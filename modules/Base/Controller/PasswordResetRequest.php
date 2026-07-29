@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class PasswordResetRequest extends \owa_controller {
+class PasswordResetRequest extends \OWA\Core\Controller {
 
     public function validate()
     {
@@ -49,7 +49,7 @@ class PasswordResetRequest extends \owa_controller {
     function action() {
 
         // Log password reset request to event queue
-        $ed = \owa_coreAPI::getEventDispatch();
+        $ed = \OWA\Core\CoreAPI::getEventDispatch();
 
         $event = $ed->makeEvent( 'base.reset_password' );
         $event->set('email_address', $this->getParam( 'email_address' ) );

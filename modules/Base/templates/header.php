@@ -1,6 +1,6 @@
 <div id="owa_header">
 
-    <span class="owa_logo"><img src="<?php echo $this->makeImageLink( owa_coreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>" alt="Open Web Analytics"></span>
+    <span class="owa_logo"><img src="<?php echo $this->makeImageLink( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>" alt="Open Web Analytics"></span>
      &nbsp
     <span class="owa_navigation">
         <UL>
@@ -19,9 +19,9 @@
     <?php $cu = $this->getCurrentUser(); ?>
     <span class="user-greating" style="">
         Hi, <?php $this->out( $cu->getUserData('user_id') );?> ! &bull;
-        <?php if ( ! owa_coreAPI::getSetting( 'base', 'is_embedded' ) ):?>
+        <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 
-                <?php if ( owa_coreAPI::isCurrentUserAuthenticated() ):?>
+                <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ):?>
                 <a class="login" href="<?php echo $this->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
                 <?php else:?>
                 <a class="login" href="<?php echo $this->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>

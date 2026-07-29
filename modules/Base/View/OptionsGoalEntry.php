@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class OptionsGoalEntry extends \owa_view {
+class OptionsGoalEntry extends \OWA\Core\View {
 
     function render() {
 

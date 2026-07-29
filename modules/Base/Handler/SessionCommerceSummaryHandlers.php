@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.4.0
  */
 
-class SessionCommerceSummaryHandlers extends \owa_observer {
+class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify handler method
@@ -61,14 +61,14 @@ class SessionCommerceSummaryHandlers extends \owa_observer {
 
         if ( $event->get( 'session_id' ) ) {
 
-            $s = \owa_coreAPI::entityFactory( 'base.session' );
+            $s = \OWA\Core\CoreAPI::entityFactory( 'base.session' );
 
             $s->getByPk( 'id', $pk );
             $id = $s->get('id');
 
             if ($id) {
                 // summarze the transaction
-                $summary = \owa_coreAPI::summarize(array(
+                $summary = \OWA\Core\CoreAPI::summarize(array(
                     'entity'        => 'base.commerce_transaction_fact',
                     'columns'        => array(
                             'id'         => 'count',
@@ -86,7 +86,7 @@ class SessionCommerceSummaryHandlers extends \owa_observer {
                 $items = $event->get('ct_line_items');
 
                 if ( ! empty( $items ) ) {
-                    $summary = \owa_coreAPI::summarize(array(
+                    $summary = \OWA\Core\CoreAPI::summarize(array(
                     'entity'        => 'base.commerce_line_item_fact',
                     'columns'        => array(
                             'sku'                 => 'count_distinct',
@@ -109,13 +109,13 @@ class SessionCommerceSummaryHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug('Not Updating session commerce transaction properties. Session does not exist yet.');
+                \OWA\Core\CoreAPI::debug('Not Updating session commerce transaction properties. Session does not exist yet.');
                 return OWA_EHS_EVENT_FAILED;
             }
 
         } else {
 
-            \owa_coreAPI::debug('Not Updating session commerce transaction properties. Session_id not present.');
+            \OWA\Core\CoreAPI::debug('Not Updating session commerce transaction properties. Session_id not present.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

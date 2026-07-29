@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ProcessEventQueue extends \owa_cliController {
+class ProcessEventQueue extends \OWA\Core\Controller\Cli {
 
     function __construct( $params ) {
 
@@ -50,7 +50,7 @@ class ProcessEventQueue extends \owa_cliController {
             $queues = 'incoming_tracking_events,processing';
         }
 
-        \owa_coreAPI::notice( "About to process event queues: $queues");
+        \OWA\Core\CoreAPI::notice( "About to process event queues: $queues");
 
         // pull list of event queues to process from command line
         $queues = $this->getParam( 'queues' );
@@ -62,7 +62,7 @@ class ProcessEventQueue extends \owa_cliController {
         } else {
 
             // get whatever queues are registered by modules
-            $s = \owa_coreAPI::serviceSingleton();
+            $s = \OWA\Core\CoreAPI::serviceSingleton();
             $queues = array_keys( $s->getMap('event_queues') );
         }
 
@@ -70,23 +70,23 @@ class ProcessEventQueue extends \owa_cliController {
 
             foreach ( $queues as $queue_name ) {
 
-                $q = \owa_coreAPI::getEventQueue( $queue_name );
+                $q = \OWA\Core\CoreAPI::getEventQueue( $queue_name );
 
                 if ( $q->connect() ) {
 
-                    $d = \owa_coreAPI::getEventDispatch();
+                    $d = \OWA\Core\CoreAPI::getEventDispatch();
                     $more = true;
 
                     while( $more ) {
 
-                        \owa_coreAPI::debug( 'calling receive message' );
+                        \OWA\Core\CoreAPI::debug( 'calling receive message' );
                         // get an item from the queue
                         $event = $q->receiveMessage();
-                        \owa_coreAPI::debug( 'Event returned: '.print_r( $event, true ) );
+                        \OWA\Core\CoreAPI::debug( 'Event returned: '.print_r( $event, true ) );
 
                         if ( $event ) {
 
-                            \owa_coreAPI::debug('received event from queue');
+                            \OWA\Core\CoreAPI::debug('received event from queue');
 
                             // Give up on an event that has exhausted its retry
                             // budget (see dbEventQueue::hasExhaustedRetries): mark
@@ -97,25 +97,25 @@ class ProcessEventQueue extends \owa_cliController {
                             // it would retry forever, accumulating in the queue.
                             if ( $q->hasExhaustedRetries( $event ) ) {
 
-                                \owa_coreAPI::notice( 'Giving up on queue item '.$event->getQueueGuid().': retries exhausted.' );
+                                \OWA\Core\CoreAPI::notice( 'Giving up on queue item '.$event->getQueueGuid().': retries exhausted.' );
                                 $q->markAsBroken( $event->getQueueGuid(), 'Retries exhausted.' );
                                 continue;
                             }
 
                             // process event if needed
                             // lookup which event processor to use to process this event type
-                            $processor_action = \owa_coreAPI::getEventProcessor( $event->getEventType() );
+                            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event->getEventType() );
 
                             if ( $processor_action ) {
 
-                                \owa_coreAPI::debug("event directly handled");
+                                \OWA\Core\CoreAPI::debug("event directly handled");
                                 // A processor runs the full request pipeline for the
                                 // event (persistence + its own internal dispatch, which
                                 // re-queues any handler failure as a fresh queue item)
                                 // and returns controller data, not an event-handling
                                 // status code. Reaching here without an exception means
                                 // the event was consumed, so remove it from the queue.
-                                \owa_coreAPI::handleRequest( [ 'event' => $event ], $processor_action );
+                                \OWA\Core\CoreAPI::handleRequest( [ 'event' => $event ], $processor_action );
                                 $q->deleteMessage( $event->getQueueGuid() );
 
                             } else {
@@ -140,7 +140,7 @@ class ProcessEventQueue extends \owa_cliController {
 
                         } else {
                             // if no event, stop the loop
-                            \owa_coreAPI::notice("No more events to process.");
+                            \OWA\Core\CoreAPI::notice("No more events to process.");
                             $more = false;
                             
                         }
@@ -152,7 +152,7 @@ class ProcessEventQueue extends \owa_cliController {
 
         } else {
 
-            \owa_coreAPI::notice("There are no event queues registered.");
+            \OWA\Core\CoreAPI::notice("There are no event queues registered.");
         }
     }
 }

@@ -90,7 +90,7 @@ define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Mysql extends \owa_db {
+class Mysql extends \OWA\Core\Db {
 
     function connect() {
 
@@ -176,14 +176,14 @@ class Mysql extends \owa_db {
   
           if ( $this->connection_status == false) {
 
-              \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+              \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
               $this->connect();
 
-              \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+              \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
           }
   
-          \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+          \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
         $this->e->debug(sprintf('Query: %s', $sql));
 
@@ -196,12 +196,12 @@ class Mysql extends \owa_db {
             mysqli_free_result($this->new_result);
         }
 
-        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
+        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
        try {
         $result = @mysqli_query( $this->connection, $sql );
     
-            \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
             // Log Errors
     
             if ( mysqli_errno( $this->connection ) ) {
@@ -216,7 +216,7 @@ class Mysql extends \owa_db {
                 );
             }
     
-            \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         } catch(\Exception $e) {
             $result = false;
            $this->e->debug(

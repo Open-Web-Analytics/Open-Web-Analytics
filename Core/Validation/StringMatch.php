@@ -30,7 +30,7 @@ namespace OWA\Core\Validation;
  * @since        owa 1.0.0
  */
  
- class StringMatch extends \owa_validation {
+ class StringMatch extends \OWA\Core\Validation\Validation {
 
      function validate() {
 

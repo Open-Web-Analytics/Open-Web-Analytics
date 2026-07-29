@@ -31,21 +31,21 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Ua extends \owa_entity {
+class Ua extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('ua');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['ua'] = new \owa_dbColumn;
+        $this->properties['ua'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ua']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['browser_type'] = new \owa_dbColumn;
+        $this->properties['browser_type'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['browser_type']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['browser'] = new \owa_dbColumn;
+        $this->properties['browser'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['browser']->setDataType(OWA_DTD_VARCHAR255);
 
     }

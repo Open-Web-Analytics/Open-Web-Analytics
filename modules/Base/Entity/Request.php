@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Request extends \owa_factTable {
+class Request extends \OWA\Core\Entity\FactTable {
     
     function __construct() {
     
@@ -65,17 +65,17 @@ class Request extends \owa_factTable {
         //$this->setProperty($session_id);
         
         // needed?
-        $inbound_visitor_id = new \owa_dbColumn('inbound_visitor_id', OWA_DTD_BIGINT);
+        $inbound_visitor_id = new \OWA\Module\Base\Classes\DbColumn('inbound_visitor_id', OWA_DTD_BIGINT);
         //$inbound_visitor_id->setForeignKey('base.visitor');
         $this->setProperty($inbound_visitor_id);
         
         // needed?
-        $inbound_session_id = new \owa_dbColumn('inbound_session_id', OWA_DTD_BIGINT);
+        $inbound_session_id = new \OWA\Module\Base\Classes\DbColumn('inbound_session_id', OWA_DTD_BIGINT);
         //$inbound_session_id->setForeignKey('base.session');
         $this->setProperty($inbound_session_id);
         
         // needed anymore?
-        $this->properties['feed_subscription_id'] = new \owa_dbColumn;
+        $this->properties['feed_subscription_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['feed_subscription_id']->setDataType(OWA_DTD_BIGINT);
         
         // move to abstract
@@ -83,7 +83,7 @@ class Request extends \owa_factTable {
         //$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
         
         //drop
-        $this->properties['user_email'] = new \owa_dbColumn;
+        $this->properties['user_email'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
         
         // move to abstract
@@ -117,13 +117,13 @@ class Request extends \owa_factTable {
         $this->properties['weekofyear']->setDataType(OWA_DTD_INT);
         */
         // drop these at some point
-        $this->properties['hour'] = new \owa_dbColumn;
+        $this->properties['hour'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['minute'] = new \owa_dbColumn;
+        $this->properties['minute'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['second'] = new \owa_dbColumn;
+        $this->properties['second'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['second']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['msec'] = new \owa_dbColumn;
+        $this->properties['msec'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['msec']->setDataType(OWA_DTD_INT);
         
         // wrong data type
@@ -133,7 +133,7 @@ class Request extends \owa_factTable {
         //$this->setProperty($referer_id);
         
         // wrong data type
-        $document_id = new \owa_dbColumn('document_id', OWA_DTD_VARCHAR255);
+        $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_VARCHAR255);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
         
@@ -143,7 +143,7 @@ class Request extends \owa_factTable {
         //$this->setProperty($site_id);
         
         // drop
-        $this->properties['site'] = new \owa_dbColumn;
+        $this->properties['site'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
     
         // move to abstract
@@ -163,7 +163,7 @@ class Request extends \owa_factTable {
         //$this->setProperty($os_id);
         
         //drop
-        $this->properties['os'] = new \owa_dbColumn;
+        $this->properties['os'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
         
         // move to abstract
@@ -173,7 +173,7 @@ class Request extends \owa_factTable {
         //$this->setProperty($ua_id);
         
         //prior page
-        $prior_document_id = new \owa_dbColumn('prior_document_id', OWA_DTD_BIGINT);
+        $prior_document_id = new \OWA\Module\Base\Classes\DbColumn('prior_document_id', OWA_DTD_BIGINT);
         $prior_document_id->setForeignKey('base.document');
         $this->setProperty($prior_document_id);
         
@@ -190,16 +190,16 @@ class Request extends \owa_factTable {
         //$this->properties['is_repeat_visitor']->setDataType(OWA_DTD_TINYINT);
         
         // drop
-        $this->properties['is_comment'] = new \owa_dbColumn;
+        $this->properties['is_comment'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['is_comment']->setDataType(OWA_DTD_TINYINT);
         
-        $this->properties['is_entry_page'] = new \owa_dbColumn;
+        $this->properties['is_entry_page'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['is_entry_page']->setDataType(OWA_DTD_TINYINT);
-        $this->properties['is_browser'] = new \owa_dbColumn;
+        $this->properties['is_browser'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['is_browser']->setDataType(OWA_DTD_TINYINT);
-        $this->properties['is_robot'] = new \owa_dbColumn;
+        $this->properties['is_robot'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['is_robot']->setDataType(OWA_DTD_TINYINT);
-        $this->properties['is_feedreader'] = new \owa_dbColumn;
+        $this->properties['is_feedreader'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['is_feedreader']->setDataType(OWA_DTD_TINYINT);
         
         //move to abstract

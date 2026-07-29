@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ModuleDeactivateCli extends \owa_cliController {
+class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
     
     function __construct($params) {
     
@@ -45,10 +45,10 @@ class ModuleDeactivateCli extends \owa_cliController {
         
         if ( $module ) {
     
-            $ret = \owa_coreAPI::deactivateModule($module);
+            $ret = \OWA\Core\CoreAPI::deactivateModule($module);
             
         } else {
-            \owa_coreAPI::notice('No module argument was specified. Use module=xxx');
+            \OWA\Core\CoreAPI::notice('No module argument was specified. Use module=xxx');
         }
     }
     

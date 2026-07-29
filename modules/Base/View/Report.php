@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class Report extends \owa_view {
+class Report extends \OWA\Core\View {
     var $report_params;
 
     function render($data) {

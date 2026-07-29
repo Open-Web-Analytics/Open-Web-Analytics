@@ -21,7 +21,7 @@ namespace OWA\Module\Base\View;
  * cors preflight response.
  * 
  */
-class CorsPreflight extends \owa_restApiView {
+class CorsPreflight extends \OWA\Core\View\RestApi {
         
     function render() {
         

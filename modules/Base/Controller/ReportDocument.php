@@ -31,11 +31,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportDocument extends \owa_reportController {
+class ReportDocument extends \OWA\Core\ReportController {
 
     function action() {
 
-        $d = \owa_coreAPI::entityFactory('base.document');
+        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
 
         if ($this->getParam('pageUrl')) {
             $pageUrl = $this->getParam('pageUrl');

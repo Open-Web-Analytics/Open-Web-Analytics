@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersEdit extends \owa_adminController {
+class UsersEdit extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -60,7 +60,7 @@ class UsersEdit extends \owa_adminController {
 
         // This needs form validation in a bad way.
 
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('user_id', $this->getParam('user_id'));
         $u->set('email_address', $this->getParam('email_address'));
 

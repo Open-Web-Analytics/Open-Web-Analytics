@@ -15,13 +15,13 @@ namespace OWA\Module\Base\Controller;
  * Responds to an OPTIONS preflight request made by browsers for non-simple HTTP CORS requests. 
  *
  */
-class CorsPreflight extends \owa_controller {
+class CorsPreflight extends \OWA\Core\Controller {
     
     function success() {
 	    
 	    http_response_code(200);
 	    
-	    $service = \owa_coreAPI::serviceSingleton();
+	    $service = \OWA\Core\CoreAPI::serviceSingleton();
 	    $this->set('HTTP_ACCESS_CONTROL_REQUEST_HEADERS', $service->request->getServerParam('HTTP_ACCESS_CONTROL_REQUEST_HEADERS') );
 	    $service->request->getRequestType();
 	    

@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.5.3
  */
 
-class ConfigurableMetric extends \owa_metric {
+class ConfigurableMetric extends \OWA\Core\Metric {
 
     function __construct( $params ) {
         

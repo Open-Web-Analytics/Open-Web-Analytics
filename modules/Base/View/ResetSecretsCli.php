@@ -31,6 +31,6 @@ namespace OWA\Module\Base\View;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class ResetSecretsCli extends \owa_cliView {
+class ResetSecretsCli extends \OWA\Core\View\Cli {
 
 }

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class SitesProfile extends \owa_view {
+class SitesProfile extends \OWA\Core\View {
 
     function render() {
 
@@ -39,7 +39,7 @@ class SitesProfile extends \owa_view {
             $this->body->set('action', 'base.sitesEdit');
             $this->body->set('headline', 'Edit Site Profile for: '. $site['domain'] );
 
-            $siteEntity = \owa_coreAPI::entityFactory('base.site');
+            $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
             $siteEntity->getByColumn('site_id', $this->get('siteId'));
             $this->body->set('siteEntity', $siteEntity);
 
@@ -69,7 +69,7 @@ class SitesProfile extends \owa_view {
      * @return array
      */
     private function getAllUserRows() {
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_user');
         $db->selectColumn("*");
         return $db->getAllRows();

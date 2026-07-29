@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.4.0
  */
 
-class SourceHandlers extends \owa_observer {
+class SourceHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -42,7 +42,7 @@ class SourceHandlers extends \owa_observer {
     function notify($event) {
 
         if ($event->get('source')) {
-            $s = \owa_coreAPI::entityFactory('base.source_dim');
+            $s = \OWA\Core\CoreAPI::entityFactory('base.source_dim');
 
             $new_id = $s->generateId( trim( strtolower( (string) $event->get('source') ) ) );
             $s->getByPk('id', $new_id);
@@ -62,11 +62,11 @@ class SourceHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug('Not Persisting. Source already exists.');
+                \OWA\Core\CoreAPI::debug('Not Persisting. Source already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
-            \owa_coreAPI::debug('Noting to handle. No source properties found on event.');
+            \OWA\Core\CoreAPI::debug('Noting to handle. No source properties found on event.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

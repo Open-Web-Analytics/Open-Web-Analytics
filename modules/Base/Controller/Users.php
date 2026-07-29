@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Users extends \owa_adminController {
+class Users extends \OWA\Core\AdminController {
         
     function __construct($params) {
         
@@ -41,7 +41,7 @@ class Users extends \owa_adminController {
     
     function action() {
         
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_user');
         $db->selectColumn("*");
         $users = $db->getAllRows();
@@ -49,7 +49,7 @@ class Users extends \owa_adminController {
         // remove this after switch to REST API in Admin Interface
         $this->set('users', $users);
         
-        $user_objs = \owa_coreAPI::loadEntitiesFromArray( $users, 'base.user');
+        $user_objs = \OWA\Core\CoreAPI::loadEntitiesFromArray( $users, 'base.user');
         $this->set('users_objs', $user_objs );
     }
     

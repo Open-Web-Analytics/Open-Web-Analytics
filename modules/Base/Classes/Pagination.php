@@ -29,7 +29,7 @@ namespace OWA\Module\Base\Classes;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Pagination extends \owa_base {
+class Pagination extends \OWA\Core\Base {
 
     var $page = 1;
 

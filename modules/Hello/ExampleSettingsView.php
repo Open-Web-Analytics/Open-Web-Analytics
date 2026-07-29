@@ -31,7 +31,7 @@ namespace OWA\Module\Hello;
  * @since        owa 1.0.0
  */
 
-class ExampleSettingsView extends \owa_view {
+class ExampleSettingsView extends \OWA\Core\View {
 
     function __construct($params) {
         //set page type

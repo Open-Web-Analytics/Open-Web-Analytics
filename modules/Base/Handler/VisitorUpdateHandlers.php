@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class VisitorUpdateHandlers extends \owa_observer {
+class VisitorUpdateHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -45,7 +45,7 @@ class VisitorUpdateHandlers extends \owa_observer {
 
         if ( $event->get( 'visitor_id' ) ) {
 
-            $v = \owa_coreAPI::entityFactory('base.visitor');
+            $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
 
             $v->load( $event->get( 'visitor_id' ) );
 
@@ -53,7 +53,7 @@ class VisitorUpdateHandlers extends \owa_observer {
 
                 $v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
 
-                \owa_coreAPI::debug("Updating... Visitor already exists.");
+                \OWA\Core\CoreAPI::debug("Updating... Visitor already exists.");
 
                 $ret = $v->save();
 
@@ -66,14 +66,14 @@ class VisitorUpdateHandlers extends \owa_observer {
 
         } else {
 
-            \owa_coreAPI::debug("Not updating... no visitor ID present.");
+            \OWA\Core\CoreAPI::debug("Not updating... no visitor ID present.");
             return OWA_EHS_EVENT_HANDLED;
         }
     }
     
     function summarizePriorSessions($id) {
 
-        $ret = \owa_coreAPI::summarize(array(
+        $ret = \OWA\Core\CoreAPI::summarize(array(
                 'entity'        => 'base.session',
                 'columns'        => array('num_prior_sessions' => 'max'),
                 'constraints'    => array( 'visitor_id' => $id ) ) );

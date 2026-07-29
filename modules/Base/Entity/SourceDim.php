@@ -31,17 +31,17 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class SourceDim extends \owa_entity {
+class SourceDim extends \OWA\Core\Entity {
     
     function __construct() {
         
         $this->setTableName('source_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['source_domain'] = new \owa_dbColumn;
+        $this->properties['source_domain'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
     }
 }

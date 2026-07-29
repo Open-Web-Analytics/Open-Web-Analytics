@@ -31,7 +31,7 @@ namespace OWA\Module\MaxmindGeoip;
  * @since        owa 1.4.0
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     var $method;
 
@@ -46,7 +46,7 @@ class Module extends \owa_module {
         $this->config_required = false;
         $this->required_schema_version = 1;
 
-        $mode = \owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
+        $mode = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'lookup_method');
 
         switch ( $mode ) {
 
@@ -65,9 +65,9 @@ class Module extends \owa_module {
         $this->method = $method;
 		
 		// turn on geo-location
-		\owa_coreAPI::setSetting( 'base', 'geolocation_lookup', true );
+		\OWA\Core\CoreAPI::setSetting( 'base', 'geolocation_lookup', true );
         // needed so default filters will not fun
-        \owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
+        \OWA\Core\CoreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
 
         return parent::__construct();
@@ -75,7 +75,7 @@ class Module extends \owa_module {
 
     function registerFilters() {
 
-        if ( \owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
+        if ( \OWA\Core\CoreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
 
             $this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
         }

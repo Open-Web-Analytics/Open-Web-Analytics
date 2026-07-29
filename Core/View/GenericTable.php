@@ -23,7 +23,7 @@ namespace OWA\Core\View;
  * Will produce a generic html table
  *
  */
-class GenericTable extends \owa_view {
+class GenericTable extends \OWA\Core\View {
 
     function __construct() {
 

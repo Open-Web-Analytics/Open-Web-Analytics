@@ -30,7 +30,7 @@ namespace OWA\Core\Validation;
  * @since        owa 1.0.0
  */
  
- class EmailAddress extends \owa_validation {
+ class EmailAddress extends \OWA\Core\Validation\Validation {
      
      function validate() {
          

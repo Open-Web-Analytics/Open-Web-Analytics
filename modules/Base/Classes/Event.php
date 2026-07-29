@@ -292,7 +292,7 @@ class Event {
      */
     function set_guid() {
 
-        return \owa_lib::generateRandomUid();
+        return \OWA\Core\Lib::generateRandomUid();
     }
 
     /**
@@ -343,7 +343,7 @@ class Event {
 
     function cleanProperties() {
 
-        return $this->setProperties(\owa_lib::inputFilter($this->getProperties()));
+        return $this->setProperties(\OWA\Core\Lib::inputFilter($this->getProperties()));
     }
 
     function setPageTitle($value) {
@@ -380,7 +380,7 @@ class Event {
 
     function getSiteSpecificGuid($site_id) {
 
-        return \owa_lib::generateRandomUid();
+        return \OWA\Core\Lib::generateRandomUid();
     }
 
     function getStatus() {

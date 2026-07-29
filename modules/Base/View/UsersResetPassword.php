@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class UsersResetPassword extends \owa_mailView {
+class UsersResetPassword extends \OWA\Core\View\Mail {
     
     function render($data) {
         

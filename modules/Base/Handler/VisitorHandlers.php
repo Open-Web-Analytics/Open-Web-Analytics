@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class VisitorHandlers extends \owa_observer {
+class VisitorHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -43,7 +43,7 @@ class VisitorHandlers extends \owa_observer {
 
         if ( $event->get( 'visitor_id' ) ) {
 
-            $v = \owa_coreAPI::entityFactory('base.visitor');
+            $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
 
             $v->load( $event->get( 'visitor_id' ) );
 
@@ -71,13 +71,13 @@ class VisitorHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug("Not updating... Visitor already exists.");
+                \OWA\Core\CoreAPI::debug("Not updating... Visitor already exists.");
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            \owa_coreAPI::debug("No visitor_id part of event...");
+            \OWA\Core\CoreAPI::debug("No visitor_id part of event...");
             return OWA_EHS_EVENT_HANDLED;
         }
     }

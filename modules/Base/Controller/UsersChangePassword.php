@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersChangePassword extends \owa_controller {
+class UsersChangePassword extends \OWA\Core\Controller {
 
     public function validate()
     {
@@ -57,16 +57,16 @@ class UsersChangePassword extends \owa_controller {
 		// needed for old style embedded install migration
 		if ( $this->getParam('is_embedded') ) {
 			
-			\owa_coreAPI::setSetting('base', 'is_embedded', true);
+			\OWA\Core\CoreAPI::setSetting('base', 'is_embedded', true);
 		}
 		
 		
-        $auth = \owa_auth::get_instance();
+        $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->params['k']);
 
         // log to event queue
         if ($status === true) {
-            $ed = \owa_coreAPI::getEventDispatch();
+            $ed = \OWA\Core\CoreAPI::getEventDispatch();
             $new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();

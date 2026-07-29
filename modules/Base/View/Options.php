@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class Options extends \owa_view {
+class Options extends \OWA\Core\View {
 
     function __construct() {
 
@@ -53,7 +53,7 @@ class Options extends \owa_view {
         $this->body->set('headline', 'OWA Settings');
 
         // get admin panels
-        $api = \owa_coreAPI::singleton();
+        $api = \OWA\Core\CoreAPI::singleton();
         $panels = $api->getAdminPanels();
         //print_r($panels);
         $this->body->set('panels', $panels);

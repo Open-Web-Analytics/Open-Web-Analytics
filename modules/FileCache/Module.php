@@ -17,7 +17,7 @@ namespace OWA\Module\FileCache;
 
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     function __construct() {
 
@@ -36,8 +36,8 @@ class Module extends \owa_module {
     function init() {
 	    
 	    $this->registerImplementation('object_cache_types', 'file', 'owa_fileCache', 'classes/fileCache.php');
-	    \owa_coreAPI::setSetting('base', 'cache_objects', true);
-	    \owa_coreAPI::setSetting('base', 'cacheType', 'file');
+	    \OWA\Core\CoreAPI::setSetting('base', 'cache_objects', true);
+	    \OWA\Core\CoreAPI::setSetting('base', 'cacheType', 'file');
     }
 }
 

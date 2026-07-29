@@ -31,27 +31,27 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class LocationDim extends \owa_entity {
+class LocationDim extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('location_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['country'] = new \owa_dbColumn;
+        $this->properties['country'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['country']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['country_code'] = new \owa_dbColumn;
+        $this->properties['country_code'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['country_code']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['state'] = new \owa_dbColumn;
+        $this->properties['state'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['state']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['city'] = new \owa_dbColumn;
+        $this->properties['city'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['latitude'] = new \owa_dbColumn;
+        $this->properties['latitude'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['latitude']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['longitude'] = new \owa_dbColumn;
+        $this->properties['longitude'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['longitude']->setDataType(OWA_DTD_VARCHAR255);
     }
 }

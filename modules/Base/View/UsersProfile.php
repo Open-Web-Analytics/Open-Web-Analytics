@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class UsersProfile extends \owa_view {
+class UsersProfile extends \OWA\Core\View {
 
     function __construct() {
 
@@ -44,7 +44,7 @@ class UsersProfile extends \owa_view {
             $this->body->set('headline', 'Edit user profile');
             $this->body->set('action', 'base.usersEdit');
             $this->body->set('edit', true);
-            $userEntity =  \owa_coreAPI::entityFactory( 'base.user' );
+            $userEntity =  \OWA\Core\CoreAPI::entityFactory( 'base.user' );
             $userEntity->load( $user['id'] );
             $this->body->set('isAdmin', $userEntity->isOWAAdmin());
         } else {
@@ -55,7 +55,7 @@ class UsersProfile extends \owa_view {
         //page title
         $this->t->set('page_title', 'User Profile');
         $this->body->set_template('users_addoredit.php');
-        $this->body->set('roles', \owa_coreAPI::getAllRoles());
+        $this->body->set('roles', \OWA\Core\CoreAPI::getAllRoles());
 
         $this->body->set('user', $user);
 

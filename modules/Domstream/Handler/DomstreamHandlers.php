@@ -31,7 +31,7 @@ namespace OWA\Module\Domstream\Handler;
  * @since        owa 1.2.1
  */
 
-class DomstreamHandlers extends \owa_observer {
+class DomstreamHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify method
@@ -41,7 +41,7 @@ class DomstreamHandlers extends \owa_observer {
      */
     function notify($event) {
 
-        $ds = \owa_coreAPI::entityFactory('base.domstream');
+        $ds = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $ds->load( $event->get('guid') );
 
         if ( ! $ds->wasPersisted() ) {
@@ -62,7 +62,7 @@ class DomstreamHandlers extends \owa_observer {
             if ( $ret ) {
 
                 // Tell others that "dom.stream" has been logged
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);
@@ -73,7 +73,7 @@ class DomstreamHandlers extends \owa_observer {
             }
 
         } else {
-            \owa_coreAPI::debug('No persisting. Domsteam  already exists.');
+            \OWA\Core\CoreAPI::debug('No persisting. Domsteam  already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

@@ -32,7 +32,7 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-class Update extends \owa_base {
+class Update extends \OWA\Core\Base {
 
     /**
      * Module Name

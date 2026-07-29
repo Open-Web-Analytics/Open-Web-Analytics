@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Classes;
  */
 
 
-class GoalManager extends \owa_base {
+class GoalManager extends \OWA\Core\Base {
 
     var $goals;
     var $activeGoals;
@@ -54,8 +54,8 @@ class GoalManager extends \owa_base {
     function __construct( $site_id ) {
 
         $this->site_id = $site_id;
-        $this->numGoals = \owa_coreAPI::getSetting('base', 'numGoals');
-        $this->numGoalGroups = \owa_coreAPI::getSetting('base', 'numGoalGroups');
+        $this->numGoals = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
+        $this->numGoalGroups = \OWA\Core\CoreAPI::getSetting('base', 'numGoalGroups');
         $this->loadGoals( $site_id );
         $this->loadGoalGroupLabels ( $site_id );
     }
@@ -72,7 +72,7 @@ class GoalManager extends \owa_base {
             $this->goal_group_labels[$i] = "Goal Group $i";
         }
 
-        $from_db = \owa_coreAPI::getSiteSetting( $site_id , 'goal_groups' );
+        $from_db = \OWA\Core\CoreAPI::getSiteSetting( $site_id , 'goal_groups' );
 
         if ($from_db) {
 
@@ -98,7 +98,7 @@ class GoalManager extends \owa_base {
             );
         }
 
-        $from_db = \owa_coreAPI::getSiteSetting( $site_id, 'goals' );
+        $from_db = \OWA\Core\CoreAPI::getSiteSetting( $site_id, 'goals' );
 
         if ($from_db) {
 
@@ -189,12 +189,12 @@ class GoalManager extends \owa_base {
 
         if ( $this->isDirtyGoals ) {
 
-            \owa_coreAPI::persistSiteSetting( $this->site_id, 'goals', $this->goals );
+            \OWA\Core\CoreAPI::persistSiteSetting( $this->site_id, 'goals', $this->goals );
         }
 
         if ( $this->isDirtyGoalGroups ) {
 
-            \owa_coreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
+            \OWA\Core\CoreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
         }
     }
 

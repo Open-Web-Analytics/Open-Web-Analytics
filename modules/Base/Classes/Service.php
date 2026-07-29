@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Classes;
  */
 
 
-class Service extends \owa_base {
+class Service extends \OWA\Core\Base {
 
     var $init = false;
     var $request;
@@ -54,12 +54,12 @@ class Service extends \owa_base {
     var $restApiRoutes = array();
 
     function __construct() {
-        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
     }
 
     function __destruct() {
-        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
     function initializeFramework() {
@@ -67,7 +67,7 @@ class Service extends \owa_base {
         if (!$this->isInit()) {
 
             // setup request container
-            $this->request = \owa_coreAPI::requestContainerSingleton();
+            $this->request = \OWA\Core\CoreAPI::requestContainerSingleton();
 
             $this->_loadModules();
             $this->_loadFilters();
@@ -80,11 +80,11 @@ class Service extends \owa_base {
             $this->setInit();
 
             // setup current user
-            $this->current_user = \owa_coreAPI::supportClassFactory('base', 'serviceUser');
+            $this->current_user = \OWA\Core\CoreAPI::supportClassFactory('base', 'serviceUser');
             // the 'log_users' config directive relies on this being populated
             $this->current_user->setUserData( 'user_id' ,  $this->request->state->get('u') );
             // load geolocation obj.
-            $this->geolocation = \owa_geolocation::getInstance();
+            $this->geolocation = \OWA\Module\Base\Classes\Geolocation::getInstance();
         }
 
     }
@@ -103,7 +103,7 @@ class Service extends \owa_base {
 		        $ua = $this->request->getServerParam('HTTP_USER_AGENT');
 	        }
 	        
-            $this->browscap = \owa_coreAPI::supportClassFactory('base', 'browscap', $ua);
+            $this->browscap = \OWA\Core\CoreAPI::supportClassFactory('base', 'browscap', $ua);
         }
 
         return $this->browscap;
@@ -111,16 +111,16 @@ class Service extends \owa_base {
 
     function _loadModules() {
 
-        $present_modules = \owa_coreAPI::getPresentModules();
-        $am = \owa_coreAPI::getActiveModules();
+        $present_modules = \OWA\Core\CoreAPI::getPresentModules();
+        $am = \OWA\Core\CoreAPI::getActiveModules();
 
         foreach ($am as $k => $v) {
 			
 			// active-module names are lowercase runtime names; getPresentModules()
 			// returns on-disk dir names, which are PascalCase (PSR-4). Translate the
 			// runtime name to its dir name for the presence check.
-			if ( in_array( \owa_lib::moduleDirName( $v ), $present_modules ) ) {
-	            $m = \owa_coreAPI::moduleClassFactory($v);
+			if ( in_array( \OWA\Core\Lib::moduleDirName( $v ), $present_modules ) ) {
+	            $m = \OWA\Core\CoreAPI::moduleClassFactory($v);
 	
 	            $this->addModule($m);
 	
@@ -140,8 +140,8 @@ class Service extends \owa_base {
     }
     
     function checkForRequiredUpdates() {
-	    \owa_coreAPI::debug( \owa_coreAPI::configSingleton() );
-	    $am = \owa_coreAPI::getActiveModules();
+	    \OWA\Core\CoreAPI::debug( \OWA\Core\CoreAPI::configSingleton() );
+	    $am = \OWA\Core\CoreAPI::getActiveModules();
 	    
 	    foreach ($am as $k => $v) {
 		    
@@ -199,7 +199,7 @@ class Service extends \owa_base {
 
             foreach ( $implementations as $implementation ) {
 
-                $m = \owa_coreAPI::metricFactory( $implementation['class'], $implementation['params']);
+                $m = \OWA\Core\CoreAPI::metricFactory( $implementation['class'], $implementation['params']);
 
                 if ( ! $m->isCalculated() ) {
                     $metricsByEntityMap[ $m->getEntityName() ][ $implementation['name'] ] = $implementation;

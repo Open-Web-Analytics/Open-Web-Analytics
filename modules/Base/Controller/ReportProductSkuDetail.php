@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportProductSkuDetail extends \owa_reportController {
+class ReportProductSkuDetail extends \OWA\Core\ReportController {
 
     function action() {
 

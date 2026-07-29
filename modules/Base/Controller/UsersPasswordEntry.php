@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersPasswordEntry extends \owa_controller {
+class UsersPasswordEntry extends \OWA\Core\Controller {
 
     function __construct($params) {
 

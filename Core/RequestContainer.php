@@ -55,7 +55,7 @@ class RequestContainer {
     function __construct() {
 
         $this->timestamp = time();
-        $this->guid = \owa_lib::generateRandomUid();
+        $this->guid = \OWA\Core\Lib::generateRandomUid();
 
         // php's server variables
         $this->server = $_SERVER;
@@ -98,7 +98,7 @@ class RequestContainer {
         }
 
         // populate owa_cookie container with just the cookies that have the owa namespace.
-        $this->owa_cookies = \owa_lib::stripParams( $this->cookies, \owa_coreAPI::getSetting('base', 'ns') );
+        $this->owa_cookies = \OWA\Core\Lib::stripParams( $this->cookies, \OWA\Core\CoreAPI::getSetting('base', 'ns') );
 
 
         // session
@@ -109,10 +109,10 @@ class RequestContainer {
         /* STATE CONTAINER */
 
         // state
-        $this->state = \owa_coreAPI::supportClassFactory('base', 'state');
+        $this->state = \OWA\Core\CoreAPI::supportClassFactory('base', 'state');
         // merges session
         if (!empty($this->session)) {
-            $this->state->addStores(\owa_lib::stripParams($this->session, \owa_coreAPI::getSetting('base', 'ns')));
+            $this->state->addStores(\OWA\Core\Lib::stripParams($this->session, \OWA\Core\CoreAPI::getSetting('base', 'ns')));
         }
 
         // merges cookies
@@ -123,7 +123,7 @@ class RequestContainer {
 
         // create request params and type
         $params = array();
-		\owa_coreAPI::debug('request container says params are:');
+		\OWA\Core\CoreAPI::debug('request container says params are:');
 		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
 				
 				$this->request_type = $_SERVER['REQUEST_METHOD'];
@@ -131,7 +131,7 @@ class RequestContainer {
 			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
 			
 				parse_str( trim(file_get_contents("php://input") ), $post_vars );
-				\owa_coreAPI::debug($post_vars);
+				\OWA\Core\CoreAPI::debug($post_vars);
 				$params = array_merge( $_GET, $post_vars);
 				
 			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
@@ -144,9 +144,9 @@ class RequestContainer {
 				$params = array_merge( $_GET, $_POST);
 			}
 			
-			$this->current_url = \owa_lib::get_current_url();
+			$this->current_url = \OWA\Core\Lib::get_current_url();
 			
-			\owa_coreAPI::debug($params);
+			\OWA\Core\CoreAPI::debug($params);
 			
 		} else {
 			
@@ -177,9 +177,9 @@ class RequestContainer {
         // Clean Input arrays
         if ( $params ) {
 
-            if ( ! \owa_coreAPI::getSetting('base', 'tracking_mode') ) {
+            if ( ! \OWA\Core\CoreAPI::getSetting('base', 'tracking_mode') ) {
 
-                $params = \owa_sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
+                $params = \OWA\Module\Base\Classes\Sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
 
             }
             if ( is_array( $params ) && ! empty( $params ) ) {
@@ -189,26 +189,26 @@ class RequestContainer {
         }
 
         // get namespace
-        $ns = \owa_coreAPI::getSetting('base', 'ns');
+        $ns = \OWA\Core\CoreAPI::getSetting('base', 'ns');
         // strip action and do params of nasty include exploits.
         if (array_key_exists( $ns.'action', $this->request)) {
 
-            $this->request[$ns.'action'] = \owa_lib::fileInclusionFilter($this->request[$ns.'action']);
+            $this->request[$ns.'action'] = \OWA\Core\Lib::fileInclusionFilter($this->request[$ns.'action']);
         }
 
         if (array_key_exists($ns.'do', $this->request)) {
 
-            $this->request[$ns.'do'] = \owa_lib::fileInclusionFilter($this->request[$ns.'do']);
+            $this->request[$ns.'do'] = \OWA\Core\Lib::fileInclusionFilter($this->request[$ns.'do']);
         }
 
         // strip owa namespace
-        $this->owa_params = \owa_lib::stripParams($this->request, $ns);
+        $this->owa_params = \OWA\Core\Lib::stripParams($this->request, $ns);
 
         // translate certain request variables that are reserved in javascript
-        $this->owa_params = \owa_lib::rekeyArray($this->owa_params, array_flip(\owa_coreAPI::getSetting('base', 'reserved_words')));
+        $this->owa_params = \OWA\Core\Lib::rekeyArray($this->owa_params, array_flip(\OWA\Core\CoreAPI::getSetting('base', 'reserved_words')));
 
         // set https flag
-        if( \owa_lib::isHttps() ) {
+        if( \OWA\Core\Lib::isHttps() ) {
             $this->is_https = true;
         }
     }
@@ -291,7 +291,7 @@ class RequestContainer {
         // replace owa params
         $this->owa_params = $params;
         //debug
-        \owa_coreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
+        \OWA\Core\CoreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
         return;
 
     }

@@ -32,7 +32,7 @@ namespace OWA\Module\MemcachedCache\Classes;
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  */
 
-class MemcachedCache extends \owa_cacheType {
+class MemcachedCache extends \OWA\Core\CacheType {
 
     /**
      * PECL Memcached client, or null when the extension is unavailable.
@@ -55,14 +55,14 @@ class MemcachedCache extends \owa_cacheType {
 
         if ( ! extension_loaded( 'memcached' ) ) {
 
-            \owa_coreAPI::notice( "PECL memcached extension not loaded; memcached object cache disabled." );
+            \OWA\Core\CoreAPI::notice( "PECL memcached extension not loaded; memcached object cache disabled." );
             $this->mc = null;
             return parent::__construct();
         }
 
-        $servers = \owa_coreAPI::getSetting( 'memcachedCache', 'memcachedServers' );
+        $servers = \OWA\Core\CoreAPI::getSetting( 'memcachedCache', 'memcachedServers' );
 
-        $persistant = \owa_coreAPI::getSetting( 'memcachedCache', 'memcachedPersistantConnections' );
+        $persistant = \OWA\Core\CoreAPI::getSetting( 'memcachedCache', 'memcachedPersistantConnections' );
 
         // A persistent_id pools/reuses the connection across requests. Only
         // pass one when persistent connections are enabled.
@@ -109,10 +109,10 @@ class MemcachedCache extends \owa_cacheType {
         // PECL returns false + RES_NOTFOUND on a miss; distinguish that from a
         // stored falsey value via the result code.
         if ( $this->mc->getResultCode() === \Memcached::RES_SUCCESS ) {
-            \owa_coreAPI::debug("$key retrieved from memcache.");
+            \OWA\Core\CoreAPI::debug("$key retrieved from memcache.");
             return $item;
         } else {
-            \owa_coreAPI::debug("$key was not found in memcache.");
+            \OWA\Core\CoreAPI::debug("$key was not found in memcache.");
         }
 
     }
@@ -131,10 +131,10 @@ class MemcachedCache extends \owa_cacheType {
         $ret = $this->mc->set( $key, $value, (int) $expiration );
 
         if ( $ret ) {
-            \owa_coreAPI::debug( "$key successfully set in memcache." );
+            \OWA\Core\CoreAPI::debug( "$key successfully set in memcache." );
             return true;
         } else {
-            \owa_coreAPI::debug( "$key not set in memcache." );
+            \OWA\Core\CoreAPI::debug( "$key not set in memcache." );
             return false;
         }
     }
@@ -150,9 +150,9 @@ class MemcachedCache extends \owa_cacheType {
         $ret = $this->mc->delete($key);
 
         if ($ret) {
-            \owa_coreAPI::debug( "$key successfully deleted from memcache." );
+            \OWA\Core\CoreAPI::debug( "$key successfully deleted from memcache." );
         } else {
-            \owa_coreAPI::debug( "$key not deleted from memcache.");
+            \OWA\Core\CoreAPI::debug( "$key not deleted from memcache.");
         }
     }
 

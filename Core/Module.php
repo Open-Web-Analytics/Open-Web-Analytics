@@ -230,7 +230,7 @@ abstract class Module {
     function __construct() {
 		
 		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
-		$this->path = OWA_MODULES_DIR . \owa_lib::moduleDirName( $this->name ) . '/';
+		$this->path = OWA_MODULES_DIR . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
 		
         //parent::__construct();
 		
@@ -333,10 +333,10 @@ abstract class Module {
         if (!is_object($handler_name)) {
 
             //$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-            $handler_name = \owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
+            $handler_name = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
         }
 
-        $eq = \owa_coreAPI::getEventDispatch();
+        $eq = \OWA\Core\CoreAPI::getEventDispatch();
         $eq->attach($event_name, array($handler_name, $method));
     }
 
@@ -355,12 +355,12 @@ abstract class Module {
         // if it's an object
         if ( is_object( $handler_name ) ) {
 
-            \owa_coreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
+            \OWA\Core\CoreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
 
         // if it's a static method name
         } elseif ( strpos( $handler_name, '::') ) {
 
-            \owa_coreAPI::registerFilter($filter_name, $handler_name, $priority);
+            \OWA\Core\CoreAPI::registerFilter($filter_name, $handler_name, $priority);
 
         // else try to create the class object
         } else {
@@ -368,11 +368,11 @@ abstract class Module {
             if ( ! class_exists( $handler_name ) ) {
 
                 //$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-                $class = \owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
+                $class = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
             }
 
             // register
-            \owa_coreAPI::registerFilter($filter_name, array($class, $method), $priority);
+            \OWA\Core\CoreAPI::registerFilter($filter_name, array($class, $method), $priority);
         }
     }
 
@@ -508,7 +508,7 @@ abstract class Module {
      */
     function install() {
 
-        \owa_coreAPI::notice('Starting installation of module: '.$this->name);
+        \OWA\Core\CoreAPI::notice('Starting installation of module: '.$this->name);
 
         $errors = '';
 
@@ -517,12 +517,12 @@ abstract class Module {
 
             foreach ($this->entities as $k => $v) {
 
-                $entity = \owa_coreAPI::entityFactory($this->name.'.'.$v);
+                $entity = \OWA\Core\CoreAPI::entityFactory($this->name.'.'.$v);
                 //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
                 if ($status != true) {
-                    \owa_coreAPI::notice("Entity Installation Failed.");
+                    \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
                     $errors = true;
                     //return false;
                 }
@@ -538,22 +538,22 @@ abstract class Module {
 
             if ($ret == true) {
 	            
-                \owa_coreAPI::notice("Post install procedure was a success.");
+                \OWA\Core\CoreAPI::notice("Post install procedure was a success.");
                 
             } else {
 	            
-                \owa_coreAPI::notice("Post install procedure failed.");
+                \OWA\Core\CoreAPI::notice("Post install procedure failed.");
             }
 
             // save schema version to configuration
-            \owa_coreAPI::persistSetting( $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
+            \OWA\Core\CoreAPI::persistSetting( $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
             //activate the module and save the configuration
             $this->activate();
-            \owa_coreAPI::notice("Installation complete.");
+            \OWA\Core\CoreAPI::notice("Installation complete.");
             return true;
 
         } else {
-            \owa_coreAPI::notice("Installation failed.");
+            \OWA\Core\CoreAPI::notice("Installation failed.");
             return false;
         }
 
@@ -580,10 +580,10 @@ abstract class Module {
     function update() {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
-        $files = \owa_lib::listDir(OWA_DIR.'modules'.'/'.\owa_lib::moduleDirName($this->name).'/'.'Update', false);
+        $files = \OWA\Core\Lib::listDir(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($this->name).'/'.'Update', false);
         //print_r($files);
 
-        $current_schema_version = \owa_coreAPI::getSetting($this->name, 'schema_version');
+        $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
         // extract sequence
         foreach ($files as $k => $v) {
@@ -597,13 +597,13 @@ abstract class Module {
             if ($seq > $current_schema_version) {
 
                 if ($seq <= $this->required_schema_version) {
-                    $this->updates[$seq] = \owa_coreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
+                    $this->updates[$seq] = \OWA\Core\CoreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
                     // if the cli update mode is required and we are not running via cli then return an error.
-                    \owa_coreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
+                    \OWA\Core\CoreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
                     if ($this->updates[$seq]->isCliModeRequired() === true && !defined('OWA_CLI')) {
                         //set flag in module
                         $this->update_from_cli_required = true;
-                        \owa_coreAPI::notice("Aborting update $seq. This update must be applied using the command line interface.");
+                        \OWA\Core\CoreAPI::notice("Aborting update $seq. This update must be applied using the command line interface.");
                         return false;
                     }
                     // set schema version from sequence number in file name. This ensures that only one update
@@ -621,14 +621,14 @@ abstract class Module {
 
         foreach ($this->updates as $k => $obj) {
 
-            \owa_coreAPI::notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
+            \OWA\Core\CoreAPI::notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
 
             $ret = $obj->apply();
 
             if ($ret == true) {
-                \owa_coreAPI::notice("Update Succeeded");
+                \OWA\Core\CoreAPI::notice("Update Succeeded");
             } else {
-                \owa_coreAPI::notice("Update Failed");
+                \OWA\Core\CoreAPI::notice("Update Failed");
                 return false;
             }
         }
@@ -651,8 +651,8 @@ abstract class Module {
      */
     function activate() {
 	
-		$ret = \owa_coreAPI::persistSetting( $this->name, 'is_active', true );
-        \owa_coreAPI::notice("Module $this->name activated");
+		$ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
+        \OWA\Core\CoreAPI::notice("Module $this->name activated");
         
         return $ret;
     }
@@ -666,7 +666,7 @@ abstract class Module {
 
         if ($this->name != 'base') {
 
-            \owa_coreAPI::persistSetting( $this->name, 'is_active', false );
+            \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
     	}
     }
 
@@ -679,8 +679,8 @@ abstract class Module {
         $current_schema = $this->getSchemaVersion();
         $required_schema = $this->getRequiredSchemaVersion();
 
-        \owa_coreAPI::debug("$this->name Schema version is $current_schema");
-        \owa_coreAPI::debug("$this->name Required Schema version is $required_schema");
+        \OWA\Core\CoreAPI::debug("$this->name Schema version is $current_schema");
+        \OWA\Core\CoreAPI::debug("$this->name Required Schema version is $required_schema");
 
         if ($current_schema >= $required_schema) {
             return true;
@@ -691,7 +691,7 @@ abstract class Module {
 
     function getSchemaVersion() {
 
-        $current_schema = \owa_coreAPI::getSetting($this->name, 'schema_version');
+        $current_schema = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
         if (empty($current_schema)) {
             $current_schema = 1;
@@ -942,7 +942,7 @@ abstract class Module {
      */
     protected function registerAction( $action_name, $class_name, $file ) {
 		
-		$s = \owa_coreAPI::serviceSingleton();
+		$s = \OWA\Core\CoreAPI::serviceSingleton();
     	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => OWA_BASE_MODULE_DIR . $file ] );
 
     }
@@ -966,7 +966,7 @@ abstract class Module {
 			$file = $this->path . $file;				
 		}
 		
-		$s = \owa_coreAPI::serviceSingleton();
+		$s = \OWA\Core\CoreAPI::serviceSingleton();
 		
 		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'conf' => $params ) );
     }
@@ -1010,7 +1010,7 @@ abstract class Module {
      */
     function registerImplementation($type, $key, $class_name, $file, $params = []) {
 
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $file = $this->path . $file;
         $class_info = array($class_name, $file, $params);
         $s->setMapValue($type, $key, $class_info);
@@ -1066,7 +1066,7 @@ abstract class Module {
 
         if ( is_array( $properties ) && $map_key ) {
 
-            $s = \owa_coreAPI::serviceSingleton();
+            $s = \OWA\Core\CoreAPI::serviceSingleton();
 
             foreach ( $properties as $k => $property ) {
 
@@ -1149,7 +1149,7 @@ abstract class Module {
     protected function registerEventQueue( $name, $map ) {
 
         $map['queue_name'] = $name;
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->setMapValue( 'event_queues', $name, $map );
     }
 

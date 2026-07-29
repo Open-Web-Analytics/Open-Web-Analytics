@@ -31,7 +31,7 @@ namespace OWA\Module\Hello;
  * @since        owa 1.0.0
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
 
     function __construct() {

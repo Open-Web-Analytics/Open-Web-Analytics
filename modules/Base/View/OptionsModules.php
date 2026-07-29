@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class OptionsModules extends \owa_view {
+class OptionsModules extends \OWA\Core\View {
 
     function __construct($params) {
 

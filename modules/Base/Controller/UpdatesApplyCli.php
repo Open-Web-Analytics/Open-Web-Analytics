@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UpdatesApplyCli extends \owa_cliController {
+class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     
     function __construct($params) {
         define('OWA_UPDATING', true);
@@ -40,7 +40,7 @@ class UpdatesApplyCli extends \owa_cliController {
     function action() {
         
         // fetch list of modules that require updates
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         
         if ($this->isParam('listpending')) {
             
@@ -77,14 +77,14 @@ class UpdatesApplyCli extends \owa_cliController {
             }
             
             if ($error === true) {
-                \owa_coreAPI::notice($this->getMsg(3307));
+                \OWA\Core\CoreAPI::notice($this->getMsg(3307));
             } else {
                 
                 // add data to container
-                \owa_coreAPI::notice($this->getMsg(3308));
+                \OWA\Core\CoreAPI::notice($this->getMsg(3308));
             }
         } else {
-            \owa_coreAPI::notice("There are no modules with pending updates to apply.");
+            \OWA\Core\CoreAPI::notice("There are no modules with pending updates to apply.");
         }
     
     
@@ -92,19 +92,19 @@ class UpdatesApplyCli extends \owa_cliController {
     
     function listPendingUpdates() {
         
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $modules = $s->getModulesNeedingUpdates();
         if ($modules) {
-            \owa_coreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
+            \OWA\Core\CoreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
         } else {
-            \owa_coreAPI::notice("No updates are pending.");
+            \OWA\Core\CoreAPI::notice("No updates are pending.");
         }
     }
     
     function apply($update) {
     
         list($module, $seq) = explode('.', $update);
-        $u = \owa_coreAPI::updateFactory($module, $seq);
+        $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
         
         // check for force command param
         $force = false;
@@ -116,15 +116,15 @@ class UpdatesApplyCli extends \owa_cliController {
         $ret = $u->apply($force);
         
         if ($ret) {
-            \owa_coreAPI::notice("Updates applied successfully.");
+            \OWA\Core\CoreAPI::notice("Updates applied successfully.");
         }
     }
     
     function rollback($update) {
         list($module, $seq) = explode('.', $update);
-        $u = \owa_coreAPI::updateFactory($module, $seq);
+        $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
         $u->rollback();
-        \owa_coreAPI::notice("Rollback completed.");
+        \OWA\Core\CoreAPI::notice("Rollback completed.");
     }
     
 }

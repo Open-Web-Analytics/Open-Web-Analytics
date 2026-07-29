@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class OptionsGeneral extends \owa_adminPageView {
+class OptionsGeneral extends \OWA\Core\View\AdminPage {
 
     function render($data) {
 

@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
  * @param limit			int			10
  * @param sort			string		'dim1,dim2'
  */
-class ReportsRest extends \owa_reportController {
+class ReportsRest extends \OWA\Core\ReportController {
 	
 	function __construct($params) {
 		
@@ -39,7 +39,7 @@ class ReportsRest extends \owa_reportController {
 			// make sure period string is valid
 			if ( $this->get( 'period' ) ) {
 				
-				$period = \owa_coreAPI::supportClassFactory('base', 'timePeriod');	
+				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');	
 				$lables = array_keys($period->getPeriodLabels() );
 				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $lables, 'stopOnError' => true) );				
 			}
@@ -127,7 +127,7 @@ class ReportsRest extends \owa_reportController {
      */
     function getResultSet() {
 
-        $rsm = new \owa_resultSetManager;
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         if ( $this->getParam('metrics') ) {
 	        
@@ -211,17 +211,17 @@ class ReportsRest extends \owa_reportController {
     function report_latest_visits() {
 
         // get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $s = \owa_coreAPI::entityFactory('base.session');
-        $h = \owa_coreAPI::entityFactory('base.host');
-        $l = \owa_coreAPI::entityFactory('base.location_dim');
-        $ua = \owa_coreAPI::entityFactory('base.ua');
-        $d = \owa_coreAPI::entityFactory('base.document');
-        $v = \owa_coreAPI::entityFactory('base.visitor');
-        $r = \owa_coreAPI::entityFactory('base.referer');
-        $sr = \owa_coreAPI::entityFactory('base.source_dim');
-        $st = \owa_coreAPI::entityFactory('base.search_term_dim');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.session');
+        $h = \OWA\Core\CoreAPI::entityFactory('base.host');
+        $l = \OWA\Core\CoreAPI::entityFactory('base.location_dim');
+        $ua = \OWA\Core\CoreAPI::entityFactory('base.ua');
+        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
+        $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
+        $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
+        $sr = \OWA\Core\CoreAPI::entityFactory('base.source_dim');
+        $st = \OWA\Core\CoreAPI::entityFactory('base.search_term_dim');
 
         $rsm->db->selectFrom($s->getTableName(), 'session');
 
@@ -290,10 +290,10 @@ class ReportsRest extends \owa_reportController {
 	function report_latest_actions() {
 
         // get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $a = \owa_coreAPI::entityFactory('base.action_fact');
-        $d = \owa_coreAPI::entityFactory('base.document');
+        $a = \OWA\Core\CoreAPI::entityFactory('base.action_fact');
+        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
 
         $rsm->db->selectFrom($a->getTableName(), 'action');
 
@@ -345,7 +345,7 @@ class ReportsRest extends \owa_reportController {
     function report_clickstream() {
 
         // get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 		
         $rsm->db->selectFrom('owa_request', 'request');
         
@@ -383,7 +383,7 @@ class ReportsRest extends \owa_reportController {
      */
     function report_transaction_items() {
 
-        $t = \owa_coreAPI::entityFactory( 'base.commerce_transaction_fact' );
+        $t = \OWA\Core\CoreAPI::entityFactory( 'base.commerce_transaction_fact' );
         $t->getbyColumn('order_id', $this->get( 'transactionId' ) );
         $trans_detail = array();
 
@@ -391,7 +391,7 @@ class ReportsRest extends \owa_reportController {
         if ( $id ) {
             $trans_detail = $t->_getProperties();
             // fetch line items
-            $db = \owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
 
             $db->selectFrom( 'owa_commerce_line_item_fact' );
             $db->selectColumn( '*' );
@@ -406,7 +406,7 @@ class ReportsRest extends \owa_reportController {
 	function report_transactions() {
 		
 		// get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 		
 		$sort = $this->get('sort') ?: 'desc';
 	
@@ -444,7 +444,7 @@ class ReportsRest extends \owa_reportController {
 
     function report_transaction()
     {
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_commerce_transaction_fact');
         $db->selectColumn("*");
         $db->where('order_id', $this->get('transactionId'));
@@ -452,7 +452,7 @@ class ReportsRest extends \owa_reportController {
         $transaction = $db->getOneRow();
         unset($db);
         
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_commerce_line_item_fact');
         $db->selectColumn("*");
         $db->where('order_id', $this->get('transactionId'));
@@ -466,7 +466,7 @@ class ReportsRest extends \owa_reportController {
 function report_clicks() {
 	
         // Fetch document object
-        $d = \owa_coreAPI::entityFactory('base.document');
+        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
 
         if ( ! $this->get('document_id') ) {
 
@@ -486,10 +486,10 @@ function report_clicks() {
             // regardless of whether the tracking filters are registered in this
             // process. There is no autoloader, so require the one class file first.
 
-            $event = \owa_coreAPI::supportClassFactory( 'base', 'event' );
+            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
             $event->setSiteId( $this->get('siteId') );
 
-            $canonical_url = \owa_trackingEventHelpers::makeUrlCanonical( urldecode( $this->get('pageUrl') ), $event );
+            $canonical_url = \OWA\Module\Base\Classes\TrackingEventHelpers::makeUrlCanonical( urldecode( $this->get('pageUrl') ), $event );
             $document_id   = $d->generateId( $canonical_url );
 
         } else {
@@ -500,7 +500,7 @@ function report_clicks() {
         $d->getByColumn('id', $document_id);
 
 		// get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 		
         $rsm->db->selectFrom('owa_click');
         $rsm->db->selectColumn("click_x as x,

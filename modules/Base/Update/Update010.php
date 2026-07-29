@@ -31,14 +31,14 @@ namespace OWA\Module\Base\Update;
  */
 
 
-class Update010 extends \owa_update {
+class Update010 extends \OWA\Core\Update {
 
     var $schema_version = 10;
     var $is_cli_mode_required = false;
 
     function up() {
 
-        $domstream = \owa_coreAPI::entityFactory('base.domstream');
+        $domstream = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $domstreams_columns = [
                 'page_width',
                 'page_height',
@@ -61,7 +61,7 @@ class Update010 extends \owa_update {
 
     function down() {
 
-        $domstream = \owa_coreAPI::entityFactory('base.domstream');
+        $domstream = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $domstreams_columns = [
             'page_width',
             'page_height',

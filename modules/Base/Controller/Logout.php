@@ -31,11 +31,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class Logout extends \owa_controller {
+class Logout extends \OWA\Core\Controller {
 
     function action() {
 
-        $auth = \owa_auth::get_instance();
+        $auth = \OWA\Core\Auth::get_instance();
         $auth->deleteCredentials();
         $this->setRedirectAction('base.loginForm');
     }

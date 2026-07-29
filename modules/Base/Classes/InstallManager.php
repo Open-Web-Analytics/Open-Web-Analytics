@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Classes;
  */
 
 
-class InstallManager extends \owa_base {
+class InstallManager extends \OWA\Core\Base {
 
     function __construct($params = '') {
 
@@ -40,7 +40,7 @@ class InstallManager extends \owa_base {
 
     function installSchema() {
 
-        $service = \owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
         $base = $service->getModule('base');
         $status = $base->install();
         return $status;
@@ -50,7 +50,7 @@ class InstallManager extends \owa_base {
     function createAdminUser($user_id, $email_address, $password = '') {
 
         //create user entity
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         // check to see if an admin user already exists
         $u->getByColumn('role', 'admin');
         $id_check = $u->get('id');
@@ -70,15 +70,15 @@ class InstallManager extends \owa_base {
                     $password = $u->generateRandomPassword();
                 }
 
-                $ret = $u->createNewUser($user_id, \owa_user::ADMIN_USER_ROLE, $password, $email_address, \owa_user::ADMIN_USER_REAL_NAME);
-                \owa_coreAPI::debug("Admin user created successfully.");
+                $ret = $u->createNewUser($user_id, \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE, $password, $email_address, \OWA\Module\Base\Entity\User::ADMIN_USER_REAL_NAME);
+                \OWA\Core\CoreAPI::debug("Admin user created successfully.");
                 return $password;
 
             } else {
-                \owa_coreAPI::debug($this->getMsgAsString(3306));
+                \OWA\Core\CoreAPI::debug($this->getMsgAsString(3306));
             }
         } else {
-            \owa_coreAPI::debug("Admin user already exists.");
+            \OWA\Core\CoreAPI::debug("Admin user already exists.");
         }
 
     }
@@ -89,7 +89,7 @@ class InstallManager extends \owa_base {
             $name = $domain;
         }
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
 
         if (!$site_id) {
             $site_id = $site->generateSiteId($domain);
@@ -129,7 +129,7 @@ class InstallManager extends \owa_base {
     function checkDbConnection() {
 
         // Check DB connection status
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->connect();
         if ($db->connection_status === true) {
             return true;
@@ -141,14 +141,14 @@ class InstallManager extends \owa_base {
     function isInstallComplete() {
         
         // is config file present?
-        $c = \owa_coreAPI::configSingleton();
+        $c = \OWA\Core\CoreAPI::configSingleton();
         if ( ! $c->isConfigFileLoaded() ) {
             
             return false;
         }
         
         // can DB connection be made?
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         if ( ! $db->connect() ) {
             
             return false;
@@ -160,14 +160,14 @@ class InstallManager extends \owa_base {
             return false;
         } else {
             
-            \owa_coreAPI::debug('base schema install check passed.');
+            \OWA\Core\CoreAPI::debug('base schema install check passed.');
         }
         
         // load config from DB
         $c->load( $this->c->get( 'base', 'configuration_id' ) );
         
         // is the install flag set
-        if ( ! \owa_coreAPI::getSetting('base', 'install_complete') ) {
+        if ( ! \OWA\Core\CoreAPI::getSetting('base', 'install_complete') ) {
             
             return false;
         }
@@ -185,27 +185,27 @@ class InstallManager extends \owa_base {
         $base_module_tables = ['user'];
         $tables_missing = [];
         
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
        
         // test for base tables
         foreach ( $base_module_tables as $table ) {
             
-            \owa_coreAPI::debug('Testing for existence of table: '. $table);
+            \OWA\Core\CoreAPI::debug('Testing for existence of table: '. $table);
             
-            $check = $db->get_results(sprintf(OWA_SQL_SHOW_TABLE, \owa_coreAPI::getSetting('base', 'ns') . $table ) );
+            $check = $db->get_results(sprintf(OWA_SQL_SHOW_TABLE, \OWA\Core\CoreAPI::getSetting('base', 'ns') . $table ) );
            
             // if a table is missing add it to this array
             if (empty($check)) {
             
                 $tables_missing[] = $table;
                 
-                \owa_coreAPI::debug('Did not find table: '. $table);
+                \OWA\Core\CoreAPI::debug('Did not find table: '. $table);
             }
         }
     
         if ( $tables_missing ) {
            
-            \owa_coreAPI::debug(sprintf("Base Schema is missing tables: %s", print_r($tables_missing, true)));
+            \OWA\Core\CoreAPI::debug(sprintf("Base Schema is missing tables: %s", print_r($tables_missing, true)));
     
             return false;
             

@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class Json extends \owa_view {
+class Json extends \OWA\Core\View {
 
     function __construct() {
 
@@ -35,7 +35,7 @@ class Json extends \owa_view {
 
         // if not found look on the request scope.
         if ( ! $callback ) {
-            $callback = \owa_coreAPI::getRequestParam('jsonpCallback');
+            $callback = \OWA\Core\CoreAPI::getRequestParam('jsonpCallback');
         }
 
         if ( $callback ) {
@@ -48,6 +48,6 @@ class Json extends \owa_view {
 
         $this->body->set('json', $body);
 
-        \owa_lib::setContentTypeHeader( $type );
+        \OWA\Core\Lib::setContentTypeHeader( $type );
     }
 }

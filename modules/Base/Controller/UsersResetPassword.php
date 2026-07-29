@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersResetPassword extends \owa_controller {
+class UsersResetPassword extends \OWA\Core\Controller {
     
     function __construct($params) {
     
@@ -42,8 +42,8 @@ class UsersResetPassword extends \owa_controller {
     
         $event = $this->getParam('event');
         
-        $auth = \owa_auth::get_instance();
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $auth = \OWA\Core\Auth::get_instance();
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('email_address', $event->get('email_address'));
         $u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
         $status = $u->update();

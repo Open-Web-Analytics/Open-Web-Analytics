@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class InstallConfigEntry extends \owa_view {
+class InstallConfigEntry extends \OWA\Core\View {
 
     function render($data) {
 
@@ -45,7 +45,7 @@ class InstallConfigEntry extends \owa_view {
         $this->body->set('config', is_array($config) ? $config : []);
         $this->body->set_template('install_config_entry.php');
         // prepopulate the public url based on the current url.
-        $public_url = \owa_lib::get_current_url();
+        $public_url = \OWA\Core\Lib::get_current_url();
         $pos = strpos($public_url, 'install.php');
         $public_url = substr($public_url, 0, $pos);
         $this->body->set('public_url', $public_url);

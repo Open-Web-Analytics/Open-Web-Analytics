@@ -40,9 +40,9 @@ class LogEmail {
 
     function append( $msg ) {
 
-        $address = \owa_coreAPI::getSetting('base', 'notice_email');
+        $address = \OWA\Core\CoreAPI::getSetting('base', 'notice_email');
 
-        $mailer = \owa_coreAPI::supportClassFactory('base', 'mailer');
+        $mailer = \OWA\Core\CoreAPI::supportClassFactory('base', 'mailer');
         $mailer->addAddress( $address, '');
         //$mailer->setFrom('owa@localhost', 'Open Web Analytics');
         $mailer->setSubject($this->subject);

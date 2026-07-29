@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.0.0
  */
 
-class SessionBrowserTypes extends \owa_metric {
+class SessionBrowserTypes extends \OWA\Core\Metric {
 
     function __construct($params = null) {
 

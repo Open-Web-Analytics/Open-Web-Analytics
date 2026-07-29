@@ -30,34 +30,34 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Document extends \owa_entity {
+class Document extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('document');
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['url'] = new \owa_dbColumn;
+        $this->properties['url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['uri'] = new \owa_dbColumn;
+        $this->properties['uri'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['uri']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['page_title'] = new \owa_dbColumn;
+        $this->properties['page_title'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['page_type'] = new \owa_dbColumn;
+        $this->properties['page_type'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_type']->setDataType(OWA_DTD_VARCHAR255);
         $this->setCachable();
     }
 
     public function crawlDocument()
     {
-        $crawler = new \owa_http();
+        $crawler = new \OWA\Core\Http();
         $res = $crawler->getRequest($this->get('url'));
 
         $title = trim($crawler->extract_title());
 
         if ($title) {
-            $this->set('page_title', \owa_lib::utf8Encode($title));
+            $this->set('page_title', \OWA\Core\Lib::utf8Encode($title));
         }
     }
 }

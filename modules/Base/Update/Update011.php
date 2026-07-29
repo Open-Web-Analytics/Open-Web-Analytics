@@ -15,25 +15,25 @@ namespace OWA\Module\Base\Update;
  * 
  */
 
-class Update011 extends \owa_update {
+class Update011 extends \OWA\Core\Update {
 
     var $schema_version = 11;
 
     function up($force = true) {
 		
-		$s = \owa_coreAPI::serviceSingleton();
+		$s = \OWA\Core\CoreAPI::serviceSingleton();
 		$file = OWA_MODULES_DIR . 'FileCache/Classes/FileCache.php'; // PSR-4 on-disk path
         $class_info = array( 'owa_fileCache', $file, [] );
         $s->setMapValue( 'object_cache_types', 'file', $class_info);
         
-        \owa_coreAPI::setSetting('base', 'cache_objects', true);
-	    \owa_coreAPI::setSetting('base', 'cacheType', 'file');
+        \OWA\Core\CoreAPI::setSetting('base', 'cache_objects', true);
+	    \OWA\Core\CoreAPI::setSetting('base', 'cacheType', 'file');
         
-        $cache = \owa_coreAPI::cacheSingleton();
+        $cache = \OWA\Core\CoreAPI::cacheSingleton();
         
         if ( $cache->flush() ) {
 
-            \owa_coreAPI::notice('Cache Flushed');
+            \OWA\Core\CoreAPI::notice('Cache Flushed');
             return true;
 
         } else {

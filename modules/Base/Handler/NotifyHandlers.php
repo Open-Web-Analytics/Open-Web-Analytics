@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Handler;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class NotifyHandlers extends \owa_observer {
+class NotifyHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Handler
@@ -42,13 +42,13 @@ class NotifyHandlers extends \owa_observer {
         
         if ( $event->getSiteId() ) {
             
-            $s = \owa_coreAPI::entityFactory( 'base.site' );
+            $s = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
             
             $s->load( $s->generateId( $event->getSiteId() ) );
 
             if ( $s->wasPersisted() ) {
 
-                $ret = \owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+                $ret = \OWA\Core\CoreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
 
                 return OWA_EHS_EVENT_HANDLED;
 
@@ -61,7 +61,7 @@ class NotifyHandlers extends \owa_observer {
                 // returning FAILED would re-queue the event onto the processing
                 // queue for a retry that can never succeed, piling up
                 // undeliverable poison-pill rows in owa_queue_item.
-                \owa_coreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
+                \OWA\Core\CoreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
 
                 return OWA_EHS_EVENT_HANDLED;
             }

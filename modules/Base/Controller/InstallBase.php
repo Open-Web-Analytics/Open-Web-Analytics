@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class InstallBase extends \owa_installController {
+class InstallBase extends \OWA\Core\Controller\Install {
 
     function __construct($params) {
 
@@ -83,7 +83,7 @@ class InstallBase extends \owa_installController {
             }
 
             // fire install complete event.
-            $ed = \owa_coreAPI::getEventDispatch();
+            $ed = \OWA\Core\CoreAPI::getEventDispatch();
             $event = $ed->eventFactory();
             $event->set('u', $this->getParam('user_id'));
             $event->set('p', $password);

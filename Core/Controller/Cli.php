@@ -34,7 +34,7 @@ namespace OWA\Core\Controller;
  */
 
 
-class Cli extends \owa_adminController {
+class Cli extends \OWA\Core\AdminController {
 
     var $is_admin = true;
 
@@ -46,13 +46,13 @@ class Cli extends \owa_adminController {
      */
     function __construct($params) {
 
-        if ( \owa_coreAPI::getSetting('base', 'request_mode') === 'cli' ) {
+        if ( \OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'cli' ) {
 
             return parent::__construct($params);
 
         } else {
 
-            \owa_coreAPI::notice("Controller not called from CLI");
+            \OWA\Core\CoreAPI::notice("Controller not called from CLI");
             exit;
         }
     }

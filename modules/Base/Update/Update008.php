@@ -30,13 +30,13 @@ namespace OWA\Module\Base\Update;
  */
 
 
-class Update008 extends \owa_update {
+class Update008 extends \OWA\Core\Update {
 
     var $schema_version = 8;
 
 
     function up($force = false) {
-        $site = \owa_coreAPI::entityFactory('base.site_user');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site_user');
         $ret = $site->createTable('site_user');
         if ($ret === false ) {
             $this->e->notice('Create table site_user failed');
@@ -47,7 +47,7 @@ class Update008 extends \owa_update {
     }
 
     function down() {
-        $site = \owa_coreAPI::entityFactory('base.site_user');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site_user');
         $ret = $site->dropTable('site_user');
         return true;
     }

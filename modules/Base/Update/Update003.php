@@ -31,12 +31,12 @@ namespace OWA\Module\Base\Update;
  */
 
 
-class Update003 extends \owa_update {
+class Update003 extends \OWA\Core\Update {
 
     function up() {
 
-        $db = \owa_coreAPI::dbSingleton();
-        $s = \owa_coreAPI::serviceSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
 
         $entities = $s->modules[$this->module_name]->getEntities();
 

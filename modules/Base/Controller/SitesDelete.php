@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesDelete extends \owa_adminController {
+class SitesDelete extends \OWA\Core\AdminController {
 
     function __construct($params) {
         parent::__construct($params);
@@ -41,7 +41,7 @@ class SitesDelete extends \owa_adminController {
 
     function action() {
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
         $this->setRedirectAction('base.sites');
         $this->set('status_code', 3204);

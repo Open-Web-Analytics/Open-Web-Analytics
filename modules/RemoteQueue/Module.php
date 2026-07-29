@@ -31,7 +31,7 @@ namespace OWA\Module\RemoteQueue;
  * @since        owa 1.5.7
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     function __construct() {
 
@@ -46,7 +46,7 @@ class Module extends \owa_module {
 
         // register named queues
 
-        $endpoint = \owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
+        $endpoint = \OWA\Core\CoreAPI::getSetting( 'remoteQueue', 'endpoint' );
 
         if ( $endpoint ) {
 

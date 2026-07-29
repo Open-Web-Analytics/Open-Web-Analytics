@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Classes;
  */
 
 
-class ServiceUser extends \owa_base {
+class ServiceUser extends \OWA\Core\Base {
     /**
      * @var \owa_user
      */
@@ -46,7 +46,7 @@ class ServiceUser extends \owa_base {
     function __construct() {
         //parent::__construct();
         // create empty user entity
-        $this->user = \owa_coreApi::entityFactory('base.user');
+        $this->user = \OWA\Core\CoreAPI::entityFactory('base.user');
         // set default role
         $this->setRole('everyone');
     }
@@ -104,7 +104,7 @@ class ServiceUser extends \owa_base {
      * @param mixed $role
      */
     function getCapabilities($role) {
-        return \owa_coreAPI::getCapabilities( $role );
+        return \OWA\Core\CoreAPI::getCapabilities( $role );
     }
 
     function getPreferences($user_id) {
@@ -149,31 +149,31 @@ class ServiceUser extends \owa_base {
      * @return boolean
      */
     function isCapable($cap, $siteId = null) {
-        \owa_coreAPI::debug("Checking if user is capable of: ".$cap);
+        \OWA\Core\CoreAPI::debug("Checking if user is capable of: ".$cap);
 
         // is this capability assigned to everyone?
         // is this the global admin user?
         // was no capability passed?
         // if so, the user can see and do everything
-        if ( \owa_coreAPI::isEveryoneCapable( $cap ) || $this->user->isAdmin() || empty($cap)) {
-            \owa_coreAPI::debug('No capability passed or user is an admin and capable of everything.');
+        if ( \OWA\Core\CoreAPI::isEveryoneCapable( $cap ) || $this->user->isAdmin() || empty($cap)) {
+            \OWA\Core\CoreAPI::debug('No capability passed or user is an admin and capable of everything.');
             return true;
         }
 
         // is this user's role capable?
         if (!in_array($cap, $this->capabilities)) {
-            \owa_coreAPI::debug('capability does not exist for this role. user is not capable');
+            \OWA\Core\CoreAPI::debug('capability does not exist for this role. user is not capable');
             return false;
         }
 
         // Does capability also require site access?
         if ( $this->isSiteAccessRequiredForCapability( $cap ) ) {
-            \owa_coreAPI::debug('Site access required for this capability.');
+            \OWA\Core\CoreAPI::debug('Site access required for this capability.');
             if ( ! $this->isSiteAccessible( $siteId ) ) {
-                \owa_coreAPI::debug('Site is not accessible for this user.');
+                \OWA\Core\CoreAPI::debug('Site is not accessible for this user.');
                 return false;
             } else {
-                \owa_coreAPI::debug('Site is accessible for this user.');
+                \OWA\Core\CoreAPI::debug('Site is accessible for this user.');
             }
         }
 
@@ -189,7 +189,7 @@ class ServiceUser extends \owa_base {
      */
     function isSiteAccessRequiredForCapability( $capability ) {
 
-        $capabilitiesThatRequireSiteAccess = \owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
+        $capabilitiesThatRequireSiteAccess = \OWA\Core\CoreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
         if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
             return true;
         }
@@ -216,10 +216,10 @@ class ServiceUser extends \owa_base {
         }
 
         if ( isset( $this->assignedSites[ $siteId ] ) ) {
-            \owa_coreAPI::debug("Site ID: $siteId in accessible list for this user.");
+            \OWA\Core\CoreAPI::debug("Site ID: $siteId in accessible list for this user.");
             return true;
         } else {
-            \owa_coreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
+            \OWA\Core\CoreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
         }
     }
 
@@ -237,7 +237,7 @@ class ServiceUser extends \owa_base {
      * Loads internal $this->assignedSites member
      */
     private function loadAssignedSites() {
-        \owa_coreAPI::debug('loading assigned sites');
+        \OWA\Core\CoreAPI::debug('loading assigned sites');
         
         try {
 	        
@@ -249,19 +249,19 @@ class ServiceUser extends \owa_base {
         
         catch( \Exception $e ) {
 			
-			\owa_coreAPI::debug('Handled exception: '. $e->getMessage() );
+			\OWA\Core\CoreAPI::debug('Handled exception: '. $e->getMessage() );
 	        
         }
 
         $site_ids = array();
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( 'owa_site_user' );
         $db->selectColumn( '*' );
         $db->where( 'user_id', $this->user->get('id') );
         $site_ids = $db->getAllRows();
 
         // filter array of site_ids.
-        $dispatch = \owa_coreAPI::getEventDispatch();
+        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
         $site_ids = $dispatch->filter('allowed_sites_list', $site_ids);
 
         $this->setAllowedSitesList($site_ids);
@@ -276,7 +276,7 @@ class ServiceUser extends \owa_base {
 
         if ( $domains ) {
             $site_ids = array();
-            $s = \owa_coreApi::entityFactory('base.site');
+            $s = \OWA\Core\CoreAPI::entityFactory('base.site');
 
             foreach ($domains as $domain) {
 
@@ -293,7 +293,7 @@ class ServiceUser extends \owa_base {
 
         if ( ! empty($site_ids) ) {
             foreach ($site_ids as $row) {
-                $siteEntity = \owa_coreApi::entityFactory('base.site');
+                $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $siteEntity->load($row['site_id']);
                 $list[ $siteEntity->get('site_id') ] = $siteEntity;
             }

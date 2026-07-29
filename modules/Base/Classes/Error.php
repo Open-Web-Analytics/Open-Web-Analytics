@@ -295,7 +295,7 @@ class Error {
 	    
 	   $level = Logger::NOTICE;
        
-       if ( \owa_lib::inDebug() ) {
+       if ( \OWA\Core\Lib::inDebug() ) {
 	       
 	       $level = Logger::DEBUG;
        }
@@ -331,7 +331,7 @@ class Error {
         $level = $this->getLogLevel();
 
         // create stream handler
-        $path = \owa_coreAPI::getSetting('base', 'error_log_file');
+        $path = \OWA\Core\CoreAPI::getSetting('base', 'error_log_file');
 
         if ( ! self::isSafeLogPath( $path ) ) {
             // refuse to open the handler rather than write to an attacker-controlled sink
@@ -382,7 +382,7 @@ class Error {
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
 
-        $path = \owa_coreAPI::getSetting('base', 'error_log_file');
+        $path = \OWA\Core\CoreAPI::getSetting('base', 'error_log_file');
 
         if ( self::isSafeLogPath( $path ) ) {
             ini_set("error_log", $path );
@@ -457,7 +457,7 @@ class Error {
                $server = __FILE__;
            }
            $conf = array('subject' => $subject . ' on '. $server, 'from' => 'OWA Error-logger', 'name' => 'exceptions_log');
-           $logger = \owa_coreAPI::supportClassFactory('base', 'logEmail', $conf);
+           $logger = \OWA\Core\CoreAPI::supportClassFactory('base', 'logEmail', $conf);
          $logger->log($body);
     }
 }

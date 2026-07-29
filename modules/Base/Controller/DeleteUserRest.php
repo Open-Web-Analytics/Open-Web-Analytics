@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 
 
-class DeleteUserRest extends \owa_usersdeleteController {
+class DeleteUserRest extends \OWA\Module\Base\Controller\UsersDelete {
 	
 	function success() {
 		

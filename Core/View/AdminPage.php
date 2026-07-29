@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class AdminPage extends \owa_view {
+class AdminPage extends \OWA\Core\View {
 
     function render($data) {
 

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.3.0
  */
 
-class ReportActionTracking extends \owa_view {
+class ReportActionTracking extends \OWA\Core\View {
 
     function render() {
 

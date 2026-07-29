@@ -74,9 +74,9 @@ class Base {
      * Base Constructor
      */
     function __construct() {
-        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-        $this->e = \owa_coreAPI::errorSingleton();
-        $this->c = \owa_coreAPI::configSingleton();
+        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
+        $this->e = \OWA\Core\CoreAPI::errorSingleton();
+        $this->c = \OWA\Core\CoreAPI::configSingleton();
         $this->config = $this->c->fetch('base');
     }
 
@@ -144,7 +144,7 @@ class Base {
     }
 
     function __destruct() {
-        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
 }

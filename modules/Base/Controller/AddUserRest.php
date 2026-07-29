@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 
 
-class AddUserRest extends \owa_usersAddController {
+class AddUserRest extends \OWA\Module\Base\Controller\UsersAdd {
 	
 	function success() {
 		

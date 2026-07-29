@@ -15,7 +15,7 @@ namespace OWA\Module\Domstream\Controller;
  * Lists available domstreams for a document
  * 
  */
-class DomstreamsRestController extends \owa_adminController {
+class DomstreamsRestController extends \OWA\Core\AdminController {
 	
 	function __construct($params) {
 		
@@ -41,7 +41,7 @@ class DomstreamsRestController extends \owa_adminController {
         }
 		 
         // get resultSet Manager instance
-		$rsm = new \owa_resultSetManager;
+		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
  
         $rsm->db->selectFrom('owa_domstream');
        
@@ -110,9 +110,9 @@ class DomstreamsRestController extends \owa_adminController {
 
        
         // Fetch document object
-        $d = \owa_coreAPI::entityFactory('base.domstream');
+        $d = \OWA\Core\CoreAPI::entityFactory('base.domstream');
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->select('*');
         $db->from( $d->getTableName() );
         $db->where( 'domstream_guid', $domstream_guid );
@@ -131,7 +131,7 @@ class DomstreamsRestController extends \owa_adminController {
         } else {
             // no rows found for some reason?..
             $error = 'No domstream rows found for domstream_guid: ' . $domstream_guid;
-            \owa_coreAPI::debug( $error );
+            \OWA\Core\CoreAPI::debug( $error );
         }
 
         $this->set('response', $row);

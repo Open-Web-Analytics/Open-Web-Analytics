@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersNewAccount extends \owa_controller {
+class UsersNewAccount extends \OWA\Core\Controller {
 
     function __construct($params) {
         return parent::__construct($params);

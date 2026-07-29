@@ -34,11 +34,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportVisit extends \owa_reportController {
+class ReportVisit extends \OWA\Core\ReportController {
 
     function action() {
 
-        $visit = \owa_coreAPI::executeApiCommand(array(
+        $visit = \OWA\Core\CoreAPI::executeApiCommand(array(
                 'request_method'	=> 'GET',
 	        	'module'			=> 'base',
 	        	'version'			=> 'v1',
@@ -48,7 +48,7 @@ class ReportVisit extends \owa_reportController {
                 'sessionId'    => $this->getParam('session_id') ) );
 
         //setup Metrics
-        $rs = \owa_coreAPI::executeApiCommand(array(
+        $rs = \OWA\Core\CoreAPI::executeApiCommand(array(
 	        	'request_method'	=> 'GET',
 	        	'module'			=> 'base',
 	        	'version'			=> 'v1',

@@ -32,7 +32,7 @@ namespace OWA\Core\Controller;
  */
 
 
-class Install extends \owa_controller {
+class Install extends \OWA\Core\Controller {
 
     var $is_installer = true;
     var $im;
@@ -49,7 +49,7 @@ class Install extends \owa_controller {
         
         $this->setRequiredCapability('install_schema');
           
-        $this->im = \owa_coreAPI::supportClassFactory('base', 'installManager');
+        $this->im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
         
         return parent::__construct( $params );
     }
@@ -58,8 +58,8 @@ class Install extends \owa_controller {
 
         if ( $this->isInstallComplete() ) {
             
-            \owa_coreAPI::debug( 'Install is already complete. redirecting to public url' );
-            return $this->redirectBrowserToUrl( \owa_coreAPI::getSetting( 'base', 'public_url' ) );
+            \OWA\Core\CoreAPI::debug( 'Install is already complete. redirecting to public url' );
+            return $this->redirectBrowserToUrl( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) );
         }
     }
 

@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesInvocation extends \owa_adminController {
+class SitesInvocation extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -43,7 +43,7 @@ class SitesInvocation extends \owa_adminController {
     function action() {
         $site_id = $this->getParam('siteId');
         $this->set('site_id', $site_id);
-        $s = \owa_coreAPI::entityFactory('base.site');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
         $s->getByColumn('site_id', $site_id);
         $this->set('site', $s);
         $this->setSubview('base.sitesInvocation');

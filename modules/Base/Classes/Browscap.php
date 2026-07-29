@@ -34,7 +34,7 @@ use UAParser\Parser;
  * @since        owa 1.0.0
  */
 
-class Browscap extends \owa_base {
+class Browscap extends \OWA\Core\Base {
 
 
     /**
@@ -68,13 +68,13 @@ class Browscap extends \owa_base {
         $this->ua = $ua;
 
         // init cache
-        $this->cache = \owa_coreAPI::cacheSingleton();
-        $this->cacheExpiration = \owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
+        $this->cache = \OWA\Core\CoreAPI::cacheSingleton();
+        $this->cacheExpiration = \OWA\Core\CoreAPI::getSetting('base', 'default_cache_expiration_period');
         $this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 
         //lookup UA
         $this->browser = $this->lookup( $this->ua );
-        \owa_coreAPI::debug('Browser Name : '. $this->getUaFamilyVersion() );
+        \OWA\Core\CoreAPI::debug('Browser Name : '. $this->getUaFamilyVersion() );
 
     }
 
@@ -88,8 +88,8 @@ class Browscap extends \owa_base {
 
         $cap = null;
 
-        \owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
-		\owa_coreAPI::debug('looking in cache for browscap');
+        \OWA\Core\CoreAPI::profile( $this, __FUNCTION__, __LINE__ );
+		\OWA\Core\CoreAPI::debug('looking in cache for browscap');
 		
 		// check cache
         $cap = $this->cache->get( 'browscap', $this->ua );
@@ -101,7 +101,7 @@ class Browscap extends \owa_base {
         } else {
 	        
         	// load parser
-            $custom_db = \owa_coreAPI::getSetting('base','ua-regexes');
+            $custom_db = \OWA\Core\CoreAPI::getSetting('base','ua-regexes');
 
             if ( $custom_db ) {
 
@@ -117,7 +117,7 @@ class Browscap extends \owa_base {
                 
 	        if ( $cap ) {
 	
-	            if ( \owa_coreAPI::getSetting('base', 'cache_objects') ) {
+	            if ( \OWA\Core\CoreAPI::getSetting('base', 'cache_objects') ) {
 	
 	                $family = $cap->ua->family;
 	
@@ -163,7 +163,7 @@ class Browscap extends \owa_base {
 
             if ( $match ) {
 
-                \owa_coreAPI::debug('Robot detect string found: ' . $robot );
+                \OWA\Core\CoreAPI::debug('Robot detect string found: ' . $robot );
 
                 break;
             }

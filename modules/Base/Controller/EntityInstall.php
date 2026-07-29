@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class EntityInstall extends \owa_cliController {
+class EntityInstall extends \OWA\Core\Controller\Cli {
 
     function __construct($params) {
 
@@ -41,7 +41,7 @@ class EntityInstall extends \owa_cliController {
 
     function action() {
 
-        $e = \owa_coreAPI::entityFactory($this->getParam('entity'));
+        $e = \OWA\Core\CoreAPI::entityFactory($this->getParam('entity'));
         $e->createTable();
     }
 }

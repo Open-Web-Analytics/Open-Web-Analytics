@@ -30,7 +30,7 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-class View extends \owa_base {
+class View extends \OWA\Core\Base {
 
     /**
      * Main view template object
@@ -119,8 +119,8 @@ class View extends \owa_base {
 
         parent::__construct($params);
 
-        $this->t = new \owa_template();
-        $this->body = new \owa_template($this->module);
+        $this->t = new \OWA\Core\Template();
+        $this->body = new \OWA\Core\Template($this->module);
         $this->setTheme();
         $this->setCss("base/css/owa.css");
     }
@@ -302,7 +302,7 @@ class View extends \owa_base {
         // report_wrapper is a config-file / settings value; reduce it to a
         // safe basename before handing it to the template loader so that a
         // poisoned setting cannot inject exotic content into log output.
-        $wrapper = \owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
+        $wrapper = \OWA\Core\Template::sanitizeTemplateName( $this->config['report_wrapper'] );
 
         if ( $wrapper === '' ) {
             $wrapper = 'wrapper_default.php';
@@ -340,7 +340,7 @@ class View extends \owa_base {
             endif;
         endif;
 
-        $this->subview = \owa_coreAPI::subViewFactory($subview);
+        $this->subview = \OWA\Core\CoreAPI::subViewFactory($subview);
         //print_r($subview.'///');
         $this->subview->setData($this->data);
     }
@@ -398,7 +398,7 @@ class View extends \owa_base {
         $uid = $path;
         // Built stylesheets are served from the public/ asset tree, not the module
         // source tree -- see settings.php setupPaths() (assets_url).
-        $url = sprintf('%s?version=%s', \owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
+        $url = sprintf('%s?version=%s', \OWA\Core\CoreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->css[$uid]['url'] = $url;
         // build file system path just in case we need to concatenate the JS into a single file.
         $fs_path = OWA_MODULES_DIR.$path;
@@ -419,7 +419,7 @@ class View extends \owa_base {
 
         // Built scripts are served from the public/ asset tree, not the module source
         // tree -- see settings.php setupPaths() (assets_url).
-        $url = sprintf('%s?version=%s', \owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
+        $url = sprintf('%s?version=%s', \OWA\Core\CoreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->js[$uid]['url'] = $url;
 
         // build file system path just in case we need to concatenate the JS into a single file.
@@ -575,7 +575,7 @@ class View extends \owa_base {
 
     function setContentTypeHeader($type = 'html') {
 
-        \owa_lib::setContentTypeHeader($type);
+        \OWA\Core\Lib::setContentTypeHeader($type);
     }
 
 }

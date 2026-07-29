@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class ApiRequest extends \owa_controller {
+class ApiRequest extends \OWA\Core\Controller {
 
     function __construct($params) {
 
@@ -40,7 +40,7 @@ class ApiRequest extends \owa_controller {
 
     function getRequiredCapability() {
 
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
             // lookup method class
         $do = $s->getApiMethodClass($this->getParam('do'));
 
@@ -80,10 +80,10 @@ class ApiRequest extends \owa_controller {
         }
 
         // set content type of reponse
-        \owa_lib::setContentTypeHeader($format);
+        \OWA\Core\Lib::setContentTypeHeader($format);
 
-        $map = \owa_coreAPI::getRequest()->getAllOwaParams();
-        $output = \owa_coreAPI::executeApiCommand($map);
+        $map = \OWA\Core\CoreAPI::getRequest()->getAllOwaParams();
+        $output = \OWA\Core\CoreAPI::executeApiCommand($map);
 
         // assign to a view for output
         if ( $format === 'json' || $format === 'jsonp') {

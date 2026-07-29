@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportAnchortext extends \owa_reportController {
+class ReportAnchortext extends \OWA\Core\ReportController {
 
     function action() {
 

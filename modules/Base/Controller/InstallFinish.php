@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
  */
 
 // needed??
-class InstallFinish extends \owa_installController {
+class InstallFinish extends \OWA\Core\Controller\Install {
 
     function action() {
 
@@ -47,7 +47,7 @@ class InstallFinish extends \owa_installController {
             $this->e->notice('Could not persist Install Complete Flag to the Database');
         }
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->getByPk('id', '1');
         $this->setView('base.install');
         $this->setSubview('base.installFinish');

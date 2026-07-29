@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class OptionsGoals extends \owa_adminController {
+class OptionsGoals extends \OWA\Core\AdminController {
     
     function __construct($params) {
     
@@ -43,7 +43,7 @@ class OptionsGoals extends \owa_adminController {
     function action() {
         
         $siteId = $this->get('siteId');
-        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
         $goals = $gm->getAllGoals();
         $goal_groups = $gm->getAllGoalGroupLabels();
         $this->set('goals', $goals);

@@ -17,7 +17,7 @@ namespace OWA\Module\Base\View;
 // $Id$
 //
 
-class WidgetOwaNews extends \owa_view {
+class WidgetOwaNews extends \OWA\Core\View {
 
     function render($data) {
 

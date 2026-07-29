@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersSetPassword extends \owa_controller {
+class UsersSetPassword extends \OWA\Core\Controller {
 
     function __construct($params) {
 
@@ -45,17 +45,17 @@ class UsersSetPassword extends \owa_controller {
         /**
          * @var $userManager \owa_userManager
          */
-        $userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
+        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
         $u = $userManager->updateUserPassword([
             'temp_passkey' => $event->get('key'),
             'password' => $event->get('password'),
             'user_id'  => $event->get('user_id')
         ]);
         // needed for migration away from old embedded install model
-        \owa_coreAPI::debug('setting migration flag...'. \owa_coreAPI::getSetting('base', 'is_embedded') );
-        if ( $u && \owa_coreAPI::getSetting('base', 'is_embedded') ) {
-				\owa_coreAPI::debug('setting migration flag...');	
-	        	\owa_coreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
+        \OWA\Core\CoreAPI::debug('setting migration flag...'. \OWA\Core\CoreAPI::getSetting('base', 'is_embedded') );
+        if ( $u && \OWA\Core\CoreAPI::getSetting('base', 'is_embedded') ) {
+				\OWA\Core\CoreAPI::debug('setting migration flag...');	
+	        	\OWA\Core\CoreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
 		}
 
         if ($u !== false) {

@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Click extends \owa_factTable {
+class Click extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
@@ -52,7 +52,7 @@ class Click extends \owa_factTable {
         //$this->properties['id']->setPrimaryKey();
 
         // drop
-        $this->properties['last_impression_id'] = new \owa_dbColumn;
+        $this->properties['last_impression_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
 
         // move to abstract
@@ -65,14 +65,14 @@ class Click extends \owa_factTable {
         //$session_id->setForeignKey('base.session');
         //$this->setProperty($session_id);
 
-        $document_id = new \owa_dbColumn('document_id', OWA_DTD_BIGINT);
+        $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_BIGINT);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
-        $this->properties['target_id'] = new \owa_dbColumn;
+        $this->properties['target_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
 
-        $this->properties['target_url'] = new \owa_dbColumn;
+        $this->properties['target_url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['target_url']->setDataType(OWA_DTD_VARCHAR255);
 
         // move to abstract
@@ -91,52 +91,52 @@ class Click extends \owa_factTable {
         $this->properties['weekofyear']->setDataType(OWA_DTD_INT);
         */
         // drop these soon
-        $this->properties['hour'] = new \owa_dbColumn;
+        $this->properties['hour'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['minute'] = new \owa_dbColumn;
+        $this->properties['minute'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['second'] = new \owa_dbColumn;
+        $this->properties['second'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['second']->setDataType(OWA_DTD_INT);
-        $this->properties['msec'] = new \owa_dbColumn;
+        $this->properties['msec'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['msec']->setDataType(OWA_DTD_VARCHAR255);
 
-        $this->properties['click_x'] = new \owa_dbColumn;
+        $this->properties['click_x'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['click_x']->setDataType(OWA_DTD_INT);
-        $this->properties['click_y'] = new \owa_dbColumn;
+        $this->properties['click_y'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['click_y']->setDataType(OWA_DTD_INT);
-        $this->properties['page_width'] = new \owa_dbColumn;
+        $this->properties['page_width'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_width']->setDataType(OWA_DTD_INT);
-        $this->properties['page_height'] = new \owa_dbColumn;
+        $this->properties['page_height'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_height']->setDataType(OWA_DTD_INT);
-        $this->properties['position'] = new \owa_dbColumn;
+        $this->properties['position'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['position']->setDataType(OWA_DTD_INT);
-        $this->properties['approx_position'] = new \owa_dbColumn;
+        $this->properties['approx_position'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['approx_position']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['dom_element_x'] = new \owa_dbColumn;
+        $this->properties['dom_element_x'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_x']->setDataType(OWA_DTD_INT);
-        $this->properties['dom_element_y'] = new \owa_dbColumn;
+        $this->properties['dom_element_y'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_y']->setDataType(OWA_DTD_INT);
-        $this->properties['dom_element_name'] = new \owa_dbColumn;
+        $this->properties['dom_element_name'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_id'] = new \owa_dbColumn;
+        $this->properties['dom_element_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_id']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_value'] = new \owa_dbColumn;
+        $this->properties['dom_element_value'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_value']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_tag'] = new \owa_dbColumn;
+        $this->properties['dom_element_tag'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_tag']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_text'] = new \owa_dbColumn;
+        $this->properties['dom_element_text'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_text']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_class'] = new \owa_dbColumn;
+        $this->properties['dom_element_class'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_class']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['dom_element_parent_id'] = new \owa_dbColumn;
+        $this->properties['dom_element_parent_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dom_element_parent_id']->setDataType(OWA_DTD_VARCHAR255);
 
         // drop
-        $this->properties['tag_id'] = new \owa_dbColumn;
+        $this->properties['tag_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
 
         //drop
-        $this->properties['placement_id'] = new \owa_dbColumn;
+        $this->properties['placement_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['placement_id']->setDataType(OWA_DTD_BIGINT);
 
         // move to abstract
@@ -144,7 +144,7 @@ class Click extends \owa_factTable {
         //$this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
 
         //drop
-        $this->properties['ad_group_id'] = new \owa_dbColumn;
+        $this->properties['ad_group_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
 
         // move to abstract
@@ -166,7 +166,7 @@ class Click extends \owa_factTable {
         //$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
 
         // drop
-        $this->properties['host'] = new \owa_dbColumn;
+        $this->properties['host'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
 
         // move to abstract

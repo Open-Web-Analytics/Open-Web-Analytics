@@ -71,7 +71,7 @@ namespace OWA\Module\Base\Classes;
         $this->loadConfigFile();
         
         // create configuration object
-        $this->config = \owa_coreAPI::entityFactory('base.configuration');
+        $this->config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
         // load entity with the default settings
         $this->config->set('settings', $this->default_config);
         
@@ -285,7 +285,7 @@ namespace OWA\Module\Base\Classes;
 
         $this->config_id = $id;
 
-        $db_config = \owa_coreAPI::entityFactory('base.configuration');
+        $db_config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
         $db_config->getByPk('id', $id);
         $db_settings = unserialize($db_config->get('settings'));
 
@@ -361,7 +361,7 @@ namespace OWA\Module\Base\Classes;
 
          // serialize array of values prior to update
 
-        $config = \owa_coreAPI::entityFactory('base.configuration');
+        $config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
 
         // if fetch from db flag is not true, try to fetch the config just in
         // case if was cached or something wen wrong.
@@ -536,7 +536,7 @@ namespace OWA\Module\Base\Classes;
 
          if (!isset($config2)) {
              //print 'hello from alt constructor';
-             $config2 = \owa_coreAPI::configSingleton();
+             $config2 = \OWA\Core\CoreAPI::configSingleton();
         }
 
          return $config2->fetch('base');
@@ -849,10 +849,10 @@ namespace OWA\Module\Base\Classes;
         $this->set('base','log_url',$public_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
-        $this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors_'. \owa_coreAPI::generateInstanceSpecificHash() .'.txt');
+        $this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors_'. \OWA\Core\CoreAPI::generateInstanceSpecificHash() .'.txt');
         $this->set('base', 'async_log_dir', OWA_DATA_DIR . 'logs/');
 
-        \owa_coreAPI::debug('check for http host');
+        \OWA\Core\CoreAPI::debug('check for http host');
         // Set cookie domain
         if (!empty($_SERVER['HTTP_HOST'])) {
 
@@ -868,19 +868,19 @@ namespace OWA\Module\Base\Classes;
      public function createConfigFile($config_values) {
 
          if (file_exists(OWA_DIR.'owa-config.php')) {
-             \owa_coreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".OWA_DIR.'owa-config.php');
+             \OWA\Core\CoreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".OWA_DIR.'owa-config.php');
              require_once(OWA_DIR . 'owa-config.php');
             return true;
          }
 
          if (!file_exists(OWA_DIR.'owa-config-dist.php')) {
              $errorMsg = "We can't find the configuration file template. Are you sure you installed OWA's files correctly? Exiting.";
-             \owa_coreAPI::error($errorMsg);
+             \OWA\Core\CoreAPI::error($errorMsg);
              throw new \Exception($errorMsg);
          }
 
          $configFileTemplate = file(OWA_DIR . 'owa-config-dist.php');
-         \owa_coreAPI::debug('found sample config file.');
+         \OWA\Core\CoreAPI::debug('found sample config file.');
 
          $handle = fopen(OWA_DIR . 'owa-config.php', 'w');
 
@@ -908,16 +908,16 @@ namespace OWA\Module\Base\Classes;
                     fwrite($handle, str_replace("http://domain/path/to/owa/", addcslashes( $config_values['public_url'], "\\'" ), $line));
                     break;
                 case "define('OWA_NONCE_KE":
-                    fwrite($handle, str_replace("yournoncekeygoeshere", \owa_coreAPI::secureRandomString(64), $line));
+                    fwrite($handle, str_replace("yournoncekeygoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
                     break;
                 case "define('OWA_NONCE_SA":
-                    fwrite($handle, str_replace("yournoncesaltgoeshere", \owa_coreAPI::secureRandomString(64), $line));
+                    fwrite($handle, str_replace("yournoncesaltgoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
                     break;
                 case "define('OWA_AUTH_KEY":
-                    fwrite($handle, str_replace("yourauthkeygoeshere", \owa_coreAPI::secureRandomString(64), $line));
+                    fwrite($handle, str_replace("yourauthkeygoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
                     break;
                 case "define('OWA_AUTH_SAL":
-                    fwrite($handle, str_replace("yourauthsaltgoeshere", \owa_coreAPI::secureRandomString(64), $line));
+                    fwrite($handle, str_replace("yourauthsaltgoeshere", \OWA\Core\CoreAPI::secureRandomString(64), $line));
                     break;
                 default:
                     fwrite($handle, $line);
@@ -926,7 +926,7 @@ namespace OWA\Module\Base\Classes;
 
         fclose($handle);
         chmod(OWA_DIR . 'owa-config.php', 0750);
-        \owa_coreAPI::debug('Config file created');
+        \OWA\Core\CoreAPI::debug('Config file created');
         require_once(OWA_DIR . 'owa-config.php');
         return true;
 
@@ -961,7 +961,7 @@ namespace OWA\Module\Base\Classes;
         }
 
         // strip port, add leading period etc.
-        $domain = \owa_lib::sanitizeCookieDomain($domain);
+        $domain = \OWA\Core\Lib::sanitizeCookieDomain($domain);
 
         // Set the cookie domain only if the domain name is a Fully qualified domain name (FQDN)
         // i.e. avoid attempts to set cookie domain for e.g. "localhost" as that is not valid
@@ -984,9 +984,9 @@ namespace OWA\Module\Base\Classes;
             }
 
             $this->set('base','cookie_domain', $domain);
-            \owa_coreAPI::debug("Setting cookie domain to $domain");
+            \OWA\Core\CoreAPI::debug("Setting cookie domain to $domain");
          } else {
-             \owa_coreAPI::debug("Not setting cookie domain as $domain is not a FQDN.");
+             \OWA\Core\CoreAPI::debug("Not setting cookie domain as $domain is not a FQDN.");
          }
      }
 

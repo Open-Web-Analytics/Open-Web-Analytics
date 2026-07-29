@@ -32,7 +32,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class NotifyNewSessionPlainText extends \owa_view {
+class NotifyNewSessionPlainText extends \OWA\Core\View {
 
     function __construct() {
 

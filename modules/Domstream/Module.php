@@ -31,7 +31,7 @@ namespace OWA\Module\Domstream;
  * @since        owa 1.6.1
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     function __construct() {
 
@@ -52,7 +52,7 @@ class Module extends \owa_module {
     function registerFilters() {
 
         // adds tracking cmd to js tracker.
-        if ( \owa_coreAPI::getSetting( 'domstream', 'is_active' ) ) {
+        if ( \OWA\Core\CoreAPI::getSetting( 'domstream', 'is_active' ) ) {
 
             $this->registerFilter('tracker_tag_cmds', $this, 'addToTracker', 99);
         }

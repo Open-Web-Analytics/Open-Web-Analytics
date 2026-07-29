@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class DocumentHandlers extends \owa_observer {
+class DocumentHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -45,7 +45,7 @@ class DocumentHandlers extends \owa_observer {
 
             // create entity
             /* @var owa_document $d */
-            $d = \owa_coreAPI::entityFactory( 'base.document' );
+            $d = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
 
             // get document id from event
             $id = $event->get( 'document_id' );
@@ -60,7 +60,7 @@ class DocumentHandlers extends \owa_observer {
                     $id = $d->generateId( $page_url );
                 } else {
 
-                    \owa_coreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
+                    \OWA\Core\CoreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
 
                     return OWA_EHS_EVENT_HANDLED;
                 }
@@ -90,8 +90,8 @@ class DocumentHandlers extends \owa_observer {
                 }
 
             } else {
-                if (\owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') &&
-                    in_array(get_class($d), \owa_coreAPI::getSetting('base', 'slowly_changing_dimension_entities'))
+                if (\OWA\Core\CoreAPI::getSetting('base', 'allow_slowly_changing_dimensions') &&
+                    in_array(get_class($d), \OWA\Core\CoreAPI::getSetting('base', 'slowly_changing_dimension_entities'))
                 ) {
                     $updated = false;
 
@@ -100,7 +100,7 @@ class DocumentHandlers extends \owa_observer {
                     if ($currentTitle !== $pageTitle) {
                         $d->set('page_title', $pageTitle);
                         $updated = true;
-                        \owa_coreAPI::debug(sprintf('Page title changed from %s to %s', $currentTitle, $pageTitle));
+                        \OWA\Core\CoreAPI::debug(sprintf('Page title changed from %s to %s', $currentTitle, $pageTitle));
                     }
 
                     $pageType = $event->get('page_type');
@@ -108,7 +108,7 @@ class DocumentHandlers extends \owa_observer {
                     if ($currentType !== $pageType) {
                         $d->set('page_type', $pageType);
                         $updated = true;
-                        \owa_coreAPI::debug(sprintf('Page type changed from %s to %s', $currentTitle, $pageTitle));
+                        \OWA\Core\CoreAPI::debug(sprintf('Page type changed from %s to %s', $currentTitle, $pageTitle));
                     }
 
                     if ($updated) {
@@ -116,13 +116,13 @@ class DocumentHandlers extends \owa_observer {
                     }
                 }
 
-                \owa_coreAPI::debug('Not logging Document, already exists');
+                \OWA\Core\CoreAPI::debug('Not logging Document, already exists');
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            \owa_coreAPI::notice('Not persisting Document dimension. document id or page url are missing from event.');
+            \OWA\Core\CoreAPI::notice('Not persisting Document dimension. document id or page url are missing from event.');
 
             return OWA_EHS_EVENT_HANDLED;
         }

@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class CrawlDocumentCli extends \owa_cliController
+class CrawlDocumentCli extends \OWA\Core\Controller\Cli
 {
     /**
      * owa_crawlDocumentCliController constructor.
@@ -56,7 +56,7 @@ class CrawlDocumentCli extends \owa_cliController
             $this->updateAllDocuments();
         }
 
-        \owa_coreAPI::notice( "Documents updated successfully." );
+        \OWA\Core\CoreAPI::notice( "Documents updated successfully." );
     }
 
     public function errorAction()
@@ -67,7 +67,7 @@ class CrawlDocumentCli extends \owa_cliController
 
     public function updateDocument($id)
     {
-        $doc = \owa_coreAPI::entityFactory('base.document');
+        $doc = \OWA\Core\CoreAPI::entityFactory('base.document');
         $doc->load($id);
         $doc->crawlDocument();
         $doc->update();
@@ -78,9 +78,9 @@ class CrawlDocumentCli extends \owa_cliController
         /**
          * @var \owa_entity $l
          */
-        $doc = \owa_coreAPI::entityFactory('base.document');
+        $doc = \OWA\Core\CoreAPI::entityFactory('base.document');
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom($doc->getTableName());
         $db->selectColumn('id');
         $db->where('url', '(none)', '!=');
@@ -88,7 +88,7 @@ class CrawlDocumentCli extends \owa_cliController
         $documents = $db->getAllRows();
 
         if (!$documents) {
-            \owa_coreAPI::notice( "No document found." );
+            \OWA\Core\CoreAPI::notice( "No document found." );
             return;
         }
 

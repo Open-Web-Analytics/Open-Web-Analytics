@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Classes;
  * @since        owa 1.0.0
  */
 
-class HttpEventQueue extends \owa_eventQueue {
+class HttpEventQueue extends \OWA\Core\EventQueue {
     
     var $endpoint = '';
     
@@ -40,7 +40,7 @@ class HttpEventQueue extends \owa_eventQueue {
         if ( array_key_exists( 'endpoint', $map ) ) {
             $this->endpoint = $map['endpoint'];
         } else {
-            $this->endpoint = \owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint');
+            $this->endpoint = \OWA\Core\CoreAPI::getSetting('base', 'remote_event_queue_endpoint');
         }
         
         return parent::__construct( $map );
@@ -77,7 +77,7 @@ class HttpEventQueue extends \owa_eventQueue {
          
               fwrite($fp, $out);
               fclose($fp);
-              \owa_coreAPI::debug("out: $out");
+              \OWA\Core\CoreAPI::debug("out: $out");
               return true;
           }
     }

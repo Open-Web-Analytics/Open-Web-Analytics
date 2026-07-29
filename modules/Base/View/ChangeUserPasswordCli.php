@@ -28,7 +28,7 @@ namespace OWA\Module\Base\View;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class ChangeUserPasswordCli extends \owa_cliView
+class ChangeUserPasswordCli extends \OWA\Core\View\Cli
 {
 
 }

@@ -28,7 +28,7 @@ namespace OWA\Module\Base\View;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class InstallStart extends \owa_view {
+class InstallStart extends \OWA\Core\View {
 
     function render() {
 

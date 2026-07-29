@@ -32,7 +32,7 @@ namespace OWA\Core;
  */
 
 
-class ReportController extends \owa_adminController {
+class ReportController extends \OWA\Core\AdminController {
 	
 	/**
 	 * An array of request param keys that
@@ -86,14 +86,14 @@ class ReportController extends \owa_adminController {
         $this->dom_id = str_replace('.', '-', (string) $this->getParam('do'));
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
-        $nav = \owa_coreAPI::getGroupNavigation('Reports');
+        $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
         
         // setup tabs
         $siteId = $this->get('siteId');
         $tabs = array();
 
         if ( $siteId ) {
-            $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+            $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
 
             $site_usage = array(
                     'tab_label'        => 'Site Usage',
@@ -105,7 +105,7 @@ class ReportController extends \owa_adminController {
             $tabs['site_usage'] = $site_usage;
 
             // ecommerce tab
-            if ( \owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+            if ( \OWA\Core\CoreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
 
                 $ecommerce = array(
                         'tab_label'        => 'e-commerce',
@@ -142,7 +142,7 @@ class ReportController extends \owa_adminController {
                 }
             }
 
-            if ( ! \owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
+            if ( ! \OWA\Core\CoreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
 
                 unset($nav['Ecommerce']);
             }
@@ -182,7 +182,7 @@ class ReportController extends \owa_adminController {
      */
     protected function getDefaultSiteId() {
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->select('site_id');
         $db->from('owa_site');
         $db->limit(1);

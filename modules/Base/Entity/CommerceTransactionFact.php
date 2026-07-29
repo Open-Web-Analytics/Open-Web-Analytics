@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class CommerceTransactionFact extends \owa_factTable {
+class CommerceTransactionFact extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
@@ -61,7 +61,7 @@ class CommerceTransactionFact extends \owa_factTable {
         //$session_id->setForeignKey('base.session');
         //$this->setProperty($session_id);
 
-        $document_id = new \owa_dbColumn('document_id', OWA_DTD_BIGINT);
+        $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_BIGINT);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
@@ -127,23 +127,23 @@ class CommerceTransactionFact extends \owa_factTable {
         //$yyyymmdd = new \owa_dbColumn('yyyymmdd', OWA_DTD_INT);
         //$this->setProperty($yyyymmdd);
 
-        $order_id = new \owa_dbColumn('order_id', OWA_DTD_VARCHAR255);
+        $order_id = new \OWA\Module\Base\Classes\DbColumn('order_id', OWA_DTD_VARCHAR255);
         $order_id->setIndex();
         $this->setProperty($order_id);
 
-        $order_source = new \owa_dbColumn('order_source', OWA_DTD_VARCHAR255);
+        $order_source = new \OWA\Module\Base\Classes\DbColumn('order_source', OWA_DTD_VARCHAR255);
         $this->setProperty($order_source);
 
-        $gateway = new \owa_dbColumn('gateway', OWA_DTD_VARCHAR255);
+        $gateway = new \OWA\Module\Base\Classes\DbColumn('gateway', OWA_DTD_VARCHAR255);
         $this->setProperty($gateway);
 
-        $total = new \owa_dbColumn('total_revenue', OWA_DTD_BIGINT);
+        $total = new \OWA\Module\Base\Classes\DbColumn('total_revenue', OWA_DTD_BIGINT);
         $this->setProperty($total);
 
-        $tax = new \owa_dbColumn('tax_revenue', OWA_DTD_BIGINT);
+        $tax = new \OWA\Module\Base\Classes\DbColumn('tax_revenue', OWA_DTD_BIGINT);
         $this->setProperty($tax);
 
-        $shipping = new \owa_dbColumn('shipping_revenue', OWA_DTD_BIGINT);
+        $shipping = new \OWA\Module\Base\Classes\DbColumn('shipping_revenue', OWA_DTD_BIGINT);
         $this->setProperty($shipping);
 
         // move to abstract

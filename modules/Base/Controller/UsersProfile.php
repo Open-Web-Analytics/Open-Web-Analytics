@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersProfile extends \owa_controller {
+class UsersProfile extends \OWA\Core\Controller {
 
     function __construct($params) {
 
@@ -44,7 +44,7 @@ class UsersProfile extends \owa_controller {
         // This needs form validation in a bad way.
         //Check to see if user is passed by constructor or else fetch the object.
         if ($this->getParam('user_id')) {
-            $u = \owa_coreAPI::entityFactory('base.user');
+            $u = \OWA\Core\CoreAPI::entityFactory('base.user');
             $u->getByColumn('user_id', $this->getParam('user_id'));
             $this->set('profile', $u->_getProperties());
             $this->set('edit', true);

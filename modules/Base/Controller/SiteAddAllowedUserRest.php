@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Controller;
  * Adds a new allowed user to a site.
  *
  */
-class SiteAddAllowedUserRest extends \owa_adminController {
+class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -50,11 +50,11 @@ class SiteAddAllowedUserRest extends \owa_adminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $s = \owa_coreAPI::entityFactory( 'base.site' );
+        $s = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $s->load( $site_id, 'site_id' );
 
         $user_id = $this->getParam( 'user_id' );
-        $u = \owa_coreAPI::entityFactory( 'base.user' );
+        $u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
         $u->load( $user_id, 'user_id' );
 
         // defense in depth: never write a relation with an unresolved foreign key.
@@ -69,7 +69,7 @@ class SiteAddAllowedUserRest extends \owa_adminController {
 	        return $this->data;
         }
 
-        $relation = \owa_coreAPI::entityFactory( 'base.site_user' );
+        $relation = \OWA\Core\CoreAPI::entityFactory( 'base.site_user' );
         $relation->set( 'user_id', $u->get( 'id' ) );
         $relation->set( 'site_id', $s->get( 'id' ) );
         $relation->save();

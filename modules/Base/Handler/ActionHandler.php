@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.3.0
  */
 
-class ActionHandler extends \owa_observer {
+class ActionHandler extends \OWA\Core\Observer {
     
     /**
      * Notify Event Handler
@@ -41,7 +41,7 @@ class ActionHandler extends \owa_observer {
      */
     function notify($event) {
         
-        $a = \owa_coreAPI::entityFactory('base.action_fact');
+        $a = \OWA\Core\CoreAPI::entityFactory('base.action_fact');
         
         $a->load( $event->get( 'guid' ) );
         
@@ -59,7 +59,7 @@ class ActionHandler extends \owa_observer {
             
             if ( $ret ) {
                 // Tell others that "track.action" has been logged
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);

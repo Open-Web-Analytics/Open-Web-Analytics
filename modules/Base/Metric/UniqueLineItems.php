@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class UniqueLineItems extends \owa_metric {
+class UniqueLineItems extends \OWA\Core\Metric {
 
     function __construct() {
     

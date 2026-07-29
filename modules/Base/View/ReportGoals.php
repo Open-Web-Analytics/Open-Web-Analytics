@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class ReportGoals extends \owa_view {
+class ReportGoals extends \OWA\Core\View {
 
     function render() {
 

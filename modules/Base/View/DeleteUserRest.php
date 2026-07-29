@@ -4,7 +4,7 @@ namespace OWA\Module\Base\View;
 
 
 
-class DeleteUserRest extends \owa_restApiView {
+class DeleteUserRest extends \OWA\Core\View\RestApi {
 	
 	function render() {
 		

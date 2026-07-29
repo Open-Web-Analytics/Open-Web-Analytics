@@ -31,7 +31,7 @@ namespace OWA\Module\Hello;
  * @since        owa 1.3.0
  */
 
-class ExampleSettingsController extends \owa_adminController {
+class ExampleSettingsController extends \OWA\Core\AdminController {
 
     function __construct($params) {
 

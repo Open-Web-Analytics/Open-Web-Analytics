@@ -31,11 +31,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportVisitors extends \owa_reportController {
+class ReportVisitors extends \OWA\Core\ReportController {
 
     function action() {
 
-        $rs = \owa_coreAPI::executeApiCommand(array(
+        $rs = \OWA\Core\CoreAPI::executeApiCommand(array(
             
             'request_method'	=> 'GET',
 			'module'			=> 'base',

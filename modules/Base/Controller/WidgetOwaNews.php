@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class WidgetOwaNews extends \owa_controller {
+class WidgetOwaNews extends \OWA\Core\Controller {
 
     function __construct($params) {
     
@@ -46,7 +46,7 @@ class WidgetOwaNews extends \owa_controller {
         //$data['params'] = $this->params;
         
         //Fetch latest OWA news
-        $crawler = new \owa_http();
+        $crawler = new \OWA\Core\Http();
         $response = $crawler->getRequest($this->config['owa_news_url']);
 
         $news = json_decode($response);

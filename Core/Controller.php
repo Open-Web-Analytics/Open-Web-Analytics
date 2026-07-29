@@ -30,7 +30,7 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-class Controller extends \owa_base {
+class Controller extends \OWA\Core\Base {
 
     /**
      * Request Parameters passed in from caller
@@ -164,7 +164,7 @@ class Controller extends \owa_base {
 		
 		$error_msg = 'Cannot perform action. OWA Updates required.';
 	                
-        \owa_coreAPI::debug( $error_msg );
+        \OWA\Core\CoreAPI::debug( $error_msg );
         
         switch ( $this->getMode() ) {
             
@@ -201,7 +201,7 @@ class Controller extends \owa_base {
      */
     function doAction() {
 
-        \owa_coreAPI::debug('Performing Action: '.get_class($this));
+        \OWA\Core\CoreAPI::debug('Performing Action: '.get_class($this));
 
         // check if the schema needs to be updated and force the update
         // not sure this should go here...
@@ -211,7 +211,7 @@ class Controller extends \owa_base {
             
             if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 
-                if ( \owa_coreAPI::isUpdateRequired() ) {
+                if ( \OWA\Core\CoreAPI::isUpdateRequired() ) {
 	            	
 	            	return $this->updateAction();
 	            }
@@ -227,7 +227,7 @@ class Controller extends \owa_base {
         /* Check validity of nonce */
         
         // certain web app controllers require nonce verification
-        if ( \owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
 	        
 	        if ($this->is_nonce_required == true) {
 		        
@@ -242,15 +242,15 @@ class Controller extends \owa_base {
         
         // if the rest api is originating within the web app then we always need to check for a nonce
         // The only way to tell if that's the case is to check if the request was auth'd using "cookies"
-        if ( \owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
             
-            $auth = \owa_auth::get_instance();
+            $auth = \OWA\Core\Auth::get_instance();
             
             if ( $auth->getAuthMethod() === 'cookies' ) {
                 
                 $nonce = $this->getParam('nonce');
-                \owa_coreAPI::debug( "REST API Nonce: $nonce");
-                \owa_coreAPI::debug( $this->get('version') . $this->get('module') . $this->get('do') );
+                \OWA\Core\CoreAPI::debug( "REST API Nonce: $nonce");
+                \OWA\Core\CoreAPI::debug( $this->get('version') . $this->get('module') . $this->get('do') );
                 if ( ! $nonce || ! $this->verifyNonce( $nonce, $this->get('version') . $this->get('module') . $this->get('do') ) ) {
                 
                     $this->e->debug('Nonce is missing or invalid.');
@@ -343,10 +343,10 @@ class Controller extends \owa_base {
     // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the
     // earliest it can happen. The u and p params will only be present if the user has logged in.
     protected function checkCapabilityAndAuthenticateUser($capability) {
-        if ( ( !empty($capability) && ! \owa_coreAPI::isEveryoneCapable( $capability ) ) || ( \owa_coreAPI::getStateParam('u') && \owa_coreAPI::getStateParam('p') ) ) {
+        if ( ( !empty($capability) && ! \OWA\Core\CoreAPI::isEveryoneCapable( $capability ) ) || ( \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p') ) ) {
             /* PERFORM AUTHENTICATION */
-            $auth = \owa_auth::get_instance();
-            if (!\owa_coreAPI::isCurrentUserAuthenticated()) {
+            $auth = \OWA\Core\Auth::get_instance();
+            if (!\OWA\Core\CoreAPI::isCurrentUserAuthenticated()) {
                 $status = $auth->authenticateUser();
                 if ($status['auth_status'] != true) {
                     $this->notAuthenticatedAction();
@@ -354,9 +354,9 @@ class Controller extends \owa_base {
                 }
             }
 
-            $currentUser = \owa_coreAPI::getCurrentUser();
+            $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
             if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
-                \owa_coreAPI::debug('User does not have capability required by this controller.');
+                \OWA\Core\CoreAPI::debug('User does not have capability required by this controller.');
                 $this->authenticatedButNotCapableAction();
                 //needed?
                 //$this->set('go', urlencode(owa_lib::get_current_url()));
@@ -372,16 +372,16 @@ class Controller extends \owa_base {
     // needed?
     protected function isEveryoneCapable($capability) {
 
-        return \owa_coreAPI::isEveryoneCapable( $capability );
+        return \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
     }
 
     function logEvent($event_type, $properties) {
 
-        $ed = \owa_coreAPI::getEventDispatch();
+        $ed = \OWA\Core\CoreAPI::getEventDispatch();
 
         if (!is_a($properties, 'owa_event')) {
 
-            $event = \owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setProperties($properties);
             $event->setEventType($event_type);
         } else {
@@ -393,7 +393,7 @@ class Controller extends \owa_base {
 
     function createValidator() {
 
-        $this->v = \owa_coreAPI::supportClassFactory('base', 'validator');
+        $this->v = \OWA\Core\CoreAPI::supportClassFactory('base', 'validator');
     }
 
     function addValidation($name, $value, $validation, $conf = array()) {
@@ -500,7 +500,7 @@ class Controller extends \owa_base {
 
     function makeTimePeriod($time_period, $params = array()) {
 
-        return \owa_coreAPI::makeTimePeriod($time_period, $params);
+        return \OWA\Core\CoreAPI::makeTimePeriod($time_period, $params);
     }
 
     function setTimePeriod($period) {
@@ -558,8 +558,8 @@ class Controller extends \owa_base {
 				$new_data[$k] = $param;
 			}
 		}
-		\owa_coreAPI::debug('setredirectAction');
-		\owa_coreAPI::debug( $new_data);
+		\OWA\Core\CoreAPI::debug('setredirectAction');
+		\OWA\Core\CoreAPI::debug( $new_data);
 		$this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method
@@ -593,7 +593,7 @@ class Controller extends \owa_base {
     
     public function getMode() {
 	    
-	    return \owa_coreAPI::getSetting( 'base', 'request_mode' );
+	    return \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' );
     }
 
     function mergeParams($array) {
@@ -614,7 +614,7 @@ class Controller extends \owa_base {
 
         $get = '';
 
-        $get .= \owa_coreAPI::getSetting('base', 'ns').'do'.'='.$action.'&';
+        $get .= \OWA\Core\CoreAPI::getSetting('base', 'ns').'do'.'='.$action.'&';
 
         if ($pass_params === true) {
 
@@ -622,21 +622,21 @@ class Controller extends \owa_base {
 
                 if (!in_array($n, $control_params)) {
 
-                    $get .= \owa_coreAPI::getSetting('base', 'ns').$n.'='.$v.'&';
+                    $get .= \OWA\Core\CoreAPI::getSetting('base', 'ns').$n.'='.$v.'&';
 
                 }
             }
         }
 
-        $new_url = sprintf(\owa_coreAPI::getSetting('base', 'link_template'), \owa_coreAPI::getSetting('base', 'main_url'), $get);
+        $new_url = sprintf(\OWA\Core\CoreAPI::getSetting('base', 'link_template'), \OWA\Core\CoreAPI::getSetting('base', 'main_url'), $get);
 
-        return \owa_lib::redirectBrowser($new_url);
+        return \OWA\Core\Lib::redirectBrowser($new_url);
 
     }
 
     function redirectBrowserToUrl($url) {
 
-        return \owa_lib::redirectBrowser($url);
+        return \OWA\Core\Lib::redirectBrowser($url);
     }
 
     function setStatusCode($code) {
@@ -670,14 +670,14 @@ class Controller extends \owa_base {
 
     function notAuthenticatedAction() {
 		
-		if (\owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
 			
 			$this->setView('base.restApi');
 			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API credentials or permissions for this user.'] );
 			http_response_code(401);	
 		} else {
 	        $this->setRedirectAction('base.loginForm');
-			$this->set('go', urlencode(\owa_lib::get_current_url()));
+			$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
 		}
     }
 
@@ -685,8 +685,8 @@ class Controller extends \owa_base {
             
         $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
 
-        $matching_nonce = \owa_coreAPI::createNonce($action);
-        \owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
+        $matching_nonce = \OWA\Core\CoreAPI::createNonce($action);
+        \OWA\Core\CoreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
         if ($nonce === $matching_nonce) {
             return true;
         }
@@ -701,7 +701,7 @@ class Controller extends \owa_base {
     }
 
     function getSetting($module, $name) {
-        return \owa_coreAPI::getSetting($module, $name);
+        return \OWA\Core\CoreAPI::getSetting($module, $name);
     }
 
 
@@ -711,16 +711,16 @@ class Controller extends \owa_base {
      */
     protected function getSitesAllowedForCurrentUser() {
    
-        $currentUser = \owa_coreAPI::getCurrentUser();
+        $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
 
         if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
             $result = array();
            
-            $relations = \owa_coreAPI::getSitesList();
+            $relations = \OWA\Core\CoreAPI::getSitesList();
 
             foreach ($relations as $siteRow) {
 
-                $site = \owa_coreAPI::entityFactory('base.site');
+                $site = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $site->load($siteRow['id']);
                 $result[$siteRow['site_id']] = $site;
             }

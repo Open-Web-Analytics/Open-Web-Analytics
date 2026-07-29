@@ -31,62 +31,62 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Impression extends \owa_entity {
+class Impression extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('impression');
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['visitor_id'] = new \owa_dbColumn;
+        $this->properties['visitor_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['session_id'] = new \owa_dbColumn;
+        $this->properties['session_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['session_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['tag_id'] = new \owa_dbColumn;
+        $this->properties['tag_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['placement_id'] = new \owa_dbColumn;
+        $this->properties['placement_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['placement_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['campaign_id'] = new \owa_dbColumn;
+        $this->properties['campaign_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['ad_group_id'] = new \owa_dbColumn;
+        $this->properties['ad_group_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['ad_id'] = new \owa_dbColumn;
+        $this->properties['ad_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['site_id'] = new \owa_dbColumn;
+        $this->properties['site_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['last_impression_id'] = new \owa_dbColumn;
+        $this->properties['last_impression_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['last_impression_timestamp'] = new \owa_dbColumn;
+        $this->properties['last_impression_timestamp'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['last_impression_timestamp']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['timestamp'] = new \owa_dbColumn;
+        $this->properties['timestamp'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['timestamp']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['year'] = new \owa_dbColumn;
+        $this->properties['year'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['year']->setDataType(OWA_DTD_INT);
-        $this->properties['month'] = new \owa_dbColumn;
+        $this->properties['month'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['month']->setDataType(OWA_DTD_INT);
-        $this->properties['day'] = new \owa_dbColumn;
+        $this->properties['day'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['day']->setDataType(OWA_DTD_INT);
-        $this->properties['dayofyear'] = new \owa_dbColumn;
+        $this->properties['dayofyear'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['dayofyear']->setDataType(OWA_DTD_INT);
-        $this->properties['weekofyear'] = new \owa_dbColumn;
+        $this->properties['weekofyear'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['weekofyear']->setDataType(OWA_DTD_INT);
-        $this->properties['hour'] = new \owa_dbColumn;
+        $this->properties['hour'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['minute'] = new \owa_dbColumn;
+        $this->properties['minute'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
-        $this->properties['msec'] = new \owa_dbColumn;
+        $this->properties['msec'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['msec']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['url'] = new \owa_dbColumn;
+        $this->properties['url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['ua_id'] = new \owa_dbColumn;
+        $this->properties['ua_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ua_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['ip_address'] = new \owa_dbColumn;
+        $this->properties['ip_address'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['host_id'] = new \owa_dbColumn;
+        $this->properties['host_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['host_id']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['host'] = new \owa_dbColumn;
+        $this->properties['host'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
     }
 

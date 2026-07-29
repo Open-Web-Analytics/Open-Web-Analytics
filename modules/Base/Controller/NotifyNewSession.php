@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class NotifyNewSession extends \owa_controller {
+class NotifyNewSession extends \OWA\Core\Controller {
         
     function action() {
         
@@ -40,7 +40,7 @@ class NotifyNewSession extends \owa_controller {
         $site = $this->getParam( 'site' );
         $this->set( 'site', $site->_getProperties() );
             
-        $this->set( 'email_address', \owa_coreAPI::getSetting( 'base', 'notice_email' ) );
+        $this->set( 'email_address', \OWA\Core\CoreAPI::getSetting( 'base', 'notice_email' ) );
         $this->set( 'session', $event->getProperties() );
         
         $this->set( 'subject', sprintf('OWA: New Visit to %s', $site->get( 'domain' ) ) );

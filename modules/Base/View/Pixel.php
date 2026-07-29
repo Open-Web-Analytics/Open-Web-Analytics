@@ -34,7 +34,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class Pixel extends \owa_view {
+class Pixel extends \OWA\Core\View {
 
     function render($data) {
 

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class PasswordResetForm extends \owa_controller {
+class PasswordResetForm extends \OWA\Core\Controller {
 
     function action() {
 

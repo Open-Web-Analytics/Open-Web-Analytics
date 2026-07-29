@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.6.8
  */
 
-class OverlayLauncher extends \owa_view {
+class OverlayLauncher extends \OWA\Core\View {
  
     function render() {
         // Assign Data to templates

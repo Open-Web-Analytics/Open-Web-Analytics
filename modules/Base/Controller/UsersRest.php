@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Controller;
  * A GET REST method for obtaiing the list of tracked web sites
  *
  */
-class UsersRest extends \owa_usersController {
+class UsersRest extends \OWA\Module\Base\Controller\Users {
     
 
     function success() {

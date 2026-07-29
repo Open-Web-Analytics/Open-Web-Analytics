@@ -62,10 +62,10 @@ class Template extends TemplateEngine {
 
         $this->caller_params = $caller_params;
 
-        $c = \owa_coreAPI::configSingleton();
+        $c = \OWA\Core\CoreAPI::configSingleton();
         $this->config = $c->fetch('base');
 
-        $this->e = \owa_coreAPI::errorSingleton();
+        $this->e = \OWA\Core\CoreAPI::errorSingleton();
 
         // set template dirs
         if(!empty($caller_params['module'])):
@@ -74,13 +74,13 @@ class Template extends TemplateEngine {
             $this->_setTemplateDir('base');
         endif;
 
-        $this->time_now = \owa_lib::time_now();
+        $this->time_now = \OWA\Core\Lib::time_now();
     }
 
     function _setTemplateDir($module) {
 
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
-        $this->module_template_dir = OWA_DIR.'modules'.'/' . \owa_lib::moduleDirName( $module ) . '/'.'templates'.'/';
+        $this->module_template_dir = OWA_DIR.'modules'.'/' . \OWA\Core\Lib::moduleDirName( $module ) . '/'.'templates'.'/';
 
         // set module local template override dir
         $this->module_local_template_dir = $this->module_template_dir.'local'.'/';
@@ -96,7 +96,7 @@ class Template extends TemplateEngine {
         $this->_setTemplateDir($module);
 
         if ($file == null) {
-            \owa_coreAPI::error('No template file was specified.');
+            \OWA\Core\CoreAPI::error('No template file was specified.');
             return false;
         } else {
             // check module's local modification template Directory
@@ -131,7 +131,7 @@ class Template extends TemplateEngine {
     function set_template($file = null) {
 
         if (!$file):
-            \owa_coreAPI::error('No template file was specified.');
+            \OWA\Core\CoreAPI::error('No template file was specified.');
             return false;
         else:
             // Normalize the requested filename before it is used in any
@@ -142,7 +142,7 @@ class Template extends TemplateEngine {
             $file = self::sanitizeTemplateName( $file );
 
             if ( $file === '' ) {
-                \owa_coreAPI::error('Invalid template file name.');
+                \OWA\Core\CoreAPI::error('Invalid template file name.');
                 return false;
             }
 
@@ -206,12 +206,12 @@ class Template extends TemplateEngine {
      */
     function truncate ($str, $length=10, $trailing='...')  {
 
-      return \owa_lib::truncate ($str, $length, $trailing);
+      return \OWA\Core\Lib::truncate ($str, $length, $trailing);
     }
 
     function get_month_label($month) {
 
-        return \owa_lib::get_month_label($month);
+        return \OWA\Core\Lib::get_month_label($month);
     }
 
     /**
@@ -257,7 +257,7 @@ class Template extends TemplateEngine {
 
         // FS existence check uses the PascalCase on-disk dir; the makeImageLink
         // args stay lowercase 'base/...' (they resolve against public/, not modules/).
-        if (file_exists(OWA_MODULES_DIR.\owa_lib::moduleDirName($module).'/i/browsers/'.$size.'/'.$browser_family.'.png')) {
+        if (file_exists(OWA_MODULES_DIR.\OWA\Core\Lib::moduleDirName($module).'/i/browsers/'.$size.'/'.$browser_family.'.png')) {
             return $this->makeImageLink('base/i/browsers/'.$size.'/'.$browser_family.'.png');
         } else {
             return $this->makeImageLink('base/i/browsers/'.$size.'/default.png');
@@ -310,9 +310,9 @@ class Template extends TemplateEngine {
                 'container_element'     => 'nav'
             ];
             
-            $options = \owa_lib::setDefaultParams( $defaults, $options );
+            $options = \OWA\Core\Lib::setDefaultParams( $defaults, $options );
             
-            $nav = \owa_coreAPI::getGroupNavigation( $menu_name );
+            $nav = \OWA\Core\CoreAPI::getGroupNavigation( $menu_name );
             
             if ( $nav ) {
                 
@@ -408,7 +408,7 @@ class Template extends TemplateEngine {
     function getAuthStatus() {
 
 
-        $auth = &\owa_auth::get_instance();
+        $auth = &\OWA\Core\Auth::get_instance();
         return $auth->auth_status;
     }
 
@@ -450,7 +450,7 @@ class Template extends TemplateEngine {
 
                 foreach ($all_params as $n => $v) {
 
-                    $get .= \owa_coreAPI::getSetting('base','ns').$n.'='.$v;
+                    $get .= \OWA\Core\CoreAPI::getSetting('base','ns').$n.'='.$v;
 
                     $i++;
 
@@ -465,7 +465,7 @@ class Template extends TemplateEngine {
 
             case 'cookie':
 
-                $string = \owa_lib::implode_assoc('=>', '|||', $all_params);
+                $string = \OWA\Core\Lib::implode_assoc('=>', '|||', $all_params);
                 break;
 
             case 'json':
@@ -551,7 +551,7 @@ class Template extends TemplateEngine {
                 $action = $all_params['action'];
             }
 
-            $all_params['nonce'] = \owa_coreAPI::createNonce($action);
+            $all_params['nonce'] = \OWA\Core\CoreAPI::createNonce($action);
         }
 
         $get = '';
@@ -564,7 +564,7 @@ class Template extends TemplateEngine {
 
             foreach ($all_params as $n => $v) {
 
-                $get .= $this->config['ns'].\owa_sanitize::escapeForDisplay($n).'='.\owa_sanitize::escapeForDisplay($v);
+                $get .= $this->config['ns'].\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
 
                 $i++;
 
@@ -592,7 +592,7 @@ class Template extends TemplateEngine {
 
         $string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
         // removes non-ascii chars
-        $string = \owa_lib::escapeNonAsciiChars($string);
+        $string = \OWA\Core\Lib::escapeNonAsciiChars($string);
         return $string;
     }
 
@@ -608,7 +608,7 @@ class Template extends TemplateEngine {
     
     function getApiKey() {
 	    
-		return \owa_coreAPI::getCurrentUserApiKey();
+		return \OWA\Core\CoreAPI::getCurrentUserApiKey();
     }
 
     function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
@@ -621,7 +621,7 @@ class Template extends TemplateEngine {
             
         } else {
             
-            $params['nonce'] = \owa_coreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
+            $params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
         }
       
         $link = $this->makeLink($params, $add_state, $url);
@@ -638,7 +638,7 @@ class Template extends TemplateEngine {
     
     function signRequestUrl( $url, $apiKey ) {
 	    
-	    return \owa_coreAPI::signRequestUrl( $url, $apiKey );
+	    return \OWA\Core\CoreAPI::signRequestUrl( $url, $apiKey );
     }
 
 
@@ -649,9 +649,9 @@ class Template extends TemplateEngine {
         // denied by the deny-all .htaccess. images_url/images_absolute_url both
         // resolve to public/ (settings.php setupPaths()).
         if ($absolute === true) {
-            $url = \owa_coreAPI::getSetting('base', 'images_absolute_url');
+            $url = \OWA\Core\CoreAPI::getSetting('base', 'images_absolute_url');
         } else {
-            $url = \owa_coreAPI::getSetting('base', 'images_url');
+            $url = \OWA\Core\CoreAPI::getSetting('base', 'images_url');
         }
 
         return $url.$path;
@@ -701,12 +701,12 @@ class Template extends TemplateEngine {
         // apply overides made via the template
         $final_params = array_merge($final_params, array_filter($params));
 
-        return \owa_coreAPI::performAction($do, $final_params);
+        return \OWA\Core\CoreAPI::performAction($do, $final_params);
     }
 
     function makeJson($array) {
 
-        $reserved_words = \owa_coreAPI::getSetting('base', 'reserved_words');
+        $reserved_words = \OWA\Core\CoreAPI::getSetting('base', 'reserved_words');
 
         $json = '{';
 
@@ -725,7 +725,7 @@ class Template extends TemplateEngine {
                 $k = $reserved_words[$k];
             }
             
-            $json .= sprintf('%s: "%s", ', $k, \owa_sanitize::escapeForDisplay( $v ) ) ;
+            $json .= sprintf('%s: "%s", ', $k, \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( $v ) ) ;
 
         }
 
@@ -860,7 +860,7 @@ class Template extends TemplateEngine {
 
         if (!empty($links) && !empty($currentSiteId)) {
 
-            $t = new \owa_template;
+            $t = new \OWA\Core\Template;
             $t->set('links', $links);
             $t->set('currentSiteId', $currentSiteId);
 			$t->set('params', array('do' => $current_action ));
@@ -878,7 +878,7 @@ class Template extends TemplateEngine {
 
         if (!empty($data)) {
 
-            $t = new \owa_template;
+            $t = new \OWA\Core\Template;
             $t->set('dom_id', $id.'Chart');
             $t->set('data', $data);
             $t->set('width', $width);
@@ -897,7 +897,7 @@ class Template extends TemplateEngine {
 
             $data_string = implode(',', $data);
 
-            $t = new \owa_template;
+            $t = new \OWA\Core\Template;
             $t->set('dom_id', $id.'Sparkline');
             $t->set('data', $data_string);
             $t->set('width', $width);
@@ -926,7 +926,7 @@ class Template extends TemplateEngine {
 
     function makeTable($labels, $data, $table_class = '', $table_id = '', $is_sortable = true) {
 
-        $t = new \owa_template;
+        $t = new \OWA\Core\Template;
 
         if (!empty($table_id)) {
             $id = rand();
@@ -948,7 +948,7 @@ class Template extends TemplateEngine {
 
     function subTemplate($template_name = '', $map = array(), $linkstate = array()) {
 
-        $t = new \owa_template;
+        $t = new \OWA\Core\Template;
 
         $t->set_template($template_name);
 
@@ -975,16 +975,16 @@ class Template extends TemplateEngine {
 
     function displayMetricInfobox($params = array()) {
 
-        $t = new \owa_template;
+        $t = new \OWA\Core\Template;
 
         if (!empty($dom_id)) {
             $dom_id = rand();
         }
         $params['do'] = 'getResultSet';
-        $count = \owa_coreAPI::executeApiCommand($params);
+        $count = \OWA\Core\CoreAPI::executeApiCommand($params);
         $params['period'] = 'last_thirty_days';
         $params['dimensions'] = 'date';
-        $trend = \owa_coreAPI::executeApiCommand($params);
+        $trend = \OWA\Core\CoreAPI::executeApiCommand($params);
         $t->set('metric_name', $params['metrics']);
         $t->set('dom_id', $dom_id);
         $t->set('count', $count);
@@ -997,7 +997,7 @@ class Template extends TemplateEngine {
 
     public function renderKpiInfobox($number, $label, $link = '', $class = '') {
 
-        $t = new \owa_template;
+        $t = new \OWA\Core\Template;
         $t->set_template( 'kpiInfobox.php' );
         $t->set( 'number', $number );
         $t->set( 'label', $label );
@@ -1016,7 +1016,7 @@ class Template extends TemplateEngine {
 
     function renderDimension($template, $properties) {
 
-        $t = new \owa_template;
+        $t = new \OWA\Core\Template;
         $t->set('properties', $properties);
         $t->set_template($template);
         return $t->fetch();
@@ -1032,8 +1032,8 @@ class Template extends TemplateEngine {
 
         return sprintf(
                 '<input type="hidden" name="%snonce" value="%s">',
-                \owa_coreAPI::getSetting('base', 'ns'),
-                \owa_coreAPI::createNonce($action));
+                \OWA\Core\CoreAPI::getSetting('base', 'ns'),
+                \OWA\Core\CoreAPI::createNonce($action));
     }
 
     function makeNonceLink() {
@@ -1049,7 +1049,7 @@ class Template extends TemplateEngine {
     function out($output, $sanitize = true, $decode_special_entities = false) {
 
         if ( $sanitize ) {
-            $output = \owa_sanitize::escapeForDisplay($output);
+            $output = \OWA\Module\Base\Classes\Sanitize::escapeForDisplay($output);
 
             if ( $decode_special_entities ) {
                 $output = strtr($output, array('&amp;'  => '&'));
@@ -1080,8 +1080,8 @@ class Template extends TemplateEngine {
      */
     function safeHref( $url, $echo = true ) {
 
-        $safe = \owa_sanitize::sanitizeHref( $url );
-        $safe = \owa_sanitize::escapeForDisplay( $safe );
+        $safe = \OWA\Module\Base\Classes\Sanitize::sanitizeHref( $url );
+        $safe = \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( $safe );
 
         if ( $echo ) {
             echo $safe;
@@ -1091,12 +1091,12 @@ class Template extends TemplateEngine {
     }
 
     function formatCurrency($value) {
-        return \owa_lib::formatCurrency( $value, \owa_coreAPI::getSetting( 'base', 'currencyLocal' ), \owa_coreAPI::getSetting( 'base', 'currencyISO3' ) );
+        return \OWA\Core\Lib::formatCurrency( $value, \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ), \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
 
     function getCurrentUser() {
 
-        return \owa_coreAPI::getCurrentUser();
+        return \OWA\Core\CoreAPI::getCurrentUser();
     }
 
     public function getSiteThumbnail( $domain, $width = '200' ) {

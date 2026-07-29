@@ -31,12 +31,12 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UpdatesApply extends \owa_controller {
+class UpdatesApply extends \OWA\Core\Controller {
 
     function action() {
 
         // fetch list of modules that require updates
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
 
         $modules = $s->getModulesNeedingUpdates();
         //print_r($modules);

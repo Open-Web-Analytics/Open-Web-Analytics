@@ -31,16 +31,16 @@ namespace OWA\Module\Base\Update;
  */
 
 
-class Update004 extends \owa_update {
+class Update004 extends \OWA\Core\Update {
 
     function up() {
 
         // create admin user for embedded installs.
         // embedded installs did not create admin users until this release (v1.2.1)
-        $cu = \owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $this->createAdminUser($cu->getUserData('email_address'));
 
-        $ds = \owa_coreAPI::entityFactory('base.domstream');
+        $ds = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $ret = $ds->createTable();
 
         if ($ret == true) {
@@ -60,7 +60,7 @@ class Update004 extends \owa_update {
     function createAdminUser($email_address) {
 
         //create user entity
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         // check to see if an admin user already exists
         $u->getByColumn('role', 'admin');
         $id_check = $u->get('id');
@@ -80,20 +80,20 @@ class Update004 extends \owa_update {
                 $u->set('role', 'admin');
                 $u->set('real_name', '');
                 $u->set('email_address', $email_address);
-                $u->set('password', \owa_lib::encryptPassword($password));
+                $u->set('password', \OWA\Core\Lib::encryptPassword($password));
                 $u->set('creation_date', time());
                 $u->set('last_update_date', time());
                 $ret = $u->create();
 
-                \owa_coreAPI::debug("Admin user created successfully.");
+                \OWA\Core\CoreAPI::debug("Admin user created successfully.");
 
                 return $password;
 
             } else {
-                \owa_coreAPI::debug($this->getMsgAsString(3306));
+                \OWA\Core\CoreAPI::debug($this->getMsgAsString(3306));
             }
         } else {
-            \owa_coreAPI::debug("Admin user already exists.");
+            \OWA\Core\CoreAPI::debug("Admin user already exists.");
         }
 
     }

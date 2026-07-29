@@ -29,16 +29,16 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class SitesEditAllowedUsers extends \owa_sitesEditSettingsController {
+class SitesEditAllowedUsers extends \OWA\Module\Base\Controller\SitesEditSettings {
 
 
 
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $siteEntity = \owa_coreAPI::entityFactory( 'base.site' );
+        $siteEntity = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $siteEntity->load( $siteEntity->generateId( $site_id ) );
-        \owa_coreAPI::debug( $siteEntity->_getProperties());
+        \OWA\Core\CoreAPI::debug( $siteEntity->_getProperties());
         if ($this->getParam( 'allowed_users' ) ) {
             $siteEntity->updateAssignedUserIds($this->getParam( 'allowed_users' ));
         }

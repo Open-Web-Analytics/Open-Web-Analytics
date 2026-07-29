@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class Mail extends \owa_view {
+class Mail extends \OWA\Core\View {
 
     // post office
     var $po;
@@ -26,7 +26,7 @@ class Mail extends \owa_view {
     function __construct() {
 
         // make this a service
-        $this->po = new \owa_mailer;
+        $this->po = new \OWA\Module\Base\Classes\Mailer;
         parent::__construct();
     }
 
@@ -35,7 +35,7 @@ class Mail extends \owa_view {
         $this->po->setHtmlBody( $this->t->fetch() );
 
         if ( $this->get( 'plainTextView' ) ) {
-            $this->po->setAltBody( \owa_coreAPI::displayView( $this->get( 'plain_text_view' ) ) );
+            $this->po->setAltBody( \OWA\Core\CoreAPI::displayView( $this->get( 'plain_text_view' ) ) );
         }
 
         return $this->po->sendMail();

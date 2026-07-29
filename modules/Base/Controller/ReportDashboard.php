@@ -31,11 +31,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportDashboard extends \owa_reportController {
+class ReportDashboard extends \OWA\Core\ReportController {
 
     function action() {
 
-		$rs = \owa_coreAPI::executeApiCommand(array(
+		$rs = \OWA\Core\CoreAPI::executeApiCommand(array(
 
 			'request_method'	=> 'GET',
 			'module'			=> 'base',
@@ -59,7 +59,7 @@ class ReportDashboard extends \owa_reportController {
 
         $metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
 
-        if ( \owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+        if ( \OWA\Core\CoreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
             $metrics .= ',transactions,transactionRevenue';
         }
 

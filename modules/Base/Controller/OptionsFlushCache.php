@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class OptionsFlushCache extends \owa_adminController {
+class OptionsFlushCache extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -41,7 +41,7 @@ class OptionsFlushCache extends \owa_adminController {
 
     function action() {
 
-        $cache = \owa_coreAPI::cacheSingleton();
+        $cache = \OWA\Core\CoreAPI::cacheSingleton();
         $cache->flush();
 
         $this->e->notice("Cache Flushed");

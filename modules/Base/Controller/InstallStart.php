@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
 
 
 
-class InstallStart extends \owa_installController {
+class InstallStart extends \OWA\Core\Controller\Install {
     
     function action() {
 

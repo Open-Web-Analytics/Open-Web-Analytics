@@ -17,7 +17,7 @@ namespace OWA\Module\Base\View;
 // $Id$
 //
 
-class SitesAddCli extends \owa_cliView {
+class SitesAddCli extends \OWA\Core\View\Cli {
 	
 	function render() {
 		

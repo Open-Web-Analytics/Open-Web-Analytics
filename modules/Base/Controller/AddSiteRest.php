@@ -3,7 +3,7 @@ namespace OWA\Module\Base\Controller;
 
 
 
-class AddSiteRest extends \owa_sitesAddController {
+class AddSiteRest extends \OWA\Module\Base\Controller\SitesAdd {
 	
 	function success() {
 		

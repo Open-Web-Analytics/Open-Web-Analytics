@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ModuleDeactivate extends \owa_adminController {
+class ModuleDeactivate extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -44,7 +44,7 @@ class ModuleDeactivate extends \owa_adminController {
 
     function action() {
 
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $m = $s->getModule($this->getParam('module'));
         $m->deactivate();
         $this->setRedirectAction('base.optionsModules');

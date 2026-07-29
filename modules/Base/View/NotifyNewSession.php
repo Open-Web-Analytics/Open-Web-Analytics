@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class NotifyNewSession extends \owa_mailView {
+class NotifyNewSession extends \OWA\Core\View\Mail {
         
     function render() {
         

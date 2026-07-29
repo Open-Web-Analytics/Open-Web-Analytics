@@ -31,19 +31,19 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.3.0
  */
 
-class SearchTermDim extends \owa_entity {
+class SearchTermDim extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('search_term_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['terms'] = new \owa_dbColumn;
+        $this->properties['terms'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['term_count'] = new \owa_dbColumn;
+        $this->properties['term_count'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
     }
 }

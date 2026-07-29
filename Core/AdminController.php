@@ -34,7 +34,7 @@ namespace OWA\Core;
  */
 
 
-class AdminController extends \owa_controller {
+class AdminController extends \OWA\Core\Controller {
     
     var $is_admin = true;
     

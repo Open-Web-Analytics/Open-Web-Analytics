@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesEdit extends \owa_adminController {
+class SitesEdit extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -60,7 +60,7 @@ class SitesEdit extends \owa_adminController {
 
         // This needs form validation in a bad way.
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         if (! $this->getParam('siteId')) {
             throw exception('No siteId passed on request');
         }

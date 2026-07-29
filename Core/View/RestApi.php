@@ -22,7 +22,7 @@ namespace OWA\Core\View;
  *
  * This view assembles the response to REST API requests
  */
-class RestApi extends \owa_view {
+class RestApi extends \OWA\Core\View {
 	
 	function __construct() {
 	 	
@@ -46,7 +46,7 @@ class RestApi extends \owa_view {
 
         // if not found look on the request scope.
         if ( ! $callback ) {
-            $callback = \owa_coreAPI::getRequestParam('jsonpCallback');
+            $callback = \OWA\Core\CoreAPI::getRequestParam('jsonpCallback');
         }
 
         if ( $callback ) {
@@ -59,9 +59,9 @@ class RestApi extends \owa_view {
 
 	   // set header if the request is from the API endpoint. Could be an internal request.
 	   
-	   if ( \owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+	   if ( \OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
 		   
-			\owa_lib::setContentTypeHeader( $type );
+			\OWA\Core\Lib::setContentTypeHeader( $type );
 			
 			// set cahce-control header to avid downstream caching.
 			header("Cache-Control: max-age=0");		
@@ -72,7 +72,7 @@ class RestApi extends \owa_view {
 
 	   
 		// Generate GUID for response
-	    $request = \owa_coreAPI::getRequest();
+	    $request = \OWA\Core\CoreAPI::getRequest();
 
         $this->body->set('request_id', $request->guid );
 	    	    
@@ -109,7 +109,7 @@ class RestApi extends \owa_view {
     
     function addCorsHeaders() {
 	    
-	    $s = \owa_coreAPI::serviceSingleton();
+	    $s = \OWA\Core\CoreAPI::serviceSingleton();
 	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
 	    
 	    // check for ORGIN header and bail if not found.
@@ -119,7 +119,7 @@ class RestApi extends \owa_view {
         }
 
         // Loop through sites list and add cors headers if the ORGIN header is present on the request
-        foreach ( \owa_coreAPI::getSitesList() as $allowedOrigin ) {
+        foreach ( \OWA\Core\CoreAPI::getSitesList() as $allowedOrigin ) {
         	
         	if ( $allowedOrigin !== $HTTP_ORIGIN ) {
 	        	

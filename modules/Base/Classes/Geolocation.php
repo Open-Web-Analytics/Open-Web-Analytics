@@ -37,7 +37,7 @@ class Geolocation {
     
     public static function getInstance() {
         
-        return new \owa_geolocation();
+        return new \OWA\Module\Base\Classes\Geolocation();
     }
 
     function __construct() {
@@ -60,9 +60,9 @@ class Geolocation {
                          'latitude'        =>    '',
                          'longitude'    =>    '');
             
-            if ( \owa_coreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
+            if ( \OWA\Core\CoreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
             
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $geo = $eq->filter('geolocation', $geo);
             
             }
@@ -143,7 +143,7 @@ class Geolocation {
             $city = $this->getCity();
         }
         $id_string = trim( strtolower($country)) . trim( strtolower($state)) . trim( strtolower($city));
-        return \owa_lib::setStringGuid( $id_string );
+        return \OWA\Core\Lib::setStringGuid( $id_string );
         
     }
 }

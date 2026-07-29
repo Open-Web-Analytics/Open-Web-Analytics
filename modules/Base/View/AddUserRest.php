@@ -4,7 +4,7 @@ namespace OWA\Module\Base\View;
 
 
 
-class AddUserRest extends \owa_restApiView {
+class AddUserRest extends \OWA\Core\View\RestApi {
 	
 	function render() {
 		

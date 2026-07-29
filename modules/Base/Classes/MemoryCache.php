@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Classes;
  * @since        owa 1.4.0
  */
 
-class MemoryCache extends \owa_cacheType {
+class MemoryCache extends \OWA\Core\CacheType {
 
 	var $cache = [];
 

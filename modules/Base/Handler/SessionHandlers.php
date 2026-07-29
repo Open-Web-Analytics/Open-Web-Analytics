@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class SessionHandlers extends \owa_observer {
+class SessionHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -61,7 +61,7 @@ class SessionHandlers extends \owa_observer {
 
         if ( $event->get('session_id') ) {
 
-            $s = \owa_coreAPI::entityFactory('base.session');
+            $s = \OWA\Core\CoreAPI::entityFactory('base.session');
 
             $s->load( $event->get('session_id') );
 
@@ -104,14 +104,14 @@ class SessionHandlers extends \owa_observer {
                 $s->set( 'latest_attributions' , $event->get( 'attribs' ) );
 
                 // Make document ids
-                $s->set('first_page_id', \owa_lib::setStringGuid($event->get('page_url')));
+                $s->set('first_page_id', \OWA\Core\Lib::setStringGuid($event->get('page_url')));
 
                 $s->set('last_page_id', $s->get('first_page_id'));
 
                 // Generate Referer id
                 // external referer does not exist anymore so i think we can take this out.
                 if ($event->get('external_referer')) {
-                    $s->set('referer_id', \owa_lib::setStringGuid($event->get('HTTP_REFERER')));
+                    $s->set('referer_id', \OWA\Core\Lib::setStringGuid($event->get('HTTP_REFERER')));
                 }
 
                 // this should already be set by the request handler.
@@ -123,12 +123,12 @@ class SessionHandlers extends \owa_observer {
                 $session = $s->_getProperties();
                 $properties = array_merge($event->getProperties(), $session);
                 $properties['request_id'] = $event->get('guid');
-                $ne = \owa_coreAPI::supportClassFactory('base', 'event');
+                $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
                 $ne->setProperties($properties);
                 $ne->setEventType('base.new_session');
 
                 // log the new session event to the event queue
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $eq->notify($ne);
 
                 if ($ret) {
@@ -137,12 +137,12 @@ class SessionHandlers extends \owa_observer {
                     return OWA_EHS_EVENT_FAILED;
                 }
             } else {
-                \owa_coreAPI::debug('Not persisting new session. Session already exists.');
+                \OWA\Core\CoreAPI::debug('Not persisting new session. Session already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
 
-            \owa_coreAPI::debug('Not persisting new session. No session_id present.');
+            \OWA\Core\CoreAPI::debug('Not persisting new session. No session_id present.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }
@@ -152,7 +152,7 @@ class SessionHandlers extends \owa_observer {
         if ( $event->get('session_id') ) {
 
             // Make entity
-            $s = \owa_coreAPI::entityFactory('base.session');
+            $s = \OWA\Core\CoreAPI::entityFactory('base.session');
 
             // Fetch from session from database
             $s->getByPk('id', $event->get('session_id'));
@@ -161,7 +161,7 @@ class SessionHandlers extends \owa_observer {
             // fail safe for when there is no existing session in DB
             if (empty($id)) {
 
-                \owa_coreAPI::debug("Aborting session update as no existing session was found");
+                \OWA\Core\CoreAPI::debug("Aborting session update as no existing session was found");
                 return OWA_EHS_EVENT_FAILED;
             }
 
@@ -220,7 +220,7 @@ class SessionHandlers extends \owa_observer {
                 // update user name if changed.
                 if ( $event->get( 'user_name' ) ||  $event->get( 'user_email' ) ) {
 
-                    if ( \owa_coreAPI::getSetting( 'base', 'update_session_user_name' ) ) {
+                    if ( \OWA\Core\CoreAPI::getSetting( 'base', 'update_session_user_name' ) ) {
 
                         // check for different user_name
                         $user_name = $event->get( 'user_name' );
@@ -249,11 +249,11 @@ class SessionHandlers extends \owa_observer {
             $session = $s->_getProperties();
             $properties = array_merge($event->getProperties(), $session);
             $properties['request_id'] = $event->get('guid');
-            $ne = \owa_coreAPI::supportClassFactory('base', 'event');
+            $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $ne->setProperties($properties);
             $ne->setEventType('base.session_update');
             // Log session update event to event queue
-            $eq = \owa_coreAPI::getEventDispatch();
+            $eq = \OWA\Core\CoreAPI::getEventDispatch();
             $ret = $eq->notify( $ne );
 
             if ( $ret ) {
@@ -263,14 +263,14 @@ class SessionHandlers extends \owa_observer {
             }
         } else {
 
-            \owa_coreAPI::debug('Not persisting new session. No session_id present.');
+            \OWA\Core\CoreAPI::debug('Not persisting new session. No session_id present.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }
     
     function summarizePageviews($id) {
 
-        $ret = \owa_coreAPI::summarize(array(
+        $ret = \OWA\Core\CoreAPI::summarize(array(
                 'entity'        => 'base.request',
                 'columns'        => array('id' => 'count_distinct'),
                 'constraints'    => array( 'session_id' => $id ) ) );

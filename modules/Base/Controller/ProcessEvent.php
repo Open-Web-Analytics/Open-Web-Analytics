@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ProcessEvent extends \owa_controller {
+class ProcessEvent extends \OWA\Core\Controller {
 
     var $event;
     var $eq;
@@ -44,11 +44,11 @@ class ProcessEvent extends \owa_controller {
             $this->event = $params['event'];
 
         } else {
-            \owa_coreAPI::debug("No event object was passed to controller.");
-            $this->event = \owa_coreAPI::supportClassFactory('base', 'event');
+            \OWA\Core\CoreAPI::debug("No event object was passed to controller.");
+            $this->event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         }
 
-        $this->eq = \owa_coreAPI::getEventDispatch();
+        $this->eq = \OWA\Core\CoreAPI::getEventDispatch();
 
         return parent::__construct($params);
 
@@ -72,9 +72,9 @@ class ProcessEvent extends \owa_controller {
 
         // TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
 
-        $teh = \owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
 
-        $s = \owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
 
         // STAGE 1 - set environmental properties from SERVER
         // now happens in coreAPI::logEvent
@@ -95,7 +95,7 @@ class ProcessEvent extends \owa_controller {
         $unsanitized_properties = array_diff_key( $this->event->getProperties(), $properties );
 
         // santize them genericly. we will apply them back to the event later
-        $sanitized_properties = \owa_sanitize::cleanInput( $unsanitized_properties, array('remove_html' => true) );
+        $sanitized_properties = \OWA\Module\Base\Classes\Sanitize::cleanInput( $unsanitized_properties, array('remove_html' => true) );
         //owa_coreAPI::debug( print_r($sanitized_properties, true ) );
 
         // translate custom var properties
@@ -121,7 +121,7 @@ class ProcessEvent extends \owa_controller {
         
         if ( ! $this->isTrackingEvent() ) {
             
-            \owa_coreAPI::debug("Not dispatching event. This is not a valid tracking event type.");
+            \OWA\Core\CoreAPI::debug("Not dispatching event. This is not a valid tracking event type.");
             return;
         }
         
@@ -130,18 +130,18 @@ class ProcessEvent extends \owa_controller {
             //filter event
             $this->event = $this->eq->filter( 'post_processed_tracking_event', $this->event );
 
-            \owa_coreAPI::debug( 'Dispatching ' . $this->event->getEventType() . ' event with properties: ' . print_r($this->event->getProperties(), true ) );
+            \OWA\Core\CoreAPI::debug( 'Dispatching ' . $this->event->getEventType() . ' event with properties: ' . print_r($this->event->getProperties(), true ) );
             $this->eq->notify( $this->event );
 
         } else {
 
-            \owa_coreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
+            \OWA\Core\CoreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
         }
     }
     
     function isTrackingEvent() {
         
-        if ( in_array( $this->event->getEventType(), \owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+        if ( in_array( $this->event->getEventType(), \OWA\Core\CoreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
             
             return true;
         }

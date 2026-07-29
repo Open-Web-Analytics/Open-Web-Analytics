@@ -22,7 +22,7 @@ namespace OWA\Module\Base\Controller;
 
 
 
-class Updates extends \owa_controller {
+class Updates extends \OWA\Core\Controller {
     
     function action() {
         
@@ -30,7 +30,7 @@ class Updates extends \owa_controller {
                 
         $data['view_method'] = 'delegate';
         $data['view'] = 'base.updates';
-        $data['modules'] = \owa_coreAPI::getModulesNeedingUpdates();
+        $data['modules'] = \OWA\Core\CoreAPI::getModulesNeedingUpdates();
         
         return $data;
     }

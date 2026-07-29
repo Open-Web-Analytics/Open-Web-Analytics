@@ -30,7 +30,7 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-class Observer extends \owa_base {
+class Observer extends \OWA\Core\Base {
 
      /**
      * The type of event that an observer would want to hear about.
@@ -63,15 +63,15 @@ class Observer extends \owa_base {
     
     function handleEvent($action) {
     
-        $data = \owa_coreAPI::performAction($action, array('event' => $this->m));
-        return \owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
+        $data = \OWA\Core\CoreAPI::performAction($action, array('event' => $this->m));
+        return \OWA\Core\CoreAPI::debug(sprintf("Handled Event. Action: %s", $action));
 
     }
     
     function sendMail($email_address, $subject, $msg) {
 
         mail($email_address, $subject, $msg);
-        \owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
+        \OWA\Core\CoreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
         return;
     }
 

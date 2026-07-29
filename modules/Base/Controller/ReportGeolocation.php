@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportGeolocation extends \owa_reportController {
+class ReportGeolocation extends \OWA\Core\ReportController {
 
     function action() {
 

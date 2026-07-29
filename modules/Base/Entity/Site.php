@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Site extends \owa_entity {
+class Site extends \OWA\Core\Entity {
 
     private static $cachedAssignedUsers = array();
 
@@ -42,20 +42,20 @@ class Site extends \owa_entity {
         $this->setTableName('site');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['site_id'] = new \owa_dbColumn;
+        $this->properties['site_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['domain'] = new \owa_dbColumn;
+        $this->properties['domain'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['domain']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['name'] = new \owa_dbColumn;
+        $this->properties['name'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['description'] = new \owa_dbColumn;
+        $this->properties['description'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['description']->setDataType(OWA_DTD_TEXT);
-        $this->properties['site_family'] = new \owa_dbColumn;
+        $this->properties['site_family'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['settings'] = new \owa_dbColumn;
+        $this->properties['settings'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
     }
 
@@ -71,9 +71,9 @@ class Site extends \owa_entity {
     }
 
     function settingsSetFilter($value) {
-        \owa_coreAPI::debug('hello rom setFilter');
+        \OWA\Core\CoreAPI::debug('hello rom setFilter');
         $value = serialize($value);
-        \owa_coreAPI::debug($value);
+        \OWA\Core\CoreAPI::debug($value);
         return $value;
     }
 
@@ -116,13 +116,13 @@ class Site extends \owa_entity {
          if (!$this->get('id')) {
              throw new \Exception('no site data loaded!');
          }
-         $db = \owa_coreAPI::dbSingleton();
+         $db = \OWA\Core\CoreAPI::dbSingleton();
          $db->deleteFrom('owa_site_user');
          $db->where( 'site_id', $this->get('id') );
          $ret = $db->executeQuery();
 
          foreach ($userIds as $id) {
-             $relation = \owa_coreAPI::entityFactory('base.site_user');
+             $relation = \OWA\Core\CoreAPI::entityFactory('base.site_user');
             $relation->set( 'user_id', intval ($id ) );
             $relation->set( 'site_id', $this->get('id') );
             $relation->save();
@@ -157,7 +157,7 @@ class Site extends \owa_entity {
              throw new \Exception('no site data loaded!');
         }
         if (!isset(self::$cachedAssignedUsers[$this->get('id')])) {
-            $db = \owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->selectFrom( 'owa_site_user' );
             $db->selectColumn( '*' );
             $db->where( 'site_id', $this->get('id') );
@@ -165,7 +165,7 @@ class Site extends \owa_entity {
             $result = array();
             if (is_array($relations)) {
                 foreach ($relations as $row) {
-                    $userEntity = \owa_coreAPI::entityFactory('base.user');
+                    $userEntity = \OWA\Core\CoreAPI::entityFactory('base.user');
                     $userEntity->load($row['user_id']);
                     $result[] = $userEntity;
                 }

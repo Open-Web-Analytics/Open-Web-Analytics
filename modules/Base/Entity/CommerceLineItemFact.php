@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class CommerceLineItemFact extends \owa_factTable {
+class CommerceLineItemFact extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
@@ -61,7 +61,7 @@ class CommerceLineItemFact extends \owa_factTable {
         //$session_id->setForeignKey('base.session');
         //$this->setProperty($session_id);
 
-        $document_id = new \owa_dbColumn('document_id', OWA_DTD_BIGINT);
+        $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_BIGINT);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
@@ -122,26 +122,26 @@ class CommerceLineItemFact extends \owa_factTable {
         //$yyyymmdd = new \owa_dbColumn('yyyymmdd', OWA_DTD_INT);
         //$this->setProperty($yyyymmdd);
 
-        $order_id = new \owa_dbColumn('order_id', OWA_DTD_VARCHAR255);
+        $order_id = new \OWA\Module\Base\Classes\DbColumn('order_id', OWA_DTD_VARCHAR255);
         $order_id->setIndex();
         $this->setProperty($order_id);
 
-        $sku = new \owa_dbColumn('sku', OWA_DTD_VARCHAR255);
+        $sku = new \OWA\Module\Base\Classes\DbColumn('sku', OWA_DTD_VARCHAR255);
         $this->setProperty($sku);
 
-        $product_name = new \owa_dbColumn('product_name', OWA_DTD_VARCHAR255);
+        $product_name = new \OWA\Module\Base\Classes\DbColumn('product_name', OWA_DTD_VARCHAR255);
         $this->setProperty($product_name);
 
-        $category = new \owa_dbColumn('category', OWA_DTD_VARCHAR255);
+        $category = new \OWA\Module\Base\Classes\DbColumn('category', OWA_DTD_VARCHAR255);
         $this->setProperty($category);
 
-        $unit_price = new \owa_dbColumn('unit_price', OWA_DTD_BIGINT);
+        $unit_price = new \OWA\Module\Base\Classes\DbColumn('unit_price', OWA_DTD_BIGINT);
         $this->setProperty($unit_price);
 
-        $quantity = new \owa_dbColumn('quantity', OWA_DTD_INT);
+        $quantity = new \OWA\Module\Base\Classes\DbColumn('quantity', OWA_DTD_INT);
         $this->setProperty($quantity);
 
-        $item_revenue = new \owa_dbColumn('item_revenue', OWA_DTD_BIGINT);
+        $item_revenue = new \OWA\Module\Base\Classes\DbColumn('item_revenue', OWA_DTD_BIGINT);
         $this->setProperty($item_revenue);
 
     }

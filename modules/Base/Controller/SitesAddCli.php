@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.1
  */
 
-class SitesAddCli extends \owa_sitesAddController {
+class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
     
 	function errorAction() {
 	

@@ -222,7 +222,7 @@ class Lib {
 
         if (empty($months)):
 
-            $months = \owa_lib::months();
+            $months = \OWA\Core\Lib::months();
 
         endif;
 
@@ -270,16 +270,16 @@ class Lib {
 
             case "day":
                 return sprintf("%s, %d%s %s",
-                            \owa_lib::get_month_label($params['month']),
+                            \OWA\Core\Lib::get_month_label($params['month']),
                             $params['day'],
-                            \owa_lib::setDaySuffix($params['day']),
+                            \OWA\Core\Lib::setDaySuffix($params['day']),
                             $params['year']
                         );
                 break;
 
             case "month":
                 return sprintf("%s %s",
-                            \owa_lib::get_month_label($params['month']),
+                            \OWA\Core\Lib::get_month_label($params['month']),
                             $params['year']
                         );
                 break;
@@ -291,13 +291,13 @@ class Lib {
                 break;
             case "date_range":
                 return sprintf("%s, %d%s %s - %s, %d%s %s",
-                            \owa_lib::get_month_label($params['month']),
+                            \OWA\Core\Lib::get_month_label($params['month']),
                             $params['day'],
-                            \owa_lib::setDaySuffix($params['day']),
+                            \OWA\Core\Lib::setDaySuffix($params['day']),
                             $params['year'],
-                            \owa_lib::get_month_label($params['month2']),
+                            \OWA\Core\Lib::get_month_label($params['month2']),
                             $params['day2'],
-                            \owa_lib::setDaySuffix($params['day2']),
+                            \OWA\Core\Lib::setDaySuffix($params['day2']),
                             $params['year2']
                         );
                 break;
@@ -362,7 +362,7 @@ class Lib {
      */
     public static function get_period_label($period) {
 
-        $periods = \owa_lib::reporting_periods();
+        $periods = \OWA\Core\Lib::reporting_periods();
 
         return $periods[$period]['label'];
     }
@@ -419,7 +419,7 @@ class Lib {
 
     public static function inputFilter($input, $options = array() ) {
 
-        return \owa_sanitize::cleanInput( $input, $options );
+        return \OWA\Module\Base\Classes\Sanitize::cleanInput( $input, $options );
     }
 
     public static function fileInclusionFilter($str) {
@@ -514,7 +514,7 @@ class Lib {
         
         if (!isset($instance)) {
             // below missing a reference becasue the static vriable can not handle a reference
-            $instance = \owa_lib::factory($class_dir, $class_prefix, $class_name, $conf);
+            $instance = \OWA\Core\Lib::factory($class_dir, $class_prefix, $class_name, $conf);
         }
         
         return $instance;
@@ -604,7 +604,7 @@ class Lib {
      */
     public static function redirectToView($data) {
         //print_r($data);
-        $c = \owa_coreAPI::configSingleton();
+        $c = \OWA\Core\CoreAPI::configSingleton();
         $config = $c->fetch('base');
 
         $control_params = array('view_method', 'auth_status');
@@ -623,7 +623,7 @@ class Lib {
 
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
 
-        \owa_lib::redirectBrowser($new_url);
+        \OWA\Core\Lib::redirectBrowser($new_url);
     }
 
     /**
@@ -638,7 +638,7 @@ class Lib {
         if ( $string ) {
 
 
-            if ( \owa_coreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
+            if ( \OWA\Core\CoreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
                 // make 64 bit ID from partial sha1
                 return (string) (int) hexdec( substr( sha1( strtolower( $string ) ), 0, 16 ) );
             } else {
@@ -770,7 +770,7 @@ class Lib {
 
                 if (is_dir($filepath)):
                     if ($recursive === true):
-                        $files = array_merge($files, \owa_lib::listDir($filepath));
+                        $files = array_merge($files, \OWA\Core\Lib::listDir($filepath));
                     endif;
                 else:
                     array_push($files, array('name' => $file, 'path' => $filepath));
@@ -799,7 +799,7 @@ class Lib {
                 $timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
             }
 
-            return \owa_lib::makeDates($timestamps, $format);
+            return \OWA\Core\Lib::makeDates($timestamps, $format);
 
         } else {
 
@@ -943,7 +943,7 @@ class Lib {
 
     public static function utf8Encode($string) {
 
-        if ( \owa_lib::checkForUtf8( $string ) ) {
+        if ( \OWA\Core\Lib::checkForUtf8( $string ) ) {
             return $string;
         } else {
             if (function_exists('iconv')) {
@@ -1171,9 +1171,9 @@ class Lib {
     public static function generateRandomUid($seed='') {
 
         $time = (string) time();
-        $random = \owa_lib::zeroFill( mt_rand( 0, 999999 ), 6 );
+        $random = \OWA\Core\Lib::zeroFill( mt_rand( 0, 999999 ), 6 );
         if ( defined('OWA_SERVER_ID') ) {
-            $server = \owa_lib::zeroFill( OWA_SERVER_ID, 3 );
+            $server = \OWA\Core\Lib::zeroFill( OWA_SERVER_ID, 3 );
         } else {
             $server = substr( getmypid(), 0, 3);
         }

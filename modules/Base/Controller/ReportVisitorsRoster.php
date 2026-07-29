@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
  * @todo        remove
  */
 
-class ReportVisitorsRoster extends \owa_reportController {
+class ReportVisitorsRoster extends \OWA\Core\ReportController {
 
     function __construct($params) {
 
@@ -44,7 +44,7 @@ class ReportVisitorsRoster extends \owa_reportController {
     function action() {
 
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
         $db->selectFrom('owa_session', 'session');
@@ -53,7 +53,7 @@ class ReportVisitorsRoster extends \owa_reportController {
         $db->where('site_id', $this->getParam('site_id'));
 
         // make new timeperiod of a day
-        $period = \owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+        $period = \OWA\Core\CoreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
         $start = $period->getStartDate();
         $end = $period->getEndDate();
         //print_r($period);

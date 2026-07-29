@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.3.0
  */
 
-class SearchTermHandlers extends \owa_observer {
+class SearchTermHandlers extends \OWA\Core\Observer {
     
     /**
      * Notify Event Handler
@@ -46,8 +46,8 @@ class SearchTermHandlers extends \owa_observer {
 
         if ($terms) {
 
-            $st = \owa_coreAPI::entityFactory('base.search_term_dim');
-            $st_id = \owa_lib::setStringGuid($terms);
+            $st = \OWA\Core\CoreAPI::entityFactory('base.search_term_dim');
+            $st_id = \OWA\Core\Lib::setStringGuid($terms);
             $st->getByPk('id', $st_id);
             $id = $st->get('id');
 
@@ -67,7 +67,7 @@ class SearchTermHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug('Not Logging. Search term already exists.');
+                \OWA\Core\CoreAPI::debug('Not Logging. Search term already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {

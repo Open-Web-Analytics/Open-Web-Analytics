@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.0.0
  */
 
-class LatestDomstreams extends \owa_metric {
+class LatestDomstreams extends \OWA\Core\Metric {
 
     function __construct($params = null) {
 

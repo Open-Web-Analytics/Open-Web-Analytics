@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class LoginForm extends \owa_view {
+class LoginForm extends \OWA\Core\View {
 
     function __construct() {
 
@@ -43,7 +43,7 @@ class LoginForm extends \owa_view {
         $this->body->set_template('login_form.php');
         $this->body->set('headline', 'Please login using the from below');
         $this->body->set('user_id', $this->get('user_id'));
-        $this->body->set('go', \owa_sanitize::cleanUrl( $this->get('go') ) );
+        $this->body->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->get('go') ) );
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }

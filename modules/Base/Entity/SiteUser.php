@@ -31,12 +31,12 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class SiteUser extends \owa_entity {
+class SiteUser extends \OWA\Core\Entity {
 
     public function __construct() {
         $this->setTableName('site_user');
-        $this->setProperty( new \owa_dbColumn( 'site_id' , OWA_DTD_BIGINT ) );
-        $this->setProperty( new \owa_dbColumn( 'user_id' , OWA_DTD_INT ) );
+        $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'site_id' , OWA_DTD_BIGINT ) );
+        $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'user_id' , OWA_DTD_INT ) );
     }
 
 

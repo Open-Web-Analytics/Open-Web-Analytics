@@ -31,25 +31,25 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class ExitPage extends \owa_entity {
+class ExitPage extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('exit');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['url'] = new \owa_dbColumn;
+        $this->properties['url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['site_name'] = new \owa_dbColumn;
+        $this->properties['site_name'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['site'] = new \owa_dbColumn;
+        $this->properties['site'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['anchortext'] = new \owa_dbColumn;
+        $this->properties['anchortext'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['anchortext']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['page_title'] = new \owa_dbColumn;
+        $this->properties['page_title'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
 
     }

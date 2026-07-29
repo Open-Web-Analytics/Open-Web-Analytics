@@ -31,29 +31,29 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Host extends \owa_entity {
+class Host extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('host');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['ip_address'] = new \owa_dbColumn;
+        $this->properties['ip_address'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['host'] = new \owa_dbColumn;
+        $this->properties['host'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['full_host'] = new \owa_dbColumn;
+        $this->properties['full_host'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['full_host']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['city'] = new \owa_dbColumn;
+        $this->properties['city'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['country'] = new \owa_dbColumn;
+        $this->properties['country'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['country']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['latitude'] = new \owa_dbColumn;
+        $this->properties['latitude'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['latitude']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['longitude'] = new \owa_dbColumn;
+        $this->properties['longitude'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['longitude']->setDataType(OWA_DTD_VARCHAR255);
     }
 

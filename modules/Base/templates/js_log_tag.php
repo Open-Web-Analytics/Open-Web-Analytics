@@ -3,9 +3,9 @@
 <script type="text/javascript">
 //<![CDATA[
 <?php } ?>
-var owa_baseUrl = '<?php $this->out( owa_coreAPI::getSetting( 'base', 'public_url' ) ); ?>';
+var owa_baseUrl = '<?php $this->out( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ); ?>';
 var owa_cmds = owa_cmds || [];
-<?php if (owa_coreAPI::getSetting('base', 'error_handler') === 'development'){ ?>
+<?php if (\OWA\Core\CoreAPI::getSetting('base', 'error_handler') === 'development'){ ?>
 owa_cmds.push(['setDebug', true]);
 <?php }?>
 <?php if ( isset($options) && $this->getValue('apiEndpoint', $options ) ) { ?>

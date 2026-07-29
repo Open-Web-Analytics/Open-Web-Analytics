@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesProfile extends \owa_adminController {
+class SitesProfile extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -44,7 +44,7 @@ class SitesProfile extends \owa_adminController {
         // needed as this controller is
         $site_id = $this->getParam('siteId');
         if (!empty($site_id)) {
-            $site = \owa_coreAPI::entityFactory('base.site');
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
             $site->getByColumn('site_id', $site_id);
             $site_data = $site->_getProperties();
             $this->set('config', $site->get('settings') );

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\Handler;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class ClickHandlers extends \owa_observer {
+class ClickHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Handler
@@ -39,7 +39,7 @@ class ClickHandlers extends \owa_observer {
      */
     function notify($event) {
 
-        $c = \owa_coreAPI::entityFactory('base.click');
+        $c = \OWA\Core\CoreAPI::entityFactory('base.click');
 
         $c->load( $event->get( 'guid' ) );
 
@@ -48,13 +48,13 @@ class ClickHandlers extends \owa_observer {
             $c->setProperties($event->getProperties());
             $c->set('visitor_id', $event->get('visitor_id'));
             $c->set('session_id', $event->get('session_id'));
-            $c->set('ua_id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $c->set('ua_id', \OWA\Core\Lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 
             // Make document id
-            $c->set('document_id', \owa_lib::setStringGuid($event->get('page_url')));
+            $c->set('document_id', \OWA\Core\Lib::setStringGuid($event->get('page_url')));
 
             // Make Target page id
-            $c->set('target_id', \owa_lib::setStringGuid($c->get('target_url')));
+            $c->set('target_id', \OWA\Core\Lib::setStringGuid($c->get('target_url')));
 
             // Make position id used for group bys
             $c->set('position', $c->get('click_x').$c->get('click_y'));
@@ -64,7 +64,7 @@ class ClickHandlers extends \owa_observer {
             if ( $ret ) {
 
                 // Tell others that "dom.click" has been logged
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);

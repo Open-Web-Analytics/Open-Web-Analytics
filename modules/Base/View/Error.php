@@ -33,7 +33,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class Error extends \owa_view {
+class Error extends \OWA\Core\View {
 
 
     function __construct() {

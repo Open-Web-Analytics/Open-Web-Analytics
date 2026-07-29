@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesEditSettings extends \owa_adminController {
+class SitesEditSettings extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -58,7 +58,7 @@ class SitesEditSettings extends \owa_adminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $site = \owa_coreAPI::entityFactory( 'base.site' );
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site->load( $site->generateId( $site_id ) );
         $settings = $site->get( 'settings' );
 
@@ -90,7 +90,7 @@ class SitesEditSettings extends \owa_adminController {
         $this->setSubview('base.sitesProfile');
         $this->set('error_code', 3311);
         $site_id = $this->getParam( 'siteId' );
-        $site = \owa_coreAPI::entityFactory( 'base.site' );
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site->load( $site->generateId( $site_id ) );
         $this->set('site', $site->_getProperties());
         $this->set('config', $this->params);

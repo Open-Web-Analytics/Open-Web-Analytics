@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class GoalStartsAll extends \owa_metric {
+class GoalStartsAll extends \OWA\Core\Metric {
 
     function __construct() {
 

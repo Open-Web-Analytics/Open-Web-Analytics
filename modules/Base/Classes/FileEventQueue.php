@@ -35,7 +35,7 @@ use Monolog\Formatter\LineFormatter;
  * @since        owa 1.0.0
  */
 
-class FileEventQueue extends \owa_eventQueue {
+class FileEventQueue extends \OWA\Core\EventQueue {
 
     var $queue;
     var $queue_dir;
@@ -53,7 +53,7 @@ class FileEventQueue extends \owa_eventQueue {
 
         // set event file
         if ( ! isset( $map['path'] ) ) {
-            $this->queue_dir = \owa_coreAPI::getSetting('base', 'async_log_dir');
+            $this->queue_dir = \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir');
         } else {
             $this->queue_dir = $map['path'];
 
@@ -167,11 +167,11 @@ class FileEventQueue extends \owa_eventQueue {
             $ps_check = $this->isRunning($former_pid);
             //if the process is still running, exit.
             if ($ps_check) {
-                \owa_coreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
+                \OWA\Core\CoreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
                 return true;
             //if it's not running remove the lock file and proceead.
             } else {
-                \owa_coreAPI::debug(sprintf('Process %d is no longer running. Deleting old Lock file. \n', $former_pid));
+                \OWA\Core\CoreAPI::debug(sprintf('Process %d is no longer running. Deleting old Lock file. \n', $former_pid));
                 unlink ($this->lock_file);
                 return false;
             }
@@ -208,19 +208,19 @@ class FileEventQueue extends \owa_eventQueue {
 
 
     function receiveMessage() {
-        \owa_coreAPI::notice("receive event.");
+        \OWA\Core\CoreAPI::notice("receive event.");
         $qfile = $this->getNextUnprocessedQueueFile();
 
         if ( ! $this->currentProcessingFileHandle ) {
 
             if ( $qfile ) {
                 // set current processing file handle to
-                \owa_coreAPI::notice("Opening queue file $qfile to process.");
+                \OWA\Core\CoreAPI::notice("Opening queue file $qfile to process.");
 
                 $this->currentProcessingFileHandle = $this->openFile( $qfile );
             } else {
 
-                \owa_coreAPI::notice('No queue file to process.');
+                \OWA\Core\CoreAPI::notice('No queue file to process.');
                 return false;
             }
         }
@@ -232,7 +232,7 @@ class FileEventQueue extends \owa_eventQueue {
             if ( ! feof( $this->currentProcessingFileHandle ) ) {
 
                 // Parse the row
-                \owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));
+                \OWA\Core\CoreAPI::debug('returning buffer: '. print_r( $buffer, true));
                
                 $event = $this->parse_log_row( $buffer );
                 //owa_coreAPI::debug('returning event: '. print_r( $event, true));
@@ -241,11 +241,11 @@ class FileEventQueue extends \owa_eventQueue {
 
             } else {
                 // if it is the end of file then, close, archive and move onto the next file.
-                \owa_coreAPI::notice('EOF reached.');
+                \OWA\Core\CoreAPI::notice('EOF reached.');
                 $this->closeFile( $this->currentProcessingFileHandle );
                 $this->currentProcessingFileHandle = '';
 
-                if ( \owa_coreAPI::getSetting( 'base', 'archive_old_events' ) ) {
+                if ( \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' ) ) {
 
                     $this->archiveProcessedFile( $qfile );
 
@@ -254,14 +254,14 @@ class FileEventQueue extends \owa_eventQueue {
                     $this->deleteFile( $qfile );
                 }
 
-                \owa_coreAPI::notice('Moving on to next queue file.');
+                \OWA\Core\CoreAPI::notice('Moving on to next queue file.');
 
                 return $this->receiveMessage();
 
             }
 
         } else {
-            \owa_coreAPI::notice('still no queue to process.');
+            \OWA\Core\CoreAPI::notice('still no queue to process.');
             return false;
         }
     }
@@ -270,7 +270,7 @@ class FileEventQueue extends \owa_eventQueue {
 
         // get a list of all unprocesed queue files
         $qfiles = $this->getUnprocessedFileList();
-        \owa_coreAPI::notice('queue files to process: '.print_r($qfiles, true));
+        \OWA\Core\CoreAPI::notice('queue files to process: '.print_r($qfiles, true));
         // get earliest queue file based on creation time so we can process them in order
         if ( $qfiles && is_array( $qfiles ) ) {
 
@@ -278,7 +278,7 @@ class FileEventQueue extends \owa_eventQueue {
 
         } else {
 
-            return \owa_coreAPI::notice('No unprocessed queue files to process.');
+            return \OWA\Core\CoreAPI::notice('No unprocessed queue files to process.');
         }
     }
 
@@ -312,7 +312,7 @@ class FileEventQueue extends \owa_eventQueue {
                     ! $item->isDot() &&
                     $item->getMTime() < ( time() - $interval ) )
                 {
-                        \owa_coreAPI::notice('about to unlink' . $item->getRealPath());
+                        \OWA\Core\CoreAPI::notice('about to unlink' . $item->getRealPath());
                         $this->deleteFile( $item->getRealPath() );
                 }
             }
@@ -321,7 +321,7 @@ class FileEventQueue extends \owa_eventQueue {
 
     function deleteFile( $path ) {
 	    
-		\owa_coreAPI::debug('About to deleting file: ' . $path);
+		\OWA\Core\CoreAPI::debug('About to deleting file: ' . $path);
         return unlink( $path );
     }
 
@@ -331,21 +331,21 @@ class FileEventQueue extends \owa_eventQueue {
 
             // Create a new log file name
             $new_file_path = sprintf("%s-eventfile-%s.txt", $this->unprocessed_path . $this->queue_name, date( $this->date_format ) );
-            $ret = \owa_lib::moveFile( $this->event_file, $new_file_path );
+            $ret = \OWA\Core\Lib::moveFile( $this->event_file, $new_file_path );
 
             if ( $ret ) {
-                \owa_coreAPI::debug('Rotated event file.');
+                \OWA\Core\CoreAPI::debug('Rotated event file.');
             } else {
-                \owa_coreAPI::debug('Could not rotate event file.');
+                \OWA\Core\CoreAPI::debug('Could not rotate event file.');
             }
         }
     }
 
     function archiveProcessedFile( $file ) {
 		
-		\owa_coreAPI::debug('Archiving file: ' . $file);
+		\OWA\Core\CoreAPI::debug('Archiving file: ' . $file);
         $new_file_path = $this->archive_path . basename( $file );
-        $ret = \owa_lib::moveFile( $file, $new_file_path );
+        $ret = \OWA\Core\Lib::moveFile( $file, $new_file_path );
     }
 
 
@@ -365,7 +365,7 @@ class FileEventQueue extends \owa_eventQueue {
 
         // Write PID to lock file
            if (fwrite($lock_file, getmypid()) === FALSE) {
-               \owa_coreAPI::debug('Cannot write to lock file. Terminating Run.');
+               \OWA\Core\CoreAPI::debug('Cannot write to lock file. Terminating Run.');
                exit;
            }
     }

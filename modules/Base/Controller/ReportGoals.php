@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportGoals extends \owa_reportController {
+class ReportGoals extends \OWA\Core\ReportController {
 
     function action() {
 
@@ -41,7 +41,7 @@ class ReportGoals extends \owa_reportController {
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.goalCompletionsAll.formatted_value *> goals completed.');
         $this->set('trendChartMetric', 'goalCompletionsAll');
 
-        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
+        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
         $goals = $gm->getActiveGoals();
 
         if ($goals) {

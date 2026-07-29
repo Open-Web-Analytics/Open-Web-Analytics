@@ -14,7 +14,7 @@ namespace OWA\Module\Base\View;
  * View
  * 
  */
-class SiteAddAllowedUserRest extends \owa_restApiView {
+class SiteAddAllowedUserRest extends \OWA\Core\View\RestApi {
         
     function render() {
         

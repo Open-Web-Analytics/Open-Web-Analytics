@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class OptionsUpdate extends \owa_adminController {
+class OptionsUpdate extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -43,7 +43,7 @@ class OptionsUpdate extends \owa_adminController {
 
     function action() {
 
-        $c = \owa_coreAPI::configSingleton();
+        $c = \OWA\Core\CoreAPI::configSingleton();
 
         $config_values = $this->get('config');
 
@@ -57,7 +57,7 @@ class OptionsUpdate extends \owa_adminController {
 
                     if ( self::isSensitiveSettingKey( $module, $name ) ) {
 
-                        \owa_coreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
+                        \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
                         continue;
                     }
 
@@ -66,7 +66,7 @@ class OptionsUpdate extends \owa_adminController {
             }
 
             $c->save();
-            \owa_coreAPI::notice("Configuration changes saved to database.");
+            \OWA\Core\CoreAPI::notice("Configuration changes saved to database.");
             $this->setStatusCode(2500);
         }
 

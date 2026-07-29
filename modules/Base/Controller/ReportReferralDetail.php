@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class ReportReferralDetail extends \owa_reportController {
+class ReportReferralDetail extends \OWA\Core\ReportController {
 
     function action() {
 
@@ -40,7 +40,7 @@ class ReportReferralDetail extends \owa_reportController {
         $this->setSubview('base.reportDimensionDetail');
         $this->setTitle('Referral:');
 
-        $r = \owa_coreAPI::entityFactory('base.referer');
+        $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
         $r->getByColumn('url', $referral);
 
         $this->set('dimension_properties', array(

@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class LineItemQuantityFromSessionFact extends \owa_metric {
+class LineItemQuantityFromSessionFact extends \OWA\Core\Metric {
 
     function __construct() {
 

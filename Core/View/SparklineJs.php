@@ -20,7 +20,7 @@ namespace OWA\Core\View;
 /**
  * @depricated
  */
-class SparklineJs extends \owa_view {
+class SparklineJs extends \OWA\Core\View {
 
     function __construct() {
 

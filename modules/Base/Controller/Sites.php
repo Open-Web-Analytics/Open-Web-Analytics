@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class Sites extends \owa_reportController {
+class Sites extends \OWA\Core\ReportController {
     
     function __construct($params) {
 
@@ -41,7 +41,7 @@ class Sites extends \owa_reportController {
     
     function action() {
     
-        $s = \owa_coreAPI::entityFactory('base.site');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('tracked_sites', $sites);
         

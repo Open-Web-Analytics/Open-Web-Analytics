@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.4.0
  */
 
-class AdHandlers extends \owa_observer {
+class AdHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -42,7 +42,7 @@ class AdHandlers extends \owa_observer {
     function notify($event) {
 
         if ($event->get('ad')) {
-            $d = \owa_coreAPI::entityFactory('base.ad_dim');
+            $d = \OWA\Core\CoreAPI::entityFactory('base.ad_dim');
 
             $new_id = $d->generateId( trim( strtolower( (string) $event->get( 'ad' ) ) ) );
             $d->getByPk('id', $new_id);
@@ -63,11 +63,11 @@ class AdHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug('Not Persisting. Ad already exists.');
+                \OWA\Core\CoreAPI::debug('Not Persisting. Ad already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
-            \owa_coreAPI::debug('Noting to handle. No Ad properties found on event.');
+            \OWA\Core\CoreAPI::debug('Noting to handle. No Ad properties found on event.');
             return OWA_EHS_EVENT_HANDLED;
         }
 

@@ -31,11 +31,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportGoalFunnel extends \owa_reportController {
+class ReportGoalFunnel extends \OWA\Core\ReportController {
 
     function action() {
 
-        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
+        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
 
         $goal_number = $this->getParam('goalNumber');
 
@@ -62,7 +62,7 @@ class ReportGoalFunnel extends \owa_reportController {
 
             //print $required_step_constraints;
             // get total visits
-            $total_visitors_rs = \owa_coreAPI::executeApiCommand(array(
+            $total_visitors_rs = \OWA\Core\CoreAPI::executeApiCommand(array(
 	            
 	            	'request_method'	=> 'GET',
 					'module'			=> 'base',
@@ -86,7 +86,7 @@ class ReportGoalFunnel extends \owa_reportController {
             $funnel[] = array('url' => $goal['details']['goal_url'], 'name' => $goal['goal_name'], 'step_number' => $steps_count + 1);
             foreach ( $funnel as $k => $step ) {
                 $operator = '==';
-                $rs = \owa_coreAPI::executeApiCommand(array(
+                $rs = \OWA\Core\CoreAPI::executeApiCommand(array(
 	                
 	                	'request_method'	=> 'GET',
 						'module'			=> 'base',

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class ReportVisits extends \owa_reportController {
+class ReportVisits extends \OWA\Core\ReportController {
 
     function action() {
 
@@ -41,7 +41,7 @@ class ReportVisits extends \owa_reportController {
             $visitorId = $this->getParam('visitor_id');
         }
 
-        $v = \owa_coreAPI::entityFactory('base.visitor');
+        $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
         $v->load($visitorId);
 
         if ($this->getParam('date')) {
@@ -49,7 +49,7 @@ class ReportVisits extends \owa_reportController {
             $endDate = $this->getParam('date');
         }
 
-        $rs = \owa_coreAPI::executeApiCommand(array(
+        $rs = \OWA\Core\CoreAPI::executeApiCommand(array(
 
             'request_method'	=> 'GET',
             'module'			=> 'base',

@@ -30,7 +30,7 @@ namespace OWA\Core;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Install extends \owa_base{
+class Install extends \OWA\Core\Base{
 
     /**
      * Data access object
@@ -69,7 +69,7 @@ class Install extends \owa_base{
     function __construct() {
 
         parent::__construct();
-        $this->db = \owa_coreAPI::dbSingleton();
+        $this->db = \OWA\Core\CoreAPI::dbSingleton();
     }
 
     /**

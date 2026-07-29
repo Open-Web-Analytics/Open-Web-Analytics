@@ -30,7 +30,7 @@ namespace OWA\Module\Base\View;
  */
 
 
-class SitesInvocation extends \owa_view {
+class SitesInvocation extends \OWA\Core\View {
 
     function render($data) {
 
@@ -53,6 +53,6 @@ class SitesInvocation extends \owa_view {
 
         $this->body->set('site_id', $this->get('site_id'));
 
-        $this->body->set('tracking_code', \owa_coreAPI::getJsTrackerTag( $this->get('site_id') ) );
+        $this->body->set('tracking_code', \OWA\Core\CoreAPI::getJsTrackerTag( $this->get('site_id') ) );
     }
 }

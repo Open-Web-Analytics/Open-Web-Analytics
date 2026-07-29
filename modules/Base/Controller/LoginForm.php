@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class LoginForm extends \owa_controller {
+class LoginForm extends \OWA\Core\Controller {
 
     function __construct($params) {
 
@@ -39,7 +39,7 @@ class LoginForm extends \owa_controller {
 
     function action() {
 
-        $cu = \owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
 
         $this->set('go', $this->getParam('go'));
         $this->set('user_id', $cu->getUserData('user_id'));

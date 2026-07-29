@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class InstallDefaultsEntry extends \owa_installController {
+class InstallDefaultsEntry extends \OWA\Core\Controller\Install {
     
     function action() {
 

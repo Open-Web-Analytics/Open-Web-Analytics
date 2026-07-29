@@ -30,7 +30,7 @@ namespace OWA\Core;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Metric extends \owa_base {
+class Metric extends \OWA\Core\Base {
 
     /**
      * Current Time
@@ -219,7 +219,7 @@ class Metric extends \owa_base {
     */
     function setEntity($name) {
         
-        $this->entity = \owa_coreAPI::entityFactory($name);
+        $this->entity = \OWA\Core\CoreAPI::entityFactory($name);
     }
     
     function getTableName() {
@@ -248,7 +248,7 @@ class Metric extends \owa_base {
             // old style metrics populate this explicitly.
             return $this->select;
         } else {
-            $db = \owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             switch ( $this->type ) {
                 
                 case 'count':

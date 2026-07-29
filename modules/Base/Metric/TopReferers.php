@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.0.0
  */
 
-class TopReferers extends \owa_metric {
+class TopReferers extends \OWA\Core\Metric {
     
     function __construct($params = '') {
     

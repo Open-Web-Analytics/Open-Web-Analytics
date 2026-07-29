@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersAdd extends \owa_adminController {
+class UsersAdd extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -48,7 +48,7 @@ class UsersAdd extends \owa_adminController {
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'userName', array('stopOnError'	=> true));
 	    $this->addValidation('role', $this->getParam('role'), 'required', array('stopOnError'	=> true));
 	    
-	    $roles = \owa_coreAPI::getAllRoles();
+	    $roles = \OWA\Core\CoreAPI::getAllRoles();
 	    $this->addValidation('role', $this->getParam('role'), 'inArray', array('possible_values' => $roles, 'stopOnError' => true) );
 	    
         // Check for user with the same email address
@@ -74,7 +74,7 @@ class UsersAdd extends \owa_adminController {
 
     function action() {
 
-        $userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
+        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
 
 
         $user_params = array( 'user_id'         => trim($this->params['user_id']),
@@ -107,7 +107,7 @@ class UsersAdd extends \owa_adminController {
 		
         // post account creation event to event queue for
         // downstream email observers/handlers
-        $ed = \owa_coreAPI::getEventDispatch();
+        $ed = \OWA\Core\CoreAPI::getEventDispatch();
         $ed->log( $u_properties, 'base.new_user_account' );
 	}
     

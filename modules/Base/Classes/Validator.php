@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Classes;
  * @since        owa 1.0.0
  */
  
- class Validator extends \owa_base {
+ class Validator extends \OWA\Core\Base {
      
      /**
       * Flag for whether or not a validation run produces errors
@@ -90,7 +90,7 @@ namespace OWA\Module\Base\Classes;
      */
     function validationFactory($class_file, $conf = array()) {
         
-        return \owa_coreAPI::validationFactory($class_file, $conf);
+        return \OWA\Core\CoreAPI::validationFactory($class_file, $conf);
     }
     
     /**
@@ -100,11 +100,11 @@ namespace OWA\Module\Base\Classes;
     function doValidations() {
         
         foreach ($this->validations as $k) {
-            \owa_coreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
+            \OWA\Core\CoreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
             $k['obj']->validate();
             
             if ($k['obj']->hasError === true) {
-                \owa_coreAPI::debug('Validation failed.');
+                \OWA\Core\CoreAPI::debug('Validation failed.');
                 $this->hasErrors = true;
                 $this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
              
@@ -114,7 +114,7 @@ namespace OWA\Module\Base\Classes;
                 }
                 
             } else {
-	            \owa_coreAPI::debug('Validation succeeded.');
+	            \OWA\Core\CoreAPI::debug('Validation succeeded.');
             }
 			//owa_coreAPI::debug( $this->getErrorMsgs() );
         }

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class UsersNewAccount extends \owa_mailView {
+class UsersNewAccount extends \OWA\Core\View\Mail {
 
     function __construct() {
 

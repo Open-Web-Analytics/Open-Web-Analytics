@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class SitesAdd extends \owa_adminController {
+class SitesAdd extends \OWA\Core\AdminController {
 	
 	function __construct( $params ) {
 		
@@ -53,7 +53,7 @@ class SitesAdd extends \owa_adminController {
 
         $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
-        $sm = \owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
 
         $site = $sm->createNewSite( $this->getParam( 'domain' ),
                             $this->getParam( 'name' ),
@@ -63,7 +63,7 @@ class SitesAdd extends \owa_adminController {
         
         if ( $site ) {
 	        
-	    	\owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
+	    	\OWA\Core\CoreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
         }
         
         $this->set( 'site', $site->_getProperties() );

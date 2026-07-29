@@ -28,7 +28,7 @@ namespace OWA\Module\Base\View;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class CrawlDocumentCli extends \owa_cliView
+class CrawlDocumentCli extends \OWA\Core\View\Cli
 {
 
 }

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.5.0
  */
 
-class ApiError extends \owa_view {
+class ApiError extends \OWA\Core\View {
 
     function render() {
 

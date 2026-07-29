@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ProcessFirstRequest extends \owa_processEventController {
+class ProcessFirstRequest extends \OWA\Module\Base\Controller\ProcessEvent {
 
     function __construct($params) {
 
@@ -46,10 +46,10 @@ class ProcessFirstRequest extends \owa_processEventController {
 
     function action() {
 
-        $fh_state_name = \owa_coreAPI::getSetting('base', 'first_hit_param');
+        $fh_state_name = \OWA\Core\CoreAPI::getSetting('base', 'first_hit_param');
         //print_r($fh_state_name);
-        $fh = \owa_coreAPI::getStateParam($fh_state_name);
-        \owa_coreAPI::debug('cookiename: '.$fh_state_name);
+        $fh = \OWA\Core\CoreAPI::getStateParam($fh_state_name);
+        \OWA\Core\CoreAPI::debug('cookiename: '.$fh_state_name);
         //owa_coreAPI::debug(print_r($_COOKIE, true));
         if (!empty($fh)) {
 
@@ -57,7 +57,7 @@ class ProcessFirstRequest extends \owa_processEventController {
             $this->event->setEventType('base.first_page_request');
             //owa_coreAPI::debug(print_r($this->event, true));
             // Delete first_hit Cookie
-            \owa_coreAPI::clearState($fh_state_name);
+            \OWA\Core\CoreAPI::clearState($fh_state_name);
 
         }
 

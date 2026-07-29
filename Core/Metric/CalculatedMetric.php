@@ -30,7 +30,7 @@ namespace OWA\Core\Metric;
  * @since        owa 1.3.0
  */
 
-class CalculatedMetric extends \owa_metric {
+class CalculatedMetric extends \OWA\Core\Metric {
     
     var $is_calculated = true;
     var $child_metrics = array();

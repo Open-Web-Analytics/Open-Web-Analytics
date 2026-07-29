@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.4.0
  */
 
-class LocationHandlers extends \owa_observer {
+class LocationHandlers extends \OWA\Core\Observer {
         
     /**
      * Notify Event Handler
@@ -43,7 +43,7 @@ class LocationHandlers extends \owa_observer {
         
         if ( $event->get( 'location_id' ) || $event->get( 'ip_address' ) ) {
 
-            $h = \owa_coreAPI::entityFactory('base.location_dim');
+            $h = \OWA\Core\CoreAPI::entityFactory('base.location_dim');
             
             // look for location id on the event. This happens when
             // another event has already created it.
@@ -57,8 +57,8 @@ class LocationHandlers extends \owa_observer {
                 $location_id = $h->generateId($key);
             // load the geo properties from the geo service.
             } else {
-                $location = \owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                \owa_coreAPI::debug('geolocation: ' .print_r($location, true));
+                $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+                \OWA\Core\CoreAPI::debug('geolocation: ' .print_r($location, true));
                 //set properties of the session
                 $event->set('country', $location->getCountry());
                 $event->set('city', $location->getCity());
@@ -80,8 +80,8 @@ class LocationHandlers extends \owa_observer {
             
             if (!$id) {
                 
-                $location = \owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                \owa_coreAPI::debug('geolocation: ' .print_r($location, true));
+                $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+                \OWA\Core\CoreAPI::debug('geolocation: ' .print_r($location, true));
                 
                 //set properties of the session
                 $h->set('country', $event->get('country'));
@@ -101,12 +101,12 @@ class LocationHandlers extends \owa_observer {
                 
             } else {
             
-                \owa_coreAPI::debug('Not Logging. Location already exists');
+                \OWA\Core\CoreAPI::debug('Not Logging. Location already exists');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
             
-            \owa_coreAPI::notice('Not persisting location dimension. Location id or ip address missing from event.');
+            \OWA\Core\CoreAPI::notice('Not persisting location dimension. Location id or ip address missing from event.');
             
             return OWA_EHS_EVENT_HANDLED;
         }

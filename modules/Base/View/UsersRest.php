@@ -14,7 +14,7 @@ namespace OWA\Module\Base\View;
  * Sites Roster View
  * 
  */
-class UsersRest extends \owa_restApiView {
+class UsersRest extends \OWA\Core\View\RestApi {
         
     function render() {
         

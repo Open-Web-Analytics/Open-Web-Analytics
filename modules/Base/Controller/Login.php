@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
 //
 
 
-class Login extends \owa_controller {
+class Login extends \OWA\Core\Controller {
 
     public function validate()
     {
@@ -28,9 +28,9 @@ class Login extends \owa_controller {
 
     function action() {
 
-        $auth = \owa_auth::get_instance();
+        $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUser();
-        $go = \owa_sanitize::cleanUrl( $this->getParam('go') );
+        $go = \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') );
         // if authentication is successfull
         if ($status['auth_status'] == true) {
 
@@ -38,7 +38,7 @@ class Login extends \owa_controller {
                 // redirect to url if present
                 $url = urldecode(htmlspecialchars_decode( $go ) );
                 $this->e->debug("redirecting browser to...:". $url);
-                \owa_lib::redirectBrowser($url);
+                \OWA\Core\Lib::redirectBrowser($url);
 
             } else {
                 //else redirect to home page

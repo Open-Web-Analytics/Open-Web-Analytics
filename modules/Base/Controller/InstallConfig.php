@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class InstallConfig extends \owa_installController {
+class InstallConfig extends \OWA\Core\Controller\Install {
 
     function __construct($params) {
     
@@ -105,15 +105,15 @@ class InstallConfig extends \owa_installController {
             define('OWA_DB_PASSWORD', $this->getParam( 'db_password' ) );
         }
 
-        \owa_coreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
-        \owa_coreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
-        \owa_coreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
-        \owa_coreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
-        \owa_coreAPI::setSetting('base', 'db_user', OWA_DB_USER);
-        \owa_coreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_user', OWA_DB_USER);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
 
         // Check DB connection status
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->connect();
         if ($db->connection_status != true) {
             $this->set('error_msg', $this->getMsg(3012));

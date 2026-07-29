@@ -31,14 +31,14 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportCampaigns extends \owa_reportController {
+class ReportCampaigns extends \OWA\Core\ReportController {
 
     function action() {
 
         $this->setSubview('base.reportDimension');
         $this->setTitle('Campaigns');
         $metrics = 'visits,pageViews,bounces';
-        if ( \owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+        if ( \OWA\Core\CoreAPI::getSetting('base', 'enableEcommerceReporting') ) {
             $metrics .= ',transactions,transactionRevenue';
         }
 

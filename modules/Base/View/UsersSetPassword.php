@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class UsersSetPassword extends \owa_view {
+class UsersSetPassword extends \OWA\Core\View {
 
     function __construct() {
 

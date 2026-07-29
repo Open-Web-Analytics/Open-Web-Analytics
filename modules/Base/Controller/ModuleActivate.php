@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ModuleActivate extends \owa_adminController {
+class ModuleActivate extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -45,7 +45,7 @@ class ModuleActivate extends \owa_adminController {
         $module = $this->getParam('module');
 
         if ( $module ) {
-            $ret = \owa_coreAPI::installModule($module);
+            $ret = \OWA\Core\CoreAPI::installModule($module);
         }
 
         $data = array();

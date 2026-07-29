@@ -28,7 +28,7 @@ namespace OWA\Module\Base\View;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class Users extends \owa_view {
+class Users extends \OWA\Core\View {
         
     function render() {
         

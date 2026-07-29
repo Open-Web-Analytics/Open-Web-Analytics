@@ -12,7 +12,7 @@ namespace OWA\Module\Domstream\Controller;
  * View
  *
  */
-class DomstreamsRestView extends \owa_restApiView {
+class DomstreamsRestView extends \OWA\Core\View\RestApi {
 
     function render() {
 

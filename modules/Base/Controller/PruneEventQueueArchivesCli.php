@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.6.0
  */
 
-class PruneEventQueueArchivesCli extends \owa_cliController {
+class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
     function __construct($params) {
 
@@ -69,7 +69,7 @@ class PruneEventQueueArchivesCli extends \owa_cliController {
         } else {
 
             // get whatever queues are registered by modules
-            $s = \owa_coreAPI::serviceSingleton();
+            $s = \OWA\Core\CoreAPI::serviceSingleton();
             $queues = array_keys( $s->getMap('event_queues') );
         }
 
@@ -77,9 +77,9 @@ class PruneEventQueueArchivesCli extends \owa_cliController {
 
             foreach ( $queues as $queue_name ) {
 
-                \owa_coreAPI::notice( "About to prune archive of event queue: $queue_name");
+                \OWA\Core\CoreAPI::notice( "About to prune archive of event queue: $queue_name");
 
-                $q = \owa_coreAPI::getEventQueue($queue_name);
+                $q = \OWA\Core\CoreAPI::getEventQueue($queue_name);
 
                 if ( $q->connect() ) {
                     $q->pruneArchive( $interval );

@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class Admin extends \owa_view {
+class Admin extends \OWA\Core\View {
 
     var $postProcessView = true;
 

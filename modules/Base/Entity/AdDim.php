@@ -31,19 +31,19 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class AdDim extends \owa_entity {
+class AdDim extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('ad_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['name'] = new \owa_dbColumn;
+        $this->properties['name'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['type'] = new \owa_dbColumn;
+        $this->properties['type'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['type']->setDataType(OWA_DTD_VARCHAR255);
     }
 }

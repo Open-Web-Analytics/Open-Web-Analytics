@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.2.1
  */
 
-class ReportDomstreams extends \owa_reportController {
+class ReportDomstreams extends \OWA\Core\ReportController {
 
     function action() {
 
@@ -42,7 +42,7 @@ class ReportDomstreams extends \owa_reportController {
 		
         // check for limits
         if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
-            $doc = \owa_coreAPI::entityFactory('base.document');
+            $doc = \OWA\Core\CoreAPI::entityFactory('base.document');
 			
 			if ( $this->get( 'document_id' ) ) {
 				
@@ -64,7 +64,7 @@ class ReportDomstreams extends \owa_reportController {
             $this->setTitle('Latest Domstreams');
         }
 
-        $ds = \owa_coreAPI::executeApiCommand(array(
+        $ds = \OWA\Core\CoreAPI::executeApiCommand(array(
 			'module'			=> 'domstream',
 			'version'			=> 'v1',
             'do'                => 'domstreams',

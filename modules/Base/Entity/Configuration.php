@@ -31,15 +31,15 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Configuration extends \owa_entity {
+class Configuration extends \OWA\Core\Entity {
 
     function __construct() {
 
         $this->setTableName('configuration');
-        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['settings'] = new \owa_dbColumn;
+        $this->properties['settings'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
         $this->setCachable();
     }

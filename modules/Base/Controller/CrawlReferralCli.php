@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class CrawlReferralCli extends \owa_cliController
+class CrawlReferralCli extends \OWA\Core\Controller\Cli
 {
     /**
      * owa_crawlReferralCliController constructor.
@@ -56,7 +56,7 @@ class CrawlReferralCli extends \owa_cliController
             $this->updateAllReferrer();
         }
 
-        \owa_coreAPI::notice( "Referer updated successfully." );
+        \OWA\Core\CoreAPI::notice( "Referer updated successfully." );
     }
 
     public function errorAction()
@@ -67,13 +67,13 @@ class CrawlReferralCli extends \owa_cliController
 
     public function updateReferrer($id)
     {
-        $r = \owa_coreAPI::entityFactory('base.referer');
+        $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
         $r->load($id);
         $r->crawlReferer();
         
         if ( $r->isDirty() ) {
-	        \owa_coreAPI::debug('dirty columns:');
-	        \owa_coreAPI::debug( $r->dirty );
+	        \OWA\Core\CoreAPI::debug('dirty columns:');
+	        \OWA\Core\CoreAPI::debug( $r->dirty );
         	$r->save();
 		}
     }
@@ -83,9 +83,9 @@ class CrawlReferralCli extends \owa_cliController
         /**
          * @var \owa_entity $l
          */
-        $ref = \owa_coreAPI::entityFactory('base.referer');
+        $ref = \OWA\Core\CoreAPI::entityFactory('base.referer');
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom($ref->getTableName());
         $db->selectColumn('id');
         $db->where('url', '(none)', '!=');
@@ -94,7 +94,7 @@ class CrawlReferralCli extends \owa_cliController
         $referrals = $db->getAllRows();
 
         if (!$referrals) {
-            \owa_coreAPI::notice( "No referrer found." );
+            \OWA\Core\CoreAPI::notice( "No referrer found." );
             return;
         }
 

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.0.0
  */
 
-class Install extends \owa_view {
+class Install extends \OWA\Core\View {
 
     function __construct() {
 

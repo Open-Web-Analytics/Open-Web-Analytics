@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class OptionsReset extends \owa_adminController {
+class OptionsReset extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -41,7 +41,7 @@ class OptionsReset extends \owa_adminController {
 
     function action() {
 
-        $config = \owa_coreAPI::configSingleton();
+        $config = \OWA\Core\CoreAPI::configSingleton();
 
         $ret = $config->reset($this->get('module'));
 

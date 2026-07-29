@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class GoalNCompletions extends \owa_metric {
+class GoalNCompletions extends \OWA\Core\Metric {
 
     function __construct( $params ) {
         
@@ -45,10 +45,10 @@ class GoalNCompletions extends \owa_metric {
         $name = 'goal'.$goal_number.'Completions';
         $this->setName( $name );
         
-        $siteId = \owa_coreAPI::getRequestParam('siteId');
+        $siteId = \OWA\Core\CoreAPI::getRequestParam('siteId');
         
         if ( $siteId ) {
-            $gm = \owa_coreAPI::getGoalManager( $siteId );
+            $gm = \OWA\Core\CoreAPI::getGoalManager( $siteId );
             $goal = $gm->getGoal($goal_number);
             $this->setLabel( sprintf('G%d: %s', $goal_number,$goal['goal_name'] ) );
         } else {

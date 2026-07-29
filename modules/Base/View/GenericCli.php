@@ -3,7 +3,7 @@ namespace OWA\Module\Base\View;
 
 		
 	
-class GenericCli extends \owa_cliView {
+class GenericCli extends \OWA\Core\View\Cli {
 	
 
 }	

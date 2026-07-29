@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class Cli extends \owa_view {
+class Cli extends \OWA\Core\View {
 
     function __construct( $params ) {
 	   	

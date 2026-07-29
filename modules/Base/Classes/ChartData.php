@@ -43,7 +43,7 @@ class ChartData {
 
     function owa_chartData() {
 
-        return \owa_chartData::__construct();
+        return \OWA\Module\Base\Classes\ChartData::__construct();
     }
 
     function setSeries($name, $data, $label = '') {

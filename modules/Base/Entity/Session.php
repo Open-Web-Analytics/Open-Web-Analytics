@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Session extends \owa_factTable {
+class Session extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
@@ -488,7 +488,7 @@ class Session extends \owa_factTable {
         // Add goal properties
 
         // determine number of goals from settings
-        $gcount = \owa_coreAPI::getSetting('base', 'numGoals');
+        $gcount = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
 
         for ( $num = 1; $num <= $gcount; $num++ ) {
 

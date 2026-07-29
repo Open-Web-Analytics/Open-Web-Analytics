@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class FeedRequestHandlers extends \owa_observer {
+class FeedRequestHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -42,7 +42,7 @@ class FeedRequestHandlers extends \owa_observer {
     function notify( $event ) {
 
         // Make entity
-        $f = \owa_coreAPI::entityFactory('base.feed_request');
+        $f = \OWA\Core\CoreAPI::entityFactory('base.feed_request');
 
         $f->load( $event->get('guid') );
 
@@ -61,16 +61,16 @@ class FeedRequestHandlers extends \owa_observer {
             $f->set( 'id', $event->get('guid') );
 
             // Make ua id
-            $f->set('ua_id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $f->set('ua_id', \OWA\Core\Lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 
             // Make OS id
-            $f->set('os_id', \owa_lib::setStringGuid($event->get('os')));
+            $f->set('os_id', \OWA\Core\Lib::setStringGuid($event->get('os')));
 
             // Make document id
-            $f->set('document_id', \owa_lib::setStringGuid($event->get('page_url')));
+            $f->set('document_id', \OWA\Core\Lib::setStringGuid($event->get('page_url')));
 
             // Generate Host id
-            $f->set('host_id', \owa_lib::setStringGuid($event->get('host')));
+            $f->set('host_id', \OWA\Core\Lib::setStringGuid($event->get('host')));
 
             $f->set('subscription_id', $event->get( 'feed_subscription_id' ) );
             // Persist to database
@@ -78,7 +78,7 @@ class FeedRequestHandlers extends \owa_observer {
 
             if ( $ret ) {
 
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
 
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
 
@@ -94,7 +94,7 @@ class FeedRequestHandlers extends \owa_observer {
             }
         } else {
 
-            \owa_coreAPI::debug('Not persisting. Feed request already exists.');
+            \OWA\Core\CoreAPI::debug('Not persisting. Feed request already exists.');
 
             return OWA_EHS_EVENT_HANDLED;
 

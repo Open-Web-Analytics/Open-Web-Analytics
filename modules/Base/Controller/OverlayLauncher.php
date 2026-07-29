@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class OverlayLauncher extends \owa_controller {
+class OverlayLauncher extends \OWA\Core\Controller {
 
     function action() {
 
@@ -46,7 +46,7 @@ class OverlayLauncher extends \owa_controller {
 	        $id = $this->get('document_id');
 	        
                 
-	        $d = \owa_coreAPI::entityFactory( $entity );
+	        $d = \OWA\Core\CoreAPI::entityFactory( $entity );
 			$d->load( $id );
 	
 	        $url = trim( (string) $d->get( $url_param ) );

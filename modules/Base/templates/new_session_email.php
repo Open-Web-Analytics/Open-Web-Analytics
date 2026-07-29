@@ -18,4 +18,4 @@
 
 
 <hr>
-<p>This visit notification e-mail was sent to you from your instance of Open Web Analytics running at <?php echo owa_coreAPI::getSetting('base', 'public_url'); ?>. To disable these notifications change your configuration settings.</p>
+<p>This visit notification e-mail was sent to you from your instance of Open Web Analytics running at <?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url'); ?>. To disable these notifications change your configuration settings.</p>

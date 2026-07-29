@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class ReportBrowsers extends \owa_reportController {
+class ReportBrowsers extends \OWA\Core\ReportController {
 
     function action() {
 

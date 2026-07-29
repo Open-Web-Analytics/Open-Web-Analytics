@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.3.0
  */
 
-class BounceRate extends \owa_calculatedMetric {
+class BounceRate extends \OWA\Core\Metric\CalculatedMetric {
 
     function __construct() {
 

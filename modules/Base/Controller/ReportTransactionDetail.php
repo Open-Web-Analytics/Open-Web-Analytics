@@ -31,13 +31,13 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportTransactionDetail extends \owa_reportController {
+class ReportTransactionDetail extends \OWA\Core\ReportController {
 
     function action() {
 
         $transactionId = $this->getParam('transactionId');
 
-        $trans_detail = \owa_coreAPI::executeAPICommand(array(
+        $trans_detail = \OWA\Core\CoreAPI::executeAPICommand(array(
 	        
 	        	'request_method' 	=> 'GET',
 	        	'module'			=> 'base',

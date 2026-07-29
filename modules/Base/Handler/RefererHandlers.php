@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class RefererHandlers extends \owa_observer {
+class RefererHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -47,7 +47,7 @@ class RefererHandlers extends \owa_observer {
         }
 
         // Make entity
-        $r = \owa_coreAPI::entityFactory('base.referer');
+        $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
 
         $r->load( $event->get( 'referer_id' ) );
         
@@ -61,7 +61,7 @@ class RefererHandlers extends \owa_observer {
             $r->set('url', $event->get('session_referer'));
 
             // Set site
-            $url = \owa_lib::parse_url( $event->get( 'session_referer' ) );
+            $url = \OWA\Core\Lib::parse_url( $event->get( 'session_referer' ) );
 
             $r->set( 'site', $url['host'] );
 
@@ -93,7 +93,7 @@ class RefererHandlers extends \owa_observer {
 	        // check and update medium if it's new
 	        // @todo make this check for a "allow_slowly_changing_dimensions" setting flag
 	        
-	        if ( \owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') ) {
+	        if ( \OWA\Core\CoreAPI::getSetting('base', 'allow_slowly_changing_dimensions') ) {
 		        
 		        if ( $medium != $r->get( 'medium' ) ) {
 			        
@@ -106,11 +106,11 @@ class RefererHandlers extends \owa_observer {
 		            
 			        $r->save();
 			        
-			        \owa_coreAPI::debug("Updating Referrer medium to be: $medium");
+			        \OWA\Core\CoreAPI::debug("Updating Referrer medium to be: $medium");
 		        }
 			}
 			
-            \owa_coreAPI::debug('Not Persisting. Referrer already exists.');
+            \OWA\Core\CoreAPI::debug('Not Persisting. Referrer already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

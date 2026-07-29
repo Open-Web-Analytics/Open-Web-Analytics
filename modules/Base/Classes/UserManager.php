@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Classes;
  * @since        owa 1.0.0
  */
 
-class UserManager extends \owa_base {
+class UserManager extends \OWA\Core\Base {
     /**
      * owa_userManager constructor.
      */
@@ -50,7 +50,7 @@ class UserManager extends \owa_base {
         }
 
         // save new user to db
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $ret = $u->createNewUser(
                 $user_params['user_id'],
                 $user_params['role'],
@@ -69,10 +69,10 @@ class UserManager extends \owa_base {
 
     public function updateUserPassword($user_params)
     {
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
 
         if (!isset($user_params['temp_passkey']) && !isset($user_params['user_id'])) {
-            \owa_coreAPI::error( "No user identification given!" );
+            \OWA\Core\CoreAPI::error( "No user identification given!" );
             return false;
         }
 
@@ -85,7 +85,7 @@ class UserManager extends \owa_base {
         }
 
         $u->set('temp_passkey', $u->generateTempPasskey($user_params['user_id']));
-        $u->set('password', \owa_lib::encryptPassword($user_params['password']));
+        $u->set('password', \OWA\Core\Lib::encryptPassword($user_params['password']));
         $ret = $u->update();
 
         return $ret ? $u : false;
@@ -94,7 +94,7 @@ class UserManager extends \owa_base {
 
     public function deleteUser($user_id) {
 
-        $u = \owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
 
         $ret = $u->delete($user_id, 'user_id');
 

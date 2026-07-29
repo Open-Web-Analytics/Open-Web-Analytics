@@ -30,7 +30,7 @@ namespace OWA\Core\Validation;
  * @since        owa 1.0.0
  */
  
- class UserName extends \owa_validation {
+ class UserName extends \OWA\Core\Validation\Validation {
 
      function validate() {
 
@@ -42,7 +42,7 @@ namespace OWA\Core\Validation;
 
          $u = $this->getValues();
 
-         $illegals = \owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+         $illegals = \OWA\Core\CoreAPI::getSetting('base', 'user_id_illegal_chars');
 
          foreach ( $illegals as $k => $char ) {
 

@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ProcessRequest extends \owa_processEventController {
+class ProcessRequest extends \OWA\Module\Base\Controller\ProcessEvent {
 
     function __construct($params) {
 
@@ -46,7 +46,7 @@ class ProcessRequest extends \owa_processEventController {
 
     function post() {
 
-        \owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
+        \OWA\Core\CoreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
 
         return $this->addToEventQueue();
     }

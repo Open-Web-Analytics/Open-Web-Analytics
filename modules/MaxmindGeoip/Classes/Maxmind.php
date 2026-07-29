@@ -39,7 +39,7 @@ if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
  * @version        $Revision$
  * @since        owa 1.4.0
  */
-class Maxmind extends \owa_location {
+class Maxmind extends \OWA\Core\Location {
 
     /**
      * URL template for REST based web service
@@ -71,7 +71,7 @@ class Maxmind extends \owa_location {
             $this->db_file_present = true;
         } else {
 
-            \owa_coreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
+            \OWA\Core\CoreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
         }
 
         return $this->db_file_present;
@@ -110,8 +110,8 @@ class Maxmind extends \owa_location {
 
     function getLocationFromWebService($location_map) {
 
-        $license_key = \owa_coreAPI::getSetting('maxmind_geoip', 'ws_license_key');
-        $user_name = \owa_coreAPI::getSetting('maxmind_geoip', 'ws_user_name');
+        $license_key = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_license_key');
+        $user_name = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_user_name');
 
         if ( ! array_key_exists( 'ip_address', $location_map ) ) {
             return $location_map;

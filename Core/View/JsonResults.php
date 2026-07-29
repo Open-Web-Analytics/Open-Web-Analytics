@@ -17,7 +17,7 @@ namespace OWA\Core\View;
 // $Id$
 //
 
-class JsonResults extends \owa_view {
+class JsonResults extends \OWA\Core\View {
 
     function render() {
 

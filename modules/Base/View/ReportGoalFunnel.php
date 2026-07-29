@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class ReportGoalFunnel extends \owa_view {
+class ReportGoalFunnel extends \OWA\Core\View {
 
     function render() {
 
@@ -37,7 +37,7 @@ class ReportGoalFunnel extends \owa_view {
         $this->body->set('funnel', $this->get('funnel'));
         $this->body->set('funnel_json', json_encode($this->get('funnel')));
         $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
-        $this->body->set('numGoals', \owa_coreAPI::getSetting('base', 'numGoals') );
+        $this->body->set('numGoals', \OWA\Core\CoreAPI::getSetting('base', 'numGoals') );
         $this->body->set('goal_number',  $this->get('goal_number') );
     }
 }

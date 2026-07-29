@@ -30,11 +30,11 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class FlushCacheCli extends \owa_cliController {
+class FlushCacheCli extends \OWA\Core\Controller\Cli {
 
     function action() {
 
-        $cache = \owa_coreAPI::cacheSingleton();
+        $cache = \OWA\Core\CoreAPI::cacheSingleton();
         $cache->flush();
 
         $this->e->notice("Cache Flushed");

@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class LineItemRevenue extends \owa_metric {
+class LineItemRevenue extends \OWA\Core\Metric {
 
     function __construct() {
 

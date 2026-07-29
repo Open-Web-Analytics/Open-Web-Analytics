@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.3.0
  */
 
-class OsHandlers extends \owa_observer {
+class OsHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -43,15 +43,15 @@ class OsHandlers extends \owa_observer {
 
         if ( $event->get( 'os' ) ) {
 
-            $os = \owa_coreAPI::entityFactory( 'base.os' );
+            $os = \OWA\Core\CoreAPI::entityFactory( 'base.os' );
 
-            $os->getByColumn( 'id', \owa_lib::setStringGuid( $event->get( 'os' ) ) );
+            $os->getByColumn( 'id', \OWA\Core\Lib::setStringGuid( $event->get( 'os' ) ) );
 
             if ( ! $os->get( 'id' ) ) {
 
                 $os->set( 'name', $event->get( 'os' ) );
 
-                $os->set( 'id', \owa_lib::setStringGuid( $event->get( 'os' ) ) );
+                $os->set( 'id', \OWA\Core\Lib::setStringGuid( $event->get( 'os' ) ) );
 
                 $ret = $os->create();
 
@@ -66,14 +66,14 @@ class OsHandlers extends \owa_observer {
 
             } else {
 
-                \owa_coreAPI::debug('Not persisting. Operating system already exists.');
+                \OWA\Core\CoreAPI::debug('Not persisting. Operating system already exists.');
 
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            \owa_coreAPI::debug('Not persisting. Operating system not present.');
+            \OWA\Core\CoreAPI::debug('Not persisting. Operating system not present.');
 
             return OWA_EHS_EVENT_HANDLED;
         }

@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class RevenuePerVisit extends \owa_calculatedMetric {
+class RevenuePerVisit extends \OWA\Core\Metric\CalculatedMetric {
 
     function __construct() {
     

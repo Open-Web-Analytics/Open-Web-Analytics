@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.4.0
  */
 
-class GoalConversionRateAll extends \owa_calculatedMetric {
+class GoalConversionRateAll extends \OWA\Core\Metric\CalculatedMetric {
 
     function __construct() {
 

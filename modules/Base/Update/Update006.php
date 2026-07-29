@@ -31,14 +31,14 @@ namespace OWA\Module\Base\Update;
  */
 
 
-class Update006 extends \owa_update {
+class Update006 extends \OWA\Core\Update {
 
     var $schema_version = 6;
     var $is_cli_mode_required = true;
 
     function up() {
 
-        $session = \owa_coreAPI::entityFactory('base.session');
+        $session = \OWA\Core\CoreAPI::entityFactory('base.session');
         $session_columns = array(
                 'num_goals',
                 'num_goal_starts',
@@ -58,7 +58,7 @@ class Update006 extends \owa_update {
                 'commerce_tax_revenue');
 
         // create goal related columns
-        $goals = \owa_coreAPI::getSetting('base', 'numGoals');
+        $goals = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
 
         for ($i=1; $i <= $goals; $i++ ) {
             $session_columns[] = 'goal_'.$i;
@@ -82,7 +82,7 @@ class Update006 extends \owa_update {
             return false;
         }
 
-        $request = \owa_coreAPI::entityFactory('base.request');
+        $request = \OWA\Core\CoreAPI::entityFactory('base.request');
         $request_columns = array(
                 'location_id',
                 'language');
@@ -98,7 +98,7 @@ class Update006 extends \owa_update {
             }
         }
 
-        $domstream = \owa_coreAPI::entityFactory('base.domstream');
+        $domstream = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $ret = $domstream->addColumn('domstream_guid');
 
         if ( $ret === true ) {
@@ -108,10 +108,10 @@ class Update006 extends \owa_update {
             return false;
         }
 
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $ret = $db->query("update owa_domstream set domstream_guid = id");
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $ret = $site->addColumn('settings');
 
         if ( $ret === true ) {
@@ -153,7 +153,7 @@ class Update006 extends \owa_update {
             return false;
         }
 
-        $click = \owa_coreAPI::entityFactory('base.click');
+        $click = \OWA\Core\CoreAPI::entityFactory('base.click');
         $ret = $click->addColumn('dom_element_class');
 
         if ( $ret === true ) {
@@ -184,7 +184,7 @@ class Update006 extends \owa_update {
                 'base.queue_item');
 
         foreach ($new_entities as $entity_name) {
-            $entity = \owa_coreAPI::entityFactory($entity_name);
+            $entity = \OWA\Core\CoreAPI::entityFactory($entity_name);
             $ret = $entity->createTable();
 
             if ($ret === true) {
@@ -201,7 +201,7 @@ class Update006 extends \owa_update {
 
     function down() {
 
-        $session = \owa_coreAPI::entityFactory('base.session');
+        $session = \OWA\Core\CoreAPI::entityFactory('base.session');
         // owa_session columns to drop
         $session_columns = array(
                 'num_goals',
@@ -222,7 +222,7 @@ class Update006 extends \owa_update {
                 'commerce_tax_revenue');
 
         // add in goal related columns
-        $goals = \owa_coreAPI::getSetting('base', 'numGoals');
+        $goals = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
         for ($i=1; $i <= $goals; $i++ ) {
             $session_columns[] = 'goal_'.$i;
             $session_columns[] = 'goal_'.$i.'_start';
@@ -236,7 +236,7 @@ class Update006 extends \owa_update {
         $session->renameColumn('medium', 'source', true);
 
         //drop request columns
-        $request = \owa_coreAPI::entityFactory('base.request');
+        $request = \OWA\Core\CoreAPI::entityFactory('base.request');
         $request_columns = array(
                 'location_id',
                 'language');
@@ -246,19 +246,19 @@ class Update006 extends \owa_update {
             $ret = $request->dropColumn( $request_col_name );
         }
 
-        $domstream = \owa_coreAPI::entityFactory('base.domstream');
+        $domstream = \OWA\Core\CoreAPI::entityFactory('base.domstream');
         $domstream->dropColumn('domstream_guid');
 
-        $site = \owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->dropColumn('settings');
         //$site->modifyColumn('id');
-        $db = \owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query('ALTER TABLE owa_site MODIFY id SERIAL');
         $db->query('UPDATE owa_site SET id = id_1_3');
         $ret = $db->query('ALTER TABLE owa_site MODIFY id INT');
         $db->query('ALTER TABLE owa_site DROP id_1_3');
 
-        $click = \owa_coreAPI::entityFactory('base.click');
+        $click = \OWA\Core\CoreAPI::entityFactory('base.click');
         $click->dropColumn('dom_element_class');
         $click->dropColumn('dom_element_parent_id');
 
@@ -273,7 +273,7 @@ class Update006 extends \owa_update {
                 'base.queue_item');
 
         foreach ($new_entities as $entity_name) {
-            $entity = \owa_coreAPI::entityFactory($entity_name);
+            $entity = \OWA\Core\CoreAPI::entityFactory($entity_name);
             $ret = $entity->dropTable();
         }
 

@@ -17,7 +17,7 @@ namespace OWA\Module\Base\View;
 // $Id$
 //
 
-class InstallFinish extends \owa_view {
+class InstallFinish extends \OWA\Core\View {
 
     function render($data) {
 

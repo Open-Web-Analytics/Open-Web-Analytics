@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class RequestHandlers extends \owa_observer {
+class RequestHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Handler
@@ -41,7 +41,7 @@ class RequestHandlers extends \owa_observer {
      */
     function notify($event) {
     
-        $r = \owa_coreAPI::entityFactory('base.request');
+        $r = \OWA\Core\CoreAPI::entityFactory('base.request');
 
         $r->load( $event->get('guid') );
 
@@ -53,7 +53,7 @@ class RequestHandlers extends \owa_observer {
             $r->set('id', $event->get('guid'));
 
             // Make prior document id
-            $r->set('prior_document_id', \owa_lib::setStringGuid($event->get('prior_page')));
+            $r->set('prior_document_id', \OWA\Core\Lib::setStringGuid($event->get('prior_page')));
 
             // Generate Host id
             $r->set('num_prior_sessions', $event->get('num_prior_sessions'));
@@ -62,7 +62,7 @@ class RequestHandlers extends \owa_observer {
 
             if ($result == true) {
 
-                $eq = \owa_coreAPI::getEventDispatch();
+                $eq = \OWA\Core\CoreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);
@@ -71,7 +71,7 @@ class RequestHandlers extends \owa_observer {
                 return OWA_EHS_EVENT_FAILED;
             }
         } else {
-            \owa_coreAPI::debug('Not persisting. Request already exists.');
+            \OWA\Core\CoreAPI::debug('Not persisting. Request already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

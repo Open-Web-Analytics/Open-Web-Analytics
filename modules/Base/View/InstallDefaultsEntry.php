@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.2.1
  */
 
-class InstallDefaultsEntry extends \owa_view {
+class InstallDefaultsEntry extends \OWA\Core\View {
 
     function render($data) {
 

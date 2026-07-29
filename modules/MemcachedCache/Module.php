@@ -17,7 +17,7 @@ namespace OWA\Module\MemcachedCache;
 
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     function __construct() {
 

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.0.0
  */
 
-class ClickBrowserTypes extends \owa_metric {
+class ClickBrowserTypes extends \OWA\Core\Metric {
     
     function __construct($params = null) {
     

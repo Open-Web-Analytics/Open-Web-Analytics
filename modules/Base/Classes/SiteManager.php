@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Classes;
  * @since        owa 1.4.1
  */
 
-class SiteManager extends \owa_base {
+class SiteManager extends \OWA\Core\Base {
 
     function __construct() {
 
@@ -42,7 +42,7 @@ class SiteManager extends \owa_base {
     function createNewSite( $domain, $name = '', $description = '', $site_family = '' ) {
 
         $site_id = md5( $domain );
-        $site = \owa_coreAPI::entityFactory( 'base.site' );
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $id = $site->generateId( $site_id );
         $site->load( $id );
 
@@ -66,7 +66,7 @@ class SiteManager extends \owa_base {
 
         } else {
 
-            \owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
+            \OWA\Core\CoreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
         }
     }
 }

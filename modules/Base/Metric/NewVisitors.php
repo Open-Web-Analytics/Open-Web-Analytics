@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.3.0
  */
 
-class NewVisitors extends \owa_metric {
+class NewVisitors extends \OWA\Core\Metric {
 
     function __construct() {
 

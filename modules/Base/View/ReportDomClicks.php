@@ -29,7 +29,7 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class ReportDomClicks extends \owa_view {
+class ReportDomClicks extends \OWA\Core\View {
         
     function render() {
         

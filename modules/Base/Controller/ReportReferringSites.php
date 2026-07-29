@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class ReportReferringSites extends \owa_reportController {
+class ReportReferringSites extends \OWA\Core\ReportController {
 
     function action() {
 

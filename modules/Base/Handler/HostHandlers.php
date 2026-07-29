@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class HostHandlers extends \owa_observer {
+class HostHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler
@@ -43,12 +43,12 @@ class HostHandlers extends \owa_observer {
 
         if ( ! $event->get( 'host_id' ) ) {
 
-            \owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
+            \OWA\Core\CoreAPI::notice('Not persisting host dimension. Host id missing from event.');
 
             return OWA_EHS_EVENT_HANDLED;
         }
 
-        $h = \owa_coreAPI::entityFactory('base.host');
+        $h = \OWA\Core\CoreAPI::entityFactory('base.host');
 
         $h->getByPk( 'id', $event->get( 'host_id' ) );
 
@@ -68,7 +68,7 @@ class HostHandlers extends \owa_observer {
 
         } else {
 
-            \owa_coreAPI::debug('Not Persisting. Host already exists.');
+            \OWA\Core\CoreAPI::debug('Not Persisting. Host already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

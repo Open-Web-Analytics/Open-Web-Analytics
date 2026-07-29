@@ -30,12 +30,12 @@ namespace OWA\Core\Validation;
  * @since        owa 1.0.0
  */
  
-class IsNotCurrentUser extends \owa_validation {
+class IsNotCurrentUser extends \OWA\Core\Validation\Validation {
      
      function validate() {
          
          $value = $this->getValues();
-         $cu = \owa_coreAPI::getCurrentUser();
+         $cu = \OWA\Core\CoreAPI::getCurrentUser();
          $user_id = $cu->getUserData( 'user_id' );
          
 		 if ( $user_id === $value ) {

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Handler;
  * @since        owa 1.0.0
  */
 
-class UserHandlers extends \owa_observer {
+class UserHandlers extends \OWA\Core\Observer {
 
     /**
      * Notify Event Handler

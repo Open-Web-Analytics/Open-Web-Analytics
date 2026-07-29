@@ -102,7 +102,7 @@ class Http {
 	    
 	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
 		   
-		    \owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
+		    \OWA\Core\CoreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
 		    
 		    return $matches;
 		}
@@ -125,7 +125,7 @@ class Http {
 		        //strip any HTML tags (i.e. img, span, etc)
 		        if ( $match[3] ) {
 			        
-		        	$match[3] = trim( \owa_sanitize::stripAllTags( $match[3] ) );
+		        	$match[3] = trim( \OWA\Module\Base\Classes\Sanitize::stripAllTags( $match[3] ) );
 		        }
 		        
 		        // if anything is left as anchortext then use that
@@ -133,9 +133,9 @@ class Http {
 					
 					$anchortext = $match[3];
 	        		
-					\owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+					\OWA\Core\CoreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
 					
-					return \owa_lib::inputFilter( $anchortext );
+					return \OWA\Core\Lib::inputFilter( $anchortext );
 				}
 			}
 		}
@@ -151,9 +151,9 @@ class Http {
             $title = $matches[1];
         }
 
-        \owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
+        \OWA\Core\CoreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return \owa_lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
+        return \OWA\Core\Lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
     }
 
     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
@@ -174,7 +174,7 @@ class Http {
 		
 		$this->response = '';
 		
-		\owa_coreAPI::debug("GET: $url");
+		\OWA\Core\CoreAPI::debug("GET: $url");
 		
         try {
 	        
@@ -190,11 +190,11 @@ class Http {
 				],
 		        'headers' => [
 			        
-					'User-Agent' => \owa_coreAPI::getSetting('base', 'owa_user_agent')
+					'User-Agent' => \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent')
 				]
 	        ]);
 	        
-	        \owa_coreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
+	        \OWA\Core\CoreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
         }
         
         catch( \GuzzleHttp\Exception\RequestException | \GuzzleHttp\Exception\ConnectException | \GuzzleHttp\Exception\ClientException $e ) {
@@ -207,8 +207,8 @@ class Http {
 			  	$res = $e->getResponse();
 		  	}
 		  	
-		  	\owa_coreAPI::debug( print_r($r, true ) );
-			\owa_coreAPI::debug( print_r($res, true ) );
+		  	\OWA\Core\CoreAPI::debug( print_r($r, true ) );
+			\OWA\Core\CoreAPI::debug( print_r($res, true ) );
 	    }
 	    
 

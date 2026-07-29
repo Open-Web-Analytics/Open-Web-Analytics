@@ -24,7 +24,7 @@ namespace OWA\Module\Base\Controller;
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
-class ResetSecretsCli extends \owa_cliController {
+class ResetSecretsCli extends \OWA\Core\Controller\Cli {
     /**
      *  constructor.
      * @param $params
@@ -81,7 +81,7 @@ class ResetSecretsCli extends \owa_cliController {
 		        	
 		        	if ( $test === substr( $secret, 0, 12 ) ) {
 			        	// write new line
-			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \owa_coreAPI::secureRandomString(64) ) );	
+			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \OWA\Core\CoreAPI::secureRandomString(64) ) );	
 	                    
 	                    $replaced = true;
 	                    $mod = true;
@@ -107,7 +107,7 @@ class ResetSecretsCli extends \owa_cliController {
 			if ( $mod ) {
 				
 			  rename( $temp_file, $config_file );
-			  \owa_coreAPI::notice( "Secrets updated successfully." );
+			  \OWA\Core\CoreAPI::notice( "Secrets updated successfully." );
 			
 			} else {
 				// else blow away any tmp file created.
@@ -117,7 +117,7 @@ class ResetSecretsCli extends \owa_cliController {
 	        
 	    } else {
 		    
-		    \owa_coreAPI::debug( "Config file doesn't exist." );
+		    \OWA\Core\CoreAPI::debug( "Config file doesn't exist." );
 	    }
     }
 

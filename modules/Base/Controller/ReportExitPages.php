@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.3.0
  */
 
-class ReportExitPages extends \owa_reportController {
+class ReportExitPages extends \OWA\Core\ReportController {
 
     function action() {
 

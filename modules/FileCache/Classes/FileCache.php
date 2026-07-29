@@ -31,7 +31,7 @@ namespace OWA\Module\FileCache\Classes;
  * @since        owa 1.4.0
  */
 
-class FileCache extends \owa_cacheType {
+class FileCache extends \OWA\Core\CacheType {
 
     var $cache_dir;
     var $lock_file_name = 'cache.lock';
@@ -69,21 +69,21 @@ class FileCache extends \owa_cacheType {
     function get( $collection, $id ) {
 
         $cache_file = $this->makeCollectionDirPath($collection).$id.'.php';
-        \owa_coreAPI::debug("check cache file: ".$cache_file);
+        \OWA\Core\CoreAPI::debug("check cache file: ".$cache_file);
 
         // if no cache file then return false
         if (!file_exists($cache_file)) {
-            \owa_coreAPI::debug(sprintf('Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
+            \OWA\Core\CoreAPI::debug(sprintf('Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
             return false;
 
         // cache object has expired
         } elseif ((filectime($cache_file) + $this->getCollectionExpirationPeriod($collection)) < time()) {
-            \owa_coreAPI::debug("time: ".time());
-            \owa_coreAPI::debug("ctime: ".filectime($cache_file));
-            \owa_coreAPI::debug("diff: ".(time() - filectime($cache_file)));
-            \owa_coreAPI::debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
+            \OWA\Core\CoreAPI::debug("time: ".time());
+            \OWA\Core\CoreAPI::debug("ctime: ".filectime($cache_file));
+            \OWA\Core\CoreAPI::debug("diff: ".(time() - filectime($cache_file)));
+            \OWA\Core\CoreAPI::debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
             $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
-            \owa_coreAPI::debug(sprintf('Cache Object has expired for Collection: %s, id: %s', $collection, $id));
+            \OWA\Core\CoreAPI::debug(sprintf('Cache Object has expired for Collection: %s, id: %s', $collection, $id));
            
         // load from cache file
         } else {
@@ -96,7 +96,7 @@ class FileCache extends \owa_cacheType {
 
         if ( $this->acquire_lock() ) {
             $this->makeCacheCollectionDir($collection);
-            \owa_coreAPI::debug(' writing file for: '.$collection.$id);
+            \OWA\Core\CoreAPI::debug(' writing file for: '.$collection.$id);
             // create collection dir
             $collection_dir = $this->makeCollectionDirPath($collection);
             // asemble cache file name
@@ -113,7 +113,7 @@ class FileCache extends \owa_cacheType {
             $tcf_handle = @fopen($temp_cache_file, 'w');
 
             if ( false === $tcf_handle ) {
-                \owa_coreAPI::debug('could not acquire temp file handler');
+                \OWA\Core\CoreAPI::debug('could not acquire temp file handler');
             } else {
 
                 fputs($tcf_handle, $data);
@@ -123,20 +123,20 @@ class FileCache extends \owa_cacheType {
                 if (!@ rename($temp_cache_file, $cache_file)) {
 
                     if (!@ copy($temp_cache_file, $cache_file)) {
-                        \owa_coreAPI::debug('could not rename or copy temp file to cache file');
+                        \OWA\Core\CoreAPI::debug('could not rename or copy temp file to cache file');
                     } else {
                         @ unlink($temp_cache_file);
-                        \owa_coreAPI::debug('removing temp cache file');
+                        \OWA\Core\CoreAPI::debug('removing temp cache file');
                     }
                 }
 
                 @ chmod($cache_file, $this->file_perms);
-                \owa_coreAPI::debug('changing file permissions on cache file');
+                \OWA\Core\CoreAPI::debug('changing file permissions on cache file');
             }
 
             $this->release_lock();
         } else {
-            \owa_coreAPI::debug("could not persist item to cache due to failure acquiring lock.");
+            \OWA\Core\CoreAPI::debug("could not persist item to cache due to failure acquiring lock.");
         }
     }
 
@@ -185,10 +185,10 @@ class FileCache extends \owa_cacheType {
         // Remove the cache file
         if (file_exists($cache_file)) {
             @ unlink($cache_file);
-            \owa_coreAPI::debug('Cache File Removed: '.$cache_file);
+            \OWA\Core\CoreAPI::debug('Cache File Removed: '.$cache_file);
             return true;
         } else {
-            \owa_coreAPI::debug('Cache File does not exist: '.$cache_file);
+            \OWA\Core\CoreAPI::debug('Cache File does not exist: '.$cache_file);
             return false;
         }
     }
@@ -250,7 +250,7 @@ class FileCache extends \owa_cacheType {
 
     function readDir($dir) {
 
-        \owa_coreAPI::debug( "Reading cache file list from: ". $dir );
+        \OWA\Core\CoreAPI::debug( "Reading cache file list from: ". $dir );
 
         $data = array();
 
@@ -285,12 +285,12 @@ class FileCache extends \owa_cacheType {
         if (!empty($files)) {
 
             foreach ($files as $file) {
-                \owa_coreAPI::debug("About to unlink cache file: ".$file);
+                \OWA\Core\CoreAPI::debug("About to unlink cache file: ".$file);
                 unlink($file);
             }
 
         } else {
-            \owa_coreAPI::debug('No Cache Files to delete.');
+            \OWA\Core\CoreAPI::debug('No Cache Files to delete.');
         }
 
         return true;

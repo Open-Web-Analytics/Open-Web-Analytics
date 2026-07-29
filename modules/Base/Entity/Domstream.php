@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Domstream extends \owa_factTable {
+class Domstream extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
@@ -61,7 +61,7 @@ class Domstream extends \owa_factTable {
         //$session_id->setForeignKey('base.session');
         //$this->setProperty($session_id);
 
-        $document_id = new \owa_dbColumn('document_id', OWA_DTD_BIGINT);
+        $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_BIGINT);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
@@ -70,12 +70,12 @@ class Domstream extends \owa_factTable {
         //$site_id->setForeignKey('base.site', 'site_id');
         //$this->setProperty($site_id);
 
-        $domstream_guid = new \owa_dbColumn('domstream_guid', OWA_DTD_BIGINT);
+        $domstream_guid = new \OWA\Module\Base\Classes\DbColumn('domstream_guid', OWA_DTD_BIGINT);
         $this->setProperty($domstream_guid);
 
-        $this->properties['events'] = new \owa_dbColumn;
+        $this->properties['events'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['events']->setDataType(OWA_DTD_BLOB);
-        $this->properties['duration'] = new \owa_dbColumn;
+        $this->properties['duration'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['duration']->setDataType(OWA_DTD_INT);
 
         // move to abstract
@@ -87,11 +87,11 @@ class Domstream extends \owa_factTable {
         //$this->properties['yyyymmdd']->setDataType(OWA_DTD_INT);
 
         // needed?
-        $this->properties['page_url'] = new \owa_dbColumn;
+        $this->properties['page_url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_url']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['page_width'] = new \owa_dbColumn;
+        $this->properties['page_width'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_width']->setDataType(OWA_DTD_INT);
-        $this->properties['page_height'] = new \owa_dbColumn;
+        $this->properties['page_height'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['page_height']->setDataType(OWA_DTD_INT);
     }
 }

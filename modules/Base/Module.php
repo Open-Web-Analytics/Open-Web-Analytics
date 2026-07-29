@@ -31,7 +31,7 @@ namespace OWA\Module\Base;
  * @since        owa 1.0.0
  */
 
-class Module extends \owa_module {
+class Module extends \OWA\Core\Module {
 
     /**
      * Constructor
@@ -63,17 +63,17 @@ class Module extends \owa_module {
         $this->registerEventQueue( 'incoming_tracking_events', array(
 
             'queue_type'            =>     'file',
-            'path'                    =>    \owa_coreAPI::getSetting('base', 'async_log_dir'),
+            'path'                    =>    \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'),
             'rotation_interval'        => 3600
         ));
 
         $this->registerEventQueue( 'processing', array(
 
             'queue_type'            => 'database',
-            'server'                => \owa_coreAPI::getSetting('base', 'db_host'),
-            'port'                    => \owa_coreAPI::getSetting('base', 'db_port'),
-            'username'                => \owa_coreAPI::getSetting('base', 'db_user'),
-            'password'                => \owa_coreAPI::getSetting('base', 'db_password')
+            'server'                => \OWA\Core\CoreAPI::getSetting('base', 'db_host'),
+            'port'                    => \OWA\Core\CoreAPI::getSetting('base', 'db_port'),
+            'username'                => \OWA\Core\CoreAPI::getSetting('base', 'db_user'),
+            'password'                => \OWA\Core\CoreAPI::getSetting('base', 'db_password')
         ));
 
         $this->setupTrackingProperties();
@@ -838,7 +838,7 @@ class Module extends \owa_module {
         );
 
         // goals
-        $gcount = \owa_coreAPI::getSetting('base', 'numGoals');
+        $gcount = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
         for ($num = 1; $num <= $gcount;$num++) {
             $params = array('goal_number' => $num);
 
@@ -2100,7 +2100,7 @@ class Module extends \owa_module {
         );
 
         // Custom variable Dimensions
-        $cv_max = \owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+        $cv_max = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
         for ($i = 1; $i <= $cv_max;$i++) {
 
             $cvar_name_col = 'cv'.$i.'_name';
@@ -2303,8 +2303,8 @@ class Module extends \owa_module {
         );
 
         // Nofifcation handler
-        if ( \owa_coreAPI::getSetting( 'base', 'announce_visitors' )
-            && \owa_coreAPI::getSetting( 'base', 'notice_email' )
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'announce_visitors' )
+            && \OWA\Core\CoreAPI::getSetting( 'base', 'notice_email' )
             //&& ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' )
             && ! defined('OWA_CLI')
             
@@ -2322,7 +2322,7 @@ class Module extends \owa_module {
     function _registerEventProcessors() {
         
         
-        $this->addEventProcessor( \owa_coreAPI::getSetting( 'base', 'tracking_event_types' ) , 'base.processRequest');
+        $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ) , 'base.processRequest');
         
         // @todo still needed?
         $this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
@@ -2372,7 +2372,7 @@ class Module extends \owa_module {
 
         if ( $type === 'unknown_event_type' ) {
 
-            $e = \owa_coreAPI::errorSingleton();
+            $e = \OWA\Core\CoreAPI::errorSingleton();
             $e->mailErrorMsg( print_r( $event->getProperties(), true ), 'Unknown Event Type' );
         }
 

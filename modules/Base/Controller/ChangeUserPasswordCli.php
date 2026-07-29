@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class ChangeUserPasswordCli extends \owa_cliController
+class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 {
     /**
      * @var \owa_userManager
@@ -47,7 +47,7 @@ class ChangeUserPasswordCli extends \owa_cliController
 
         $this->setRequiredCapability('edit_settings');
 
-        $this->_userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
+        $this->_userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
     }
 
     public function validate()
@@ -81,11 +81,11 @@ class ChangeUserPasswordCli extends \owa_cliController
         ]);
 
         if ($status !== false) {
-            \owa_coreAPI::notice( "Updated user password successfully." );
+            \OWA\Core\CoreAPI::notice( "Updated user password successfully." );
             return;
         }
 
-        \owa_coreAPI::notice( "User password update failed." );
+        \OWA\Core\CoreAPI::notice( "User password update failed." );
     }
 
     public function errorAction()

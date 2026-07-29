@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.3.0
  */
 
-class UniqueActions extends \owa_metric {
+class UniqueActions extends \OWA\Core\Metric {
 
     function __construct() {
 

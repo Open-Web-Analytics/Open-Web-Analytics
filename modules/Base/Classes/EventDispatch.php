@@ -69,7 +69,7 @@ class EventDispatch {
         static $ed;
 
         if ( ! $ed ) {
-            $ed = new \owa_eventDispatch();
+            $ed = new \OWA\Module\Base\Classes\EventDispatch();
         }
 
         return $ed;
@@ -96,7 +96,7 @@ class EventDispatch {
 
     function attach($event_name, $observer) {
 
-        $id = \owa_lib::generateRandomUid();
+        $id = \OWA\Core\Lib::generateRandomUid();
         // Register event names for this handler
         if(is_array($event_name)) {
 
@@ -148,7 +148,7 @@ class EventDispatch {
             }
         }
 
-        $id = \owa_lib::generateRandomUid();
+        $id = \OWA\Core\Lib::generateRandomUid();
 
         $this->listenersByFilterType[$filter_name][$priority][] = $id;
 
@@ -168,7 +168,7 @@ class EventDispatch {
     function notify($event) {
 
         $responses = array();
-        \owa_coreAPI::debug("Notifying listeners of ".$event->getEventType());
+        \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
         //print_r($this->listenersByEventType[$event_type] );
         //print $event->getEventType();
         if (array_key_exists($event->getEventType(), $this->listenersByEventType)) {
@@ -180,23 +180,23 @@ class EventDispatch {
                     $class = get_class( $this->listeners[$observer_id][0] );
                     $responses[ $class ] = call_user_func_array($this->listeners[$observer_id], array($event));
                     //owa_coreAPI::debug(print_r($event, true));
-                    \owa_coreAPI::debug(sprintf("%s event handled by %s.",$event->getEventType(), get_class($this->listeners[$observer_id][0])));
+                    \OWA\Core\CoreAPI::debug(sprintf("%s event handled by %s.",$event->getEventType(), get_class($this->listeners[$observer_id][0])));
                 }
             }
         } else {
-            \owa_coreAPI::debug("no listeners registered for this event type.");
+            \OWA\Core\CoreAPI::debug("no listeners registered for this event type.");
         }
 
-        \owa_coreAPI::debug('EHS: Responses - '.print_r($responses, true));
+        \OWA\Core\CoreAPI::debug('EHS: Responses - '.print_r($responses, true));
 
         if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
-            \owa_coreAPI::debug("EHS: Event was not handled successfully by some handlers.");
+            \OWA\Core\CoreAPI::debug("EHS: Event was not handled successfully by some handlers.");
             $q = $this->getEventQueue( 'processing' );
             $q->sendMessage( $event );
             return OWA_EHS_EVENT_FAILED;
         } else {
             $event->setStatusAsHandled();
-            \owa_coreAPI::debug("EHS: Event was handled successfully by all handlers.");
+            \OWA\Core\CoreAPI::debug("EHS: Event was handled successfully by all handlers.");
             return OWA_EHS_EVENT_HANDLED;
         }
 
@@ -214,7 +214,7 @@ class EventDispatch {
      */
 
     function notifyUntill() {
-        \owa_coreAPI::debug("Notifying Until listener for $event_type answers");
+        \OWA\Core\CoreAPI::debug("Notifying Until listener for $event_type answers");
     }
 
     /**
@@ -227,7 +227,7 @@ class EventDispatch {
      * @return $new_value    mixed
      */
     function filter($filter_name, $value = '') {
-        \owa_coreAPI::debug("Filtering $filter_name");
+        \OWA\Core\CoreAPI::debug("Filtering $filter_name");
 
         if (array_key_exists($filter_name, $this->listenersByFilterType)) {
             // sort the filter list by priority
@@ -260,13 +260,13 @@ class EventDispatch {
 
 
 
-                    \owa_coreAPI::debug(sprintf("Filter: %s. Value passed: %s", $filter_method, print_r($value, true)));
+                    \OWA\Core\CoreAPI::debug(sprintf("Filter: %s. Value passed: %s", $filter_method, print_r($value, true)));
                     $value = call_user_func_array($this->listeners[$observer_id], array_slice($args,1));
-                    \owa_coreAPI::debug(sprintf("Filter: %s. Value returned: %s", $filter_method, print_r($value, true)));
+                    \OWA\Core\CoreAPI::debug(sprintf("Filter: %s. Value returned: %s", $filter_method, print_r($value, true)));
                     // set filterred value as value in args for next filter
                     $args[1] = $value;
                     // debug whats going on
-                    \owa_coreAPI::debug(sprintf("%s filtered by %s.", $filter_name, $filter_method));
+                    \OWA\Core\CoreAPI::debug(sprintf("%s filtered by %s.", $filter_name, $filter_method));
                 }
             }
         }
@@ -288,7 +288,7 @@ class EventDispatch {
         //owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 
         if (!is_a($event_params,'owa_event')) {
-            $event = \owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setProperties($event_params);
             $event->setEventType($event_type);
         } else {
@@ -315,12 +315,12 @@ class EventDispatch {
 
     function getEventQueue( $name ) {
 
-        return \owa_coreAPI::getEventQueue( $name );
+        return \OWA\Core\CoreAPI::getEventQueue( $name );
     }
 
     function eventFactory() {
 
-        return \owa_coreAPI::supportClassFactory('base', 'event');
+        return \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
     }
 
     function makeEvent($type = '') {

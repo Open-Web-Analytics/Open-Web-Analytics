@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Metric;
  * @since        owa 1.3.0
  */
 
-class Bounces extends \owa_metric {
+class Bounces extends \OWA\Core\Metric {
 
     function __construct() {
 
