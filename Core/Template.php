@@ -23,9 +23,6 @@ if (!class_exists('Template')) {
 }
 
 
-if (!class_exists('owa_sanitize')) {
-    require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
-}
 
 /**
  * OWA Wrapper for template class

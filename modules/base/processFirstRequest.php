@@ -19,7 +19,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**
  * Controller

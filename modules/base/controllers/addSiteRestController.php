@@ -2,7 +2,6 @@
 namespace OWA\Module\Base\Controller;
 
 
-require_once(OWA_BASE_MODULE_DIR.'sitesAdd.php');
 
 class AddSiteRest extends \owa_sitesAddController {
 	

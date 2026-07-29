@@ -2,7 +2,6 @@
 namespace OWA\Module\Base\Controller;
 
 
-require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
  * Report REST Controller.
@@ -486,7 +485,6 @@ function report_clicks() {
             // string when it was). Call it directly so the result is deterministic
             // regardless of whether the tracking filters are registered in this
             // process. There is no autoloader, so require the one class file first.
-            require_once( OWA_BASE_CLASS_DIR . 'trackingEventHelpers.php' );
 
             $event = \owa_coreAPI::supportClassFactory( 'base', 'event' );
             $event->setSiteId( $this->get('siteId') );

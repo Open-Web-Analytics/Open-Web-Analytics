@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_MODULE_DIR.'/sitesEditSettings.php');
 
 /**
  * Edit Sites allowed Users

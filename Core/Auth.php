@@ -18,7 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
 
 /**
  * User Authentication Object

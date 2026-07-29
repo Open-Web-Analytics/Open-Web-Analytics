@@ -8,7 +8,6 @@ namespace OWA\Module\Domstream\Controller;
  * Website: http://www.openwebanalytics.con
  */
 
-require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
  * Domstreams Controller

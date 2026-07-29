@@ -132,9 +132,6 @@ class CoreAPI {
 
         if( ! isset( $config ) ) {
 
-            if ( ! class_exists( 'owa_settings' ) ) {
-                require_once( OWA_BASE_CLASS_DIR.'settings.php' );
-            }
 
             $config = \owa_coreAPI::supportClassFactory( 'base', 'settings' );
         }
@@ -148,9 +145,6 @@ class CoreAPI {
 
         if( ! $e ) {
 
-            if ( ! class_exists( 'owa_error' ) ) {
-                require_once( OWA_BASE_CLASS_DIR.'error.php' );
-            }
 
             $e = \owa_coreAPI::supportClassFactory( 'base', 'error' );
 
@@ -297,9 +291,6 @@ class CoreAPI {
 
         if(empty($s)) {
 
-            if (!class_exists('owa_service')) {
-                require_once(OWA_BASE_CLASS_DIR.'service.php');
-            }
 
             $s = \owa_coreAPI::supportClassFactory('base', 'service');
 
@@ -1455,9 +1446,6 @@ class CoreAPI {
 
     public static function getEventDispatch() {
 
-        if (! class_exists( 'owa_eventDispatch' ) ) {
-            require_once(OWA_BASE_CLASS_DIR.'eventDispatch.php');
-        }
 
         return \owa_eventDispatch::get_instance();
 

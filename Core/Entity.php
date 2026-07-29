@@ -18,9 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-if (!class_exists('owa_dbColumn')):
-    require_once(OWA_BASE_CLASS_DIR.'column.php');
-endif;
 
 /**
  * Abstract Entity Class

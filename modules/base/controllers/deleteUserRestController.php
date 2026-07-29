@@ -2,7 +2,6 @@
 namespace OWA\Module\Base\Controller;
 
 
-require_once(OWA_BASE_MODULE_DIR.'usersDelete.php');
 
 class DeleteUserRest extends \owa_usersdeleteController {
 	

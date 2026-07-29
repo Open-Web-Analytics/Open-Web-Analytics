@@ -18,9 +18,6 @@ namespace OWA\Module\Base\Classes;
 // $Id$
 //
 
-if ( ! class_exists( 'owa_event' ) ) {
-    require_once(OWA_BASE_CLASS_DIR.'event.php');
-}
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;

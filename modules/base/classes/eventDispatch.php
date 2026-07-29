@@ -19,9 +19,6 @@ namespace OWA\Module\Base\Classes;
 //
 
 
-if (!class_exists('owa_event') ) {
-    require_once(OWA_BASE_CLASS_DIR.'event.php');
-}
 
 define('OWA_EHS_EVENT_HANDLED', 2);
 define('OWA_EHS_EVENT_FAILED', 3);

@@ -19,7 +19,6 @@ namespace OWA\Core;
 //
 
 include_once('owa_env.php');
-require_once(OWA_BASE_CLASS_DIR.'error.php');
 
 /**
  * Abstract Caller class used to build application specific invocation classes

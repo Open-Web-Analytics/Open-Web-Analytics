@@ -220,7 +220,6 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
 
     private function makeController($params)
     {
-        require_once(OWA_BASE_MODULE_DIR . 'controllers/siteAddAllowedUserRestController.php');
         return new owa_siteAddAllowedUserRestController($params);
     }
 

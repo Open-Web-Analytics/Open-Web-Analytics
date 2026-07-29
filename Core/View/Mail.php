@@ -26,7 +26,6 @@ class Mail extends \owa_view {
     function __construct() {
 
         // make this a service
-        require_once(OWA_BASE_CLASS_DIR.'mailer.php');
         $this->po = new \owa_mailer;
         parent::__construct();
     }

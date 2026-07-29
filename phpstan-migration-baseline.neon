@@ -1012,7 +1012,7 @@ parameters:
 			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/hello/exampleSettings.php
+			path: modules/hello/exampleSettingsView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
