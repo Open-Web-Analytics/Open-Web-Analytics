@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class OptionsModules extends \owa_adminController {
+class OptionsModules extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -53,7 +53,7 @@ class OptionsModules extends \owa_adminController {
                     // test for whether file is a dir
                     if (is_dir($path.$file)):
 
-                         $mod = \owa_coreAPI::moduleClassFactory($file);
+                         $mod = \OWA\Core\CoreAPI::moduleClassFactory($file);
                          $dirs[$file]['name'] = $mod->name;
                          $dirs[$file]['display_name'] = $mod->display_name;
                          $dirs[$file]['author'] = $mod->author;
@@ -79,12 +79,17 @@ class OptionsModules extends \owa_adminController {
         // remove base module so it can't be deactivated
         // unset($dirs['base']);
 
-        $active_modules = \owa_coreAPI::getActiveModules();
+        // getActiveModules() returns runtime module names (the lowercase config
+        // keys, e.g. 'hello'), but $dirs is keyed by on-disk directory name,
+        // which is PascalCase post-PSR-4 (e.g. 'Hello'). Match on the stored
+        // runtime name ($mod->name) rather than the directory key so the roster
+        // renders Deactivate for active modules.
+        $active_modules = array_flip( \OWA\Core\CoreAPI::getActiveModules() );
 
-        foreach ($active_modules as $module) {
+        foreach ($dirs as $dir => $info) {
 
-            if (!empty($dirs[$module])):
-                $dirs[$module]['status'] = 'active';
+            if (isset($info['name']) && isset($active_modules[$info['name']])):
+                $dirs[$dir]['status'] = 'active';
             endif;
         }
 
