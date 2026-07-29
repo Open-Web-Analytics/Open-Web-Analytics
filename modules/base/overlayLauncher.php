@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_overlayLauncherController extends owa_controller {
+class OverlayLauncher extends \owa_controller {
 
     function action() {
 
@@ -45,7 +47,7 @@ class owa_overlayLauncherController extends owa_controller {
 	        $id = $this->get('document_id');
 	        
                 
-	        $d = owa_coreAPI::entityFactory( $entity );
+	        $d = \owa_coreAPI::entityFactory( $entity );
 			$d->load( $id );
 	
 	        $url = trim( (string) $d->get( $url_param ) );
@@ -66,25 +68,5 @@ class owa_overlayLauncherController extends owa_controller {
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
-/**
- * Overlay Launcher Controller View
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.6.8
- */
 
-class owa_overlayLauncherView extends owa_view {
- 
-    function render() {
-        // Assign Data to templates
-         $this->t->set_template('player_overlay.php');
-        $this->t->set('domstream', $this->get('domstream'));
-        $this->t->set('url', $this->get('url'));
-    }
-}
 ?>

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,11 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.4.0
  */
 
-class owa_reportGoalFunnelController extends owa_reportController {
+class ReportGoalFunnel extends \owa_reportController {
 
     function action() {
 
-        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
+        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
 
         $goal_number = $this->getParam('goalNumber');
 
@@ -61,7 +63,7 @@ class owa_reportGoalFunnelController extends owa_reportController {
 
             //print $required_step_constraints;
             // get total visits
-            $total_visitors_rs = owa_coreAPI::executeApiCommand(array(
+            $total_visitors_rs = \owa_coreAPI::executeApiCommand(array(
 	            
 	            	'request_method'	=> 'GET',
 					'module'			=> 'base',
@@ -85,7 +87,7 @@ class owa_reportGoalFunnelController extends owa_reportController {
             $funnel[] = array('url' => $goal['details']['goal_url'], 'name' => $goal['goal_name'], 'step_number' => $steps_count + 1);
             foreach ( $funnel as $k => $step ) {
                 $operator = '==';
-                $rs = owa_coreAPI::executeApiCommand(array(
+                $rs = \owa_coreAPI::executeApiCommand(array(
 	                
 	                	'request_method'	=> 'GET',
 						'module'			=> 'base',
@@ -131,29 +133,6 @@ class owa_reportGoalFunnelController extends owa_reportController {
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
-/**
- * Goal Funnel Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.4.0
- */
 
-class owa_reportGoalFunnelView extends owa_view {
-
-    function render() {
-
-        $this->body->set_template('report_goal_funnel.php');
-        $this->body->set('funnel', $this->get('funnel'));
-        $this->body->set('funnel_json', json_encode($this->get('funnel')));
-        $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
-        $this->body->set('numGoals', owa_coreAPI::getSetting('base', 'numGoals') );
-        $this->body->set('goal_number',  $this->get('goal_number') );
-    }
-}
 
 ?>

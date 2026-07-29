@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_DIR.'owa_view.php');
  * @since        owa 1.4.1
  */
 
-class owa_sitesAddCliController extends owa_sitesAddController {
+class SitesAddCli extends \owa_sitesAddController {
     
 	function errorAction() {
 	
@@ -46,13 +48,6 @@ class owa_sitesAddCliController extends owa_sitesAddController {
 
 
 
-class owa_sitesAddCliView extends owa_cliView {
-	
-	function render() {
-		
-		$this->body->set('status_msg', "Site added successfully.");
-	    $this->setResponseData( $this->get('site') );
-	}
-}
+
 
 ?>

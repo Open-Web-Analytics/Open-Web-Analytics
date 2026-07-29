@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 
 
@@ -34,11 +36,11 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_reportVisitController extends owa_reportController {
+class ReportVisit extends \owa_reportController {
 
     function action() {
 
-        $visit = owa_coreAPI::executeApiCommand(array(
+        $visit = \owa_coreAPI::executeApiCommand(array(
                 'request_method'	=> 'GET',
 	        	'module'			=> 'base',
 	        	'version'			=> 'v1',
@@ -48,7 +50,7 @@ class owa_reportVisitController extends owa_reportController {
                 'sessionId'    => $this->getParam('session_id') ) );
 
         //setup Metrics
-        $rs = owa_coreAPI::executeApiCommand(array(
+        $rs = \owa_coreAPI::executeApiCommand(array(
 	        	'request_method'	=> 'GET',
 	        	'module'			=> 'base',
 	        	'version'			=> 'v1',
@@ -66,28 +68,6 @@ class owa_reportVisitController extends owa_reportController {
     }
 }
 
-/**
- * Visit Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_reportVisitView extends owa_view {
-
-    function render() {
-
-        // Assign data to templates
-        $this->body->set_template('report_visit.php');
-        $this->body->set('session_id', $this->get('session_id'));
-        $this->body->set('visits', $this->get('visit'));
-        $this->body->set('clickstream', $this->get('clickstream'));
-    }
-}
 
 ?>

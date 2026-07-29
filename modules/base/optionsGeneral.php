@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsGeneralController extends owa_adminController {
+class OptionsGeneral extends \owa_adminController {
 
     function __construct($params) {
 
@@ -56,31 +58,6 @@ class owa_optionsGeneralController extends owa_adminController {
 
 }
 
-/**
- * Options View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_optionsGeneralView extends owa_adminPageView {
-
-    function render($data) {
-
-        // load template
-        $this->body->set_template('options_general.php');
-        // fetch admin links from all modules
-        $this->body->set('headline', 'General Configuration Options');
-
-        //print_r($data['config']);
-        // assign config data
-        $this->body->set( 'config', $this->get( 'configuration' ) ) ;
-    }
-}
 
 ?>

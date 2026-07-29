@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsModulesController extends owa_adminController {
+class OptionsModules extends \owa_adminController {
 
     function __construct($params) {
 
@@ -53,7 +55,7 @@ class owa_optionsModulesController extends owa_adminController {
                     // test for whether file is a dir
                     if (is_dir($path.$file)):
 
-                         $mod = owa_coreAPI::moduleClassFactory($file);
+                         $mod = \owa_coreAPI::moduleClassFactory($file);
                          $dirs[$file]['name'] = $mod->name;
                          $dirs[$file]['display_name'] = $mod->display_name;
                          $dirs[$file]['author'] = $mod->author;
@@ -79,7 +81,7 @@ class owa_optionsModulesController extends owa_adminController {
         // remove base module so it can't be deactivated
         // unset($dirs['base']);
 
-        $active_modules = owa_coreAPI::getActiveModules();
+        $active_modules = \owa_coreAPI::getActiveModules();
 
         foreach ($active_modules as $module) {
 
@@ -99,43 +101,6 @@ class owa_optionsModulesController extends owa_adminController {
 
 }
 
-/**
- * Options Modules View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_optionsModulesView extends owa_view {
-
-    function __construct($params) {
-
-        //set privilege level
-        $this->_setPriviledgeLevel('admin');
-        //set page type
-        $this->_setPageType('Administration Page');
-
-        return parent::__construct();
-    }
-
-    function render($data) {
-
-        //$this->c->get('base', 'modules'));
-
-        // load template
-        $this->body->set_template('options_modules.php');
-
-        // fetch admin links from all modules
-        $this->body->set('headline', 'Modules Administration');
-
-        // Assign module data
-        $this->body->set('modules', $this->get('modules'));
-    }
-}
 
 ?>

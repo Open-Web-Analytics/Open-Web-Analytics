@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@ require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_crawlReferralCliController extends owa_cliController
+class CrawlReferralCli extends \owa_cliController
 {
     /**
      * owa_crawlReferralCliController constructor.
@@ -55,7 +57,7 @@ class owa_crawlReferralCliController extends owa_cliController
             $this->updateAllReferrer();
         }
 
-        owa_coreAPI::notice( "Referer updated successfully." );
+        \owa_coreAPI::notice( "Referer updated successfully." );
     }
 
     public function errorAction()
@@ -66,13 +68,13 @@ class owa_crawlReferralCliController extends owa_cliController
 
     public function updateReferrer($id)
     {
-        $r = owa_coreAPI::entityFactory('base.referer');
+        $r = \owa_coreAPI::entityFactory('base.referer');
         $r->load($id);
         $r->crawlReferer();
         
         if ( $r->isDirty() ) {
-	        owa_coreAPI::debug('dirty columns:');
-	        owa_coreAPI::debug( $r->dirty );
+	        \owa_coreAPI::debug('dirty columns:');
+	        \owa_coreAPI::debug( $r->dirty );
         	$r->save();
 		}
     }
@@ -80,11 +82,11 @@ class owa_crawlReferralCliController extends owa_cliController
     public function updateAllReferrer()
     {
         /**
-         * @var owa_entity $l
+         * @var \owa_entity $l
          */
-        $ref = owa_coreAPI::entityFactory('base.referer');
+        $ref = \owa_coreAPI::entityFactory('base.referer');
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->selectFrom($ref->getTableName());
         $db->selectColumn('id');
         $db->where('url', '(none)', '!=');
@@ -93,7 +95,7 @@ class owa_crawlReferralCliController extends owa_cliController
         $referrals = $db->getAllRows();
 
         if (!$referrals) {
-            owa_coreAPI::notice( "No referrer found." );
+            \owa_coreAPI::notice( "No referrer found." );
             return;
         }
 
@@ -104,19 +106,3 @@ class owa_crawlReferralCliController extends owa_cliController
 }
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
-
-/**
- * Crawl referrer cli View
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
-class owa_crawlReferralCliView extends owa_cliView
-{
-
-}

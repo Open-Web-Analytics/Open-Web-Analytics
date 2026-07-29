@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @since        owa 1.4.0
  */
 
-class owa_optionsGoalsController extends owa_adminController {
+class OptionsGoals extends \owa_adminController {
     
     function __construct($params) {
     
@@ -43,7 +45,7 @@ class owa_optionsGoalsController extends owa_adminController {
     function action() {
         
         $siteId = $this->get('siteId');
-        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
         $goals = $gm->getAllGoals();
         $goal_groups = $gm->getAllGoalGroupLabels();
         $this->set('goals', $goals);
@@ -54,30 +56,6 @@ class owa_optionsGoalsController extends owa_adminController {
     }
 }
 
-/**
- * Goals Roster View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.4.0
- */
 
-class owa_optionsGoalsView extends owa_view {
-        
-    function render($data) {
-        
-        // load template
-        $this->body->set_template( 'options_goals.php' );
-        // fetch admin links from all modules
-        $this->body->set( 'headline', 'Conversion Goals');
-        $this->body->set( 'goals', $this->get( 'goals' ) );
-        $this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
-        $this->body->set( 'siteId', $this->get( 'siteId' ) );
-    }
-}
 
 ?>

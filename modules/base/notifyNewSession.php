@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 
 //
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since        owa 1.0.0
  */
 
-class owa_notifyNewSessionController extends owa_controller {
+class NotifyNewSession extends \owa_controller {
         
     function action() {
         
@@ -39,7 +41,7 @@ class owa_notifyNewSessionController extends owa_controller {
         $site = $this->getParam( 'site' );
         $this->set( 'site', $site->_getProperties() );
             
-        $this->set( 'email_address', owa_coreAPI::getSetting( 'base', 'notice_email' ) );
+        $this->set( 'email_address', \owa_coreAPI::getSetting( 'base', 'notice_email' ) );
         $this->set( 'session', $event->getProperties() );
         
         $this->set( 'subject', sprintf('OWA: New Visit to %s', $site->get( 'domain' ) ) );
@@ -50,29 +52,6 @@ class owa_notifyNewSessionController extends owa_controller {
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
-/**
- * New Session Notification View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_notifyNewSessionView extends owa_mailView {
-        
-    function render() {
-        
-        $this->t->set_template( 'wrapper_email.php' );
-        $this->body->set_template( 'new_session_email.php' );
-        $this->body->set( 'site', $this->get( 'site' ) );
-        $this->body->set( 'session', $this->get( 'session' ) );
-        $this->setMailSubject( $this->get('subject') );
-        $this->addMailToAddress( $this->get('email_address') );
-    }
-}
 
 ?>

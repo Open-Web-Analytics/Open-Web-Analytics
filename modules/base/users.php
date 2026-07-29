@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_usersController extends owa_adminController {
+class Users extends \owa_adminController {
         
     function __construct($params) {
         
@@ -41,7 +43,7 @@ class owa_usersController extends owa_adminController {
     
     function action() {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->selectFrom('owa_user');
         $db->selectColumn("*");
         $users = $db->getAllRows();
@@ -49,7 +51,7 @@ class owa_usersController extends owa_adminController {
         // remove this after switch to REST API in Admin Interface
         $this->set('users', $users);
         
-        $user_objs = owa_coreAPI::loadEntitiesFromArray( $users, 'base.user');
+        $user_objs = \owa_coreAPI::loadEntitiesFromArray( $users, 'base.user');
         $this->set('users_objs', $user_objs );
     }
     
@@ -61,27 +63,6 @@ class owa_usersController extends owa_adminController {
 }
 
 
-/**
- * Users Roster View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
-class owa_usersView extends owa_view {
-        
-    function render() {
-        
-        //page title
-        $this->t->set('page_title', 'User Roster');
-        $this->body->set_template('users.php');
-        $this->body->set('headline', 'User Roster');
-        $this->body->set('users', $this->get('users'));
-    }
-}
+
 
 ?>

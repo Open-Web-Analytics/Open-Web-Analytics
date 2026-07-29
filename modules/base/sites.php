@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_sitesController extends owa_reportController {
+class Sites extends \owa_reportController {
     
     function __construct($params) {
 
@@ -42,7 +44,7 @@ class owa_sitesController extends owa_reportController {
     
     function action() {
     
-        $s = owa_coreAPI::entityFactory('base.site');
+        $s = \owa_coreAPI::entityFactory('base.site');
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('tracked_sites', $sites);
         
@@ -59,27 +61,6 @@ class owa_sitesController extends owa_reportController {
 }
 
 
-/**
- * Sites Roster View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_sitesView extends owa_view {
-        
-    function render() {
-        
-        //page title
-        $this->t->set('page_title', 'Sites Roster');
-        $this->body->set_template('sites.php');
-        $this->body->set('tracked_sites', $this->get('tracked_sites'));
-    }
-}
 
 ?>

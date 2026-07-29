@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -20,36 +22,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 
-/**
- * Add Sites View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_sitesAddView extends owa_view {
-
-    function render($data) {
-
-        //page title
-        $this->t->set('page_title', 'Add Web Site');
-        $this->body->set('headline', 'Add Web Site Profile');
-        // load body template
-        $this->body->set_template('sites_addoredit.php');
-
-        $this->body->set('action', 'base.sitesAdd');
-
-        //Check to see if user is passed by constructor or else fetch the object.
-        if ($data['site']) {
-            $this->body->set('site', $data['site']);
-        }
-    }
-}
 
 /**
  * Add Site Controller
@@ -63,7 +36,7 @@ class owa_sitesAddView extends owa_view {
  * @since        owa 1.0.0
  */
 
-class owa_sitesAddController extends owa_adminController {
+class SitesAdd extends \owa_adminController {
 	
 	function __construct( $params ) {
 		
@@ -82,7 +55,7 @@ class owa_sitesAddController extends owa_adminController {
 
         $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
-        $sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = \owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
 
         $site = $sm->createNewSite( $this->getParam( 'domain' ),
                             $this->getParam( 'name' ),
@@ -92,7 +65,7 @@ class owa_sitesAddController extends owa_adminController {
         
         if ( $site ) {
 	        
-	    	owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
+	    	\owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
         }
         
         $this->set( 'site', $site->_getProperties() );

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,11 +33,11 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_reportDocumentController extends owa_reportController {
+class ReportDocument extends \owa_reportController {
 
     function action() {
 
-        $d = owa_coreAPI::entityFactory('base.document');
+        $d = \owa_coreAPI::entityFactory('base.document');
 
         if ($this->getParam('pageUrl')) {
             $pageUrl = $this->getParam('pageUrl');
@@ -64,37 +66,6 @@ class owa_reportDocumentController extends owa_reportController {
 }
 
 
-/**
- * Document Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_reportDocumentView extends owa_view {
-
-    function render($data) {
-
-        // Assign Data to templates
-        $this->body->set('metrics', $this->get('metrics'));
-        $this->body->set('dimensions', $this->get('dimensions'));
-        $this->body->set('sort', $this->get('sort'));
-        $this->body->set('resultsPerPage', $this->get('resultsPerPage'));
-        $this->body->set('dimensionLink', $this->get('dimensionLink'));
-        $this->body->set('trendChartMetric', $this->get('trendChartMetric'));
-        $this->body->set('trendTitle', $this->get('trendTitle'));
-        $this->body->set('constraints', $this->get('constraints'));
-        $this->body->set('gridTitle', $this->get('gridTitle'));
-        $this->body->set('document', $this->get('document'));
-        $this->body->set('dimension_properties', $this->get('document'));
-        $this->body->set('dimension_template', 'item_document.php');
-        $this->body->set_template('report_document.php');
-    }
-}
 
 ?>

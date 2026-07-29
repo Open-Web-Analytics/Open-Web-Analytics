@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -34,7 +36,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @todo        remove
  */
 
-class owa_reportVisitorsRosterController extends owa_reportController {
+class ReportVisitorsRoster extends \owa_reportController {
 
     function __construct($params) {
 
@@ -45,7 +47,7 @@ class owa_reportVisitorsRosterController extends owa_reportController {
     function action() {
 
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
 
         $db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
         $db->selectFrom('owa_session', 'session');
@@ -54,7 +56,7 @@ class owa_reportVisitorsRosterController extends owa_reportController {
         $db->where('site_id', $this->getParam('site_id'));
 
         // make new timeperiod of a day
-        $period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+        $period = \owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
         $start = $period->getStartDate();
         $end = $period->getEndDate();
         //print_r($period);
@@ -72,26 +74,6 @@ class owa_reportVisitorsRosterController extends owa_reportController {
 
 }
 
-/**
- * Visitors Roster Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_reportVisitorsRosterView extends owa_view {
-
-    function render($data) {
-
-        $this->body->set_template('report_visitors_roster.php');
-        $this->body->set('headline', 'Visitors');
-        $this->body->set('visitors', $data['visitors']);
-    }
-}
 
 ?>

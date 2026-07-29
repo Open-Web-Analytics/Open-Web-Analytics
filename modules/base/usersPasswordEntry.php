@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,7 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersPasswordEntryController extends owa_controller {
+class UsersPasswordEntry extends \owa_controller {
 
     function __construct($params) {
 
@@ -52,36 +54,6 @@ class owa_usersPasswordEntryController extends owa_controller {
 
 }
 
-/**
- * Change Password View
- * 
- * Presents a simple form to the user asking them to enter a new password.
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_usersPasswordEntryView extends owa_view {
-
-    function __construct() {
-
-        return parent::__construct();
-    }
-
-    function render($data) {
-
-        $this->t->set_template('wrapper_public.php');
-        $this->t->set('page_title', 'OWA Password Entry');
-        $this->body->set_template('users_change_password.php');
-        $this->body->set('headline', $this->getMsg(3005));
-        $this->body->set('key', $this->get('key'));
-        $this->body->set('is_embedded', $this->get('is_embedded'));
-    }
-}
 
 ?>

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersSetPasswordController extends owa_controller {
+class UsersSetPassword extends \owa_controller {
 
     function __construct($params) {
 
@@ -44,19 +46,19 @@ class owa_usersSetPasswordController extends owa_controller {
         $event = $this->getParam('event');
 
         /**
-         * @var $userManager owa_userManager
+         * @var $userManager \owa_userManager
          */
-        $userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
         $u = $userManager->updateUserPassword([
             'temp_passkey' => $event->get('key'),
             'password' => $event->get('password'),
             'user_id'  => $event->get('user_id')
         ]);
         // needed for migration away from old embedded install model
-        owa_coreAPI::debug('setting migration flag...'. owa_coreAPI::getSetting('base', 'is_embedded') );
-        if ( $u && owa_coreAPI::getSetting('base', 'is_embedded') ) {
-				owa_coreAPI::debug('setting migration flag...');	
-	        	owa_coreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
+        \owa_coreAPI::debug('setting migration flag...'. \owa_coreAPI::getSetting('base', 'is_embedded') );
+        if ( $u && \owa_coreAPI::getSetting('base', 'is_embedded') ) {
+				\owa_coreAPI::debug('setting migration flag...');	
+	        	\owa_coreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
 		}
 
         if ($u !== false) {
@@ -74,31 +76,6 @@ class owa_usersSetPasswordController extends owa_controller {
 
 }
 
-/**
- * Set Password Notification View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_usersSetPasswordView extends owa_view {
-
-    function __construct() {
-
-        return parent::__construct();
-    }
-
-    function render($data) {
-
-        $this->t->set_template('wrapper_email.php');
-        $this->body->set_template('users_set_password_email.php');
-        $this->body->set('ip', $data['ip']);
-    }
-}
 
 ?>

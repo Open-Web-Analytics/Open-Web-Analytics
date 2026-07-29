@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,10 +31,10 @@ require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_changeUserPasswordCliController extends owa_cliController
+class ChangeUserPasswordCli extends \owa_cliController
 {
     /**
-     * @var owa_userManager
+     * @var \owa_userManager
      */
     private $_userManager;
 
@@ -46,7 +48,7 @@ class owa_changeUserPasswordCliController extends owa_cliController
 
         $this->setRequiredCapability('edit_settings');
 
-        $this->_userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $this->_userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
     }
 
     public function validate()
@@ -80,11 +82,11 @@ class owa_changeUserPasswordCliController extends owa_cliController
         ]);
 
         if ($status !== false) {
-            owa_coreAPI::notice( "Updated user password successfully." );
+            \owa_coreAPI::notice( "Updated user password successfully." );
             return;
         }
 
-        owa_coreAPI::notice( "User password update failed." );
+        \owa_coreAPI::notice( "User password update failed." );
     }
 
     public function errorAction()
@@ -96,19 +98,5 @@ class owa_changeUserPasswordCliController extends owa_cliController
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
-/**
- * Change user password cli View
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
-class owa_changeUserPasswordCliView extends owa_cliView
-{
 
-}
 ?>

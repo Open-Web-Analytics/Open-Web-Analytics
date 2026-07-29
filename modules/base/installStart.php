@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -20,7 +22,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
-class owa_installStartController extends owa_installController {
+class InstallStart extends \owa_installController {
     
     function action() {
 
@@ -29,28 +31,6 @@ class owa_installStartController extends owa_installController {
     }
 }
 
-/**
- * Installation View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
-class owa_installStartView extends owa_view {
 
-    function render() {
-
-        $this->body->set_template('install_start.php');
-        //page title
-        $this->t->set('page_title', 'OWA Installation Start');
-        // fetch admin links from all modules
-        $this->body->set('headline', 'Get Started...');
-        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
-    }
-}
 
 ?>

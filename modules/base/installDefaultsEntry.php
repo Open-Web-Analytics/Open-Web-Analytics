@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  * @since        owa 1.0.0
  */
 
-class owa_installDefaultsEntryController extends owa_installController {
+class InstallDefaultsEntry extends \owa_installController {
     
     function action() {
 
@@ -40,30 +42,6 @@ class owa_installDefaultsEntryController extends owa_installController {
     }
 }
 
-/**
- * Installer Defaults Entry
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.2.1
- */
 
-class owa_installDefaultsEntryView extends owa_view {
-
-    function render($data) {
-
-        // page title
-        $this->t->set('page_title', 'OWA User / Site Setup');
-        // set defaults
-        $this->body->set('defaults', $this->get('defaults'));
-        // load body template
-        $this->body->set_template('install_defaults_entry.php');
-        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
-    }
-}
 
 ?>

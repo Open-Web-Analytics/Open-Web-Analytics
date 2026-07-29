@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since        owa 1.0.0
  */
 
-class owa_passwordResetFormController extends owa_controller {
+class PasswordResetForm extends \owa_controller {
 
     function action() {
 
@@ -40,32 +42,6 @@ class owa_passwordResetFormController extends owa_controller {
 }
 
 
-/**
- * Password Reset Request View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_passwordResetFormView extends owa_view {
-
-    function __construct() {
-
-        return parent::__construct();
-    }
-
-    function render($data) {
-
-        $this->setTitle('Password Reset');
-        $this->t->set_template('wrapper_public.php');
-        $this->body->set_template('users_password_reset_request.php');
-    }
-
-}
 
 ?>

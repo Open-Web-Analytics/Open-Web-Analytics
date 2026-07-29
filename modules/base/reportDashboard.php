@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,11 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_reportDashboardController extends owa_reportController {
+class ReportDashboard extends \owa_reportController {
 
     function action() {
 
-		$rs = owa_coreAPI::executeApiCommand(array(
+		$rs = \owa_coreAPI::executeApiCommand(array(
 
 			'request_method'	=> 'GET',
 			'module'			=> 'base',
@@ -58,7 +60,7 @@ class owa_reportDashboardController extends owa_reportController {
 
         $metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
 
-        if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+        if ( \owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
             $metrics .= ',transactions,transactionRevenue';
         }
 
@@ -68,29 +70,6 @@ class owa_reportDashboardController extends owa_reportController {
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
-/**
- * Dashboard Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_reportDashboardView extends owa_view {
-
-    function render() {
-
-        $this->body->set_template('report_dashboard.php');
-        $this->body->set('summary', $this->get('summary'));
-        $this->body->set('site_trend', $this->get('site_trend'));
-        $this->body->set('visits', $this->get('latest_visits'));
-        $this->body->set('actions', $this->get('actions'));
-        $this->body->set('metrics', $this->get('metrics'));
-    }
-}
 
 ?>

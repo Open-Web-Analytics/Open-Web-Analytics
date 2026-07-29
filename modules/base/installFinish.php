@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 
 //
@@ -33,7 +35,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 // needed??
-class owa_installFinishController extends owa_installController {
+class InstallFinish extends \owa_installController {
 
     function action() {
 
@@ -47,7 +49,7 @@ class owa_installFinishController extends owa_installController {
             $this->e->notice('Could not persist Install Complete Flag to the Database');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->getByPk('id', '1');
         $this->setView('base.install');
         $this->setSubview('base.installFinish');
@@ -58,23 +60,6 @@ class owa_installFinishController extends owa_installController {
 }
 
 
-class owa_installFinishView extends owa_view {
 
-    function render($data) {
-
-        // Set Page title
-        $this->t->set('page_title', 'Installation Complete');
-
-        // Set Page headline
-        $this->body->set('headline', 'Installation is Complete');
-
-        $this->body->set('site_id', $this->get('site_id'));
-        $this->body->set('u', $this->get('u'));
-        $this->body->set('p', $this->get('p'));
-        // load body template
-        $this->body->set_template('install_finish.php');
-        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
-    }
-}
 
 ?>

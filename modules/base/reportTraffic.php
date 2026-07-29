@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_reportTrafficController extends owa_reportController {
+class ReportTraffic extends \owa_reportController {
         
     function action() {
     
@@ -42,26 +44,6 @@ class owa_reportTrafficController extends owa_reportController {
     }
 }
 
-/**
- * Traffic Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_reportTrafficView extends owa_view {
-        
-    function render($data) {
-        
-        // Assign Data to templates
-        
-        $this->body->set_template('report_traffic.php');
-    }
-}
 
 ?>

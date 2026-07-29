@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.3.0
  */
 
-class owa_reportVisitsController extends owa_reportController {
+class ReportVisits extends \owa_reportController {
 
     function action() {
 
@@ -41,7 +43,7 @@ class owa_reportVisitsController extends owa_reportController {
             $visitorId = $this->getParam('visitor_id');
         }
 
-        $v = owa_coreAPI::entityFactory('base.visitor');
+        $v = \owa_coreAPI::entityFactory('base.visitor');
         $v->load($visitorId);
 
         if ($this->getParam('date')) {
@@ -49,7 +51,7 @@ class owa_reportVisitsController extends owa_reportController {
             $endDate = $this->getParam('date');
         }
 
-        $rs = owa_coreAPI::executeApiCommand(array(
+        $rs = \owa_coreAPI::executeApiCommand(array(
 
             'request_method'	=> 'GET',
             'module'			=> 'base',
@@ -72,27 +74,6 @@ class owa_reportVisitsController extends owa_reportController {
     }
 }
 
-/**
- * Visits Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
- */
 
-class owa_reportVisitsView extends owa_view {
-
-    function render() {
-
-        $this->body->set_template('report_visits.php');
-        $this->body->set('visitor_id', $this->get('visitor_id'));
-        $this->body->set('visits', $this->get('visits'));
-        $this->body->set('visitor', $this->get('visitor'));
-    }
-}
 
 ?>

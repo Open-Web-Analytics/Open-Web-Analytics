@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_sitesInvocationController extends owa_adminController {
+class SitesInvocation extends \owa_adminController {
 
     function __construct($params) {
 
@@ -43,7 +45,7 @@ class owa_sitesInvocationController extends owa_adminController {
     function action() {
         $site_id = $this->getParam('siteId');
         $this->set('site_id', $site_id);
-        $s = owa_coreAPI::entityFactory('base.site');
+        $s = \owa_coreAPI::entityFactory('base.site');
         $s->getByColumn('site_id', $site_id);
         $this->set('site', $s);
         $this->setSubview('base.sitesInvocation');
@@ -53,44 +55,6 @@ class owa_sitesInvocationController extends owa_adminController {
 
 
 
-/**
- * Sites Invocation Instructions
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-
-class owa_sitesInvocationView extends owa_view {
-
-    function render($data) {
-
-        $site = $this->get('site');
-
-        if ($site->get('name')) {
-            $name = sprintf("%s (%s)", $site->get('domain'), $site->get('name'));
-        } else {
-            $name = $site->get('domain');
-        }
-
-
-        //page title
-        $this->t->set('page_title', 'Tracking Tags');
-        $this->body->set('site', $site);
-        $this->body->set('name', $name);
-        $this->body->set('options', array());
-        // load body template
-        $this->body->set_template('sites_invocation.php');
-
-        $this->body->set('site_id', $this->get('site_id'));
-
-        $this->body->set('tracking_code', owa_coreAPI::getJsTrackerTag( $this->get('site_id') ) );
-    }
-}
 
 ?>

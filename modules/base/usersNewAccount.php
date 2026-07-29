@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersNewAccountController extends owa_controller {
+class UsersNewAccount extends \owa_controller {
 
     function __construct($params) {
         return parent::__construct($params);
@@ -57,36 +59,6 @@ class owa_usersNewAccountController extends owa_controller {
 }
 
 
-/**
- * New Account Notification View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_usersNewAccountView extends owa_mailView {
-
-    function __construct() {
-
-        return parent::__construct();
-    }
-
-    function render($data) {
-
-        $this->t->set_template('wrapper_email.php');
-        $this->body->set_template('users_new_account_email.php');
-        $this->body->set('user_id', $data['user_id']);
-        $this->body->set('key', $data['temp_passkey']);
-        // mailer specific
-        $this->setMailSubject($data['subject']);
-        $this->addMailToAddress($data['email_address'], $this->get('name'));
-
-    }
-}
 
 ?>

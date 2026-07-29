@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once ( OWA_BASE_DIR. '/Http.php' );
  * @since        owa 1.0.0
  */
 
-class owa_widgetOwaNewsController extends owa_controller {
+class WidgetOwaNews extends \owa_controller {
 
     function __construct($params) {
     
@@ -45,7 +47,7 @@ class owa_widgetOwaNewsController extends owa_controller {
         //$data['params'] = $this->params;
         
         //Fetch latest OWA news
-        $crawler = new owa_http();
+        $crawler = new \owa_http();
         $response = $crawler->getRequest($this->config['owa_news_url']);
 
         $news = json_decode($response);
@@ -56,15 +58,6 @@ class owa_widgetOwaNewsController extends owa_controller {
     
 }
 
-class owa_widgetOwaNewsView extends owa_view {
 
-    function render($data) {
-
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('news.php');
-        $this->body->set('news', $data['news']);
-    }
-
-}
 
 ?>

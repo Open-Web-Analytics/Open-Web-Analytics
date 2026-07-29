@@ -304,7 +304,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/loginForm.php
+			path: modules/base/loginFormView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
@@ -670,7 +670,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/optionsModules.php
+			path: modules/base/optionsModulesView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
@@ -688,7 +688,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/passwordResetForm.php
+			path: modules/base/passwordResetFormView.php
 
 		-
 			message: '#^Call to sprintf contains an invalid placeholder\.$#'
@@ -838,7 +838,7 @@ parameters:
 			message: '#^Result of method owa_mailView\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/usersNewAccount.php
+			path: modules/base/usersNewAccountView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
@@ -850,7 +850,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/usersPasswordEntry.php
+			path: modules/base/usersPasswordEntryView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
@@ -862,7 +862,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/usersProfile.php
+			path: modules/base/usersProfileView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
@@ -880,7 +880,7 @@ parameters:
 			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/usersSetPassword.php
+			path: modules/base/usersSetPasswordView.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'

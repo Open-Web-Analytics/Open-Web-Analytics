@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersResetPasswordController extends owa_controller {
+class UsersResetPassword extends \owa_controller {
     
     function __construct($params) {
     
@@ -43,8 +45,8 @@ class owa_usersResetPasswordController extends owa_controller {
     
         $event = $this->getParam('event');
         
-        $auth = owa_auth::get_instance();
-        $u = owa_coreAPI::entityFactory('base.user');
+        $auth = \owa_auth::get_instance();
+        $u = \owa_coreAPI::entityFactory('base.user');
         $u->getByColumn('email_address', $event->get('email_address'));
         $u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
         $status = $u->update();
@@ -64,29 +66,7 @@ class owa_usersResetPasswordController extends owa_controller {
     
 }
 
-/**
- * Reset Password Notification View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
 
-class owa_usersResetPasswordView extends owa_mailView {
-    
-    function render($data) {
-        
-        $this->t->set_template('wrapper_email.php');
-        $this->body->set_template('users_reset_password_email.php');
-        $this->body->set('key', $this->get('key'));
-        $this->setMailSubject('Your New OWA Password');
-        $this->addMailToAddress($this->get('email_address'));
-    }
-}
 
 
 ?>

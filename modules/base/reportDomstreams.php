@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.2.1
  */
 
-class owa_reportDomstreamsController extends owa_reportController {
+class ReportDomstreams extends \owa_reportController {
 
     function action() {
 
@@ -42,7 +44,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 		
         // check for limits
         if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
-            $doc = owa_coreAPI::entityFactory('base.document');
+            $doc = \owa_coreAPI::entityFactory('base.document');
 			
 			if ( $this->get( 'document_id' ) ) {
 				
@@ -64,7 +66,7 @@ class owa_reportDomstreamsController extends owa_reportController {
             $this->setTitle('Latest Domstreams');
         }
 
-        $ds = owa_coreAPI::executeApiCommand(array(
+        $ds = \owa_coreAPI::executeApiCommand(array(
 			'module'			=> 'domstream',
 			'version'			=> 'v1',
             'do'                => 'domstreams',
@@ -86,29 +88,6 @@ class owa_reportDomstreamsController extends owa_reportController {
 
 }
 
-/**
- * Domstream Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.2.1
- */
 
-class owa_reportDomstreamsView extends owa_view {
-
-    function render() {
-
-        $this->body->set('domstreams', $this->get('domstreams'));
-        $this->body->set_template('report_domstreams.php');
-        $doc = $this->get('document');
-        $this->body->set('document', $doc);
-        $this->body->set('properties', $this->get('item_properties'));
-    }
-
-}
 
 ?>
