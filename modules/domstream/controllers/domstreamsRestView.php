@@ -1,0 +1,21 @@
+<?php
+namespace OWA\Module\Domstream\Controller;
+
+
+/**
+ * Open Web Analytics - The Open Source Web Analytics Framework
+ * Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+ * Website: http://www.openwebanalytics.con
+ */
+
+/**
+ * View
+ *
+ */
+class DomstreamsRestView extends \owa_restApiView {
+
+    function render() {
+
+        $this->setResponseData( $this->get('response') );
+    }
+}

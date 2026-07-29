@@ -161,19 +161,3 @@ class DomstreamsRestController extends \owa_adminController {
     }
 
 }
-
-
-
-/**
- * View
- * 
- */
-class DomstreamsRestView extends \owa_restApiView {
-        
-    function render() {
-        
-        $this->setResponseData( $this->get('response') );
-    }
-}
-
-?>

@@ -20,31 +20,32 @@ namespace OWA\Module\Hello;
 
 
 /**
- * Example Settings/Options Controller
- * 
+ * Options View
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
  * @version        $Revision$
- * @since        owa 1.3.0
+ * @since        owa 1.0.0
  */
 
-class ExampleSettingsController extends \owa_adminController {
+class ExampleSettingsView extends \owa_view {
 
     function __construct($params) {
-
-        parent::__construct($params);
-        $this->type = 'options';
-        $this->setRequiredCapability('edit_settings');
+        //set page type
+        $this->_setPageType('Administration Page');
+        return parent::__construct($params);
     }
 
-    function action() {
+    function render($data) {
 
-        // add data to container
-        $this->setView('base.options');
-        $this->setSubview('base.exampleSettings');
+        // load template
+        $this->body->setTemplateFile('hello', 'example_settings.php');
+        // assign headline
+        $this->body->set('headline', 'Example Settings Page');
     }
+
 
 }
