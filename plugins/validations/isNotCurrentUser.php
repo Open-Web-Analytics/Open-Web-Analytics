@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Validation;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,12 +30,12 @@
  * @since        owa 1.0.0
  */
  
-class owa_isNotCurrentUserValidation extends owa_validation {
+class IsNotCurrentUser extends \owa_validation {
      
      function validate() {
          
          $value = $this->getValues();
-         $cu = owa_coreAPI::getCurrentUser();
+         $cu = \owa_coreAPI::getCurrentUser();
          $user_id = $cu->getUserData( 'user_id' );
          
 		 if ( $user_id === $value ) {

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Validation;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
  
- class owa_userNameValidation extends owa_validation {
+ class UserName extends \owa_validation {
 
      function validate() {
 
@@ -40,7 +42,7 @@
 
          $u = $this->getValues();
 
-         $illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+         $illegals = \owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
 
          foreach ( $illegals as $k => $char ) {
 

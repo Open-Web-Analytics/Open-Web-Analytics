@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Validation;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
  
- class owa_subStringPositionValidation extends owa_validation {
+ class SubStringPosition extends \owa_validation {
      
      function validate() {
          

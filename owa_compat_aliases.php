@@ -111,6 +111,20 @@ function owa_compat_class_map(): array
         'owa_adminPageView' => 'OWA\\Core\\View\\AdminPage',
         'owa_cliView' => 'OWA\\Core\\View\\Cli',
 
+        // validators -> OWA\Core\Validation\ (Phase 6 stage 3; base + 11 plugins)
+        'owa_validation' => 'OWA\\Core\\Validation\\Validation',
+        'owa_emailAddressValidation' => 'OWA\\Core\\Validation\\EmailAddress',
+        'owa_entityDoesNotExistValidation' => 'OWA\\Core\\Validation\\EntityDoesNotExist',
+        'owa_entityExistsValidation' => 'OWA\\Core\\Validation\\EntityExists',
+        'owa_inArrayValidation' => 'OWA\\Core\\Validation\\InArray',
+        'owa_isNotCurrentUserValidation' => 'OWA\\Core\\Validation\\IsNotCurrentUser',
+        'owa_requiredValidation' => 'OWA\\Core\\Validation\\Required',
+        'owa_stringLengthValidation' => 'OWA\\Core\\Validation\\StringLength',
+        'owa_stringMatchValidation' => 'OWA\\Core\\Validation\\StringMatch',
+        'owa_subStringMatchValidation' => 'OWA\\Core\\Validation\\SubStringMatch',
+        'owa_subStringPositionValidation' => 'OWA\\Core\\Validation\\SubStringPosition',
+        'owa_userNameValidation' => 'OWA\\Core\\Validation\\UserName',
+
         // modules/base/entities (Phase 6 stage 2)
         'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
         'owa_action_fact' => 'OWA\\Module\\Base\\Entity\\ActionFact',

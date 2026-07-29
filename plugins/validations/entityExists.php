@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Validation;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,11 +30,11 @@
  * @since        owa 1.0.0
  */
  
- class owa_entityExistsValidation extends owa_validation {
+ class EntityExists extends \owa_validation {
           
      function validate() {
          
-         $entity = owa_coreAPI::entityFactory($this->getConfig('entity'));
+         $entity = \owa_coreAPI::entityFactory($this->getConfig('entity'));
          $entity->getByColumn($this->getConfig('column'), $this->getValues());
                   
          $error = $this->getErrorMsg();
