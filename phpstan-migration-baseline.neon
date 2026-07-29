@@ -265,7 +265,7 @@ parameters:
 			path: modules/base/entityInstall.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/error.php
@@ -277,7 +277,7 @@ parameters:
 			path: modules/base/flushProcessedEventsCli.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/install.php
@@ -301,7 +301,7 @@ parameters:
 			path: modules/base/loginForm.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/loginFormView.php
@@ -643,13 +643,13 @@ parameters:
 			path: modules/base/moduleInstallCli.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/notifyNewSessionPlainText.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/options.php
@@ -667,7 +667,7 @@ parameters:
 			path: modules/base/optionsModules.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/optionsModulesView.php
@@ -685,7 +685,7 @@ parameters:
 			path: modules/base/optionsUpdate.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/passwordResetFormView.php
@@ -835,7 +835,7 @@ parameters:
 			path: modules/base/usersNewAccount.php
 
 		-
-			message: '#^Result of method owa_mailView\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\\Mail\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersNewAccountView.php
@@ -847,7 +847,7 @@ parameters:
 			path: modules/base/usersPasswordEntry.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersPasswordEntryView.php
@@ -859,7 +859,7 @@ parameters:
 			path: modules/base/usersProfile.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersProfileView.php
@@ -877,7 +877,7 @@ parameters:
 			path: modules/base/usersSetPassword.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersSetPasswordView.php
@@ -901,7 +901,7 @@ parameters:
 			path: modules/fileCache/module.php
 
 		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/hello/exampleSettings.php
@@ -959,6 +959,12 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: owa_adminController.php
+
+		-
+			message: '#^Method OWA\\Core\\View\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: owa_adminView.php
 
 		-
 			message: '#^Method OWA\\Core\\Auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
@@ -1051,15 +1057,9 @@ parameters:
 			path: owa_template.php
 
 		-
-			message: '#^Access to an undefined property owa_view\:\:\$renderJsInLine\.$#'
+			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
 			identifier: property.notFound
 			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Method owa_view\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
-			identifier: arguments.count
-			count: 2
 			path: owa_view.php
 
 		-

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_requestContainer.php'); // ??
  * @since        owa 1.0.0
  */
 
-class owa_view extends owa_base {
+class View extends \owa_base {
 
     /**
      * Main view template object
@@ -64,7 +66,7 @@ class owa_view extends owa_base {
     /**
      * CSS file for main template
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $css_file;
 
@@ -120,8 +122,8 @@ class owa_view extends owa_base {
 
         parent::__construct($params);
 
-        $this->t = new owa_template();
-        $this->body = new owa_template($this->module);
+        $this->t = new \owa_template();
+        $this->body = new \owa_template($this->module);
         $this->setTheme();
         $this->setCss("base/css/owa.css");
     }
@@ -129,7 +131,7 @@ class owa_view extends owa_base {
     /**
      * Assembles the view using passed model objects
      *
-     * @param unknown_type $data
+     * @param mixed $data
      * @return unknown
      */
     function assembleView($data) {
@@ -303,7 +305,7 @@ class owa_view extends owa_base {
         // report_wrapper is a config-file / settings value; reduce it to a
         // safe basename before handing it to the template loader so that a
         // poisoned setting cannot inject exotic content into log output.
-        $wrapper = owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
+        $wrapper = \owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
 
         if ( $wrapper === '' ) {
             $wrapper = 'wrapper_default.php';
@@ -341,7 +343,7 @@ class owa_view extends owa_base {
             endif;
         endif;
 
-        $this->subview = owa_coreAPI::subViewFactory($subview);
+        $this->subview = \owa_coreAPI::subViewFactory($subview);
         //print_r($subview.'///');
         $this->subview->setData($this->data);
     }
@@ -364,7 +366,7 @@ class owa_view extends owa_base {
     /**
      * Assembles the view using passed model objects
      *
-     * @param unknown_type $data
+     * @param mixed $data
      * @return unknown
      */
     function assembleSubView($data) {
@@ -399,7 +401,7 @@ class owa_view extends owa_base {
         $uid = $path;
         // Built stylesheets are served from the public/ asset tree, not the module
         // source tree -- see settings.php setupPaths() (assets_url).
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
+        $url = sprintf('%s?version=%s', \owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->css[$uid]['url'] = $url;
         // build file system path just in case we need to concatenate the JS into a single file.
         $fs_path = OWA_MODULES_DIR.$path;
@@ -420,7 +422,7 @@ class owa_view extends owa_base {
 
         // Built scripts are served from the public/ asset tree, not the module source
         // tree -- see settings.php setupPaths() (assets_url).
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
+        $url = sprintf('%s?version=%s', \owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->js[$uid]['url'] = $url;
 
         // build file system path just in case we need to concatenate the JS into a single file.
@@ -576,401 +578,27 @@ class owa_view extends owa_base {
 
     function setContentTypeHeader($type = 'html') {
 
-        owa_lib::setContentTypeHeader($type);
+        \owa_lib::setContentTypeHeader($type);
     }
 
 }
 
-/**
- * Generic HTMl Table View
- *
- * Will produce a generic html table
- *
- */
-class owa_genericTableView extends owa_view {
-
-    function __construct() {
-
-        parent::__construct();
-
-    }
-
-    function render($data) {
-
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('generic_table.php');
-
-        if (!empty($data['labels'])):
-            $this->body->set('labels', $data['labels']);
-            $this->body->set('col_count', count($data['labels']));
-        else:
-            $this->body->set('labels', '');
-            $this->body->set('col_count', count($data['rows'][0]));
-        endif;
-
-        if (!empty($data['rows'])):
-            $this->body->set('rows', $data['rows']);
-            $this->body->set('row_count', count($data['rows']));
-        else:
-            $this->body->set('rows', '');
-            $this->body->set('row_count', 0);
-        endif;
-
-        if (array_key_exists('table_class', $data)):
-            $this->body->set('table_class', $data['table_class']);
-        else:
-            $this->body->set('table_class', 'data');
-        endif;
-
-        if (array_key_exists('header_orientation', $data)):
-            $this->body->set('header_orientation', $data['header_orientation']);
-        else:
-            $this->body->set('header_orientation', 'col');
-        endif;
-
-        if (array_key_exists('table_footer', $data)):
-            $this->body->set('table_footer', $data['table_footer']);
-        else:
-            $this->body->set('table_footer', '');
-        endif;
-
-        if (array_key_exists('table_caption', $data)):
-            $this->body->set('table_caption', $data['table_caption']);
-        else:
-            $this->body->set('table_caption', '');
-        endif;
-
-        if (array_key_exists('is_sortable', $data)) {
-            if ($data['is_sortable'] != true) {
-                $this->body->set('sort_table_class', '');
-            }
-        } else {
-            $this->body->set('sort_table_class', 'tablesorter');
-        }
-
-        if (array_key_exists('table_row_template', $data)):
-            $this->body->set('table_row_template', $data['table_row_template']);
-        else:
-            ;
-        endif;
-
-        // show the no data error msg
-        if (array_key_exists('show_error', $data)):
-            $this->body->set('show_error', $data['show_error']);
-        else:
-            $this->body->set('show_error', true);
-        endif;
-
-        $this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
-
-    }
-}
-
-/**
- * @depricated
- */
-class owa_sparklineJsView extends owa_view {
-
-    function __construct() {
-
-        parent::__construct();
-
-    }
-
-    function render($data) {
-
-        // load template
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('sparklineJs.php');
-        // set
-        $this->body->set('widget', $data['widget']);
-        $this->body->set('type', $data['type']);
-        $this->body->set('height', $data['height']);
-        $this->body->set('width', $data['width']);
-        $this->body->set('values', $data['series']['values']);
-        $this->body->set('dom_id', $data['dom_id'].rand());
-        //$this->setJs("includes/jquery/jquery.sparkline.js");
-        return;
-    }
-}
-
-class owa_mailView extends owa_view {
-
-    // post office
-    var $po;
-    var $postProcessView = true;
-
-    function __construct() {
-
-        // make this a service
-        require_once(OWA_BASE_CLASS_DIR.'mailer.php');
-        $this->po = new owa_mailer;
-        parent::__construct();
-    }
-
-    function postProcess() {
-
-        $this->po->setHtmlBody( $this->t->fetch() );
-
-        if ( $this->get( 'plainTextView' ) ) {
-            $this->po->setAltBody( owa_coreAPI::displayView( $this->get( 'plain_text_view' ) ) );
-        }
-
-        return $this->po->sendMail();
-    }
-
-    function setMailSubject($sbj) {
-
-        $this->po->setSubject( $sbj );
-    }
-
-    function addMailToAddress($email, $name = '') {
-
-        if (empty($name)) {
-            $name = $email;
-        }
-
-        $this->po->addAddress($email, $name);
-    }
-}
-
-class owa_adminView extends owa_view {
-
-    var $postProcessView = true;
-
-    function __construct() {
-
-        parent::__construct();
-    }
-
-    function post() {
-        $this->setJs('owa.css');
-        $this->setJs('owa.admin.css');
-    }
-}
-
-/**
- * Rest API view
- *
- * This view assembles the response to REST API requests
- */
-class owa_restApiView extends owa_view {
-	
-	function __construct() {
-	 	
-	 	parent::__construct();
-	 	
-	 	// load templates
-        $this->t->set_template('wrapper_blank.php');
-        
-        $this->body->set_template('restApiResponse.php');
-    }
-    
-    /**
-	 * Used to set values of the response that we do not want the
-	 * abstract view to worry about or have ot deal with.
-	 *
-	 */
-    function pre() {
-	   
-	   // look for jsonp callback
-        $callback = $this->get('jsonpCallback');
-
-        // if not found look on the request scope.
-        if ( ! $callback ) {
-            $callback = owa_coreAPI::getRequestParam('jsonpCallback');
-        }
-
-        if ( $callback ) {
-            $this->body->set('callback', $callback);
-            $type = 'jsonp';
-        } else {
-            
-            $type = 'json';
-        }
-
-	   // set header if the request is from the API endpoint. Could be an internal request.
-	   
-	   if ( owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
-		   
-			owa_lib::setContentTypeHeader( $type );
-			
-			// set cahce-control header to avid downstream caching.
-			header("Cache-Control: max-age=0");		
-			
-			// add CORS request headers
-			$this->addCorsHeaders();
-	   }
-
-	   
-		// Generate GUID for response
-	    $request = owa_coreAPI::getRequest();
-
-        $this->body->set('request_id', $request->guid );
-	    	    
-	    $error = array();
-	    
-	    // set error msgs
-        if ( array_key_exists( 'error_msg', $this->data ) ) {
-	        
-            $error[] = $this->data['error_msg'];
-        }
-        
-        if ( array_key_exists( 'validation_errors', $this->data ) ) {
-	        
-            $error[] = $this->data['validation_errors'];
-        }
-        
-        $http_response = array(
-	        
-	        'status_code'	=> http_response_code()
-        );
-        
-        $this->body->set('http_response', $http_response);
-        $this->body->set('data', '');
-        $this->body->set('error', $error);
-    }
-    
-    /**
-	 * Sets the data payload of the response
-	 */
-    function setResponseData( $data ) {
-	    
-	    $this->body->set( 'response_data', $data );
-    }
-    
-    function addCorsHeaders() {
-	    
-	    $s = owa_coreAPI::serviceSingleton();
-	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
-	    
-	    // check for ORGIN header and bail if not found.
-        if ( ! isset( $HTTP_ORIGIN ) || $HTTP_ORIGIN == '') {
-	       
-            return;
-        }
-
-        // Loop through sites list and add cors headers if the ORGIN header is present on the request
-        foreach ( owa_coreAPI::getSitesList() as $allowedOrigin ) {
-        	
-        	if ( $allowedOrigin !== $HTTP_ORIGIN ) {
-	        	
-            	continue;
-            }
-			
-			// send back the allowed orgin
-            header( 'Access-Control-Allow-Origin: ' . $HTTP_ORIGIN );
-            
-            // needed to allow cookie content to become available to the DOM.
-            header( "Access-Control-Allow-Credentials: true" );
-            
-            // stop the loop
-            break;
-        }
-    }
-}
-
-class owa_jsonView extends owa_view {
-
-    function __construct() {
-
-        parent::__construct();
-    }
-
-    function render() {
-
-        // load template
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('json.php');
-
-        // look for jsonp callback
-        $callback = $this->get('jsonpCallback');
-
-        // if not found look on the request scope.
-        if ( ! $callback ) {
-            $callback = owa_coreAPI::getRequestParam('jsonpCallback');
-        }
-
-        if ( $callback ) {
-            $body = sprintf("%s(%s);", $callback, json_encode( $this->get( 'json' ) ) );
-            $type = 'jsonp';
-        } else {
-            $body = json_encode( $this->get( 'json' ) );
-            $type = 'json';
-        }
-
-        $this->body->set('json', $body);
-
-        owa_lib::setContentTypeHeader( $type );
-    }
-}
-
-class owa_jsonResultsView extends owa_view {
-
-    function render() {
-
-        // load template
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('json.php');
-
-        // set
-        $this->body->set('json', json_encode($this->get('data')));
-    }
-}
-
-class owa_adminPageView extends owa_view {
-
-    function render($data) {
-
-        // Set Page title
-        $this->t->set('page_title', $this->get('title'));
-
-        // Set Page headline
-        $this->body->set('title', $this->get('title'));
-        $this->body->set('titleSuffix', $this->get('titleSuffix'));
-        $this->body->set_template('genericAdminPage.php');
-        
-        $this->setJs('owa.reporting', 'base/dist/owa.reporting-combined-min.js');
-        $this->setCss("base/css/owa.reporting-css-combined.css");
-    }
-}
-
-class owa_cliView extends owa_view {
-
-    function __construct( $params ) {
-	   	
-		parent::__construct($params);
-    }
-    
-    function pre() {
-	    
-	    $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('msgsCli.php');
-	    
-	    $error = array();
-	    
-	    // set error msgs
-        if ( array_key_exists( 'error_msg', $this->data ) ) {
-	        
-            $error[] = $this->data['error_msg'];
-        }
-        
-        if ( array_key_exists( 'validation_errors', $this->data ) ) {
-	        
-            $error[] = $this->data['validation_errors'];
-        }
-        
-		$this->body->set('response_data', '');
-		$this->body->set('error', $error);
-    }
-    
-    /**
-	 * Sets the data payload of the response
-	 */
-    function setResponseData( $data ) {
-	    
-	    $this->body->set( 'response_data', $data );
-    }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ?>

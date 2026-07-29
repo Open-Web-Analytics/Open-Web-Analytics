@@ -205,7 +205,7 @@ parameters:
 			path: owa_module.php
 
 		-
-			message: '#^Access to an undefined property owa_view\:\:\$renderJsInLine\.$#'
+			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
 			identifier: property.notFound
 			count: 1
 			path: owa_view.php
@@ -217,37 +217,13 @@ parameters:
 			path: owa_view.php
 
 		-
-			message: '#^Method owa_view\:\:assembleSubView\(\) has invalid return type unknown\.$#'
+			message: '#^Method OWA\\Core\\View\:\:assembleSubView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
 			path: owa_view.php
 
 		-
-			message: '#^Method owa_view\:\:assembleView\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Method owa_view\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
-			identifier: arguments.count
-			count: 2
-			path: owa_view.php
-
-		-
-			message: '#^Parameter \$data of method owa_view\:\:assembleSubView\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Parameter \$data of method owa_view\:\:assembleView\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Property owa_view\:\:\$css_file has unknown class unknown_type as its type\.$#'
+			message: '#^Method OWA\\Core\\View\:\:assembleView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
 			path: owa_view.php

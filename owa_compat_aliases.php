@@ -98,6 +98,18 @@ function owa_compat_class_map(): array
         'owa_entity' => 'OWA\\Core\\Entity',
         'owa_metric' => 'OWA\\Core\\Metric',
         'owa_module' => 'OWA\\Core\\Module',
+        'owa_view' => 'OWA\\Core\\View',
+
+        // owa_view.php subclasses -> OWA\Core\View\ (Phase 6 stage 3)
+        'owa_genericTableView' => 'OWA\\Core\\View\\GenericTable',
+        'owa_sparklineJsView' => 'OWA\\Core\\View\\SparklineJs',
+        'owa_mailView' => 'OWA\\Core\\View\\Mail',
+        'owa_adminView' => 'OWA\\Core\\View\\Admin',
+        'owa_restApiView' => 'OWA\\Core\\View\\RestApi',
+        'owa_jsonView' => 'OWA\\Core\\View\\Json',
+        'owa_jsonResultsView' => 'OWA\\Core\\View\\JsonResults',
+        'owa_adminPageView' => 'OWA\\Core\\View\\AdminPage',
+        'owa_cliView' => 'OWA\\Core\\View\\Cli',
 
         // modules/base/entities (Phase 6 stage 2)
         'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
