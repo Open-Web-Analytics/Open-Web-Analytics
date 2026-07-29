@@ -61,7 +61,7 @@ final class EventQueueProcessingTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------------
 
-    private function queue(): owa_dbEventQueue
+    private function queue(): \OWA\Module\Base\Classes\DbEventQueue
     {
         // The 'processing' named queue is the database-backed queue. connect()
         // wires up its db handle (the drain does this before receiving); it is
