@@ -125,6 +125,15 @@ function owa_compat_class_map(): array
         'owa_subStringPositionValidation' => 'OWA\\Core\\Validation\\SubStringPosition',
         'owa_userNameValidation' => 'OWA\\Core\\Validation\\UserName',
 
+        // module.php registry classes -> OWA\Module\<Mod>\Module (Phase 6 stage 3)
+        'owa_baseModule' => 'OWA\\Module\\Base\\Module',
+        'owa_domstreamModule' => 'OWA\\Module\\Domstream\\Module',
+        'owa_fileCacheModule' => 'OWA\\Module\\FileCache\\Module',
+        'owa_helloModule' => 'OWA\\Module\\Hello\\Module',
+        'owa_maxmind_geoipModule' => 'OWA\\Module\\MaxmindGeoip\\Module',
+        'owa_memcachedCacheModule' => 'OWA\\Module\\MemcachedCache\\Module',
+        'owa_remoteQueueModule' => 'OWA\\Module\\RemoteQueue\\Module',
+
         // modules/base/entities (Phase 6 stage 2)
         'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
         'owa_action_fact' => 'OWA\\Module\\Base\\Entity\\ActionFact',

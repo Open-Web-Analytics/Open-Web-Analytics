@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Domstream;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @since        owa 1.6.1
  */
 
-class owa_domstreamModule extends owa_module {
+class Module extends \owa_module {
 
     function __construct() {
 
@@ -51,7 +53,7 @@ class owa_domstreamModule extends owa_module {
     function registerFilters() {
 
         // adds tracking cmd to js tracker.
-        if ( owa_coreAPI::getSetting( 'domstream', 'is_active' ) ) {
+        if ( \owa_coreAPI::getSetting( 'domstream', 'is_active' ) ) {
 
             $this->registerFilter('tracker_tag_cmds', $this, 'addToTracker', 99);
         }

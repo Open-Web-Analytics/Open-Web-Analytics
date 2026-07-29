@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\MemcachedCache;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,7 +18,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 
  */
 
-class owa_memcachedCacheModule extends owa_module {
+class Module extends \owa_module {
 
     function __construct() {
 

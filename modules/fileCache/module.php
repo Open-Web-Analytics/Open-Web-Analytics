@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\FileCache;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,7 +18,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 
  */
 
-class owa_fileCacheModule extends owa_module {
+class Module extends \owa_module {
 
     function __construct() {
 
@@ -35,8 +37,8 @@ class owa_fileCacheModule extends owa_module {
     function init() {
 	    
 	    $this->registerImplementation('object_cache_types', 'file', 'owa_fileCache', 'classes/fileCache.php');
-	    owa_coreAPI::setSetting('base', 'cache_objects', true);
-	    owa_coreAPI::setSetting('base', 'cacheType', 'file');
+	    \owa_coreAPI::setSetting('base', 'cache_objects', true);
+	    \owa_coreAPI::setSetting('base', 'cacheType', 'file');
     }
 }
 

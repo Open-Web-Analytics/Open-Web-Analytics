@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\MaxmindGeoip;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @since        owa 1.4.0
  */
 
-class owa_maxmind_geoipModule extends owa_module {
+class Module extends \owa_module {
 
     var $method;
 
@@ -45,7 +47,7 @@ class owa_maxmind_geoipModule extends owa_module {
         $this->config_required = false;
         $this->required_schema_version = 1;
 
-        $mode = owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
+        $mode = \owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
 
         switch ( $mode ) {
 
@@ -64,9 +66,9 @@ class owa_maxmind_geoipModule extends owa_module {
         $this->method = $method;
 		
 		// turn on geo-location
-		owa_coreAPI::setSetting( 'base', 'geolocation_lookup', true );
+		\owa_coreAPI::setSetting( 'base', 'geolocation_lookup', true );
         // needed so default filters will not fun
-        owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
+        \owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
 
         return parent::__construct();
@@ -74,7 +76,7 @@ class owa_maxmind_geoipModule extends owa_module {
 
     function registerFilters() {
 
-        if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
+        if ( \owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
 
             $this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
         }

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\RemoteQueue;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @since        owa 1.5.7
  */
 
-class owa_remoteQueueModule extends owa_module {
+class Module extends \owa_module {
 
     function __construct() {
 
@@ -45,7 +47,7 @@ class owa_remoteQueueModule extends owa_module {
 
         // register named queues
 
-        $endpoint = owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
+        $endpoint = \owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
 
         if ( $endpoint ) {
 

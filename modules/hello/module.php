@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Hello;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @since        owa 1.0.0
  */
 
-class owa_helloModule extends owa_module {
+class Module extends \owa_module {
 
 
     function __construct() {
