@@ -432,7 +432,31 @@ class CoreAPI {
         $seg   = \owa_lib::moduleDirName( $module );
         $class = 'OWA\\Module\\' . $seg . '\\Module';
 
-        return \owa_lib::factory( OWA_BASE_CLASSES_DIR . $seg, '', $class );
+        if ( class_exists( $class ) ) {
+            return \owa_lib::factory( OWA_BASE_CLASSES_DIR . $seg, '', $class );
+        }
+
+        // BACKWARDS COMPAT (third-party modules): a pre-PSR-4 module ships its
+        // registry class the old way -- a global-namespace `owa_<name>Module`
+        // declared in modules/<dir>/module.php, not an autoloadable
+        // OWA\Module\<Seg>\Module. Fall back to the legacy require + instantiate
+        // so such a module still loads through a full major-version deprecation
+        // window. OWA's own modules never reach here (their PSR-4 class exists).
+        \owa_coreAPI::notice(
+            "Module '{$module}' loaded via the DEPRECATED pre-PSR-4 path "
+            . "(modules/{$seg}/module.php declaring owa_{$module}Module). Migrate it "
+            . "to a PascalCase directory with an OWA\\Module\\" . \owa_lib::moduleDirName( $module )
+            . "\\Module class; the legacy layout will be removed in a future major version."
+        );
+
+        $legacy_file  = OWA_MODULES_DIR . $seg . '/module.php';
+        $legacy_class = 'owa_' . $module . 'Module';
+
+        if ( ! class_exists( $legacy_class ) && file_exists( $legacy_file ) ) {
+            require_once( $legacy_file );
+        }
+
+        return \owa_lib::factory( OWA_MODULES_DIR . $seg, 'owa_', $module . 'Module' );
     }
 
 

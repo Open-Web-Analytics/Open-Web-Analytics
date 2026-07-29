@@ -33,11 +33,32 @@ class Lib {
      *   memcachedCache-> MemcachedCache
      *   remoteQueue   -> RemoteQueue
      *
+     * BACKWARDS COMPAT (third-party modules): a module shipped in the pre-PSR-4
+     * convention still lives in a lowercase directory (modules/mymodule/). If no
+     * PascalCase dir exists but a legacy-named one does, resolve to the legacy
+     * dir verbatim so the presence check + every path-building factory keep
+     * finding it. OWA's own modules always hit the PascalCase branch (the legacy
+     * dirs are gone), so this costs them nothing but a cached is_dir() stat.
+     * The transform is still idempotent on its own output ('Base' -> 'Base').
+     *
      * @param string $name lowercase module runtime name
-     * @return string PascalCase directory / namespace segment
+     * @return string PascalCase directory / namespace segment (or legacy dir)
      */
     public static function moduleDirName($name) {
-        return str_replace('_', '', ucwords($name, '_'));
+        static $cache = array();
+        if ( isset( $cache[ $name ] ) ) {
+            return $cache[ $name ];
+        }
+        $pascal = str_replace( '_', '', ucwords( $name, '_' ) );
+
+        // Prefer the PSR-4 PascalCase dir; fall back to a legacy lowercase dir
+        // that exists as-is (a pre-PSR-4 third-party module).
+        if ( defined( 'OWA_MODULES_DIR' )
+            && ! is_dir( OWA_MODULES_DIR . $pascal )
+            && is_dir( OWA_MODULES_DIR . $name ) ) {
+            return $cache[ $name ] = $name;
+        }
+        return $cache[ $name ] = $pascal;
     }
 
     /**
