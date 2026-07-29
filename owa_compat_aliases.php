@@ -303,6 +303,99 @@ function owa_compat_class_map(): array
         'owa_sitesRestView' => 'OWA\\Module\\Base\\View\\SitesRest',
         'owa_usersRestController' => 'OWA\\Module\\Base\\Controller\\UsersRest',
         'owa_usersRestView' => 'OWA\\Module\\Base\\View\\UsersRest',
+
+        // modules/base flat pages — SINGLE-class files (Phase 6 stage 3).
+        // In-place affix->namespace (no split needed): Controller suffix ->
+        // ...Base\\Controller\\<Name>, View suffix -> ...Base\\View\\<Name>.
+        'owa_entityInstallController' => 'OWA\\Module\\Base\\Controller\\EntityInstall',
+        'owa_errorView' => 'OWA\\Module\\Base\\View\\Error',
+        'owa_flushCacheCliController' => 'OWA\\Module\\Base\\Controller\\FlushCacheCli',
+        'owa_flushProcessedEventsCliController' => 'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',
+        'owa_genericCliView' => 'OWA\\Module\\Base\\View\\GenericCli',
+        'owa_installView' => 'OWA\\Module\\Base\\View\\Install',
+        'owa_installBaseController' => 'OWA\\Module\\Base\\Controller\\InstallBase',
+        'owa_installCliController' => 'OWA\\Module\\Base\\Controller\\InstallCli',
+        'owa_installConfigController' => 'OWA\\Module\\Base\\Controller\\InstallConfig',
+        'owa_installConfigEntryView' => 'OWA\\Module\\Base\\View\\InstallConfigEntry',
+        'owa_loginController' => 'OWA\\Module\\Base\\Controller\\Login',
+        'owa_logoutController' => 'OWA\\Module\\Base\\Controller\\Logout',
+        'owa_moduleActivateController' => 'OWA\\Module\\Base\\Controller\\ModuleActivate',
+        'owa_moduleActivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleActivateCli',
+        'owa_moduleDeactivateController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivate',
+        'owa_moduleDeactivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',
+        'owa_moduleInstallCliController' => 'OWA\\Module\\Base\\Controller\\ModuleInstallCli',
+        'owa_notifyNewSessionPlainTextView' => 'OWA\\Module\\Base\\View\\NotifyNewSessionPlainText',
+        'owa_optionsView' => 'OWA\\Module\\Base\\View\\Options',
+        'owa_optionsFlushCacheController' => 'OWA\\Module\\Base\\Controller\\OptionsFlushCache',
+        'owa_optionsGoalEditController' => 'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',
+        'owa_optionsResetController' => 'OWA\\Module\\Base\\Controller\\OptionsReset',
+        'owa_optionsUpdateController' => 'OWA\\Module\\Base\\Controller\\OptionsUpdate',
+        'owa_passwordResetRequestController' => 'OWA\\Module\\Base\\Controller\\PasswordResetRequest',
+        'owa_pixelView' => 'OWA\\Module\\Base\\View\\Pixel',
+        'owa_processEventController' => 'OWA\\Module\\Base\\Controller\\ProcessEvent',
+        'owa_processEventQueueController' => 'OWA\\Module\\Base\\Controller\\ProcessEventQueue',
+        'owa_processFirstRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',
+        'owa_processRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessRequest',
+        'owa_pruneEventQueueArchivesCliController' => 'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',
+        'owa_reportActionDetailController' => 'OWA\\Module\\Base\\Controller\\ReportActionDetail',
+        'owa_reportActionGroupController' => 'OWA\\Module\\Base\\Controller\\ReportActionGroup',
+        'owa_reportActionGroupsController' => 'OWA\\Module\\Base\\Controller\\ReportActionGroups',
+        'owa_reportAdDetailController' => 'OWA\\Module\\Base\\Controller\\ReportAdDetail',
+        'owa_reportAdTypeDetailController' => 'OWA\\Module\\Base\\Controller\\ReportAdTypeDetail',
+        'owa_reportAdTypesController' => 'OWA\\Module\\Base\\Controller\\ReportAdTypes',
+        'owa_reportAdsController' => 'OWA\\Module\\Base\\Controller\\ReportAds',
+        'owa_reportAnchortextController' => 'OWA\\Module\\Base\\Controller\\ReportAnchortext',
+        'owa_reportAttributionHistoryController' => 'OWA\\Module\\Base\\Controller\\ReportAttributionHistory',
+        'owa_reportAvgOrderValueController' => 'OWA\\Module\\Base\\Controller\\ReportAvgOrderValue',
+        'owa_reportBrowserDetailController' => 'OWA\\Module\\Base\\Controller\\ReportBrowserDetail',
+        'owa_reportBrowsersController' => 'OWA\\Module\\Base\\Controller\\ReportBrowsers',
+        'owa_reportCampaignDetailController' => 'OWA\\Module\\Base\\Controller\\ReportCampaignDetail',
+        'owa_reportCampaignsController' => 'OWA\\Module\\Base\\Controller\\ReportCampaigns',
+        'owa_reportCountryDetailController' => 'OWA\\Module\\Base\\Controller\\ReportCountryDetail',
+        'owa_reportCreativePerformanceController' => 'OWA\\Module\\Base\\Controller\\ReportCreativePerformance',
+        'owa_reportDaysToPurchaseController' => 'OWA\\Module\\Base\\Controller\\ReportDaysToPurchase',
+        'owa_reportEcommerceConversionRateController' => 'OWA\\Module\\Base\\Controller\\ReportEcommerceConversionRate',
+        'owa_reportEntryPagesController' => 'OWA\\Module\\Base\\Controller\\ReportEntryPages',
+        'owa_reportExitPagesController' => 'OWA\\Module\\Base\\Controller\\ReportExitPages',
+        'owa_reportGeolocationController' => 'OWA\\Module\\Base\\Controller\\ReportGeolocation',
+        'owa_reportHostDetailController' => 'OWA\\Module\\Base\\Controller\\ReportHostDetail',
+        'owa_reportHostsController' => 'OWA\\Module\\Base\\Controller\\ReportHosts',
+        'owa_reportKeywordDetailController' => 'OWA\\Module\\Base\\Controller\\ReportKeywordDetail',
+        'owa_reportKeywordsController' => 'OWA\\Module\\Base\\Controller\\ReportKeywords',
+        'owa_reportOsController' => 'OWA\\Module\\Base\\Controller\\ReportOs',
+        'owa_reportOsDetailController' => 'OWA\\Module\\Base\\Controller\\ReportOsDetail',
+        'owa_reportPageTypeDetailController' => 'OWA\\Module\\Base\\Controller\\ReportPageTypeDetail',
+        'owa_reportPageTypesController' => 'OWA\\Module\\Base\\Controller\\ReportPageTypes',
+        'owa_reportPagesController' => 'OWA\\Module\\Base\\Controller\\ReportPages',
+        'owa_reportProductCategoriesController' => 'OWA\\Module\\Base\\Controller\\ReportProductCategories',
+        'owa_reportProductCategoryDetailController' => 'OWA\\Module\\Base\\Controller\\ReportProductCategoryDetail',
+        'owa_reportProductDetailController' => 'OWA\\Module\\Base\\Controller\\ReportProductDetail',
+        'owa_reportProductSkuDetailController' => 'OWA\\Module\\Base\\Controller\\ReportProductSkuDetail',
+        'owa_reportProductSkusController' => 'OWA\\Module\\Base\\Controller\\ReportProductSkus',
+        'owa_reportProductsController' => 'OWA\\Module\\Base\\Controller\\ReportProducts',
+        'owa_reportReferralDetailController' => 'OWA\\Module\\Base\\Controller\\ReportReferralDetail',
+        'owa_reportReferralLinkTextDetailController' => 'OWA\\Module\\Base\\Controller\\ReportReferralLinkTextDetail',
+        'owa_reportReferringSitesController' => 'OWA\\Module\\Base\\Controller\\ReportReferringSites',
+        'owa_reportRevenueController' => 'OWA\\Module\\Base\\Controller\\ReportRevenue',
+        'owa_reportSearchEngineDetailController' => 'OWA\\Module\\Base\\Controller\\ReportSearchEngineDetail',
+        'owa_reportSearchEnginesController' => 'OWA\\Module\\Base\\Controller\\ReportSearchEngines',
+        'owa_reportSourceDetailController' => 'OWA\\Module\\Base\\Controller\\ReportSourceDetail',
+        'owa_reportSourcesController' => 'OWA\\Module\\Base\\Controller\\ReportSources',
+        'owa_reportStateDetailController' => 'OWA\\Module\\Base\\Controller\\ReportStateDetail',
+        'owa_reportVisitorsAgeController' => 'OWA\\Module\\Base\\Controller\\ReportVisitorsAge',
+        'owa_reportVisitorsLoyaltyController' => 'OWA\\Module\\Base\\Controller\\ReportVisitorsLoyalty',
+        'owa_reportVisitorsRecencyController' => 'OWA\\Module\\Base\\Controller\\ReportVisitorsRecency',
+        'owa_reportVisitsToPurchaseController' => 'OWA\\Module\\Base\\Controller\\ReportVisitsToPurchase',
+        'owa_sitesDeleteController' => 'OWA\\Module\\Base\\Controller\\SitesDelete',
+        'owa_sitesEditController' => 'OWA\\Module\\Base\\Controller\\SitesEdit',
+        'owa_sitesEditAllowedUsersController' => 'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',
+        'owa_sitesEditSettingsController' => 'OWA\\Module\\Base\\Controller\\SitesEditSettings',
+        'owa_updatesApplyController' => 'OWA\\Module\\Base\\Controller\\UpdatesApply',
+        'owa_updatesApplyCliController' => 'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',
+        'owa_usersAddController' => 'OWA\\Module\\Base\\Controller\\UsersAdd',
+        'owa_usersChangePasswordController' => 'OWA\\Module\\Base\\Controller\\UsersChangePassword',
+        'owa_usersDeleteController' => 'OWA\\Module\\Base\\Controller\\UsersDelete',
+        'owa_usersEditController' => 'OWA\\Module\\Base\\Controller\\UsersEdit',
     ];
 }
 
@@ -315,11 +408,28 @@ spl_autoload_register(function (string $class): void {
     }
 
     $map = owa_compat_class_map();
-    if (!isset($map[$class])) {
-        return; // not a migrated class — leave it to the require_once loaders
+    $new = $map[$class] ?? null;
+
+    // PHP class names are case-insensitive, and legacy OWA code references some
+    // owa_* names in the "wrong" case (e.g. deleteUserRestController.php extends
+    // owa_usersdeleteController, whose canonical class is owa_usersDeleteController).
+    // That resolved fine while the class was globally declared; now it lives only
+    // behind this bridge, so fall back to a case-insensitive lookup to preserve
+    // the original semantics.
+    if ($new === null) {
+        static $ciMap = null;
+        if ($ciMap === null) {
+            $ciMap = [];
+            foreach ($map as $old => $target) {
+                $ciMap[strtolower($old)] = $target;
+            }
+        }
+        $new = $ciMap[strtolower($class)] ?? null;
     }
 
-    $new = $map[$class];
+    if ($new === null) {
+        return; // not a migrated class — leave it to the require_once loaders
+    }
 
     // Make sure the new class is actually loaded (Composer PSR-4/classmap).
     // Guard the alias so we never redefine an old name that is still declared

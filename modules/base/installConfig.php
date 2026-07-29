@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  * @since        owa 1.0.0
  */
 
-class owa_installConfigController extends owa_installController {
+class InstallConfig extends \owa_installController {
 
     function __construct($params) {
     
@@ -104,15 +106,15 @@ class owa_installConfigController extends owa_installController {
             define('OWA_DB_PASSWORD', $this->getParam( 'db_password' ) );
         }
 
-        owa_coreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
-        owa_coreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
-        owa_coreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
-        owa_coreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
-        owa_coreAPI::setSetting('base', 'db_user', OWA_DB_USER);
-        owa_coreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
+        \owa_coreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
+        \owa_coreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
+        \owa_coreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
+        \owa_coreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
+        \owa_coreAPI::setSetting('base', 'db_user', OWA_DB_USER);
+        \owa_coreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
 
         // Check DB connection status
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->connect();
         if ($db->connection_status != true) {
             $this->set('error_msg', $this->getMsg(3012));

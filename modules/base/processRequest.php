@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 
 //
@@ -33,7 +35,7 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
  * @since        owa 1.0.0
  */
 
-class owa_processRequestController extends owa_processEventController {
+class ProcessRequest extends \owa_processEventController {
 
     function __construct($params) {
 
@@ -47,7 +49,7 @@ class owa_processRequestController extends owa_processEventController {
 
     function post() {
 
-        owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
+        \owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
 
         return $this->addToEventQueue();
     }

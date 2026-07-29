@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,16 +30,16 @@ require_once(OWA_BASE_MODULE_DIR.'/sitesEditSettings.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_sitesEditAllowedUsersController extends owa_sitesEditSettingsController {
+class SitesEditAllowedUsers extends \owa_sitesEditSettingsController {
 
 
 
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $siteEntity = owa_coreAPI::entityFactory( 'base.site' );
+        $siteEntity = \owa_coreAPI::entityFactory( 'base.site' );
         $siteEntity->load( $siteEntity->generateId( $site_id ) );
-        owa_coreAPI::debug( $siteEntity->_getProperties());
+        \owa_coreAPI::debug( $siteEntity->_getProperties());
         if ($this->getParam( 'allowed_users' ) ) {
             $siteEntity->updateAssignedUserIds($this->getParam( 'allowed_users' ));
         }

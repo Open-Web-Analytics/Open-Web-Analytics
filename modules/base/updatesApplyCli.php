@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_updatesApplyCliController extends owa_cliController {
+class UpdatesApplyCli extends \owa_cliController {
     
     function __construct($params) {
         define('OWA_UPDATING', true);
@@ -38,7 +40,7 @@ class owa_updatesApplyCliController extends owa_cliController {
     function action() {
         
         // fetch list of modules that require updates
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         
         if ($this->isParam('listpending')) {
             
@@ -75,14 +77,14 @@ class owa_updatesApplyCliController extends owa_cliController {
             }
             
             if ($error === true) {
-                owa_coreAPI::notice($this->getMsg(3307));
+                \owa_coreAPI::notice($this->getMsg(3307));
             } else {
                 
                 // add data to container
-                owa_coreAPI::notice($this->getMsg(3308));
+                \owa_coreAPI::notice($this->getMsg(3308));
             }
         } else {
-            owa_coreAPI::notice("There are no modules with pending updates to apply.");
+            \owa_coreAPI::notice("There are no modules with pending updates to apply.");
         }
     
     
@@ -90,19 +92,19 @@ class owa_updatesApplyCliController extends owa_cliController {
     
     function listPendingUpdates() {
         
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $modules = $s->getModulesNeedingUpdates();
         if ($modules) {
-            owa_coreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
+            \owa_coreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
         } else {
-            owa_coreAPI::notice("No updates are pending.");
+            \owa_coreAPI::notice("No updates are pending.");
         }
     }
     
     function apply($update) {
     
         list($module, $seq) = explode('.', $update);
-        $u = owa_coreAPI::updateFactory($module, $seq);
+        $u = \owa_coreAPI::updateFactory($module, $seq);
         
         // check for force command param
         $force = false;
@@ -114,15 +116,15 @@ class owa_updatesApplyCliController extends owa_cliController {
         $ret = $u->apply($force);
         
         if ($ret) {
-            owa_coreAPI::notice("Updates applied successfully.");
+            \owa_coreAPI::notice("Updates applied successfully.");
         }
     }
     
     function rollback($update) {
         list($module, $seq) = explode('.', $update);
-        $u = owa_coreAPI::updateFactory($module, $seq);
+        $u = \owa_coreAPI::updateFactory($module, $seq);
         $u->rollback();
-        owa_coreAPI::notice("Rollback completed.");
+        \owa_coreAPI::notice("Rollback completed.");
     }
     
 }

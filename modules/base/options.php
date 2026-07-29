@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\View;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsView extends owa_view {
+class Options extends \owa_view {
 
     function __construct() {
 
@@ -52,7 +54,7 @@ class owa_optionsView extends owa_view {
         $this->body->set('headline', 'OWA Settings');
 
         // get admin panels
-        $api = owa_coreAPI::singleton();
+        $api = \owa_coreAPI::singleton();
         $panels = $api->getAdminPanels();
         //print_r($panels);
         $this->body->set('panels', $panels);

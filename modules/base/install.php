@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\View;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_installView extends owa_view {
+class Install extends \owa_view {
 
     function __construct() {
 

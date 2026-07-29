@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -34,7 +36,7 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersChangePasswordController extends owa_controller {
+class UsersChangePassword extends \owa_controller {
 
     public function validate()
     {
@@ -58,16 +60,16 @@ class owa_usersChangePasswordController extends owa_controller {
 		// needed for old style embedded install migration
 		if ( $this->getParam('is_embedded') ) {
 			
-			owa_coreAPI::setSetting('base', 'is_embedded', true);
+			\owa_coreAPI::setSetting('base', 'is_embedded', true);
 		}
 		
 		
-        $auth = owa_auth::get_instance();
+        $auth = \owa_auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->params['k']);
 
         // log to event queue
         if ($status === true) {
-            $ed = owa_coreAPI::getEventDispatch();
+            $ed = \owa_coreAPI::getEventDispatch();
             $new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();

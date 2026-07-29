@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersEditController extends owa_adminController {
+class UsersEdit extends \owa_adminController {
 
     function __construct($params) {
 
@@ -59,7 +61,7 @@ class owa_usersEditController extends owa_adminController {
 
         // This needs form validation in a bad way.
 
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \owa_coreAPI::entityFactory('base.user');
         $u->getByColumn('user_id', $this->getParam('user_id'));
         $u->set('email_address', $this->getParam('email_address'));
 

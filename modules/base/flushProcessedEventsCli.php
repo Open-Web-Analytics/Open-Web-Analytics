@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_flushProcessedEventsCliController extends owa_cliController {
+class FlushProcessedEventsCli extends \owa_cliController {
 
     function __construct( $params ) {
 
@@ -45,7 +47,7 @@ class owa_flushProcessedEventsCliController extends owa_cliController {
         // owa_eventDispatch, so the old call fataled on every invocation.
         // getEventQueue() resolves the queue by its registered name and
         // connect() supplies the db handle that flushHandledEvents() needs.
-        $q = owa_coreAPI::getEventQueue( 'processing' );
+        $q = \owa_coreAPI::getEventQueue( 'processing' );
 
         if ( $q->connect() ) {
 

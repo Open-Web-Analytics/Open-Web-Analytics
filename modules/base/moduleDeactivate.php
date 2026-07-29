@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_moduleDeactivateController extends owa_adminController {
+class ModuleDeactivate extends \owa_adminController {
 
     function __construct($params) {
 
@@ -43,7 +45,7 @@ class owa_moduleDeactivateController extends owa_adminController {
 
     function action() {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $m = $s->getModule($this->getParam('module'));
         $m->deactivate();
         $this->setRedirectAction('base.optionsModules');

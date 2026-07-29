@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_installCliController extends owa_cliController {
+class InstallCli extends \owa_cliController {
 
     function __construct($params) {
         define('OWA_INSTALLING', true);
@@ -37,8 +39,8 @@ class owa_installCliController extends owa_cliController {
 
     function action() {
 
-        $service = owa_coreAPI::serviceSingleton();
-        $im = owa_coreAPI::supportClassFactory('base', 'installManager');
+        $service = \owa_coreAPI::serviceSingleton();
+        $im = \owa_coreAPI::supportClassFactory('base', 'installManager');
         $this->e->notice('Starting OWA Install from command line.');
 
         //create config file

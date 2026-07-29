@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\View;
+
 
 
 //
@@ -33,7 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_pixelView extends owa_view {
+class Pixel extends \owa_view {
 
     function render($data) {
 

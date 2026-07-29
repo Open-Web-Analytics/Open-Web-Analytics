@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,11 +30,11 @@
  * @since        owa 1.3.0
  */
 
-class owa_flushCacheCliController extends owa_cliController {
+class FlushCacheCli extends \owa_cliController {
 
     function action() {
 
-        $cache = owa_coreAPI::cacheSingleton();
+        $cache = \owa_coreAPI::cacheSingleton();
         $cache->flush();
 
         $this->e->notice("Cache Flushed");

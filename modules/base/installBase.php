@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  * @since        owa 1.0.0
  */
 
-class owa_installBaseController extends owa_installController {
+class InstallBase extends \owa_installController {
 
     function __construct($params) {
 
@@ -82,7 +84,7 @@ class owa_installBaseController extends owa_installController {
             }
 
             // fire install complete event.
-            $ed = owa_coreAPI::getEventDispatch();
+            $ed = \owa_coreAPI::getEventDispatch();
             $event = $ed->eventFactory();
             $event->set('u', $this->getParam('user_id'));
             $event->set('p', $password);

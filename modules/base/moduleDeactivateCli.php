@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @since        owa 1.0.0
  */
 
-class owa_moduleDeactivateCliController extends owa_cliController {
+class ModuleDeactivateCli extends \owa_cliController {
     
     function __construct($params) {
     
@@ -44,10 +46,10 @@ class owa_moduleDeactivateCliController extends owa_cliController {
         
         if ( $module ) {
     
-            $ret = owa_coreAPI::deactivateModule($module);
+            $ret = \owa_coreAPI::deactivateModule($module);
             
         } else {
-            owa_coreAPI::notice('No module argument was specified. Use module=xxx');
+            \owa_coreAPI::notice('No module argument was specified. Use module=xxx');
         }
     }
     

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_sitesEditController extends owa_adminController {
+class SitesEdit extends \owa_adminController {
 
     function __construct($params) {
 
@@ -59,7 +61,7 @@ class owa_sitesEditController extends owa_adminController {
 
         // This needs form validation in a bad way.
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         if (! $this->getParam('siteId')) {
             throw exception('No siteId passed on request');
         }

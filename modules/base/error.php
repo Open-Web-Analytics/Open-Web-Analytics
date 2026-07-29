@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\View;
+
 
 
 //
@@ -32,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_errorView extends owa_view {
+class Error extends \owa_view {
 
 
     function __construct() {

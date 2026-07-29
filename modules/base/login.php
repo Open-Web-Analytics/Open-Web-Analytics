@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -19,7 +21,7 @@
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
-class owa_loginController extends owa_controller {
+class Login extends \owa_controller {
 
     public function validate()
     {
@@ -28,9 +30,9 @@ class owa_loginController extends owa_controller {
 
     function action() {
 
-        $auth = owa_auth::get_instance();
+        $auth = \owa_auth::get_instance();
         $status = $auth->authenticateUser();
-        $go = owa_sanitize::cleanUrl( $this->getParam('go') );
+        $go = \owa_sanitize::cleanUrl( $this->getParam('go') );
         // if authentication is successfull
         if ($status['auth_status'] == true) {
 
@@ -38,7 +40,7 @@ class owa_loginController extends owa_controller {
                 // redirect to url if present
                 $url = urldecode(htmlspecialchars_decode( $go ) );
                 $this->e->debug("redirecting browser to...:". $url);
-                owa_lib::redirectBrowser($url);
+                \owa_lib::redirectBrowser($url);
 
             } else {
                 //else redirect to home page

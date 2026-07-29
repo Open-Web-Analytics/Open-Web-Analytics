@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @since        owa 1.4.0
  */
 
-class owa_optionsGoalEditController extends owa_adminController {
+class OptionsGoalEdit extends \owa_adminController {
 
     function __construct($params) {
 
@@ -43,7 +45,7 @@ class owa_optionsGoalEditController extends owa_adminController {
         $goal = $this->getParam('goal');
 
         foreach ($goal['details']['funnel_steps'] as $num => $step) {
-            $check = owa_lib::array_values_assoc($step);
+            $check = \owa_lib::array_values_assoc($step);
             if (!empty($check)) {
                 $step['step_number'] = $num;
                 $this->params['goal']['details']['funnel_steps'][$num] = $step;
@@ -101,7 +103,7 @@ class owa_optionsGoalEditController extends owa_adminController {
 
         // setup goal manager
         $siteId = $this->get('siteId');
-        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
         $goal = $this->getParam('goal');
         //$all_goals = owa_coreAPI::getSiteSetting($site_id, 'goals');
         //$goal_groups = owa_coreAPI::getSiteSetting($site_id, 'goal_groups');
@@ -112,7 +114,7 @@ class owa_optionsGoalEditController extends owa_adminController {
             //$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
         }
 
-        owa_coreAPI::debug('New goals: '.print_r($gm->goals,true));
+        \owa_coreAPI::debug('New goals: '.print_r($gm->goals,true));
         $this->setStatusCode(2504);
         $this->set('siteId', $siteId);
         $this->setRedirectAction('base.optionsGoals');
@@ -126,7 +128,7 @@ class owa_optionsGoalEditController extends owa_adminController {
         $this->set('goal', $goal);
         $this->set('goal_number', $goal['goal_number']);
         $siteId = $this->get('siteId');
-        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
         $this->set('goal_groups', $gm->getAllGoalGroupLabels() );
     }
 }

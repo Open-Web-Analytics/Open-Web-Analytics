@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsFlushCacheController extends owa_adminController {
+class OptionsFlushCache extends \owa_adminController {
 
     function __construct($params) {
 
@@ -40,7 +42,7 @@ class owa_optionsFlushCacheController extends owa_adminController {
 
     function action() {
 
-        $cache = owa_coreAPI::cacheSingleton();
+        $cache = \owa_coreAPI::cacheSingleton();
         $cache->flush();
 
         $this->e->notice("Cache Flushed");

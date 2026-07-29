@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_sitesDeleteController extends owa_adminController {
+class SitesDelete extends \owa_adminController {
 
     function __construct($params) {
         parent::__construct($params);
@@ -40,7 +42,7 @@ class owa_sitesDeleteController extends owa_adminController {
 
     function action() {
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
         $this->setRedirectAction('base.sites');
         $this->set('status_code', 3204);

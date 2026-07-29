@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsResetController extends owa_adminController {
+class OptionsReset extends \owa_adminController {
 
     function __construct($params) {
 
@@ -40,7 +42,7 @@ class owa_optionsResetController extends owa_adminController {
 
     function action() {
 
-        $config = owa_coreAPI::configSingleton();
+        $config = \owa_coreAPI::configSingleton();
 
         $ret = $config->reset($this->get('module'));
 

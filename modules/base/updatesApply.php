@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,12 +32,12 @@ require_once(OWA_DIR.'owa_controller.php');
  * @since        owa 1.0.0
  */
 
-class owa_updatesApplyController extends owa_controller {
+class UpdatesApply extends \owa_controller {
 
     function action() {
 
         // fetch list of modules that require updates
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
 
         $modules = $s->getModulesNeedingUpdates();
         //print_r($modules);

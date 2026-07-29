@@ -211,12 +211,6 @@ parameters:
 			path: modules/base/classes/validator.php
 
 		-
-			message: '#^Class owa_usersDeleteController referenced with incorrect case\: owa_usersdeleteController\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/controllers/deleteUserRestController.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
@@ -715,25 +709,25 @@ parameters:
 			path: modules/base/processEventQueue.php
 
 		-
-			message: '#^Method owa_processFirstRequestController\:\:action\(\) should return unknown but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Controller\\ProcessFirstRequest\:\:action\(\) should return OWA\\Module\\Base\\Controller\\unknown but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/processFirstRequest.php
 
 		-
-			message: '#^Result of method owa_processEventController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Module\\Base\\Controller\\ProcessEvent\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/processFirstRequest.php
 
 		-
-			message: '#^Method owa_processRequestController\:\:action\(\) should return unknown but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Controller\\ProcessRequest\:\:action\(\) should return OWA\\Module\\Base\\Controller\\unknown but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/processRequest.php
 
 		-
-			message: '#^Result of method owa_processEventController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Module\\Base\\Controller\\ProcessEvent\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/processRequest.php

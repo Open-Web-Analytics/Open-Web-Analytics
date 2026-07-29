@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,11 +33,11 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @since        owa 1.0.0
  */
 
-class owa_logoutController extends owa_controller {
+class Logout extends \owa_controller {
 
     function action() {
 
-        $auth = owa_auth::get_instance();
+        $auth = \owa_auth::get_instance();
         $auth->deleteCredentials();
         $this->setRedirectAction('base.loginForm');
     }

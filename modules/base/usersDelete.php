@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_usersDeleteController extends owa_adminController {
+class UsersDelete extends \owa_adminController {
 
     function __construct($params) {
 
@@ -47,7 +49,7 @@ class owa_usersDeleteController extends owa_adminController {
 
     function action() {
 
-        $userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $userManager = \owa_coreApi::supportClassFactory('base', 'userManager');
 
         // add check here to ensure that this is not the default user....
         $userManager->deleteUser($this->getParam('user_id'));

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since        owa 1.0.0
  */
 
-class owa_passwordResetRequestController extends owa_controller {
+class PasswordResetRequest extends \owa_controller {
 
     public function validate()
     {
@@ -48,7 +50,7 @@ class owa_passwordResetRequestController extends owa_controller {
     function action() {
 
         // Log password reset request to event queue
-        $ed = owa_coreAPI::getEventDispatch();
+        $ed = \owa_coreAPI::getEventDispatch();
 
         $event = $ed->makeEvent( 'base.reset_password' );
         $event->set('email_address', $this->getParam( 'email_address' ) );

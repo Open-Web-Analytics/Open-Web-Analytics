@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,14 +32,14 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.4.0
  */
 
-class owa_reportCampaignsController extends owa_reportController {
+class ReportCampaigns extends \owa_reportController {
 
     function action() {
 
         $this->setSubview('base.reportDimension');
         $this->setTitle('Campaigns');
         $metrics = 'visits,pageViews,bounces';
-        if ( owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+        if ( \owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
             $metrics .= ',transactions,transactionRevenue';
         }
 

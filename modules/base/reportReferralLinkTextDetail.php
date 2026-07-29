@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.0.0
  */
 
-class owa_reportReferralLinkTextDetailController extends owa_reportController {
+class ReportReferralLinkTextDetail extends \owa_reportController {
 
     function action() {
 

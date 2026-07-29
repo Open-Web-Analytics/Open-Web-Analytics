@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\View;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_installConfigEntryView extends owa_view {
+class InstallConfigEntry extends \owa_view {
 
     function render($data) {
 
@@ -44,7 +46,7 @@ class owa_installConfigEntryView extends owa_view {
         $this->body->set('config', is_array($config) ? $config : []);
         $this->body->set_template('install_config_entry.php');
         // prepopulate the public url based on the current url.
-        $public_url = owa_lib::get_current_url();
+        $public_url = \owa_lib::get_current_url();
         $pos = strpos($public_url, 'install.php');
         $public_url = substr($public_url, 0, $pos);
         $this->body->set('public_url', $public_url);

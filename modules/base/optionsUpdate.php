@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsUpdateController extends owa_adminController {
+class OptionsUpdate extends \owa_adminController {
 
     function __construct($params) {
 
@@ -42,7 +44,7 @@ class owa_optionsUpdateController extends owa_adminController {
 
     function action() {
 
-        $c = owa_coreAPI::configSingleton();
+        $c = \owa_coreAPI::configSingleton();
 
         $config_values = $this->get('config');
 
@@ -56,7 +58,7 @@ class owa_optionsUpdateController extends owa_adminController {
 
                     if ( self::isSensitiveSettingKey( $module, $name ) ) {
 
-                        owa_coreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
+                        \owa_coreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
                         continue;
                     }
 
@@ -65,7 +67,7 @@ class owa_optionsUpdateController extends owa_adminController {
             }
 
             $c->save();
-            owa_coreAPI::notice("Configuration changes saved to database.");
+            \owa_coreAPI::notice("Configuration changes saved to database.");
             $this->setStatusCode(2500);
         }
 

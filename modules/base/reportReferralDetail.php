@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since        owa 1.3.0
  */
 
-class owa_reportReferralDetailController extends owa_reportController {
+class ReportReferralDetail extends \owa_reportController {
 
     function action() {
 
@@ -39,7 +41,7 @@ class owa_reportReferralDetailController extends owa_reportController {
         $this->setSubview('base.reportDimensionDetail');
         $this->setTitle('Referral:');
 
-        $r = owa_coreAPI::entityFactory('base.referer');
+        $r = \owa_coreAPI::entityFactory('base.referer');
         $r->getByColumn('url', $referral);
 
         $this->set('dimension_properties', array(

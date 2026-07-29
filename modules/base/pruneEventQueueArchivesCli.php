@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @since        owa 1.6.0
  */
 
-class owa_pruneEventQueueArchivesCliController extends owa_cliController {
+class PruneEventQueueArchivesCli extends \owa_cliController {
 
     function __construct($params) {
 
@@ -68,7 +70,7 @@ class owa_pruneEventQueueArchivesCliController extends owa_cliController {
         } else {
 
             // get whatever queues are registered by modules
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             $queues = array_keys( $s->getMap('event_queues') );
         }
 
@@ -76,9 +78,9 @@ class owa_pruneEventQueueArchivesCliController extends owa_cliController {
 
             foreach ( $queues as $queue_name ) {
 
-                owa_coreAPI::notice( "About to prune archive of event queue: $queue_name");
+                \owa_coreAPI::notice( "About to prune archive of event queue: $queue_name");
 
-                $q = owa_coreAPI::getEventQueue($queue_name);
+                $q = \owa_coreAPI::getEventQueue($queue_name);
 
                 if ( $q->connect() ) {
                     $q->pruneArchive( $interval );
