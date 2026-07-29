@@ -18,7 +18,6 @@ namespace OWA\Module\FileCache\Classes;
 // $Id$
 //
 
-require_once( OWA_BASE_CLASS_DIR . 'cacheType.php' );
 
 /**
  * File Based Cache Class

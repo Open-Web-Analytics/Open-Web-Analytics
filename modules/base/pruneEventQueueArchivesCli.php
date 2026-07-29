@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
  * Prune Event Queues Archive CLI Controller

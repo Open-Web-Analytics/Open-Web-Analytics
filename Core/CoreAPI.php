@@ -439,7 +439,6 @@ class CoreAPI {
 
     public static function updateFactory($module, $filename, $class_ns = 'owa_') {
 
-        require_once(OWA_BASE_CLASS_DIR.'update.php');
 
         //$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $filename, '_update');
         $class = $class_ns.$module.'_'.$filename.'_update';
@@ -1131,9 +1130,6 @@ class CoreAPI {
      */
     public static function validationFactory($class_file, $conf = array()) {
 
-        if (!class_exists('owa_validation')):
-            require_once(OWA_BASE_CLASS_DIR.'validation.php');
-        endif;
 
         return \owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
 

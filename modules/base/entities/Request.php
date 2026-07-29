@@ -19,7 +19,6 @@
 
 namespace OWA\Module\Base\Entity;
 
-require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
 
 /**
  * page Request Entity

@@ -47,7 +47,6 @@ abstract class CliControllerTestCase extends TestCase
             require_once($owa_root . 'owa.php');
             // cli.php requires the CLI controller base before any command loads;
             // the individual command files do not require it themselves.
-            require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
 
             $GLOBALS['owa_test_cli_instance'] = new owa([
                 'instance_role' => 'admin_cli',

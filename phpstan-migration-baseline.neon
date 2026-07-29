@@ -1,6 +1,132 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: Core/AdminController.php
+
+		-
+			message: '#^Method OWA\\Core\\Auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: Core/Auth.php
+
+		-
+			message: '#^Undefined variable\: \$u$#'
+			identifier: variable.undefined
+			count: 1
+			path: Core/Auth.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Controller.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:errorAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Controller.php
+
+		-
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: Core/Controller/Cli.php
+
+		-
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: Core/Controller/Install.php
+
+		-
+			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Undefined variable\: \$file$#'
+			identifier: variable.undefined
+			count: 1
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Db.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
+			identifier: method.notFound
+			count: 15
+			path: Core/Db.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Entity.php
+
+		-
+			message: '#^Access to an undefined property OWA\\Core\\Install\:\:\$tables\.$#'
+			identifier: property.notFound
+			count: 1
+			path: Core/Install.php
+
+		-
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: Core/Metric.php
+
+		-
+			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: Core/Module.php
+
+		-
+			message: '#^Access to an undefined property OWA\\Core\\RequestContainer\:\:\$files\.$#'
+			identifier: property.notFound
+			count: 1
+			path: Core/RequestContainer.php
+
+		-
+			message: '#^Undefined variable\: \$class$#'
+			identifier: variable.undefined
+			count: 1
+			path: Core/Template.php
+
+		-
+			message: '#^Undefined variable\: \$dom_id$#'
+			identifier: variable.undefined
+			count: 1
+			path: Core/Template.php
+
+		-
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
+			path: Core/Update.php
+
+		-
+			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
+			identifier: property.notFound
+			count: 1
+			path: Core/View.php
+
+		-
+			message: '#^Method OWA\\Core\\View\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: Core/View/Admin.php
+
+		-
 			message: '#^Array has 2 duplicate keys with value 2504 \(2504, 2504\)\.$#'
 			identifier: array.duplicateKey
 			count: 1
@@ -35,12 +161,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/chartData.php
-
-		-
-			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/classes/cliController.php
 
 		-
 			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
@@ -83,12 +203,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/httpEventQueue.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/classes/installController.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
@@ -191,12 +305,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: modules/base/classes/trackingEventHelpers.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/classes/update.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
@@ -953,114 +1061,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: owa.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: owa_adminController.php
-
-		-
-			message: '#^Method OWA\\Core\\View\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
-			identifier: arguments.count
-			count: 2
-			path: owa_adminView.php
-
-		-
-			message: '#^Method OWA\\Core\\Auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: owa_auth.php
-
-		-
-			message: '#^Undefined variable\: \$u$#'
-			identifier: variable.undefined
-			count: 1
-			path: owa_auth.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:errorAction\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Undefined variable\: \$file$#'
-			identifier: variable.undefined
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
-			identifier: method.notFound
-			count: 15
-			path: owa_db.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Access to an undefined property OWA\\Core\\Install\:\:\$tables\.$#'
-			identifier: property.notFound
-			count: 1
-			path: owa_install.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: owa_metric.php
-
-		-
-			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Access to an undefined property OWA\\Core\\RequestContainer\:\:\$files\.$#'
-			identifier: property.notFound
-			count: 1
-			path: owa_requestContainer.php
-
-		-
-			message: '#^Undefined variable\: \$class$#'
-			identifier: variable.undefined
-			count: 1
-			path: owa_template.php
-
-		-
-			message: '#^Undefined variable\: \$dom_id$#'
-			identifier: variable.undefined
-			count: 1
-			path: owa_template.php
-
-		-
-			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
-			identifier: property.notFound
-			count: 1
-			path: owa_view.php
 
 		-
 			message: '#^Function add_action not found\.$#'

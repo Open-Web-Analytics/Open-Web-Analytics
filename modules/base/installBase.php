@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * base Schema Installation Controller

@@ -18,9 +18,6 @@ namespace OWA\Module\Base\Classes;
 // $Id$
 //
 
-if ( ! class_exists( 'owa_eventQueue' ) ) {
-    require_once( OWA_BASE_CLASS_DIR.'eventQueue.php' );
-}
 /**
  * Database backed Event Queue Implementation
  * 

@@ -19,9 +19,6 @@ namespace OWA\Module\Base\Metric;
 // $Id$
 //
 
-if (!class_exists("owa_calculatedMetric")) {
-    require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
-}
 
 /**
  * Goal Abandon Rate Metric

@@ -4,226 +4,226 @@ parameters:
 			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:errorAction\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
 			message: '#^Call to method generateId\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method get\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 2
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method getSiteSetting\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method getTableAlias\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method set\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method setProperties\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method update\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method wasPersisted\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Method OWA\\Core\\CoreAPI\:\:entityFactory\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Method OWA\\Core\\CoreAPI\:\:rawEntityFactory\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Undefined variable\: \$file$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$col_def might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$conf might not be defined\.$#'
 			identifier: variable.undefined
 			count: 2
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$file might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$name might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$params might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$something might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
 			count: 15
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
 			message: '#^Variable \$ret might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
 			message: '#^Variable \$all_cols might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
 			message: '#^Variable \$vars might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
 			message: '#^Method OWA\\Core\\Lib\:\:get_period_label\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_lib.php
+			path: Core/Lib.php
 
 		-
 			message: '#^Variable \$state might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_lib.php
+			path: Core/Lib.php
 
 		-
 			message: '#^Call to method createTable\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
 			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
 			message: '#^Variable \$class might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
 			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
 			identifier: property.notFound
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
 			message: '#^Method OWA\\Core\\Base\:\:__construct\(\) invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
 			message: '#^Method OWA\\Core\\View\:\:assembleSubView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
 			message: '#^Method OWA\\Core\\View\:\:assembleView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_view.php
+			path: Core/View.php

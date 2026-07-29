@@ -28,16 +28,10 @@
     },
 
     "autoload": {
+        "psr-4": {
+            "OWA\\Core\\": "Core/"
+        },
         "classmap": [
-            "owa_base.php", "owa_coreAPI.php", "owa_db.php", "owa_lib.php",
-            "owa_auth.php", "owa_caller.php", "owa_controller.php",
-            "owa_adminController.php", "owa_reportController.php", "owa_entity.php",
-            "Http.php", "owa_install.php", "owa_location.php",
-            "owa_metric.php", "owa_module.php", "owa_observer.php",
-            "owa_requestContainer.php", "owa_template.php", "owa_view.php",
-            "owa_genericTableView.php", "owa_sparklineJsView.php", "owa_mailView.php",
-            "owa_adminView.php", "owa_restApiView.php", "owa_jsonView.php",
-            "owa_jsonResultsView.php", "owa_adminPageView.php", "owa_cliView.php",
             "modules/",
             "plugins/",
             "includes/"

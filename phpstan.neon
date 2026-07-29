@@ -4,14 +4,14 @@ includes:
 parameters:
     level: 3
     paths:
-        - owa_lib.php
-        - owa_coreAPI.php
-        - owa_view.php
-        - owa_base.php
-        - owa_controller.php
-        - owa_module.php
-        - owa_entity.php
-        - owa_db.php
+        - Core/Lib.php
+        - Core/CoreAPI.php
+        - Core/View.php
+        - Core/Base.php
+        - Core/Controller.php
+        - Core/Module.php
+        - Core/Entity.php
+        - Core/Db.php
     # Framework uses runtime-defined constants and dynamic class loading; keep
     # the baseline broad so this catches *new* breakage (undefined symbols from
     # deletions) rather than pre-existing legacy noise.

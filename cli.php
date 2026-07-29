@@ -43,7 +43,6 @@ if (!OWA_CLI)
 
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa.php');
-require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 $params = [];
 // get params from the command line args

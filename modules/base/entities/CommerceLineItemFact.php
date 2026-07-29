@@ -19,9 +19,6 @@
 
 namespace OWA\Module\Base\Entity;
 
-if ( ! class_exists( 'owa_factTable' ) ) {
-    require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
-}
 
 /**
  * Commerce Transaction Line Item Fact Entity

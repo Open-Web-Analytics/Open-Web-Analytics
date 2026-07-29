@@ -18,7 +18,6 @@ namespace OWA\Module\MemcachedCache\Classes;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'cacheType.php');
 
 /**
  * Memcached Based Cache

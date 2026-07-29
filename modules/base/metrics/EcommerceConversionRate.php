@@ -19,9 +19,6 @@ namespace OWA\Module\Base\Metric;
 // $Id$
 //
 
-if (!class_exists("owa_calculatedMetric")) {
-    require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
-}
 
 /**
  * Avg. Revenue per Transaction Calculated Metric
