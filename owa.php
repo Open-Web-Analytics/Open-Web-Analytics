@@ -7,7 +7,6 @@
 //
 
 require_once('owa_env.php');
-require_once('owa_caller.php');
 
 /**
  * OWA Core

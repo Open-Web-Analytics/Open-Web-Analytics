@@ -432,9 +432,6 @@ class CoreAPI {
      */
     public static function moduleClassFactory($module) {
 
-
-        require_once(OWA_BASE_DIR.'/modules/'.$module.'/module.php');
-
         return \owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
 
     }

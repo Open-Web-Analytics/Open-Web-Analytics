@@ -19,10 +19,6 @@ namespace OWA\Module\Base\Handler;
 //
 
 
-if (!class_exists('owa_http')) {
-    require_once(OWA_BASE_DIR.'/Http.php');
-}
-
 /**
  * OWA Referer Event handlers
  * 
