@@ -33,8 +33,7 @@
             "OWA\\Module\\": "modules/"
         },
         "classmap": [
-            "modules/MaxmindGeoip/includes/",
-            "plugins/"
+            "modules/MaxmindGeoip/includes/"
         ]
     },
 

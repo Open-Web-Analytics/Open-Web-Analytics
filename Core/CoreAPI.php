@@ -51,16 +51,37 @@ class CoreAPI {
         return $api;
     }
 
+    /**
+     * Load the DB driver class for a given database type.
+     *
+     * THIRD-PARTY DB-DRIVER SEAM
+     * --------------------------
+     * OWA's bundled drivers (e.g. "mysql") live in the OWA\Core\Db namespace
+     * and autoload via Composer; their legacy `owa_db_<type>` names resolve
+     * through the compat bridge (owa_compat_aliases.php). A third party can add
+     * support for another database WITHOUT patching OWA core: drop a class file
+     * at `plugins/db/owa_db_<type>.php` declaring `class owa_db_<type> extends
+     * \owa_db`, then set the `db_type` config to `<type>`.
+     *
+     * The `plugins/` directory is NOT shipped in the repo — it is a convention
+     * location that a driver author creates in their own install. Because this
+     * method `require`s the file by its constructed path (below), the driver
+     * does NOT need to be Composer-classmap-discoverable to load; and because
+     * the file is untracked by OWA's git, a `git pull` upgrade never removes it.
+     */
     public static function setupStorageEngine($type) {
 
-		
+
 		if ( $type ) {
         	$connection_class = "owa_db_" . $type;
 
             if ( ! class_exists( $connection_class ) ) {
-	            
+
+                // Third-party driver seam: load a custom owa_db_<type> dropped
+                // in at plugins/db/. Guarded by class_exists above so bundled
+                // (autoloadable) drivers never reach this fallback.
                 $connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
-				
+
 				if ( file_exists( $connection_class_path ) ) {
 					
 	                 if ( ! require_once( $connection_class_path ) ) {
