@@ -493,6 +493,16 @@ function owa_compat_class_map(): array
         'owa_usersSetPasswordView' => 'OWA\\Module\\Base\\View\\UsersSetPassword',
         'owa_widgetOwaNewsController' => 'OWA\\Module\\Base\\Controller\\WidgetOwaNews',
         'owa_widgetOwaNewsView' => 'OWA\\Module\\Base\\View\\WidgetOwaNews',
+
+        // modules/base flat pages — EDGE cases (Phase 6 stage 3):
+        // report.php (owa_reportView + 3 dimensional subviews) and the
+        // asymmetric apiRequest.php (owa_apiRequestController + owa_apiErrorView).
+        'owa_apiRequestController' => 'OWA\\Module\\Base\\Controller\\ApiRequest',
+        'owa_apiErrorView' => 'OWA\\Module\\Base\\View\\ApiError',
+        'owa_reportView' => 'OWA\\Module\\Base\\View\\Report',
+        'owa_reportDimensionView' => 'OWA\\Module\\Base\\View\\ReportDimension',
+        'owa_reportDimensionDetailView' => 'OWA\\Module\\Base\\View\\ReportDimensionDetail',
+        'owa_reportSimpleDimensionalView' => 'OWA\\Module\\Base\\View\\ReportSimpleDimensional',
     ];
 }
 

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since        owa 1.3.0
  */
 
-class owa_apiRequestController extends owa_controller {
+class ApiRequest extends \owa_controller {
 
     function __construct($params) {
 
@@ -40,7 +42,7 @@ class owa_apiRequestController extends owa_controller {
 
     function getRequiredCapability() {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
             // lookup method class
         $do = $s->getApiMethodClass($this->getParam('do'));
 
@@ -80,10 +82,10 @@ class owa_apiRequestController extends owa_controller {
         }
 
         // set content type of reponse
-        owa_lib::setContentTypeHeader($format);
+        \owa_lib::setContentTypeHeader($format);
 
-        $map = owa_coreAPI::getRequest()->getAllOwaParams();
-        $output = owa_coreAPI::executeApiCommand($map);
+        $map = \owa_coreAPI::getRequest()->getAllOwaParams();
+        $output = \owa_coreAPI::executeApiCommand($map);
 
         // assign to a view for output
         if ( $format === 'json' || $format === 'jsonp') {
@@ -116,26 +118,6 @@ class owa_apiRequestController extends owa_controller {
     }
 }
 
-/**
- * API Error View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2012 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.5.0
- */
 
-class owa_apiErrorView extends owa_view {
-
-    function render() {
-
-        $this->t->set_template('wrapper_blank.php');
-        $this->body->set_template('apiError.php');
-        $this->body->set( 'error_msg', $this->get( 'error_msg' ) );
-    }
-}
 
 ?>
