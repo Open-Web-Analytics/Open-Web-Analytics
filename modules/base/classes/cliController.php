@@ -18,7 +18,6 @@ namespace OWA\Core\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * CLI Controller Class

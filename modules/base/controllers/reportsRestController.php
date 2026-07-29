@@ -2,7 +2,6 @@
 namespace OWA\Module\Base\Controller;
 
 
-require_once(OWA_DIR.'owa_reportController.php');
 require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**

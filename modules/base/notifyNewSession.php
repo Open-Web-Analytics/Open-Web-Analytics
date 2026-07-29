@@ -19,7 +19,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 /**
  * Notify New Session Controller
@@ -50,7 +49,6 @@ class NotifyNewSession extends \owa_controller {
     }
 }
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 

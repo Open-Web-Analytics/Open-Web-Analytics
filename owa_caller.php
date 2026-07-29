@@ -19,10 +19,6 @@ namespace OWA\Core;
 //
 
 include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_base.php');
-require_once(OWA_BASE_DIR.'/owa_requestContainer.php');
-require_once(OWA_BASE_DIR.'/owa_auth.php');
-require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 require_once(OWA_BASE_CLASS_DIR.'error.php');
 
 /**

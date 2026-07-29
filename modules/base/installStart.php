@@ -19,7 +19,6 @@ namespace OWA\Module\Base\Controller;
 //
 
 require_once(OWA_BASE_CLASS_DIR.'installController.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class InstallStart extends \owa_installController {

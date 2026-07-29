@@ -18,7 +18,6 @@ namespace OWA\Module\MaxmindGeoip;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_module.php');
 
 /**
  * Maxmind GeoIP Module

@@ -19,8 +19,6 @@ namespace OWA\Module\Base\Controller;
 //
 
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Users Roster View

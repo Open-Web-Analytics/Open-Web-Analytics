@@ -18,7 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
 /**
  * Database Connection Class

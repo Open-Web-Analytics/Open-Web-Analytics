@@ -18,7 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_requestContainer.php'); // ??
 
 /**

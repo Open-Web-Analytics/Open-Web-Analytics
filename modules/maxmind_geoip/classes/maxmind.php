@@ -18,7 +18,6 @@ namespace OWA\Module\MaxmindGeoip\Classes;
 // $Id$
 //
 
-require_once( OWA_BASE_DIR.'/owa_location.php' );
 
 if(!class_exists('\MaxMind\Db\Reader')){
     require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader.php' );

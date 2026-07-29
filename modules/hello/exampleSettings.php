@@ -18,9 +18,6 @@ namespace OWA\Module\Hello;
 // $Id$
 //
 
-require_once(OWA_DIR.'owa_lib.php');
-require_once(OWA_DIR.'owa_view.php');
-require_once(OWA_DIR.'owa_adminController.php');
 
 /**
  * Example Settings/Options Controller

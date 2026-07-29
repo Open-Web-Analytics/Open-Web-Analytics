@@ -6,7 +6,6 @@ namespace OWA\Module\FileCache;
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
 
-require_once(OWA_BASE_DIR.'/owa_module.php');
 
 /**
  * Remote Queue Module

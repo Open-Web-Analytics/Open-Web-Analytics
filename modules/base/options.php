@@ -18,7 +18,6 @@ namespace OWA\Module\Base\View;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Options View

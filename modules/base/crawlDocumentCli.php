@@ -99,4 +99,3 @@ class CrawlDocumentCli extends \owa_cliController
     }
 }
 
-require_once(OWA_BASE_DIR.'/owa_view.php');

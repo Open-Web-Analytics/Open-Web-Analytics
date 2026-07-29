@@ -18,7 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Abstract Report Controller Class

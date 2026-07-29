@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_DIR.'owa_controller.php');
 
 /**
  * Updates Application Controller

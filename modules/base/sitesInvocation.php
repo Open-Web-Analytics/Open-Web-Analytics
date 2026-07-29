@@ -19,8 +19,6 @@ namespace OWA\Module\Base\Controller;
 //
 
 
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Tracked Sites Tag Generator Controller

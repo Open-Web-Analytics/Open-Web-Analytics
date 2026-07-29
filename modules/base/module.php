@@ -18,7 +18,6 @@ namespace OWA\Module\Base;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_module.php');
 
 /**
  * Base Package Module

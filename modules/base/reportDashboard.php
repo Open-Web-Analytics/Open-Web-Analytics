@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
  * Dashboard Report Controller
@@ -68,7 +67,6 @@ class ReportDashboard extends \owa_reportController {
     }
 }
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 

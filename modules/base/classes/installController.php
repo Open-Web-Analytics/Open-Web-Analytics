@@ -18,7 +18,6 @@ namespace OWA\Core\Controller;
 // $Id$
 //
 
-require_once(OWA_DIR.'owa_controller.php');
 
 /**
  * Abstract Install Controller

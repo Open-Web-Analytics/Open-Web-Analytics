@@ -18,8 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_DIR.'owa_view.php');
-require_once(OWA_DIR.'owa_adminController.php');
 
 /**
  * Admin Settings/Options Controller

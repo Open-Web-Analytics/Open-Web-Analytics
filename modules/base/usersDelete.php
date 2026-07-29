@@ -18,7 +18,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Delete User Controller

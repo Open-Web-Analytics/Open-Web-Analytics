@@ -19,7 +19,6 @@ namespace OWA\Module\Base\Controller;
 //
 
 require_once(OWA_BASE_MODULE_DIR.'sitesAdd.php');
-require_once(OWA_DIR.'owa_view.php');
 
 /**
  * Add Site Controller

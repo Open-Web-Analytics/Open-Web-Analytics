@@ -8,7 +8,6 @@ namespace OWA\Module\Domstream\Controller;
  * Website: http://www.openwebanalytics.con
  */
 
-require_once(OWA_DIR.'owa_adminController.php');
 require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
@@ -164,7 +163,6 @@ class DomstreamsRestController extends \owa_adminController {
 }
 
 
-require_once(OWA_DIR.'owa_view.php');
 
 /**
  * View

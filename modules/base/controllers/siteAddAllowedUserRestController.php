@@ -8,7 +8,6 @@ namespace OWA\Module\Base\Controller;
  * Website: http://www.openwebanalytics.con
  */
 
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Add Site allowed User REST Controller

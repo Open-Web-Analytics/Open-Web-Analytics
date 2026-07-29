@@ -18,7 +18,6 @@ namespace OWA\Module\RemoteQueue;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_module.php');
 
 /**
  * Remote Queue Module

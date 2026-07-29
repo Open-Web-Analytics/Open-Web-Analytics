@@ -19,7 +19,6 @@ namespace OWA\Module\Base\View;
 //
 
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Crawl document cli View

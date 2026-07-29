@@ -19,8 +19,6 @@ namespace OWA\Module\Base\Controller;
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**
