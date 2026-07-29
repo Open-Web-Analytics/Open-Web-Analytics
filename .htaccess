@@ -32,11 +32,26 @@
         Require all granted
     </If>
 
+    # The install root DIRECTORY -- "/owa/" in a subdirectory install, "/" when the repo
+    # root is the docroot. A bare directory URL is authorized as the directory itself, so
+    # none of the allows above cover it and it needs its own grant. Gated on owa_env.php,
+    # which exists only in the install root: every other directory stays denied.
+    <If "-f '%{REQUEST_FILENAME}/owa_env.php'">
+        Require all granted
+    </If>
+
 </IfModule>
 
 <IfModule mod_rewrite.c>
 
 RewriteEngine On
+
+# Install root -> index.php. Serves the root's entry point here rather than leaving it
+# to mod_dir, whose DirectoryIndex does not include index.php on every host. Only the
+# bare root matches ^$ (a subdirectory request arrives with a non-empty per-directory
+# path); the slashless "/owa" form is left to mod_dir's canonical 301 -> "/owa/".
+RewriteCond %{REQUEST_URI} /$
+RewriteRule ^$ index.php [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

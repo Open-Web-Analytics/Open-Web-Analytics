@@ -82,6 +82,14 @@ const DENIED_PATHS = [
     'webpack.config.js',                              // build metadata
     'package.json',                                   // build metadata
     'composer.json',                                  // build metadata
+    // Bare directory URLs. The install root is allowed (see the root tests below), but
+    // every OTHER directory must stay denied. Most of them carry an inert index.php
+    // anti-listing stub, so a naive "allow any directory containing an index.php" root
+    // fix would serve these as blank 200s; and a root fix that leaned on mod_dir could
+    // surface a mod_autoindex listing here instead (Options Indexes is the distro
+    // default for a docroot). Both are guarded by asserting these stay 403/404.
+    'modules/',
+    'conf/',
 ];
 
 // The site's WAF/rate-limiter allowlists the "Open Web Analytics" UA token (see
@@ -122,4 +130,38 @@ test.describe('web-access hardening policy @server-config', () => {
             expect([403, 404], `${p} should be denied, got ${code}`).toContain(code);
         });
     }
+
+    // The install ROOT itself -- the first URL anyone visits after unpacking, and the one
+    // this suite used to miss completely: ROOT was only ever used as a PREFIX for the
+    // paths above, never requested on its own. That blind spot is how OWA 1.9.0 shipped
+    // a 403 on every fresh install (issue #950) -- authorization runs in the auth phase,
+    // but mod_dir does not map a bare directory URL onto DirectoryIndex until the handler
+    // phase, so deny-all rejected the request as a DIRECTORY before index.php was ever
+    // considered.
+    test('public: the install root is served', async ({ request }) => {
+        const code = await statusOf(request, ROOT);
+        expect(code, 'the install root should be publicly reachable').toBeLessThan(400);
+    });
+
+    // The same directory without its trailing slash. Also 403'd before the fix, and for
+    // the same reason: mod_dir's canonical "add the slash" 301 is a handler-phase
+    // response, so it never ran either.
+    test('public: the install root is served without a trailing slash', async ({ request }) => {
+        const code = await statusOf(request, ROOT.replace(/\/$/, ''));
+        expect(code, 'the slashless install root should be publicly reachable').toBeLessThan(400);
+    });
+
+    // The root must resolve to the index.php ENTRY POINT, not to a directory listing.
+    // Distinguishes the fix working from mod_autoindex papering over it: index.php with
+    // no session redirects into the login flow, so a 2xx listing would fail here.
+    test('public: the install root resolves to the index.php entry point', async ({ request }) => {
+        const res = await request.get(ROOT, {
+            headers: { 'User-Agent': UA },
+            maxRedirects: 0,
+            failOnStatusCode: false,
+        });
+        expect(res.status(), 'root should redirect into the app, not render a listing').toBe(302);
+        expect(res.headers()['location'] || '', 'root should redirect to an OWA entry point')
+            .toMatch(/index\.php\?owa_do=/);
+    });
 });
