@@ -18,9 +18,6 @@ namespace OWA\Module\Domstream\Handler;
 // $Id$
 //
 
-if(!class_exists('owa_observer')) {
-    require_once(OWA_DIR.'owa_observer.php');
-}
 
 /**
  * OWA user management Event handlers

@@ -53,10 +53,6 @@ class CoreAPI {
 
     public static function setupStorageEngine($type) {
 
-        if ( ! class_exists( 'owa_db' ) ) {
-	        
-            require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
-        }
 		
 		if ( $type ) {
         	$connection_class = "owa_db_" . $type;
@@ -370,9 +366,6 @@ class CoreAPI {
 
         if(!isset($request)):
 
-            if (!class_exists('owa_requestContainer')):
-                require_once(OWA_DIR.'owa_requestContainer.php');
-            endif;
 
             $request = \owa_lib::factory(OWA_DIR, '', 'owa_requestContainer');
 
@@ -439,9 +432,6 @@ class CoreAPI {
      */
     public static function moduleClassFactory($module) {
 
-        if (!class_exists('owa_module')):
-            require_once(OWA_BASE_CLASSES_DIR.'owa_module.php');
-        endif;
 
         require_once(OWA_BASE_DIR.'/modules/'.$module.'/module.php');
 
@@ -514,9 +504,6 @@ class CoreAPI {
 
 
 
-        if (!class_exists('owa_entity')):
-            require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');
-        endif;
 
         $entity = \owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
         $entity->name = $entity_name;
@@ -651,9 +638,6 @@ class CoreAPI {
             $metric_name = $s->getMetricClasses($metric_name);
         }
 
-        if (!class_exists('owa_metric')) {
-            require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-        }
 
         return \owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
     }
@@ -1723,9 +1707,6 @@ class CoreAPI {
 
     public static function getJsTrackerTag( $site_id, $options = array() ) {
 
-        if ( ! class_exists( 'owa_template' ) ) {
-            require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
-        }
 
         $t = new \owa_template();
 

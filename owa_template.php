@@ -22,9 +22,6 @@ if (!class_exists('Template')) {
     require_once(OWA_INCLUDE_DIR.'template_class.php');
 }
 
-if (!class_exists('owa_lib')) {
-    require_once(OWA_BASE_DIR.'/owa_lib.php');
-}
 
 if (!class_exists('owa_sanitize')) {
     require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
@@ -417,9 +414,6 @@ class Template extends \Template {
      */
     function getAuthStatus() {
 
-        if (!class_exists('owa_auth')) {
-            require_once(OWA_BASE_DIR.'/owa_auth.php');
-        }
 
         $auth = &\owa_auth::get_instance();
         return $auth->auth_status;

@@ -18,9 +18,6 @@ namespace OWA\Module\Base\Handler;
 // $Id$
 //
 
-if(!class_exists('owa_observer')) {
-    require_once(OWA_DIR.'owa_observer.php');
-}
 
 /**
  * Host Event handlers

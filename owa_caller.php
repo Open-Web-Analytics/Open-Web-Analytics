@@ -163,10 +163,6 @@ class Caller extends \owa_base {
         
         if( ! \owa_coreAPI::getRequestParam( 'is_robot' ) ) {
         
-            if ( ! class_exists( 'owa_template' ) ) {
-            
-                require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
-            }
         
             $t = new \owa_template();
             $t->set_template('js_helper_tags.php');

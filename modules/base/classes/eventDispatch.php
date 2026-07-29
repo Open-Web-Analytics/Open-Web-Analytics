@@ -18,10 +18,6 @@ namespace OWA\Module\Base\Classes;
 // $Id$
 //
 
-if (!class_exists('owa_observer')) {
-
-    require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
-}
 
 if (!class_exists('owa_event') ) {
     require_once(OWA_BASE_CLASS_DIR.'event.php');
