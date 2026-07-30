@@ -21,6 +21,8 @@ includes:
     - phpstan-migration-baseline.neon
 
 parameters:
+    parallel:
+        maximumNumberOfProcesses: 1
     level: 0
     paths:
         - .

@@ -40,6 +40,8 @@ includes:
     - phpstan-templates-baseline.neon
 
 parameters:
+    parallel:
+        maximumNumberOfProcesses: 1
     level: 1
     paths:
         - modules/Base/templates
