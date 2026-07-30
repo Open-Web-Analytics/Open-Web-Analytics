@@ -2,19 +2,19 @@
 <?php if (!empty($view->document)): require('item_document.php'); endif;?>
 
 
-<?php if ( $domstreams ):?>
+<?php if ( $view->domstreams ):?>
 <table class="simpleTable">
     <thead>
         <tr>
-            <th><?php echo $domstreams->labels->timestamp;?></th>
-            <th><?php echo $domstreams->labels->page_url;?></th>
-            <th><?php echo $domstreams->labels->duration;?></th>
+            <th><?php echo $view->domstreams->labels->timestamp;?></th>
+            <th><?php echo $view->domstreams->labels->page_url;?></th>
+            <th><?php echo $view->domstreams->labels->duration;?></th>
             <th></th>
         </tr>
         <TR><BR></TR>
     </thead>
     <tbody>
-        <?php  $d2 = $domstreams; $domstreams = (array) $domstreams; foreach($domstreams['resultsRows'] as $k => $ds): $ds = (array) $ds; ?>
+        <?php  $d2 = $view->domstreams; $rows = (array) $view->domstreams; foreach($rows['resultsRows'] as $k => $ds): $ds = (array) $ds; ?>
 
         <TR>
             <TD class="data_cell">

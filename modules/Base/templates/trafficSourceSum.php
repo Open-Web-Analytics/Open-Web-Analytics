@@ -1,4 +1,16 @@
-<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php
+/**
+ * @var \OWA\Core\ViewScope $view
+ * @var array $row  from the includer's scope -- see below
+ *
+ * trafficSourceSum.php is included from row_visitSummary.php, which is itself
+ * included inside report_latest_visits.php's `foreach (... as $row)`. $row is
+ * therefore the loop value from the INCLUDER's scope, not a view var.
+ *
+ * PHPStan analyses every template standalone, so it cannot see an includer's
+ * locals; the @var above declares the contract rather than suppressing it.
+ */
+?>
 <div class="propertyList" style="background-image: url('<?php $view->out( $view->makeImageLink('base/i/referer_icon.gif') );?>');background-repeat: no-repeat; padding:5px 5px 5px 35px; background-position:0px 5px;">
     <dl>
     

@@ -1,0 +1,73 @@
+########################################################################
+# Template static-analysis gate -- catches reads of a view variable that
+# nothing sets.
+#
+# WHY A THIRD CONFIG. Neither existing gate can see this class of bug:
+#   - phpstan.neon runs at level 3 but over 8 Core/ files only.
+#   - phpstan-migration.neon runs over the whole tree but at LEVEL 0,
+#     which does not report undefined variables at all.
+# So until now nothing stopped a template from reading a variable no
+# controller ever sets. That is not hypothetical: three such reads shipped
+# for years and were only found by hand (PR #955) -- among them
+# `$view->sort ?: $tag['sort']`, a typo for $tab that made the fallback
+# silently yield null, so the dimension grid queried the REST API with no
+# sort at all. LEVEL 1 is exactly the threshold that reports these
+# (level 0 sees none of them; level 2 adds nothing over level 1 here), so
+# this config sits at 1 deliberately rather than as a stepping stone.
+#
+# WHY IT NEEDS BOTH PARAMETERS BELOW. Templates receive their data as
+# `$view`, an OWA\Core\ViewScope whose __get serves any key the controller
+# set, so ViewScope must be declared a universal object crate or every
+# `$view->anything` read reports an undefined property. And the tree uses
+# runtime-defined constants (OWA_DIR and friends), so the bootstrap file
+# has to run first. Drop either and the run reports nothing useful.
+#
+# CAUTION: PHPStan resolves `paths` RELATIVE TO THIS FILE. A copy of this
+# config placed elsewhere silently analyses nothing and prints
+# "[OK] No errors" -- a clean bill of health from a run that read no
+# files. If you fork it for a one-off, use absolute paths, and confirm a
+# nonzero count on a tree you know has errors before trusting an [OK].
+#
+# Scope is OWA's own templates only. Third-party module templates,
+# site-owner templates/local/ overrides and custom themes are not in this
+# repo and are still written against the bare-variable contract that
+# extract() supports until v2.0 (see UPGRADING.md) -- they must never be
+# analysed here.
+#
+# Run via:  composer phpstan:templates
+########################################################################
+includes:
+    - phpstan-templates-baseline.neon
+
+parameters:
+    level: 1
+    paths:
+        - modules/Base/templates
+        - modules/Hello/templates
+    universalObjectCratesClasses:
+        - OWA\Core\ViewScope
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    # Unlike the other two configs this one REPORTS unmatched ignores, so a
+    # baseline entry that stops applying (the template was fixed, renamed or
+    # deleted) fails the gate instead of rotting in place.
+    reportUnmatchedIgnoredErrors: true
+
+    ignoreErrors:
+        # BY DESIGN, not debt. Two install templates read $this->config[...].
+        # ViewScope deliberately does NOT proxy property reads to the Template:
+        # a template's `$this->config` is the Template's own config, which is a
+        # different thing from a view var that happens to be named 'config', and
+        # conflating them let a view var shadow the property and return the wrong
+        # value. So property reads stay as `$this->` in templates (see the
+        # ViewScope class docblock), and `$this` is legitimately in scope at
+        # runtime because the include happens inside TemplateEngine::fetch().
+        # PHPStan analyses each template as a standalone file, where $this
+        # cannot exist -- an artifact of the analysis, not a defect in the code.
+        -
+            message: '#^Variable \$this might not be defined\.$#'
+            identifier: variable.undefined
+            paths:
+                - modules/Base/templates/install_config_entry.php
+                - modules/Base/templates/install_start.php

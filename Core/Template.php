@@ -874,23 +874,6 @@ class Template extends TemplateEngine {
 
     }
 
-    function displayChart($id, $data, $width = '100%', $height = '200px') {
-
-        if (!empty($data)) {
-
-            $t = new \OWA\Core\Template;
-            $t->set('dom_id', $id.'Chart');
-            $t->set('data', $data);
-            $t->set('width', $width);
-            $t->set('height', $height);
-            $t->set_template('chart_dom.php');
-            return $t->fetch();
-        } else {
-
-            return false;
-        }
-    }
-
     function displaySparkline($id, $data, $width = '100px', $height = '35px') {
 
         if (!empty($data)) {

@@ -29,8 +29,20 @@ jobs:
       - name: Lint (php -l)
         run: composer run-script lint
 
-      - name: Static analysis (PHPStan)
+      - name: Static analysis (PHPStan — Core/)
         run: composer run-script phpstan
+
+      # Whole-tree class resolution. This existed as a composer script but was
+      # never wired into CI, so a dropped alias or a rename that de-synced a file
+      # from its class could only be caught by someone running it locally.
+      - name: Static analysis (PHPStan — whole tree)
+        run: composer run-script phpstan:migration
+
+      # Templates: catches a template reading a view var nothing sets. Neither
+      # gate above can see it -- the first covers 8 Core/ files, the second runs
+      # at level 0, which does not report undefined variables.
+      - name: Static analysis (PHPStan — templates)
+        run: composer run-script phpstan:templates
 
       - name: Unit tests (PHPUnit)
         run: composer run-script test
