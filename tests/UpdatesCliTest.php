@@ -13,10 +13,14 @@ final class UpdateGuardProbe extends \OWA\Core\Update
     public static bool $upCalled   = false;
     public static bool $downCalled = false;
 
+    /** Simulate a down() that runs but does not finish. */
+    public static bool $downShouldFail = false;
+
     public static function reset(): void
     {
-        self::$upCalled   = false;
-        self::$downCalled = false;
+        self::$upCalled       = false;
+        self::$downCalled     = false;
+        self::$downShouldFail = false;
     }
 
     function up($force = false)
@@ -30,7 +34,7 @@ final class UpdateGuardProbe extends \OWA\Core\Update
     {
         self::$downCalled = true;
 
-        return true;
+        return ! self::$downShouldFail;
     }
 }
 
@@ -196,27 +200,92 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * NOTE: Core\Update::rollback() returns true unconditionally -- including
-     * on the refusal branch above -- and UpdatesApplyCli::rollback() ignores
-     * the return value and always prints "Rollback completed."
-     *
-     * So an operator rolling back out of sequence is told it worked when
-     * nothing happened. This test pins the CURRENT behaviour so the
-     * discrepancy is visible and deliberate rather than assumed; the misleading
-     * report is worth fixing separately, and when it is, this expectation
-     * should be inverted.
+     * rollback() must report refusal, not success. It previously returned true
+     * unconditionally, so UpdatesApplyCli printed "Rollback completed." even
+     * when nothing had run.
      */
-    public function testRollbackReturnValueIsCurrentlyUninformative(): void
+    public function testRollbackReturnsFalseWhenItRefuses(): void
     {
         $current = $this->currentSchemaVersion();
         $probe   = $this->makeProbe($current + 5);
 
-        $this->assertTrue(
+        $this->assertFalse(
             $probe->rollback(),
-            'If rollback() now reports refusal properly, invert this test and '
-            . 'update UpdatesApplyCli::rollback() to stop printing '
-            . '"Rollback completed." unconditionally.'
+            'A refused rollback reported success. The CLI relies on this return '
+            . 'value to decide what to tell the operator.'
         );
         $this->assertFalse(UpdateGuardProbe::$downCalled);
+    }
+
+    /**
+     * The success path, exercised WITHOUT mutating anything: when
+     * current === schema_version - 1 (rolling back an update that failed part
+     * way), rollback() runs down() and reports success but does not move
+     * schema_version -- there is nothing to move.
+     */
+    public function testRollbackReturnsTrueWhenDownSucceeds(): void
+    {
+        $current = $this->currentSchemaVersion();
+        $probe   = $this->makeProbe($current + 1);
+
+        $this->assertTrue(
+            $probe->rollback(),
+            'A rollback whose down() succeeded must report success.'
+        );
+        $this->assertTrue(UpdateGuardProbe::$downCalled, 'down() never ran.');
+        $this->assertSame(
+            $current,
+            $this->currentSchemaVersion(),
+            'schema_version moved on a branch that should not persist it.'
+        );
+    }
+
+    /**
+     * The dangerous outcome: down() ran and did NOT finish. The schema may be
+     * partially torn down, so schema_version must stay put and the caller must
+     * be told it failed -- silently reporting success here is how an operator
+     * ends up believing a rollback happened that did not.
+     */
+    public function testRollbackReturnsFalseWhenDownFailsPartWay(): void
+    {
+        $current = $this->currentSchemaVersion();
+        UpdateGuardProbe::$downShouldFail = true;
+
+        $probe = $this->makeProbe($current + 1);
+
+        $this->assertFalse(
+            $probe->rollback(),
+            'A rollback whose down() failed reported success.'
+        );
+        $this->assertTrue(UpdateGuardProbe::$downCalled, 'down() never ran.');
+        $this->assertSame(
+            $current,
+            $this->currentSchemaVersion(),
+            'schema_version was moved despite down() failing -- the recorded '
+            . 'version would then disagree with the actual schema.'
+        );
+    }
+
+    /**
+     * The CLI must branch on that return value rather than announcing success
+     * unconditionally.
+     */
+    public function testCliReportsAFailedRollbackHonestly(): void
+    {
+        $src = file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApplyCli.php'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/\$ret\s*=\s*\$u->rollback\(\)\s*;/',
+            $src,
+            'UpdatesApplyCli::rollback() must capture the return value.'
+        );
+        $this->assertStringContainsString(
+            'did NOT complete',
+            $src,
+            'UpdatesApplyCli must tell the operator when a rollback did not '
+            . 'complete instead of always printing "Rollback completed."'
+        );
     }
 }
