@@ -299,28 +299,8 @@ namespace OWA\Module\Base\Classes;
                 unset($db_settings['base']['error_handler']);
             }
 
-            // Same treatment, generalised. Settings that may only come from the
-            // config file or the installer are ignored no matter what they
-            // hold, because two rules make a stored copy unreachable: the merge
-            // below puts the DB array SECOND (so it overrides owa-config.php),
-            // and the options form refuses to rewrite these keys. Observed in
-            // the wild as async_log_dir values still naming a previous
-            // server's paths, silently beating a correct config file.
-            //
-            // Dropping them here is non-destructive -- the stored row is not
-            // touched until something saves -- and lets an affected install
-            // self-heal on the next request rather than waiting for Update012.
-            foreach ( self::configFileOnlySettings() as $cfo_module => $cfo_keys ) {
-
-                if ( ! isset( $db_settings[ $cfo_module ] ) || ! is_array( $db_settings[ $cfo_module ] ) ) {
-                    continue;
-                }
-
-                foreach ( array_keys( $cfo_keys ) as $cfo_key ) {
-
-                    unset( $db_settings[ $cfo_module ][ $cfo_key ] );
-                }
-            }
+            // Same treatment, generalised -- see stripConfigFileOnlySettings().
+            $db_settings = self::stripConfigFileOnlySettings( $db_settings );
 
             $this->db_settings = $db_settings;
             $this->config_from_db = true;
@@ -634,6 +614,51 @@ namespace OWA\Module\Base\Classes;
                  'is_active'        => true,
              ),
          );
+     }
+
+     /**
+      * Remove config-file-only settings from a settings array loaded out of the
+      * database.
+      *
+      * A stored copy of one of these is UNREACHABLE, and its value is
+      * irrelevant to that fact:
+      *
+      *   - load() merges the DB array OVER the config-file array, so a stored
+      *     value beats owa-config.php, and
+      *   - the options form refuses to rewrite these keys.
+      *
+      * So there is no supported way to correct one. Two installs were found
+      * carrying async_log_dir values naming a previous server's directories
+      * that do not exist on the current host, silently overriding a correct
+      * config file.
+      *
+      * Pure and static so the behaviour can be tested without a database.
+      * Only the modules named in configFileOnlySettings() are touched -- every
+      * other module's settings pass through untouched, which is what keeps a
+      * module's own schema_version / is_active safe.
+      *
+      * @param  array $db_settings settings as read from the data store
+      * @return array the same array minus any config-file-only keys
+      */
+     public static function stripConfigFileOnlySettings( $db_settings ) {
+
+         if ( ! is_array( $db_settings ) ) {
+             return $db_settings;
+         }
+
+         foreach ( self::configFileOnlySettings() as $module => $keys ) {
+
+             if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
+                 continue;
+             }
+
+             foreach ( array_keys( $keys ) as $key ) {
+
+                 unset( $db_settings[ $module ][ $key ] );
+             }
+         }
+
+         return $db_settings;
      }
 
      /**

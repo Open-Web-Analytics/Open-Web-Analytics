@@ -264,24 +264,117 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * A config-file-only setting stored in the DB is unreachable: load() merges
-     * the DB array OVER the config file, and the form refuses to rewrite it. So
-     * it must be ignored on load regardless of its value.
+     * THE CORE BEHAVIOUR. A config-file-only setting stored in the database is
+     * unreachable -- load() merges the DB array OVER the config file so the
+     * stored value wins, and the form refuses to rewrite it. It must therefore
+     * be dropped on load whatever it holds.
+     *
+     * This is the real-world shape: async_log_dir naming a previous server's
+     * directory, and report_wrapper naming a .tpl file that no longer exists.
+     *
+     * @dataProvider configFileOnlyValueProvider
      */
-    public function testConfigFileOnlySettingsAreIgnoredRegardlessOfValue(): void
+    public function testConfigFileOnlySettingsAreStrippedRegardlessOfValue($value): void
     {
-        $cfo = \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
+            'base' => [
+                'async_log_dir'  => $value,
+                'report_wrapper' => $value,
+                'error_log_file' => $value,
+                // must survive: not config-file-only
+                'notice_email'   => 'peter@example.com',
+            ],
+        ]);
 
-        $this->assertArrayHasKey('async_log_dir', $cfo);
-        $this->assertArrayHasKey('report_wrapper', $cfo);
+        foreach (['async_log_dir', 'report_wrapper', 'error_log_file'] as $key) {
+            $this->assertArrayNotHasKey(
+                $key,
+                $stripped['base'],
+                "base.$key must never be sourced from the database -- its value is "
+                . 'irrelevant, because neither the form nor the config file can '
+                . 'override a stored copy.'
+            );
+        }
 
-        // Value must be irrelevant -- these were found in the wild holding a
-        // previous server's paths, which no supported action could correct.
-        $this->assertArrayHasKey(
-            'error_log_file',
-            $cfo,
-            'stream targets must never be sourced from the database'
+        $this->assertSame(
+            'peter@example.com',
+            $stripped['base']['notice_email'] ?? null,
+            'a normal setting must pass through untouched'
         );
+    }
+
+    public static function configFileOnlyValueProvider(): array
+    {
+        return [
+            'stale path from another server' => ['/home/padams/gone/owa-data/logs/'],
+            'dangling .tpl name'             => ['wrapper_default.tpl'],
+            'value equal to the default'     => [''],
+            'null'                           => [null],
+            'plausible correct value'        => ['/var/www/html/site/owa-data/logs/'],
+        ];
+    }
+
+    /**
+     * The strip must not touch other modules. What they store is their own
+     * schema_version and is_active -- dropping fileCache.is_active=false would
+     * silently re-enable a module that was deliberately disabled, and dropping
+     * a module's schema_version would re-run its updates.
+     */
+    public function testStripLeavesOtherModulesAlone(): void
+    {
+        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
+            'base'      => ['async_log_dir' => '/gone/', 'notice_email' => 'a@b.c'],
+            'domstream' => ['schema_version' => 1, 'is_active' => true],
+            'fileCache' => ['is_active' => false],
+            // a module that happens to use a name from the base list
+            'hello'     => ['report_wrapper' => 'something.php', 'is_active' => true],
+        ]);
+
+        $this->assertArrayNotHasKey('async_log_dir', $stripped['base']);
+
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $stripped['domstream']);
+        $this->assertSame(['is_active' => false], $stripped['fileCache'],
+            'a deliberately disabled module must stay disabled');
+        $this->assertSame(
+            ['report_wrapper' => 'something.php', 'is_active' => true],
+            $stripped['hello'],
+            'the base list is scoped to base; an identically named key in another '
+            . 'module is not covered by it'
+        );
+    }
+
+    /**
+     * The prune is likewise confined to modules whose defaults are known.
+     * default_config holds only 'base', so every other module is skipped -- the
+     * guard that keeps their schema_version / is_active intact.
+     */
+    public function testPruneSkipsModulesWithNoKnownDefaults(): void
+    {
+        $c = $this->settings();
+
+        $this->assertArrayNotHasKey(
+            'domstream',
+            $c->default_config,
+            'default_config is expected to hold only base; if a module now '
+            . 'contributes defaults, re-check that pruning it is safe'
+        );
+
+        $c->db_settings['domstream'] = ['schema_version' => 1, 'is_active' => true];
+        $c->db_settings['fileCache'] = ['is_active' => false];
+
+        $removed = $c->pruneRedundantPersistedSettings();
+
+        foreach ($removed as $entry) {
+            $this->assertStringStartsWith(
+                'base.',
+                $entry,
+                "prune touched $entry; it must only ever act on modules whose "
+                . 'defaults it actually knows'
+            );
+        }
+
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream']);
+        $this->assertSame(['is_active' => false], $c->db_settings['fileCache']);
     }
 
     public static function differsFromDefaultProvider(): array
