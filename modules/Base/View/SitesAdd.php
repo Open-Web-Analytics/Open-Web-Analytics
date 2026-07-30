@@ -41,9 +41,12 @@ class SitesAdd extends \OWA\Core\View {
 
         $this->body->set('action', 'base.sitesAdd');
 
-        //Check to see if user is passed by constructor or else fetch the object.
-        if ($data['site']) {
-            $this->body->set('site', $data['site']);
-        }
+        // sites_addoredit.php is shared with base.sitesProfile and reads both
+        // 'site' and 'config'. Set them UNCONDITIONALLY -- empty array when
+        // absent -- so the template never has to guess which view rendered it.
+        // 'site' was previously set only when $data['site'] was truthy, and
+        // 'config' was never set here at all.
+        $this->body->set('site', $data['site'] ?? []);
+        $this->body->set('config', $data['config'] ?? []);
     }
 }

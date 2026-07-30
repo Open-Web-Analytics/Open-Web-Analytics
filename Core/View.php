@@ -189,10 +189,16 @@ class View extends \OWA\Core\Base {
             // old style
             $this->construct($this->data);
         }
-        //array of errors usually used for field validations
-        if (array_key_exists('validation_errors', $this->data)) {
-            $this->body->set('validation_errors', $this->data['validation_errors']);
-       }
+        // Array of errors, usually used for field validations. Set
+        // UNCONDITIONALLY so a form template can always read it: a template that
+        // renders both a fresh form and a re-submitted one with errors should not
+        // have to care which branch of the controller it arrived through. The
+        // subview equivalent below already does this. Empty array, not null, so
+        // if()/empty() keep behaving exactly as they did when the key was absent.
+        $this->body->set(
+            'validation_errors',
+            $this->data['validation_errors'] ?? []
+        );
 
         // pagination
         if (array_key_exists('pagination', $this->data)) {

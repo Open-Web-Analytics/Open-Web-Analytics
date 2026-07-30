@@ -18,7 +18,7 @@
 
                 <th valign="top">Name:</th>
                 <td>
-                    <input name="<?php echo $view->getNs();?>goal[goal_name]" type="text" size="40" value="<?php $view->out($goal['goal_name']);?>">
+                    <input name="<?php echo $view->getNs();?>goal[goal_name]" type="text" size="40" value="<?php $view->out($view->goal['goal_name']);?>">
                 </td>
             </tr>
             <tr>
@@ -30,8 +30,8 @@
                 <td>
 
                     <select name="<?php echo $view->getNs();?>goal[goal_group]">
-                        <?php foreach ($goal_groups as $k => $group): ?>
-                        <option value="<?php $view->out($k, false);?>" <?php if ( isset( $goal['goal_group'] ) && $goal['goal_group'] == $k ) { echo 'SELECTED';}?>><?php
+                        <?php foreach ($view->goal_groups as $k => $group): ?>
+                        <option value="<?php $view->out($k, false);?>" <?php if ( isset( $view->goal['goal_group'] ) && $view->goal['goal_group'] == $k ) { echo 'SELECTED';}?>><?php
                         if ( !empty( $group ) ) {
                             $view->out($k." - $group");
                         } else {
@@ -42,17 +42,17 @@
                     </select>
                     <BR><BR>Edit the group label:
 
-                    <input name="<?php echo $view->getNs();?>new_goal_group_name" type="text" size="20" value="<?php $view->out(@$goal_groups[$goal['goal_group']]);?>">
+                    <input name="<?php echo $view->getNs();?>new_goal_group_name" type="text" size="20" value="<?php $view->out($view->goal_groups[ $view->goal['goal_group'] ?? '' ] ?? '');?>">
                 </td>
             </tr>
             <tr>
                 <th valign="top">Status:</th>
                 <td>
                     <select name="<?php echo $view->getNs();?>goal[goal_status]">
-                        <option value="active" <?php if (isset($goal['goal_status']) && $goal['goal_status'] != 'disabled'){echo 'SELECTED';}?>>
+                        <option value="active" <?php if (isset($view->goal['goal_status']) && $view->goal['goal_status'] != 'disabled'){echo 'SELECTED';}?>>
                             Active
                         </option>
-                        <option value="disabled" <?php if (isset($goal['goal_status']) && $goal['goal_status'] === 'disabled'){echo 'SELECTED';}?>>
+                        <option value="disabled" <?php if (isset($view->goal['goal_status']) && $view->goal['goal_status'] === 'disabled'){echo 'SELECTED';}?>>
                             Disabled
                         </option>
                     </select>
@@ -69,7 +69,7 @@
                     </p>
                 </th>
                 <td>
-                    <input name="<?php echo $view->getNs();?>goal[goal_value]" type="text" size="20" value="<?php $view->out(@$goal['goal_value']);?>">
+                    <input name="<?php echo $view->getNs();?>goal[goal_value]" type="text" size="20" value="<?php $view->out($view->goal['goal_value'] ?? '');?>">
                     <span class="optional">Optional</span>
                 </td>
             </tr>
@@ -82,11 +82,11 @@
                     </p>
                 </th>
                 <td>
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="url_destination" <?php if (isset($goal['goal_type']) && $goal['goal_type'] === 'url_destination'){echo 'CHECKED';}?> > URL Destination<BR>
+                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="url_destination" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'url_destination'){echo 'CHECKED';}?> > URL Destination<BR>
 
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="pages_per_visit" <?php if (isset($goal['goal_type']) && $goal['goal_type'] === 'pages_per_visit'){echo 'CHECKED';}?> > Pages / Visit<BR>
+                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="pages_per_visit" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'pages_per_visit'){echo 'CHECKED';}?> > Pages / Visit<BR>
 
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="visit_duration" <?php if (isset($goal['goal_type']) && $goal['goal_type'] === 'visit_duration'){echo 'CHECKED';}?> > Visit Duration <BR>
+                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="visit_duration" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'visit_duration'){echo 'CHECKED';}?> > Visit Duration <BR>
 
 
                 </td>
@@ -105,13 +105,13 @@
                 <th>Match Type:</th>
                 <td>
                     <select name="<?php echo $view->getNs();?>goal[details][match_type]">
-                        <option value="begins" <?php if (isset($goal['details']['match_type']) && $goal['details']['match_type'] === 'begins'){echo 'SELECTED';}?>>
+                        <option value="begins" <?php if (isset($view->goal['details']['match_type']) && $view->goal['details']['match_type'] === 'begins'){echo 'SELECTED';}?>>
                             Begins With
                         </option>
-                        <option value="exact" <?php if (isset($goal['details']['match_type']) && $goal['details']['match_type'] === 'exact'){echo 'SELECTED';}?>>
+                        <option value="exact" <?php if (isset($view->goal['details']['match_type']) && $view->goal['details']['match_type'] === 'exact'){echo 'SELECTED';}?>>
                             Exact Match
                         </option>
-                        <option value="regex" <?php if (isset($goal['details']['match_type']) && $goal['details']['match_type'] === 'regex'){echo 'SELECTED';}?>>
+                        <option value="regex" <?php if (isset($view->goal['details']['match_type']) && $view->goal['details']['match_type'] === 'regex'){echo 'SELECTED';}?>>
                             Regular Expression
                         </option>
                     </select>
@@ -126,7 +126,7 @@
                 </p>
                 </th>
                 <td>
-                    <input name="<?php echo $view->getNs();?>goal[details][goal_url]" value="<?php $view->out(@$goal['details']['goal_url']);?>" type="text" size="60" value="<?php $view->out($goal['url']);?>">
+                    <input name="<?php echo $view->getNs();?>goal[details][goal_url]" value="<?php $view->out($view->goal['details']['goal_url'] ?? '');?>" type="text" size="60" value="<?php $view->out($view->goal['url']);?>">
                 </td>
             </tr>
         </table>
@@ -254,10 +254,10 @@ CHECKED
 
 <script>
 var steps = [];
-<?php // !empty() guard first: $goal['details'] is null for a goal with no details,
+<?php // !empty() guard first: $view->goal['details'] is null for a goal with no details,
       // and array_key_exists() with a null second argument is a TypeError on PHP 8
       // (pre-8 it was a warning returning false). ?>
-<?php if (!empty($goal['details']) && array_key_exists('funnel_steps', $goal['details'])):?>
-<?php $view->out(sprintf("steps = %s;", json_encode($goal['details']['funnel_steps'])), false); ?>
+<?php if (!empty($view->goal['details']) && array_key_exists('funnel_steps', $view->goal['details'])):?>
+<?php $view->out(sprintf("steps = %s;", json_encode($view->goal['details']['funnel_steps'])), false); ?>
 <?php endif;?>
 </script>

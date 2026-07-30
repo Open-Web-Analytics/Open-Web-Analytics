@@ -12,9 +12,9 @@
             <TH>User Name</TH>
             <TD>
             <?php if ( $view->edit === true ):?>
-            <input type="hidden" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $user['user_id'] );?>"><span class="noedit"><?php $view->out( $user['user_id'] )?></span>
+            <input type="hidden" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] );?>"><span class="noedit"><?php $view->out( $view->user['user_id'] )?></span>
             <?php else:?>
-            <input type="text" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( @$user['user_id'] );?>">
+            <input type="text" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
             <?php endif;?>
             </TD>
         </TR>
@@ -22,21 +22,21 @@
         <?php if ($view->edit === true):?>
         <TR>
             <TH>API Key</TH>
-            <TD><span class="noedit"><?php echo $user['api_key'];?></span></TD>
+            <TD><span class="noedit"><?php echo $view->user['api_key'];?></span></TD>
         </TR>
         <?php endif;?>
 
         <?php if ( ! $view->isAdmin ):?>
         <TR>
             <TH>Real Name</TH>
-            <TD><input type="text" size="30" name="<?php echo $view->getNs();?>real_name" value="<?php $view->out( $view->getValue( 'real_name', $user ) );?>"></TD>
+            <TD><input type="text" size="30" name="<?php echo $view->getNs();?>real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
         </TR>
         <TR>
             <TH>Role</TH>
             <TD>
             <select name="<?php echo $view->getNs();?>role">
                 <?php foreach ($view->roles as $role):?>
-                <option <?php if( isset( $user['role'] ) && $user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
+                <option <?php if( isset( $view->user['role'] ) && $view->user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
                 <?php endforeach;?>
             </select>
             </TD>
@@ -46,12 +46,12 @@
         <?php endif;?>
         <TR>
             <TH>E-mail Address</TH>
-            <TD><input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( @$user['email_address'] );?>"></TD>
+            <TD><input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
         </TR>
 
         <TR>
             <TD>
-                <input type="hidden" name="<?php echo $view->getNs();?>id" value="<?php $view->out( @$user['id'] );?>">
+                <input type="hidden" name="<?php echo $view->getNs();?>id" value="<?php $view->out( $view->user['id'] ?? '' );?>">
                 <?php echo $view->createNonceFormField($view->action);?>
                 <input type="hidden" name="<?php echo $view->getNs();?>action" value="<?php echo $view->action;?>">
                 <input class="owa-button" type="submit" value="Save" name="<?php echo $view->getNs();?>save_button">
