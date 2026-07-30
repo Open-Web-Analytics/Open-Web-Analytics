@@ -57,11 +57,12 @@ class SitesProfile extends \OWA\Core\View {
 
         $this->body->set('users', $this->getAllUserRows());
 
-        $this->body->set( 'site', $site );
+        // Normalised to arrays: both are already set unconditionally, but either
+        // can arrive null on the add path, and the template indexes into them.
+        $this->body->set( 'site', $site ?? [] );
         $this->body->set( 'edit', $this->get('edit') );
         $this->body->set( 'site_id', $this->get('siteId') );
-        $this->body->set( 'config', $this->get('config') );
-        //print_r($this->get('config'));
+        $this->body->set( 'config', $this->get('config') ?? [] );
         $this->body->set_template( 'sites_addoredit.php' );
     }
 

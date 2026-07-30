@@ -48,6 +48,26 @@ final class TemplateLatentVarTest extends TestCase
     }
 
     /**
+     * A Template for the admin add/edit forms. Stubs only the helpers that would
+     * otherwise need a request/DB (nonce fields, links, the param namespace) --
+     * everything the form template decides for itself is left real.
+     */
+    private function formSpy(): object
+    {
+        return new class('base') extends \OWA\Core\Template {
+
+            function createNonceFormField($action) { return "<!--nonce:$action-->"; }
+
+            function makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false) {
+
+                return 'LINK';
+            }
+
+            function getNs() { return 'owa_'; }
+        };
+    }
+
+    /**
      * @param array<string, mixed> $vars
      */
     private function render(object $t, string $file, array $vars): string
@@ -190,5 +210,100 @@ final class TemplateLatentVarTest extends TestCase
         $this->assertStringContainsString('Visitors: Last 30 Days', $out);
         // Guard the dangling-colon regression specifically.
         $this->assertDoesNotMatchRegularExpression('/Visitors:\s*<\/H2>/i', $out);
+    }
+
+    /**
+     * The three admin add/edit forms render on the ADD path, where the record
+     * does not exist yet.
+     *
+     * WHY THIS IS THE TEST THAT MATTERS. Each form serves both add and edit, and
+     * on the add path the record vars are empty. They used to be read as bare
+     * variables behind an @, which silently yielded null. They are now
+     * $view->site / $view->user / $view->goal, and $view->neverSet THROWS -- so if a
+     * view ever stops setting one of these unconditionally, this test fails
+     * instead of an admin getting a 500. The hoisting that makes that safe lives
+     * in Core/View.php (validation_errors) and View/SitesAdd.php +
+     * View/SitesProfile.php (site, config).
+     *
+     * @dataProvider addPathForms
+     * @param array<string, mixed> $vars
+     * @param array<int, string>   $expected
+     */
+    public function testAdminFormsRenderOnTheAddPath(string $template, array $vars, array $expected): void
+    {
+        $out = $this->render($this->formSpy(), $template, $vars);
+
+        foreach ($expected as $needle) {
+            $this->assertStringContainsString($needle, $out, "$template: missing $needle");
+        }
+        // An empty record must not leak a literal 'null' or an array-to-string
+        // conversion into a form field.
+        $this->assertStringNotContainsString('value="null"', $out);
+        $this->assertStringNotContainsString('Array', $out);
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: array<string, mixed>, 2: array<int, string>}>
+     */
+    public static function addPathForms(): array
+    {
+        $users = [['id' => '7', 'user_id' => 'admin', 'real_name' => 'Ada L', 'role' => 'admin']];
+        $siteEntity = new class { function isUserAssigned($id) { return false; } };
+
+        return [
+            'sites_addoredit (add)' => [
+                'sites_addoredit.php',
+                [
+                    'headline' => 'Add Site', 'action' => 'base.sitesAdd', 'edit' => false,
+                    'users' => $users, 'siteEntity' => $siteEntity, 'site_id' => '',
+                    // what the hoisted views now always provide
+                    'site' => [], 'config' => [], 'validation_errors' => [],
+                ],
+                ['name="owa_domain"', '<!--nonce:base.sitesEditSettings-->'],
+            ],
+            'users_addoredit (add)' => [
+                'users_addoredit.php',
+                [
+                    'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
+                    'isAdmin' => false, 'roles' => ['admin', 'viewer'], 'user' => [],
+                ],
+                ['name="owa_user_id"', 'name="owa_email_address"'],
+            ],
+            'options_goal_entry (add)' => [
+                'options_goal_entry.php',
+                [
+                    'headline' => 'New Goal', 'goal_number' => 1, 'siteId' => 'abc123',
+                    'goal' => [], 'goal_groups' => [],
+                ],
+                ['name="owa_goal[goal_name]"', 'name="owa_goal[goal_value]"'],
+            ],
+        ];
+    }
+
+    /**
+     * Core/View sets validation_errors UNCONDITIONALLY, so a form template can
+     * read it without knowing which controller branch it arrived through.
+     *
+     * It used to be set only when the key was already in $this->data, which is
+     * what forced sites_addoredit.php to read it behind an @. An empty array
+     * rather than null keeps if()/empty() behaving exactly as they did when the
+     * key was simply absent. Asserted against the source because the alternative
+     * -- standing up a full View with a body template -- would test the harness
+     * more than the guarantee.
+     */
+    public function testValidationErrorsIsAlwaysSetOnTheBody(): void
+    {
+        $src = file_get_contents(__DIR__ . '/../Core/View.php');
+
+        $this->assertStringNotContainsString(
+            "if (array_key_exists('validation_errors', $this->data)) {",
+            $src,
+            'validation_errors is conditional again -- a form reading $view->validation_errors will throw'
+        );
+        $this->assertStringContainsString(
+            "$this->data['validation_errors'] ?? []",
+            $src,
+            'expected the unconditional set with an [] default'
+        );
     }
 }

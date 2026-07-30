@@ -35,9 +35,12 @@
 # analysed here.
 #
 # Run via:  composer phpstan:templates
+#
+# NO BASELINE. The gate shipped with one -- 29 errors across three admin
+# add/edit forms -- and those were cleared in the very next PR, so it was
+# deleted rather than left as an empty file. The template tree analyses
+# clean at zero, and reportUnmatchedIgnoredErrors below keeps it that way.
 ########################################################################
-includes:
-    - phpstan-templates-baseline.neon
 
 parameters:
     parallel:
@@ -51,9 +54,10 @@ parameters:
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
     treatPhpDocTypesAsCertain: false
-    # Unlike the other two configs this one REPORTS unmatched ignores, so a
-    # baseline entry that stops applying (the template was fixed, renamed or
-    # deleted) fails the gate instead of rotting in place.
+    # Unlike the other two configs this one REPORTS unmatched ignores, so an
+    # ignore that stops applying (the template was fixed, renamed or deleted)
+    # fails the gate instead of rotting in place. This is what forced the
+    # baseline to be regenerated the moment its 29 errors were fixed.
     reportUnmatchedIgnoredErrors: true
 
     ignoreErrors:
