@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <table class="management">
 
     <thead>
@@ -32,33 +33,33 @@
 
         <tr>
             <th>Order Id</th>
-            <td><?php $this->out( $trans_detail['order_id'] );?></td>
+            <td><?php $view->out( $view->trans_detail['order_id'] );?></td>
         </tr>
         <tr>
             <th>Order Source</th>
-            <td><?php $this->out( $trans_detail['order_source'] );?></td>
+            <td><?php $view->out( $view->trans_detail['order_source'] );?></td>
         </tr>
         <tr>
             <th>Processing Gateway</th>
-            <td><?php $this->out( $trans_detail['gateway'] );?></td>
+            <td><?php $view->out( $view->trans_detail['gateway'] );?></td>
         </tr>
         <tr>
             <th>Total Revenue</th>
-            <td><?php $this->out( $this->formatCurrency( $trans_detail['total_revenue'] ) );?></td>
+            <td><?php $view->out( $view->formatCurrency( $view->trans_detail['total_revenue'] ) );?></td>
         </tr>
         <tr>
             <th>Tax Revenue</th>
-            <td><?php $this->out( $this->formatCurrency( $trans_detail['tax_revenue'] ) );?></td>
+            <td><?php $view->out( $view->formatCurrency( $view->trans_detail['tax_revenue'] ) );?></td>
         </tr>
         <tr>
             <th>Shipping Revenue</th>
-            <td><?php $this->out( $this->formatCurrency( $trans_detail['shipping_revenue'] ) );?></td>
+            <td><?php $view->out( $view->formatCurrency( $view->trans_detail['shipping_revenue'] ) );?></td>
         </tr>
     </tbody>
 </table>
 
 <h3>Transaction Line Items</h3>
-<?php if ( isset( $trans_detail['line_items'] ) ):?>
+<?php if ( isset( $view->trans_detail['line_items'] ) ):?>
 <table class="simpleTable">
     <tr>
         <th>Product Name</th>
@@ -68,13 +69,13 @@
         <th>Item Revenue</th>
     </tr>
 
-    <?php foreach ($trans_detail['line_items'] as $li): $li = (array) $li; ?>
+    <?php foreach ($view->trans_detail['line_items'] as $li): $li = (array) $li; ?>
     <tr>
-        <td><?php $this->out( $li['product_name'] ); ?> (<?php $this->out( $li['category'] ); ?>)</td>
-        <td><?php $this->out( $li['sku'] ); ?></td>
-        <td><?php $this->out( $this->formatCurrency( $li['unit_price'] ) ); ?></td>
-        <td><?php $this->out( $li['quantity'] ); ?></td>
-        <td><?php $this->out( $this->formatCurrency( $li['item_revenue'] ) ); ?></td>
+        <td><?php $view->out( $li['product_name'] ); ?> (<?php $view->out( $li['category'] ); ?>)</td>
+        <td><?php $view->out( $li['sku'] ); ?></td>
+        <td><?php $view->out( $view->formatCurrency( $li['unit_price'] ) ); ?></td>
+        <td><?php $view->out( $li['quantity'] ); ?></td>
+        <td><?php $view->out( $view->formatCurrency( $li['item_revenue'] ) ); ?></td>
     </tr>
     <?php endforeach; ?>
 </table>

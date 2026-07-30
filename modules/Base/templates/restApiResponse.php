@@ -1,23 +1,24 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 	
 $_response = [
 		    
-		    'requestId'			=> $request_id,
-		    'httpResponse'		=> $http_response,
-		    'error'				=> $error,
+		    'requestId'			=> $view->request_id,
+		    'httpResponse'		=> $view->http_response,
+		    'error'				=> $view->error,
 		    'data'				=> null
 
 ];
 
 
-if ( isset( $response_data ) ) {
+if ( isset( $view->response_data ) ) {
 	
-	$_response['data'] = $response_data;
+	$_response['data'] = $view->response_data;
 }
 
-if ( isset( $callback ) && ! empty( $callback) ) {
+if ( isset( $view->callback ) && ! empty( $view->callback) ) {
 	
-	echo sprintf("%s(%s);", $callback, json_encode( $_response ) );	
+	echo sprintf("%s(%s);", $view->callback, json_encode( $_response ) );	
 } else {
 
 	echo json_encode( $_response );

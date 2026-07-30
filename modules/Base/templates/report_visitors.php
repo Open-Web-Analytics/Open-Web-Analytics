@@ -1,10 +1,11 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionContent">
     <div id="visitor-trend" style="height:125px;width:auto;"></div>
     <div id="trend-metrics"></div>
 
     <script>
     //OWA.setSetting('debug', true);
-    var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+    var aurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                     'metrics' => 'uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration',
                                                     'dimensions' => 'date',
                                                     'sort' => 'date',
@@ -30,20 +31,20 @@
                 <div class="owa_reportSectionContent" style="">
                     <div class="owa_reportSectionHeader">Latest Visits</div>
                     <?php include('report_latest_visits.php')?>
-                    <?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
+                    <?php echo $view->makePaginationFromResultSet($view->visits, array('do' => 'base.reportVisitors'), true);?>
                 </div>
             </td>
             <TD width="50%" valign="top">
                 <div class="owa_reportSectionContent">
                     <div class="section_header inline_h2">Visitor Reports</div>
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitorsLoyalty'), true);?>">Visitor Loyalty</a></span> - See how long ago your visitors first came to your web site.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportVisitorsLoyalty'), true);?>">Visitor Loyalty</a></span> - See how long ago your visitors first came to your web site.
                     </P>
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportGeolocation'), true);?>">Geo-location</a></span> - See which parts of the world your visitors are coming from.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportGeolocation'), true);?>">Geo-location</a></span> - See which parts of the world your visitors are coming from.
                     </P>
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportHosts'), true);?>">Domains</a></span> - See which Networks or Internet hosts your visitors are coming from.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportHosts'), true);?>">Domains</a></span> - See which Networks or Internet hosts your visitors are coming from.
                     </P>
                 </div>
 
@@ -53,7 +54,7 @@
                     <div id="top-browsers"></div>
                     <script>
 
-                        var bturl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                        var bturl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                                 'metrics' => 'visits',
                                                                                 'dimensions' => 'browserType',
                                                                                 'sort' => 'visits-',
@@ -62,7 +63,7 @@
                                                                                 ),true);?>';
 
                         OWA.items.browsertypes = new OWA.resultSetExplorer('top-browsers');
-                        OWA.items.browsertypes.addLinkToColumn('browserType', '<?php echo $this->makeLink(array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'),true); ?>', ['browserType']);
+                        OWA.items.browsertypes.addLinkToColumn('browserType', '<?php echo $view->makeLink(array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'),true); ?>', ['browserType']);
                         OWA.items.browsertypes.asyncQueue.push(['refreshGrid']);
                         OWA.items.browsertypes.load(bturl);
 
@@ -74,7 +75,7 @@
                     <div id="top-visitors"></div>
                     <script>
 
-                        var tvurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                        var tvurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                                 'metrics' => 'visits,pageViews',
                                                                                 'dimensions' => 'visitorId',
                                                                                 'sort' => 'visits-',
@@ -83,7 +84,7 @@
                                                                                 ),true);?>';
 
                         OWA.items.topvisitors = new OWA.resultSetExplorer('top-visitors');
-                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s'), true); ?>', ['visitorId']);
+                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $view->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s'), true); ?>', ['visitorId']);
                         OWA.items.topvisitors.asyncQueue.push(['refreshGrid']);
                         OWA.items.topvisitors.load(tvurl);
 

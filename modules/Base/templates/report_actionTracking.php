@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php include('report_dimensionDetailNoTabs.php');?>
 
 
@@ -9,7 +10,7 @@
                 <div style="min-width:250px;" id="actionsByNameExplorer"></div>
                 <script>
                 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                var aurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'actions',
                                                                   'dimensions' => 'actionGroup,actionName',
                                                                   'sort' => 'actions-',
@@ -17,7 +18,7 @@
                                                                   'format' => 'json'), true);?>';
                                                                   
                 rsh = new OWA.resultSetExplorer('actionsByNameExplorer');
-                var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s', 'actionGroup' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s', 'actionGroup' => '%s'), true);?>';
                 rsh.addLinkToColumn('actionName', link, ['actionName', 'actionGroup']);
                 rsh.asyncQueue.push(['refreshGrid']);
                 rsh.load(aurl, 'grid');
@@ -30,7 +31,7 @@
                 <div class="section_header">Actions By Group</div>
                 <div style="min-width:300px;" id="actionsByGroupExplorer"></div>
                 <script>
-                var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                               'metrics' => 'actions',
                                                               'dimensions' => 'actionGroup',
                                                               'sort' => 'actions-',
@@ -38,7 +39,7 @@
                                                               'format' => 'json'), true);?>';
                                                               
                 rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
-                var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>';
                 rshre.addLinkToColumn('actionGroup', link, ['actionGroup']);
                 rshre.asyncQueue.push(['refreshGrid']);
                 rshre.load(url);

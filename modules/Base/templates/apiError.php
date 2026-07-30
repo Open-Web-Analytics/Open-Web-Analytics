@@ -1,2 +1,3 @@
-<?php if (isset($error_msg['headline'])) : $this->out( $error_msg['headline'] ); endif; ?>
-<?php if (isset($error_msg['message'])) : $this->out( $error_msg['message'] ); endif; ?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php if (isset($view->error_msg['headline'])) : $view->out( $view->error_msg['headline'] ); endif; ?>
+<?php if (isset($view->error_msg['message'])) : $view->out( $view->error_msg['message'] ); endif; ?>

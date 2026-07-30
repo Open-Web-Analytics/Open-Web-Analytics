@@ -1,8 +1,9 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 
-if ( $msgs ) {
+if ( $view->msgs ) {
 
-    $this->out( $msgs );
+    $view->out( $view->msgs );
 }
 
 ?>

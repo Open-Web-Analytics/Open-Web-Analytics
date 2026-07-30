@@ -1,5 +1,6 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 
-    echo $json;
+    echo $view->json;
 
 ?>

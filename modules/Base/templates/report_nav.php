@@ -1,12 +1,13 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_admin_nav">
 
     <UL>
-        <?php foreach ($links as $kl => $l): ?>
-        <?php if (!$this->getCurrentUser()->isCapable($l['priviledge'], $currentSiteId)) { continue; } ?>
+        <?php foreach ($view->links as $kl => $l): ?>
+        <?php if (!$view->getCurrentUser()->isCapable($l['priviledge'], $view->currentSiteId)) { continue; } ?>
         <LI>
             <div class="owa_admin_nav_topmenu">
 
-                <div class="owa_admin_nav_topmenu_item <?php if ($l['ref'] === $params['do'] || ( array_key_exists('subgroup', $l) && in_array( $params['do'], array_column($l['subgroup'], 'ref')))) { echo ' owa_current';} ?>">
+                <div class="owa_admin_nav_topmenu_item <?php if ($l['ref'] === $view->params['do'] || ( array_key_exists('subgroup', $l) && in_array( $view->params['do'], array_column($l['subgroup'], 'ref')))) { echo ' owa_current';} ?>">
                     <span class="owa_admin_nav_topmenu_toggle 
                     
                     <?php 
@@ -19,7 +20,7 @@
 			      
                     ?>"></span>
               
-                    <span><i class="owa_nav_icon <?php $this->out( $l['icon_class']); ?>"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $this->makeLink(array('do' => $l['ref']), true);?>"><?php echo $l['anchortext'];?></a></span>
+                    <span><i class="owa_nav_icon <?php $view->out( $l['icon_class']); ?>"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink(array('do' => $l['ref']), true);?>"><?php echo $l['anchortext'];?></a></span>
                     
 
                 </div>
@@ -29,10 +30,10 @@
                 <div id="owa_admin_nav_subgroup_<?php echo $kl;?>" class="owa_admin_nav_subgroup">
                     <UL>
                         <?php foreach ($l['subgroup'] as $sgl): ?>
-                        <?php if (!$this->getCurrentUser()->isCapable($sgl['priviledge'], $currentSiteId)) continue; ?>
+                        <?php if (!$view->getCurrentUser()->isCapable($sgl['priviledge'], $view->currentSiteId)) continue; ?>
                         <LI>
                             <div class="owa_admin_nav_subgroup_item ">
-                                <a href="<?php echo $this->makeLink(array('do' => $sgl['ref']), true);?>"><?php echo $sgl['anchortext'];?></a>
+                                <a href="<?php echo $view->makeLink(array('do' => $sgl['ref']), true);?>"><?php echo $sgl['anchortext'];?></a>
                             </div>
 
                         </LI>

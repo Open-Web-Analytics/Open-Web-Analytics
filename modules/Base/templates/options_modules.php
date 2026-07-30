@@ -1,7 +1,8 @@
-<div class="panel_headline"><?php echo $headline?></div>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<div class="panel_headline"><?php echo $view->headline?></div>
 <div id="panel">
 
-<?php if (!empty($modules)): ?>
+<?php if (!empty($view->modules)): ?>
 
 <table width="100%" id="module_roster" class="management">
     <thead>
@@ -14,7 +15,7 @@
     </TR>
     </thead>
     <tbody>
-    <?php foreach ($modules as $k => $v): ?>
+    <?php foreach ($view->modules as $k => $v): ?>
 
     <TR>
         <TD>
@@ -27,9 +28,9 @@
         <TD class="">
         <?php if ($v['name'] != 'base'): ?>
         <?php if (isset($v['status']) && $v['status'] == 'active'): ?>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>">Deactivate</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>">Deactivate</a>
         <?php else: ?>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.moduleActivate', 'module' => $v['name']), false, false, false, true );?>">Activate</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleActivate', 'module' => $v['name']), false, false, false, true );?>">Activate</a>
         <?php endif; ?>
         <?php endif;?>
 

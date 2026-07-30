@@ -28,6 +28,8 @@ See the [technical requirements](https://github.com/Open-Web-Analytics/Open-Web-
 ## Documentation
 See the wiki for documentation about the OWA Server and the Javascript Tracker client.
 
+Upgrading, or maintaining a third-party module, local template override, or custom theme? See [UPGRADING.md](UPGRADING.md) for the interfaces that are deprecated but still supported, and what replaces each one.
+
 ## Issues & Support
 
 Please read the [troubleshooting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) guide before filing any issue or bug reports. Issue tickets without the necessary debug info will be closed automatically.

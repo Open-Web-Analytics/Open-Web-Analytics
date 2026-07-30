@@ -104,17 +104,40 @@ class TemplateEngine {
      */
     function fetch($file = null) {
         if(!$file):
-             $file = $this->file;
+             $__owa_template_file = $this->file;
         else:
-            $file = $this->template_dir.$file;
+            $__owa_template_file = $this->template_dir.$file;
         endif;
 
-        extract($this->vars);          // Extract the vars to local namespace
-        ob_start();                    // Start output buffering
-        include($file);                // Include the file
-        $contents = ob_get_contents(); // Get the contents of the buffer
-        ob_end_clean();                // End buffering and discard
-        return $contents;              // Return the contents
+        // DEPRECATED bare-variable contract, kept for compatibility. Third-party
+        // module templates, site-owner templates/local/ overrides and custom themes
+        // are written against extracted locals ($foo) and $this, and OWA neither
+        // ships nor can migrate them. They keep working; removed at v2.0, alongside
+        // the owa_* class-name bridge. OWA's own templates use $view instead.
+        //
+        // The locals above/below are underscore-prefixed because extract() defaults
+        // to EXTR_OVERWRITE: a template payload with a 'file' or 'contents' key
+        // would otherwise clobber the include path or the captured output.
+        extract($this->vars);
+
+        // The modern, analysable scope: $view->foo for data, $view->out() for
+        // helpers. Built AFTER extract() so a stray 'view' key cannot clobber it.
+        $view = new ViewScope($this);
+
+        // try/finally so the buffer is always discarded, even when the template
+        // throws. ViewScope::__get raises on a view var that was never set, and
+        // that exception unwinds straight out of include() -- without the finally
+        // the ob_start() above would leak. A leaked buffer is nastier than it
+        // sounds: renders nest, so each swallowed template error leaves output
+        // captured in a buffer nobody closes, and a later ob_get_contents()
+        // returns unrelated markup.
+        ob_start();
+        try {
+            include($__owa_template_file);
+            return ob_get_contents();
+        } finally {
+            ob_end_clean();
+        }
     }
 
 }

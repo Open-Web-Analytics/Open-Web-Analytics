@@ -1,6 +1,7 @@
-<?php if ($dimension_properties): ?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php if ($view->dimension_properties): ?>
 <div class="owa_reportSectionContent">
-    <?php echo $this->renderDimension($dimension_template, $dimension_properties);?>
+    <?php echo $view->renderDimension($view->dimension_template, $view->dimension_properties);?>
 </div>
 <?php endif;?>
 
@@ -35,19 +36,19 @@
                     <P>
                         <span class="inline_h3"><a href="<?php 
 	                        echo ( 
-	                        	$this->makeLink(
+	                        	$view->makeLink(
 		                        	[
 			                        	'do' => 'base.overlayLauncher', 
-				                        'document_id' =>$document->get('id'), 
+				                        'document_id' =>$view->document->get('id'), 
 					                    'overlay_params' => base64_encode(
-											$this->makeParamString(
+											$view->makeParamString(
 							                    
 								                [
 								                    'action' 		=> 'loadHeatmap', 
-									                'api_url' 		=> $this->makeApiLink(
+									                'api_url' 		=> $view->makeApiLink(
 									                	
 										                [
-										                	'document_id' 	=> $document->get('id'),
+										                	'document_id' 	=> $view->document->get('id'),
 														    'module' 		=> 'base',
 														    'version'		=> 'v1',
 														    'do'			=> 'reports',
@@ -57,7 +58,7 @@
 											            true
 									                ), 
 										            
-											        'document_id' 	=> $document->get('id')
+											        'document_id' 	=> $view->document->get('id')
 												], 
 												false, 
 												'json'
@@ -69,11 +70,11 @@
                     </P>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams', 'document_id' => $document->get('id')), true);?>">Domstreams</a></span> - mouse movement recordings.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomstreams', 'document_id' => $view->document->get('id')), true);?>">Domstreams</a></span> - mouse movement recordings.
                     </P>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomClicks', 'document_id' => $document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomClicks', 'document_id' => $view->document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
                     </P>
                 </div>
             </TD>
@@ -84,44 +85,44 @@
 
 
 <script>
-        var trurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+        var trurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'pagePath,pageTitle',
                                                       'sort' => 'visits-',
                                                       'resultsPerPage' => 15,
-                                                      'constraints'            => 'priorPageUrl=='.urlencode((string) $dimension_properties->get('url')),
+                                                      'constraints'            => 'priorPageUrl=='.urlencode((string) $view->dimension_properties->get('url')),
                                                       'format' => 'json'), true);?>';
 
         var trshre = new OWA.resultSetExplorer('nextpages');
-        var link = '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+        var link = '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
         trshre.addLinkToColumn('pagePath', link, ['pagePath']);
         trshre.asyncQueue.push(['refreshGrid']);
         trshre.load(trurl);
 
-        var prurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+        var prurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'priorPagePath,priorPageTitle',
                                                       'sort' => 'visits-',
                                                       'resultsPerPage' => 15,
-                                                      'constraints'            => urlencode('pageUrl=='.(string) $dimension_properties->get('url')),
+                                                      'constraints'            => urlencode('pageUrl=='.(string) $view->dimension_properties->get('url')),
                                                       'format' => 'json'), true);?>';
 
         var prshre = new OWA.resultSetExplorer('priorpages');
-        var link = '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+        var link = '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
         prshre.addLinkToColumn('priorPagePath', link, ['priorPagePath']);
         prshre.asyncQueue.push(['refreshGrid']);
         prshre.load(prurl);
 
-        var vrurl = '<?php echo $this->makeApiLink(['do' => 'reports', 'module' => 'base', 'version' => 'v1',
+        var vrurl = '<?php echo $view->makeApiLink(['do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                     'metrics'           => 'visits,pageViews',
                                                     'dimensions'        => 'visitorId',
                                                     'sort'              => 'visits-',
                                                     'resultsPerPage'    => 15,
-                                                    'constraints'       => urlencode('pageUrl=='.(string) $dimension_properties->get('url')),
+                                                    'constraints'       => urlencode('pageUrl=='.(string) $view->dimension_properties->get('url')),
                                                     'format'            => 'json'], true);?>';
 
         var vrshre = new OWA.resultSetExplorer('pagevisitors');
-        var link = '<?php echo $this->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
+        var link = '<?php echo $view->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
         vrshre.addLinkToColumn('visitorId', link, ['visitorId']);
         vrshre.asyncQueue.push(['refreshGrid']);
         vrshre.load(vrurl);

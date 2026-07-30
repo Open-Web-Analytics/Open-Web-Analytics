@@ -1,6 +1,7 @@
-<?php if (isset($dimension_properties) && $dimension_properties): ?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php if (isset($view->dimension_properties) && $view->dimension_properties): ?>
 <div class="owa_reportSectionContent">
-    <?php echo $this->renderDimension($dimension_template, $dimension_properties);?>
+    <?php echo $view->renderDimension($view->dimension_template, $view->dimension_properties);?>
 </div>
 <?php endif;?>
 
@@ -13,16 +14,16 @@
     <?php if(isset($pie) && $pie): ?>
     <div id="pie" style="min-width:300px;"></div>
     <script>
-    var hpurl = '<?php echo $this->makeApiLink(array(
+    var hpurl = '<?php echo $view->makeApiLink(array(
                         'do'             => 'reports', 'module' => 'base', 'version' => 'v1',
                         'metrics'         => 'pageViews,visits,bounceRate',
                         'dimensions'     => 'hostName',
                         'sort'             => 'visits-',
                         'format'         => 'json',
-                        'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
+                        'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))),true);?>';
 
     hp = new OWA.resultSetExplorer('pie');
-    hp.options.pieChart.dimension = '<?php echo $dimensions;?>';
+    hp.options.pieChart.dimension = '<?php echo $view->dimensions;?>';
     hp.options.pieChart.metric = 'visits';
     hp.setView('pie');
     hp.load(hpurl);
@@ -33,23 +34,23 @@
     <div style="clear:both;"></div>
     <script>
 
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
-                                                                    'metrics' => $metrics,
+        var trendurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                    'metrics' => $view->metrics,
                                                                     'dimensions' => 'date',
                                                                     'sort' => 'date',
                                                                     'format' => 'json',
-                                                                    'constraints' => $constraints
+                                                                    'constraints' => $view->constraints
                                                                     ),true);?>';
 
         var trend = new OWA.resultSetExplorer('trend-chart');
         trend.options.sparkline.metric = 'visits';
 
 
-        <?php if ($trendTitle):?>
-        trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
+        <?php if ($view->trendTitle):?>
+        trend.asyncQueue.push(['renderTemplate', '<?php echo $view->trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
         <?php endif;?>
-        <?php if (isset($trendChartMetric)): ?>
-        trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
+        <?php if (isset($view->trendChartMetric)): ?>
+        trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $view->trendChartMetric; ?>'}], 'trend-chart']);
         <?php endif; ?>
         trend.options.metricBoxes.width = '150px';
         trend.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
@@ -60,30 +61,30 @@
 
 </div>
 
-<?php if ( $this->get( 'dimensions' ) ):?>
+<?php if ( $view->get( 'dimensions' ) ):?>
 <div class="owa_reportSectionContent">
 
     <div id="dimension-grid"></div>
 
     <script>
-        var dimurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
-                                                                    'metrics' => $metrics,
-                                                                    'dimensions' => $dimensions,
-                                                                    'sort' => $sort,
-                                                                    'resultsPerPage' => $resultsPerPage,
+        var dimurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                    'metrics' => $view->metrics,
+                                                                    'dimensions' => $view->dimensions,
+                                                                    'sort' => $view->sort,
+                                                                    'resultsPerPage' => $view->resultsPerPage,
                                                                     'format' => 'json',
-                                                                    'constraints' => $constraints
+                                                                    'constraints' => $view->constraints
                                                                     ),true);?>';
 
         var dim = new OWA.resultSetExplorer('dimension-grid');
 
-        <?php if (!empty($dimensionLink)):?>
-        var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
-        var values = <?php if (is_array($dimensionLink['valueColumns'])) {
+        <?php if (!empty($view->dimensionLink)):?>
+        var link = '<?php echo $view->makeLink($view->dimensionLink['template'], true);?>';
+        var values = <?php if (is_array($view->dimensionLink['valueColumns'])) {
                         $values = "[";
                         $i = 0;
-                        $count = count($dimensionLink['valueColumns']);
-                        foreach ($dimensionLink['valueColumns'] as $v) {
+                        $count = count($view->dimensionLink['valueColumns']);
+                        foreach ($view->dimensionLink['valueColumns'] as $v) {
                             $values .= "'$v'";
                             if ($i < $count) {
                                 $values .= ', ';
@@ -93,13 +94,13 @@
                         $values .= "]";
                         echo $values;
                     } else {
-                        echo "['".$dimensionLink['valueColumns']."']";
+                        echo "['".$view->dimensionLink['valueColumns']."']";
                     }
                     ?>;
-        dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
+        dim.addLinkToColumn('<?php echo $view->dimensionLink['linkColumn'];?>', link, values);
         <?php endif; ?>
-        <?php if (!empty($excludeColumns)):?>
-        dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
+        <?php if (!empty($view->excludeColumns)):?>
+        dim.options.grid.excludeColumns = [<?php echo $view->excludeColumns;?>];
         <?php endif; ?>
         dim.asyncQueue.push(['refreshGrid']);
         dim.load(dimurl);

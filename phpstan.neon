@@ -15,6 +15,13 @@ parameters:
     # Framework uses runtime-defined constants and dynamic class loading; keep
     # the baseline broad so this catches *new* breakage (undefined symbols from
     # deletions) rather than pre-existing legacy noise.
+    # ViewScope hands templates their view data through __get, so any view var is a
+    # legitimate property. Declaring it a universal object crate is how PHPStan is
+    # told that (it infers nothing from __get on its own) -- without this, every
+    # $view->someVar read in a template reports an undefined property.
+    universalObjectCratesClasses:
+        - OWA\Core\ViewScope
+
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
     treatPhpDocTypesAsCertain: false

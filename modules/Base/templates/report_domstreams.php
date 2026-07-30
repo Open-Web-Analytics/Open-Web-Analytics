@@ -1,4 +1,5 @@
-<?php if (!empty($document)): require('item_document.php'); endif;?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php if (!empty($view->document)): require('item_document.php'); endif;?>
 
 
 <?php if ( $domstreams ):?>
@@ -20,8 +21,8 @@
                 <?php echo date("F j, Y, g:i a",$ds['timestamp']);?>
             </TD>
             <TD class="data_cell">
-            <a href="<?php $this->safeHref( $ds['page_url'] );?>">
-                <?php $this->out( $this->truncate($ds['page_url'], 150) );?>
+            <a href="<?php $view->safeHref( $ds['page_url'] );?>">
+                <?php $view->out( $view->truncate($ds['page_url'], 150) );?>
             </a>
             </TD>
 
@@ -30,11 +31,11 @@
             </TD>
             <TD class="data_cell">
                 <a class="play" data-overlay="<?php echo trim( base64_encode(
-                                $this->makeParamString(
+                                $view->makeParamString(
                                     [
                                         'action' => 'loadPlayer',
                                         'domstream_guid' => $ds['domstream_guid'],
-	                                    'api_url' 		=> $this->makeApiLink(
+	                                    'api_url' 		=> $view->makeApiLink(
 									                	
 										                [
 										                	'domstream_guid' => $ds['domstream_guid'],
@@ -58,7 +59,7 @@
 								            $ds['page_url'] = $parts[0];
 								        }
 
-	                                    $this->safeHref( $ds['page_url'] );?>"
+	                                    $view->safeHref( $ds['page_url'] );?>"
                                     href="#">Play</a>
             </TD>
         </TR>
@@ -66,7 +67,7 @@
     </tbody>
 </table>
 
-<?php echo $this->makePaginationFromResultSet($d2, array('do' => 'base.reportDomstreams'), true);?>
+<?php echo $view->makePaginationFromResultSet($d2, array('do' => 'base.reportDomstreams'), true);?>
 
 <?php else:?>
     There are no Dom Streams this time period.

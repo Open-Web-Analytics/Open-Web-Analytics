@@ -1,55 +1,56 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 
 <div>
 
     Choose a goal: <select id="goalChooser">
-        <?php for ($i = 1; $i <= $numGoals; $i++):?>
-        <option <?php if ($i == $goal_number): echo 'SELECTED'; endif;?> value="<?php $this->out($i, false); ?>">Goal <?php $this->out($i, false); ?></option>
+        <?php for ($i = 1; $i <= $view->numGoals; $i++):?>
+        <option <?php if ($i == $view->goal_number): echo 'SELECTED'; endif;?> value="<?php $view->out($i, false); ?>">Goal <?php $view->out($i, false); ?></option>
         <?php endfor; ?>
     </select>
 </div>
 
-<?php if ( $this->get('funnel') ):?>
+<?php if ( $view->get('funnel') ):?>
 <table class="funnel" border="0" style="min-width:100%;">
     <tr>
         <td class="funnelLeft">Prior Page Viewed</td>
-        <td class="funnelMiddle"><h2><?php $this->out($goal_conversion_rate);?> conversion rate</h2></td>
+        <td class="funnelMiddle"><h2><?php $view->out($view->goal_conversion_rate);?> conversion rate</h2></td>
         <td class="funnelRight" style="text-align:right;">Next Page Viewed</td>
     </tr>
-    <?php foreach ($funnel as $k => $step):?>
+    <?php foreach ($view->funnel as $k => $step):?>
     <tr>
-        <td width="33%" valign="top" class="funnelLeft" id="entrances_step_<?php $this->out($step['step_number']);?>">
-            <div class="funnelLargeNumber entranceCount" style="text-align: right;" id="prior_page_count_step_<?php $this->out($step['step_number']);?>">
+        <td width="33%" valign="top" class="funnelLeft" id="entrances_step_<?php $view->out($step['step_number']);?>">
+            <div class="funnelLargeNumber entranceCount" style="text-align: right;" id="prior_page_count_step_<?php $view->out($step['step_number']);?>">
 
             </div>
         </td>
-        <td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $this->out($step['step_number']);?>">
-            <div class="funnelStepName">Step <?php $this->out($step['step_number']);?>: <?php $this->out($step['name']);?></div>
-            <div class="funnelStepCount"><?php $this->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
-            <div class="funnelStepUrl"><?php $this->out($step['url']);?></div>
+        <td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $view->out($step['step_number']);?>">
+            <div class="funnelStepName">Step <?php $view->out($step['step_number']);?>: <?php $view->out($step['name']);?></div>
+            <div class="funnelStepCount"><?php $view->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
+            <div class="funnelStepUrl"><?php $view->out($step['url']);?></div>
             <div class="genericHorizontalList" style="padding-top:10px;font-size:12px;">
                 <ul class="">
 
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
                     </li>
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomClicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomClicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
                     </li>
                 </ul>
             </div>
         </td>
-        <td width="33%" valign="top" class="funnelRight" id="exits_step_<?php $this->out($step['step_number']);?>">
-            <div class="funnelLargeNumber exitCount" id="next_page_count_step_<?php $this->out($step['step_number']);?>"></div>
+        <td width="33%" valign="top" class="funnelRight" id="exits_step_<?php $view->out($step['step_number']);?>">
+            <div class="funnelLargeNumber exitCount" id="next_page_count_step_<?php $view->out($step['step_number']);?>"></div>
         </td>
     </tr>
-    <?php if (array_key_exists($k+1, $funnel)):?>
+    <?php if (array_key_exists($k+1, $view->funnel)):?>
     <tr>
         <td class="funnelLeft"></td>
         <td class="funnelMiddle funnelLargeNumber funnelFlow">
-            <?php $this->out($funnel[$k+1]['visitor_percentage']);?><BR>
-            <span class="secondaryText">Proceeded to step: <?php $this->out($funnel[$k+1]['name']); ?></span>
+            <?php $view->out($view->funnel[$k+1]['visitor_percentage']);?><BR>
+            <span class="secondaryText">Proceeded to step: <?php $view->out($view->funnel[$k+1]['name']); ?></span>
         </td>
         <td class="funnelRight"></td>
     </tr>
@@ -58,7 +59,7 @@
 </table>
 
 <script>
-var funnel_json = <?php $this->out($funnel_json, false);?>;
+var funnel_json = <?php $view->out($view->funnel_json, false);?>;
 var i = 1;
 for (step in funnel_json) {
     step = parseInt(step);
@@ -136,8 +137,8 @@ for (step in funnel_json) {
 </script>
 <?php else: ?>
 No Funnel has been configured for this goal.
-<?php if ($this->getCurrentUser()->isCapable('edit_settings')): ?>
-    <a href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $goal_number, 'siteId' => $params['siteId']));?>">Add a funnel</a>
+<?php if ($view->getCurrentUser()->isCapable('edit_settings')): ?>
+    <a href="<?php echo $view->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $view->goal_number, 'siteId' => $view->params['siteId']));?>">Add a funnel</a>
 <?php endif; ?>
 <?php endif;?>
 
