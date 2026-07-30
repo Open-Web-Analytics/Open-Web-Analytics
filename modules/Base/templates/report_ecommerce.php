@@ -103,5 +103,4 @@
     </TR>
 </table>
 
-<?php require_once('js_report_templates.php');?>
-
+<?php require_once('js_report_templates.php');

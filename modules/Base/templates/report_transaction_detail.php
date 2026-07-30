@@ -81,5 +81,4 @@
 </table>
 <?php else: ?>
 None.
-<?php endif;?>
-
+<?php endif;
