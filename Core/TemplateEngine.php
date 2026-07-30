@@ -124,11 +124,20 @@ class TemplateEngine {
         // helpers. Built AFTER extract() so a stray 'view' key cannot clobber it.
         $view = new ViewScope($this);
 
+        // try/finally so the buffer is always discarded, even when the template
+        // throws. ViewScope::__get raises on a view var that was never set, and
+        // that exception unwinds straight out of include() -- without the finally
+        // the ob_start() above would leak. A leaked buffer is nastier than it
+        // sounds: renders nest, so each swallowed template error leaves output
+        // captured in a buffer nobody closes, and a later ob_get_contents()
+        // returns unrelated markup.
         ob_start();
-        include($__owa_template_file);
-        $__owa_template_output = ob_get_contents();
-        ob_end_clean();
-        return $__owa_template_output;
+        try {
+            include($__owa_template_file);
+            return ob_get_contents();
+        } finally {
+            ob_end_clean();
+        }
     }
 
 }

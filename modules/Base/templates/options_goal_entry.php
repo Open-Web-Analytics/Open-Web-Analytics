@@ -254,7 +254,10 @@ CHECKED
 
 <script>
 var steps = [];
-<?php if (array_key_exists('funnel_steps', $goal['details'])):?>
+<?php // !empty() guard first: $goal['details'] is null for a goal with no details,
+      // and array_key_exists() with a null second argument is a TypeError on PHP 8
+      // (pre-8 it was a warning returning false). ?>
+<?php if (!empty($goal['details']) && array_key_exists('funnel_steps', $goal['details'])):?>
 <?php $view->out(sprintf("steps = %s;", json_encode($goal['details']['funnel_steps'])), false); ?>
 <?php endif;?>
 </script>
