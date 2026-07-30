@@ -1,877 +1,229 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Call to method fetch\(\) on an unknown class owa_settings\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_base.php
-
-		-
-			message: '#^Iterating over an object of an unknown class unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_base.php
-
-		-
-			message: '#^Parameter \$array of method owa_base\:\:_setObjectValues\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_base.php
-
-		-
-			message: '#^Property owa_base\:\:\$c has unknown class owa_settings as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_base.php
-
-		-
-			message: '#^Property owa_base\:\:\$module has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_base.php
-
-		-
-			message: '#^Call to an undefined method owa_controller\:\:action\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
-			message: '#^Call to an undefined method owa_controller\:\:errorAction\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:errorAction\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
-			message: '#^Call to method getAssignedSites\(\) on an unknown class owa_serviceUser\.$#'
+			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_controller.php
+			path: Core/Controller.php
 
 		-
-			message: '#^Call to method isAdmin\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Call to method isAnonymousUser\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Call to method isCapable\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Call to method load\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_controller.php
-
-		-
-			message: '#^Call to static method get_instance\(\) on an unknown class owa_auth\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_controller.php
-
-		-
-			message: '#^Access to property \$config on an unknown class owa_settings\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Access to property \$denormalizedDimensions on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Access to property \$dimensions on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Access to property \$geolocation on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Access to property \$metrics on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Access to property \$modules on an unknown class owa_service\.$#'
+			message: '#^Call to method generateId\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Access to property \$request on an unknown class owa_service\.$#'
+			message: '#^Call to method get\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 12
-			path: owa_coreAPI.php
+			count: 2
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method fetch\(\) on an unknown class owa_template\.$#'
+			message: '#^Call to method getSiteSetting\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method generateId\(\) on an unknown class unknown\.$#'
+			message: '#^Call to method getTableAlias\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method get\(\) on an unknown class owa_settings\.$#'
+			message: '#^Call to method set\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method get\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getApiKey\(\) on an unknown class owa_serviceUser\.$#'
+			message: '#^Call to method setProperties\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method getApiMethodClass\(\) on an unknown class owa_service\.$#'
+			message: '#^Call to method update\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method getBrowscap\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getCliCommandClass\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getCurrentUser\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getMap\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getMapValue\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 5
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getMetricClasses\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getModule\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getModulesNeedingUpdates\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getRestApiRoute\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getRole\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getSiteSetting\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getTableAlias\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getTableName\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method getUserData\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method isAuthenticated\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method isCapable\(\) on an unknown class owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method isUpdateRequired\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method load\(\) on an unknown class unknown\.$#'
+			message: '#^Call to method wasPersisted\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method persistSetting\(\) on an unknown class owa_settings\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method set\(\) on an unknown class owa_template\.$#'
-			identifier: class.notFound
-			count: 3
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method set\(\) on an unknown class unknown\.$#'
+			message: '#^Method OWA\\Core\\CoreAPI\:\:entityFactory\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to method setProperties\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method setSetting\(\) on an unknown class owa_settings\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method set_template\(\) on an unknown class owa_template\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method update\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to method wasPersisted\(\) on an unknown class unknown\.$#'
-			identifier: class.notFound
-			count: 3
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to static method get_instance\(\) on an unknown class owa_auth\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Call to static method get_instance\(\) on an unknown class owa_eventDispatch\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Instantiated class owa_template not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:configSingleton\(\) has invalid return type owa_settings\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:entityFactory\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:getCurrentUser\(\) has invalid return type owa_serviceUser\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Method owa_coreAPI\:\:rawEntityFactory\(\) has invalid return type unknown\.$#'
+			message: '#^Method OWA\\Core\\CoreAPI\:\:rawEntityFactory\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:serviceSingleton\(\) has invalid return type owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Parameter \$entity_name of method owa_coreAPI\:\:entityFactory\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Parameter \$entity_name of method owa_coreAPI\:\:rawEntityFactory\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Undefined variable\: \$file$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$col_def might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$conf might not be defined\.$#'
 			identifier: variable.undefined
 			count: 2
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$file might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$name might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$params might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
 			message: '#^Variable \$something might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_coreAPI.php
+			path: Core/CoreAPI.php
 
 		-
-			message: '#^Call to an undefined method owa_db\:\:get_results\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
-			message: '#^Call to an undefined method owa_db\:\:query\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
 			count: 15
-			path: owa_db.php
-
-		-
-			message: '#^Call to static method stripSql\(\) on an unknown class owa_sanitize\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_CHARACTER_ENCODING_UTF8 not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_TABLE_CHARACTER_ENCODING not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_TABLE_TYPE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_TABLE_TYPE_DEFAULT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_TABLE_TYPE_DISK not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_DTD_TABLE_TYPE_MEMORY not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_ADD_COLUMN not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_ADD_INDEX not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_ALTER_TABLE_TYPE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_ASCENDING not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_AVERAGE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_BEGIN_TRANSACTION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_COUNT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_CREATE_TABLE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DELETE_ROW not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DESCENDING not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DISTINCT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DIVISION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DROP_COLUMN not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DROP_INDEX not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_DROP_TABLE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_END_TRANSACTION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_INSERT_ROW not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_MODIFY_COLUMN not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_NOTREGEXP not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_REGEXP not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_RENAME_COLUMN not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_RENAME_TABLE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_ROUND not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_SUM not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Constant OWA_SQL_UPDATE_ROW not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
 			message: '#^Variable \$ret might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_db.php
+			path: Core/Db.php
 
 		-
-			message: '#^Call to an undefined method owa_entity\:\:getEntityPropertyList\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Call to method setForeignKey\(\) on an unknown class owa_dbColumn\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Call to method setPrimaryKey\(\) on an unknown class owa_dbColumn\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Call to method setindex\(\) on an unknown class owa_dbColumn\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Instantiated class owa_dbColumn not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_entity.php
-
-		-
-			message: '#^Parameter \$array of method owa_entity\:\:setProperties\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
 			message: '#^Variable \$all_cols might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
 			message: '#^Variable \$vars might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_entity.php
+			path: Core/Entity.php
 
 		-
-			message: '#^Call to method fetch\(\) on an unknown class owa_settings\.$#'
+			message: '#^Method OWA\\Core\\Lib\:\:get_period_label\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Call to static method cleanInput\(\) on an unknown class owa_sanitize\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Iterating over an object of an unknown class unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Method owa_lib\:\:get_period_label\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Method owa_lib\:\:moduleRequireOnce\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Parameter \$data of method owa_lib\:\:redirectToView\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Parameter \$file of method owa_lib\:\:moduleRequireOnce\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Parameter \$module of method owa_lib\:\:moduleRequireOnce\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Parameter \$period of method owa_lib\:\:get_period_label\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
+			path: Core/Lib.php
 
 		-
 			message: '#^Variable \$state might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_lib.php
+			path: Core/Lib.php
 
 		-
-			message: '#^Access to offset mixed on an unknown class unknown_type\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_module.php
-
-		-
-			message: '#^Call to method createTable\(\) on an unknown class unknown\.$#'
+			message: '#^Call to method createTable\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
-			message: '#^Call to method setMapValue\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 5
-			path: owa_module.php
-
-		-
-			message: '#^Call to method setRestApiRoute\(\) on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Function exception not found\.$#'
-			identifier: function.notFound
-			count: 3
-			path: owa_module.php
-
-		-
-			message: '#^Method owa_module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Property owa_module\:\:\$author_url has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Property owa_module\:\:\$display_name has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Property owa_module\:\:\$metrics has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
 			message: '#^Variable \$class might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: owa_module.php
+			path: Core/Module.php
 
 		-
-			message: '#^Access to an undefined property owa_view\:\:\$renderJsInLine\.$#'
+			message: '#^Access to an undefined property OWA\\Core\\View\:\:\$renderJsInLine\.$#'
 			identifier: property.notFound
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
-			message: '#^Access to property \$request on an unknown class owa_service\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Call to static method sanitizeTemplateName\(\) on an unknown class owa_template\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Instantiated class owa_mailer not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Instantiated class owa_template not found\.$#'
-			identifier: class.notFound
-			count: 2
-			path: owa_view.php
-
-		-
-			message: '#^Method owa_base\:\:__construct\(\) invoked with 1 parameter, 0 required\.$#'
+			message: '#^Method OWA\\Core\\Base\:\:__construct\(\) invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
-			message: '#^Method owa_view\:\:assembleSubView\(\) has invalid return type unknown\.$#'
+			message: '#^Method OWA\\Core\\View\:\:assembleSubView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_view.php
+			path: Core/View.php
 
 		-
-			message: '#^Method owa_view\:\:assembleView\(\) has invalid return type unknown\.$#'
+			message: '#^Method OWA\\Core\\View\:\:assembleView\(\) has invalid return type OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Method owa_view\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
-			identifier: arguments.count
-			count: 2
-			path: owa_view.php
-
-		-
-			message: '#^Parameter \$data of method owa_view\:\:assembleSubView\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Parameter \$data of method owa_view\:\:assembleView\(\) has invalid type unknown_type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Property owa_view\:\:\$css_file has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Property owa_view\:\:\$module has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
+			path: Core/View.php

@@ -25,15 +25,6 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class TemplateXssTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        // owa_template is not autoloaded; the framework require_once's it on
-        // demand (owa_coreAPI::getJsTrackerTag). Do the same here.
-        if (!class_exists('owa_template')) {
-            require_once OWA_BASE_CLASSES_DIR . 'owa_template.php';
-        }
-    }
-
     /**
      * A URL payload that survives makeUrlCanonical() (verified: parse_url keeps
      * the raw quote) and breaks out of an href attribute + opens a tag.

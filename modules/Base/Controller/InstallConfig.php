@@ -1,0 +1,139 @@
+<?php
+namespace OWA\Module\Base\Controller;
+
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+
+/**
+ * Install Configuration Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.0.0
+ */
+
+class InstallConfig extends \OWA\Core\Controller\Install {
+
+    function __construct($params) {
+    
+        parent::__construct($params);
+
+        // require nonce
+        $this->setNonceRequired();
+    }
+
+    public function validate()
+    {
+        //required params
+        $this->addValidation('db_host', $this->getParam('db_host'), 'required', ['errorMsg' => 'Database host is required.']);
+        $this->addValidation('db_name', $this->getParam('db_name'), 'required', ['errorMsg' => 'Database name is required.']);
+        $this->addValidation('db_user', $this->getParam('db_user'), 'required', ['errorMsg' => 'Database user is required.']);
+        // NOTE: db_password is intentionally NOT required. MySQL permits accounts
+        // with an empty password (common for local/dev servers, and the CI
+        // mysql:8.0 service runs with MYSQL_ALLOW_EMPTY_PASSWORD). The real gate
+        // is the live connection check in action() below -- a bad/empty password
+        // that the server rejects fails there with a connection error, so a
+        // presence check here only blocks legitimate passwordless installs.
+        $this->addValidation('db_type', $this->getParam('db_type'), 'required', ['errorMsg' => 'Database type is required.']);
+
+        // Config for the public_url validation
+        $publicUrlConf = [
+            'substring' => 'http',
+            'match'     => '/',
+            'length'    => -1,
+            'position'  => -1,
+            'operator'  => '=',
+            'errorMsg'  => 'Your URL of OWA\'s base directory must end with a slash.'
+        ];
+
+        $this->addValidation('public_url', $this->getParam('public_url'), 'subStringMatch', $publicUrlConf);
+
+        // Config for the domain validation
+        $domainConf = [
+            'substring' => 'http',
+            'position'  => 0,
+            'operator'  => '=',
+            'errorMsg'  => 'Please add http:// or https:// to the beginning of your public url.'
+        ];
+
+        $this->addValidation('public_url', $this->getParam('public_url'), 'subStringPosition', $domainConf);
+    }
+
+    function action() {
+
+        // define db connection constants using values submitted
+        if ( ! defined( 'OWA_DB_TYPE' ) ) {
+            define( 'OWA_DB_TYPE', $this->getParam( 'db_type' ) );
+        }
+
+        if ( ! defined( 'OWA_DB_HOST' ) ) {
+            define('OWA_DB_HOST', $this->getParam( 'db_host' ) );
+        }
+
+        if ( ! defined( 'OWA_DB_PORT' ) ) {
+            define('OWA_DB_PORT', $this->getParam( 'db_port' ) );
+        }
+
+        if ( ! defined( 'OWA_DB_NAME' ) ) {
+            define('OWA_DB_NAME', $this->getParam( 'db_name' ) );
+        }
+
+        if ( ! defined( 'OWA_DB_USER' ) ) {
+            define('OWA_DB_USER', $this->getParam( 'db_user' ) );
+        }
+
+        if ( ! defined( 'OWA_DB_PASSWORD' ) ) {
+            define('OWA_DB_PASSWORD', $this->getParam( 'db_password' ) );
+        }
+
+        \OWA\Core\CoreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_user', OWA_DB_USER);
+        \OWA\Core\CoreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
+
+        // Check DB connection status
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->connect();
+        if ($db->connection_status != true) {
+            $this->set('error_msg', $this->getMsg(3012));
+            $this->set('config', $this->params);
+            $this->setView('base.install');
+            $this->setSubview('base.installConfigEntry');
+
+        } else {
+            //create config file
+            $this->c->createConfigFile($this->params);
+            $this->setRedirectAction('base.installDefaultsEntry');
+        }
+    }
+
+    function errorAction() {
+        
+        $this->set('config', $this->params);
+        $this->setView('base.install');
+        $this->setSubview('base.installConfigEntry');
+    }
+}
+
+?>

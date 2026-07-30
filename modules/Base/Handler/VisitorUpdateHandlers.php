@@ -1,0 +1,85 @@
+<?php
+namespace OWA\Module\Base\Handler;
+
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+
+/**
+ * OWA Visitor Update Event handlers
+ *
+ * Used to update certain properties of an existing visitor entity
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.0.0
+ */
+
+class VisitorUpdateHandlers extends \OWA\Core\Observer {
+
+    /**
+     * Notify Event Handler
+     *
+     * @param     mixed $event
+     * @access     public
+     */
+    function notify($event) {
+
+        if ( $event->get( 'visitor_id' ) ) {
+
+            $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
+
+            $v->load( $event->get( 'visitor_id' ) );
+
+            if ( $v->wasPersisted() ) {
+
+                $v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
+
+                \OWA\Core\CoreAPI::debug("Updating... Visitor already exists.");
+
+                $ret = $v->save();
+
+                if ( $ret ) {
+                    return OWA_EHS_EVENT_HANDLED;
+                } else {
+                    return OWA_EHS_EVENT_FAILED;
+                }
+            }
+
+        } else {
+
+            \OWA\Core\CoreAPI::debug("Not updating... no visitor ID present.");
+            return OWA_EHS_EVENT_HANDLED;
+        }
+    }
+    
+    function summarizePriorSessions($id) {
+
+        $ret = \OWA\Core\CoreAPI::summarize(array(
+                'entity'        => 'base.session',
+                'columns'        => array('num_prior_sessions' => 'max'),
+                'constraints'    => array( 'visitor_id' => $id ) ) );
+
+        return $ret['num_prior_sessions_max'];
+    }
+}
+
+?>

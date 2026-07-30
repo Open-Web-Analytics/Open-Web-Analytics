@@ -7,7 +7,6 @@
 //
 
 require_once('owa_env.php');
-require_once('owa_caller.php');
 
 /**
  * OWA Core
@@ -17,7 +16,7 @@ require_once('owa_caller.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
 
-class owa extends owa_caller {
+class owa extends \OWA\Core\Caller {
 
     function __construct($config = null) {
 

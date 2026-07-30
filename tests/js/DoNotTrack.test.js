@@ -1,4 +1,4 @@
-import { Util as OwaUtil } from '../../modules/base/src/common/Util.js';
+import { Util as OwaUtil } from '../../modules/Base/src/common/Util.js';
 
 /**
  * Do Not Track (DNT) tests.
@@ -136,7 +136,7 @@ describe('tracker-dom.js — the DNT bootstrap gate', () => {
             global.owa_cmds = cmds;
             window.owa_cmds = cmds;
 
-            require('../../modules/base/src/tracker/tracker-dom.js');
+            require('../../modules/Base/src/tracker/tracker-dom.js');
 
             // On load the gate opened: the array was replaced by the live queue...
             expect(Array.isArray(window.owa_cmds)).toBe(false);
@@ -163,7 +163,7 @@ describe('tracker-dom.js — the DNT bootstrap gate', () => {
             global.owa_cmds = cmds;
             window.owa_cmds = cmds;
 
-            require('../../modules/base/src/tracker/tracker-dom.js');
+            require('../../modules/Base/src/tracker/tracker-dom.js');
 
             // The gate stayed shut: owa_cmds is still the untouched plain array
             // (never swapped for a CommandQueue)...

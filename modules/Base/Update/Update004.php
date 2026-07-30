@@ -1,0 +1,103 @@
+<?php
+namespace OWA\Module\Base\Update;
+
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+/**
+ * 004 Update Class
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.2.1
+ */
+
+
+class Update004 extends \OWA\Core\Update {
+
+    function up() {
+
+        // create admin user for embedded installs.
+        // embedded installs did not create admin users until this release (v1.2.1)
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
+        $this->createAdminUser($cu->getUserData('email_address'));
+
+        $ds = \OWA\Core\CoreAPI::entityFactory('base.domstream');
+        $ret = $ds->createTable();
+
+        if ($ret == true) {
+            $this->e->notice('Domstream entity table created');
+            return true;
+        } else {
+            $this->e->notice('Domstream entity table creation failed');
+            return false;
+        }
+    }
+
+    function down() {
+
+        return false;
+    }
+
+    function createAdminUser($email_address) {
+
+        //create user entity
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
+        // check to see if an admin user already exists
+        $u->getByColumn('role', 'admin');
+        $id_check = $u->get('id');
+        // if not then proceed
+        if (empty($id_check)) {
+
+            //Check to see if user name already exists
+            $u->getByColumn('user_id', 'admin');
+
+            $id = $u->get('id');
+
+            // Set user object Params
+            if (empty($id)) {
+
+                $password = $u->generateRandomPassword();
+                $u->set('user_id', 'admin');
+                $u->set('role', 'admin');
+                $u->set('real_name', '');
+                $u->set('email_address', $email_address);
+                $u->set('password', \OWA\Core\Lib::encryptPassword($password));
+                $u->set('creation_date', time());
+                $u->set('last_update_date', time());
+                $ret = $u->create();
+
+                \OWA\Core\CoreAPI::debug("Admin user created successfully.");
+
+                return $password;
+
+            } else {
+                \OWA\Core\CoreAPI::debug($this->getMsgAsString(3306));
+            }
+        } else {
+            \OWA\Core\CoreAPI::debug("Admin user already exists.");
+        }
+
+    }
+
+}
+
+?>

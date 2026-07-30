@@ -47,7 +47,6 @@ abstract class CliControllerTestCase extends TestCase
             require_once($owa_root . 'owa.php');
             // cli.php requires the CLI controller base before any command loads;
             // the individual command files do not require it themselves.
-            require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
 
             $GLOBALS['owa_test_cli_instance'] = new owa([
                 'instance_role' => 'admin_cli',
@@ -159,12 +158,16 @@ abstract class CliControllerTestCase extends TestCase
      */
     protected function runCommand(string $class, string $controllerFile, array $params): array
     {
-        if ($controllerFile[0] === '/') {
-            $path = $controllerFile;
-        } else {
-            $path = OWA_BASE_MODULE_DIR . $controllerFile;
+        // Controllers autoload by name (compat bridge + Composer PSR-4); only fall
+        // back to an explicit require if the class is somehow not yet defined. The
+        // legacy module-relative path no longer exists post-PSR-4, so this require
+        // must stay guarded.
+        if (!class_exists($class)) {
+            $path = ($controllerFile[0] === '/')
+                ? $controllerFile
+                : OWA_BASE_MODULE_DIR . $controllerFile;
+            require_once($path);
         }
-        require_once($path);
 
         $ctrl = new $class($params);
         $data = $ctrl->doAction();

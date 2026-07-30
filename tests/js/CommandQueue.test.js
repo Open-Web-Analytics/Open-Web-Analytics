@@ -1,4 +1,4 @@
-import { CommandQueue } from '../../modules/base/src/tracker/CommandQueue.js';
+import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 
 /**
  * Command-queue (owa_cmds) invocation tests.

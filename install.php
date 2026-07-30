@@ -63,7 +63,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // need third param here so that seting is not persisted.
     $owa->setSetting('base','main_url', 'install.php');
     // run controller, echo page content
-    $do = owa_coreAPI::getRequestParam('do');
+    $do = \OWA\Core\CoreAPI::getRequestParam('do');
     $params = array();
     if (empty($do)) {
 

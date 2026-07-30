@@ -1,0 +1,38 @@
+########################################################################
+# Whole-tree PHPStan config — the 4th net of the namespace-migration
+# safety net (Phase 6, stage 0).
+#
+# The scoped phpstan.neon (8 core files) is the tight day-to-day gate.
+# THIS config scans the ENTIRE OWA-owned tree — every module, plugin,
+# and framework file — which only became analyzable once the composer
+# classmap autoloader (autoload.classmap in composer.json) let PHPStan
+# resolve every owa_* class by file. Its job during the migration is to
+# catch class-resolution breakage across the whole codebase (undefined
+# classes from a dropped alias, a rename that de-synced a file from its
+# class, a require path that no longer resolves) that an 8-file scan
+# cannot see.
+#
+# Baselined against the UNTOUCHED tree (phpstan-migration-baseline.neon)
+# so it reports only *new* breakage introduced by the migration, not the
+# large body of pre-existing legacy-type noise. Run via:
+#   composer phpstan:migration
+########################################################################
+includes:
+    - phpstan-migration-baseline.neon
+
+parameters:
+    level: 0
+    paths:
+        - .
+    excludePaths:
+        - vendor/*
+        - node_modules/*
+        - public/*
+        - includes/MaxMind/*
+        - includes/template_class/*
+        - owa-config*.php
+        - tests/*
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false

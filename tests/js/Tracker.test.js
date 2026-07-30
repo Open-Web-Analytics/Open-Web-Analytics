@@ -1,4 +1,4 @@
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 
 /**
  * Event-assembly tests for the tracker's public track* methods.
@@ -104,5 +104,66 @@ describe('OWATracker event assembly', () => {
         expect(e.get('click_y')).toBe('34');
 
         document.body.removeChild(link);
+    });
+});
+
+/**
+ * trackCustomEvent(eventType, properties).
+ *
+ * The documented public embed API is the async owa_cmds command queue, which is
+ * fire-and-forget and cannot pass in an Event instance built by makeEvent(). So
+ * custom events -- the one flow that required an Event object -- could not be
+ * logged from the queue. trackCustomEvent builds the Event internally (like
+ * trackAction does) so it can be driven from the queue; trackEvent(eventObject)
+ * is left untouched for advanced/return-value use.
+ *
+ * These drive the REAL send path and intercept only the innermost logEvent, so
+ * they exercise the Event construction end to end.
+ */
+describe('trackCustomEvent(eventType, properties)', () => {
+
+    function newTracker() {
+        const t = new OWATracker({ cookie_domain_set: true });
+        t.setSiteId('custom-event-site');
+        return t;
+    }
+
+    test('builds and logs a custom event from a type string and properties object', () => {
+        const t = newTracker();
+        let beacon = null;
+        t.logEvent = (properties) => { beacon = properties; };
+
+        t.trackCustomEvent('someeventname', { somename: 'somevalue', other: 2 });
+
+        expect(beacon).not.toBeNull();
+        expect(beacon.event_type).toBe('someeventname');
+        expect(beacon.somename).toBe('somevalue');
+        expect(beacon.other).toBe(2);
+    });
+
+    test('works with just an event type and no properties', () => {
+        const t = newTracker();
+        let beacon = null;
+        t.logEvent = (properties) => { beacon = properties; };
+
+        t.trackCustomEvent('someeventname');
+
+        expect(beacon).not.toBeNull();
+        expect(beacon.event_type).toBe('someeventname');
+    });
+
+    test('makeEvent() + trackEvent(event) still works (unchanged advanced path)', () => {
+        const t = newTracker();
+        let beacon = null;
+        t.logEvent = (properties) => { beacon = properties; };
+
+        const e = t.makeEvent();
+        e.setEventType('someeventname');
+        e.set('somename', 'somevalue');
+        t.trackEvent(e);
+
+        expect(beacon).not.toBeNull();
+        expect(beacon.event_type).toBe('someeventname');
+        expect(beacon.somename).toBe('somevalue');
     });
 });

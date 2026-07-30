@@ -32,10 +32,11 @@ describe('per-module build manifest discovery', () => {
         }));
 
     test('at least one module declares a build manifest', () => {
-        // base ships the tracker + reporting products; if this ever hits zero the
-        // discovery glob has silently stopped finding anything.
+        // Base ships the tracker + reporting products; if this ever hits zero the
+        // discovery glob has silently stopped finding anything. On-disk module dirs
+        // are PascalCase (PSR-4), so the base module's dir is 'Base'.
         expect(manifests.length).toBeGreaterThan(0);
-        expect(manifests.map((m) => m.module)).toContain('base');
+        expect(manifests.map((m) => m.module)).toContain('Base');
     });
 
     test('every declared package is well-formed and its inputs exist', () => {

@@ -46,11 +46,11 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     $owa->setSetting('base', 'is_remote_event_queue', true);
     $owa->e->debug('post: ' . print_r($_POST, true) );
-    $raw_event = owa_coreAPI::getRequestParam('event');
+    $raw_event = \OWA\Core\CoreAPI::getRequestParam('event');
 
     if ( $raw_event ) {
 
-        $dispatch = owa_coreAPI::getEventDispatch();
+        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
         $event = $dispatch->makeEvent();
         
         $event->loadFromArray($raw_event);

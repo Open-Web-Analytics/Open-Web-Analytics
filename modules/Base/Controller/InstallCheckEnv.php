@@ -1,0 +1,154 @@
+<?php
+namespace OWA\Module\Base\Controller;
+
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+
+/**
+ * Server Environment Check Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.0.0
+ */
+
+class InstallCheckEnv extends \OWA\Core\Controller\Install {
+
+    function action() {
+
+        $errors = array();
+        $bad_environment = false;
+        $config_file_present = false;
+
+        // check PHP version
+        $version = explode( '.', phpversion() );
+
+        if ( $version[0] < 5 && $version[1] < 2 ) {
+            $errors['php_version']['name'] = 'PHP Version';
+            $errors['php_version']['value'] = phpversion();
+            $errors['php_version']['msg'] = $this->getMsgAsString(3301);
+            $bad_environment = true;
+        }
+
+        // Check permissions on log directory
+        if ( ! is_writable( OWA_DATA_DIR . 'logs/' ) ) {
+
+            $errors['owa_logdir_permissions']['name'] = 'Log Directory Permissions';
+            $errors['owa_logdir_permissions']['value'] = 'Not writable';
+            $errors['owa_logdir_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'logs/ ' . ' to ensure it is writable.';
+            $bad_environment = true;
+        }
+
+        // Check permissions on caches directory
+        if ( ! is_writable( OWA_DATA_DIR . 'caches/' ) ) {
+
+            $errors['owa_caches_permissions']['name'] = 'Caches Directory Permissions';
+            $errors['owa_caches_permissions']['value'] = 'Not writable';
+            $errors['owa_caches_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'caches/ ' . ' to ensure it is writable.';
+            $bad_environment = true;
+        }
+
+        // check for magic_quotes
+        if ( function_exists( 'get_magic_quotes_gpc' ) ) {
+
+            $magic_quotes = get_magic_quotes_gpc();
+
+            if ( $magic_quotes ) {
+
+                $errors['magic_quotes_gpc']['name'] = 'magic_quotes_gpc';
+                $errors['magic_quotes_gpc']['value'] = $magic_quotes;
+                $errors['magic_quotes_gpc']['msg'] = "The magic_quotes_gpc PHP INI directive must be set to 'OFF' in order for OWA domstreams to operate correctly.";
+                $bad_environment = true;
+
+            }
+        }
+        
+        // check to ensure tha the vendors dir exist
+        if (! is_dir( OWA_VENDOR_DIR ) ) {
+	        
+	        $errors['vendors_dir'] = [
+		        
+		        'name'	=> 'Vendors Directory',
+		        'value'	=> 'missing',
+		        'msg'	=> "The vendors directory is missing. Please run 'composer install' from the top level OWA directory."
+	        ];
+	        
+	        $bad_environment = true;
+        }
+        
+        // check to ensure the built asset dir exists. The webpack build now emits
+        // the tracker/reporting bundles under public/base/dist (they used to live
+        // in modules/base/dist); public/ is gitignored, so a fresh source checkout
+        // still lacks it until 'npm run build' runs.
+        if ( ! is_dir( OWA_DIR .'public/base/dist' ) ) {
+
+	        $errors['base_dist_dir'] = [
+
+		        'name'	=> 'dist Directory',
+		        'value'	=> 'missing',
+		        'msg'	=> "The built asset directory (public/base/dist) is missing. Please run 'npm run build' from the top level OWA directory."
+	        ];
+
+	        $bad_environment = true;
+        }
+
+
+        // Check for config file and then test the db connection
+        if ($this->c->isConfigFilePresent()) {
+            $config_file_present = true;
+            $conn = $this->checkDbConnection();
+            if ($conn != true) {
+                $errors['db']['name'] = 'Database Connection';
+                $errors['db']['value'] = 'Connection failed';
+                $errors['db']['msg'] = 'Check the connection settings in your configuration file.' ;
+                $bad_environment = true;
+            }
+        }
+
+        // if the environment is good
+        if ($bad_environment != true) {
+            // and the config file is present
+            if ($config_file_present === true) {
+                //skip to defaults entry step
+                $this->setRedirectAction('base.installDefaultsEntry');
+                return;
+            } else {
+                // otherwise show config file entry form
+                $this->setView('base.install');
+                // Todo: prepopulate public URL.
+                //$config = array('public_url', $url);
+                //$this->set('config', $config);
+                $this->setSubview('base.installConfigEntry');
+                return;
+            }
+        // if the environment is bad, then show environment error details.
+        } else {
+            $this->set('errors', $errors);
+            $this->setView('base.install');
+            $this->setSubview('base.installCheckEnv');
+        }
+    }
+}
+
+
+
+?>

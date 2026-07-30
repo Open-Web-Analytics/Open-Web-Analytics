@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 /**
  * Build-integrity characterization of the combined reporting stylesheet
- * (public/base/css/owa.reporting-css-combined.css; sources in modules/base/css/).
+ * (public/base/css/owa.reporting-css-combined.css; sources in modules/Base/css/).
  *
  * This file's production moved from the PHP-CLI `cmd=build` controller
  * (base.build / owa_buildController, formerly driven by base/module.php
@@ -12,7 +12,7 @@ const { execSync } = require('child_process');
  *   - The six source CSS files are the webpack entry, in the SAME cascade order
  *     the PHP package used: jquery-ui, ui.jqgrid, chosen, owa, owa.admin, owa.report.
  *   - mini-css-extract-plugin emits the combined file under the SAME name to the
- *     SAME directory (modules/base/css/), and css-loader runs with url:false so
+ *     SAME directory (modules/Base/css/), and css-loader runs with url:false so
  *     every url() is passed through verbatim -- combined with the css/ output dir,
  *     the relative asset paths (images/ui-icons_*, chosen-sprite.png, ../i/*) stay
  *     valid without rewriting a single url().
@@ -27,14 +27,14 @@ describe('reporting CSS build integrity', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
-    const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
+    const manifestPath = path.join(repoRoot, 'modules/Base/build.manifest.json');
     // Source stylesheets live in the module tree; the BUILT artifact + its copied
     // url() assets are emitted into the public/ asset tree (moved out of source so the
     // deny-all .htaccess can allow public/** without exposing anything sensitive).
-    const cssSrcDir = path.join(repoRoot, 'modules/base/css');
+    const cssSrcDir = path.join(repoRoot, 'modules/Base/css');
     const publicCssDir = path.join(repoRoot, 'public/base/css');
     const artifactPath = path.join(publicCssDir, 'owa.reporting-css-combined.css');
-    const modulePhpPath = path.join(repoRoot, 'modules/base/module.php');
+    const modulePhpPath = path.join(repoRoot, 'modules/Base/Module.php');
 
     // The six source stylesheets, in the cascade order the entry lists them.
     // Order is load-bearing: later files intentionally override earlier ones.

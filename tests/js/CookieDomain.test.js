@@ -1,5 +1,5 @@
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
-import { OWA_instance as OWA } from '../../modules/base/src/common/owa.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
+import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 /**
  * Cookie-domain resolution (setCookieDomain / getCookieDomain).

@@ -11,8 +11,8 @@ jest.mock('jquery', () => {
     return jq;
 });
 
-import { Player } from '../../modules/base/src/tracker/Player.js';
-import { OWA_instance as OWA } from '../../modules/base/src/common/owa.js';
+import { Player } from '../../modules/Base/src/tracker/Player.js';
+import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 /**
  * Domstream PLAYBACK tests (admin-side replay).

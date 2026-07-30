@@ -1,0 +1,91 @@
+<?php
+namespace OWA\Module\Base\Controller;
+
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+
+/**
+ * Domstream Report Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.2.1
+ */
+
+class ReportDomstreams extends \OWA\Core\ReportController {
+
+    function action() {
+
+        $document_id = '';
+
+        // get period
+        $p = $this->getPeriod();
+		
+        // check for limits
+        if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
+            $doc = \OWA\Core\CoreAPI::entityFactory('base.document');
+			
+			if ( $this->get( 'document_id' ) ) {
+				
+				$doc->load($this->getParam('document_id'));
+			} elseif ($this->getParam('pageUrl')) {
+                $doc->getByColumn('url', $this->getParam('pageUrl'));
+            } elseif ($this->getParam('pagePath')) {
+                $doc->getByColumn('uri', $this->getParam('pagePath'));
+            }
+            
+            $document_id = $doc->get('id');
+            $pageUrl = $doc->get('url');
+
+            $this->setTitle('Domstream Recordings: ', $doc->get('url'));
+            $this->set('document', $doc->_getProperties());
+            $this->set('item_properties', $doc);
+        } else {
+            // latest domstream report
+            $this->setTitle('Latest Domstreams');
+        }
+
+        $ds = \OWA\Core\CoreAPI::executeApiCommand(array(
+			'module'			=> 'domstream',
+			'version'			=> 'v1',
+            'do'                => 'domstreams',
+            'request_method'	=> 'GET',
+            'startDate'         => $p->getStartDate()->getYyyymmdd(),
+            'endDate'            => $p->getEndDate()->getYyyymmdd(),
+            'pageUrl'        => $pageUrl,
+            'siteId'            => $this->getParam('siteId'),
+            'page'                => $this->getParam('page'),
+            'resultsPerPage'    => 50
+        ));
+ 
+		 $this->set('domstreams', $ds);
+        // set view stuff
+        $this->setSubview('base.reportDomstreams');
+
+
+    }
+
+}
+
+
+
+?>

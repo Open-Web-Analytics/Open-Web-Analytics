@@ -17,7 +17,6 @@
 //
 
 include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 
 /**
@@ -54,7 +53,7 @@ header('Content-encoding: none', true);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // redirect to blank.php
-    owa_lib::redirectBrowser( str_replace('log.php', 'blank.php', owa_lib::get_current_url() ) );
+    \OWA\Core\Lib::redirectBrowser( str_replace('log.php', 'blank.php', \OWA\Core\Lib::get_current_url() ) );
     // necessary or else buffer is not actually flushed
     echo ' ';
 } else {
@@ -93,13 +92,13 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     $owa->e->debug('Logging new tracking event...');
     
-    $service = owa_coreAPI::serviceSingleton();
+    $service = \OWA\Core\CoreAPI::serviceSingleton();
     $service->request->decodeRequestParams();
-    $event = owa_coreAPI::supportClassFactory('base', 'event');
-    $event->setEventType(owa_coreAPI::getRequestParam('event_type'));
+    $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+    $event->setEventType(\OWA\Core\CoreAPI::getRequestParam('event_type'));
     $event->setProperties($service->request->getAllOwaParams());
 
-    owa_coreAPI::logEvent($event->getEventType(), $event);
+    \OWA\Core\CoreAPI::logEvent($event->getEventType(), $event);
 
 } else {
     // unload owa

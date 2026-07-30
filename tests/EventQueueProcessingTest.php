@@ -61,7 +61,7 @@ final class EventQueueProcessingTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------------
 
-    private function queue(): owa_dbEventQueue
+    private function queue(): \OWA\Module\Base\Classes\DbEventQueue
     {
         // The 'processing' named queue is the database-backed queue. connect()
         // wires up its db handle (the drain does this before receiving); it is
@@ -239,7 +239,6 @@ final class EventQueueProcessingTest extends TestCase
 
     public function testNotifyHandlerDoesNotFailForUnregisteredSite(): void
     {
-        require_once OWA_BASE_MODULE_DIR . 'handlers/notifyHandlers.php';
         $handler = new owa_notifyHandlers();
 
         // A site_id that is guaranteed not to resolve to a persisted site.
@@ -260,7 +259,6 @@ final class EventQueueProcessingTest extends TestCase
 
     public function testNotifyHandlerHandlesEventWithNoSiteId(): void
     {
-        require_once OWA_BASE_MODULE_DIR . 'handlers/notifyHandlers.php';
         $handler = new owa_notifyHandlers();
 
         $event = $this->makeEvent('base.new_session', []); // no site_id

@@ -1,4 +1,4 @@
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 
 /**
  * Transport-layer tests for the tracker's GET beacon.

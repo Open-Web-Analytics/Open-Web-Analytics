@@ -43,7 +43,6 @@ if (!OWA_CLI)
 
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa.php');
-require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 $params = [];
 // get params from the command line args
@@ -81,7 +80,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // setting user auth
     $owa->setCurrentUser('admin', 'cli-user');
     // run controller or view and echo page content
-    $s = owa_coreAPI::serviceSingleton();
+    $s = \OWA\Core\CoreAPI::serviceSingleton();
     $s->loadCliCommands();
 
     if (array_key_exists('cmd', $params)) {
@@ -92,11 +91,11 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
             $params['do'] = $cmd;
             echo $owa->handleRequest($params);
         } else {
-            owa_coreAPI::notice( "Invalid command name.");
+            \OWA\Core\CoreAPI::notice( "Invalid command name.");
         }
 
     } else {
-        owa_coreAPI::notice("Missing a command argument.");
+        \OWA\Core\CoreAPI::notice("Missing a command argument.");
     }
 
 } else {

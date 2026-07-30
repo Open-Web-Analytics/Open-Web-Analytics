@@ -1,4 +1,4 @@
-import { Event } from '../../modules/base/src/tracker/Event.js';
+import { Event } from '../../modules/Base/src/tracker/Event.js';
 
 /**
  * Unit tests for the tracker Event value object. Event is the payload every
