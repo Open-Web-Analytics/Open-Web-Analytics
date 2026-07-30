@@ -2,6 +2,8 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
+    parallel:
+        maximumNumberOfProcesses: 1
     level: 3
     paths:
         - Core/Lib.php
