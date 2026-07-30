@@ -15,7 +15,20 @@ require_once(OWA_BASE_MODULE_DIR.'sites.php');
  *
  */
 class owa_sitesRestController extends owa_sitesController {
-    
+
+	function action() {
+        
+        $site_id = $this->getParam('siteId');
+        if (!empty($site_id)) {
+            $site = owa_coreAPI::entityFactory('base.site');
+            $site->getByColumn('site_id', $site_id);
+            $this->set('site', $site);
+        } else {
+            $s = owa_coreAPI::entityFactory('base.site');
+            $sites = $this->getSitesAllowedForCurrentUser();
+            $this->set('tracked_sites', $sites);
+        }
+    }
 
     function success() {
 	    
@@ -36,7 +49,12 @@ class owa_sitesRestView extends owa_restApiView {
         
     function render() {
         
-        $this->setResponseData( $this->get('tracked_sites') );
+        $site = $this->get('site');
+        if (empty($site)) {
+            $this->setResponseData($this->get('tracked_sites'));
+        } else {
+            $this->setResponseData($site);
+        }
     }
 }
 

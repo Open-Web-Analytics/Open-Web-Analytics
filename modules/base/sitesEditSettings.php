@@ -73,14 +73,20 @@ class owa_sitesEditSettingsController extends owa_adminController {
 
             $ret = $site->update();
 
-            if ($ret) {
-                $this->setStatusCode( 3201 );
-            }
-
             $this->set('siteId', $site_id);
             $this->set('edit', true);
-            $this->setRedirectAction( 'base.sitesProfile' );
+            $siteRes = owa_coreAPI::entityFactory( 'base.site' );
+            $siteRes->load( $siteRes->generateId($site_id) );
+            if( ! $this->getParam( 'edit' ) ){
+                $this->set( 'site' , $siteRes );
+            }
         }
+    }
+
+    function success() {
+
+        $this->setRedirectAction( 'base.sitesProfile' );
+        $this->set( 'status_code' , 3201 );
     }
 
     function errorAction() {
