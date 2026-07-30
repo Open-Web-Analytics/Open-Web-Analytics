@@ -1,1 +1,2 @@
-<?php echo $tracking_code; ?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php echo $view->tracking_code; ?>

@@ -1,10 +1,11 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 
 <table id= "" class="owa_dataGrid<?php //echo $class; ?>" summary="">
-    <!-- <CAPTION>Result set for <?php echo $rs->timePeriod['label'];?>.</CAPTION> -->
+    <!-- <CAPTION>Result set for <?php echo $view->rs->timePeriod['label'];?>.</CAPTION> -->
     <thead>
         <tr>
-<?php if ($rs->resultsRows):?>
-<?php foreach ($rs->resultsRows[0] as $k => $v):?>
+<?php if ($view->rs->resultsRows):?>
+<?php foreach ($view->rs->resultsRows[0] as $k => $v):?>
             <th class="<?php if($v['result_type'] === 'dimension') { echo 'dimensionColumn';} else { echo 'metricColumn';}?>"><?php echo $v['label'];?></th>
 <?php endforeach;?>
 <?php endif;?>
@@ -16,8 +17,8 @@
     </tfoot>
         
     <tbody>
-<?php if ($rs->resultsRows):?>
-<?php foreach ($rs->resultsRows as $row):?>
+<?php if ($view->rs->resultsRows):?>
+<?php foreach ($view->rs->resultsRows as $row):?>
         <tr>
 <?php foreach ($row as $k => $v):?>
             <td class="<?php if($v['result_type'] === 'dimension') { echo 'dimensionColumn';} else { echo 'metricColumn';}?>">

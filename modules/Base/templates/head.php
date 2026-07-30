@@ -1,12 +1,13 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <!-- HEAD Elements -->
-<?php if(!empty($css)): ?>
-<?php foreach ($css as $cssfile): ?>
+<?php if(!empty($view->css)): ?>
+<?php foreach ($view->css as $cssfile): ?>
 <LINK REL=StyleSheet HREF="<?php echo $cssfile['url'];?>" TYPE="text/css">
 <?php endforeach; ?>
 <?php endif;?>
 
-<?php if(!empty($js)): ?>
-<?php foreach ($js as $jsfile): ?>
+<?php if(!empty($view->js)): ?>
+<?php foreach ($view->js as $jsfile): ?>
 <?php if ($jsfile['ie_only']):?>
  <!--[if IE]><script language="javascript" type="text/javascript" src="<?php echo $jsfile['url'];?>"></script><![endif]-->
 <?php else: ?>

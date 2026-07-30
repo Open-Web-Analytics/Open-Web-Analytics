@@ -1,25 +1,26 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 	
-if ( isset($msgs) && ! empty($msgs) ) {
+if ( isset($view->msgs) && ! empty($view->msgs) ) {
 	
-	\OWA\Core\CoreAPI::notice( json_encode( $msgs, JSON_PRETTY_PRINT ) );
+	\OWA\Core\CoreAPI::notice( json_encode( $view->msgs, JSON_PRETTY_PRINT ) );
 }
 
-if( isset( $status_msg ) && ! empty( $status_msg ) ) {
+if( isset( $view->status_msg ) && ! empty( $view->status_msg ) ) {
 
-	\OWA\Core\CoreAPI::notice( $status_msg );
+	\OWA\Core\CoreAPI::notice( $view->status_msg );
 
 }
 
-if ( isset( $error ) && ! empty( $error ) ) {
+if ( isset( $view->error ) && ! empty( $view->error ) ) {
 	
-	\OWA\Core\CoreAPI::notice("Command failed. There were some errors:". "\n" . json_encode( $error, JSON_PRETTY_PRINT ) );
+	\OWA\Core\CoreAPI::notice("Command failed. There were some errors:". "\n" . json_encode( $view->error, JSON_PRETTY_PRINT ) );
 	
 } else {
 	
-	if ( isset( $response_data ) && ! empty( $response_data ) ) {
+	if ( isset( $view->response_data ) && ! empty( $view->response_data ) ) {
 	
-		\OWA\Core\CoreAPI::notice( "\n" . json_encode( $response_data, JSON_PRETTY_PRINT ) );
+		\OWA\Core\CoreAPI::notice( "\n" . json_encode( $view->response_data, JSON_PRETTY_PRINT ) );
 	}
 }
 

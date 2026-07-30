@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div id="updates" style="width:800px; margin: 0px auto 20px auto;">
     <div class="" style="text-align:center;">
         <h1>Open Web Analytics Updater</h1>
@@ -12,7 +13,7 @@
         <P>
         <UL>
 
-        <?php foreach ($modules as $k => $module): ?>
+        <?php foreach ($view->modules as $k => $module): ?>
 
             <LI><?php echo $module; ?></LI>
 
@@ -24,7 +25,7 @@
         <BR>
 
         <P>
-        <a href="<?php echo $this->makeLink(array('do' => 'base.updatesApply'));?>"><span class="owa-button">Apply updates</span></a>
+        <a href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>"><span class="owa-button">Apply updates</span></a>
         </P>
 
     </div>

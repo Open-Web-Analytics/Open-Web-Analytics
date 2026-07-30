@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div>
     <div style="display: table-cell; vertical-align: middle">
         <span>
@@ -7,7 +8,7 @@
             $avatar = '';
             if ( isset($row) && is_array( $row ) && array_key_exists('visitor_user_email', $row) ) {
                 
-                $this->getAvatarImage($row['visitor_user_email']);
+                $view->getAvatarImage($row['visitor_user_email']);
             }
             if ( $avatar ) {
         		
@@ -22,11 +23,11 @@
             ?>
         
         </span>
-        <span class="inline_h2"><?php $this->out( $visitor_label );?></span>
+        <span class="inline_h2"><?php $view->out( $view->visitor_label );?></span>
     </div>
     <BR>
     <div>
-        <?php $this->renderKpiInfobox( $first_visit_date, 'First Visit' ); ?>
+        <?php $view->renderKpiInfobox( $view->first_visit_date, 'First Visit' ); ?>
 
     </div>
 </div>
@@ -40,7 +41,7 @@
                 <div class="owa_reportSectionContent" style="min-width:500px;">
                     <div class="owa_reportSectionHeader">Latest Visits</div>
                     <?php include('report_latest_visits.php')?>
-                    <?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
+                    <?php echo $view->makePaginationFromResultSet($view->visits, array('do' => 'base.reportVisitors'), true);?>
                 </div>
             </td>
             <td valign="top">
@@ -55,19 +56,19 @@
 
 <script>
 	
-var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+var burl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                           'metrics' => 'actions', 
                                                           'dimensions' => 'actionGroup,actionName', 
-                                                          'constraints' => 'visitorId=='.$this->get('visitor_id'),
+                                                          'constraints' => 'visitorId=='.$view->get('visitor_id'),
                                                           'sort' => 'actions-', 
                                                           'resultsPerPage' => 5,
                                                           'format' => 'json'), true);?>';
 	
 var bsh = new OWA.resultSetExplorer('latest-actions');
 	bsh.options.grid.showRowNumbers = false;
-	bsh.addLinkToColumn('actionGroup', '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
 	bsh.asyncQueue.push(['refreshGrid']);
 	bsh.load(burl);
-	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('bsh', bsh);
+	OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('bsh', bsh);
 
 </script>

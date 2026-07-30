@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <!-- <div class="panel_headline"><?php //echo $headline;?></div> -->
 
 <h2>Uh-oh. We found a few issues.</h2>
@@ -13,7 +14,7 @@
 </style>    
 
 <h3>Problems</h3>
-<?php foreach ($errors as $error): ?>
+<?php foreach ($view->errors as $error): ?>
 <p class="form-row">
     <span class="form-label"><?php echo $error['name'];?></span>
     <span class="form-field form-error"><?php echo $error['value'];?></span>

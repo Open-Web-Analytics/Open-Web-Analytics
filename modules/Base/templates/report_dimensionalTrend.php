@@ -1,19 +1,20 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionContent">
     
     <div id="trend-chart"></div>
     <div id="trend-title" class="owa_reportHeadline"></div>
     <div id="report-tabs">
         
-        <?php foreach ($tabs as $k => $tab): ?>
-        <div id="tab_<?php $this->out($k); ?>">
+        <?php foreach ($view->tabs as $k => $tab): ?>
+        <div id="tab_<?php $view->out($k); ?>">
             
-                <div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if( $this->get( 'pie' ) ) {echo 'float:right';}?>"></div>
-                <?php if ( $this->get('pie' ) ): ?>
+                <div id="<?php $view->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if( $view->get( 'pie' ) ) {echo 'float:right';}?>"></div>
+                <?php if ( $view->get('pie' ) ): ?>
                 <div id="pie" style="min-width:300px;"></div>
                 <?php endif;?>
                 <div class="spacer" style="clear:both; height:20px;"></div>
-                <?php if (!$this->get('hideGrid')):?>
-                <div id="<?php $this->out($k); ?>_dimension-grid"></div>
+                <?php if (!$view->get('hideGrid')):?>
+                <div id="<?php $view->out($k); ?>_dimension-grid"></div>
                 <?php endif;?>
             
         </div>
@@ -25,54 +26,54 @@
         
     // add tabs
     
-    <?php foreach ($tabs as $k => $tab): ?>
+    <?php foreach ($view->tabs as $k => $tab): ?>
     
-    // adding tab for <?php $this->out($k, false);?>
+    // adding tab for <?php $view->out($k, false);?>
     
     
-    var tab = new OWA.report.tab('tab_<?php $this->out($k, false);?>');
-    tab.setLabel('<?php $this->out($tab['tab_label']);?>');
+    var tab = new OWA.report.tab('tab_<?php $view->out($k, false);?>');
+    tab.setLabel('<?php $view->out($tab['tab_label']);?>');
     // create trend and aggregate data resultSetExplorer objects
-    var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+    var trendurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                 'metrics' => $tab['metrics'],
                                                                 'dimensions' => 'date',
                                                                 'sort' => 'date',
                                                                 'format' => 'json',
-                                                                'constraints' => $constraints
+                                                                'constraints' => $view->constraints
                                                                 ),true);?>';
                                                                   
     var trend = new OWA.resultSetExplorer('trend-chart');
     trend.setDataLoadUrl(trendurl);
     trend.options.sparkline.metric = 'visits';
-    <?php if ($trendTitle):?>
-    trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
+    <?php if ($view->trendTitle):?>
+    trend.asyncQueue.push(['renderTemplate', '<?php echo $view->trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
     <?php endif;?>
-    trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php if ( isset($tab['trendchartmetric'] ) ): echo $tab['trendchartmetric']; else: echo $trendChartMetric; endif; ?>'}], 'trend-chart']);
+    trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php if ( isset($tab['trendchartmetric'] ) ): echo $tab['trendchartmetric']; else: echo $view->trendChartMetric; endif; ?>'}], 'trend-chart']);
     trend.options.metricBoxes.width = '150px';
-    trend.asyncQueue.push(['makeMetricBoxes' , '<?php $this->out($k, false);?>_trend-metrics']);
+    trend.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out($k, false);?>_trend-metrics']);
     // add rse to tab
     tab.addRse('trend', trend);
     // dimensonal data object
-    var dimurl = '<?php $_sort = $sort ?: $tag['sort'];
+    var dimurl = '<?php $_sort = $view->sort ?: $tag['sort'];
 	    
-	    echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+	    echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                 'metrics' => $tab['metrics'],
-                                                                'dimensions' => $dimensions,
+                                                                'dimensions' => $view->dimensions,
                                                                 'sort' => $_sort,
-                                                                'resultsPerPage' => $resultsPerPage,
+                                                                'resultsPerPage' => $view->resultsPerPage,
                                                                 'format' => 'json',
-                                                                'constraints' => $constraints
+                                                                'constraints' => $view->constraints
                                                                 ),true);?>';
                                                                   
-    var dim = new OWA.resultSetExplorer('<?php $this->out($k, false);?>_dimension-grid');
+    var dim = new OWA.resultSetExplorer('<?php $view->out($k, false);?>_dimension-grid');
     dim.setDataLoadUrl(dimurl);
-    <?php if (!empty($dimensionLink)):?>
-    var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
-    var values = <?php if (is_array($dimensionLink['valueColumns'])) {
+    <?php if (!empty($view->dimensionLink)):?>
+    var link = '<?php echo $view->makeLink($view->dimensionLink['template'], true);?>';
+    var values = <?php if (is_array($view->dimensionLink['valueColumns'])) {
                     $values = "[";
                     $i = 0;
-                    $count = count($dimensionLink['valueColumns']);
-                    foreach ($dimensionLink['valueColumns'] as $v) {
+                    $count = count($view->dimensionLink['valueColumns']);
+                    foreach ($view->dimensionLink['valueColumns'] as $v) {
                         $values .= "'$v'";
                         if ($i < $count) {
                             $values .= ', ';
@@ -82,29 +83,29 @@
                     $values .= "]";
                     echo $values;
                 } else {
-                    echo "['".$dimensionLink['valueColumns']."']";
+                    echo "['".$view->dimensionLink['valueColumns']."']";
                 }
                 ?>;
-    dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
+    dim.addLinkToColumn('<?php echo $view->dimensionLink['linkColumn'];?>', link, values);
     <?php endif; ?>
     
-    <?php if (isset($gridFormatters) && ! empty($gridFormatters) ):?>
-    <?php foreach ($gridFormatters as $col => $formatter): ?>
-    dim.options.grid.columnFormatters['<?php $this->out($col); ?>'] = <?php $this->out($formatter, false);?>;
+    <?php if (isset($view->gridFormatters) && ! empty($view->gridFormatters) ):?>
+    <?php foreach ($view->gridFormatters as $col => $formatter): ?>
+    dim.options.grid.columnFormatters['<?php $view->out($col); ?>'] = <?php $view->out($formatter, false);?>;
     <?php endforeach;?>
     <?php endif;?>
     
-    <?php if (!empty($excludeColumns)):?>
-    dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
+    <?php if (!empty($view->excludeColumns)):?>
+    dim.options.grid.excludeColumns = [<?php echo $view->excludeColumns;?>];
     <?php endif; ?>
     dim.asyncQueue.push(['refreshGrid']);
     // add dim object to tab
     tab.addRse('dim', dim);
     // add tab
-    OWA.items['<?php echo $dom_id;?>'].addTab( tab );
+    OWA.items['<?php echo $view->dom_id;?>'].addTab( tab );
     <?php endforeach;?>
     // create report tabs
-    OWA.items['<?php echo $dom_id;?>'].createTabs();
+    OWA.items['<?php echo $view->dom_id;?>'].createTabs();
     
 </script>
 

@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php require('report_trend_section.php');?>
 
 <div class="owa_reportSectionContent">
@@ -10,10 +11,10 @@
                     <div class="section_header">Dom IDs</div>
                     <div style="min-width:300px;" id="topDomIds"></div>
                     <script>
-                    var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                    var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'domClicks',
                                                                   'dimensions' => 'domElementId',
-                                                                  'constraints' => $constraints,
+                                                                  'constraints' => $view->constraints,
                                                                   'sort' => 'domClicks-',
                                                                   'resultsPerPage' => 5,
                                                                   'format' => 'json'), true);?>';
@@ -28,10 +29,10 @@
                     <div class="section_header">Name Attributes</div>
                     <div style="min-width:300px;" id="topDomNames"></div>
                     <script>
-                    var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                    var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'domClicks',
                                                                   'dimensions' => 'domElementName',
-                                                                  'constraints' => $constraints,
+                                                                  'constraints' => $view->constraints,
                                                                   'sort' => 'domClicks-',
                                                                   'resultsPerPage' => 5,
                                                                   'format' => 'json'), true);?>';
@@ -50,10 +51,10 @@
                     <div class="section_header">HTML Tags</div>
                     <div style="min-width:300px;" id="topHtmlTags"></div>
                     <script>
-                    var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                    var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'domClicks',
                                                                   'dimensions' => 'domElementTag',
-                                                                  'constraints' => $constraints,
+                                                                  'constraints' => $view->constraints,
                                                                   'sort' => 'domClicks-',
                                                                   'resultsPerPage' => 5,
                                                                   'format' => 'json'), true);?>';
@@ -68,10 +69,10 @@
                     <div class="section_header">Dom Classes</div>
                     <div style="min-width:300px;" id="topDomClasses"></div>
                     <script>
-                    var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                    var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'domClicks',
                                                                   'dimensions' => 'domElementClass',
-                                                                  'constraints' => $constraints,
+                                                                  'constraints' => $view->constraints,
                                                                   'sort' => 'domClicks-',
                                                                   'resultsPerPage' => 5,
                                                                   'format' => 'json'), true);?>';

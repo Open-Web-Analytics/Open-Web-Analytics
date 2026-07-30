@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionContent" style="width:auto;">
 <div class="owa_reportSectionHeader">Site Metrics</div>
 
@@ -15,7 +16,7 @@
 
                 <div id="top-pages" style="min-width:350px"></div>
                 <div class="owa_moreLinks">
-                    <a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
+                    <a href="<?php echo $view->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
                 </div>
             </div>
 
@@ -40,7 +41,7 @@
                 <div class="owa_genericHorizontalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -68,14 +69,14 @@
 
                 <div id="top-referers" style="min-width:350px"></div>
                 <div class="owa_moreLinks">
-                    <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+                    <a href="<?php echo $view->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
                 </div>
                 <div id="test"></div>
             </div>
 
             <div class="owa_reportSectionContent">
                 <div class="section_header">OWA News</div>
-                <?php echo $this->getWidget('base.widgetOwaNews','',false);?>
+                <?php echo $view->getWidget('base.widgetOwaNews','',false);?>
             </div>
         </TD>
     </TR>
@@ -85,11 +86,11 @@
 
     var aurl = '<?php
 
-                    echo $this->makeApiLink(array(
+                    echo $view->makeApiLink(array(
                         'module'	=> 'base',
 	    				'version'	=>'v1',
 	    				'do' => 'reports',
-                        'metrics'        => $metrics,
+                        'metrics'        => $view->metrics,
                         'dimensions'     => 'date',
                         'sort'             => 'date',
                         'format'         => 'json'
@@ -103,9 +104,9 @@
     rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
 
     rsh.load(aurl);
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh', rsh);
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('rsh', rsh);
 	
-	var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+	var burl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                               'metrics' => 'actions', 
                                                               'dimensions' => 'actionGroup,actionName', 
                                                               'sort' => 'actions-', 
@@ -114,13 +115,13 @@
  
 	var bsh = new OWA.resultSetExplorer('actions-trend');
 	bsh.options.grid.showRowNumbers = false;
-	bsh.addLinkToColumn('actionGroup', '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
 	bsh.asyncQueue.push(['refreshGrid']);
 	bsh.load(burl);
-	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('bsh', bsh);
+	OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('bsh', bsh);
 	
 (function() {
-    var tcurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+    var tcurl = '<?php echo $view->makeApiLink(array('module'	=> 'base',
 	    											'version'	=>'v1',
 	    											'do' => 'reports',
                                                     'metrics' => 'pageViews',
@@ -133,15 +134,15 @@
 
     OWA.items.tc = new OWA.resultSetExplorer('top-pages');
     OWA.items.tc.options.grid.showRowNumbers = false;
-    OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'), true);?>', ['pageUrl']);
+    OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'), true);?>', ['pageUrl']);
     OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
     OWA.items.tc.asyncQueue.push(['refreshGrid']);
     OWA.items.tc.load(tcurl);
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'tc', OWA.items.tc );
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'tc', OWA.items.tc );
 })();
 
 (function() {
-    var traurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+    var traurl = '<?php echo $view->makeApiLink(array('module'	=> 'base',
 	    											'version'	=>'v1',
 	    											'do' => 'reports',
                                                     'metrics' => 'visits',
@@ -155,16 +156,16 @@
 
     OWA.items.topreferers = new OWA.resultSetExplorer('top-referers');
     OWA.items.topreferers.options.grid.showRowNumbers = false;
-    OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
+    OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $view->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
     OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
     OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
     OWA.items.topreferers.load(traurl);
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'topreferers', OWA.items.topreferers );
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'topreferers', OWA.items.topreferers );
 
 })();
 
 (function() {
-    var aturl = '<?php echo $this->makeApiLink(array(
+    var aturl = '<?php echo $view->makeApiLink(array(
         'module'	=> 'base',
 	    'version'	=>'v1',
 	    'do' => 'reports',
@@ -173,19 +174,19 @@
         'sort' => 'date',
         'format' => 'json',
         'period' => 'last_seven_days',
-        'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))
+        'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))
     ));?>';
 
     at = new OWA.resultSetExplorer('actions-trend');
     at.options.areaChart.series.push({x:'date',y:'actions'});
     at.setView('areaChart');
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'at', at );
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'at', at );
 
     //at.load(aturl);
 })();
 
 (function() {
-    var vmurl = '<?php echo $this->makeApiLink(array(
+    var vmurl = '<?php echo $view->makeApiLink(array(
 	    															'module'	=> 'base',
 	    															'version'	=>'v1',
 	    															'do' => 'reports',
@@ -193,31 +194,31 @@
                                                                     'dimensions' => 'medium',
                                                                     'sort' => 'visits-',
                                                                     'format' => 'json',
-                                                                    'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
+                                                                    'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))),true);?>';
 
     var vm = new OWA.resultSetExplorer('visitor-mediums');
     vm.options.pieChart.metric = 'visits';
     vm.options.pieChart.dimension = 'medium';
     vm.setView('pie');
     vm.load(vmurl);
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'vm', vm );
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'vm', vm );
 })();
 
 (function() {
-    var aurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+    var aurl = '<?php echo $view->makeApiLink(array('module'	=> 'base',
 	    											'version'	=>'v1',
 	    											'do' => 'reports',
                                                     'metrics' => 'repeatVisitors,newVisitors',
                                                     'dimensions' => '',
                                                     'sort' => 'visits',
                                                     'format' => 'json',
-                                                    'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
+                                                    'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))),true);?>';
 
     OWA.items.vt = new OWA.resultSetExplorer('visitor-types');
     OWA.items.vt.options.pieChart.metrics = ['repeatVisitors', 'newVisitors'];
     OWA.items.vt.asyncQueue.push(['makePieChart']);
     OWA.items.vt.load(aurl);
-    OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'vt', OWA.items.vt );
+    OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'vt', OWA.items.vt );
 })();
 
 </script>

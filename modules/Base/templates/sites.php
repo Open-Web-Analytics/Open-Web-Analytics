@@ -1,12 +1,13 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 
 <P>Below is the list of web sites that are being tracked.</P>
 
-<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
-    <p class="inline_h2"><a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add New</a></p>
+<?php if ($view->getCurrentUser()->isCapable('edit_sites')): ?>
+    <p class="inline_h2"><a href="<?php echo $view->makeLink(array('do' => 'base.sitesProfile'));?>">Add New</a></p>
 <?php endif; ?>
 
-<?php if ($tracked_sites): ?>
-    <?php foreach ($tracked_sites as $site):?>
+<?php if ($view->tracked_sites): ?>
+    <?php foreach ($view->tracked_sites as $site):?>
     <div class="owa_reportSectionContent" style="min-width:500px;">
     <TABLE width="" border="0" class="management">
         <thead></thead>
@@ -14,28 +15,28 @@
             <TR>
 
                 <td style="width:150px;" valign="">
-                    <?php $this->getSiteThumbnail( $site->get( 'domain' ), 150 );?>
+                    <?php $view->getSiteThumbnail( $site->get( 'domain' ), 150 );?>
                 </td>
 
                 <td valign="" style="min-width:300px;">
                     <span style="font-size:14px; font-weight:bold;">
-                        <a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $this->out( $site->get('name') );?></a>
+                        <a href="<?php echo $view->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $view->out( $site->get('name') );?></a>
                     </span><BR>
                     <?php if ($site->get('description') != ''):?>
-                    <span class="info_text"><?php $this->out( $site->get('description') );?></span><BR>
+                    <span class="info_text"><?php $view->out( $site->get('description') );?></span><BR>
                     <?php endif;?>
-                    <span class="externalUrl"><?php $this->out( $site->get('domain') );?></span><BR><BR>
+                    <span class="externalUrl"><?php $view->out( $site->get('domain') );?></span><BR><BR>
                     <div>
-                    <a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a>
-                    <?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
-                        | <a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit Profile</a>
-                        | <a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a>
+                    <a href="<?php echo $view->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a>
+                    <?php if ($view->getCurrentUser()->isCapable('edit_sites')): ?>
+                        | <a href="<?php echo $view->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit Profile</a>
+                        | <a href="<?php echo $view->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a>
                     <?php endif; ?>
-                    <?php if ($this->getCurrentUser()->isCapable('edit_settings')): ?>
-                        <a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $site->get('site_id') ) );?>">Goals</a>
+                    <?php if ($view->getCurrentUser()->isCapable('edit_settings')): ?>
+                        <a href="<?php echo $view->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $site->get('site_id') ) );?>">Goals</a>
                     <?php endif; ?>
-                    <?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
-                        | <a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $site->get('site_id') ), false, false, false, true );?>">Delete</a>
+                    <?php if ($view->getCurrentUser()->isCapable('edit_sites')): ?>
+                        | <a href="<?php echo $view->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $site->get('site_id') ), false, false, false, true );?>">Delete</a>
                     <?php endif; ?>
                     </div>
                 </td>
@@ -43,7 +44,7 @@
                     <!-- stats -->
                     <div id="trend-metrics-<?php echo $site->get('site_id'); ?>"></div>
                     <script>
-                        var aurl = '<?php echo $this->makeApiLink(array(
+                        var aurl = '<?php echo $view->makeApiLink(array(
                                             'do'            => 'reports', 'module' => 'base', 'version' => 'v1',
                                             'metrics'        => 'visits,pageViews,bounceRate',
                                             'dimensions'     => 'date',
@@ -58,7 +59,7 @@
                         rsh.options.metricBoxes.width = '150px';
                         rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics-<?php echo $site->get('site_id'); ?>']);
                         rsh.load(aurl);
-                        OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh-<?php echo $site->get('site_id'); ?>', rsh);
+                        OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('rsh-<?php echo $site->get('site_id'); ?>', rsh);
                     </script>
 
 
@@ -72,8 +73,8 @@
 <?php else: ?>
 
 There are no tracked sites.
-<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
-    <a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a site</a>.
+<?php if ($view->getCurrentUser()->isCapable('edit_sites')): ?>
+    <a href="<?php echo $view->makeLink(array('do' => 'base.sitesProfile'));?>">Add a site</a>.
 <?php endif; ?>
 </TD>
 

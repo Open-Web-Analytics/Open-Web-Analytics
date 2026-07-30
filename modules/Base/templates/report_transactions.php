@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionContent">
     <div id="trend-chart" style="height:125px;width:auto;"></div>
     <div class="owa_reportHeadline" id="content-headline"></div>
@@ -26,12 +27,12 @@
 <script>
 //OWA.setSetting('debug', true);
 
-var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+var aurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
                                                 'format' => 'json',
-                                                'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
+                                                'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.rsh = new OWA.resultSetExplorer('trend-chart');
 OWA.items.rsh.options.metricBoxes.width = '125px';
@@ -40,17 +41,17 @@ OWA.items.rsh.asyncQueue.push(['makeMetricBoxes', 'trend-metrics']);
 OWA.items.rsh.asyncQueue.push(['renderTemplate','#headline-template', {data: OWA.items.rsh}, 'replace', 'content-headline']);
 OWA.items.rsh.load(aurl);
 
-var transactionsurl = '<?php echo $this->makeApiLink(array(
+var transactionsurl = '<?php echo $view->makeApiLink(array(
                                                 'do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'transactionRevenue,shippingRevenue,taxRevenue',
                                                 'dimensions' => 'timestamp,transactionId',
                                                 'sort' => 'timestamp-',
                                                 'format' => 'json',
                                                 'resultsPerPage' => 25,
-                                                'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
+                                                'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.transactions = new OWA.resultSetExplorer('transactions');
-OWA.items.transactions.addLinkToColumn('transactionId', '<?php echo $this->makeLink(array(
+OWA.items.transactions.addLinkToColumn('transactionId', '<?php echo $view->makeLink(array(
                                                                         'do' => 'base.reportTransactionDetail',
                                                                         'transactionId' => '%s'
                                                                     ),true);?>', ['transactionId']);

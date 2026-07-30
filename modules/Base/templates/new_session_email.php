@@ -1,20 +1,21 @@
-<p>There was a new visit to site: <?php $this->out( $site['domain'] );?>.</p>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<p>There was a new visit to site: <?php $view->out( $view->site['domain'] );?>.</p>
 
-<p>Visitor ID: <?php $this->out( $session['visitor_id'] );?></p>
+<p>Visitor ID: <?php $view->out( $view->session['visitor_id'] );?></p>
 
-<p>Username (email): <?php $this->out( $session['user_name'] );?>  (<?php if (isset($session['user_email'])) {
-                                                                    $this->out( $session['user_email'] );
+<p>Username (email): <?php $view->out( $view->session['user_name'] );?>  (<?php if (isset($view->session['user_email'])) {
+                                                                    $view->out( $view->session['user_email'] );
                                                                 } else {
                                                                     echo 'not set';
                                                                 }  ?>)
 </p>
-<p>Host: <?php $this->out( $session['host'] );?></p>
+<p>Host: <?php $view->out( $view->session['host'] );?></p>
 
 
-<p>City/Country:  <?php $this->out( $session['city'] );?> <?php $this->out( $session['country'] );?></p>
+<p>City/Country:  <?php $view->out( $view->session['city'] );?> <?php $view->out( $view->session['country'] );?></p>
 
 
-<p>Entry page:  <?php $this->out( $session['page_title'] );?> - <?php $this->out( $session['page_url'] );?></p>
+<p>Entry page:  <?php $view->out( $view->session['page_title'] );?> - <?php $view->out( $view->session['page_url'] );?></p>
 
 
 <hr>

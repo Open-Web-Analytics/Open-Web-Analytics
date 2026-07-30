@@ -1,10 +1,11 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div id="owa_reportSiteFilter" style="line-height:30px;">
     
     <div style="float:left;">
         <span>Web Site:</span>
         <SELECT name="owa_reportSiteFilterSelect" id="owa_reportSiteFilterSelect" style="height:auto;">
-        <?php  foreach ($sites as $site ):?>
-            <OPTION VALUE="<?php $this->out($site->get('site_id'), false);?>" <?php if ($params['siteId'] === $site->get('site_id')):?>selected="selected" selected <?php endif; ?>><?php $this->out( $site->get('name') );?></OPTION>
+        <?php  foreach ($view->sites as $site ):?>
+            <OPTION VALUE="<?php $view->out($site->get('site_id'), false);?>" <?php if ($view->params['siteId'] === $site->get('site_id')):?>selected="selected" selected <?php endif; ?>><?php $view->out( $site->get('name') );?></OPTION>
         <?php endforeach;?>
         </SELECT>
     </div>
@@ -13,10 +14,10 @@
     <ul>
         <?php if (\OWA\Core\CoreAPI::isCurrentUserCapable("edit_settings")):?>
         <LI>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $params['siteId'], 'edit' => true ) );?>">Settings</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $view->params['siteId'], 'edit' => true ) );?>">Settings</a>
         </LI>
         <LI>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $params['siteId'] ) );?>">Goals</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $view->params['siteId'] ) );?>">Goals</a>
         </LI>
          <?php endif;?>
     </ul>

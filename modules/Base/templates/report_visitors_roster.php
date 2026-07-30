@@ -1,17 +1,18 @@
-<H2><?php echo $headline;?>: <?php echo $date_label;?></H2>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<H2><?php echo $view->headline;?>: <?php echo $date_label;?></H2>
 
 <table>
-    <?php if (!empty($visitors)):?>
-    <?php foreach ($visitors as $visitor):?>
+    <?php if (!empty($view->visitors)):?>
+    <?php foreach ($view->visitors as $visitor):?>
     <TR>
-        <TD><img src="<?php echo $this->makeImageLink('base/i/user_icon_small.gif');?>" align="top">
-            <a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id'], 'period' => 'all_time'));?>">
+        <TD><img src="<?php echo $view->makeImageLink('base/i/user_icon_small.gif');?>" align="top">
+            <a href="<?php echo $view->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id'], 'period' => 'all_time'));?>">
             <?php if(!empty($visitor['user_name'])):
-                $this->out( $visitor['user_name'] );
+                $view->out( $visitor['user_name'] );
             elseif(!empty($visitor['user_email'])):
-                $this->out( $visitor['user_email'] );
+                $view->out( $visitor['user_email'] );
             else:
-                $this->out( $visitor['visitor_id'] );
+                $view->out( $visitor['visitor_id'] );
             endif;?>
             </a>
         </TD>

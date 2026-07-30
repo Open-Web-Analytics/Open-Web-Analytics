@@ -1,1 +1,2 @@
-<?php echo $body;?>
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php echo $view->body;?>

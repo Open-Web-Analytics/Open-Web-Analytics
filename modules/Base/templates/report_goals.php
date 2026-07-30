@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionContent">
     
     <div id="trend-chart"></div>
@@ -8,20 +9,20 @@
     <div style="clear:both;"></div>
     <script>
         
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
-                                                                    'metrics' => $metrics,
+        var trendurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                    'metrics' => $view->metrics,
                                                                     'dimensions' => 'date',
                                                                     'sort' => 'date',
                                                                     'format' => 'json',
-                                                                    'constraints' => $constraints
+                                                                    'constraints' => $view->constraints
                                                                     ),true);?>';
                                                                       
         var trend = new OWA.resultSetExplorer('trend-chart');
         trend.options.sparkline.metric = 'goalCompletionsAll';
-        <?php if ($trendTitle):?>
-        trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
+        <?php if ($view->trendTitle):?>
+        trend.asyncQueue.push(['renderTemplate', '<?php echo $view->trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
         <?php endif;?>
-        trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
+        trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $view->trendChartMetric; ?>'}], 'trend-chart']);
         trend.options.metricBoxes.width = '150px';
         trend.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
         trend.load(trendurl);
@@ -36,11 +37,11 @@
             <div class="owa_reportSectionContent">
                 <div class="section_header">Goal Performance</div>
                 <div style="min-width:250px;" id="goalMetrics"></div>
-                <?php if ($goal_metrics): ?>
+                <?php if ($view->goal_metrics): ?>
                 <script>
                 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
-                                                                  'metrics' => $goal_metrics,
+                var aurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                  'metrics' => $view->goal_metrics,
                                                                   'format' => 'json'), true);?>';
                                                                   
                 rsh = new OWA.resultSetExplorer('goalMetrics');
@@ -59,7 +60,7 @@
                 <UL>
                     <li>
                         
-                        <a href="<?php echo $this->makeLink(array('do' => 'base.reportGoalFunnel'), true);?>">Conversion Funnels</a> - Goal funnel Visualization.
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportGoalFunnel'), true);?>">Conversion Funnels</a> - Goal funnel Visualization.
                         
                     </li>
                 </UL>

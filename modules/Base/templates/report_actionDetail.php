@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="owa_reportSectionHeader">Action Metrics</div>
 <div class="owa_reportSectionContent">
 
@@ -48,13 +49,13 @@
 
         if (ui.index === 0) {
 
-            var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+            var aurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                           'metrics' => 'actions,actionsValue',
                                                           'dimensions' => 'actionLabel',
                                                           'sort' => 'actions-',
                                                           'resultsPerPage' => 25,
                                                           'format' => 'json',
-                                                          'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
+                                                          'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
 
             rsh = new OWA.resultSetExplorer('actionsByLabelExplorer');
             rsh.load(aurl, 'grid');
@@ -63,13 +64,13 @@
 
         if (ui.index === 1) {
 
-            var aurl2 = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+            var aurl2 = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                           'metrics' => 'actions,actionsValue',
                                                           'dimensions' => 'date',
                                                           'sort' => 'date-',
                                                           'resultsPerPage' => 25,
                                                           'format' => 'json',
-                                                          'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
+                                                          'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
 
             rsh2 = new OWA.resultSetExplorer('actionsByDateExplorer');
             rsh2.load(aurl2, 'grid');
