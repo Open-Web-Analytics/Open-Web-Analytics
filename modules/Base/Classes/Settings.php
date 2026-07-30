@@ -295,8 +295,31 @@ namespace OWA\Module\Base\Classes;
 
             // needed to get rid of legacy setting that used to be stored in the DB.
             if (array_key_exists('error_handler', $db_settings['base'])) {
-                
+
                 unset($db_settings['base']['error_handler']);
+            }
+
+            // Same treatment, generalised. Settings that may only come from the
+            // config file or the installer are ignored no matter what they
+            // hold, because two rules make a stored copy unreachable: the merge
+            // below puts the DB array SECOND (so it overrides owa-config.php),
+            // and the options form refuses to rewrite these keys. Observed in
+            // the wild as async_log_dir values still naming a previous
+            // server's paths, silently beating a correct config file.
+            //
+            // Dropping them here is non-destructive -- the stored row is not
+            // touched until something saves -- and lets an affected install
+            // self-heal on the next request rather than waiting for Update012.
+            foreach ( self::configFileOnlySettings() as $cfo_module => $cfo_keys ) {
+
+                if ( ! isset( $db_settings[ $cfo_module ] ) || ! is_array( $db_settings[ $cfo_module ] ) ) {
+                    continue;
+                }
+
+                foreach ( array_keys( $cfo_keys ) as $cfo_key ) {
+
+                    unset( $db_settings[ $cfo_module ][ $cfo_key ] );
+                }
             }
 
             $this->db_settings = $db_settings;
@@ -536,6 +559,81 @@ namespace OWA\Module\Base\Classes;
 
          $this->db_settings[$module][$key] = $value;
          $this->is_dirty = true;
+     }
+
+     /**
+      * Settings that must come from the config file or the installer, and must
+      * NEVER be read from the database.
+      *
+      * These name filesystem paths, stream targets, credentials and template
+      * files. Two rules combine to make a stored copy unreachable:
+      *
+      *   1. the options form refuses to write them (see
+      *      OptionsUpdate::isSensitiveSettingKey -- allowing it is an RCE
+      *      primitive), and
+      *   2. load() merges the DB array OVER the config-file array, so a stored
+      *      value WINS against owa-config.php.
+      *
+      * So once one is persisted there is no supported way to change it: not the
+      * form, not the config file. Observed in the wild -- two installs carried
+      * async_log_dir values pointing at a previous server's /home/padams/...
+      * paths that do not exist, silently overriding a correct config file.
+      *
+      * Value is irrelevant here. Whatever it holds, it must not come from the
+      * database, so it is dropped on load regardless -- the same treatment
+      * error_handler already gets in load().
+      *
+      * NOT included: configuration_id, schema_version, install_complete and
+      * is_active. Those are denylisted from the FORM but are legitimate
+      * database state -- schema_version and install_complete have no code
+      * default at all, so dropping them would make a working install look
+      * uninstalled and re-run every update from scratch.
+      *
+      * @return array<string, array<string, bool>> module => key => true
+      */
+     public static function configFileOnlySettings() {
+
+         return array(
+             'base' => array(
+                 'error_log_file'       => true,
+                 'async_error_log_file' => true,
+                 'async_log_file'       => true,
+                 'async_log_dir'        => true,
+                 'async_lock_file'      => true,
+                 'report_wrapper'       => true,
+                 'db_type'              => true,
+                 'db_host'              => true,
+                 'db_port'              => true,
+                 'db_name'              => true,
+                 'db_user'              => true,
+                 'db_password'          => true,
+                 'db_class_dir'         => true,
+                 'plugin_dir'           => true,
+                 'module_dir'           => true,
+                 'templates_dir'        => true,
+                 'public_path'          => true,
+                 'search_engines.ini'   => true,
+                 'query_strings.ini'    => true,
+             ),
+         );
+     }
+
+     /**
+      * Form-denylisted settings that ARE legitimate database state. Listed
+      * separately so the two reasons for denylisting stay distinguishable.
+      *
+      * @return array<string, array<string, bool>>
+      */
+     public static function databaseStateSettings() {
+
+         return array(
+             'base' => array(
+                 'configuration_id' => true,
+                 'schema_version'   => true,
+                 'install_complete' => true,
+                 'is_active'        => true,
+             ),
+         );
      }
 
      /**

@@ -213,6 +213,77 @@ final class SettingsPersistenceTest extends TestCase
         $this->assertSame($stored, $c->db_settings['base']['zz_test_key'] ?? null, $why);
     }
 
+    /**
+     * The form's protection must not narrow. isSensitiveSettingKey() is now
+     * composed from the two Settings lists; their union has to stay exactly the
+     * denylist that was hard-coded before, or a setting silently becomes
+     * form-writable again (an RCE primitive, per that method's own docblock).
+     */
+    public function testFormDenylistStillCoversEveryOriginalKey(): void
+    {
+        $union = array_merge(
+            \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
+            \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']
+        );
+
+        $original = [
+            'error_log_file','async_error_log_file','async_log_file','async_log_dir',
+            'async_lock_file','report_wrapper','db_type','db_host','db_port','db_name',
+            'db_user','db_password','db_class_dir','plugin_dir','module_dir',
+            'templates_dir','public_path','configuration_id','schema_version',
+            'install_complete','is_active','search_engines.ini','query_strings.ini',
+        ];
+
+        foreach ($original as $key) {
+            $this->assertArrayHasKey(
+                $key,
+                $union,
+                "base.$key dropped out of the form denylist. Allowing the options "
+                . 'form to write it is an RCE primitive.'
+            );
+        }
+    }
+
+    /**
+     * The two categories must stay disjoint, and the ones that are real
+     * database state must NOT be in the config-file-only list -- dropping
+     * schema_version or install_complete makes a working install look
+     * uninstalled and re-run every update.
+     */
+    public function testDatabaseStateKeysAreNotTreatedAsConfigFileOnly(): void
+    {
+        $cfo = \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+
+        foreach (['schema_version', 'install_complete', 'configuration_id', 'is_active'] as $key) {
+            $this->assertArrayNotHasKey(
+                $key,
+                $cfo,
+                "$key is real database state; dropping it on load would break the install."
+            );
+        }
+    }
+
+    /**
+     * A config-file-only setting stored in the DB is unreachable: load() merges
+     * the DB array OVER the config file, and the form refuses to rewrite it. So
+     * it must be ignored on load regardless of its value.
+     */
+    public function testConfigFileOnlySettingsAreIgnoredRegardlessOfValue(): void
+    {
+        $cfo = \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+
+        $this->assertArrayHasKey('async_log_dir', $cfo);
+        $this->assertArrayHasKey('report_wrapper', $cfo);
+
+        // Value must be irrelevant -- these were found in the wild holding a
+        // previous server's paths, which no supported action could correct.
+        $this->assertArrayHasKey(
+            'error_log_file',
+            $cfo,
+            'stream targets must never be sourced from the database'
+        );
+    }
+
     public static function differsFromDefaultProvider(): array
     {
         return [

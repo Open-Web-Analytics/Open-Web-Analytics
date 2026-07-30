@@ -42,6 +42,18 @@ class Update012 extends \OWA\Core\Update {
 
         $config = $this->c;
 
+        // NOTE on config-file-only settings (async_log_dir, report_wrapper,
+        // error_log_file, db_*, the *_dir paths ...): this update does NOT
+        // handle them, deliberately. Settings::load() drops them from
+        // db_settings on every request, so by the time any update runs they are
+        // already gone from the in-memory set, and the save() below rewrites
+        // the row without them. Repeating the removal here would be dead code
+        // that never fires and reports removals that already happened.
+        //
+        // That is also why the fix does not depend on this update: an affected
+        // install self-heals on its next request. Update012 only handles what
+        // load() deliberately leaves alone.
+
         // ---- 1. dangling .tpl names -------------------------------------
         // Any persisted string still naming a .tpl file is dangling: the
         // migration removed every .tpl from the tree. Rewrite to .php, which
@@ -83,7 +95,11 @@ class Update012 extends \OWA\Core\Update {
         }
 
         if ( ! $retargeted && ! $removed ) {
-            \OWA\Core\CoreAPI::notice( 'Configuration already clean; nothing to repair.' );
+            \OWA\Core\CoreAPI::notice(
+                'No redundant or dangling settings found. (Config-file-only '
+                . 'settings, if any were stored, are dropped by Settings::load() '
+                . 'and will not be written back.)'
+            );
             return true;
         }
 

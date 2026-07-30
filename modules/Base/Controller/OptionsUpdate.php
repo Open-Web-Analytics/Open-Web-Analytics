@@ -84,33 +84,30 @@ class OptionsUpdate extends \OWA\Core\AdminController {
      */
     private static function isSensitiveSettingKey( $module, $key ) {
 
-        static $denylist = [
-            'base' => [
-                'error_log_file'        => true,
-                'async_error_log_file'  => true,
-                'async_log_file'        => true,
-                'async_log_dir'         => true,
-                'async_lock_file'       => true,
-                'report_wrapper'        => true,
-                'db_type'               => true,
-                'db_host'               => true,
-                'db_port'               => true,
-                'db_name'               => true,
-                'db_user'               => true,
-                'db_password'           => true,
-                'db_class_dir'          => true,
-                'plugin_dir'            => true,
-                'module_dir'            => true,
-                'templates_dir'         => true,
-                'public_path'           => true,
-                'configuration_id'      => true,
-                'schema_version'        => true,
-                'install_complete'      => true,
-                'is_active'             => true,
-                'search_engines.ini'    => true,
-                'query_strings.ini'     => true,
-            ],
-        ];
+        // Composed from the two lists on Settings so there is a single source
+        // of truth, and so the REASON a key is denylisted stays visible:
+        //
+        //   configFileOnlySettings() - must never live in the database at all;
+        //                              load() drops them, Update012 clears them.
+        //   databaseStateSettings()  - legitimate database state that the form
+        //                              simply must not edit (schema_version,
+        //                              install_complete, ...).
+        //
+        // The union is identical to the previous hard-coded denylist; a test
+        // pins that so the form's protection cannot narrow by accident.
+        static $denylist = null;
+
+        if ( $denylist === null ) {
+
+            $denylist = \OWA\Module\Base\Classes\Settings::configFileOnlySettings();
+
+            foreach ( \OWA\Module\Base\Classes\Settings::databaseStateSettings() as $m => $keys ) {
+
+                $denylist[ $m ] = isset( $denylist[ $m ] )
+                    ? array_merge( $denylist[ $m ], $keys )
+                    : $keys;
+            }
+        }
 
         return isset( $denylist[ $module ][ $key ] );
     }
