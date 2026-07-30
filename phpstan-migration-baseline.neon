@@ -991,12 +991,6 @@ parameters:
 			path: modules/Base/templates/report_transaction_detail.php
 
 		-
-			message: '#^Path in include\(\) "row_action\.php" is not a file or it does not exist\.$#'
-			identifier: include.fileNotFound
-			count: 1
-			path: modules/Base/templates/widget_latestActions.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1

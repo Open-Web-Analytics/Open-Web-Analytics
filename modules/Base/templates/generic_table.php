@@ -17,7 +17,7 @@ jQuery(document).ready(function() {
         <TR>
             <?php if (!empty($view->labels)):?>
             <?php foreach ($view->labels as $label): ?>
-            <TH scope="<?php echo $th_scope;?>"><?php echo $label;?></TH>
+            <TH scope="col"><?php echo $label;?></TH>
             <?php endforeach;?>
             <?php endif;?>
         </TR>

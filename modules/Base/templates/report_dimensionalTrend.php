@@ -54,7 +54,7 @@
     // add rse to tab
     tab.addRse('trend', trend);
     // dimensonal data object
-    var dimurl = '<?php $_sort = $view->sort ?: $tag['sort'];
+    var dimurl = '<?php $_sort = $view->sort ?: $tab['sort'];
 	    
 	    echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                 'metrics' => $tab['metrics'],
