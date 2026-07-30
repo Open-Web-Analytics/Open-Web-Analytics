@@ -36,3 +36,30 @@ parameters:
         - tests/phpstan-bootstrap.php
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: false
+
+    # RUNTIME-GENERATED FILES, absent from a clean checkout. These four
+    # include/require sites resolve fine on an installed copy, which is why they
+    # never showed up while this config was only ever run locally -- wiring it
+    # into CI is what exposed them. All four are correctly guarded in code, so
+    # they are false positives from a missing file, NOT debt, and belong here
+    # rather than in the generated baseline:
+    #
+    #   Settings.php:123   inside if ( $this->isConfigFilePresent() )
+    #   Settings.php:872   inside if ( file_exists(OWA_DIR.'owa-config.php') )
+    #   Settings.php:930   immediately after the file is written (fclose+chmod above)
+    #   PslReader.php:50   $tld_file falls back to the COMMITTED
+    #                      modules/Base/data/effectiveTLDs.inc.php when the
+    #                      user-downloaded copy under owa-data/ is absent;
+    #                      PHPStan only resolved the first branch's path
+    #
+    # owa-config.php is created by the installer and is already in excludePaths
+    # above, so it is deliberately never present in the repo.
+    ignoreErrors:
+        -
+            message: '#owa\-config\.php" is not a file or it does not exist\.$#'
+            paths:
+                - modules/Base/Classes/Settings.php
+        -
+            message: '#effectiveTLDs\.inc\.php" is not a file or it does not exist\.$#'
+            paths:
+                - modules/Base/Classes/PslReader.php
