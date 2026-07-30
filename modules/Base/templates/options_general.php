@@ -133,6 +133,11 @@
 
                 <select id="TIMEZONE" name="<?php echo $view->getNs();?>config[base.timezone]">
                 <?php
+                // These two conf files exist only to declare their arrays, so the
+                // variables below come from the require, not from a view var.
+                // PHPStan cannot follow a require path built from a constant.
+                /** @var array<string, array<string>> $timezones */
+                /** @var array<string, string> $countryCode2Name */
                 require_once(OWA_DIR.'conf/country2Timezones.php');
                 require_once(OWA_DIR.'conf/countryCodes2Names.php');
                 $selected_already = false;
