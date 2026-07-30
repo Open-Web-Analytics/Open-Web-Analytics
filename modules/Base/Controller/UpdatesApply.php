@@ -54,6 +54,18 @@ class UpdatesApply extends \OWA\Core\Controller {
         // without web auth, and updates 005/006/007/010 already require it.
         $this->setRequiredCapability('edit_modules');
 
+        // Capability alone still allowed a logged-in admin to be induced into
+        // applying updates via a crafted link (CSRF). The "Apply updates" link
+        // in base.updates now carries a nonce (makeLink's 5th arg).
+        //
+        // Ordering matters and is in our favour: doAction() runs the capability
+        // check BEFORE the nonce check, so an unauthenticated visitor is sent to
+        // login rather than failing on a nonce. And because createNonce() binds
+        // to user_id, the nonce minted for an anonymous view of base.updates
+        // will not verify -- after logging in the interception re-renders the
+        // page, minting one bound to the real user.
+        $this->setNonceRequired();
+
         parent::__construct($params);
     }
 
