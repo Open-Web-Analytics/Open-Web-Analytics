@@ -503,8 +503,117 @@ namespace OWA\Module\Base\Classes;
      public function persistSetting($module, $key, $value) {
 
          $this->set($module, $key, $value);
+
+         // Do not store a value that merely restates the code default.
+         //
+         // A stored value overrides the default FOREVER. Writing one that is
+         // currently identical to the default looks harmless, but it silently
+         // pins that value: when the default later changes, the install keeps
+         // the old one and no longer tracks the code. report_wrapper is the
+         // case that proved this -- installs had 'wrapper_default.tpl' stored
+         // back when that WAS the default, so the .tpl -> .php migration could
+         // not reach them and every report render fataled on an empty include
+         // path, with the only clue written to OWA's own log rather than the
+         // web server's.
+         //
+         // Keys with no code default (schema_version, install_complete) can
+         // never match here, so they are always stored -- which is required,
+         // since get() would otherwise return null and the install would look
+         // uninstalled.
+         if ( array_key_exists( $module, $this->default_config )
+              && array_key_exists( $key, $this->default_config[ $module ] )
+              && self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
+
+             // Also drop any previously stored copy, so an install heals itself
+             // the next time the setting is written.
+             if ( isset( $this->db_settings[ $module ][ $key ] ) ) {
+                 unset( $this->db_settings[ $module ][ $key ] );
+                 $this->is_dirty = true;
+             }
+
+             return;
+         }
+
          $this->db_settings[$module][$key] = $value;
          $this->is_dirty = true;
+     }
+
+     /**
+      * Is a stored value equivalent to the code default, such that dropping it
+      * changes nothing?
+      *
+      * Dropping a key is safe by construction: get() then returns the default.
+      * The only question is whether the stored value MEANS the same thing.
+      *
+      * Cross-type comparison has to be loose, because the settings form submits
+      * everything as strings while the defaults are typed. Real data looks like
+      * '1' vs true, or NULL vs '' -- semantically identical, never === equal.
+      * A strict test therefore matches nothing at all on a real install.
+      *
+      * PHP 8 already removed the historic hazards here: 'abc' == 0, '0' == ''
+      * and 0 == '' are all false now. The one remaining trap is two NUMERIC
+      * STRINGS in different notation ('1e2' == '100'), so string-to-string
+      * comparison is required to be exact; loose equality applies only across
+      * differing types.
+      *
+      * @param  mixed $stored
+      * @param  mixed $default
+      * @return bool
+      */
+     private static function isEquivalentToDefault( $stored, $default ) {
+
+         if ( is_string( $stored ) && is_string( $default ) ) {
+             return $stored === $default;
+         }
+
+         return $stored == $default;
+     }
+
+     /**
+      * Drop persisted settings that merely restate the current code default.
+      *
+      * Historic installs accumulated these: an old config GUI wrote the whole
+      * settings array rather than just changed fields, so a value identical to
+      * the default of the day got stored and then pinned forever. Each one is a
+      * latent bug that surfaces the moment that default changes -- see the
+      * report_wrapper '.tpl' case, which turned into a fatal on every report
+      * render years after it was written.
+      *
+      * Removing them is behaviour-preserving by definition: get() falls back to
+      * the very default the stored value duplicates. Keys with no code default
+      * (schema_version, install_complete) cannot match and are never touched.
+      *
+      * Caller is responsible for save().
+      *
+      * @return array list of "module.key" entries removed
+      */
+     public function pruneRedundantPersistedSettings() {
+
+         $removed = array();
+
+         foreach ( $this->db_settings as $module => $values ) {
+
+             if ( ! is_array( $values ) ) {
+                 continue;
+             }
+
+             foreach ( $values as $key => $value ) {
+
+                 if ( ! array_key_exists( $module, $this->default_config )
+                      || ! array_key_exists( $key, $this->default_config[ $module ] ) ) {
+                     continue;
+                 }
+
+                 if ( self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
+
+                     unset( $this->db_settings[ $module ][ $key ] );
+                     $removed[] = $module . '.' . $key;
+                     $this->is_dirty = true;
+                 }
+             }
+         }
+
+         return $removed;
      }
 
      /**
