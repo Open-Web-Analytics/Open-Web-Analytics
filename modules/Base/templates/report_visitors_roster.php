@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<H2><?php echo $view->headline;?>: <?php echo $date_label;?></H2>
+<H2><?php echo $view->headline;?>: <?php $view->out($view->period_label);?></H2>
 
 <table>
     <?php if (!empty($view->visitors)):?>

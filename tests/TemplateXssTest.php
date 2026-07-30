@@ -131,9 +131,9 @@ final class TemplateXssTest extends TestCase
         // with short_open_tag=Off it rendered the PHP as literal text; converting
         // it to <?php means the branch (and the escaping) actually run now.
         $html = $this->renderBaseTemplate('report_visitors_roster.php', [
-            'headline'   => 'Visitors',
-            'date_label' => 'Last 30 Days',
-            'visitors'   => [
+            'headline'     => 'Visitors',
+            'period_label' => 'Last 30 Days',
+            'visitors'     => [
                 ['visitor_id' => '1785002347504724034', 'user_name' => self::TEXT_PAYLOAD, 'user_email' => ''],
             ],
         ]);
