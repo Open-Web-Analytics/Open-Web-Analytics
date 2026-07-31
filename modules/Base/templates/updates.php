@@ -25,7 +25,9 @@
         <BR>
 
         <P>
-        <a href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>"><span class="owa-button">Apply updates</span></a>
+        <?php // 5th arg = $add_nonce. base.updatesApply mutates the schema, so
+              // the link must carry a nonce or its setNonceRequired() check fails. ?>
+        <a href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'), false, '', false, true);?>"><span class="owa-button">Apply updates</span></a>
         </P>
 
     </div>

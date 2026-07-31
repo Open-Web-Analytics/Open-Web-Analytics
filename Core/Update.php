@@ -134,7 +134,14 @@ class Update extends \OWA\Core\Base {
     /**
      * Rollsback an update
      *
-     * @return boolean
+     * Returns true ONLY when down() ran and succeeded. Refusing an
+     * out-of-sequence rollback and a failing down() both return false, matching
+     * apply()'s contract in this class.
+     *
+     * (This previously returned true unconditionally, so callers could not tell
+     * a completed rollback from one that never ran.)
+     *
+     * @return boolean true if the rollback was applied, false if refused or failed
      */
     function rollback() {
 
@@ -157,14 +164,23 @@ class Update extends \OWA\Core\Base {
                     $this->e->notice("Rollback succeeded to version: $current_version.");
                 }
 
+                return true;
+
             } else {
-                $this->e->notice("Rollback failed.");
+                // down() ran and did not finish. This is the dangerous outcome:
+                // the schema may be partially torn down, and schema_version is
+                // deliberately NOT moved, so the recorded version can now
+                // disagree with the actual schema.
+                $this->e->notice(sprintf('Rollback of update %s FAILED part way through. The schema may be partially rolled back, and the recorded schema version is still %s. Inspect the schema before retrying or re-applying.', $this->schema_version, $current_version));
+
+                return false;
             }
-        } else {
-            $this->e->notice(sprintf('Rollback of update %s cannot be applied because it does not appear that it update %s has been applied to your instance. Your current schema version is only %s', $this->schema_version, $this->schema_version, $current_version));
         }
 
-        return true;
+        // Refused: nothing ran, the schema is untouched.
+        $this->e->notice(sprintf('Rollback of update %s cannot be applied because it does not appear that it update %s has been applied to your instance. Your current schema version is only %s', $this->schema_version, $this->schema_version, $current_version));
+
+        return false;
     }
 
     /**

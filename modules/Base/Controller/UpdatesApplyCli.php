@@ -123,8 +123,17 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     function rollback($update) {
         list($module, $seq) = explode('.', $update);
         $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
-        $u->rollback();
-        \OWA\Core\CoreAPI::notice("Rollback completed.");
+
+        // rollback() returns false when it refuses an out-of-sequence rollback
+        // and when down() fails part way. Reporting "completed" regardless told
+        // operators the schema had moved when nothing had happened.
+        $ret = $u->rollback();
+
+        if ($ret) {
+            \OWA\Core\CoreAPI::notice("Rollback completed.");
+        } else {
+            \OWA\Core\CoreAPI::notice("Rollback did NOT complete. See the messages above for whether it was refused or failed part way.");
+        }
     }
     
 }

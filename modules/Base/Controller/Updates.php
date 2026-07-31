@@ -23,7 +23,17 @@ namespace OWA\Module\Base\Controller;
 
 
 class Updates extends \OWA\Core\Controller {
-    
+
+    // DELIBERATELY has no required capability. Core\Controller::updateAction()
+    // redirects here (setRedirectAction('base.updates')) whenever an admin
+    // request is intercepted because the schema is out of date -- and that
+    // interception runs BEFORE the capability check, for a request that may not
+    // be authenticated yet. Gating this controller would put a login wall in
+    // front of the very page the interception exists to display.
+    //
+    // It only lists which modules have pending updates. base.updatesApply, the
+    // action that actually mutates the schema, is gated instead.
+
     function action() {
         
         $data = array();
