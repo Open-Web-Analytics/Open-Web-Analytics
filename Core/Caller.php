@@ -18,7 +18,14 @@ namespace OWA\Core;
 // $Id$
 //
 
-include_once('owa_env.php');
+// __DIR__ is required: a bare relative path is resolved against include_path,
+// which begins with '.', i.e. the CURRENT WORKING DIRECTORY -- not this file's
+// directory. The root entry points (index.php, log.php, cli.php ...) get away
+// with the bare form only because owa_env.php sits beside them, so PHP's
+// calling-script-directory fallback finds it. This file lives in Core/, so that
+// fallback looks in the wrong place and the include fails for every caller whose
+// cwd is not the install root (CLI, cron, WP-CLI, a plugin-nested install).
+include_once( __DIR__ . '/../owa_env.php' );
 
 /**
  * Abstract Caller class used to build application specific invocation classes
