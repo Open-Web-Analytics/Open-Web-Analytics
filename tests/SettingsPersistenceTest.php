@@ -1,5 +1,7 @@
 <?php
 
+require_once( __DIR__ . '/SettingsSingletonSnapshot.php' );
+
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -26,48 +28,27 @@ use PHPUnit\Framework\TestCase;
  */
 final class SettingsPersistenceTest extends TestCase
 {
-    /** @var array snapshot of the shared singleton's state */
-    private $snapshot = [];
+    /**
+     * These tests exercise the SHARED config singleton, and Settings::__destruct()
+     * calls save() whenever is_dirty is set -- so without this, mutations here get
+     * flushed to the real owa_configuration row at script shutdown, long after any
+     * individual test finishes. See the trait for what that cost twice.
+     */
+    use SettingsSingletonSnapshot;
 
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    /**
-     * These tests exercise the SHARED config singleton, and Settings::__destruct()
-     * calls save() whenever is_dirty is set -- so without this, mutations here get
-     * flushed to the real owa_configuration row at script shutdown, long after any
-     * individual test finishes. (Learned the hard way: an earlier version of this
-     * file rewrote query_string_filters and schema_version in the dev database.)
-     *
-     * Snapshot before, restore after, and clear is_dirty so nothing is written.
-     */
     protected function setUp(): void
     {
-        $c = $this->settings();
-
-        $this->snapshot = [
-            'db_settings'    => $c->db_settings,
-            'default_config' => $c->default_config,
-            'is_dirty'       => $c->is_dirty,
-        ];
+        $this->snapshotSettings();
     }
 
     protected function tearDown(): void
     {
-        $c = $this->settings();
-
-        $c->db_settings    = $this->snapshot['db_settings'];
-        $c->default_config = $this->snapshot['default_config'];
-        // Must be last: restoring the arrays above does not reset the flag, and
-        // a stale is_dirty is exactly what triggers the shutdown write.
-        $c->is_dirty       = $this->snapshot['is_dirty'];
-    }
-
-    private function settings(): object
-    {
-        return owa_coreAPI::configSingleton();
+        $this->restoreSettings();
     }
 
     public function testAValueEqualToTheCodeDefaultIsNotPersisted(): void
