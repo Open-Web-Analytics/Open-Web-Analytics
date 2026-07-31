@@ -61,7 +61,12 @@
                 var url = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                               'metrics' => 'transactions,transactionRevenue',
                                                               'dimensions' => 'source',
-                                                              'sort' => 'transactionsRevenue-',
+                                                              // transactionRevenue, SINGULAR -- the metric queried on
+                                                              // the line above and the one that exists. The plural
+                                                              // 'transactionsRevenue' resolved to nothing, so the result
+                                                              // set returned a null sortColumn/sortOrder and jqGrid threw
+                                                              // on .toLowerCase() while building this grid.
+                                                              'sort' => 'transactionRevenue-',
                                                               'resultsPerPage' => 5,
                                                               'format' => 'json'), true);?>';
 

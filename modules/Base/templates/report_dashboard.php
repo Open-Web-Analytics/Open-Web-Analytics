@@ -210,7 +210,11 @@
 	    											'do' => 'reports',
                                                     'metrics' => 'repeatVisitors,newVisitors',
                                                     'dimensions' => '',
-                                                    'sort' => 'visits',
+                                                    // No sort: dimensions is empty, so this is an aggregate-only
+                                                    // query feeding a pie chart -- there are no rows to order.
+                                                    // It previously sorted by 'visits', which this query does not
+                                                    // request; an unresolvable sort is what left other reports with
+                                                    // a null sortColumn/sortOrder.
                                                     'format' => 'json',
                                                     'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))),true);?>';
 

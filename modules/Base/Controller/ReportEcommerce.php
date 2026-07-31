@@ -49,7 +49,15 @@ class ReportEcommerce extends \OWA\Core\ReportController {
         $this->setSubview('base.reportEcommerce');
         $this->setTitle('Ecommerce');
         $this->set('metrics', 'visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction');
-        $this->set('sort', 'actions');
+        // 'transactions' is one of the metrics above. The previous value,
+        // 'actions', is a real metric but not one this report queries, so it
+        // could never resolve.
+        //
+        // This particular value is not actually read -- report_ecommerce.php
+        // hard-codes a sort per sub-explorer -- so this is correctness rather
+        // than a fix for a live symptom. It is set to something valid so the
+        // report contract holds uniformly instead of carrying an exemption.
+        $this->set('sort', 'transactions-');
         $this->set('resultsPerPage', 30);
         $this->set('trendChartMetric', 'transactions');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions completed.');

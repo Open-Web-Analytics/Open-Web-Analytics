@@ -38,7 +38,14 @@ class ReportCampaigns extends \OWA\Core\ReportController {
         $this->setSubview('base.reportDimension');
         $this->setTitle('Campaigns');
         $metrics = 'visits,pageViews,bounces';
-        if ( \OWA\Core\CoreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+        // enableEcommerceReporting is a PER-SITE setting. The global base setting
+        // of the same name has been false since it was introduced -- it carries a
+        // "move to site settings" note and nothing turns it on -- so reading it
+        // here meant the e-commerce columns never appeared on this report, even
+        // for a site with e-commerce enabled. Every other consumer
+        // (ReportController::pre twice, ReportDashboard) already reads the site
+        // setting; this was the last one left on the global.
+        if ( \OWA\Core\CoreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
             $metrics .= ',transactions,transactionRevenue';
         }
 

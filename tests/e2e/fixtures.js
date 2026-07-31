@@ -111,6 +111,25 @@ async function openReport(page, { doName = 'base.reportBrowsers', period = 'last
     await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
 }
 
+/**
+ * Navigate to a report that renders WITHOUT tabs.
+ *
+ * The tabbed layout is a property of the subview, not of the report:
+ * base.reportSimpleDimensional uses report_dimensionDetailNoTabs.php, so
+ * #report-tabs never gains the .ui-tabs class and openReport() above would time
+ * out waiting for a widget that is never built. That family is content-based
+ * (Pages, Products, Transactions...) where a session tab would be meaningless.
+ *
+ * Waits for the grid instead, which is the load-bearing widget on those pages.
+ */
+async function openReportNoTabs(page, { doName, period = 'last_thirty_days' } = {}) {
+    await page.goto(
+        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        { waitUntil: 'networkidle' }
+    );
+    await page.waitForSelector('.ui-jqgrid', { timeout: 20_000 });
+}
+
 module.exports = {
     FIXTURE,
     login,
@@ -118,6 +137,7 @@ module.exports = {
     adminLogin,
     logout,
     clickAndWait,
+    openReportNoTabs,
     openDashboard,
     openReport,
 };
