@@ -287,7 +287,11 @@ namespace OWA\Module\Base\Classes;
 
         $db_config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
         $db_config->getByPk('id', $id);
-        $db_settings = unserialize($db_config->get('settings'));
+        // The settings blob is a nested array of scalars and nothing else --
+        // save() writes serialize($this->db_settings). Refusing objects here
+        // costs nothing and means a tampered-with row cannot instantiate a
+        // class during unserialize.
+        $db_settings = unserialize($db_config->get('settings'), ['allowed_classes' => false]);
 
         //print $db_settings;
         // store copy of config for use with updates and set a flag
@@ -377,7 +381,8 @@ namespace OWA\Module\Base\Classes;
 
             if (!empty($settings)) {
 
-                $settings = unserialize($settings);
+                // Array data only, same as load() -- see the note there.
+                $settings = unserialize($settings, ['allowed_classes' => false]);
 
                 $new_config = array();
 

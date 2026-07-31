@@ -96,13 +96,61 @@ class EventQueue  {
     }
 
     function prepareMessage( $msg ) {
-        
+
         return serialize( $msg );
     }
-    
+
     function decodeMessage ( $msg ) {
-        
-        return unserialize( $msg );
+
+        return unserialize( $msg, array( 'allowed_classes' => self::allowedEventClasses() ) );
+    }
+
+    /**
+     * The only classes a queued message is allowed to reconstruct.
+     *
+     * A queue blob is written by prepareMessage() from an object this instance
+     * built, so nothing an HTTP caller sends can name a class here -- their
+     * input lands in the event's PROPERTIES, and a string that looks like a
+     * serialized object stays a string through the round trip.
+     *
+     * The allowlist exists for the case where the blob is no longer trustworthy:
+     * anyone who can write to owa_queue_item (a SQL-injection foothold, stolen
+     * database credentials, a restored-from-elsewhere table) would otherwise
+     * have a straight path from "can write a row" to "can instantiate arbitrary
+     * classes on the next queue run". This turns that into a decode failure.
+     *
+     * Resolved through the support-class factory rather than hardcoded, because
+     * a module may substitute its own event class -- pinning
+     * Base\Classes\Event would silently break such an install by decoding its
+     * events into __PHP_Incomplete_Class.
+     *
+     * @return string[]
+     */
+    protected static function allowedEventClasses() {
+
+        static $classes = null;
+
+        if ( $classes === null ) {
+
+            $classes = array( 'OWA\Module\Base\Classes\Event' );
+
+            try {
+                $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+
+                if ( is_object( $event ) ) {
+                    $classes[] = get_class( $event );
+                }
+
+            } catch ( \Throwable $e ) {
+                // Fall back to the base class. A decode that then fails is
+                // visible as an unprocessable queue item, not a silent
+                // widening of what may be instantiated.
+            }
+
+            $classes = array_values( array_unique( $classes ) );
+        }
+
+        return $classes;
     }
     
     function pruneArchive ( $interval ) {

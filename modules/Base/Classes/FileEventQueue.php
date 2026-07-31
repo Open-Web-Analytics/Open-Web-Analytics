@@ -354,7 +354,12 @@ class FileEventQueue extends \OWA\Core\EventQueue {
         if ($row) {
             $raw_event = explode("|*|", $row);
             $row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]);
-            $event = unserialize(urldecode($row_array['event_obj']));
+            // Same allowlist as the db queue -- a log file anyone can append to
+            // must not be able to name the class that gets instantiated here.
+            $event = unserialize(
+                urldecode($row_array['event_obj']),
+                array( 'allowed_classes' => self::allowedEventClasses() )
+            );
             return $event;
         }
     }

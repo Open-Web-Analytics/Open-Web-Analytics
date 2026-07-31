@@ -262,20 +262,74 @@ class Event {
      }
 
     /**
-     * Loads Event class variables from an array
+     * Properties a remote sender is allowed to set on an incoming event.
      *
-     * @param     array $properties
+     * This is an ALLOWLIST because loadFromArray()'s only caller is queue.php,
+     * which is fed straight from an unauthenticated HTTP request. Everything
+     * absent from this list is queue bookkeeping that belongs to the RECEIVING
+     * instance, not to whoever posted the event.
+     *
+     * Letting a sender set those was a real (if narrow) problem. sendMessage()
+     * uses the event's guid as the queue-item PRIMARY KEY, and the retry
+     * machinery reads receive_count / do_not_receive_before_timestamp. A caller
+     * that could set them could collide with an existing queue item, park an
+     * event arbitrarily far in the future, or arrive pre-loaded with a receive
+     * count that trips the retry limits.
+     *
+     * Dropping them is also more correct on the merits: a freshly received
+     * event SHOULD start with fresh queue state, which is exactly what the
+     * constructor already gives it.
+     *
+     * guid and timestamp stay settable on purpose -- the remote-queue forwarder
+     * (HttpEventQueue) relays both, the guid is what makes a retried forward
+     * idempotent rather than duplicating the queue item, and the timestamp is
+     * the real event time from the upstream instance rather than the moment the
+     * forward happened to arrive. Both are validated below instead.
+     *
+     * @var string[]
+     */
+    private static $remote_settable = array(
+        'eventType',
+        'properties',
+        'guid',
+        'timestamp',
+    );
+
+    /**
+     * Loads Event class variables from an array.
+     *
+     * @param  array $vars
      */
      function loadFromArray ( $vars ) {
+
+        if ( ! is_array( $vars ) ) {
+            return;
+        }
 
          $has = get_object_vars( $this );
 
         foreach ($has as $name => $oldValue ) {
-        
-            if ( isset( $vars[$name] ) ) {
 
-                $this->$name = $vars[ $name ];
+            if ( ! in_array( $name, self::$remote_settable, true ) ) {
+                continue;
             }
+
+            if ( ! isset( $vars[ $name ] ) ) {
+                continue;
+            }
+
+            $value = $vars[ $name ];
+
+            // guid and timestamp are numeric by construction -- generateRandomUid()
+            // returns time().rand(6).serverId(3) and the guid column is a BIGINT.
+            // A non-numeric value here is not a valid event identifier, and the
+            // guid reaches the queue item's primary key.
+            if ( ( $name === 'guid' || $name === 'timestamp' )
+                 && ! ( is_int( $value ) || is_string( $value ) && ctype_digit( $value ) ) ) {
+                continue;
+            }
+
+            $this->$name = $value;
         }
     }
 

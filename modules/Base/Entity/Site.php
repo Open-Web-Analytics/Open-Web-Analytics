@@ -66,7 +66,10 @@ class Site extends \OWA\Core\Entity {
 
     function settingsGetFilter($value) {
         if ($value) {
-            return unserialize($value);
+            // Site settings are an array of scalars -- settingsSetFilter()
+            // writes serialize($value) for exactly that. Refusing objects means
+            // a tampered-with column cannot instantiate a class on read.
+            return unserialize($value, ['allowed_classes' => false]);
         }
     }
 
