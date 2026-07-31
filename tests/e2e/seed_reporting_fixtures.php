@@ -34,6 +34,23 @@ const E2E_USER_ROLE   = 'analyst';                // has view_reports + view_sit
 const E2E_USER_NAME   = 'OWA E2E Reporter';
 const E2E_PAGEVIEWS   = 8;                         // number of synthetic pageviews
 
+// E-commerce fixture. enableEcommerceReporting is a PER-SITE setting, so the
+// seeder turns it on for the fixture site -- the global base setting of the same
+// name has been false since it was introduced and is not what any report reads.
+// Two transactions with three line items between them: enough for the commerce
+// reports to have rows, and for productName to appear more than once so a
+// grouped dimension is not trivially one row per item.
+const E2E_ECOMMERCE   = true;
+const E2E_TXNS = [
+    ['order_id' => 'e2e-order-1001', 'day_ago' => 9, 'revenue' => 42.60, 'tax' => 3.40, 'shipping' => 8.95, 'items' => [
+        ['sku' => 'E2E-SKU-1', 'name' => 'E2E Widget',  'category' => 'Widgets', 'price' => 10.20, 'qty' => 2],
+        ['sku' => 'E2E-SKU-2', 'name' => 'E2E Gadget',  'category' => 'Gadgets', 'price' => 5.50,  'qty' => 1],
+    ]],
+    ['order_id' => 'e2e-order-1002', 'day_ago' => 2, 'revenue' => 20.40, 'tax' => 1.60, 'shipping' => 4.00, 'items' => [
+        ['sku' => 'E2E-SKU-1', 'name' => 'E2E Widget',  'category' => 'Widgets', 'price' => 10.20, 'qty' => 2],
+    ]],
+];
+
 // A second fixture user with the ADMIN role, so the admin-actions e2e suite
 // (tests/e2e/admin-actions.spec.js) can drive the write flows that need
 // edit_users / edit_sites / edit_settings / edit_modules capabilities. The
@@ -117,6 +134,9 @@ function fixtureInfo(): array
         'pw_user_id'     => E2E_PWUSER_ID,
         'pw_password'    => E2E_PWUSER_PASS,
         'pw_passkey'     => E2E_PWUSER_KEY,
+        'ecommerce'      => E2E_ECOMMERCE,
+        'order_ids'      => array_column(E2E_TXNS, 'order_id'),
+        'product_names'  => ['E2E Widget', 'E2E Gadget'],
     ];
 }
 
@@ -192,6 +212,12 @@ function seed(): array
 
     $out['pageviews_seeded']  = $seeded;
     $out['pageviews_total']   = countSiteRequests(md5(E2E_SITE_DOMAIN));
+    // 4. E-commerce. The setting is per-site; enabling it is what makes the
+    //    e-commerce tab appear on the session-based reports and lets the
+    //    commerce reports return rows.
+    owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting', true);
+    $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting');
+    $out['transactions_seeded'] = seedTransactions();
     $out['status']            = 'seeded';
     return $out;
 }
@@ -205,7 +231,8 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact'] as $table) {
+    foreach (['owa_request', 'owa_session', 'owa_action_fact',
+              'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
             $db->deleteFrom($table);
@@ -276,6 +303,143 @@ function teardown(): array
  * last_thirty_days window. $n caps how many of the plan actually fire (used by
  * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
  */
+/**
+ * Seed commerce transactions + line items for the fixture site.
+ *
+ * Idempotent by order_id: re-running the seeder does not duplicate rows, which
+ * matters because the commerce report assertions use exact revenue totals.
+ *
+ * Rows are written directly rather than pushed through the tracker: the
+ * e-commerce beacon needs a live session to attach to, and these facts only
+ * have to be reportable, not realistic.
+ */
+function seedTransactions(): int
+{
+    $site_id = md5(E2E_SITE_DOMAIN);
+    $seeded  = 0;
+    foreach (E2E_TXNS as $txn) {
+        $existing = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
+        $existing->load($txn['order_id'], 'order_id');
+        if ($existing->wasPersisted()) {
+            continue;
+        }
+        // Midday on its day, matching seedPageviews() so both land inside the
+        // same reporting window.
+        $ts = time() - ($txn['day_ago'] * 86400);
+        $ts = $ts - ($ts % 86400) + 43200;
+        // Attach to the session seeded for the same day. Commerce facts written
+        // by the real handler inherit session_id/visitor_id from the parent
+        // event, and the e-commerce OVERVIEW report reads its totals off the
+        // SESSION rather than off these tables -- so facts with session_id 0
+        // report as zero revenue no matter how much is in the fact rows.
+        $session = sessionForDay($site_id, (int) date('Ymd', $ts));
+
+        $t = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
+        $t->set('id', numericGuid());
+        $t->set('site_id', $site_id);
+        $t->set('session_id', $session['id'] ?? 0);
+        $t->set('visitor_id', $session['visitor_id'] ?? 0);
+        $t->set('order_id', $txn['order_id']);
+        $t->set('order_source', 'e2e-fixture');
+        $t->set('gateway', 'e2e');
+        // Currency is stored in CENTS -- the columns are BIGINT and the real
+        // handler runs every amount through prepareCurrencyValue() ($v * 100).
+        // Writing dollars here would report $0.43 for a $42.60 order.
+        $t->set('total_revenue', owa_lib::prepareCurrencyValue($txn['revenue']));
+        $t->set('tax_revenue', owa_lib::prepareCurrencyValue($txn['tax']));
+        $t->set('shipping_revenue', owa_lib::prepareCurrencyValue($txn['shipping']));
+        $t->set('timestamp', $ts);
+        $t->set('yyyymmdd', (int) date('Ymd', $ts));
+        $t->set('year', (int) date('Y', $ts));
+        $t->set('month', (int) date('n', $ts));
+        $t->set('day', (int) date('j', $ts));
+        $t->save();
+        $seeded++;
+        foreach ($txn['items'] as $item) {
+            $li = owa_coreAPI::entityFactory('base.commerce_line_item_fact');
+            $li->set('id', numericGuid());
+            $li->set('site_id', $site_id);
+            $li->set('session_id', $session['id'] ?? 0);
+            $li->set('visitor_id', $session['visitor_id'] ?? 0);
+            $li->set('order_id', $txn['order_id']);
+            $li->set('sku', $item['sku']);
+            $li->set('product_name', $item['name']);
+            $li->set('category', $item['category']);
+            $li->set('unit_price', owa_lib::prepareCurrencyValue($item['price']));
+            $li->set('quantity', $item['qty']);
+            $li->set('item_revenue', owa_lib::prepareCurrencyValue($item['price'] * $item['qty']));
+            $li->set('timestamp', $ts);
+            $li->set('yyyymmdd', (int) date('Ymd', $ts));
+            $li->set('year', (int) date('Y', $ts));
+            $li->set('month', (int) date('n', $ts));
+            $li->set('day', (int) date('j', $ts));
+            $li->save();
+        }
+
+        if (!empty($session['id'])) {
+            summariseCommerceOntoSession($session['id']);
+        }
+    }
+    return $seeded;
+}
+
+/**
+ * The session row seeded for a given day, or null.
+ *
+ * seedPageviews() creates one session per visit day, and the transaction days
+ * are chosen to line up with two of them.
+ */
+function sessionForDay(string $site_id, int $yyyymmdd): ?array
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->connect();
+    $rows = $db->get_results(
+        "SELECT id, visitor_id FROM owa_session WHERE site_id = '" . $db->prepare($site_id) . "'"
+        . " AND yyyymmdd = " . (int) $yyyymmdd . " LIMIT 1"
+    );
+    return is_array($rows) && $rows ? (array) $rows[0] : null;
+}
+
+/**
+ * Roll the session's commerce columns up from the fact tables.
+ *
+ * Deliberately uses the SAME owa_coreAPI::summarize() calls as
+ * SessionCommerceSummaryHandlers rather than computing the numbers here, so the
+ * fixture cannot drift from what the application would have written had these
+ * facts arrived through the tracker.
+ */
+function summariseCommerceOntoSession($session_pk): void
+{
+    $s = owa_coreAPI::entityFactory('base.session');
+    $s->getByPk('id', $session_pk);
+    if (!$s->get('id')) {
+        return;
+    }
+
+    $txn = owa_coreAPI::summarize([
+        'entity'      => 'base.commerce_transaction_fact',
+        'columns'     => ['id' => 'count', 'total_revenue' => 'sum',
+                          'tax_revenue' => 'sum', 'shipping_revenue' => 'sum'],
+        'constraints' => ['session_id' => $session_pk],
+    ]);
+    $s->set('commerce_trans_count', $txn['id_count']);
+    $s->set('commerce_trans_revenue', $txn['total_revenue_sum']);
+    $s->set('commerce_tax_revenue', $txn['tax_revenue_sum']);
+    $s->set('commerce_shipping_revenue', $txn['shipping_revenue_sum']);
+
+    $items = owa_coreAPI::summarize([
+        'entity'      => 'base.commerce_line_item_fact',
+        'columns'     => ['sku' => 'count_distinct', 'item_revenue' => 'sum',
+                          'quantity' => 'sum'],
+        'constraints' => ['session_id' => $session_pk],
+    ]);
+    $s->set('commerce_items_count', $items['sku_dcount']);
+    $s->set('commerce_items_revenue', $items['item_revenue_sum']);
+    $s->set('commerce_items_quantity', $items['quantity_sum']);
+
+    $s->update();
+}
+
 function seedPageviews(int $n): int
 {
     $site_id = md5(E2E_SITE_DOMAIN);

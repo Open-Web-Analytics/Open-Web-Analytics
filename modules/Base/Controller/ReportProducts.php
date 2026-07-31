@@ -39,7 +39,13 @@ class ReportProducts extends \OWA\Core\ReportController {
         $this->setTitle('Products');
         $this->set('metrics', 'lineItemQuantity,lineItemRevenue');
         $this->set('dimensions', 'productName');
-        $this->set('sort', 'actions');
+        // 'actions' is not one of this report's metrics -- it is not queried
+        // here at all, so the sort could not resolve and the dimensional query
+        // returned no rows: the page rendered with aggregates of 0 and an empty
+        // grid, which reads as "no sales" rather than as a fault. Its two
+        // siblings with the identical metric list (ReportProductSkus,
+        // ReportProductCategories) both sort by lineItemQuantity-.
+        $this->set('sort', 'lineItemQuantity-');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array('linkColumn' => 'productName',
                                                 'template' => array('do' => 'base.reportProductDetail', 'productName' => '%s'),

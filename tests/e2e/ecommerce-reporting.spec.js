@@ -1,0 +1,152 @@
+const { test, expect } = require('@playwright/test');
+const { FIXTURE, login, openReport, openReportNoTabs } = require('./fixtures');
+
+/**
+ * E-commerce reporting: the tabs, and the commerce reports themselves.
+ *
+ * WHY THIS EXISTS
+ * ---------------
+ * enableEcommerceReporting is a PER-SITE setting. There is a base setting of the
+ * same name which has been false since it was introduced -- it carries a "move
+ * to site settings" note -- and reading the wrong one is a silent failure: the
+ * report still renders, it just quietly leaves the e-commerce columns out. That
+ * is exactly what ReportCampaigns did until this suite was written, and nothing
+ * caught it because every page still returned 200.
+ *
+ * WHICH REPORTS GET TABS
+ * ----------------------
+ * Tabs are a property of the SUBVIEW, not of the setting:
+ *
+ *   base.reportDimension       -> report_dimensionalTrend.php     TABS
+ *   base.reportDimensionDetail -> report_dimensionDetail.php      TABS
+ *   base.reportSimpleDimensional -> report_dimensionDetailNoTabs.php   none
+ *
+ * That split is deliberate and is not a bug: the tabbed reports are
+ * session-based (Site Usage / e-commerce / goal groups are all per-visit
+ * metrics), while the untabbed ones are content-based, where a session tab
+ * would be meaningless. These tests pin the split so "fixing" one side of it
+ * has to be a deliberate act.
+ *
+ * The fixture site has e-commerce enabled and two seeded transactions -- see
+ * seed_reporting_fixtures.php, which also writes currency in CENTS because the
+ * fact columns are BIGINT and the real handler multiplies by 100.
+ */
+
+// Dollar totals implied by the seeded fixture (E2E_TXNS).
+const EXPECTED = {
+    orderCount:     2,
+    totalRevenue:   63.00,   // 42.60 + 20.40
+    lineItemRevenue: 46.30,  // (10.20*2) + 5.50 + (10.20*2)
+    widgetRevenue:  40.80,   // E2E Widget across both orders
+    gadgetRevenue:   5.50,
+};
+
+test.describe('e-commerce reporting', () => {
+
+    test.beforeEach(async ({ page }) => {
+        await login(page);
+    });
+
+    test('the e-commerce tab appears on a session-based report when the site has it enabled', async ({ page }) => {
+        await openReport(page, { doName: 'base.reportBrowsers' });
+
+        // Tabs render as <div id="tab_<key>"> -- the label itself is written
+        // into the JS block below them, so the div id is the stable hook.
+        const tabIds = await page.locator('#report-tabs > div[id^="tab_"]').evaluateAll(
+            els => els.map(e => e.id.replace(/^tab_/, ''))
+        );
+
+        expect(tabIds).toContain('site_usage');
+        expect(tabIds).toContain('ecommerce');
+    });
+
+    test('the tabbed and untabbed report families stay as they are', async ({ page }) => {
+        // Session-based -> tabs.
+        await openReport(page, { doName: 'base.reportBrowsers' });
+        await expect(page.locator('#report-tabs > div[id^="tab_"]').first()).toBeAttached();
+
+        // Content-based -> deliberately no tabs (report_dimensionDetailNoTabs).
+        // Uses the no-tabs helper: openReport() waits for #report-tabs.ui-tabs,
+        // a widget these pages never build.
+        await openReportNoTabs(page, { doName: 'base.reportPages' });
+        await expect(page.locator('#report-tabs > div[id^="tab_"]')).toHaveCount(0);
+    });
+
+    test('Campaigns includes e-commerce metrics, which requires reading the SITE setting', async ({ page }) => {
+        // ReportCampaigns used owa_coreAPI::getSetting('base', ...) -- the global
+        // -- so transactions/transactionRevenue were never added to its metric
+        // list no matter how the site was configured. The columns come from the
+        // metrics string, so their absence is the observable symptom.
+        await openReport(page, { doName: 'base.reportCampaigns' });
+
+        const body = await page.content();
+        expect(body).toContain('transactionRevenue');
+        expect(body).toContain('transactions');
+    });
+
+    test('the Products report returns the seeded line items with correct revenue', async ({ page }) => {
+        await openReportNoTabs(page, { doName: 'base.reportProducts' });
+
+        const grid = page.locator('.ui-jqgrid');
+        await expect(grid).toBeAttached();
+
+        const text = await page.locator('body').innerText();
+
+        // Both seeded products, and the revenue split between them. Getting the
+        // cents/dollars conversion wrong in either the seeder or the formatter
+        // shows up here as an order-of-magnitude error rather than a near miss.
+        expect(text).toContain('E2E Widget');
+        expect(text).toContain('E2E Gadget');
+        expect(text).toMatch(new RegExp(EXPECTED.widgetRevenue.toFixed(2).replace('.', '\\.')));
+        expect(text).toMatch(new RegExp(EXPECTED.gadgetRevenue.toFixed(2).replace('.', '\\.')));
+    });
+
+    test('the Transactions report returns the seeded orders', async ({ page }) => {
+        await openReportNoTabs(page, { doName: 'base.reportTransactions' });
+
+        const text = await page.locator('body').innerText();
+
+        for (const orderId of FIXTURE.order_ids || ['e2e-order-1001', 'e2e-order-1002']) {
+            expect(text).toContain(orderId);
+        }
+    });
+
+    test('the e-commerce overview report renders the seeded totals', async ({ page }) => {
+        await openReportNoTabs(page, { doName: 'base.reportEcommerce' });
+
+        const text = await page.locator('body').innerText();
+
+        // This report reads commerce totals off the SESSION, not off the fact
+        // tables -- SessionCommerceSummaryHandlers rolls them up onto the
+        // session row when a transaction arrives. The fixture therefore attaches
+        // its transactions to the sessions seeded for the same day and runs the
+        // SAME owa_coreAPI::summarize() calls the handler uses, so these totals
+        // are the ones the application would have written itself.
+        expect(text).toMatch(new RegExp(EXPECTED.totalRevenue.toFixed(2).replace('.', '\\.')));
+        expect(text).toContain('Transactions');
+        expect(text).toContain('Revenue Per Visit');
+    });
+
+    // Regression test for a real bug this suite found.
+    //
+    // base.reportEcommerce set sort='actions' -- neither a metric it queries nor
+    // a dimension it groups on, and the report has no dimensions at all. The
+    // unresolvable sort came back as a null sortColumn/sortOrder, which
+    // setGridOptions handed to jqGrid, which called .toLowerCase() on it:
+    // "Cannot read properties of null (reading 'toLowerCase')", thrown while
+    // building the grid. The page still rendered, so the only trace was the
+    // browser console -- which nothing was watching.
+    test('no report page raises a browser console error', async ({ page }) => {
+        // The dimension-resolution warning that started this work was invisible
+        // in the browser -- it only reached the server log. This catches the
+        // client-side equivalent across the commerce reports.
+        const errors = [];
+        page.on('pageerror', e => errors.push(e.message));
+
+        for (const doName of ['base.reportEcommerce', 'base.reportProducts', 'base.reportTransactions']) {
+            await openReportNoTabs(page, { doName });
+        }
+
+        expect(errors).toEqual([]);
+    });
+});

@@ -1382,8 +1382,20 @@ OWA.dataGrid.prototype = {
             height: '100%',
             autowidth: true,
             hoverrows: false,
-            sortname: resultSet.sortColumn,
-            sortorder: resultSet.sortOrder,
+            // Defaulted, not passed straight through. A sort that does not
+            // resolve comes back null here, and jqGrid calls .toLowerCase() on
+            // sortorder while building the grid -- "Cannot read properties of
+            // null (reading 'toLowerCase')", thrown before the grid finishes.
+            // The page still renders, so the only trace is the browser console.
+            //
+            // Defence in depth, NOT the fix for any current bug: the one
+            // occurrence of this had a misspelt metric in report_ecommerce.php
+            // ('transactionsRevenue' for 'transactionRevenue') and correcting
+            // that clears it on its own -- verified by removing this default and
+            // re-running, which still passes. Kept because a caller typo should
+            // not be able to throw out of grid construction.
+            sortname: resultSet.sortColumn || '',
+            sortorder: resultSet.sortOrder || 'asc',
             onSortCol: function( index, iCol, sortorder ) {
 
                 //that.sortGrid( index, sortorder );
