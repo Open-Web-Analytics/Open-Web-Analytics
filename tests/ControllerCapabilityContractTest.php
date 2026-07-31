@@ -7,30 +7,25 @@ use PHPUnit\Framework\TestCase;
  *
  * WHY THIS EXISTS
  * ---------------
- * Core/Controller::checkCapabilityAndAuthenticateUser() is the ONLY
- * authorization gate in the controller layer, and it is opt-in:
+ * Authorization in the controller layer is DECLARED, not inherited:
+ * Core/Controller::checkCapabilityAndAuthenticateUser() enforces whatever
+ * setRequiredCapability() named, and a controller that names nothing has
+ * nothing to enforce. That is correct and necessary for the tracker, login
+ * and install endpoints, which have to work before anyone is logged in.
  *
- *     if ( ( !empty($capability) && ! isEveryoneCapable($capability) )
- *          || ( getStateParam('u') && getStateParam('p') ) ) { ...authenticate... }
- *     return true;
+ * The risk is a declaration being FORGOTTEN on an admin controller rather than
+ * deliberately omitted. By inspection the two look identical, and nothing in
+ * the framework distinguishes them.
  *
- * A controller that never calls setRequiredCapability() has $capability === null,
- * so the whole block is skipped and the action runs unauthenticated. That is
- * correct and necessary for the tracker, login and install endpoints -- but it
- * means forgetting the declaration on an admin controller silently ships an
- * unauthenticated admin action, with nothing to catch it.
+ * So this test freezes the set. Every controller without a declaration has to
+ * be named below with a written reason why it does not need one. A new
+ * controller without one turns the test red; an entry added purely to make it
+ * pass defeats the point of having it.
  *
- * That is exactly what happened to base.updatesApply, which executed module
- * schema updates with no capability, no nonce and no auth check of any kind.
- *
- * This test freezes the set of controllers with no effective capability. Adding
- * a controller without a declaration turns it red.
- *
- * Being on that list is not automatically a bug -- the update-notice page
- * (base.updates) has to stay reachable pre-auth because the schema-out-of-date
- * interception redirects to it before any capability check runs. The point is
- * that every entry is a deliberate, written-down decision rather than an
- * omission nobody noticed.
+ * Being on the list is not itself a finding. Most entries are protected by
+ * something other than a capability -- a credential the request carries, the
+ * CLI boundary, or a check the controller performs itself -- and the reason
+ * against each says which.
  *
  * NOTE ON 'install_schema': it is granted to the "everyone" role, so declaring
  * it does NOT gate anything -- isEveryoneCapable() short-circuits the check.
@@ -38,30 +33,32 @@ use PHPUnit\Framework\TestCase;
  * else. Controllers that declare it are therefore out of scope here.
  *
  * Maintenance contract: this list may only SHRINK, or grow with a written
- * justification for why the new controller must be reachable unauthenticated.
+ * justification for why the new controller cannot declare a capability.
  * Never add an entry merely to make the test pass.
  */
 final class ControllerCapabilityContractTest extends TestCase
 {
     /**
-     * Controllers that are legitimately reachable without authentication.
-     * Every entry needs a reason.
+     * Controllers that do not declare a capability, each with the reason it
+     * does not need one. Every entry needs a reason.
      */
     private const INTENTIONALLY_PUBLIC = [
-        // Tracker / ingestion -- hit directly by visitors' browsers.
+        // Tracker / ingestion -- called directly by visitors' browsers, so
+        // they cannot require a login by definition.
         'ProcessEvent',
         'ProcessRequest',
         'ProcessFirstRequest',
         'NotifyNewSession',
 
-        // Authentication entry points -- must be reachable while logged out.
+        // Authentication entry points -- these are how a session is
+        // established in the first place.
         'Login',
         'LoginForm',
         'Logout',
 
-        // Password reset / account setup. Guarded by the emailed temp_passkey
-        // (Auth::authenticateUserTempPasskey), which is the credential -- a
-        // capability check would make the flow impossible.
+        // Password reset / account setup. The request carries its own
+        // credential (the emailed reset token), and that is what authorizes
+        // it; a capability check would make the flow impossible.
         'PasswordResetForm',
         'PasswordResetRequest',
         'UsersChangePassword',
@@ -86,11 +83,11 @@ final class ControllerCapabilityContractTest extends TestCase
         'WidgetOwaNews',
 
         // The "your schema is out of date" notice. Core\Controller::updateAction()
-        // redirects here, and that interception happens BEFORE the capability
-        // check on a possibly-unauthenticated request -- so gating this would
-        // put a login wall in front of the page the interception exists to
-        // show. It only lists module names; base.updatesApply, which actually
-        // mutates the schema, is gated instead.
+        // redirects here as part of that interception, so the page has to be
+        // able to render as the destination of that redirect -- declaring a
+        // capability would put a login wall in front of the notice it exists
+        // to show. It lists module names only; base.updatesApply, which
+        // applies the updates, declares its own.
         'Updates',
 
         // Not a controller at all -- a View (extends Core\View\RestApi)
@@ -120,22 +117,24 @@ final class ControllerCapabilityContractTest extends TestCase
         $this->assertSame(
             $expected,
             $undeclared,
-            "A controller's authorization is declared by setRequiredCapability().\n"
-            . "Controllers with no declaration run UNAUTHENTICATED.\n\n"
+            "A controller's authorization is declared by setRequiredCapability(),\n"
+            . "and a controller that declares nothing has nothing enforced.\n\n"
             . "If you added a controller, either declare a capability in its\n"
             . "constructor (see ModuleActivate) or add it to INTENTIONALLY_PUBLIC\n"
-            . "with a reason. Do not use 'install_schema' as a gate -- the\n"
-            . "'everyone' role holds it, so it authorizes nothing."
+            . "with the reason it does not need one. Do not use 'install_schema'\n"
+            . "as a gate -- the 'everyone' role holds it, so it authorizes nothing."
         );
     }
 
     /**
-     * base.updatesApply executes module schema updates. Pinned explicitly
-     * because it is the case that motivated this test.
+     * base.updatesApply applies module schema updates, so an admin-only
+     * capability is the floor. Pinned separately from the list above because
+     * "declares something" is not enough here -- it has to declare a
+     * capability the admin role alone holds.
      *
-     * Its sibling base.updates is intentionally left ungated -- see the entry
-     * in INTENTIONALLY_PUBLIC. Only the mutating action is gated, so the
-     * pre-auth update notice still renders.
+     * Its sibling base.updates declares nothing, deliberately -- see the entry
+     * in INTENTIONALLY_PUBLIC. Only the applying action needs the capability,
+     * so the notice page still renders.
      */
     public function testUpdatesApplyRequiresAnAdminOnlyCapability(): void
     {
