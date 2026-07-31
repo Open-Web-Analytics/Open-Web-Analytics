@@ -499,7 +499,43 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $dimension = $this->lookupDimension($dimension_name, $entity);
 
-        if ($dimension['denormalized'] === true) {
+        // lookupDimension() returns null when the name does not resolve AGAINST
+        // THIS ENTITY. That is a routine outcome, not an error case: it looks
+        // for a denormalized dimension on this entity, then the
+        // related_dimensions cache, then the global (non-denormalized)
+        // registry. A denormalized dimension such as productName lives only
+        // under its own entity (base.commerce_line_item_fact), so checking it
+        // against base.request finds nothing in any of the three.
+        //
+        // And the callers do exactly that on purpose -- they loop every
+        // requested dimension against every candidate entity looking for one
+        // that fits them all, so most pairings are expected to miss. Without
+        // this guard each of those misses fell through to the array access
+        // below and logged "Trying to access array offset on value of type
+        // null", which is why the warning appeared on ordinary report
+        // requests rather than only on bad input.
+        //
+        // Not related is the correct answer here, and it is what the callers
+        // already assumed -- they test `if (!$check)`, which treated the
+        // implicit null the same way. Returning false makes the contract match
+        // the method name.
+        //
+        // Strictly this branch is redundant: the isset() below already stops
+        // the warning and the trailing return already yields false, and a
+        // mutation test confirms removing it changes nothing observable. It
+        // stays for the DEBUG LOG. Without it an unregistered name falls
+        // through to "Could not find a foreign key for productName in
+        // base.request", which sends the reader looking for a missing foreign
+        // key when the real problem is that the dimension does not exist.
+        if ( ! $dimension ) {
+            \OWA\Core\CoreAPI::debug("Dimension: $dimension_name did not resolve, so it is not related to $entity_name");
+            return false;
+        }
+
+        // isset() guards a dimension array that has no 'denormalized' key at
+        // all. The strict === true is kept deliberately: only a real boolean
+        // true counts, exactly as before.
+        if ( isset( $dimension['denormalized'] ) && $dimension['denormalized'] === true ) {
             //$this->related_dimensions[$dimension['name']] = $dimension;
             \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
             return true;
@@ -515,6 +551,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 \OWA\Core\CoreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
             }
         }
+
+        // Was an implicit null before. Every caller tests the result for
+        // truthiness, so this changes no behaviour -- it just stops a method
+        // named is...() from answering a question with null.
+        return false;
     }
 
     function getMetricEntities($metric_name) {
