@@ -18,7 +18,7 @@
 
                 <th valign="top">Name:</th>
                 <td>
-                    <input name="<?php echo $view->getNs();?>goal[goal_name]" type="text" size="40" value="<?php $view->out($view->goal['goal_name']);?>">
+                    <input name="<?php echo $view->getNs();?>goal[goal_name]" type="text" size="40" value="<?php $view->out($view->goal['goal_name'] ?? '');?>">
                 </td>
             </tr>
             <tr>
@@ -126,7 +126,7 @@
                 </p>
                 </th>
                 <td>
-                    <input name="<?php echo $view->getNs();?>goal[details][goal_url]" value="<?php $view->out($view->goal['details']['goal_url'] ?? '');?>" type="text" size="60" value="<?php $view->out($view->goal['url']);?>">
+                    <input name="<?php echo $view->getNs();?>goal[details][goal_url]" value="<?php $view->out($view->goal['details']['goal_url'] ?? '');?>" type="text" size="60">
                 </td>
             </tr>
         </table>

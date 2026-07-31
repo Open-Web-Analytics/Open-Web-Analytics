@@ -231,7 +231,27 @@ final class TemplateLatentVarTest extends TestCase
      */
     public function testAdminFormsRenderOnTheAddPath(string $template, array $vars, array $expected): void
     {
-        $out = $this->render($this->formSpy(), $template, $vars);
+        // The add path renders with an EMPTY record, so every read of a record
+        // field has to be guarded. An unguarded one is only a PHP warning --
+        // the form still renders and the assertions below still pass -- so the
+        // diagnostics are captured explicitly. Without this the template can
+        // warn on every render and nothing goes red: options_goal_entry.php did
+        // exactly that for $goal['goal_name'] and $goal['url'], visible only in
+        // a CI log nobody reads.
+        $diagnostics = [];
+
+        set_error_handler(static function ($no, $str, $file, $line) use (&$diagnostics) {
+            $diagnostics[] = sprintf('%s (%s:%d)', $str, basename((string) $file), $line);
+            return true;
+        });
+
+        try {
+            $out = $this->render($this->formSpy(), $template, $vars);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $diagnostics, "$template raised PHP diagnostics on the add path");
 
         foreach ($expected as $needle) {
             $this->assertStringContainsString($needle, $out, "$template: missing $needle");
