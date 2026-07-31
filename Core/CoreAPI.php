@@ -496,20 +496,43 @@ class CoreAPI {
 
     public static function updateFactory($module, $filename, $class_ns = 'owa_') {
 
+        // NAMESPACE-FIRST. Update classes are PSR-4: UpdateNNN.php declares
+        // OWA\Module\<Module>\Update\UpdateNNN, which Composer autoloads with no
+        // require. The legacy name built below ('owa_base_Update011_update')
+        // has not existed since the PSR-4 relocation, so resolving it first is
+        // what makes updates loadable at all.
+        $namespaced = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+                    . '\\Update\\' . $filename;
 
-        //$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $filename, '_update');
-        $class = $class_ns.$module.'_'.$filename.'_update';
+        if ( class_exists( $namespaced ) ) {
 
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, 'updates', $filename);
-        endif;
+            $obj = new $namespaced();
 
-        $obj = \OWA\Core\Lib::factory(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Update', '', $class);
+        } else {
+
+            // Legacy fallback: a pre-PSR-4 third-party module shipping
+            // updates/<seq>.php with an owa_*_update class.
+            $class = $class_ns.$module.'_'.$filename.'_update';
+
+            // Require class file if class does not already exist
+            if(!class_exists($class)):
+                \OWA\Core\CoreAPI::moduleRequireOnce($module, 'updates', $filename);
+            endif;
+
+            $obj = \OWA\Core\Lib::factory(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Update', '', $class);
+        }
 
         $obj->module_name = $module;
         if (!$obj->schema_version) {
-            $obj->schema_version = $filename;
+            // Derive the sequence from the filename for updates that do not
+            // declare one (Update003 and Update004 still rely on this).
+            //
+            // Legacy files were named '<seq>.php', so assigning $filename gave
+            // the right number. PSR-4 files are 'UpdateNNN.php', so the same
+            // assignment yielded the string 'Update004' -- which casts to 0 and
+            // makes apply()/rollback() sequence checks compare against zero.
+            // Take the digits, whichever naming form was passed.
+            $obj->schema_version = (int) preg_replace( '/\D/', '', (string) $filename );
         }
         return $obj;
     }

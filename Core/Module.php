@@ -587,17 +587,31 @@ abstract class Module {
 
         // extract sequence
         foreach ($files as $k => $v) {
-            // the use of %d casts the sequence number as an int which is critical for maintaining the
-            // order of the keys in the array that we are going ot create that holds the update objs
-            //$n = sscanf($v['name'], '%d_%s', $seq, $classname);
-            $seq = substr($v['name'], 0, -4);
+            // Update files are PSR-4 class files: UpdateNNN.php, holding class
+            // UpdateNNN. The sequence is the NNN.
+            //
+            // This used to be substr($name, 0, -4) + settype('integer'), which
+            // worked while the files were named '011.php'. The PSR-4 relocation
+            // renamed them to 'Update011.php' -- required, because PSR-4 maps
+            // OWA\Module\Base\Update\Update011 to Base/Update/Update011.php and
+            // '011' is not a legal class name -- but this parser was not
+            // updated with them. (int) 'Update011' is 0, so the guard below
+            // ('0 > current_schema_version') was never true and NO update could
+            // run on any install, while the CLI still reported success because
+            // the loop simply completed over an empty set.
+            $classname = substr($v['name'], 0, -4);
 
-            settype($seq, "integer");
+            if ( ! preg_match( '/^Update(\d+)$/', $classname, $seq_match ) ) {
+                // Not an update class file; ignore rather than mis-sequence it.
+                continue;
+            }
+
+            $seq = (int) $seq_match[1];
 
             if ($seq > $current_schema_version) {
 
                 if ($seq <= $this->required_schema_version) {
-                    $this->updates[$seq] = \OWA\Core\CoreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
+                    $this->updates[$seq] = \OWA\Core\CoreAPI::updateFactory($this->name, $classname);
                     // if the cli update mode is required and we are not running via cli then return an error.
                     \OWA\Core\CoreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
                     if ($this->updates[$seq]->isCliModeRequired() === true && !defined('OWA_CLI')) {

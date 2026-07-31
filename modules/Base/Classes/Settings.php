@@ -295,9 +295,12 @@ namespace OWA\Module\Base\Classes;
 
             // needed to get rid of legacy setting that used to be stored in the DB.
             if (array_key_exists('error_handler', $db_settings['base'])) {
-                
+
                 unset($db_settings['base']['error_handler']);
             }
+
+            // Same treatment, generalised -- see stripConfigFileOnlySettings().
+            $db_settings = self::stripConfigFileOnlySettings( $db_settings );
 
             $this->db_settings = $db_settings;
             $this->config_from_db = true;
@@ -503,8 +506,237 @@ namespace OWA\Module\Base\Classes;
      public function persistSetting($module, $key, $value) {
 
          $this->set($module, $key, $value);
+
+         // Do not store a value that merely restates the code default.
+         //
+         // A stored value overrides the default FOREVER. Writing one that is
+         // currently identical to the default looks harmless, but it silently
+         // pins that value: when the default later changes, the install keeps
+         // the old one and no longer tracks the code. report_wrapper is the
+         // case that proved this -- installs had 'wrapper_default.tpl' stored
+         // back when that WAS the default, so the .tpl -> .php migration could
+         // not reach them and every report render fataled on an empty include
+         // path, with the only clue written to OWA's own log rather than the
+         // web server's.
+         //
+         // Keys with no code default (schema_version, install_complete) can
+         // never match here, so they are always stored -- which is required,
+         // since get() would otherwise return null and the install would look
+         // uninstalled.
+         if ( array_key_exists( $module, $this->default_config )
+              && array_key_exists( $key, $this->default_config[ $module ] )
+              && self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
+
+             // Also drop any previously stored copy, so an install heals itself
+             // the next time the setting is written.
+             if ( isset( $this->db_settings[ $module ][ $key ] ) ) {
+                 unset( $this->db_settings[ $module ][ $key ] );
+                 $this->is_dirty = true;
+             }
+
+             return;
+         }
+
          $this->db_settings[$module][$key] = $value;
          $this->is_dirty = true;
+     }
+
+     /**
+      * Settings that must come from the config file or the installer, and must
+      * NEVER be read from the database.
+      *
+      * These name filesystem paths, stream targets, credentials and template
+      * files. Two rules combine to make a stored copy unreachable:
+      *
+      *   1. the options form refuses to write them (see
+      *      OptionsUpdate::isSensitiveSettingKey -- allowing it is an RCE
+      *      primitive), and
+      *   2. load() merges the DB array OVER the config-file array, so a stored
+      *      value WINS against owa-config.php.
+      *
+      * So once one is persisted there is no supported way to change it: not the
+      * form, not the config file. Observed in the wild -- two installs carried
+      * async_log_dir values pointing at a previous server's /home/padams/...
+      * paths that do not exist, silently overriding a correct config file.
+      *
+      * Value is irrelevant here. Whatever it holds, it must not come from the
+      * database, so it is dropped on load regardless -- the same treatment
+      * error_handler already gets in load().
+      *
+      * NOT included: configuration_id, schema_version, install_complete and
+      * is_active. Those are denylisted from the FORM but are legitimate
+      * database state -- schema_version and install_complete have no code
+      * default at all, so dropping them would make a working install look
+      * uninstalled and re-run every update from scratch.
+      *
+      * @return array<string, array<string, bool>> module => key => true
+      */
+     public static function configFileOnlySettings() {
+
+         return array(
+             'base' => array(
+                 'error_log_file'       => true,
+                 'async_error_log_file' => true,
+                 'async_log_file'       => true,
+                 'async_log_dir'        => true,
+                 'async_lock_file'      => true,
+                 'report_wrapper'       => true,
+                 'db_type'              => true,
+                 'db_host'              => true,
+                 'db_port'              => true,
+                 'db_name'              => true,
+                 'db_user'              => true,
+                 'db_password'          => true,
+                 'db_class_dir'         => true,
+                 'plugin_dir'           => true,
+                 'module_dir'           => true,
+                 'templates_dir'        => true,
+                 'public_path'          => true,
+                 'search_engines.ini'   => true,
+                 'query_strings.ini'    => true,
+             ),
+         );
+     }
+
+     /**
+      * Form-denylisted settings that ARE legitimate database state. Listed
+      * separately so the two reasons for denylisting stay distinguishable.
+      *
+      * @return array<string, array<string, bool>>
+      */
+     public static function databaseStateSettings() {
+
+         return array(
+             'base' => array(
+                 'configuration_id' => true,
+                 'schema_version'   => true,
+                 'install_complete' => true,
+                 'is_active'        => true,
+             ),
+         );
+     }
+
+     /**
+      * Remove config-file-only settings from a settings array loaded out of the
+      * database.
+      *
+      * A stored copy of one of these is UNREACHABLE, and its value is
+      * irrelevant to that fact:
+      *
+      *   - load() merges the DB array OVER the config-file array, so a stored
+      *     value beats owa-config.php, and
+      *   - the options form refuses to rewrite these keys.
+      *
+      * So there is no supported way to correct one. Two installs were found
+      * carrying async_log_dir values naming a previous server's directories
+      * that do not exist on the current host, silently overriding a correct
+      * config file.
+      *
+      * Pure and static so the behaviour can be tested without a database.
+      * Only the modules named in configFileOnlySettings() are touched -- every
+      * other module's settings pass through untouched, which is what keeps a
+      * module's own schema_version / is_active safe.
+      *
+      * @param  array $db_settings settings as read from the data store
+      * @return array the same array minus any config-file-only keys
+      */
+     public static function stripConfigFileOnlySettings( $db_settings ) {
+
+         if ( ! is_array( $db_settings ) ) {
+             return $db_settings;
+         }
+
+         foreach ( self::configFileOnlySettings() as $module => $keys ) {
+
+             if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
+                 continue;
+             }
+
+             foreach ( array_keys( $keys ) as $key ) {
+
+                 unset( $db_settings[ $module ][ $key ] );
+             }
+         }
+
+         return $db_settings;
+     }
+
+     /**
+      * Is a stored value equivalent to the code default, such that dropping it
+      * changes nothing?
+      *
+      * Dropping a key is safe by construction: get() then returns the default.
+      * The only question is whether the stored value MEANS the same thing.
+      *
+      * Cross-type comparison has to be loose, because the settings form submits
+      * everything as strings while the defaults are typed. Real data looks like
+      * '1' vs true, or NULL vs '' -- semantically identical, never === equal.
+      * A strict test therefore matches nothing at all on a real install.
+      *
+      * PHP 8 already removed the historic hazards here: 'abc' == 0, '0' == ''
+      * and 0 == '' are all false now. The one remaining trap is two NUMERIC
+      * STRINGS in different notation ('1e2' == '100'), so string-to-string
+      * comparison is required to be exact; loose equality applies only across
+      * differing types.
+      *
+      * @param  mixed $stored
+      * @param  mixed $default
+      * @return bool
+      */
+     private static function isEquivalentToDefault( $stored, $default ) {
+
+         if ( is_string( $stored ) && is_string( $default ) ) {
+             return $stored === $default;
+         }
+
+         return $stored == $default;
+     }
+
+     /**
+      * Drop persisted settings that merely restate the current code default.
+      *
+      * Historic installs accumulated these: an old config GUI wrote the whole
+      * settings array rather than just changed fields, so a value identical to
+      * the default of the day got stored and then pinned forever. Each one is a
+      * latent bug that surfaces the moment that default changes -- see the
+      * report_wrapper '.tpl' case, which turned into a fatal on every report
+      * render years after it was written.
+      *
+      * Removing them is behaviour-preserving by definition: get() falls back to
+      * the very default the stored value duplicates. Keys with no code default
+      * (schema_version, install_complete) cannot match and are never touched.
+      *
+      * Caller is responsible for save().
+      *
+      * @return array list of "module.key" entries removed
+      */
+     public function pruneRedundantPersistedSettings() {
+
+         $removed = array();
+
+         foreach ( $this->db_settings as $module => $values ) {
+
+             if ( ! is_array( $values ) ) {
+                 continue;
+             }
+
+             foreach ( $values as $key => $value ) {
+
+                 if ( ! array_key_exists( $module, $this->default_config )
+                      || ! array_key_exists( $key, $this->default_config[ $module ] ) ) {
+                     continue;
+                 }
+
+                 if ( self::isEquivalentToDefault( $value, $this->default_config[ $module ][ $key ] ) ) {
+
+                     unset( $this->db_settings[ $module ][ $key ] );
+                     $removed[] = $module . '.' . $key;
+                     $this->is_dirty = true;
+                 }
+             }
+         }
+
+         return $removed;
      }
 
      /**

@@ -295,13 +295,20 @@ final class TemplateLatentVarTest extends TestCase
     {
         $src = file_get_contents(__DIR__ . '/../Core/View.php');
 
+        // Single-quoted on purpose. These were double-quoted, so "$this->data"
+        // interpolated the TEST's own (undefined) $data property and collapsed
+        // to the empty string: the negative assertion searched for
+        // "if (array_key_exists('validation_errors', )) {" and passed no matter
+        // what View.php contained, and the positive one matched only by
+        // accident. The undefined-property warning was the only trace, and
+        // nothing was configured to show it.
         $this->assertStringNotContainsString(
-            "if (array_key_exists('validation_errors', $this->data)) {",
+            'if (array_key_exists(\'validation_errors\', $this->data)) {',
             $src,
             'validation_errors is conditional again -- a form reading $view->validation_errors will throw'
         );
         $this->assertStringContainsString(
-            "$this->data['validation_errors'] ?? []",
+            '$this->data[\'validation_errors\'] ?? []',
             $src,
             'expected the unconditional set with an [] default'
         );
