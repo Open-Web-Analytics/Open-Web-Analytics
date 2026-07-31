@@ -45,14 +45,29 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
  * (rather than error) in environments without DB access. Uses a real
  * SELECT round-trip: mysqli_report is OFF and mysqli_init() leaves a truthy
  * handle even on a failed connect, so connection_status alone is unreliable.
+ *
+ * A FAILED probe is the expected, healthy path on a runner with no database --
+ * it is how 143 tests know to skip. But mysqli_real_connect() reports failure
+ * by raising a PHP warning, not by throwing, so the catch below never sees it
+ * and the warning surfaces attributed to whichever test happened to probe
+ * first. That one unavoidable warning is what kept failOnWarning off, which in
+ * turn let real warnings accumulate unnoticed.
+ *
+ * So the probe swallows diagnostics for its own duration only. This suppresses
+ * nothing else: the handler is installed immediately before the round-trip and
+ * restored immediately after, including on the throw path.
  */
 function owa_test_db_available(): bool
 {
+    set_error_handler(static function () { return true; });
+
     try {
         $db = owa_coreAPI::dbSingleton();
         $row = $db->get_row('SELECT 1 AS ok');
         return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
     } catch (\Throwable $e) {
         return false;
+    } finally {
+        restore_error_handler();
     }
 }
