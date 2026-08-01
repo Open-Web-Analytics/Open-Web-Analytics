@@ -14,7 +14,7 @@ overrides, and anyone maintaining a custom theme.
 
 ---
 
-## Deprecated in 1.9.x, removed in v2.0
+## Deprecated in 1.10.0, removed in v2.0
 
 ### 1. Bare template variables and `$this` inside templates
 
