@@ -58,6 +58,11 @@ class UsersSetPassword extends \OWA\Core\Controller {
 	        	\OWA\Core\CoreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
 		}
 
+        // Returned unconditionally below, but only populated when the user
+        // loaded. Returning an undefined variable made the failure path hand
+        // back null instead of an empty payload.
+        $data = [];
+
         if ($u !== false) {
             $data['view'] = 'base.usersSetPassword';
             $data['view_method'] = 'email';

@@ -81,6 +81,10 @@ class UpdatesApply extends \OWA\Core\Controller {
         // foreach do update in order
 
         $error = false;
+        // Set alongside $error inside the loop below, so at runtime it is always
+        // defined by the time it is read. Initialised anyway: the correlation is
+        // not visible to a reader (or to static analysis) at the point of use.
+        $cli_update_required = false;
 
         foreach ($modules as $k => $v) {
 

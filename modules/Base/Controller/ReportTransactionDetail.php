@@ -49,7 +49,9 @@ class ReportTransactionDetail extends \OWA\Core\ReportController {
 		$trans_detail = (array) $trans_detail;
         $this->set('trans_detail', $trans_detail);
         $this->setSubview('base.reportTransactionDetail');
-        $this->setTitle('Transaction Detail for: ', $transaction_id);
+        // Was $transaction_id -- a typo for the $transactionId set above, so the
+        // report heading rendered with null instead of the transaction id.
+        $this->setTitle('Transaction Detail for: ', $transactionId);
     }
 
 }

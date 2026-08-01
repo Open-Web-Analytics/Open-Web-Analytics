@@ -36,6 +36,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
     function action() {
 
         $document_id = '';
+        // Only assigned inside the document branch below, but read
+        // unconditionally in the API call.
+        $pageUrl = '';
 
         // get period
         $p = $this->getPeriod();
