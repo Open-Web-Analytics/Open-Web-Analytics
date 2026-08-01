@@ -44,6 +44,12 @@ class ReportVisits extends \OWA\Core\ReportController {
         $v = \OWA\Core\CoreAPI::entityFactory('base.visitor');
         $v->load($visitorId);
 
+        // Both are read unconditionally by the API call below. Without a date
+        // param the request falls back to 'period', so null is the correct
+        // default -- but they still have to exist.
+        $startDate = null;
+        $endDate = null;
+
         if ($this->getParam('date')) {
             $startDate = $this->getParam('date');
             $endDate = $this->getParam('date');

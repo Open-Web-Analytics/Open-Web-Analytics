@@ -51,6 +51,9 @@ class ReportDomClicks extends \OWA\Core\ReportController {
             $title_slug = $pagePath;
         }
         
+        // Only assigned inside the branch below, but read by setTitle() after it.
+        $title_slug = '';
+
         if ($this->getParam('document_id')) {
             $did = $this->getParam('document_id');
             $d->load( $did );

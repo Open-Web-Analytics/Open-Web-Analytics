@@ -44,8 +44,11 @@ class ReportGoals extends \OWA\Core\ReportController {
         $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
         $goals = $gm->getActiveGoals();
 
+        // Read by set() after the branch, so it must exist even when a site has
+        // no active goals.
+        $goal_metrics = '';
+
         if ($goals) {
-            $goal_metrics = '';
             $goal_count = count($goals);
             $i = 1;
             foreach ($goals as $goal) {

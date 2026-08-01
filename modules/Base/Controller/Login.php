@@ -65,7 +65,11 @@ class Login extends \OWA\Core\Controller {
 
         // return login form with error msg
         $this->setView('base.loginForm');
-        $this->set('go', $go);
+        // $go is a local of action(); reading it here silently yielded null, so a
+        // failed login dropped the redirect target and sent the user to the
+        // default landing page instead of back where they were headed. Re-derive
+        // it from the request, sanitised the same way action() does.
+        $this->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') ));
         //$this->set('error_code', 2002);
         $this->set('user_id', $this->getParam('user_id'));
     }
