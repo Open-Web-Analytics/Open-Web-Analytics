@@ -576,23 +576,80 @@ class OWATracker  {
                 //this.cdPost( this.prepareRequestData( properties ) );
                 var data = this.prepareRequestData( properties );
                 this.cdPost( data );
+
+                /*
+                 * The hidden-iframe POST gives us no delivery signal, so commit
+                 * optimistically -- exactly the behaviour this path has always
+                 * had. Withholding here would mean a site whose payloads always
+                 * exceed getRequestCharacterLimit could never persist a session
+                 * at all, minting a new one on every page view. That is a worse
+                 * failure than the one this deferral exists to prevent.
+                 */
+                OWA.commitDeferredStatePersistence();
             } else {
 
                 OWA.debug('url : %s', url);
-                   var image = new Image(1, 1);
-                   //expireDateTime = now.getTime() + delay;
-                   image.onLoad = function () { };
-                image.src = url;
-                if (block) {
-                    //OWA.debug(' blocking...');
-                }
-                OWA.debug('Inserted web bug for %s', properties['event_type']);
+                this.sendRequest( url, properties['event_type'] );
             }
 
             if (callback && (typeof(callback) === "function")) {
                 callback();
             }
         }
+    }
+
+    /**
+     * Hands a request URL to the browser for delivery.
+     *
+     * Prefers navigator.sendBeacon: it is the only transport that survives page
+     * unload, which is the dominant way a first page view is lost -- the visitor
+     * clicks through (including an in-page anchor) while the pixel is still in
+     * flight and the browser cancels it. Called with no body it issues a POST
+     * with the query string intact, so log.php keeps reading $_GET unchanged.
+     *
+     * sendBeacon returns false when the browser refuses to queue the payload
+     * (size caps, disabled by policy); in that case, and on older browsers, fall
+     * back to the historical 1x1 pixel.
+     *
+     * The return value drives whether session identity may be persisted:
+     * accepted -> commit; refused/errored -> abandon; neither (the page was torn
+     * down mid-flight) -> nothing is committed, and the next page correctly
+     * starts a new session.
+     */
+    sendRequest( url, event_type ) {
+
+        var that = this;
+        var queued = false;
+
+        if ( typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' ) {
+
+            try {
+                queued = navigator.sendBeacon( url );
+            } catch ( e ) {
+                // Some browsers throw on a cross-origin or oversized payload
+                // rather than returning false.
+                queued = false;
+            }
+        }
+
+        if ( queued ) {
+
+            OWA.debug( 'Beacon queued for %s', event_type );
+            OWA.commitDeferredStatePersistence();
+            return true;
+        }
+
+        var image = new Image(1, 1);
+
+        // NOTE: 'onload', not 'onLoad'. The latter is not a DOM property and
+        // never fires -- it sat here unnoticed for years because nothing hung
+        // off the success path until now.
+        image.onload  = function () { OWA.commitDeferredStatePersistence(); };
+        image.onerror = function () { OWA.abandonDeferredStatePersistence(); };
+        image.src = url;
+
+        OWA.debug('Inserted web bug for %s', event_type);
+        return false;
     }
         
     /**
@@ -1959,6 +2016,19 @@ class OWATracker  {
 
         var that = this;
         if ( ! this.stateInit ) {
+
+            /*
+             * Withhold session identity (s.sid / s.last_req) from the cookie
+             * until this event is accepted for delivery. Memory still receives
+             * the values immediately, so every event on this page reads the same
+             * session. See StateManager.beginDeferredPersistence().
+             *
+             * This runs only on the FIRST tracked event of a page, which makes
+             * the deferral one-shot: if that event's send fails, a later event
+             * on the same page finds the flag already cleared and so cannot
+             * commit a session the server was never told about.
+             */
+            OWA.beginDeferredStatePersistence();
 
             this.setVisitorId( event, function(event) {
 

@@ -117,9 +117,27 @@ class OWA {
     }
     
     setStateStoreFormat(store_name, format) {
-    
+
         this.initializeStateManager();
         return this.state.setStoreFormat(store_name, format);
+    }
+
+    beginDeferredStatePersistence() {
+
+        this.initializeStateManager();
+        return this.state.beginDeferredPersistence();
+    }
+
+    commitDeferredStatePersistence() {
+
+        this.initializeStateManager();
+        return this.state.commitDeferredPersistence();
+    }
+
+    abandonDeferredStatePersistence() {
+
+        this.initializeStateManager();
+        return this.state.abandonDeferredPersistence();
     }
     
     debug() {

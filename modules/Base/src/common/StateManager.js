@@ -10,6 +10,62 @@ class StateManager {
 		this.stores = {};
 		this.storeFormats = {};
 		this.storeMeta = {};
+
+		/*
+		 * Session identity is written to memory immediately (so every event on
+		 * this page reads the same values) but withheld from the COOKIE until a
+		 * request carrying it has actually been accepted for delivery.
+		 *
+		 * Persisting these before delivery is what strands a session: the cookie
+		 * asserts session X, the server was never told about X, and every later
+		 * page takes sessionHandlers::logSessionUpdate() -- which correctly
+		 * aborts, because on a multi-server setup an update can legitimately
+		 * arrive before its create. Nothing then reconciles it.
+		 *
+		 * Only these two keys wait. Everything else -- referer, campaign keys,
+		 * custom vars -- persists immediately, because they are facts observable
+		 * ONLY on the landing hit and are unrecoverable if dropped.
+		 */
+		this.deferPersistence = false;
+		this.deferredKeys = { 's': [ 'sid', 'last_req' ] };
+	}
+
+	/**
+	 * Withhold the deferred keys from the cookie until a send is accepted.
+	 * Memory is unaffected -- this only filters what gets serialized.
+	 */
+	beginDeferredPersistence() {
+
+		this.deferPersistence = true;
+	}
+
+	/**
+	 * A request carrying the session identity was accepted for delivery, so the
+	 * cookie may now assert it. Re-persists the affected stores.
+	 */
+	commitDeferredPersistence() {
+
+		if ( ! this.deferPersistence ) {
+			return;
+		}
+
+		this.deferPersistence = false;
+
+		for ( var store_name in this.deferredKeys ) {
+			if ( this.isPresent( store_name ) ) {
+				this.persist( store_name );
+			}
+		}
+	}
+
+	/**
+	 * The send was refused or never completed. Leave the cookie as it was: the
+	 * next page then finds no sid/last_req, treats the request as a new session,
+	 * and the server creates it properly.
+	 */
+	abandonDeferredPersistence() {
+
+		this.deferPersistence = false;
 	}
         
     registerStore( name, expiration, length, format ) {
@@ -60,26 +116,65 @@ class StateManager {
         } else {
             this.stores[store_name] = value;
         }
-        
-        format = this.getFormat(store_name);
-        
+
+        // Memory is now current for every event on this page. Persistence is a
+        // separate concern -- see persist().
+        this.persist( store_name, is_perminant );
+    }
+
+    /**
+     * Serialize a store to its cookie.
+     *
+     * While deferPersistence is on, the store's deferred keys are filtered OUT
+     * of the serialized snapshot. The filter lives here rather than in set() so
+     * that a write to any OTHER key in the same store (referer, campaign, dsps)
+     * cannot smuggle an undelivered sid into the cookie as a side effect -- the
+     * cookie is per-store, not per-key.
+     */
+    persist( store_name, is_perminant ) {
+
+        if ( ! this.isPresent( store_name ) ) {
+            return;
+        }
+
+        var snapshot = this.stores[store_name];
+
+        if ( this.deferPersistence
+             && this.deferredKeys.hasOwnProperty( store_name )
+             && snapshot
+             && typeof snapshot === 'object' )
+        {
+            var withheld = this.deferredKeys[ store_name ];
+            var filtered = {};
+
+            for ( var k in snapshot ) {
+                if ( snapshot.hasOwnProperty( k ) && withheld.indexOf( k ) === -1 ) {
+                    filtered[k] = snapshot[k];
+                }
+            }
+
+            snapshot = filtered;
+        }
+
+        var format = this.getFormat(store_name);
+
         if ( ! format ) {
-            
+
             // check the orginal format that the state store was loaded from.
             if (this.storeFormats.hasOwnProperty(store_name)) {
                 format = this.storeFormats[store_name];
             }
         }
-        
+
         var state_value = '';
-        
+
         if (format === 'json') {
-            state_value = JSON.stringify(this.stores[store_name]);
+            state_value = JSON.stringify(snapshot);
         } else {
-            state_value = Util.assocStringFromJson(this.stores[store_name]);
+            state_value = Util.assocStringFromJson(snapshot);
         }
-        
-        expiration_days = this.getExpirationDays( store_name );
+
+        var expiration_days = this.getExpirationDays( store_name );
         
         if ( ! expiration_days ) {
             
@@ -103,27 +198,18 @@ class StateManager {
         if ( store_name ) {
         
             if (value) {
-                
+
                 format = this.getFormat(store_name);
                 this.stores[store_name] = value;
                 this.storeFormats[store_name] = format;
-                
-                var cookie_value = '';
-                
-                if (format === 'json') {
-                    cookie_value = JSON.stringify(value);
-                } else {
-                    cookie_value = Util.assocStringFromJson(value);
-                }
             }
-        
-            var domain = OWA.getSetting('cookie_domain') || document.domain;
-            
-            expiration_days = this.getExpirationDays( store_name );
-            
-            OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
-            Util.setCookie( OWA.getSetting('ns') + store_name, cookie_value, expiration_days, '/', domain );
-            
+
+            // Route through persist() rather than writing the cookie here, so a
+            // replace (notably clear(store, key), which rebuilds the store minus
+            // one key) honours the deferred-key filter. Writing directly would
+            // serialize an undelivered sid straight back into the cookie.
+            OWA.debug('About to replace state store (%s)', store_name);
+            this.persist( store_name, is_perminant );
         }
     }
         
