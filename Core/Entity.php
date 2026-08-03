@@ -111,6 +111,29 @@ class Entity {
         return $properties;
     }
     
+    /**
+     * Properties that must never leave the server.
+     *
+     * Declared on the entity rather than at each call site so a field is named
+     * once, next to the column it protects, and every route that serializes the
+     * entity inherits it. Subclasses holding secrets override this.
+     *
+     * @var array
+     */
+    protected $private_properties = [];
+
+    /**
+     * The entity as a plain array, safe to serialize into a response.
+     *
+     * This is what REST responses are built from -- see View\RestApi::setResponseData().
+     *
+     * @return array
+     */
+    public function getPublicProperties() {
+
+	    return $this->getProperties( $this->private_properties );
+    }
+
     function getProperties( $drop_keys = [] ) {
 	    
 	    $properties = $this->_getProperties();

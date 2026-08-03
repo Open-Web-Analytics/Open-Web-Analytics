@@ -103,8 +103,55 @@ class RestApi extends \OWA\Core\View {
 	 * Sets the data payload of the response
 	 */
     function setResponseData( $data ) {
-	    
-	    $this->body->set( 'response_data', $data );
+
+	    $this->body->set( 'response_data', self::toResponseData( $data ) );
+    }
+
+    /**
+     * Reduces entities to their public properties before they are serialized.
+     *
+     * Handed an entity, json_encode() would otherwise emit every public member it
+     * happens to have -- the property bag, but also _tableProperties, wasPersisted,
+     * cache and dirty, none of which are API surface. Worse, the payload becomes
+     * whatever the entity currently holds, so a newly added sensitive column ships
+     * the moment it exists unless someone remembers to strip it at the call site.
+     *
+     * Doing it here rather than in each view makes the safe path the default one:
+     * an entity cannot reach a response without passing through this.
+     *
+     * Anything that is not an entity is returned untouched, so views that already
+     * assemble plain arrays are unaffected.
+     *
+     * @param  mixed $data
+     * @param  int   $depth  Guards against a cyclic graph; entity payloads are
+     *                       shallow, so exceeding this means something is wrong.
+     * @return mixed
+     */
+    protected static function toResponseData( $data, $depth = 0 ) {
+
+	    if ( $depth > 10 ) {
+
+		    return null;
+	    }
+
+	    if ( $data instanceof \OWA\Core\Entity ) {
+
+		    return $data->getPublicProperties();
+	    }
+
+	    if ( is_array( $data ) ) {
+
+		    $out = array();
+
+		    foreach ( $data as $k => $v ) {
+
+			    $out[ $k ] = self::toResponseData( $v, $depth + 1 );
+		    }
+
+		    return $out;
+	    }
+
+	    return $data;
     }
     
     function addCorsHeaders() {
