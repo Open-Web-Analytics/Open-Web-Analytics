@@ -525,9 +525,161 @@ class Module extends \OWA\Core\Module {
         return $cmds;
     }
     
+    /**
+     * Register this module's actions against their controllers.
+     *
+     * Registration is what lets CoreAPI::performAction() take the safe branch --
+     * Lib::simpleFactory() with a class name and path resolved from THIS table --
+     * instead of falling through to moduleFactory(), which reconstructs a class
+     * name and a filesystem path by concatenating the request's own 'do' param.
+     * That legacy branch stays for third-party modules that do not register, and
+     * is now guarded by an identifier check, but core should never rely on it.
+     *
+     * Class names are the PSR-4 names, so Composer autoloads them and
+     * simpleFactory() never touches the filesystem; the path is kept as a
+     * fallback for a broken autoloader.
+     */
     function registerActions() {
 
-        $this->registerAction( 'base.resetSecretsCli', 'owa_resetSecretsCliController', 'controllers/resetSecretsCli.php' );
+        $this->registerAction( 'base.addSiteRest',                   'OWA\\Module\\Base\\Controller\\AddSiteRest',                  'Controller/AddSiteRest.php' );
+        $this->registerAction( 'base.addUserRest',                   'OWA\\Module\\Base\\Controller\\AddUserRest',                  'Controller/AddUserRest.php' );
+        $this->registerAction( 'base.apiRequest',                    'OWA\\Module\\Base\\Controller\\ApiRequest',                   'Controller/ApiRequest.php' );
+        $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
+        $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
+        $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
+        $this->registerAction( 'base.crawlReferralCli',              'OWA\\Module\\Base\\Controller\\CrawlReferralCli',             'Controller/CrawlReferralCli.php' );
+        $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
+        $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
+        $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
+        $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
+        $this->registerAction( 'base.installBase',                   'OWA\\Module\\Base\\Controller\\InstallBase',                  'Controller/InstallBase.php' );
+        $this->registerAction( 'base.installCheckEnv',               'OWA\\Module\\Base\\Controller\\InstallCheckEnv',              'Controller/InstallCheckEnv.php' );
+        $this->registerAction( 'base.installCli',                    'OWA\\Module\\Base\\Controller\\InstallCli',                   'Controller/InstallCli.php' );
+        $this->registerAction( 'base.installConfig',                 'OWA\\Module\\Base\\Controller\\InstallConfig',                'Controller/InstallConfig.php' );
+        $this->registerAction( 'base.installDefaultsEntry',          'OWA\\Module\\Base\\Controller\\InstallDefaultsEntry',         'Controller/InstallDefaultsEntry.php' );
+        $this->registerAction( 'base.installFinish',                 'OWA\\Module\\Base\\Controller\\InstallFinish',                'Controller/InstallFinish.php' );
+        $this->registerAction( 'base.installStart',                  'OWA\\Module\\Base\\Controller\\InstallStart',                 'Controller/InstallStart.php' );
+        $this->registerAction( 'base.login',                         'OWA\\Module\\Base\\Controller\\Login',                        'Controller/Login.php' );
+        $this->registerAction( 'base.loginForm',                     'OWA\\Module\\Base\\Controller\\LoginForm',                    'Controller/LoginForm.php' );
+        $this->registerAction( 'base.logout',                        'OWA\\Module\\Base\\Controller\\Logout',                       'Controller/Logout.php' );
+        $this->registerAction( 'base.moduleActivate',                'OWA\\Module\\Base\\Controller\\ModuleActivate',               'Controller/ModuleActivate.php' );
+        $this->registerAction( 'base.moduleActivateCli',             'OWA\\Module\\Base\\Controller\\ModuleActivateCli',            'Controller/ModuleActivateCli.php' );
+        $this->registerAction( 'base.moduleDeactivate',              'OWA\\Module\\Base\\Controller\\ModuleDeactivate',             'Controller/ModuleDeactivate.php' );
+        $this->registerAction( 'base.moduleDeactivateCli',           'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',          'Controller/ModuleDeactivateCli.php' );
+        $this->registerAction( 'base.moduleInstallCli',              'OWA\\Module\\Base\\Controller\\ModuleInstallCli',             'Controller/ModuleInstallCli.php' );
+        $this->registerAction( 'base.notifyNewSession',              'OWA\\Module\\Base\\Controller\\NotifyNewSession',             'Controller/NotifyNewSession.php' );
+        $this->registerAction( 'base.optionsFlushCache',             'OWA\\Module\\Base\\Controller\\OptionsFlushCache',            'Controller/OptionsFlushCache.php' );
+        $this->registerAction( 'base.optionsGeneral',                'OWA\\Module\\Base\\Controller\\OptionsGeneral',               'Controller/OptionsGeneral.php' );
+        $this->registerAction( 'base.optionsGoalEdit',               'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',              'Controller/OptionsGoalEdit.php' );
+        $this->registerAction( 'base.optionsGoalEntry',              'OWA\\Module\\Base\\Controller\\OptionsGoalEntry',             'Controller/OptionsGoalEntry.php' );
+        $this->registerAction( 'base.optionsGoals',                  'OWA\\Module\\Base\\Controller\\OptionsGoals',                 'Controller/OptionsGoals.php' );
+        $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
+        $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
+        $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
+        $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
+        $this->registerAction( 'base.passwordResetForm',             'OWA\\Module\\Base\\Controller\\PasswordResetForm',            'Controller/PasswordResetForm.php' );
+        $this->registerAction( 'base.passwordResetRequest',          'OWA\\Module\\Base\\Controller\\PasswordResetRequest',         'Controller/PasswordResetRequest.php' );
+        $this->registerAction( 'base.processEvent',                  'OWA\\Module\\Base\\Controller\\ProcessEvent',                 'Controller/ProcessEvent.php' );
+        $this->registerAction( 'base.processEventQueue',             'OWA\\Module\\Base\\Controller\\ProcessEventQueue',            'Controller/ProcessEventQueue.php' );
+        $this->registerAction( 'base.processFirstRequest',           'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',          'Controller/ProcessFirstRequest.php' );
+        $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
+        $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
+        $this->registerAction( 'base.reportActionDetail',            'OWA\\Module\\Base\\Controller\\ReportActionDetail',           'Controller/ReportActionDetail.php' );
+        $this->registerAction( 'base.reportActionGroup',             'OWA\\Module\\Base\\Controller\\ReportActionGroup',            'Controller/ReportActionGroup.php' );
+        $this->registerAction( 'base.reportActionGroups',            'OWA\\Module\\Base\\Controller\\ReportActionGroups',           'Controller/ReportActionGroups.php' );
+        $this->registerAction( 'base.reportActionTracking',          'OWA\\Module\\Base\\Controller\\ReportActionTracking',         'Controller/ReportActionTracking.php' );
+        $this->registerAction( 'base.reportAdDetail',                'OWA\\Module\\Base\\Controller\\ReportAdDetail',               'Controller/ReportAdDetail.php' );
+        $this->registerAction( 'base.reportAdTypeDetail',            'OWA\\Module\\Base\\Controller\\ReportAdTypeDetail',           'Controller/ReportAdTypeDetail.php' );
+        $this->registerAction( 'base.reportAdTypes',                 'OWA\\Module\\Base\\Controller\\ReportAdTypes',                'Controller/ReportAdTypes.php' );
+        $this->registerAction( 'base.reportAds',                     'OWA\\Module\\Base\\Controller\\ReportAds',                    'Controller/ReportAds.php' );
+        $this->registerAction( 'base.reportAnchortext',              'OWA\\Module\\Base\\Controller\\ReportAnchortext',             'Controller/ReportAnchortext.php' );
+        $this->registerAction( 'base.reportAttributionHistory',      'OWA\\Module\\Base\\Controller\\ReportAttributionHistory',     'Controller/ReportAttributionHistory.php' );
+        $this->registerAction( 'base.reportAvgOrderValue',           'OWA\\Module\\Base\\Controller\\ReportAvgOrderValue',          'Controller/ReportAvgOrderValue.php' );
+        $this->registerAction( 'base.reportBrowserDetail',           'OWA\\Module\\Base\\Controller\\ReportBrowserDetail',          'Controller/ReportBrowserDetail.php' );
+        $this->registerAction( 'base.reportBrowsers',                'OWA\\Module\\Base\\Controller\\ReportBrowsers',               'Controller/ReportBrowsers.php' );
+        $this->registerAction( 'base.reportCampaignDetail',          'OWA\\Module\\Base\\Controller\\ReportCampaignDetail',         'Controller/ReportCampaignDetail.php' );
+        $this->registerAction( 'base.reportCampaigns',               'OWA\\Module\\Base\\Controller\\ReportCampaigns',              'Controller/ReportCampaigns.php' );
+        $this->registerAction( 'base.reportCommerce',                'OWA\\Module\\Base\\Controller\\ReportCommerce',               'Controller/ReportCommerce.php' );
+        $this->registerAction( 'base.reportContent',                 'OWA\\Module\\Base\\Controller\\ReportContent',                'Controller/ReportContent.php' );
+        $this->registerAction( 'base.reportCountryDetail',           'OWA\\Module\\Base\\Controller\\ReportCountryDetail',          'Controller/ReportCountryDetail.php' );
+        $this->registerAction( 'base.reportCreativePerformance',     'OWA\\Module\\Base\\Controller\\ReportCreativePerformance',    'Controller/ReportCreativePerformance.php' );
+        $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
+        $this->registerAction( 'base.reportDaysToPurchase',          'OWA\\Module\\Base\\Controller\\ReportDaysToPurchase',         'Controller/ReportDaysToPurchase.php' );
+        $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
+        $this->registerAction( 'base.reportDomClicks',               'OWA\\Module\\Base\\Controller\\ReportDomClicks',              'Controller/ReportDomClicks.php' );
+        $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
+        $this->registerAction( 'base.reportEcommerce',               'OWA\\Module\\Base\\Controller\\ReportEcommerce',              'Controller/ReportEcommerce.php' );
+        $this->registerAction( 'base.reportEcommerceConversionRate', 'OWA\\Module\\Base\\Controller\\ReportEcommerceConversionRate', 'Controller/ReportEcommerceConversionRate.php' );
+        $this->registerAction( 'base.reportEntryPages',              'OWA\\Module\\Base\\Controller\\ReportEntryPages',             'Controller/ReportEntryPages.php' );
+        $this->registerAction( 'base.reportExitPages',               'OWA\\Module\\Base\\Controller\\ReportExitPages',              'Controller/ReportExitPages.php' );
+        $this->registerAction( 'base.reportFeeds',                   'OWA\\Module\\Base\\Controller\\ReportFeeds',                  'Controller/ReportFeeds.php' );
+        $this->registerAction( 'base.reportGeolocation',             'OWA\\Module\\Base\\Controller\\ReportGeolocation',            'Controller/ReportGeolocation.php' );
+        $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
+        $this->registerAction( 'base.reportGoals',                   'OWA\\Module\\Base\\Controller\\ReportGoals',                  'Controller/ReportGoals.php' );
+        $this->registerAction( 'base.reportHostDetail',              'OWA\\Module\\Base\\Controller\\ReportHostDetail',             'Controller/ReportHostDetail.php' );
+        $this->registerAction( 'base.reportHosts',                   'OWA\\Module\\Base\\Controller\\ReportHosts',                  'Controller/ReportHosts.php' );
+        $this->registerAction( 'base.reportKeywordDetail',           'OWA\\Module\\Base\\Controller\\ReportKeywordDetail',          'Controller/ReportKeywordDetail.php' );
+        $this->registerAction( 'base.reportKeywords',                'OWA\\Module\\Base\\Controller\\ReportKeywords',               'Controller/ReportKeywords.php' );
+        $this->registerAction( 'base.reportOs',                      'OWA\\Module\\Base\\Controller\\ReportOs',                     'Controller/ReportOs.php' );
+        $this->registerAction( 'base.reportOsDetail',                'OWA\\Module\\Base\\Controller\\ReportOsDetail',               'Controller/ReportOsDetail.php' );
+        $this->registerAction( 'base.reportPageTypeDetail',          'OWA\\Module\\Base\\Controller\\ReportPageTypeDetail',         'Controller/ReportPageTypeDetail.php' );
+        $this->registerAction( 'base.reportPageTypes',               'OWA\\Module\\Base\\Controller\\ReportPageTypes',              'Controller/ReportPageTypes.php' );
+        $this->registerAction( 'base.reportPages',                   'OWA\\Module\\Base\\Controller\\ReportPages',                  'Controller/ReportPages.php' );
+        $this->registerAction( 'base.reportProductCategories',       'OWA\\Module\\Base\\Controller\\ReportProductCategories',      'Controller/ReportProductCategories.php' );
+        $this->registerAction( 'base.reportProductCategoryDetail',   'OWA\\Module\\Base\\Controller\\ReportProductCategoryDetail',  'Controller/ReportProductCategoryDetail.php' );
+        $this->registerAction( 'base.reportProductDetail',           'OWA\\Module\\Base\\Controller\\ReportProductDetail',          'Controller/ReportProductDetail.php' );
+        $this->registerAction( 'base.reportProductSkuDetail',        'OWA\\Module\\Base\\Controller\\ReportProductSkuDetail',       'Controller/ReportProductSkuDetail.php' );
+        $this->registerAction( 'base.reportProductSkus',             'OWA\\Module\\Base\\Controller\\ReportProductSkus',            'Controller/ReportProductSkus.php' );
+        $this->registerAction( 'base.reportProducts',                'OWA\\Module\\Base\\Controller\\ReportProducts',               'Controller/ReportProducts.php' );
+        $this->registerAction( 'base.reportReferralDetail',          'OWA\\Module\\Base\\Controller\\ReportReferralDetail',         'Controller/ReportReferralDetail.php' );
+        $this->registerAction( 'base.reportReferralLinkTextDetail',  'OWA\\Module\\Base\\Controller\\ReportReferralLinkTextDetail', 'Controller/ReportReferralLinkTextDetail.php' );
+        $this->registerAction( 'base.reportReferringSites',          'OWA\\Module\\Base\\Controller\\ReportReferringSites',         'Controller/ReportReferringSites.php' );
+        $this->registerAction( 'base.reportRevenue',                 'OWA\\Module\\Base\\Controller\\ReportRevenue',                'Controller/ReportRevenue.php' );
+        $this->registerAction( 'base.reportSearchEngineDetail',      'OWA\\Module\\Base\\Controller\\ReportSearchEngineDetail',     'Controller/ReportSearchEngineDetail.php' );
+        $this->registerAction( 'base.reportSearchEngines',           'OWA\\Module\\Base\\Controller\\ReportSearchEngines',          'Controller/ReportSearchEngines.php' );
+        $this->registerAction( 'base.reportSourceDetail',            'OWA\\Module\\Base\\Controller\\ReportSourceDetail',           'Controller/ReportSourceDetail.php' );
+        $this->registerAction( 'base.reportSources',                 'OWA\\Module\\Base\\Controller\\ReportSources',                'Controller/ReportSources.php' );
+        $this->registerAction( 'base.reportStateDetail',             'OWA\\Module\\Base\\Controller\\ReportStateDetail',            'Controller/ReportStateDetail.php' );
+        $this->registerAction( 'base.reportTraffic',                 'OWA\\Module\\Base\\Controller\\ReportTraffic',                'Controller/ReportTraffic.php' );
+        $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
+        $this->registerAction( 'base.reportTransactions',            'OWA\\Module\\Base\\Controller\\ReportTransactions',           'Controller/ReportTransactions.php' );
+        $this->registerAction( 'base.reportVisit',                   'OWA\\Module\\Base\\Controller\\ReportVisit',                  'Controller/ReportVisit.php' );
+        $this->registerAction( 'base.reportVisitor',                 'OWA\\Module\\Base\\Controller\\ReportVisitor',                'Controller/ReportVisitor.php' );
+        $this->registerAction( 'base.reportVisitors',                'OWA\\Module\\Base\\Controller\\ReportVisitors',               'Controller/ReportVisitors.php' );
+        $this->registerAction( 'base.reportVisitorsAge',             'OWA\\Module\\Base\\Controller\\ReportVisitorsAge',            'Controller/ReportVisitorsAge.php' );
+        $this->registerAction( 'base.reportVisitorsLoyalty',         'OWA\\Module\\Base\\Controller\\ReportVisitorsLoyalty',        'Controller/ReportVisitorsLoyalty.php' );
+        $this->registerAction( 'base.reportVisitorsRecency',         'OWA\\Module\\Base\\Controller\\ReportVisitorsRecency',        'Controller/ReportVisitorsRecency.php' );
+        $this->registerAction( 'base.reportVisitorsRoster',          'OWA\\Module\\Base\\Controller\\ReportVisitorsRoster',         'Controller/ReportVisitorsRoster.php' );
+        $this->registerAction( 'base.reportVisits',                  'OWA\\Module\\Base\\Controller\\ReportVisits',                 'Controller/ReportVisits.php' );
+        $this->registerAction( 'base.reportVisitsToPurchase',        'OWA\\Module\\Base\\Controller\\ReportVisitsToPurchase',       'Controller/ReportVisitsToPurchase.php' );
+        $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
+        $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
+        $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
+        $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.sitesAdd',                      'OWA\\Module\\Base\\Controller\\SitesAdd',                     'Controller/SitesAdd.php' );
+        $this->registerAction( 'base.sitesAddCli',                   'OWA\\Module\\Base\\Controller\\SitesAddCli',                  'Controller/SitesAddCli.php' );
+        $this->registerAction( 'base.sitesDelete',                   'OWA\\Module\\Base\\Controller\\SitesDelete',                  'Controller/SitesDelete.php' );
+        $this->registerAction( 'base.sitesEdit',                     'OWA\\Module\\Base\\Controller\\SitesEdit',                    'Controller/SitesEdit.php' );
+        $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
+        $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
+        $this->registerAction( 'base.sitesInvocation',               'OWA\\Module\\Base\\Controller\\SitesInvocation',              'Controller/SitesInvocation.php' );
+        $this->registerAction( 'base.sitesProfile',                  'OWA\\Module\\Base\\Controller\\SitesProfile',                 'Controller/SitesProfile.php' );
+        $this->registerAction( 'base.sitesRest',                     'OWA\\Module\\Base\\Controller\\SitesRest',                    'Controller/SitesRest.php' );
+        $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates',                      'Controller/Updates.php' );
+        $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply',                 'Controller/UpdatesApply.php' );
+        $this->registerAction( 'base.updatesApplyCli',               'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',              'Controller/UpdatesApplyCli.php' );
+        $this->registerAction( 'base.users',                         'OWA\\Module\\Base\\Controller\\Users',                        'Controller/Users.php' );
+        $this->registerAction( 'base.usersAdd',                      'OWA\\Module\\Base\\Controller\\UsersAdd',                     'Controller/UsersAdd.php' );
+        $this->registerAction( 'base.usersChangePassword',           'OWA\\Module\\Base\\Controller\\UsersChangePassword',          'Controller/UsersChangePassword.php' );
+        $this->registerAction( 'base.usersDelete',                   'OWA\\Module\\Base\\Controller\\UsersDelete',                  'Controller/UsersDelete.php' );
+        $this->registerAction( 'base.usersEdit',                     'OWA\\Module\\Base\\Controller\\UsersEdit',                    'Controller/UsersEdit.php' );
+        $this->registerAction( 'base.usersNewAccount',               'OWA\\Module\\Base\\Controller\\UsersNewAccount',              'Controller/UsersNewAccount.php' );
+        $this->registerAction( 'base.usersPasswordEntry',            'OWA\\Module\\Base\\Controller\\UsersPasswordEntry',           'Controller/UsersPasswordEntry.php' );
+        $this->registerAction( 'base.usersProfile',                  'OWA\\Module\\Base\\Controller\\UsersProfile',                 'Controller/UsersProfile.php' );
+        $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );
+        $this->registerAction( 'base.usersRest',                     'OWA\\Module\\Base\\Controller\\UsersRest',                    'Controller/UsersRest.php' );
+        $this->registerAction( 'base.usersSetPassword',              'OWA\\Module\\Base\\Controller\\UsersSetPassword',             'Controller/UsersSetPassword.php' );
+        $this->registerAction( 'base.widgetOwaNews',                 'OWA\\Module\\Base\\Controller\\WidgetOwaNews',                'Controller/WidgetOwaNews.php' );
     }
 
     /**

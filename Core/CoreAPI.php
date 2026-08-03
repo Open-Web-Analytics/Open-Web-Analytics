@@ -420,7 +420,45 @@ class CoreAPI {
     }
 
     public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
-        list($module, $file) = explode(".", $modulefile);
+        /*
+         * Both halves are used to build a filesystem path -- moduleRequireOnce()
+         * builds modules/<dir>/<file>.php and Lib::factory() builds
+         * <dir>/owa_<file><suffix>.php -- and both then require_once() it. This
+         * is the legacy resolution path, reached when an action is not in the
+         * action registry (i.e. third-party modules). The value is request
+         * supplied, so it is validated here rather than trusted.
+         *
+         * RequestContainer sanitizes params through Sanitize::cleanInput(), but
+         * that is HTML/encoding oriented and does not constrain a path.
+         * Sanitize::cleanFilename() does, but has never been wired to anything.
+         *
+         * Require a bare identifier for each half. A module or action name has
+         * never legitimately contained a separator, and a positive match is used
+         * rather than blacklist replacement.
+         */
+        $segments = explode( '.', (string) $modulefile );
+
+        if ( count( $segments ) !== 2 ) {
+
+            \OWA\Core\CoreAPI::notice( 'Refusing to resolve action: expected <module>.<action>.' );
+
+            throw new \Exception( 'Invalid action.' );
+        }
+
+        list( $module, $file ) = $segments;
+
+        foreach ( array( 'module' => $module, 'action' => $file ) as $part => $value ) {
+
+            if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $value ) ) {
+
+                \OWA\Core\CoreAPI::notice(
+                    sprintf( 'Refusing to resolve action: %s segment is not a bare identifier.', $part )
+                );
+
+                throw new \Exception( 'Invalid action.' );
+            }
+        }
+
         $class = $class_ns.$file.$class_suffix;
         //print $class;
         // Require class file if class does not already exist
@@ -1363,13 +1401,18 @@ class CoreAPI {
             \OWA\Core\CoreAPI::debug('Handling request with params: '. print_r($params, true));
         }
 
-        // backwards compatability with old style view/controler scheme
-        // @todo still needed??
-        if (array_key_exists('view', $params)) {
-            // its a view request so the only data is in whats in the params
-            $init = true;
-            return \OWA\Core\CoreAPI::displayView($params);
-        }
+        /*
+         * The old-style 'view' request scheme was removed here.
+         *
+         * It let a request name a view to render directly. Nothing in the
+         * codebase ever constructed such a URL -- this branch was its only
+         * consumer, with no writer in Core/, modules/, templates or JS -- so it
+         * was dead weight carried since the early releases.
+         *
+         * displayView() itself is unchanged and stays: it is still used
+         * internally to render an already-resolved view, and by View\Mail for
+         * alternate bodies.
+         */
 
         if (empty($action)) {
             $action = \OWA\Core\CoreAPI::getRequestParam('action');
