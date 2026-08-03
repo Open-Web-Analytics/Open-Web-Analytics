@@ -29,6 +29,14 @@ final class NonceFailureResponseTest extends TestCase
         // request_mode is global and decides which branch answers, so a REST
         // test running earlier would otherwise steer these.
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'admin_web');
+
+        // The referring page decides whether a way back is offered, so each test
+        // states its own rather than inheriting a previous one's.
+        unset($_SERVER['HTTP_REFERER']);
+
+        // getReferringPage() resolves against this; without a matching host every
+        // referrer below would read as foreign and the link would never appear.
+        \OWA\Core\CoreAPI::setSetting('base', 'public_url', 'https://owa.example.test/owa/');
     }
 
     private function respondTo(bool $authenticated): array
@@ -88,6 +96,46 @@ final class NonceFailureResponseTest extends TestCase
             $msg,
             'the message should explain that the form lapsed'
         );
+    }
+
+    /**
+     * "Start the action again" is only actionable if the way back is offered.
+     * The referring page is the screen that rendered the expired form.
+     */
+    public function testTheWayBackIsOffered()
+    {
+        $_SERVER['HTTP_REFERER'] = 'https://owa.example.test/owa/index.php?owa_do=base.optionsGeneral';
+
+        $data = $this->respondTo(true);
+
+        $this->assertStringContainsString(
+            'owa_do=base.optionsGeneral',
+            (string) ($data['error_msg'] ?? ''),
+            'the screen the form came from should be linked'
+        );
+    }
+
+    /** The referrer reaches an href, so it cannot be trusted as markup. */
+    public function testTheWayBackIsEscaped()
+    {
+        $_SERVER['HTTP_REFERER'] =
+            'https://owa.example.test/owa/index.php?owa_do=base.sites&x="><script>alert(1)</script>';
+
+        $msg = (string) ($this->respondTo(true)['error_msg'] ?? '');
+
+        $this->assertStringNotContainsString('<script>', $msg, 'markup must not survive into the page');
+        $this->assertStringNotContainsString('"><', $msg, 'the attribute must not be breakable');
+    }
+
+    /** Nothing to link to when the referrer is unusable; the message still stands. */
+    public function testTheMessageStandsAloneWithoutAReferrer()
+    {
+        unset($_SERVER['HTTP_REFERER']);
+
+        $msg = (string) ($this->respondTo(true)['error_msg'] ?? '');
+
+        $this->assertNotSame('', $msg, 'the explanation is still required');
+        $this->assertStringNotContainsString('<a href', $msg, 'no link when there is nowhere to send them');
     }
 
     /** Not signed in: the login form is still the right answer. */

@@ -68,6 +68,28 @@ test.describe('a stale nonce on an authenticated session', () => {
     });
 
     /**
+     * Telling someone to start over is only actionable with the way back. The
+     * form was submitted from base.optionsGeneral, so that is where the link
+     * goes -- and loading it mints a nonce that will verify.
+     */
+    test('offers the way back to the screen the form came from', async ({ page }) => {
+        await submitWithStaleNonce(page);
+
+        const back = page.locator('a[href*="base.optionsGeneral"]');
+
+        await expect(back, 'the originating screen should be linked').toHaveCount(1);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            back.first().click(),
+        ]);
+
+        // Back on a working form, with a nonce minted for this session.
+        await expect(page.locator('input[name="owa_nonce"]')).toHaveCount(1);
+        expect(await onLoginForm(page), 'and still signed in').toBe(0);
+    });
+
+    /**
      * The nonce exists so a state-changing request is one the user just
      * confirmed. Refusing it must not quietly apply the change anyway.
      */

@@ -753,7 +753,24 @@ class Controller extends \OWA\Core\Base {
 
 			// generic_error.php echoes error_msg directly, so it has to be a
 			// string -- handing it the getMsg() array renders as "Array".
-			$this->set('error_msg', $this->getMsgAsString(2005));
+			$msg = $this->getMsgAsString(2005);
+
+			// Telling someone to go back to where they started is only useful if
+			// they are given the way back. The screen that rendered the expired
+			// form is the referring page, and it will mint a fresh nonce.
+			$back = $this->getReferringPage();
+
+			if ( $back ) {
+
+				// $back is client-supplied and lands in an href, so it is escaped
+				// as an attribute rather than trusted the way a built URL is.
+				$msg .= sprintf(
+					' <a href="%s">Return to the previous screen</a>',
+					htmlspecialchars( $back, ENT_QUOTES, 'UTF-8' )
+				);
+			}
+
+			$this->set('error_msg', $msg);
 		}
     }
 
