@@ -628,67 +628,6 @@ class Lib {
     }
 
     /**
-     * Adds or replaces a query parameter on a URL.
-     *
-     * Used to carry a status code onto a redirect destination that is not built
-     * by the application -- setRedirectAction() propagates one through its own
-     * params, but a plain browser redirect has no such channel.
-     *
-     * Replaces rather than appends so a destination that already carries the
-     * parameter does not end up with two of them.
-     *
-     * @param  string $url
-     * @param  string $name  Full parameter name, including any namespace prefix.
-     * @param  string $value
-     * @return string
-     */
-    public static function addQueryParam( $url, $name, $value ) {
-
-        $parts = parse_url( $url );
-
-        if ( $parts === false ) {
-
-            return $url;
-        }
-
-        $query = array();
-
-        if ( ! empty( $parts['query'] ) ) {
-
-            parse_str( $parts['query'], $query );
-        }
-
-        $query[ $name ] = $value;
-
-        $rebuilt = '';
-
-        if ( ! empty( $parts['scheme'] ) ) {
-
-            $rebuilt .= $parts['scheme'] . '://';
-        }
-
-        if ( ! empty( $parts['host'] ) ) {
-
-            $rebuilt .= $parts['host'];
-
-            if ( ! empty( $parts['port'] ) ) {
-
-                $rebuilt .= ':' . $parts['port'];
-            }
-        }
-
-        $rebuilt .= $parts['path'] ?? '';
-        $rebuilt .= '?' . http_build_query( $query );
-
-        if ( ! empty( $parts['fragment'] ) ) {
-
-            $rebuilt .= '#' . $parts['fragment'];
-        }
-
-        return $rebuilt;
-    }
-
-    /**
      * Resolves a redirect target against this installation.
      *
      * Some callers pass a destination that originated on the request -- the

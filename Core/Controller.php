@@ -314,20 +314,6 @@ class Controller extends \OWA\Core\Base {
         // controllers that donot use $this->data
         if (!empty($actionResult)) {
 
-            // An older-style controller returns its own array, which replaces
-            // everything doAction() put on $this->data -- including a status or
-            // error code carried on the query string from a redirect. Those
-            // describe the request rather than the action, so a controller that
-            // did not speak to them should not silently drop them.
-            foreach ( array( 'status_code', 'error_code' ) as $carried ) {
-
-                if ( ! array_key_exists( $carried, $actionResult )
-                    && array_key_exists( $carried, $this->data ) ) {
-
-                    $actionResult[ $carried ] = $this->data[ $carried ];
-                }
-            }
-
             $this->post();
             return $actionResult;
         } else {
@@ -683,53 +669,6 @@ class Controller extends \OWA\Core\Base {
         $this->set('error_msg', $msg);
     }
 
-    /**
-     * The page the browser came from, when it belongs to this installation.
-     *
-     * Used to resume someone at the screen that offered a blocked action rather
-     * than dumping them on start_page. Browsers send the full URL on a
-     * same-origin request, which is what an admin form post is, so this is
-     * normally the page that rendered the form.
-     *
-     * The value is client-supplied, so it is resolved against the installation
-     * exactly like any other redirect target, and discarded if it does not
-     * belong to it. A referrer pointing back at the current request is discarded
-     * too -- resuming that would fail the same check all over again.
-     *
-     * @return string The referring page, or '' when there is nothing usable.
-     */
-    protected function getReferringPage() {
-
-        $referer = isset( $_SERVER['HTTP_REFERER'] ) ? trim( (string) $_SERVER['HTTP_REFERER'] ) : '';
-
-        if ( ! $referer ) {
-
-            return '';
-        }
-
-        // resolveRedirectUrl() substitutes the base URL for anything outside the
-        // installation, so a value it did not return unchanged was not ours.
-        if ( \OWA\Core\Lib::resolveRedirectUrl( $referer ) !== $referer ) {
-
-            return '';
-        }
-
-        if ( $referer === \OWA\Core\Lib::get_current_url() ) {
-
-            return '';
-        }
-
-        // Coming from the login screen itself means the previous request was
-        // already turned away. Resuming it would land the user back on the form
-        // they just completed.
-        if ( strpos( $referer, 'base.login' ) !== false ) {
-
-            return '';
-        }
-
-        return $referer;
-    }
-
     function notAuthenticatedAction() {
 		
 		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
@@ -765,22 +704,13 @@ class Controller extends \OWA\Core\Base {
 
 			} else {
 
-				$back = $this->getReferringPage();
-
-				// Arriving back on that screen with no explanation leaves the
-				// outcome ambiguous -- for a delete especially, the user cannot
-				// tell whether it went through. status_code survives on the query
-				// string and View renders it through the standard message block.
-				if ( $back ) {
-
-					$back = \OWA\Core\Lib::addQueryParam(
-						$back,
-						\OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . 'status_code',
-						2006
-					);
-				}
-
-				$this->set('go', urlencode( $back ));
+				// A state-changing action is never resumed: the nonce is derived
+				// from user_id, so one minted before signing in cannot verify
+				// afterwards, and re-minting it would let a crafted link name any
+				// action and have the server bless it. Login falls through to
+				// start_page and the user re-initiates from a screen that mints a
+				// nonce for their authenticated identity.
+				$this->set('go', '');
 			}
 		}
     }

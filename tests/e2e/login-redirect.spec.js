@@ -60,58 +60,6 @@ test.describe('post-login redirect destination', () => {
             .not.toContain('sitesDelete');
     });
 
-    /**
-     * The action is not resumed, but the screen that offered it is. Navigating
-     * from a real page means the browser sends a same-origin Referer, which is
-     * the page that would mint a fresh nonce for the authenticated identity.
-     *
-     * base.updates is the referring page because it renders for a logged-out
-     * visitor -- which is the #979 situation exactly, and is why its Apply link
-     * carries a nonce minted with no user_id. Starting from a gated screen would
-     * bounce to the login form first, and the Referer would be that form.
-     */
-    test('the screen the action was reached from is resumed instead', async ({ page }) => {
-        // Land on a real page first so the click carries a Referer -- a bare
-        // goto() has none, and there would be nothing to resume.
-        await page.goto('?owa_do=base.updates', { waitUntil: 'networkidle' });
-
-        expect(await onLoginForm(page), 'base.updates should render without a login')
-            .toBe(0);
-
-        await page.evaluate(() => {
-            const a = document.createElement('a');
-            a.href = '?owa_do=base.sitesDelete&owa_siteId=nonexistent';
-            a.id = 'go-to-write-action';
-            a.textContent = 'delete';   // needs size, or it cannot be clicked
-            document.body.appendChild(a);
-        });
-
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('#go-to-write-action').click(),
-        ]);
-
-        expect(await onLoginForm(page), 'a write action should bounce a logged-out user to login')
-            .toBeGreaterThan(0);
-
-        await submitLoginForm(page);
-
-        expect(await onLoginForm(page), 'correct credentials must not return the login form')
-            .toBe(0);
-
-        expect(page.url(), 'the originating screen should be resumed')
-            .toContain('base.updates');
-
-        expect(page.url(), 'but never the action itself')
-            .not.toContain('sitesDelete');
-
-        // Without this the outcome is ambiguous -- nothing on the page would say
-        // whether the action they clicked had been carried out.
-        const body = (await page.content()).toLowerCase();
-        expect(body, 'the screen should say the action was not carried out')
-            .toMatch(/not carried out|try it again/);
-    });
-
     /** Deep-linking to a report while logged out must still land on the report. */
     test('a read-only destination is still resumed after login', async ({ page }) => {
         await page.goto(
