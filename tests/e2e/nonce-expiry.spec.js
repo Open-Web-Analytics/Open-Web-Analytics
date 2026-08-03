@@ -56,7 +56,7 @@ test.describe('a stale nonce on an authenticated session', () => {
         const body = (await page.content()).toLowerCase();
 
         expect(body, 'the page should say the form is no longer usable')
-            .toMatch(/(no longer valid|expired|still signed in)/);
+            .toMatch(/(no longer valid|expired)/);
 
         expect(body, 'it must not suggest the password was wrong')
             .not.toMatch(/user name or password did not match/);

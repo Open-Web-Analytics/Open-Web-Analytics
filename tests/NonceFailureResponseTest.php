@@ -92,7 +92,7 @@ final class NonceFailureResponseTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/(expired|no longer valid|signed in)/',
+            '/(expired|no longer valid)/',
             $msg,
             'the message should explain that the form lapsed'
         );
