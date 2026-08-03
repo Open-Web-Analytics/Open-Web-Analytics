@@ -35,6 +35,7 @@ $_owa_messages = [
     2002 => ['headline' => 'Login Failed', 'message' => 'Your user name or password did not match.'],
     2003 => ['headline' => 'Error', 'message' => 'Your Account lacks the necessary privileges to access the requested resource.'],
     2004 => ['headline' => 'Error', 'message' => 'You must login to access the requested resource.'],
+    2006 => ['headline' => 'Not completed', 'message' => 'You needed to sign in first, so the action was not carried out. Try it again now.'],
     2010 => ['headline' => 'Success', 'message' => 'Logout Complete.'],
     2011 => ['headline' => 'Error', 'message' => 'Can\'t find your temporary passkey in the db.'],
 

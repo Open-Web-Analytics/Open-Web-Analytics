@@ -79,10 +79,18 @@ final class LoginRedirectNonceTest extends TestCase
 
         $go = $this->goValue(true);
 
-        $this->assertSame(
+        $this->assertStringStartsWith(
             $_SERVER['HTTP_REFERER'],
             $go,
             'the screen the action was offered from should be resumed'
+        );
+
+        // Landing there with no explanation leaves the outcome ambiguous -- for
+        // a delete especially, the user cannot tell whether it went through.
+        $this->assertStringContainsString(
+            'status_code=2006',
+            $go,
+            'the destination should carry the notice that nothing was carried out'
         );
 
         $this->assertStringNotContainsString(

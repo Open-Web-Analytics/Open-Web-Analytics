@@ -313,6 +313,21 @@ class Controller extends \OWA\Core\Base {
         // need to check ret for backwards compatability with older
         // controllers that donot use $this->data
         if (!empty($actionResult)) {
+
+            // An older-style controller returns its own array, which replaces
+            // everything doAction() put on $this->data -- including a status or
+            // error code carried on the query string from a redirect. Those
+            // describe the request rather than the action, so a controller that
+            // did not speak to them should not silently drop them.
+            foreach ( array( 'status_code', 'error_code' ) as $carried ) {
+
+                if ( ! array_key_exists( $carried, $actionResult )
+                    && array_key_exists( $carried, $this->data ) ) {
+
+                    $actionResult[ $carried ] = $this->data[ $carried ];
+                }
+            }
+
             $this->post();
             return $actionResult;
         } else {
@@ -750,7 +765,22 @@ class Controller extends \OWA\Core\Base {
 
 			} else {
 
-				$this->set('go', urlencode( $this->getReferringPage() ));
+				$back = $this->getReferringPage();
+
+				// Arriving back on that screen with no explanation leaves the
+				// outcome ambiguous -- for a delete especially, the user cannot
+				// tell whether it went through. status_code survives on the query
+				// string and View renders it through the standard message block.
+				if ( $back ) {
+
+					$back = \OWA\Core\Lib::addQueryParam(
+						$back,
+						\OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . 'status_code',
+						2006
+					);
+				}
+
+				$this->set('go', urlencode( $back ));
 			}
 		}
     }

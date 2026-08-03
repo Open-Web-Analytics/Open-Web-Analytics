@@ -104,6 +104,12 @@ test.describe('post-login redirect destination', () => {
 
         expect(page.url(), 'but never the action itself')
             .not.toContain('sitesDelete');
+
+        // Without this the outcome is ambiguous -- nothing on the page would say
+        // whether the action they clicked had been carried out.
+        const body = (await page.content()).toLowerCase();
+        expect(body, 'the screen should say the action was not carried out')
+            .toMatch(/not carried out|try it again/);
     });
 
     /** Deep-linking to a report while logged out must still land on the report. */
