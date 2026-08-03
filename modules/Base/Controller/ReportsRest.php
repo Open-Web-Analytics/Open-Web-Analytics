@@ -153,12 +153,23 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 	function getReport( $report_name ) {
 
-		$method = 'report_'.$report_name;
 
 		// validate() rejects an unknown report before the action runs, so this is
 		// a backstop: the name is concatenated into a method call, and an
 		// unhandled one used to be a fatal rather than a response.
-		if ( ! is_string( $report_name ) || ! method_exists( $this, $method ) ) {
+		// The type is checked BEFORE the method name is built -- concatenating
+		// first raises a warning for anything that is not a string, which is one
+		// of the shapes this exists to turn away quietly.
+		if ( ! is_string( $report_name ) ) {
+
+			\OWA\Core\CoreAPI::notice( 'Refusing to run report: name is not a string.' );
+
+			return '';
+		}
+
+		$method = 'report_'.$report_name;
+
+		if ( ! method_exists( $this, $method ) ) {
 
 			\OWA\Core\CoreAPI::notice(
 				sprintf( 'Refusing to run report: %s is not a known report.', print_r( $report_name, true ) )
