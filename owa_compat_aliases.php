@@ -306,7 +306,7 @@ function owa_compat_class_map(): array
         // module.php files (the module-registry classes themselves) stay global —
         // deferred to the module.php special-case stage.
         'owa_domstreamsRestController' => 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController',
-        'owa_domstreamsRestView' => 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestView',
+        'owa_domstreamsRestView' => 'OWA\\Module\\Domstream\\View\\DomstreamsRest',
         'owa_domstreamHandlers' => 'OWA\\Module\\Domstream\\Handler\\DomstreamHandlers',
         'owa_fileCache' => 'OWA\\Module\\FileCache\\Classes\\FileCache',
         'owa_exampleSettingsController' => 'OWA\\Module\\Hello\\ExampleSettingsController',

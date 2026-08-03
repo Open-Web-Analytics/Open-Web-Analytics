@@ -90,10 +90,6 @@ final class ControllerCapabilityContractTest extends TestCase
         // applies the updates, declares its own.
         'Updates',
 
-        // Not a controller at all -- a View (extends Core\View\RestApi)
-        // misfiled into a Controller/ directory. Harmless here; worth
-        // relocating on its own merits.
-        'DomstreamsRestView',
     ];
 
     public function testEveryControllerEitherDeclaresACapabilityOrIsKnownPublic(): void
