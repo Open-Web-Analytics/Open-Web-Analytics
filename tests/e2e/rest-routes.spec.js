@@ -53,14 +53,15 @@ function sign(requestUrl, apiKey, authKey) {
 
 /** Build the URL a route is called at, optionally signed. */
 function routeUrl(root, route, query, creds) {
-    // handleRestRequest() reads owa_do FIRST and returns early -- with an empty
-    // 200, not an error -- when it is absent. owa_rest_params is only consulted
-    // afterwards, where it overwrites module/version/do. So a request carrying
-    // rest_params alone never reaches the router; both have to be sent.
-    const name = route.split('/').pop();
+    // Deliberately sends owa_rest_params WITHOUT owa_do, because that is exactly
+    // what .htaccess produces for the documented route form:
+    //
+    //   RewriteRule api/(.*)$ api/index.php?owa_rest_params=$1 [QSA,NC,L]
+    //
+    // The rewrite is Apache-only and the self-host runner serves through php -S,
+    // so the specs exercise the rewrite's OUTPUT rather than the pretty URL.
     const base = root + 'api/index.php'
-        + '?owa_do=' + name
-        + '&owa_rest_params=' + route
+        + '?owa_rest_params=' + route
         + (query ? '&' + query : '');
 
     if (!creds) {
@@ -164,5 +165,48 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         );
 
         expect(res.status(), 'an unknown route should not 500').toBeLessThan(500);
+    });
+
+    /**
+     * A request that names no route used to return an empty 200 -- a silent false
+     * success a client could not tell from a call that legitimately had no data.
+     * There is deliberately no default route here: the admin endpoint falls back
+     * to the start_page setting, but a REST client that omits the route has made
+     * a malformed request.
+     */
+    test('a request naming no route is a 400, not an empty 200', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const res = await request.fetch(root + 'api/index.php', { method: 'GET' });
+
+        expect(res.status(), 'no route named should be a bad request').toBe(400);
+
+        const body = JSON.parse(await res.text());
+        expect(body.httpResponse.status_code).toBe(400);
+        expect(body.error[0].headline).toBeTruthy();
+
+        // The reply is readable pre-auth, so it must not name or hint at routes.
+        expect(JSON.stringify(body)).not.toMatch(/sites|users|reports|domstream/i);
+    });
+
+    /**
+     * These are answered before the controller authenticates, so if an unknown
+     * route replied differently from a real one, an anonymous caller could map
+     * the whole API by diffing responses.
+     */
+    test('an unknown route is indistinguishable from an unauthenticated one', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+
+        const strip = async (route) => {
+            const res = await request.fetch(routeUrl(root, route, '', null), { method: 'GET' });
+            const body = (await res.text()).replace(/"requestId":"[0-9]*"/, '"requestId":"X"');
+            return { status: res.status(), body };
+        };
+
+        const real = await strip('base/v1/sites');
+        const fake = await strip('base/v1/nosuchroute');
+
+        expect(real.status, 'a real route unauthenticated should be 401').toBe(401);
+        expect(fake.status, 'an unknown route must use the same status').toBe(real.status);
+        expect(fake.body, 'an unknown route must be byte-identical').toBe(real.body);
     });
 });

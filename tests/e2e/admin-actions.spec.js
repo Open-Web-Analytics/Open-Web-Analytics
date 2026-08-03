@@ -398,3 +398,77 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
         await expect(page.locator('text=Logout').first()).toBeVisible();
     });
 });
+
+/**
+ * The admin endpoint's default action.
+ *
+ * index.php supplies a route when the request does not name one:
+ *
+ *     $do = CoreAPI::getRequestParam('do');
+ *     if ( ! $do ) { $params['do'] = $owa->getSetting('base', 'start_page'); }
+ *
+ * Arriving at index.php with no params is the normal way into the admin UI, so
+ * this fallback has to keep working. It is also the reason the REST endpoint's
+ * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
+ * so the asymmetry is pinned rather than incidental.
+ */
+test.describe('admin: start_page default action', () => {
+
+    test('a bare request renders the start_page report, not an error', async ({ page }) => {
+        await login(page);
+
+        // No owa_do at all -- the fallback has to supply base.sites.
+        const res = await page.goto('?', { waitUntil: 'networkidle' });
+
+        expect(res.status(), 'a bare admin request should render').toBe(200);
+
+        const body = await page.content();
+        expect(body.length, 'a bare request must not render an empty page').toBeGreaterThan(0);
+        expect(body).not.toMatch(/Fatal error|Uncaught Exception|Invalid action/i);
+    });
+
+    test('the bare request and an explicit base.sites render the same screen', async ({ page }) => {
+        await login(page);
+
+        await page.goto('?owa_do=base.sites', { waitUntil: 'networkidle' });
+        const explicitTitle = await page.title();
+
+        await page.goto('?', { waitUntil: 'networkidle' });
+        const defaultTitle = await page.title();
+
+        // start_page defaults to base.sites (Settings.php), so the two must agree.
+        // Comparing rendered titles rather than asserting a literal keeps this
+        // honest if the default is ever repointed at a different report.
+        expect(defaultTitle, 'the default action should land on the start_page report')
+            .toBe(explicitTitle);
+    });
+
+    /**
+     * The start_page report itself -- reached by default, so a break here takes
+     * out the admin UI's front door and every post-login redirect with it.
+     */
+    test('the start_page report lists the fixture site', async ({ page }) => {
+        await login(page);
+        await page.goto('?', { waitUntil: 'networkidle' });
+
+        const body = await page.content();
+
+        // The roster has to actually render its rows, not just a chrome shell.
+        expect(body, 'the sites report should list the fixture site')
+            .toContain(FIXTURE.siteDomain);
+
+        // And it must be the report, not a bounce back to the login form.
+        expect(body).not.toMatch(/input[^>]+name="owa_password"/);
+    });
+
+    test('the REST endpoint does NOT default -- it reports a bad request', async ({ page }) => {
+        // Same omission, opposite contract: a REST client that names no route has
+        // made a malformed request, and picking one for it would hide the mistake.
+        const res = await page.request.get('api/index.php');
+
+        expect(res.status(), 'REST must not fall back to a default route').toBe(400);
+
+        const body = JSON.parse(await res.text());
+        expect(body.httpResponse.status_code).toBe(400);
+    });
+});
