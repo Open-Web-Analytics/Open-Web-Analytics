@@ -51,6 +51,22 @@ class Error extends \OWA\Core\View {
         endif;
 
         // load body template
+        // generic_error.php reads error_msg from the body's own scope, so the
+        // controller's message has to be handed across or the template falls back
+        // to its placeholder and the reason for the error is lost.
+        if ( isset( $data['error_msg'] ) ) {
+
+            $msg = $data['error_msg'];
+
+            // Controllers set this from getMsg(), which returns headline/message.
+            if ( is_array( $msg ) ) {
+
+                $msg = implode( ' ', array_values( $msg ) );
+            }
+
+            $this->body->set( 'error_msg', $msg );
+        }
+
         $this->body->set_template('generic_error.php');
 
         return;
