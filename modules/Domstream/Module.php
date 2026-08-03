@@ -93,6 +93,6 @@ class Module extends \OWA\Core\Module {
      */
     function registerApiMethods() {
 		
-		$this->registerRestApiRoute( 'v1', 'domstreams', 'GET', 'owa_domstreamsRestController', 'controllers/domstreamsRestController.php' );
+		$this->registerRestApiRoute( 'v1', 'domstreams', 'GET', 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', 'Controller/DomstreamsRestController.php' );
     }
 }

@@ -560,13 +560,13 @@ class Module extends \OWA\Core\Module {
      */
     function registerApiMethods() {
 
-    	$this->registerRestApiRoute( 'v1', 'sites', 'GET', 'owa_sitesRestController', 'controllers/sitesRestController.php' );
-        $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'owa_addSiteRestController', 'controllers/addSiteRestController.php' );
-        $this->registerRestApiRoute( 'v1', 'users', 'GET', 'owa_usersRestController', 'controllers/usersRestController.php' );
-        $this->registerRestApiRoute( 'v1', 'users', 'POST', 'owa_addUserRestController', 'controllers/addUserRestController.php' );
-		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'owa_deleteUserRestController', 'controllers/deleteUserRestController.php', [ 'params_order' => ['user_id'] ] );
-		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'owa_siteAddAllowedUserRestController', 'controllers/siteAddAllowedUserRestController.php' );
-		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'owa_reportsRestController', 'controllers/reportsRestController.php', [ 'params_order' => ['report_name'] ] );
+    	$this->registerRestApiRoute( 'v1', 'sites', 'GET', 'OWA\\Module\\Base\\Controller\\SitesRest', 'Controller/SitesRest.php' );
+        $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'OWA\\Module\\Base\\Controller\\AddSiteRest', 'Controller/AddSiteRest.php' );
+        $this->registerRestApiRoute( 'v1', 'users', 'GET', 'OWA\\Module\\Base\\Controller\\UsersRest', 'Controller/UsersRest.php' );
+        $this->registerRestApiRoute( 'v1', 'users', 'POST', 'OWA\\Module\\Base\\Controller\\AddUserRest', 'Controller/AddUserRest.php' );
+		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', 'Controller/DeleteUserRest.php', [ 'params_order' => ['user_id'] ] );
+		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest', 'Controller/SiteAddAllowedUserRest.php' );
+		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
     }
 
     /**

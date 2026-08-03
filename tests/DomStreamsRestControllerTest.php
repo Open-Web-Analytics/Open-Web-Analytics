@@ -24,7 +24,7 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
     /** Absolute path — this controller lives in the domstream module, not base. */
     private function ctrlFile(): string
     {
-        return OWA_MODULES_DIR . 'domstream/controllers/domstreamsRestController.php';
+        return OWA_MODULES_DIR . 'Domstream/Controller/DomstreamsRestController.php';
     }
 
     protected function setUp(): void
@@ -121,6 +121,17 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
         $this->assertSame(201, $resp['status'],
             'A valid domstreams list query should return 201.');
         $this->assertSame('domstream.domstreamsRest', $resp['view']);
+
+        // Asserting the name alone would pass with the view deleted: the
+        // controller only records a string. Resolve it the way displayView()
+        // does -- owa_<name>View through the class map -- so a move that breaks
+        // the mapping fails here rather than at runtime.
+        $viewClass = \OWA\Core\Lib::resolveNamespacedClass('owa_domstreamsRestView');
+
+        $this->assertNotNull($viewClass,
+            'The view named by the controller does not resolve to a class.');
+        $this->assertTrue(class_exists($viewClass),
+            "Resolved view class {$viewClass} cannot be loaded.");
         $this->assertIsArray($resp['data'],
             'The list payload should be the serialized result set (an array).');
 
@@ -172,6 +183,17 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
         $this->assertSame(201, $resp['status'],
             'A valid single-domstream query should return 201.');
         $this->assertSame('domstream.domstreamsRest', $resp['view']);
+
+        // Asserting the name alone would pass with the view deleted: the
+        // controller only records a string. Resolve it the way displayView()
+        // does -- owa_<name>View through the class map -- so a move that breaks
+        // the mapping fails here rather than at runtime.
+        $viewClass = \OWA\Core\Lib::resolveNamespacedClass('owa_domstreamsRestView');
+
+        $this->assertNotNull($viewClass,
+            'The view named by the controller does not resolve to a class.');
+        $this->assertTrue(class_exists($viewClass),
+            "Resolved view class {$viewClass} cannot be loaded.");
 
         // getDomstream() decodes + merges the stored events blob into the payload;
         // the captured event types must round-trip to the client.
