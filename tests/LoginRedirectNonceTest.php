@@ -34,11 +34,109 @@ final class LoginRedirectNonceTest extends TestCase
         $_SERVER['HTTP_HOST']   = 'owa.example.test';
         $_SERVER['REQUEST_URI'] = '/owa/index.php?owa_do=base.sitesDelete&owa_nonce=abc123';
 
+        // The referring page is now a candidate destination, so each test states
+        // its own. Leaving a previous test's value in place would decide the
+        // outcome here instead of the case under test.
+        unset($_SERVER['HTTP_REFERER']);
+
+        // resolveRedirectUrl() compares against this, so the fixture host has to
+        // be the installation's own or every referrer below reads as foreign.
+        \OWA\Core\CoreAPI::setSetting('base', 'public_url', 'https://owa.example.test/owa/');
+
         // notAuthenticatedAction() answers a REST request with a 401 body and
         // never sets 'go' at all. request_mode is global, so a REST test running
         // earlier in the suite would otherwise send these down that branch and
         // make the assertions meaningless.
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'admin_web');
+    }
+
+    /** The value queued for resumption after login, decoded. */
+    private function goValue(bool $nonceRequired): string
+    {
+        $controller = new \OWA\Module\Base\Controller\Sites([]);
+
+        if ($nonceRequired) {
+            $controller->setNonceRequired();
+        }
+
+        $controller->notAuthenticatedAction();
+
+        $prop = new ReflectionProperty($controller, 'data');
+        $prop->setAccessible(true);
+        $data = (array) $prop->getValue($controller);
+
+        return urldecode((string) ($data['go'] ?? ''));
+    }
+
+    /**
+     * A state-changing action is not resumed, but the page that offered it is --
+     * that screen renders rather than writes, and will mint a nonce for the
+     * authenticated identity.
+     */
+    public function testTheReferringPageIsResumedInsteadOfTheAction()
+    {
+        $_SERVER['HTTP_REFERER'] = 'https://owa.example.test/owa/index.php?owa_do=base.sites';
+
+        $go = $this->goValue(true);
+
+        $this->assertSame(
+            $_SERVER['HTTP_REFERER'],
+            $go,
+            'the screen the action was offered from should be resumed'
+        );
+
+        $this->assertStringNotContainsString(
+            'sitesDelete',
+            $go,
+            'the action itself must never be queued for replay'
+        );
+    }
+
+    /** The referrer is client-supplied, so a foreign one is not a destination. */
+    public function testAnOffsiteReferrerIsDiscarded()
+    {
+        $_SERVER['HTTP_REFERER'] = 'https://example.com/somewhere';
+
+        $this->assertSame('', $this->goValue(true), 'an offsite referrer must not be resumed');
+    }
+
+    /** Resuming the blocked request itself would just fail the same check again. */
+    public function testAReferrerPointingAtTheCurrentRequestIsDiscarded()
+    {
+        $_SERVER['HTTP_REFERER'] = \OWA\Core\Lib::get_current_url();
+
+        $this->assertSame('', $this->goValue(true), 'the blocked request must not resume itself');
+    }
+
+    /** Nothing to resume when the browser sent no referrer at all. */
+    public function testAMissingReferrerLeavesNothingToResume()
+    {
+        unset($_SERVER['HTTP_REFERER']);
+
+        $this->assertSame('', $this->goValue(true));
+    }
+
+    /**
+     * Arriving from the login screen means the previous request was already
+     * turned away. Resuming it would return the user to the form they just
+     * completed -- the same dead end the whole change exists to remove.
+     */
+    public function testAReferrerFromTheLoginScreenIsDiscarded()
+    {
+        foreach (
+            [
+                'https://owa.example.test/owa/index.php?owa_do=base.loginForm',
+                'https://owa.example.test/owa/index.php?owa_do=base.login&owa_go=x',
+            ] as $referer
+        ) {
+            $_SERVER['HTTP_REFERER'] = $referer;
+
+            $this->assertSame(
+                '',
+                $this->goValue(true),
+                sprintf('%s should not be resumed after login', $referer)
+            );
+        }
     }
 
     /** Run notAuthenticatedAction() on a controller and report whether 'go' was set. */

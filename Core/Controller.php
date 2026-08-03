@@ -668,6 +668,53 @@ class Controller extends \OWA\Core\Base {
         $this->set('error_msg', $msg);
     }
 
+    /**
+     * The page the browser came from, when it belongs to this installation.
+     *
+     * Used to resume someone at the screen that offered a blocked action rather
+     * than dumping them on start_page. Browsers send the full URL on a
+     * same-origin request, which is what an admin form post is, so this is
+     * normally the page that rendered the form.
+     *
+     * The value is client-supplied, so it is resolved against the installation
+     * exactly like any other redirect target, and discarded if it does not
+     * belong to it. A referrer pointing back at the current request is discarded
+     * too -- resuming that would fail the same check all over again.
+     *
+     * @return string The referring page, or '' when there is nothing usable.
+     */
+    protected function getReferringPage() {
+
+        $referer = isset( $_SERVER['HTTP_REFERER'] ) ? trim( (string) $_SERVER['HTTP_REFERER'] ) : '';
+
+        if ( ! $referer ) {
+
+            return '';
+        }
+
+        // resolveRedirectUrl() substitutes the base URL for anything outside the
+        // installation, so a value it did not return unchanged was not ours.
+        if ( \OWA\Core\Lib::resolveRedirectUrl( $referer ) !== $referer ) {
+
+            return '';
+        }
+
+        if ( $referer === \OWA\Core\Lib::get_current_url() ) {
+
+            return '';
+        }
+
+        // Coming from the login screen itself means the previous request was
+        // already turned away. Resuming it would land the user back on the form
+        // they just completed.
+        if ( strpos( $referer, 'base.login' ) !== false ) {
+
+            return '';
+        }
+
+        return $referer;
+    }
+
     function notAuthenticatedAction() {
 		
 		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
@@ -688,9 +735,11 @@ class Controller extends \OWA\Core\Base {
 			// crafted link name any action and have the server bless it, which is
 			// the CSRF the nonce exists to prevent.
 			//
-			// So a state-changing action is not resumed at all. Login falls through
-			// to start_page, and the user re-initiates from a page that mints a
-			// nonce for their authenticated identity.
+			// So a state-changing action is never resumed. What can be resumed is
+			// the page that OFFERED it -- the referring page, which will mint a
+			// fresh nonce for the authenticated identity. That is a destination
+			// that renders rather than one that writes, which is the distinction
+			// that matters here.
 			//
 			// is_nonce_required marks exactly that set: every controller that sets
 			// it is a write (add/edit/delete/activate/update/apply). No report or
@@ -698,6 +747,10 @@ class Controller extends \OWA\Core\Base {
 			if ( ! $this->is_nonce_required ) {
 
 				$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
+
+			} else {
+
+				$this->set('go', urlencode( $this->getReferringPage() ));
 			}
 		}
     }
