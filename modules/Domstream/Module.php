@@ -33,6 +33,30 @@ namespace OWA\Module\Domstream;
 
 class Module extends \OWA\Core\Module {
 
+    /**
+     * Register this module's actions against their controllers.
+     *
+     * See Base\Module::registerActions() -- registration keeps
+     * CoreAPI::performAction() on the safe branch instead of reconstructing a
+     * class name and filesystem path from the request's own 'do' param.
+     */
+    function registerActions() {
+
+        // NOTE: registerAction() prefixes $file with OWA_BASE_MODULE_DIR, which is
+        // hardcoded to modules/Base/ -- so a non-Base module cannot express a
+        // correct path through it. Pass none: the class name is the PSR-4 name,
+        // so Composer autoloads it and simpleFactory() short-circuits on
+        // class_exists() before the path is ever consulted.
+        //
+        // Not changing that prefix here on purpose: third-party modules calling
+        // registerAction() today are passing Base-relative paths, and switching
+        // it to $this->path would break them silently. registerRestApiRoute() is
+        // the module-aware equivalent if this ever needs revisiting.
+        $this->registerAction( 'domstream.domstreamsRest',
+            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController',
+            '' );
+    }
+
     function __construct() {
 
         $this->name = 'domstream';
