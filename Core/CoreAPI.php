@@ -1446,45 +1446,53 @@ class CoreAPI {
         \OWA\Core\CoreAPI::debug('Handling REST request with params: '. print_r($params, true));
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
-        
-        if ( ! $action ) {
-            
-            \OWA\Core\CoreAPI::debug('no action specified on REST request params');
-            return; 
-        }
-             
+
         // REST API Requests
         // Lookup controller for REST API route.
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
-            
+
             // get request method
             $request_method = $service->request->getRequestType();
-            
+
             // check to see if this is a CORS pre-flight Request
             if ($request_method == 'OPTIONS') {
-                
-                $controller = \OWA\Core\Lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
+
+                $controller = \OWA\Core\Lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );
                 return \OWA\Core\CoreAPI::runController( $controller );
             }
-            
-            // check for rewriten rest params and set module, version, and do params from that
+
+            // check for rewriten rest params and set module, version, and do params from that.
+            //
+            // This has to happen BEFORE the request is required to name an action:
+            // the documented route form is /api/<module>/<version>/<route>, which
+            // .htaccess rewrites to owa_rest_params alone, carrying no 'do' of its own.
             $rest_params = self::getRequestParam('rest_params');
-            
+
             if ( $rest_params ) {
-            
+
                 $rest_params = explode('/', $rest_params);
                 self::debug( 'exploding raw REST params:');
                 self::debug( $rest_params );
-            
+
                 if ( count( $rest_params ) >= 3 ) {
-                    
+
                     $params['module'] = $rest_params[0];
                     $params['version'] = $rest_params[1];
                     $params['do'] = $rest_params[2];
                     $action = $params['do'];
-                }				
+                }
             }
-            
+
+            // A REST request must name its route. There is deliberately no default
+            // action here -- the admin endpoint falls back to the start_page setting
+            // when 'do' is absent, but a client that omits the route has made a
+            // malformed request, and choosing one for it would hide the mistake.
+            if ( ! $action ) {
+
+                \OWA\Core\CoreAPI::debug('no action specified on REST request params');
+                return self::restError( 400 );
+            }
+
             
             \OWA\Core\CoreAPI::debug('Generating REST API route controller...');
             
@@ -1512,15 +1520,19 @@ class CoreAPI {
                     return \OWA\Core\CoreAPI::runController( $controller );
                 
                 } else {
-                    
+
+                    // Answered exactly as an unauthenticated request is, and for the
+                    // same reason: this runs before the controller authenticates, so
+                    // a distinct "no such route" reply would let an anonymous caller
+                    // enumerate the API by watching which names answer differently.
                     \OWA\Core\CoreAPI::debug('No REST API route found');
-                    return;	
+                    return self::restError( 401 );
                 }
-        
+
             } else {
-                
+
                 \OWA\Core\CoreAPI::debug('Could not generate controller because no version param was on request.');
-                return;
+                return self::restError( 400 );
             }
             
         } else {
@@ -1529,6 +1541,40 @@ class CoreAPI {
         }
     }
     
+    /**
+     * Renders a REST error through the standard response envelope.
+     *
+     * Returned instead of the empty 200 these paths used to produce, which was
+     * indistinguishable from a successful call that carried no data.
+     *
+     * These run BEFORE the controller authenticates, so the reply is readable by
+     * anyone and says nothing a caller could not already supply: no route names,
+     * no hint of whether a route exists, no suggestions. 401 reuses the wording
+     * of a genuine auth failure so the two cannot be told apart.
+     *
+     * @param  int    $code  400 for a malformed request, 401 otherwise.
+     * @return string        The rendered response body.
+     */
+    private static function restError( $code ) {
+
+        $messages = array(
+            400 => array(
+                'headline'  => 'Bad request.',
+                'msg'       => 'The request did not name a route to call.'
+            ),
+            401 => array(
+                'headline'  => 'Not authenticated.',
+                'msg'       => 'Check API credentials or permissions for this user.'
+            ),
+        );
+
+        $error_msg = isset( $messages[ $code ] ) ? $messages[ $code ] : $messages[ 400 ];
+
+        http_response_code( $code );
+
+        return self::displayView( array( 'error_msg' => $error_msg ), 'base.restApi' );
+    }
+
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
 	    
 	    if ( ! empty( $request_method )
