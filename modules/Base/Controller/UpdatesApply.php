@@ -33,38 +33,33 @@ namespace OWA\Module\Base\Controller;
 
 class UpdatesApply extends \OWA\Core\Controller {
 
+    /**
+     * DELIBERATELY has no required capability and no nonce, for the same reason
+     * the sibling base.updates has none: the schema has to be brought forward
+     * before the rest of the application can be relied on, and the authentication
+     * path is part of what may be waiting on it.
+     *
+     * This action WAS gated. Gating it made the documented upgrade unusable for a
+     * signed-out admin, which is what #979 reported. base.updates renders
+     * anonymously, so its Apply link carries a nonce minted with no user_id;
+     * createNonce() binds to user_id, so that nonce can never verify once the
+     * admin signs in. The request was turned away, the browser returned to the
+     * login form, and correct credentials appeared to be rejected.
+     *
+     * WordPress takes the same position for the equivalent step: wp-admin/upgrade.php
+     * loads wp-load.php rather than admin.php and calls wp_upgrade() with no
+     * capability check and no nonce.
+     *
+     * What that gives up is a crafted link inducing an update. The exposure is
+     * small: the work is idempotent, does nothing unless the schema is behind,
+     * and produces only the change the administrator was already being told to
+     * make. Weighed against an upgrade path that cannot be completed from the
+     * browser, that is the better trade.
+     *
+     * `php cli.php cmd=update` (base.updatesApplyCli) remains the route for
+     * updates that cannot run over the web; updates 005/006/007/010 require it.
+     */
     function __construct($params) {
-
-        // Applying schema updates is an admin operation. Without a declared
-        // capability the base controller performs no authentication at all,
-        // which left this action reachable unauthenticated.
-        //
-        // 'install_schema' would NOT work here -- it is granted to the
-        // "everyone" role, so isEveryoneCapable() short-circuits the check.
-        //
-        // Note the sibling base.updates is deliberately NOT gated: it is the
-        // target of the pre-auth update interception. Gating only this action
-        // keeps that notice reachable while requiring an admin to actually
-        // mutate the schema.
-        //
-        // If a future update ever breaks authentication itself (new code
-        // querying a column an old schema lacks), the web path here cannot
-        // complete. That is recoverable, not a lockout: `php cli.php cmd=update`
-        // (base.updatesApplyCli, registered in Base/Module.php) applies updates
-        // without web auth, and updates 005/006/007/010 already require it.
-        $this->setRequiredCapability('edit_modules');
-
-        // Capability alone still allowed a logged-in admin to be induced into
-        // applying updates via a crafted link (CSRF). The "Apply updates" link
-        // in base.updates now carries a nonce (makeLink's 5th arg).
-        //
-        // Ordering matters and is in our favour: doAction() runs the capability
-        // check BEFORE the nonce check, so an unauthenticated visitor is sent to
-        // login rather than failing on a nonce. And because createNonce() binds
-        // to user_id, the nonce minted for an anonymous view of base.updates
-        // will not verify -- after logging in the interception re-renders the
-        // page, minting one bound to the real user.
-        $this->setNonceRequired();
 
         parent::__construct($params);
     }

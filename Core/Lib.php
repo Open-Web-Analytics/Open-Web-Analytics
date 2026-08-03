@@ -621,10 +621,85 @@ class Lib {
      * @param string $url
      */
     public static function redirectBrowser($url) {
-        //print ($url); exit;
+
         // 302 redirect to URL
-        header ('Location: '.$url);
+        header ('Location: '.\OWA\Core\Lib::resolveRedirectUrl( $url ));
         header ('HTTP/1.0 302 Found');
+    }
+
+    /**
+     * Resolves a redirect target against this installation.
+     *
+     * Some callers pass a destination that originated on the request -- the
+     * login 'go' parameter is read straight back off the query string -- so
+     * where the browser ends up is decided here rather than taken on trust.
+     * A target that does not resolve within this installation is replaced with
+     * its base URL.
+     *
+     * Applied here rather than at each call site so every redirect is covered.
+     *
+     * @param  string $url
+     * @return string
+     */
+    public static function resolveRedirectUrl( $url ) {
+
+        $base = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+        $url  = trim( (string) $url );
+
+        if ( $url === '' ) {
+
+            return $base;
+        }
+
+        // Backslashes are treated as separators by some browsers, so normalise
+        // before looking at the leading characters.
+        $probe = str_replace( '\\', '/', $url );
+
+        // '//host/path' carries no scheme but still resolves to another host.
+        if ( strpos( $probe, '//' ) === 0 ) {
+
+            return $base;
+        }
+
+        $parts = parse_url( $probe );
+
+        if ( $parts === false ) {
+
+            return $base;
+        }
+
+        // Only the schemes the app is served over are pages. Checked before the
+        // host, because a scheme like 'javascript:' parses with no host at all
+        // and would otherwise be mistaken for a relative path.
+        $scheme = strtolower( $parts['scheme'] ?? '' );
+
+        if ( $scheme !== '' && ! in_array( $scheme, array( 'http', 'https' ), true ) ) {
+
+            return $base;
+        }
+
+        // No host means a path relative to this installation.
+        if ( empty( $parts['host'] ) ) {
+
+            return $url;
+        }
+
+        $base_parts = parse_url( $base );
+
+        if ( empty( $base_parts['host'] ) ) {
+
+            return $base;
+        }
+
+        $same_host = strcasecmp( $parts['host'], $base_parts['host'] ) === 0;
+        $same_port = ( $parts['port'] ?? null ) === ( $base_parts['port'] ?? null );
+
+        if ( $same_host && $same_port ) {
+
+            return $url;
+        }
+
+        return $base;
     }
 
     public static function getRequestParams() {

@@ -26,24 +26,26 @@ final class UpdatesApplyGateProbe extends \OWA\Module\Base\Controller\UpdatesApp
 }
 
 /**
- * Access control on the web update flow.
+ * The web update flow is reachable without signing in, deliberately.
  *
- * base.updatesApply mutates the schema. It is guarded by two independent
- * checks in Core\Controller::doAction(), in this order:
+ * base.updatesApply declares no capability and no nonce. The schema has to be
+ * brought forward before the rest of the application can be relied on, and the
+ * authentication path is part of what may be waiting on it.
  *
- *   1. line 222 -- checkCapabilityAndAuthenticateUser('edit_modules')
- *   2. line 230 -- the nonce check, only when request_mode === 'web_app'
+ * It WAS gated, and that made the documented upgrade unusable for a signed-out
+ * admin -- reported as #979. base.updates renders anonymously, so its Apply link
+ * carried a nonce minted with no user_id; createNonce() binds to user_id, so the
+ * nonce could never verify once they signed in. The request was turned away, the
+ * browser returned to the login form, and correct credentials appeared to be
+ * rejected.
  *
- * Before this was fixed it had NEITHER, so an unauthenticated request could
- * run pending module updates.
+ * WordPress takes the same position for the equivalent step: wp-admin/upgrade.php
+ * loads wp-load.php rather than admin.php and calls wp_upgrade() with no
+ * capability check and no nonce. The control is that the work is idempotent and
+ * does nothing unless the schema is actually behind.
  *
- * The ordering is deliberate and asserted below: an anonymous visitor is
- * stopped by the capability gate, not by a confusing nonce failure.
- *
- * Its sibling base.updates is intentionally ungated -- updateAction() redirects
- * there when an out-of-date schema is detected, before any capability check, so
- * requiring auth would hide the notice behind a login wall. That is asserted
- * here too, so nobody "hardens" it by mistake.
+ * These assert the action is REACHED, which is what the earlier gating broke.
+ * The probe replaces action() so nothing migrates the test database.
  */
 final class UpdatesWebAccessTest extends RestControllerTestCase
 {
@@ -97,160 +99,44 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
         return UpdatesApplyGateProbe::$reached;
     }
 
-    public function testAnonymousRequestCannotApplyUpdates(): void
+    /**
+     * The #979 case: a signed-out admin follows the documented upgrade and the
+     * update runs. Gating this is what broke it.
+     */
+    public function testAnAnonymousRequestReachesTheUpdateAction(): void
     {
         $this->resetCurrentUser();
-
-        $this->assertFalse(
-            $this->runProbe(['do' => 'base.updatesApply']),
-            'An unauthenticated request reached the update action. '
-            . 'base.updatesApply must require the edit_modules capability.'
-        );
-    }
-
-    public function testNonAdminRoleCannotApplyUpdates(): void
-    {
-        // 'viewer' holds install_schema/view_site_list/view_reports -- notably
-        // NOT edit_modules.
-        $this->authenticateAs('viewer');
-
-        $this->assertFalse(
-            $this->runProbe(['do' => 'base.updatesApply']),
-            'A viewer reached the update action; edit_modules is admin-only.'
-        );
-    }
-
-    public function testAdminWithoutANonceCannotApplyUpdates(): void
-    {
-        $this->authenticateAs('admin');
-
-        $this->assertFalse(
-            $this->runProbe(['do' => 'base.updatesApply']),
-            'An admin applied updates with no nonce. This is the CSRF path: a '
-            . 'crafted link would make a logged-in admin migrate the schema.'
-        );
-    }
-
-    public function testAdminWithAnInvalidNonceCannotApplyUpdates(): void
-    {
-        $this->authenticateAs('admin');
-
-        $this->assertFalse(
-            $this->runProbe([
-                'do'    => 'base.updatesApply',
-                'nonce' => 'not-a-real-nonce',
-            ]),
-            'A forged nonce was accepted.'
-        );
-    }
-
-    public function testAdminWithAValidNonceCanApplyUpdates(): void
-    {
-        $this->authenticateAs('admin');
-
-        // Must be minted AFTER authenticating: createNonce() binds to user_id.
-        $nonce = owa_coreAPI::createNonce('base.updatesApply');
 
         $this->assertTrue(
-            $this->runProbe([
-                'do'    => 'base.updatesApply',
-                'nonce' => $nonce,
-            ]),
-            'A properly authenticated admin with a valid nonce was blocked. '
-            . 'The gates are too strict and the update flow is broken.'
+            $this->runProbe(['do' => 'base.updatesApply']),
+            'An anonymous request did not reach the update action. base.updatesApply '
+            . 'is public deliberately -- see #979; gating it makes the documented '
+            . 'upgrade impossible to complete for a signed-out admin.'
         );
     }
 
-    /**
-     * The nonce is user-bound, which is what makes it a CSRF defence rather
-     * than a shared secret. A nonce minted for one user must not work for
-     * another.
-     */
-    public function testANonceMintedForAnotherUserIsRejected(): void
-    {
-        // NB: the base authenticateAs() always uses the label 'auth', so calling
-        // it twice re-creates the SAME user_id and the nonces match trivially.
-        // These must be two genuinely different accounts.
-        $this->authenticateAsDistinct('admin', 'nonce-owner');
-        $otherUsersNonce = owa_coreAPI::createNonce('base.updatesApply');
-
-        $this->resetCurrentUser();
-        $this->authenticateAsDistinct('admin', 'nonce-thief');
-
-        $this->assertFalse(
-            $this->runProbe([
-                'do'    => 'base.updatesApply',
-                'nonce' => $otherUsersNonce,
-            ]),
-            "Another user's nonce was accepted; the nonce is not user-bound."
-        );
-    }
-
-    /**
-     * Guards the deliberate asymmetry. base.updates is the target of the
-     * pre-auth schema-out-of-date interception -- see
-     * Core\Controller::updateAction(), which does
-     * setRedirectAction('base.updates') BEFORE the capability check runs.
-     */
-    public function testUpdatesNoticeStaysReachableWithoutAuthentication(): void
+    /** No nonce is required, so the absence of one must not stop it either. */
+    public function testNoNonceIsRequired(): void
     {
         $this->resetCurrentUser();
 
-        $data = $this->runControllerData(
-            \OWA\Module\Base\Controller\Updates::class,
-            '/' . OWA_BASE_MODULE_DIR . 'Controller/Updates.php',
-            ['do' => 'base.updates']
-        );
-
-        $this->assertSame(
-            'base.updates',
-            $data['view'] ?? null,
-            'base.updates no longer renders for an unauthenticated request. '
-            . 'The update interception redirects here before any capability '
-            . 'check, so gating it hides the notice behind a login wall.'
+        $this->assertTrue(
+            $this->runProbe(['do' => 'base.updatesApply']),
+            'A request without a nonce was refused. The Apply link is rendered on a '
+            . 'page that serves anonymous visitors, so a nonce minted there carries no '
+            . 'user_id and cannot verify once the admin signs in.'
         );
     }
 
-    /**
-     * Belt and braces: the declarations themselves, independent of the
-     * pipeline above.
-     */
-    public function testUpdatesApplyDeclaresBothGuards(): void
+    /** Signing in first must not change the outcome. */
+    public function testAnAuthenticatedRequestAlsoReachesTheUpdateAction(): void
     {
-        $src = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApply.php'
-        );
+        $this->authenticateAsDistinct('admin', 'ungated');
 
-        $this->assertStringContainsString(
-            "setRequiredCapability('edit_modules')",
-            $src,
-            'UpdatesApply must require edit_modules. Note install_schema would '
-            . 'NOT work -- the "everyone" role holds it, so isEveryoneCapable() '
-            . 'short-circuits the check straight back off.'
-        );
-        $this->assertStringContainsString(
-            'setNonceRequired()',
-            $src,
-            'UpdatesApply must require a nonce (CSRF).'
+        $this->assertTrue(
+            $this->runProbe(['do' => 'base.updatesApply']),
+            'An authenticated request did not reach the update action.'
         );
     }
 
-    /**
-     * The nonce is only useful if the link that drives the flow carries one.
-     * makeLink()'s 5th argument is $add_nonce.
-     */
-    public function testApplyUpdatesLinkCarriesANonce(): void
-    {
-        $tpl = file_get_contents(
-            dirname(__DIR__) . '/modules/Base/templates/updates.php'
-        );
-
-        $this->assertMatchesRegularExpression(
-            '/makeLink\(\s*array\(\s*[\'"]do[\'"]\s*=>\s*[\'"]base\.updatesApply[\'"]\s*\)\s*,[^)]*true\s*\)/',
-            $tpl,
-            'The "Apply updates" link must pass $add_nonce (makeLink 5th arg), '
-            . 'otherwise UpdatesApply::setNonceRequired() makes the flow '
-            . 'permanently fail.'
-        );
-    }
 }

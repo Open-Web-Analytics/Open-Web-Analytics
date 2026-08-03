@@ -313,6 +313,7 @@ class Controller extends \OWA\Core\Base {
         // need to check ret for backwards compatability with older
         // controllers that donot use $this->data
         if (!empty($actionResult)) {
+
             $this->post();
             return $actionResult;
         } else {
@@ -677,7 +678,40 @@ class Controller extends \OWA\Core\Base {
 			http_response_code(401);	
 		} else {
 	        $this->setRedirectAction('base.loginForm');
-			$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
+
+			// 'go' resumes the blocked request after login, which is only safe for
+			// a destination that just renders something.
+			//
+			// A nonce is derived from the current user_id, so one minted before
+			// login can never verify after it -- the request would bounce straight
+			// back to this form, looking to the user like their credentials were
+			// refused. Re-minting it after login is not the fix: that would let a
+			// crafted link name any action and have the server bless it, which is
+			// the CSRF the nonce exists to prevent.
+			//
+			// So a state-changing action is never resumed. What can be resumed is
+			// the page that OFFERED it -- the referring page, which will mint a
+			// fresh nonce for the authenticated identity. That is a destination
+			// that renders rather than one that writes, which is the distinction
+			// that matters here.
+			//
+			// is_nonce_required marks exactly that set: every controller that sets
+			// it is a write (add/edit/delete/activate/update/apply). No report or
+			// view controller does, so deep-linking to a report still resumes.
+			if ( ! $this->is_nonce_required ) {
+
+				$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
+
+			} else {
+
+				// A state-changing action is never resumed: the nonce is derived
+				// from user_id, so one minted before signing in cannot verify
+				// afterwards, and re-minting it would let a crafted link name any
+				// action and have the server bless it. Login falls through to
+				// start_page and the user re-initiates from a screen that mints a
+				// nonce for their authenticated identity.
+				$this->set('go', '');
+			}
 		}
     }
 

@@ -87,8 +87,21 @@ final class ControllerCapabilityContractTest extends TestCase
         // able to render as the destination of that redirect -- declaring a
         // capability would put a login wall in front of the notice it exists
         // to show. It lists module names only; base.updatesApply, which
-        // applies the updates, declares its own.
+        // applies the updates, is public for the same reason.
         'Updates',
+        // Applying those updates. Public deliberately: the schema has to be
+        // brought forward before the rest of the application can be relied on,
+        // and the authentication path is part of what may be waiting on it.
+        // Gating it made the documented upgrade unusable for a signed-out admin
+        // (#979) -- base.updates renders anonymously, so its Apply link carried a
+        // nonce minted with no user_id, and createNonce() binds to user_id, so it
+        // could never verify once they signed in.
+        //
+        // WordPress takes the same position: wp-admin/upgrade.php loads
+        // wp-load.php rather than admin.php and runs wp_upgrade() with no
+        // capability check and no nonce. The control is that the work is
+        // idempotent and does nothing unless the schema is actually behind.
+        'UpdatesApply',
 
     ];
 
@@ -123,31 +136,46 @@ final class ControllerCapabilityContractTest extends TestCase
     }
 
     /**
-     * base.updatesApply applies module schema updates, so an admin-only
-     * capability is the floor. Pinned separately from the list above because
-     * "declares something" is not enough here -- it has to declare a
-     * capability the admin role alone holds.
+     * base.updatesApply declares NO capability and NO nonce, deliberately.
      *
-     * Its sibling base.updates declares nothing, deliberately -- see the entry
-     * in INTENTIONALLY_PUBLIC. Only the applying action needs the capability,
-     * so the notice page still renders.
+     * Pinned as its own test because it reverses an earlier decision and the
+     * reasoning has to survive: the schema must be brought forward before the
+     * rest of the application can be relied on, and the authentication path is
+     * part of what may be waiting on it. Gating it made the documented upgrade
+     * unusable for a signed-out admin -- reported as #979 -- because
+     * base.updates renders anonymously, so its Apply link carried a nonce minted
+     * with no user_id, and createNonce() binds to user_id, so that nonce could
+     * never verify once they signed in. The request was turned away and correct
+     * credentials appeared to be rejected.
+     *
+     * WordPress takes the same position for the equivalent step:
+     * wp-admin/upgrade.php loads wp-load.php rather than admin.php and calls
+     * wp_upgrade() with no capability check and no nonce.
+     *
+     * Re-gating it would reintroduce that flow, so this fails rather than lets
+     * it happen quietly.
      */
-    public function testUpdatesApplyRequiresAnAdminOnlyCapability(): void
+    public function testUpdatesApplyIsDeliberatelyUngated(): void
     {
         $classes = $this->scanClasses();
 
-        // Capabilities held ONLY by the admin role (Settings.php 'capabilities').
-        // 'install_schema' is excluded on purpose: the 'everyone' role holds it.
-        $adminOnly = ['edit_settings', 'edit_sites', 'edit_users', 'edit_modules'];
+        $this->assertNull(
+            $this->effectiveCapability('UpdatesApply', $classes),
+            'base.updatesApply must not declare a capability -- see #979. Gating it '
+            . 'makes the upgrade unusable for a signed-out admin, because the Apply '
+            . 'link on the anonymous notice page carries a nonce that can never verify.'
+        );
 
-        $cap = $this->effectiveCapability('UpdatesApply', $classes);
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/UpdatesApply.php'
+        );
 
-        $this->assertNotNull($cap, 'UpdatesApply must declare a capability.');
-        $this->assertContains(
-            $cap,
-            $adminOnly,
-            "UpdatesApply must require an admin-only capability; '$cap' is "
-            . 'held by a non-admin role, so it would not gate the action.'
+        $this->assertStringNotContainsString(
+            'setNonceRequired',
+            $source,
+            'base.updatesApply must not require a nonce: the notice page it is reached '
+            . 'from renders anonymously, so the nonce is minted without a user_id and '
+            . 'cannot verify afterwards.'
         );
     }
 
