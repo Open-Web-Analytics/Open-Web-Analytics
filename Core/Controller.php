@@ -235,7 +235,7 @@ class Controller extends \OWA\Core\Base {
 	
 	            if (!$nonce || !$this->verifyNonce($nonce)) {
 	                $this->e->debug('Nonce is not valid.');
-	                return $this->finishActionCall($this->notAuthenticatedAction());
+	                return $this->finishActionCall($this->nonceFailedAction());
 	            }
 	        }
 		}
@@ -667,6 +667,111 @@ class Controller extends \OWA\Core\Base {
         $msg['message'] .= $additionalMessage;
         $this->setView('base.error');
         $this->set('error_msg', $msg);
+    }
+
+    /**
+     * The page the browser came from, when it belongs to this installation.
+     *
+     * Used to resume someone at the screen that offered a blocked action rather
+     * than dumping them on start_page. Browsers send the full URL on a
+     * same-origin request, which is what an admin form post is, so this is
+     * normally the page that rendered the form.
+     *
+     * The value is client-supplied, so it is resolved against the installation
+     * exactly like any other redirect target, and discarded if it does not
+     * belong to it. A referrer pointing back at the current request is discarded
+     * too -- resuming that would fail the same check all over again.
+     *
+     * @return string The referring page, or '' when there is nothing usable.
+     */
+    protected function getReferringPage() {
+
+        $referer = isset( $_SERVER['HTTP_REFERER'] ) ? trim( (string) $_SERVER['HTTP_REFERER'] ) : '';
+
+        if ( ! $referer ) {
+
+            return '';
+        }
+
+        // resolveRedirectUrl() substitutes the base URL for anything outside the
+        // installation, so a value it did not return unchanged was not ours.
+        if ( \OWA\Core\Lib::resolveRedirectUrl( $referer ) !== $referer ) {
+
+            return '';
+        }
+
+        if ( $referer === \OWA\Core\Lib::get_current_url() ) {
+
+            return '';
+        }
+
+        // Coming from the login screen itself means the previous request was
+        // already turned away. Resuming it would land the user back on the form
+        // they just completed.
+        if ( strpos( $referer, 'base.login' ) !== false ) {
+
+            return '';
+        }
+
+        return $referer;
+    }
+
+    /**
+     * Answers a request whose nonce was missing or did not verify.
+     *
+     * A nonce failure and a missing session are different conditions and were
+     * answered the same way -- with the login form. For someone who is already
+     * signed in that is untrue and unactionable: they re-enter credentials that
+     * were never the problem, which is what made the report on #979 read as an
+     * authentication failure rather than an expired token.
+     *
+     * A nonce carries a time window and the user_id it was minted for, so it can
+     * lapse for a perfectly valid session: a form left open too long, or one
+     * rendered before signing in as someone else.
+     *
+     * The action is deliberately not retried once a fresh nonce could be minted.
+     * The nonce exists so that a state-changing request is one the user just
+     * confirmed, and completing it on their behalf would defeat that.
+     */
+    function nonceFailedAction() {
+
+		// Not signed in: the nonce is beside the point, credentials come first.
+		if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
+
+			return $this->notAuthenticatedAction();
+		}
+
+		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+
+			$this->setView('base.restApi');
+			$this->set('error_msg', $this->getMsg(2005));
+			http_response_code(403);
+
+		} else {
+
+			$this->setView('base.error');
+
+			// generic_error.php echoes error_msg directly, so it has to be a
+			// string -- handing it the getMsg() array renders as "Array".
+			$msg = $this->getMsgAsString(2005);
+
+			// Telling someone to go back to where they started is only useful if
+			// they are given the way back. The screen that rendered the expired
+			// form is the referring page, and it will mint a fresh nonce.
+			$back = $this->getReferringPage();
+
+			if ( $back ) {
+
+				// $back is client-supplied and lands in an href, so it is escaped
+				// as an attribute rather than trusted the way a built URL is.
+				$msg .= sprintf(
+					' <a href="%s">Return to the previous screen</a>',
+					htmlspecialchars( $back, ENT_QUOTES, 'UTF-8' )
+				);
+			}
+
+			$this->set('error_msg', $msg);
+		}
     }
 
     function notAuthenticatedAction() {
