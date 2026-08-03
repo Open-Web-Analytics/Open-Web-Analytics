@@ -44,9 +44,20 @@ class ReportsRest extends \OWA\Core\ReportController {
 				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $lables, 'stopOnError' => true) );				
 			}
 		} else {
-			
+
+			// report_name selects a report_<name>() method by concatenation, so
+			// it has to name a report this controller actually implements. The
+			// switch below only adds each report's own required params; it never
+			// rejected an unrecognised name, which then reached the dispatch.
+			$this->addValidation(
+				'report_name',
+				$this->get('report_name'),
+				'inArray',
+				array( 'possible_values' => self::getReportNames(), 'stopOnError' => true )
+			);
+
 			switch( $this->get('report_name') ) {
-				
+
 				case 'visit':
 				case 'clickstream':
 				
@@ -113,10 +124,60 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 	}
 	
+	/**
+	 * The reports this controller can serve.
+	 *
+	 * Derived from the report_<name>() methods it defines rather than listed by
+	 * hand, so the set cannot drift out of step with the implementations.
+	 *
+	 * @return array
+	 */
+	public static function getReportNames() {
+
+		$names = array();
+
+		$class = new \ReflectionClass( self::class );
+
+		foreach ( $class->getMethods( \ReflectionMethod::IS_PUBLIC ) as $method ) {
+
+			if ( strpos( $method->name, 'report_' ) === 0 ) {
+
+				$names[] = substr( $method->name, 7 );
+			}
+		}
+
+		sort( $names );
+
+		return $names;
+	}
+
 	function getReport( $report_name ) {
-		
+
+
+		// validate() rejects an unknown report before the action runs, so this is
+		// a backstop: the name is concatenated into a method call, and an
+		// unhandled one used to be a fatal rather than a response.
+		// The type is checked BEFORE the method name is built -- concatenating
+		// first raises a warning for anything that is not a string, which is one
+		// of the shapes this exists to turn away quietly.
+		if ( ! is_string( $report_name ) ) {
+
+			\OWA\Core\CoreAPI::notice( 'Refusing to run report: name is not a string.' );
+
+			return '';
+		}
+
 		$method = 'report_'.$report_name;
-		
+
+		if ( ! method_exists( $this, $method ) ) {
+
+			\OWA\Core\CoreAPI::notice(
+				sprintf( 'Refusing to run report: %s is not a known report.', print_r( $report_name, true ) )
+			);
+
+			return '';
+		}
+
 		return $this->$method();
 	}
 	
