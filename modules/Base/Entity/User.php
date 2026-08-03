@@ -35,7 +35,12 @@ class User extends \OWA\Core\Entity {
     
     const ADMIN_USER_REAL_NAME = 'default admin';
     const ADMIN_USER_ROLE = 'admin';
-    
+
+    /**
+     * Credential fields. These are never part of a response payload.
+     */
+    protected $private_properties = [ 'password', 'temp_passkey', 'api_key' ];
+
     function __construct() {
     
         $this->setTableName('user');
