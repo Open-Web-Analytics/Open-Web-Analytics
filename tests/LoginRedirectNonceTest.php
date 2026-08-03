@@ -114,6 +114,55 @@ final class LoginRedirectNonceTest extends TestCase
         }
     }
 
+    /**
+     * A nonce-guarded controller declares a capability, so the authentication
+     * gate turns an anonymous request away before the nonce is ever examined.
+     *
+     * The gate only authenticates when a capability is set and not granted to
+     * everyone, so a controller that requires a nonce but declares no capability
+     * is reachable unauthenticated, with the nonce as the only thing in front of
+     * it. That is intended for exactly two: the installer runs before any user
+     * exists, and requiring authentication there would deadlock the bootstrap.
+     * Anything else acquiring that shape is a mistake, not a decision.
+     */
+    public function testNonceGuardedControllersDeclareACapability()
+    {
+        $bootstrapExempt = ['InstallBase', 'InstallConfig'];
+
+        foreach (glob(__DIR__ . '/../modules/*/Controller/*.php') as $file) {
+            $source = (string) file_get_contents($file);
+
+            if (strpos($source, 'setNonceRequired') === false) {
+                continue;
+            }
+
+            $name = basename($file, '.php');
+
+            if (in_array($name, $bootstrapExempt, true)) {
+                $this->assertStringNotContainsString(
+                    'setRequiredCapability',
+                    $source,
+                    sprintf(
+                        '%s is exempt because it runs before any user exists. Now that it '
+                        . 'declares a capability, drop the exemption.',
+                        $name
+                    )
+                );
+                continue;
+            }
+
+            $this->assertStringContainsString(
+                'setRequiredCapability',
+                $source,
+                sprintf(
+                    '%s requires a nonce but declares no capability, so the authentication '
+                    . 'gate is skipped and it can be reached without signing in.',
+                    $name
+                )
+            );
+        }
+    }
+
     /** No report/view controller may require a nonce, or it loses 'go' silently. */
     public function testNoReportControllerRequiresANonce()
     {
