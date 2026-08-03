@@ -1,0 +1,130 @@
+<?php
+
+use PHPUnit\Framework\TestCase;
+
+/**
+ * A state-changing action is not resumed across a login.
+ *
+ * notAuthenticatedAction() put the whole current URL into 'go' so the request
+ * could be replayed after login. For a nonce-guarded action that cannot work:
+ * createNonce() mixes in the current user_id, so a nonce minted while logged out
+ * never verifies once logged in. The replay failed the nonce check, which routes
+ * back to the same handler, and the user saw the login form again -- indis-
+ * tinguishable from having typed the wrong password.
+ *
+ * Re-minting the nonce after login would be worse than the bug: a crafted link
+ * could name any action and have the server issue a valid nonce for it.
+ *
+ * So 'go' is set only for actions that are not nonce-guarded.
+ */
+final class LoginRedirectNonceTest extends TestCase
+{
+    public static function setUpBeforeClass(): void
+    {
+        require_once __DIR__ . '/bootstrap_owa.php';
+    }
+
+    /**
+     * get_current_url() builds 'go' from the request, which does not exist under
+     * CLI -- without this the redirect is empty for every case and the assertions
+     * below would pass for the wrong reason.
+     */
+    protected function setUp(): void
+    {
+        $_SERVER['HTTP_HOST']   = 'owa.example.test';
+        $_SERVER['REQUEST_URI'] = '/owa/index.php?owa_do=base.sitesDelete&owa_nonce=abc123';
+
+        // notAuthenticatedAction() answers a REST request with a 401 body and
+        // never sets 'go' at all. request_mode is global, so a REST test running
+        // earlier in the suite would otherwise send these down that branch and
+        // make the assertions meaningless.
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'admin_web');
+    }
+
+    /** Run notAuthenticatedAction() on a controller and report whether 'go' was set. */
+    private function setsGo(bool $nonceRequired): bool
+    {
+        $controller = new \OWA\Module\Base\Controller\Sites([]);
+
+        if ($nonceRequired) {
+            $controller->setNonceRequired();
+        }
+
+        $controller->notAuthenticatedAction();
+
+        // set() writes to the controller's data (what the view is handed);
+        // get() reads request params. Asserting via get() would report NULL for
+        // every case and pass this whole file for the wrong reason.
+        $prop = new ReflectionProperty($controller, 'data');
+        $prop->setAccessible(true);
+        $data = (array) $prop->getValue($controller);
+
+        return isset($data['go']) && $data['go'] !== '';
+    }
+
+    /** The reported failure: the replayed request could never have verified. */
+    public function testAStateChangingActionIsNotResumedAfterLogin()
+    {
+        $this->assertFalse(
+            $this->setsGo(true),
+            'a nonce-guarded action must not be replayed after login'
+        );
+    }
+
+    /** Deep-linking to a report while logged out must still work. */
+    public function testAReadOnlyActionIsStillResumed()
+    {
+        $this->assertTrue(
+            $this->setsGo(false),
+            'a read-only destination should still be resumed after login'
+        );
+    }
+
+    /**
+     * The behaviour keys off is_nonce_required, so that flag has to keep meaning
+     * "state-changing write". Every controller setting it should be one, and no
+     * report or view controller should.
+     */
+    public function testOnlyWriteControllersRequireANonce()
+    {
+        $withNonce = [];
+
+        foreach (glob(__DIR__ . '/../modules/*/Controller/*.php') as $file) {
+            if (strpos((string) file_get_contents($file), 'setNonceRequired') !== false) {
+                $withNonce[] = basename($file, '.php');
+            }
+        }
+
+        $this->assertNotEmpty($withNonce, 'no nonce-guarded controllers found at all');
+
+        foreach ($withNonce as $name) {
+            $this->assertMatchesRegularExpression(
+                '/(Add|Edit|Delete|Update|Apply|Activate|Deactivate|Install)/',
+                $name,
+                sprintf(
+                    '%s requires a nonce but does not look like a write. If it is read-only '
+                    . 'it will silently lose its post-login redirect.',
+                    $name
+                )
+            );
+        }
+    }
+
+    /** No report/view controller may require a nonce, or it loses 'go' silently. */
+    public function testNoReportControllerRequiresANonce()
+    {
+        foreach (glob(__DIR__ . '/../modules/*/Controller/*.php') as $file) {
+            $name = basename($file, '.php');
+
+            if (!preg_match('/(Report|Dashboard|View)/', $name)) {
+                continue;
+            }
+
+            $this->assertStringNotContainsString(
+                'setNonceRequired',
+                (string) file_get_contents($file),
+                sprintf('%s is a read-only screen and must not require a nonce', $name)
+            );
+        }
+    }
+}
