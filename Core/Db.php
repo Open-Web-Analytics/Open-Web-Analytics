@@ -1037,12 +1037,75 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Normalizes a column list into its canonical comma-separated form.
+     *
+     * Callers pass either 'yyyymmdd' or 'action_group, action_name'. The
+     * comparison against information_schema needs the form GROUP_CONCAT
+     * produces, so whitespace is removed. Returns an empty array if any part is
+     * not a bare identifier, which is the caller's signal to refuse.
+     */
+    protected function normalizeIndexColumns( $column_name ) {
+
+        $cols = array();
+
+        foreach ( explode( ',', (string) $column_name ) as $col ) {
+
+            $col = trim( $col );
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $col ) ) {
+
+                return array();
+            }
+
+            $cols[] = $col;
+        }
+
+        return $cols;
+    }
+
+    /**
+     * Is there already an index covering exactly these columns?
+     *
+     * Schema introspection is driver-specific, so the driver answers this. A
+     * driver that cannot introspect reports false, which preserves the old
+     * add-unconditionally behaviour rather than silently skipping the index.
+     */
+    function indexExists( $table_name, $column_name ) {
+
+        return false;
+    }
+
+    /**
      * Adds index to a column
      *
+     * Does nothing when an index over the same columns is already present.
+     * addIndex() ran unnamed, so MySQL assigned a name each time and repeated
+     * calls -- an update re-run, or two updates covering the same table --
+     * silently accumulated duplicate copies rather than failing.
      */
     function addIndex($table_name, $column_name, $index_definition = '') {
 
-        return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $index_definition));
+        $cols = $this->normalizeIndexColumns( $column_name );
+
+        if ( ! $cols || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to index %s (%s): not a bare identifier.', $table_name, $column_name ) );
+
+            return false;
+        }
+
+        if ( $this->indexExists( $table_name, $column_name ) ) {
+
+            return true;
+        }
+
+        // Name it, so a later run is recognisable and this stays diagnosable.
+        // MySQL caps identifiers at 64 characters.
+        $index_name = substr( 'idx_' . implode( '_', $cols ), 0, 64 );
+
+        return $this->query(
+            sprintf( OWA_SQL_ADD_NAMED_INDEX, $table_name, $index_name, implode( ', ', $cols ), $index_definition )
+        );
     }
 
     /**

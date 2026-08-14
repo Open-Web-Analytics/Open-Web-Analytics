@@ -69,6 +69,17 @@ define('OWA_SQL_REGEXP', 'REGEXP');
 define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
 define('OWA_SQL_LIKE', 'LIKE');
 define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
+// Named form. The unnamed one above lets MySQL pick the name, so repeating it
+// yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.
+define('OWA_SQL_ADD_NAMED_INDEX', 'ALTER TABLE %s ADD INDEX %s (%s) %s');
+// Does an index covering exactly this column list already exist? Matched on the
+// columns, not the name, so indexes MySQL auto-named are recognised too.
+define('OWA_SQL_INDEX_EXISTS',
+    "SELECT COUNT(*) AS n FROM ( "
+  . "SELECT INDEX_NAME FROM information_schema.STATISTICS "
+  . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' "
+  . "GROUP BY INDEX_NAME "
+  . "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = '%s' ) x");
 define('OWA_SQL_COUNT', 'COUNT(%s)');
 define('OWA_SQL_SUM', 'SUM(%s)');
 define('OWA_SQL_ROUND', 'ROUND(%s)');
@@ -287,6 +298,32 @@ class Mysql extends \OWA\Core\Db {
         $row = mysqli_fetch_assoc($this->new_result);
 
         return $row;
+    }
+
+    /**
+     * Is there already an index covering exactly these columns?
+     *
+     * Matched on the column list rather than the index name, so an index MySQL
+     * named itself -- site_id, site_id_2 -- is recognised as covering site_id.
+     *
+     * @param string $table_name
+     * @param string $column_name  one column, or a comma-separated list
+     * @return bool
+     */
+    function indexExists( $table_name, $column_name ) {
+
+        $cols = $this->normalizeIndexColumns( $column_name );
+
+        if ( ! $cols || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        $row = $this->get_row(
+            sprintf( OWA_SQL_INDEX_EXISTS, $table_name, implode( ',', $cols ) )
+        );
+
+        return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
     }
 
     /**
