@@ -58,9 +58,18 @@ final class SiteSettingMissingSiteIdTest extends TestCase
      * is well-formed but not present still resolves through load(), and still
      * answers null because the row was never persisted -- reaching that answer
      * by the normal path rather than by the early return.
+     *
+     * This is the only case here that reaches load(), so it is the only one
+     * that needs a configured install: the entity cache it passes through
+     * reads OWA_AUTH_KEY, which a config-less CI run does not define. The
+     * guard cases above return before any of that.
      */
     public function testUnknownButWellFormedSiteIdStillResolvesThroughLoad()
     {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; skipping site lookup test.');
+        }
+
         $this->assertNull(
             \OWA\Core\CoreAPI::getSiteSetting('no-such-site-' . bin2hex(random_bytes(8)), 'goals'),
             'an unknown site should answer null'
