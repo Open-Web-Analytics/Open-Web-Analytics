@@ -214,6 +214,15 @@ class CoreAPI {
 
     public static function getSiteSetting($site_id, $name) {
 
+        // No site id means there is no row to look up. load() would reach
+        // getByColumn(), which throws on an empty value, so the absence of a
+        // parameter would surface as an uncaught exception rather than as the
+        // "no setting" answer every caller already handles.
+        if ( ! $site_id ) {
+
+            return;
+        }
+
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
