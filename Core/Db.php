@@ -1076,6 +1076,65 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Every non-primary index on the OWA tables.
+     *
+     * Schema introspection is driver-specific. A driver that cannot introspect
+     * reports nothing, so callers see no indexes rather than a wrong answer.
+     *
+     * @return array
+     */
+    function listIndexes() {
+
+        return array();
+    }
+
+    /**
+     * Indexes that duplicate another index on the same table, exactly.
+     *
+     * Same columns in the same order, same uniqueness, same type. The first by
+     * name is kept and the rest are returned as removable, so the result is
+     * stable and one index always survives for each column list.
+     *
+     * Reporting is separated from removing so the decision can be inspected --
+     * and tested -- without touching the schema.
+     *
+     * @return array of ['t' => table, 'i' => index, 'cols' => column list, 'keeping' => index kept]
+     */
+    function getDuplicateIndexes( $only_table = null ) {
+
+        $seen = array();
+        $dupes = array();
+
+        foreach ( $this->listIndexes() as $row ) {
+
+            if ( $only_table !== null && $row['t'] !== $only_table ) {
+
+                continue;
+            }
+
+            // Uniqueness and type are part of the identity: a unique index and a
+            // non-unique one over the same columns are not copies of each other.
+            $key = $row['t'] . "\0" . $row['cols'] . "\0" . $row['nu'] . "\0" . $row['ty'];
+
+            if ( isset( $seen[ $key ] ) ) {
+
+                $dupes[] = array(
+                    't'       => $row['t'],
+                    'i'       => $row['i'],
+                    'cols'    => $row['cols'],
+                    'keeping' => $seen[ $key ],
+                );
+
+            } else {
+
+                $seen[ $key ] = $row['i'];
+            }
+        }
+
+        return $dupes;
+    }
+
+    /**
      * Adds index to a column
      *
      * Does nothing when an index over the same columns is already present.
