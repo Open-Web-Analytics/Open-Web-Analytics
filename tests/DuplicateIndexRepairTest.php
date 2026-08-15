@@ -155,6 +155,27 @@ final class DuplicateIndexRepairTest extends TestCase
         $this->assertCount(2, $this->indexNames($t), 'neither should be removed');
     }
 
+    /**
+     * down() succeeds without putting the duplicates back.
+     *
+     * Recreating them would restore the cost -- space, and a write on every
+     * INSERT -- without restoring any capability, since an exact copy can never
+     * be chosen over the index it duplicates. Failing the rollback instead would
+     * strand the schema version, so it reports and succeeds.
+     */
+    public function testDownIsANoOpThatSucceeds()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->query(sprintf('ALTER TABLE %s ADD INDEX (yyyymmdd)', $t));
+        $before = $this->indexNames($t);
+
+        $this->assertTrue((new \OWA\Module\Base\Update\Update013())->down(), 'down() should succeed');
+
+        $this->assertSame($before, $this->indexNames($t), 'down() must not add indexes back');
+    }
+
     /** Tables outside the owa_ prefix are not OWA's to touch. */
     public function testTablesOutsideThePrefixAreIgnored()
     {

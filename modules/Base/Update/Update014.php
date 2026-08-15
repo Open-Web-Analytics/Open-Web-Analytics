@@ -89,4 +89,50 @@ class Update014 extends \OWA\Core\Update {
 
         return true;
     }
+
+    /**
+     * Remove the indexes up() added.
+     *
+     * Only the ones it created: they carry the name addIndex() gives them, so an
+     * index over visitor_id that was already present under another name -- which
+     * up() would have skipped -- is left alone.
+     */
+    function down() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $s  = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $ours = array();
+
+        foreach ( $db->listIndexes() as $row ) {
+
+            if ( $row['cols'] === 'visitor_id' && $row['i'] === 'idx_visitor_id' ) {
+
+                $ours[] = $row['t'];
+            }
+        }
+
+        $dropped = 0;
+
+        foreach ( $s->modules[ $this->module_name ]->getEntities() as $name ) {
+
+            $table = $this->c->get( 'base', 'ns' ) . $name;
+
+            if ( ! in_array( $table, $ours, true ) ) {
+
+                continue;
+            }
+
+            if ( $db->dropIndex( $table, 'idx_visitor_id' ) ) {
+
+                $dropped++;
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Dropped visitor_id index on %s.', $table ) );
+            }
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf( 'visitor_id: dropped %d index(es).', $dropped ) );
+
+        return true;
+    }
 }

@@ -93,6 +93,37 @@ final class VisitorIdIndexTest extends TestCase
         $this->assertTrue($db->indexExists($t, 'visitor_id'), 'the column should now be indexed');
     }
 
+    /**
+     * The round trip, against the real fact tables, since up() and down() work
+     * from the entity registry and cannot be pointed at a scratch table.
+     *
+     * It restores what it changes: up() runs in the finally block whatever
+     * happens, so a failing assertion cannot leave the schema unindexed.
+     */
+    public function testDownRemovesTheIndexAndUpRestoresIt()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Core\CoreAPI::getSetting('base', 'ns') . 'request';
+
+        $update = new \OWA\Module\Base\Update\Update014();
+        $update->module_name = 'base';
+
+        // Start from the applied state regardless of how the install was left.
+        $update->up();
+        $this->assertTrue($db->indexExists($table, 'visitor_id'), 'up() should leave it indexed');
+
+        try {
+            $this->assertTrue($update->down(), 'down() should report success');
+            $this->assertFalse($db->indexExists($table, 'visitor_id'), 'down() should remove the index');
+
+            $this->assertTrue($update->up(), 'up() should report success');
+            $this->assertTrue($db->indexExists($table, 'visitor_id'), 'up() should put it back');
+
+        } finally {
+            $update->up();
+        }
+    }
+
     /** Running it twice must not produce a second copy -- addIndex is idempotent. */
     public function testIndexingIsIdempotent()
     {
