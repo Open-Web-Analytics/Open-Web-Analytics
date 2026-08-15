@@ -1592,12 +1592,20 @@ class Db extends \OWA\Core\Base {
      * rewrites only the periods it has to. A partition that already matches the
      * target exactly is left untouched, which makes re-running this a no-op.
      *
-     * @param string $table_name
-     * @param string $granularity  daily|weekly|monthly
-     * @param bool   $dry_run      report the statements without running them
+     * A range restricts it to part of the table, which is how an installation
+     * ends up coarse for old data and fine for recent: converting everything to
+     * daily would give a table years of history one partition per day, and each
+     * partition is a file. The range is snapped outwards to the boundaries of
+     * the partitions it touches, since a partition can only be rewritten whole.
+     *
+     * @param string      $table_name
+     * @param string      $granularity  daily|quarter-month|half-month|monthly
+     * @param bool        $dry_run      report the statements without running them
+     * @param string|null $from         first day to convert, yyyymmdd
+     * @param string|null $to           first day not to convert, yyyymmdd
      * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
      */
-    function repartitionTable( $table_name, $granularity, $dry_run = false ) {
+    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null ) {
 
         $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array() );
 
@@ -1606,6 +1614,36 @@ class Db extends \OWA\Core\Base {
         if ( ! $spans ) {
 
             return $result;
+        }
+
+        // Keep only the partitions the range touches. A partition is rewritten
+        // whole or not at all, so one that merely overlaps the range is
+        // included and the range effectively widens to its boundaries.
+        if ( $from !== null || $to !== null ) {
+
+            $wanted = array();
+
+            foreach ( $spans as $span ) {
+
+                if ( $to !== null && (string) $span['start'] >= (string) $to ) {
+
+                    continue;
+                }
+
+                if ( $from !== null && (string) $span['less_than'] <= (string) $from ) {
+
+                    continue;
+                }
+
+                $wanted[] = $span;
+            }
+
+            $spans = array_values( $wanted );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
         }
 
         $span_start = $spans[0]['start'];

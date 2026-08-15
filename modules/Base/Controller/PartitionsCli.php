@@ -52,6 +52,14 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             $tables[] = $table;
         }
 
+        if ( $only && ! $tables ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '"%s" is not a fact table. Partitioning applies to: %s.',
+                $only, implode( ', ', $this->factTables() )
+            ) );
+        }
+
         return $tables;
     }
 

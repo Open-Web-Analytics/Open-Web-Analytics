@@ -162,4 +162,47 @@ final class PartitionOperationsTest extends TestCase
         $this->assertNotContains('pmax', $plan['drop']);
         $this->assertContains('pmax', $this->partitionNames($t));
     }
+
+    /**
+     * A range converts only the periods it touches, which is what allows one
+     * table to be coarse for old data and fine for recent. Converting
+     * everything to daily would give years of history one partition per day,
+     * and each partition is a file.
+     */
+    public function testRepartitionHonoursARange()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260415, 'monthly'));
+        $db->query(sprintf('INSERT INTO %s VALUES (1,20260105),(2,20260205),(3,20260305),(4,20260405)', $t));
+
+        $result = $db->repartitionTable($t, 'daily', false, '20260301', '20260401');
+
+        $this->assertCount(1, $result['changed'], 'only March should be rewritten');
+        $this->assertEmpty($result['failed']);
+        $this->assertSame(4, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'rows must survive');
+
+        $names = $this->partitionNames($t);
+
+        $this->assertContains('p20260101', $names, 'January must still be monthly');
+        $this->assertContains('p20260201', $names, 'February must still be monthly');
+        $this->assertContains('p20260401', $names, 'April must be untouched');
+        $this->assertContains('p20260331', $names, 'March must now be daily');
+    }
+
+    /** A range matching no partition changes nothing rather than everything. */
+    public function testRangeOutsideTheDataIsANoOp()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
+        $before = $this->partitionNames($t);
+
+        $result = $db->repartitionTable($t, 'daily', false, '20200101', '20200201');
+
+        $this->assertEmpty($result['changed']);
+        $this->assertSame($before, $this->partitionNames($t));
+    }
 }

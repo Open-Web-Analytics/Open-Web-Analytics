@@ -62,10 +62,19 @@ class PartitionInitCli extends PartitionsCli {
             // Cover the data that is there. An empty table still gets the
             // current period so that writes have somewhere to go beyond the
             // catch-all.
-            $row   = $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS mn, MAX(yyyymmdd) AS mx FROM %s', $table ) );
+            //
+            // The minimum ignores malformed dates. Installations carry rows
+            // with yyyymmdd of 0, and a plain MIN() returns that, which would
+            // put the first boundary at today and collapse every year of
+            // history into one partition. Those rows still land in the first
+            // partition, since RANGE has no lower bound -- they simply must not
+            // decide where the partitioning starts.
+            $row   = $db->get_row( sprintf(
+                'SELECT MIN(yyyymmdd) AS mn, MAX(yyyymmdd) AS mx FROM %s WHERE yyyymmdd > 19700101', $table
+            ) );
             $today = date( 'Ymd' );
 
-            $min = ( $row && $row['mn'] && (int) $row['mn'] > 19700101 ) ? $row['mn'] : $today;
+            $min = ( $row && $row['mn'] ) ? $row['mn'] : $today;
             $max = ( $row && $row['mx'] && (int) $row['mx'] > (int) $min ) ? $row['mx'] : $today;
 
             $ranges = \OWA\Core\Db::makePartitionRanges( $min, $max, $granularity );

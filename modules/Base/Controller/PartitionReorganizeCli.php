@@ -33,6 +33,18 @@ class PartitionReorganizeCli extends PartitionsCli {
         $db          = \OWA\Core\CoreAPI::dbSingleton();
         $granularity = $this->getParam( 'granularity' );
         $dry_run     = (bool) $this->getParam( 'dry-run' );
+        $from        = $this->getParam( 'from' ) ?: null;
+        $to          = $this->getParam( 'to' ) ?: null;
+
+        foreach ( array( 'from' => $from, 'to' => $to ) as $name => $value ) {
+
+            if ( $value !== null && ! preg_match( '/^\d{8}$/', (string) $value ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( '%s must be a date as yyyymmdd; got "%s".', $name, $value ) );
+
+                return;
+            }
+        }
 
         if ( ! $granularity ) {
 
@@ -64,7 +76,7 @@ class PartitionReorganizeCli extends PartitionsCli {
                 continue;
             }
 
-            $result = $db->repartitionTable( $table, $granularity, $dry_run );
+            $result = $db->repartitionTable( $table, $granularity, $dry_run, $from, $to );
 
             if ( ! $result['changed'] && ! $result['failed'] ) {
 
