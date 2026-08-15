@@ -1121,133 +1121,116 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Partition boundaries for a date range, at the given granularity.
+     * Where a month is cut, by day of month.
+     *
+     * Named for how many parts a month is divided into, never for a duration:
+     * months vary from 28 to 31 days, so any name carrying a day count would be
+     * wrong in some month. A third of January is 11 days and a third of
+     * February is 8; both are still a third of their month.
+     *
+     * Cutting only on days of the month is also what keeps every boundary
+     * aligned to a month start, which is what lets a granularity change rewrite
+     * one month at a time instead of the whole table.
+     */
+    const PARTITION_CUTS = array(
+        'monthly'       => array( 1 ),
+        'half-month'    => array( 1, 16 ),
+        'quarter-month' => array( 1, 8, 15, 22 ),
+        // 'daily' is every day of the month, so it is generated rather than listed.
+    );
+
+    /**
+     * Is this a granularity we can partition by?
+     *
+     * @param string $granularity
+     * @return bool
+     */
+    public static function isPartitionGranularity( $granularity ) {
+
+        return $granularity === 'daily' || isset( self::PARTITION_CUTS[ $granularity ] );
+    }
+
+    /**
+     * The day-of-month cut points for one month.
+     *
+     * @param \DateTimeImmutable $month  any day within the month
+     * @param string $granularity
+     * @return int[] ascending days of the month
+     */
+    private static function cutsForMonth( $month, $granularity ) {
+
+        if ( $granularity === 'daily' ) {
+
+            return range( 1, (int) $month->format( 't' ) );
+        }
+
+        if ( ! isset( self::PARTITION_CUTS[ $granularity ] ) ) {
+
+            return array();
+        }
+
+        $days = (int) $month->format( 't' );
+        $cuts = array();
+
+        foreach ( self::PARTITION_CUTS[ $granularity ] as $day ) {
+
+            // A short month cannot be cut past its end.
+            if ( $day <= $days ) {
+
+                $cuts[] = $day;
+            }
+        }
+
+        return $cuts;
+    }
+
+    /**
+     * Partition boundaries covering a date range.
      *
      * Each partition is named for the first day it holds and bounded by the
-     * first day it does not, which is the form RANGE wants. Rows whose date is
-     * malformed -- a handful of installs carry yyyymmdd values of 0 or 1 --
-     * land in the first partition, since RANGE has no lower bound.
+     * first day it does not. Rows whose date is malformed -- a handful of
+     * installs carry yyyymmdd values of 0 or 1 -- land in the first partition,
+     * since RANGE has no lower bound.
      *
      * @param int    $start_yyyymmdd
      * @param int    $end_yyyymmdd
-     * @param string $granularity  daily|weekly|monthly
+     * @param string $granularity
      * @return array name => less_than, in range order
      */
     public static function makePartitionRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
 
-        $step = array(
-            'daily'   => '+1 day',
-            'weekly'  => '+1 week',
-            'monthly' => '+1 month',
-        );
-
-        if ( ! isset( $step[ $granularity ] ) ) {
-
-            return array();
-        }
-
-        $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
-        $end   = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $end_yyyymmdd );
-
-        if ( ! $start || ! $end || $end < $start ) {
-
-            return array();
-        }
-
-        // Align to the start of the period so boundaries land on period edges
-        // however the range was given. Weeks start Monday.
-        if ( $granularity === 'monthly' ) {
-
-            $start = $start->modify( 'first day of this month' );
-
-        } elseif ( $granularity === 'weekly' ) {
-
-            $start = $start->modify( 'monday this week' );
-        }
-
-        $ranges = array();
-        $cursor = $start;
-
-        while ( $cursor <= $end ) {
-
-            $next = $cursor->modify( $step[ $granularity ] );
-            $ranges[ 'p' . $cursor->format( 'Ymd' ) ] = $next->format( 'Ymd' );
-            $cursor = $next;
-        }
-
-        return $ranges;
-    }
-
-    /**
-     * Indexes that duplicate another index on the same table, exactly.
-     *
-     * Same columns in the same order, same uniqueness, same type. The first by
-     * name is kept and the rest are returned as removable, so the result is
-     * stable and one index always survives for each column list.
-     *
-     * Reporting is separated from removing so the decision can be inspected --
-     * and tested -- without touching the schema.
-     *
-     * @return array of ['t' => table, 'i' => index, 'cols' => column list, 'keeping' => index kept]
-     */
-    function getDuplicateIndexes( $only_table = null ) {
-
-        $seen = array();
-        $dupes = array();
-
-        foreach ( $this->listIndexes() as $row ) {
-
-            if ( $only_table !== null && $row['t'] !== $only_table ) {
-
-                continue;
-            }
-
-            // Uniqueness and type are part of the identity: a unique index and a
-            // non-unique one over the same columns are not copies of each other.
-            $key = $row['t'] . "\0" . $row['cols'] . "\0" . $row['nu'] . "\0" . $row['ty'];
-
-            if ( isset( $seen[ $key ] ) ) {
-
-                $dupes[] = array(
-                    't'       => $row['t'],
-                    'i'       => $row['i'],
-                    'cols'    => $row['cols'],
-                    'keeping' => $seen[ $key ],
-                );
-
-            } else {
-
-                $seen[ $key ] = $row['i'];
-            }
-        }
-
-        return $dupes;
+        return self::buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, false );
     }
 
     /**
      * Partition boundaries that exactly tile a half-open span.
      *
      * REORGANIZE requires the replacement partitions to cover precisely the
-     * span of the ones they replace -- no gap, no overhang. So unlike
-     * makePartitionRanges() this does not align backwards to a period edge: it
-     * starts at the span start and clamps the final boundary to the span end.
-     * Aligning would push the first boundary below the span (1 Feb 2026 is a
-     * Sunday, so 'monday this week' lands in January) and the statement fails.
+     * span of the ones they replace -- no gap, no overhang -- so boundaries
+     * outside the span are clamped to it.
      *
-     * @param string $start_yyyymmdd  first day the span holds
-     * @param string $end_yyyymmdd    first day it does not
-     * @param string $granularity     daily|weekly|monthly
+     * @param int    $start_yyyymmdd  first day the span holds
+     * @param int    $end_yyyymmdd    first day it does not
+     * @param string $granularity
      * @return array name => less_than
      */
     public static function makePartitionRangesForSpan( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
 
-        $step = array(
-            'daily'   => '+1 day',
-            'weekly'  => '+1 week',
-            'monthly' => '+1 month',
-        );
+        return self::buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, true );
+    }
 
-        if ( ! isset( $step[ $granularity ] ) ) {
+    /**
+     * Walk the months in a range, emitting a partition per cut point.
+     *
+     * @param int    $start_yyyymmdd
+     * @param int    $end_yyyymmdd
+     * @param string $granularity
+     * @param bool   $exact  treat the end as exclusive and clamp to it
+     * @return array
+     */
+    private static function buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, $exact ) {
+
+        if ( ! self::isPartitionGranularity( $granularity ) ) {
 
             return array();
         }
@@ -1255,42 +1238,57 @@ class Db extends \OWA\Core\Base {
         $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
         $end   = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $end_yyyymmdd );
 
-        if ( ! $start || ! $end || $end <= $start ) {
+        if ( ! $start || ! $end ) {
+
+            return array();
+        }
+
+        if ( $exact ? ( $end <= $start ) : ( $end < $start ) ) {
 
             return array();
         }
 
         $ranges = array();
-        $cursor = $start;
+        $month  = $start->modify( 'first day of this month' )->setTime( 0, 0 );
+        $limit  = $end->modify( 'first day of next month' )->setTime( 0, 0 );
 
-        while ( $cursor < $end ) {
+        while ( $month < $limit ) {
 
-            $next = $cursor->modify( $step[ $granularity ] );
+            $next_month = $month->modify( 'first day of next month' );
 
-            // Keep weeks inside their month. A week that straddles a month
-            // boundary would leave the two sequences with no shared boundary
-            // between them, forcing every affected month to be rewritten in one
-            // statement instead of one month at a time. The cost is a short
-            // final week per month, which is a fair trade for being able to
-            // convert a large table incrementally.
-            if ( $granularity === 'weekly' ) {
+            $cuts = self::cutsForMonth( $month, $granularity );
 
-                $month_end = $cursor->modify( 'first day of next month' )->setTime( 0, 0 );
+            foreach ( $cuts as $i => $day ) {
 
-                if ( $next > $month_end ) {
+                $from = $month->setDate( (int) $month->format( 'Y' ), (int) $month->format( 'n' ), $day );
 
-                    $next = $month_end;
+                $to = isset( $cuts[ $i + 1 ] )
+                    ? $month->setDate( (int) $month->format( 'Y' ), (int) $month->format( 'n' ), $cuts[ $i + 1 ] )
+                    : $next_month;
+
+                if ( $exact ) {
+
+                    // Nothing outside the span the replacement has to tile.
+                    if ( $to <= $start || $from >= $end ) {
+
+                        continue;
+                    }
+
+                    if ( $from < $start ) {
+
+                        $from = $start;
+                    }
+
+                    if ( $to > $end ) {
+
+                        $to = $end;
+                    }
                 }
+
+                $ranges[ 'p' . $from->format( 'Ymd' ) ] = $to->format( 'Ymd' );
             }
 
-            // Never overhang the span; the last partition closes on it exactly.
-            if ( $next > $end ) {
-
-                $next = $end;
-            }
-
-            $ranges[ 'p' . $cursor->format( 'Ymd' ) ] = $next->format( 'Ymd' );
-            $cursor = $next;
+            $month = $next_month;
         }
 
         return $ranges;
