@@ -86,6 +86,13 @@ define('OWA_SQL_LIST_INDEXES',
   . "AND TABLE_NAME LIKE 'owa\\\\_%%' "
   . "GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE, INDEX_TYPE "
   . "ORDER BY TABLE_NAME, INDEX_NAME");
+// OWA tables carrying a given column. Used to index a column wherever it
+// appears, including fact tables a module contributes, rather than working from
+// a list that goes stale.
+define('OWA_SQL_TABLES_WITH_COLUMN',
+    "SELECT TABLE_NAME AS t FROM information_schema.COLUMNS "
+  . "WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = '%s' "
+  . "AND TABLE_NAME LIKE 'owa\\\\_%%' ORDER BY TABLE_NAME");
 define('OWA_SQL_INDEX_EXISTS',
     "SELECT COUNT(*) AS n FROM ( "
   . "SELECT INDEX_NAME FROM information_schema.STATISTICS "
@@ -353,6 +360,34 @@ class Mysql extends \OWA\Core\Db {
         $rows = $this->get_results( OWA_SQL_LIST_INDEXES );
 
         return is_array( $rows ) ? $rows : array();
+    }
+
+    /**
+     * OWA tables that carry the given column.
+     *
+     * Scoped to the 'owa_' prefix for the same reason listIndexes() is: an
+     * installation may share its database with another application.
+     *
+     * @param string $column_name
+     * @return string[] table names
+     */
+    function getTablesWithColumn( $column_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $column_name ) ) {
+
+            return array();
+        }
+
+        $rows = $this->get_results( sprintf( OWA_SQL_TABLES_WITH_COLUMN, $column_name ) );
+
+        $tables = array();
+
+        foreach ( (array) $rows as $row ) {
+
+            $tables[] = $row['t'];
+        }
+
+        return $tables;
     }
 
     /**
