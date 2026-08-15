@@ -228,4 +228,53 @@ final class PartitionOperationsTest extends TestCase
 
         $this->assertSame(6, $all['planned']);
     }
+
+    /**
+     * A cutoff in the future keeps the current period rather than wiping the
+     * table. Asking to drop everything older than a date years ahead is a
+     * mistyped year; taken literally it would discard data being written right
+     * now, since every bounded partition precedes it.
+     */
+    public function testFutureCutoffIsClampedToToday()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $today = date('Ymd');
+        $month = substr($today, 0, 6) . '01';
+
+        // Monthly, with boundaries current through today.
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime($month . ' -4 months')), $today, 'monthly'
+        ));
+
+        $db->query(sprintf(
+            'INSERT INTO %s VALUES (1,%s),(2,%s)',
+            $t, date('Ymd', strtotime($month . ' -2 months')), $today
+        ));
+
+        $plan = $db->getDroppablePartitions($t, 29990101);
+
+        $this->assertSame('29990101', $plan['requested'], 'the untouched request should be reported');
+        $this->assertNotContains('p' . $month, $plan['drop'], 'the current period must survive');
+        $this->assertSame('p' . $month, $plan['straddling']['name']);
+
+        foreach ($plan['drop'] as $p) {
+            $db->dropPartition($t, $p);
+        }
+
+        $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], "today's row must survive");
+        $this->assertContains('p' . $month, $this->partitionNames($t));
+    }
+
+    /** A cutoff in the past is taken at face value. */
+    public function testPastCutoffIsNotClamped()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20240101, 20240415, 'monthly'));
+
+        $this->assertNull($db->getDroppablePartitions($t, 20240301)['requested']);
+    }
 }

@@ -76,14 +76,30 @@ class PartitionDropCli extends PartitionsCli {
                 continue;
             }
 
-            // Removing every partition leaves only the catch-all, which is
-            // almost always a mistyped cutoff rather than an intent to empty
-            // the table.
+            // A cutoff in the future is a mistyped year. It is honoured as
+            // today rather than refused, which keeps the current period and
+            // discards the rest -- but say so, since the date was not taken
+            // literally.
+            if ( $plan['requested'] ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: %s is in the future; treating it as today (%s). Data being collected now '
+                  . 'is never dropped, so the current period is kept.',
+                    $table, $plan['requested'], date( 'Ymd' )
+                ) );
+            }
+
+            // Every bounded partition going means all history goes; the
+            // catch-all and the period holding today remain, so collection
+            // continues. Still worth confirming -- it is usually a cutoff
+            // meant to be years earlier.
             if ( count( $plan['drop'] ) === count( $spans ) && ! $this->getParam( 'force' ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: %s would remove EVERY partition. If that is intended, re-run with force=1.',
-                    $table, $cutoff
+                    '%s: %s would drop all %d historical partition(s), leaving only what is being '
+                  . 'collected now. Everything before %s would be gone. If that is intended, '
+                  . 're-run with force=1.',
+                    $table, $cutoff, count( $plan['drop'] ), $plan['effective']
                 ) );
 
                 continue;

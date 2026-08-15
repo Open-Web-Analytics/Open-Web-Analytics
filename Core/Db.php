@@ -1570,6 +1570,14 @@ class Db extends \OWA\Core\Base {
      * The catch-all is never droppable: it has no upper bound, and it holds
      * current traffic.
      *
+     * A cutoff later than today is clamped to today. Data up to and including
+     * today is being written right now, so no cutoff may reach it -- a date in
+     * the future is a mistyped year, not a request to discard the current
+     * period. With the cutoff clamped, the partition holding today straddles it
+     * and is kept by the rule above, which leaves exactly the current period in
+     * place. 'requested' reports the original where it differed, so the caller
+     * can say the date was not taken literally.
+     *
      * @param string $table_name
      * @param int    $older_than_yyyymmdd
      * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
@@ -1580,6 +1588,14 @@ class Db extends \OWA\Core\Base {
         $effective  = null;
         $straddling = null;
         $cutoff     = (string) $older_than_yyyymmdd;
+        $requested  = null;
+        $today      = date( 'Ymd' );
+
+        if ( $cutoff > $today ) {
+
+            $requested = $cutoff;
+            $cutoff    = $today;
+        }
 
         foreach ( $this->getPartitionSpans( $table_name ) as $span ) {
 
@@ -1600,7 +1616,12 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        return array( 'drop' => $drop, 'effective' => $effective, 'straddling' => $straddling );
+        return array(
+            'drop'       => $drop,
+            'effective'  => $effective,
+            'straddling' => $straddling,
+            'requested'  => $requested,
+        );
     }
 
     /**
