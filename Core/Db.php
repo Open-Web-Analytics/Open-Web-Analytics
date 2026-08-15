@@ -1182,6 +1182,15 @@ class Db extends \OWA\Core\Base {
      */
     const PARTITION_MONTHS_AHEAD = 12;
 
+    /**
+     * Days of slack on the lower bound used to prune per-session queries.
+     *
+     * See factLowerBound(). Sized empirically against observed anomalies, not
+     * from a known mechanism -- the one unexplained case measured in the field
+     * was two days.
+     */
+    const FACT_LOWER_BOUND_SLACK_DAYS = 30;
+
     const PARTITION_CUTS = array(
         'monthly'       => array( 1 ),
         'half-month'    => array( 1, 16 ),
@@ -1601,10 +1610,25 @@ class Db extends \OWA\Core\Base {
      * running past midnight, and not a date taken from an id, which the tracker
      * mints from the browser's clock.
      *
-     * A day of slack absorbs a backwards clock step on the server, the only way
-     * a row could carry an earlier date than the session containing it. Returns
-     * null where the date is unusable, in which case the caller simply does not
-     * constrain -- slower, never wrong.
+     * The slack is empirical, and deliberately generous, because the ways this
+     * invariant can be broken are not fully known.
+     *
+     * Both dates are server-assigned from the same clock: an event takes its
+     * timestamp in Event::__construct(), before it is persisted to the queue,
+     * and yyyymmdd is derived from that timestamp -- so neither queue lag nor a
+     * client clock can move them apart. On a 685,623-row installation four rows
+     * were nonetheless dated before their session. Three are explained: a
+     * sentinel session_id of -1, and two rows joined through a collided 32-bit
+     * crc32 id, which is not a real session at all. The fourth, two days out
+     * with a modern id, has no established cause.
+     *
+     * A month costs one extra partition on a monthly layout, which is cheap
+     * against an anomaly whose mechanism has not been identified. Narrow it
+     * only with evidence about that mechanism, not on the reasoning that both
+     * dates ought to agree -- they ought to, and in one case did not.
+     *
+     * Returns null where the date is unusable, in which case the caller simply
+     * does not constrain -- slower, never wrong.
      *
      * @param mixed $session_yyyymmdd
      * @return string|null yyyymmdd
@@ -1627,7 +1651,7 @@ class Db extends \OWA\Core\Base {
             return null;
         }
 
-        return $date->modify( '-1 day' )->format( 'Ymd' );
+        return $date->modify( '-' . self::FACT_LOWER_BOUND_SLACK_DAYS . ' days' )->format( 'Ymd' );
     }
 
     /**

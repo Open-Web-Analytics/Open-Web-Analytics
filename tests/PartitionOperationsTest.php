@@ -504,11 +504,19 @@ final class PartitionOperationsTest extends TestCase
      */
     public function testFactLowerBoundNeverExcludesTheSessionsOwnRows()
     {
-        // A day of slack, so a backwards clock step cannot push a request below it.
-        $this->assertSame('20260814', \OWA\Core\Db::factLowerBound('20260815'));
-        $this->assertSame('20251231', \OWA\Core\Db::factLowerBound('20260101'), 'must cross a year boundary');
-        $this->assertSame('20260228', \OWA\Core\Db::factLowerBound('20260301'), 'must handle month lengths');
-        $this->assertSame('20280229', \OWA\Core\Db::factLowerBound('20280301'), 'and leap years');
+        // Slack for queue lag: a session is dated when its event was processed,
+        // so a delayed event can be dated after requests that belong to it.
+        $slack = \OWA\Core\Db::FACT_LOWER_BOUND_SLACK_DAYS;
+
+        foreach (['20260815', '20260101', '20260301', '20280301'] as $date) {
+            $this->assertSame(
+                date('Ymd', strtotime("$date -$slack days")),
+                \OWA\Core\Db::factLowerBound($date),
+                "must subtract $slack days from $date across month, year and leap boundaries"
+            );
+        }
+
+        $this->assertGreaterThanOrEqual(2, $slack, 'must cover at least the queue lag observed in the field');
 
         // Unusable dates yield no bound at all, so the caller queries unconstrained.
         foreach ([0, '0', '', null, 'garbage', '19700101', '2026081', '202608155'] as $bad) {
