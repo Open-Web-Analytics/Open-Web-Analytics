@@ -714,13 +714,59 @@ class Entity {
         return;
     }
     
-    function getColumnDefinition($column_name) {
+    function getColumnDefinition($column_name, $omit_primary_key = false) {
     
         if (empty($this->properties)) {
-            return $this->$column_name->getDefinition();
+            return $this->$column_name->getDefinition($omit_primary_key);
         } else {
-            return $this->properties[$column_name]->getDefinition();
+            return $this->properties[$column_name]->getDefinition($omit_primary_key);
         }
+    }
+    
+    /**
+     * The column declared as the primary key, if any.
+     *
+     * @return string|null
+     */
+    function getPrimaryKeyColumn() {
+        
+        if (isset($this->_tableProperties['primary_key'])) {
+            return $this->_tableProperties['primary_key'];
+        }
+        
+        // Entities declare the key on the column rather than the table, so ask
+        // the columns which one claims it.
+        foreach ((array) $this->properties as $name => $col) {
+            
+            if (is_object($col) && $col->get('is_primary_key')) {
+                return $name;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Partition this entity's table by range on a column.
+     *
+     * The column has to be part of every unique key, so declaring it also makes
+     * the primary key composite -- see Db::createTable().
+     *
+     * @param string $column
+     */
+    function setPartitionColumn($column) {
+        
+        $this->_tableProperties['partition_column'] = $column;
+    }
+    
+    /**
+     * The column this entity's table is partitioned by, if any.
+     *
+     * @return string|null
+     */
+    function getPartitionColumn() {
+        
+        return isset($this->_tableProperties['partition_column']) ? $this->_tableProperties['partition_column'] : null;
     }
     
     function setProperty($obj) {

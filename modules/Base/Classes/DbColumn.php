@@ -90,7 +90,11 @@ class DbColumn {
          return;
      }
 
-     function getDefinition() {
+     /**
+      * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
+      *                                table that declares a composite one
+      */
+     function getDefinition( $omit_primary_key = false ) {
 
          $definition = '';
 
@@ -111,8 +115,10 @@ class DbColumn {
             $definition .= ' '.OWA_DTD_UNIQUE;
         endif;
 
-        // check for primary key
-        if ($this->get('is_primary_key') == true):
+        // check for primary key. A partitioned table declares a composite key
+        // at table level instead, since the partitioning column has to be part
+        // of it, so the caller can ask for the inline one to be left off.
+        if ($this->get('is_primary_key') == true && ! $omit_primary_key):
             $definition .= ' '.OWA_DTD_PRIMARY_KEY;
             //$definition .= sprintf(", INDEX (%s)", $this->get('name'));
         endif;

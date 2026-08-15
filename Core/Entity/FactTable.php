@@ -79,6 +79,11 @@ class FactTable extends \OWA\Core\Entity {
     
         $columns['yyyymmdd'] = new \OWA\Module\Base\Classes\DbColumn('yyyymmdd', OWA_DTD_INT);
         $columns['yyyymmdd']->setIndex();
+
+        // Fact tables are partitioned by date: it is what makes dropping old
+        // data a metadata operation rather than a mass delete, and it prunes
+        // every report query, which all bound this column.
+        $this->setPartitionColumn('yyyymmdd');
         
         $columns['year'] = new \OWA\Module\Base\Classes\DbColumn('year', OWA_DTD_INT);
         $columns['month'] = new \OWA\Module\Base\Classes\DbColumn('month', OWA_DTD_INT);

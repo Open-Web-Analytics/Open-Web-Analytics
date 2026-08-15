@@ -1663,6 +1663,16 @@ class Db extends \OWA\Core\Base {
 
         //create column defs
 
+        // A partitioned table cannot carry the primary key inline: the
+        // partitioning column has to be part of it, so it is declared at table
+        // level below. Only when the driver can actually partition.
+        $partition_column = null;
+
+        if ( method_exists( $entity, 'getPartitionColumn' ) && $this->supportsPartitioning() ) {
+
+            $partition_column = $entity->getPartitionColumn();
+        }
+
         $all_cols = $entity->getColumns();
 
         $columns = '';
@@ -1677,7 +1687,7 @@ class Db extends \OWA\Core\Base {
         foreach ($all_cols as $k => $v){
 
             // get column definition
-            $columns .= $v.' '.$entity->getColumnDefinition($v);
+            $columns .= $v.' '.$entity->getColumnDefinition($v, (bool) $partition_column);
 
             // Add commas to column statement
             if ($i < $count - 1):
@@ -1719,6 +1729,26 @@ class Db extends \OWA\Core\Base {
         }
 
         $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+
+        if ( $partition_column ) {
+
+            $pk = $entity->getPrimaryKeyColumn();
+
+            if ( $pk && $pk !== $partition_column ) {
+
+                $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
+            }
+
+            // Start with the month the table is created in; later periods are
+            // added as they are needed, and everything beyond the last boundary
+            // falls into the catch-all until then.
+            $now = date( 'Ymd' );
+
+            $table_options .= $this->makePartitionClause(
+                $partition_column,
+                self::makePartitionRanges( $now, $now, 'monthly' )
+            );
+        }
 
         return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));
     }
