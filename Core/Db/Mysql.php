@@ -254,8 +254,13 @@ class Mysql extends \OWA\Core\Db {
     /**
      * Fetch result set array
      *
+     * Null, not an empty array, when there is nothing to return -- no rows, or
+     * a query that failed. Callers have always had to allow for that, so the
+     * behaviour is left alone and the type is corrected to match it: returning
+     * an array instead would silently change what `=== null` sees.
+     *
      * @param     string $sql
-     * @return     array
+     * @return     array|null
      * @access  public
      */
     function get_results( $sql ) {
@@ -290,17 +295,25 @@ class Mysql extends \OWA\Core\Db {
     /**
      * Fetch Single Row
      *
+     * Null when the query returns no row -- and also when it fails, since a
+     * failed query has no row either. query() returns false in that case, which
+     * mysqli_fetch_assoc() refuses, so a failure raised a TypeError rather than
+     * reporting itself as no result. Every caller already tests the return
+     * value, because "no row" has always been a normal answer.
+     *
      * @param string $sql
-     * @return array
+     * @return array|null
      */
     function get_row($sql) {
 
-        $this->query($sql);
+        $result = $this->query($sql);
 
-        //print_r($this->result);
-        $row = mysqli_fetch_assoc($this->new_result);
+        if ( ! $result || ! ( $this->new_result instanceof \mysqli_result ) ) {
 
-        return $row;
+            return null;
+        }
+
+        return mysqli_fetch_assoc($this->new_result);
     }
 
     /**
