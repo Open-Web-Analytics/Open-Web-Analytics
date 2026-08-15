@@ -584,6 +584,9 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.processFirstRequest',           'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',          'Controller/ProcessFirstRequest.php' );
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
+        $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli',           'Controller/PartitionInitCli.php' );
+        $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
+        $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.reportActionDetail',            'OWA\\Module\\Base\\Controller\\ReportActionDetail',           'Controller/ReportActionDetail.php' );
         $this->registerAction( 'base.reportActionGroup',             'OWA\\Module\\Base\\Controller\\ReportActionGroup',            'Controller/ReportActionGroup.php' );
         $this->registerAction( 'base.reportActionGroups',            'OWA\\Module\\Base\\Controller\\ReportActionGroups',           'Controller/ReportActionGroups.php' );
@@ -699,6 +702,9 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('add-site', 'base.sitesAddCli');
         $this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
+        $this->registerCliCommand('partition-init', 'base.partitionInitCli');
+        $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
+        $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
         $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
         $this->registerCliCommand('update-document', 'base.crawlDocumentCli');

@@ -1110,6 +1110,17 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * The columns of a table's primary key. Unknown, without introspection.
+     *
+     * @param string $table_name
+     * @return string[]
+     */
+    function getPrimaryKeyColumns( $table_name ) {
+
+        return array();
+    }
+
+    /**
      * Is this table partitioned?
      *
      * @param string $table_name
@@ -1354,6 +1365,26 @@ class Db extends \OWA\Core\Base {
         if ( ! $clause ) {
 
             return false;
+        }
+
+        // Every unique key has to contain the partitioning column, so widen the
+        // primary key first where it does not. A table built by createTable()
+        // already has it; one that predates partitioning does not.
+        $pk = $this->getPrimaryKeyColumns( $table_name );
+
+        if ( $pk && ! in_array( $column, $pk, true ) ) {
+
+            $widened = array_merge( $pk, array( $column ) );
+
+            $ret = $this->query( sprintf(
+                'ALTER TABLE %s DROP PRIMARY KEY, ADD PRIMARY KEY (%s)',
+                $table_name, implode( ', ', $widened )
+            ) );
+
+            if ( ! $ret ) {
+
+                return false;
+            }
         }
 
         return $this->query( sprintf( 'ALTER TABLE %s%s', $table_name, $clause ) );

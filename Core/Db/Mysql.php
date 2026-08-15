@@ -348,6 +348,33 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * The columns of a table's primary key, in key order.
+     *
+     * @param string $table_name
+     * @return string[]
+     */
+    function getPrimaryKeyColumns( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return array();
+        }
+
+        $sql = "SELECT COLUMN_NAME AS c FROM information_schema.STATISTICS "
+             . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND INDEX_NAME = 'PRIMARY' "
+             . "ORDER BY SEQ_IN_INDEX";
+
+        $cols = array();
+
+        foreach ( (array) $this->get_results( sprintf( $sql, $table_name ) ) as $row ) {
+
+            $cols[] = $row['c'];
+        }
+
+        return $cols;
+    }
+
+    /**
      * Is there already an index covering exactly these columns?
      *
      * Matched on the column list rather than the index name, so an index MySQL

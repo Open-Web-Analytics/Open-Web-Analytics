@@ -72,6 +72,12 @@ final class ActionRegistryTest extends TestCase
 
             $class = 'OWA\\Module\\Base\\Controller\\' . $short;
 
+            // An abstract controller cannot be dispatched, so it has nothing to
+            // register. Checking the class beats maintaining a list of them.
+            if (class_exists($class) && (new \ReflectionClass($class))->isAbstract()) {
+                continue;
+            }
+
             if (! isset($registered[$class])) {
                 $missing[] = $short;
             }
