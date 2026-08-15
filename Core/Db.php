@@ -1168,11 +1168,41 @@ class Db extends \OWA\Core\Base {
      */
     const PARTITION_COUNT_LIMIT = 400;
 
+    /**
+     * How many whole future months of partitions to keep ahead of today.
+     *
+     * The catch-all exists so that a write past the last boundary is accepted
+     * rather than rejected, but anything landing in it cannot be dropped by a
+     * retention cutoff -- it has no upper bound, so it is never wholly older
+     * than any date. Keeping a year of partitions ahead means the catch-all
+     * stays empty in normal operation: every write finds a real bounded
+     * partition, retention reaches the date asked for, and the periodic top-up
+     * splits an empty catch-all, which is cheap. It also means a top-up that
+     * stops running has a year of slack before anything is affected.
+     */
+    const PARTITION_MONTHS_AHEAD = 12;
+
     const PARTITION_CUTS = array(
         'monthly'       => array( 1 ),
         'half-month'    => array( 1, 16 ),
         'quarter-month' => array( 1, 8, 15, 22 ),
     );
+
+    /**
+     * The upper boundary a table needs for a given lead of whole future months.
+     *
+     * Counted from the start of the current month, so the result does not move
+     * within a month: the current period plus the lead. Twelve months ahead of
+     * mid-August 2026 is 1 September 2027 -- September 2026 through August 2027
+     * being the twelve future months.
+     *
+     * @param int $months
+     * @return string yyyymmdd
+     */
+    static function partitionLeadBoundary( $months = self::PARTITION_MONTHS_AHEAD ) {
+
+        return date( 'Ymd', strtotime( date( 'Ym' ) . '01 +' . ( (int) $months + 1 ) . ' months' ) );
+    }
 
     /**
      * Is this a granularity we can partition by?
@@ -1557,6 +1587,106 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * The name of the catch-all partition, or null where there is none.
+     *
+     * @param string $table_name
+     * @return string|null
+     */
+    function getCatchAllPartition( $table_name ) {
+
+        foreach ( $this->listPartitions( $table_name ) as $p ) {
+
+            if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                return $p['name'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Add whatever partitions are missing between the last boundary and a date.
+     *
+     * The new periods are cut out of the catch-all, which is the only partition
+     * holding anything above the last boundary, and a fresh catch-all is put
+     * back on the end so writes beyond the new range are still accepted. Where
+     * the catch-all is empty -- the normal case when this is run often enough --
+     * the rewrite moves no rows.
+     *
+     * Doing nothing when the range is already covered is what makes this safe
+     * to run on a schedule: the result depends on the date, not on how many
+     * times it has run.
+     *
+     * @param string $table_name
+     * @param string $granularity
+     * @param string $through      yyyymmdd the partitions must reach
+     * @param bool   $dry_run
+     * @return array ['added','planned','top','covered']
+     */
+    function extendPartitions( $table_name, $granularity, $through, $dry_run = false ) {
+
+        $result = array( 'added' => array(), 'planned' => 0, 'top' => null, 'covered' => false );
+
+        $spans     = $this->getPartitionSpans( $table_name );
+        $catch_all = $this->getCatchAllPartition( $table_name );
+
+        if ( ! $spans || ! $catch_all ) {
+
+            return $result;
+        }
+
+        $top = $spans[ count( $spans ) - 1 ]['less_than'];
+
+        $result['top'] = (string) $top;
+
+        if ( (string) $top >= (string) $through ) {
+
+            $result['covered'] = true;
+
+            return $result;
+        }
+
+        $ranges = self::makePartitionRangesForSpan( $top, $through, $granularity );
+
+        if ( ! $ranges ) {
+
+            return $result;
+        }
+
+        $result['planned'] = count( $ranges );
+
+        if ( $dry_run ) {
+
+            $result['added'] = array_keys( $ranges );
+
+            return $result;
+        }
+
+        // The replacements must tile exactly what they replace, and the
+        // catch-all reaches to MAXVALUE, so one has to go back on the end.
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $catch_all, OWA_DTD_PARTITION_MAXVALUE );
+
+        $sql = sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, $catch_all, implode( ', ', $parts )
+        );
+
+        if ( $this->query( $sql ) ) {
+
+            $result['added'] = array_keys( $ranges );
+        }
+
+        return $result;
+    }
+
+    /**
      * Which partitions hold only data older than a cutoff.
      *
      * A partition is droppable only when everything in it precedes the cutoff,
@@ -1898,14 +2028,17 @@ class Db extends \OWA\Core\Base {
                 $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
             }
 
-            // Start with the month the table is created in; later periods are
-            // added as they are needed, and everything beyond the last boundary
-            // falls into the catch-all until then.
-            $now = date( 'Ymd' );
-
+            // Cover the current month and a year ahead, so that the catch-all
+            // stays empty until the lead runs down. partition-init tops this up
+            // and is meant to run periodically; a table created and never
+            // topped up still has a year before anything reaches the catch-all.
             $table_options .= $this->makePartitionClause(
                 $partition_column,
-                self::makePartitionRanges( $now, $now, 'monthly' )
+                self::makePartitionRanges(
+                    date( 'Ymd' ),
+                    date( 'Ymd', strtotime( self::partitionLeadBoundary() . ' -1 day' ) ),
+                    'monthly'
+                )
             );
         }
 

@@ -277,4 +277,86 @@ final class PartitionOperationsTest extends TestCase
 
         $this->assertNull($db->getDroppablePartitions($t, 20240301)['requested']);
     }
+
+    /**
+     * The lead is what keeps the catch-all empty, and so what keeps retention
+     * able to reach the date it is given. Topping it up must converge: the
+     * layout should depend on the date, not on how many times this has run.
+     */
+    public function testExtendingTheLeadIsIdempotent()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $month = date('Ym') . '01';
+
+        // A table partitioned months ago and never topped up: recent writes
+        // have piled into the catch-all, where retention cannot reach them.
+        $start = date('Ymd', strtotime($month . ' -6 months'));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
+        $db->query(sprintf('INSERT INTO %s VALUES (1,%s),(2,%s)', $t, $start, date('Ymd')));
+
+        $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t PARTITION (pmax)")['n'],
+            'the recent row should be stuck in the catch-all');
+
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+
+        $first = $db->extendPartitions($t, 'monthly', $through);
+
+        $this->assertNotEmpty($first['added']);
+        $this->assertFalse($first['covered']);
+        $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no rows may be lost');
+        $this->assertSame(0, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t PARTITION (pmax)")['n'],
+            'the catch-all should now be empty');
+
+        $count = count($this->partitionNames($t));
+
+        // Running again changes nothing.
+        $second = $db->extendPartitions($t, 'monthly', $through);
+
+        $this->assertTrue($second['covered']);
+        $this->assertEmpty($second['added']);
+        $this->assertCount($count, $this->partitionNames($t));
+
+        // And what was trapped in the catch-all is now droppable.
+        $cutoff = date('Ymd', strtotime($month . ' -1 month'));
+        $this->assertNotEmpty($db->getDroppablePartitions($t, $cutoff)['drop']);
+    }
+
+    /** The lead counts whole future months from the start of this one. */
+    public function testLeadBoundary()
+    {
+        $month = date('Ym') . '01';
+
+        $this->assertSame(
+            date('Ymd', strtotime($month . ' +13 months')),
+            \OWA\Core\Db::partitionLeadBoundary(12),
+            'twelve future months, plus the current one'
+        );
+
+        $this->assertSame(
+            date('Ymd', strtotime($month . ' +4 months')),
+            \OWA\Core\Db::partitionLeadBoundary(3)
+        );
+    }
+
+    /** A table already reaching past the target is left alone. */
+    public function testExtendIsANoOpWhenAlreadyCovered()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd'), date('Ymd', strtotime($through . ' -1 day')), 'monthly'
+        ));
+
+        $before = $this->partitionNames($t);
+        $result = $db->extendPartitions($t, 'monthly', $through);
+
+        $this->assertTrue($result['covered']);
+        $this->assertSame($through, $result['top'], 'the lead should already be exactly met');
+        $this->assertSame($before, $this->partitionNames($t));
+    }
 }
