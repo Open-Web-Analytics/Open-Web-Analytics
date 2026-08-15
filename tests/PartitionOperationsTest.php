@@ -359,4 +359,78 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame($through, $result['top'], 'the lead should already be exactly met');
         $this->assertSame($before, $this->partitionNames($t));
     }
+
+    /** Every scheme is recognisable from the boundaries it cuts on. */
+    public function testGranularityIsInferredFromTheTable()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $month = date('Ym') . '01';
+
+        foreach (array_keys(\OWA\Core\Db::PARTITION_CUTS) as $granularity) {
+
+            $t = $this->makeTable();
+
+            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                date('Ymd', strtotime($month . ' -2 months')), date('Ymd'), $granularity
+            ));
+
+            $this->assertSame($granularity, $db->inferPartitionGranularity($t));
+        }
+    }
+
+    /**
+     * The point of inferring: a table converted to a finer granularity must
+     * keep extending at it. Topping the lead up with the command's own default
+     * would quietly undo the conversion on the next scheduled run.
+     */
+    public function testTheLeadKeepsTheTablesOwnGranularity()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+        $month = date('Ym') . '01';
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            $month, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary(3) . ' -1 day')), 'quarter-month'
+        ));
+
+        $db->extendPartitions($t, $db->inferPartitionGranularity($t), \OWA\Core\Db::partitionLeadBoundary());
+
+        $this->assertSame('quarter-month', $db->inferPartitionGranularity($t),
+            'the granularity must survive a top-up');
+
+        // The final month must be cut into four, not left whole.
+        $spans = $db->getPartitionSpans($t);
+        $last  = substr($spans[count($spans) - 1]['start'], 0, 6);
+        $parts = 0;
+
+        foreach ($spans as $span) {
+            if (substr($span['start'], 0, 6) === $last) {
+                $parts++;
+            }
+        }
+
+        $this->assertSame(4, $parts, 'the newest month should still be quartered');
+    }
+
+    /** A table coarse in history and finer recently follows its recent end. */
+    public function testInferenceFollowsTheRecentEnd()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+        $month = date('Ym') . '01';
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime($month . ' -6 months')), date('Ymd'), 'monthly'
+        ));
+
+        $db->repartitionTable($t, 'quarter-month', false, date('Ymd', strtotime($month . ' -1 month')), null);
+
+        $this->assertSame('quarter-month', $db->inferPartitionGranularity($t));
+    }
+
+    /** An unpartitioned table has nothing to infer from. */
+    public function testInferenceYieldsNullWhenThereIsNoScheme()
+    {
+        $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->inferPartitionGranularity($this->makeTable()));
+    }
 }

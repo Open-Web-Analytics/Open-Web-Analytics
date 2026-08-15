@@ -19,13 +19,18 @@ namespace OWA\Module\Base\Controller;
  * partitions ahead means writes always find a real partition, so nothing
  * accumulates anywhere retention cannot reach.
  *
+ * Granularity is inferred from each table unless given, so a table converted
+ * with partition-reorganize keeps extending at the granularity it was given
+ * rather than reverting to monthly on the next scheduled run.
+ *
  * It is a command rather than an update because the first run rewrites every
  * fact table: on a busy installation that is minutes of I/O, and it should be
  * run deliberately rather than firing inside an upgrade nobody scheduled.
  * Later runs only split an empty catch-all and are cheap.
  *
- *   cmd=partition-init                          partition/top up, monthly
- *   cmd=partition-init granularity=half-month   a finer granularity
+ *   cmd=partition-init                          partition/top up, keeping
+ *                                               each table's own granularity
+ *   cmd=partition-init granularity=half-month   override it
  *   cmd=partition-init months-ahead=6           keep six months ahead, not twelve
  *   cmd=partition-init table=owa_request        one table
  *   cmd=partition-init dry-run=1                report the plan, change nothing
@@ -43,7 +48,10 @@ class PartitionInitCli extends PartitionsCli {
         }
 
         $db          = \OWA\Core\CoreAPI::dbSingleton();
-        $granularity = $this->getParam( 'granularity' ) ?: 'monthly';
+        // Left unset, each table keeps whatever it is already using. Setting
+        // granularity is partition-reorganize's job; this command maintains
+        // what it finds, so a scheduled run does not quietly undo a choice.
+        $granularity = $this->getParam( 'granularity' ) ?: null;
         $dry_run     = (bool) $this->getParam( 'dry-run' );
 
         $months_ahead = $this->getParam( 'months-ahead' );
@@ -51,7 +59,7 @@ class PartitionInitCli extends PartitionsCli {
             ? \OWA\Core\Db::PARTITION_MONTHS_AHEAD
             : max( 1, (int) $months_ahead );
 
-        if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
+        if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
@@ -79,13 +87,18 @@ class PartitionInitCli extends PartitionsCli {
 
         foreach ( $tables as $table ) {
 
+            // An unpartitioned table has nothing to infer from, so it starts
+            // monthly unless told otherwise.
+            $table_granularity = $granularity
+                ?: ( $db->inferPartitionGranularity( $table ) ?: 'monthly' );
+
             // Already partitioned: top the lead back up rather than skipping.
             // This is the case on every run after the first, and is what makes
             // repeated runs converge on the same layout instead of doing
             // nothing.
             if ( $db->isPartitioned( $table ) ) {
 
-                $ext = $db->extendPartitions( $table, $granularity, $through, true );
+                $ext = $db->extendPartitions( $table, $table_granularity, $through, true );
 
                 if ( $ext['covered'] ) {
 
@@ -116,17 +129,17 @@ class PartitionInitCli extends PartitionsCli {
 
                     \OWA\Core\CoreAPI::notice( sprintf(
                         '%s: would add %d %s partition(s), extending %s to %s.',
-                        $table, $ext['planned'], $granularity, $ext['top'], $through
+                        $table, $ext['planned'], $table_granularity, $ext['top'], $through
                     ) );
 
                     continue;
                 }
 
-                $done = $db->extendPartitions( $table, $granularity, $through );
+                $done = $db->extendPartitions( $table, $table_granularity, $through );
 
                 \OWA\Core\CoreAPI::notice( $done['added']
-                    ? sprintf( '%s: added %d partition(s), now covered through %s.',
-                        $table, count( $done['added'] ), $through )
+                    ? sprintf( '%s: added %d %s partition(s), now covered through %s.',
+                        $table, count( $done['added'] ), $table_granularity, $through )
                     : sprintf( '%s: FAILED to extend; see the database error above.', $table )
                 );
 
@@ -155,7 +168,7 @@ class PartitionInitCli extends PartitionsCli {
             // falls in.
             $max = date( 'Ymd', strtotime( $through . ' -1 day' ) );
 
-            $ranges = \OWA\Core\Db::makePartitionRanges( $min, $max, $granularity );
+            $ranges = \OWA\Core\Db::makePartitionRanges( $min, $max, $table_granularity );
 
             if ( ! $ranges ) {
 
@@ -173,7 +186,7 @@ class PartitionInitCli extends PartitionsCli {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: would create %d %s partitions covering %s to %s, plus a catch-all.',
-                    $table, count( $ranges ), $granularity, $min, $through
+                    $table, count( $ranges ), $table_granularity, $min, $through
                 ) );
 
                 continue;

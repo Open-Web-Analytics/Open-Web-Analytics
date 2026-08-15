@@ -1587,6 +1587,59 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Work out the granularity a table is already using.
+     *
+     * Taken from the boundaries rather than the partition names. The names
+     * encode the same dates -- p20261008 is the period starting on the 8th --
+     * but a name is a label this class chose, while VALUES LESS THAN is what
+     * MySQL enforces and what actually decides where a row goes. Where the two
+     * could disagree, the boundary is the truth.
+     *
+     * Since every cut is a day of the month, the days a month is cut on are
+     * exactly the granularity's entry in PARTITION_CUTS, so this is a lookup
+     * rather than a calculation.
+     *
+     * Only the most recent month is considered. A table is allowed to be coarse
+     * in history and finer over recent periods, and it is the recent end that
+     * says what new periods should look like.
+     *
+     * @param string $table_name
+     * @return string|null  null where it does not match a known scheme
+     */
+    function inferPartitionGranularity( $table_name ) {
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans ) {
+
+            return null;
+        }
+
+        $month = substr( $spans[ count( $spans ) - 1 ]['start'], 0, 6 );
+        $days  = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( substr( $span['start'], 0, 6 ) === $month ) {
+
+                $days[] = (int) substr( $span['start'], 6, 2 );
+            }
+        }
+
+        sort( $days );
+
+        foreach ( self::PARTITION_CUTS as $granularity => $cuts ) {
+
+            if ( $days === $cuts ) {
+
+                return $granularity;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The name of the catch-all partition, or null where there is none.
      *
      * @param string $table_name
