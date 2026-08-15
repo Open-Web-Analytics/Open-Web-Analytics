@@ -18,6 +18,8 @@ namespace OWA\Module\Base\Controller;
  * The lead is added BEFORE anything is dropped. Extending is the safe half, so
  * a run that fails partway has still gained coverage rather than having
  * discarded history and then failed to create anywhere for new data to go.
+ * Where the lead is refused for want of open files, it is retried after the
+ * drop, since dropping is what frees them.
  *
  *   cmd=partition-rotate keep=24                  keep two years, twelve ahead
  *   cmd=partition-rotate keep=12 months-ahead=6   a shorter lead
@@ -117,9 +119,24 @@ class PartitionRotateCli extends PartitionsCli {
             $table_granularity = $granularity ?: ( $db->inferPartitionGranularity( $table ) ?: 'monthly' );
 
             // Ahead first: see the class comment.
-            $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
+            $extended = $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
 
-            $this->dropOlderThan( $table, $cutoff, $dry_run );
+            $dropped = $this->dropOlderThan( $table, $cutoff, $dry_run );
+
+            // Dropping frees the open files the lead was refused for, so a
+            // refusal is worth revisiting once the old periods have gone.
+            // Otherwise this run would leave behind the very state the command
+            // exists to prevent: history dropped, nothing created ahead. Not
+            // skipping the drop instead, which would deadlock -- the count
+            // could never come down, so the lead could never fit.
+            if ( ! $extended && $dropped && ! $dry_run ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: retrying the lead now that %d partition(s) have gone.', $table, $dropped
+                ) );
+
+                $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
+            }
         }
     }
 }
