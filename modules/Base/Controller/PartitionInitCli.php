@@ -98,50 +98,7 @@ class PartitionInitCli extends PartitionsCli {
             // nothing.
             if ( $db->isPartitioned( $table ) ) {
 
-                $ext = $db->extendPartitions( $table, $table_granularity, $through, true );
-
-                if ( $ext['covered'] ) {
-
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        '%s: already covered through %s; nothing to add.', $table, $ext['top']
-                    ) );
-
-                    continue;
-                }
-
-                if ( ! $ext['planned'] ) {
-
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        '%s: partitioned, but its layout could not be read; skipping.', $table
-                    ) );
-
-                    continue;
-                }
-
-                if ( ! $this->withinPartitionBudget(
-                    $table, count( $db->getPartitionSpans( $table ) ) + $ext['planned'], $budget
-                ) ) {
-
-                    continue;
-                }
-
-                if ( $dry_run ) {
-
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        '%s: would add %d %s partition(s), extending %s to %s.',
-                        $table, $ext['planned'], $table_granularity, $ext['top'], $through
-                    ) );
-
-                    continue;
-                }
-
-                $done = $db->extendPartitions( $table, $table_granularity, $through );
-
-                \OWA\Core\CoreAPI::notice( $done['added']
-                    ? sprintf( '%s: added %d %s partition(s), now covered through %s.',
-                        $table, count( $done['added'] ), $table_granularity, $through )
-                    : sprintf( '%s: FAILED to extend; see the database error above.', $table )
-                );
+                $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
 
                 continue;
             }

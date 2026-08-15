@@ -171,6 +171,171 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return false;
     }
 
+    /**
+     * Bring one table's lead up to a date, reporting what it did.
+     *
+     * Shared by partition-init and partition-rotate so that extending is
+     * described the same way whichever command asked for it.
+     *
+     * @param string $table
+     * @param string $granularity
+     * @param string $through
+     * @param array  $budget  from partitionLimit()
+     * @param bool   $dry_run
+     * @return bool  false only where it wanted to act and could not
+     */
+    protected function extendTableLead( $table, $granularity, $through, $budget, $dry_run ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $plan = $db->extendPartitions( $table, $granularity, $through, true );
+
+        if ( $plan['covered'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: already covered through %s; nothing to add.', $table, $plan['top']
+            ) );
+
+            return true;
+        }
+
+        if ( ! $plan['planned'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: partitioned, but its layout could not be read; skipping.', $table
+            ) );
+
+            return false;
+        }
+
+        if ( ! $this->withinPartitionBudget(
+            $table, count( $db->getPartitionSpans( $table ) ) + $plan['planned'], $budget
+        ) ) {
+
+            return false;
+        }
+
+        if ( $dry_run ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: would add %d %s partition(s), extending %s to %s.',
+                $table, $plan['planned'], $granularity, $plan['top'], $through
+            ) );
+
+            return true;
+        }
+
+        $done = $db->extendPartitions( $table, $granularity, $through );
+
+        if ( ! $done['added'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%s: FAILED to extend; see the database error above.', $table ) );
+
+            return false;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: added %d %s partition(s), now covered through %s.',
+            $table, count( $done['added'] ), $granularity, $through
+        ) );
+
+        return true;
+    }
+
+    /**
+     * Drop one table's partitions that hold only data older than a cutoff.
+     *
+     * Shared by partition-drop and partition-rotate.
+     *
+     * @param string $table
+     * @param string $cutoff
+     * @param bool   $dry_run
+     * @return int  partitions dropped, or that would be
+     */
+    protected function dropOlderThan( $table, $cutoff, $dry_run ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $plan  = $db->getDroppablePartitions( $table, $cutoff );
+        $spans = $db->getPartitionSpans( $table );
+
+        if ( ! $plan['drop'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%s: nothing older than %s.', $table, $cutoff ) );
+
+            return 0;
+        }
+
+        // A cutoff in the future is a mistyped year. It is honoured as today
+        // rather than refused, which keeps the current period and discards the
+        // rest -- but say so, since the date was not taken literally.
+        if ( $plan['requested'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: %s is in the future; treating it as today (%s). Data being collected now '
+              . 'is never dropped, so the current period is kept.',
+                $table, $plan['requested'], date( 'Ymd' )
+            ) );
+        }
+
+        // Every bounded partition going means all history goes; the catch-all
+        // and the period holding today remain, so collection continues. Still
+        // worth confirming -- it is usually a cutoff meant to be years earlier.
+        if ( count( $plan['drop'] ) === count( $spans ) && ! $this->getParam( 'force' ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: %s would drop all %d historical partition(s), leaving only what is being '
+              . 'collected now. Everything before %s would be gone. If that is intended, '
+              . 're-run with force=1.',
+                $table, $cutoff, count( $plan['drop'] ), $plan['effective']
+            ) );
+
+            return 0;
+        }
+
+        $dropped = count( $plan['drop'] );
+
+        if ( $dry_run ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: would drop %d partition(s) [%s]; data before %s would be gone.',
+                $table, $dropped, implode( ', ', $plan['drop'] ), $plan['effective']
+            ) );
+
+        } else {
+
+            $dropped = 0;
+
+            foreach ( $plan['drop'] as $partition ) {
+
+                if ( $db->dropPartition( $table, $partition ) ) {
+
+                    $dropped++;
+
+                } else {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( '%s: failed to drop %s.', $table, $partition ) );
+                }
+            }
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: dropped %d partition(s). Data before %s no longer exists.',
+                $table, $dropped, $plan['effective']
+            ) );
+        }
+
+        if ( $plan['straddling'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: kept %s (%s to %s) -- it also holds data on or after %s, so the boundary reached is %s.',
+                $table, $plan['straddling']['name'], $plan['straddling']['start'],
+                $plan['straddling']['less_than'], $cutoff, $plan['effective']
+            ) );
+        }
+
+        return $dropped;
+    }
+
     /** Is the driver able to partition at all? Report once, clearly. */
     protected function assertPartitioningSupported() {
 

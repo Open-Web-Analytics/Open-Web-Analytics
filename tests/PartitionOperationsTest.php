@@ -433,4 +433,66 @@ final class PartitionOperationsTest extends TestCase
     {
         $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->inferPartitionGranularity($this->makeTable()));
     }
+
+    /**
+     * Rotation is the two halves of one policy: keep N months, stay a lead
+     * ahead. The invariant afterwards is that the table covers the lead AND
+     * holds nothing older than the cutoff -- and that running it again changes
+     * nothing.
+     *
+     * Ordering matters. The lead is added before anything is dropped, so a run
+     * that fails partway has gained coverage rather than discarded history and
+     * then failed to create anywhere for new data to go.
+     */
+    public function testRotationExtendsAndPrunesAndSettles()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+        $month = date('Ym') . '01';
+
+        // Three years of history, and a lead that ran down long ago.
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime($month . ' -36 months')), date('Ymd'), 'monthly'
+        ));
+
+        $db->query(sprintf(
+            'INSERT INTO %s VALUES (1,%s),(2,%s),(3,%s)',
+            $t,
+            date('Ymd', strtotime($month . ' -30 months')),   // outside a 24-month window
+            date('Ymd', strtotime($month . ' -6 months')),    // inside it
+            date('Ymd')                                       // today
+        ));
+
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+        $cutoff  = date('Ymd', strtotime('-24 months'));
+
+        $rotate = function () use ($db, $t, $through, $cutoff) {
+            $added = $db->extendPartitions($t, $db->inferPartitionGranularity($t), $through);
+            $plan  = $db->getDroppablePartitions($t, $cutoff);
+            foreach ($plan['drop'] as $p) {
+                $db->dropPartition($t, $p);
+            }
+            return array(count($added['added']), count($plan['drop']));
+        };
+
+        list($added, $dropped) = $rotate();
+
+        $this->assertGreaterThan(0, $added, 'the lead should have been extended');
+        $this->assertGreaterThan(0, $dropped, 'stale history should have been dropped');
+
+        // The row outside the window is gone; the two inside it are not.
+        $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n']);
+
+        $spans = $db->getPartitionSpans($t);
+
+        $this->assertSame($through, $spans[count($spans) - 1]['less_than'], 'must reach the lead');
+        $this->assertGreaterThanOrEqual($cutoff, $spans[0]['less_than'] , 'nothing wholly older than the cutoff may remain');
+
+        // Settled: a second rotation is a no-op.
+        list($added2, $dropped2) = $rotate();
+
+        $this->assertSame(0, $added2, 'nothing left to add');
+        $this->assertSame(0, $dropped2, 'nothing left to drop');
+        $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n']);
+    }
 }
