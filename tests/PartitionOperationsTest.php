@@ -495,4 +495,55 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame(0, $dropped2, 'nothing left to drop');
         $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n']);
     }
+
+    /**
+     * The bound used to prune per-session summaries must never exclude a row
+     * that belongs to the session. It is a lower bound taken from the session's
+     * own server-assigned date, so the only thing it can remove is a partition
+     * the session cannot be in.
+     */
+    public function testFactLowerBoundNeverExcludesTheSessionsOwnRows()
+    {
+        // A day of slack, so a backwards clock step cannot push a request below it.
+        $this->assertSame('20260814', \OWA\Core\Db::factLowerBound('20260815'));
+        $this->assertSame('20251231', \OWA\Core\Db::factLowerBound('20260101'), 'must cross a year boundary');
+        $this->assertSame('20260228', \OWA\Core\Db::factLowerBound('20260301'), 'must handle month lengths');
+        $this->assertSame('20280229', \OWA\Core\Db::factLowerBound('20280301'), 'and leap years');
+
+        // Unusable dates yield no bound at all, so the caller queries unconstrained.
+        foreach ([0, '0', '', null, 'garbage', '19700101', '2026081', '202608155'] as $bad) {
+            $this->assertNull(\OWA\Core\Db::factLowerBound($bad), var_export($bad, true) . ' should not bound');
+        }
+    }
+
+    /** The bound prunes on a partitioned table and changes no result. */
+    public function testFactLowerBoundPrunesWithoutChangingTheAnswer()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->query(sprintf('ALTER TABLE %s ADD session_id BIGINT, ADD KEY session_id (session_id)', $t));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20250101, 20251231, 'monthly'));
+
+        // One session on 15 June with three requests, one of them next day.
+        $db->query(sprintf(
+            'INSERT INTO %s (id, yyyymmdd, session_id) VALUES (1,20250615,77),(2,20250615,77),(3,20250616,77),(4,20250201,88)',
+            $t
+        ));
+
+        $since = \OWA\Core\Db::factLowerBound('20250615');
+
+        $unbounded = $db->get_row("SELECT COUNT(DISTINCT id) AS n FROM $t WHERE session_id = 77");
+        $bounded   = $db->get_row("SELECT COUNT(DISTINCT id) AS n FROM $t WHERE session_id = 77 AND yyyymmdd >= $since");
+
+        $this->assertSame(3, (int) $unbounded['n']);
+        $this->assertSame((int) $unbounded['n'], (int) $bounded['n'], 'the bound must not change the count');
+
+        // And it really does prune.
+        $plan = $db->get_results("EXPLAIN SELECT COUNT(DISTINCT id) FROM $t WHERE session_id = 77 AND yyyymmdd >= $since");
+        $scanned = count(explode(',', $plan[0]['partitions']));
+        $all     = count($db->getPartitionSpans($t));
+
+        $this->assertLessThan($all, $scanned, 'the bound should reduce the partitions scanned');
+    }
 }

@@ -67,6 +67,17 @@ class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
             $id = $s->get('id');
 
             if ($id) {
+
+                // See Db::factLowerBound(): the session's own date bounds which
+                // partitions its fact rows can be in, without excluding any.
+                $constraints = array( 'session_id' => $id );
+                $since = \OWA\Core\Db::factLowerBound( $s->get( 'yyyymmdd' ) );
+
+                if ( $since ) {
+
+                    $constraints['yyyymmdd'] = array( 'value' => $since, 'operator' => '>=' );
+                }
+
                 // summarze the transaction
                 $summary = \OWA\Core\CoreAPI::summarize(array(
                     'entity'        => 'base.commerce_transaction_fact',
@@ -75,7 +86,7 @@ class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
                             'total_revenue'        => 'sum',
                             'tax_revenue'        => 'sum',
                             'shipping_revenue'    => 'sum'),
-                    'constraints'    => array( 'session_id' => $id ) ) );
+                    'constraints'    => $constraints ) );
 
                 $s->set( 'commerce_trans_count', $summary['id_count'] );
                 $s->set( 'commerce_trans_revenue', $summary['total_revenue_sum'] );
@@ -92,7 +103,7 @@ class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
                             'sku'                 => 'count_distinct',
                             'item_revenue'        => 'sum',
                             'quantity'            => 'sum'),
-                    'constraints'    => array( 'session_id' => $id ) ) );
+                    'constraints'    => $constraints ) );
 
                     $s->set( 'commerce_items_count', $summary['sku_dcount'] );
                     $s->set( 'commerce_items_revenue', $summary['item_revenue_sum'] );

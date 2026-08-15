@@ -176,7 +176,7 @@ class SessionHandlers extends \OWA\Core\Observer {
             if ($event_req_time > $last_req_time) {
 
                 // increment number of page views
-                $s->set( 'num_pageviews', $this->summarizePageviews( $id ) );
+                $s->set( 'num_pageviews', $this->summarizePageviews( $id, $s->get( 'yyyymmdd' ) ) );
 
                 // set bounce flag to false as there must have been 2 page views
                 $s->set( 'is_bounce', 'false' );
@@ -268,12 +268,26 @@ class SessionHandlers extends \OWA\Core\Observer {
         }
     }
     
-    function summarizePageviews($id) {
+    function summarizePageviews($id, $session_yyyymmdd = null) {
+
+        $constraints = array( 'session_id' => $id );
+
+        // Bound the scan by the session's own date. A request cannot be older
+        // than the session holding it, so this excludes no valid row -- but on
+        // a partitioned table it is the difference between visiting every
+        // partition and visiting the few the session can be in. Left off where
+        // the date is unusable.
+        $since = \OWA\Core\Db::factLowerBound( $session_yyyymmdd );
+
+        if ( $since ) {
+
+            $constraints['yyyymmdd'] = array( 'value' => $since, 'operator' => '>=' );
+        }
 
         $ret = \OWA\Core\CoreAPI::summarize(array(
                 'entity'        => 'base.request',
                 'columns'        => array('id' => 'count_distinct'),
-                'constraints'    => array( 'session_id' => $id ) ) );
+                'constraints'    => $constraints ) );
 
         return $ret['id_dcount'];
     }

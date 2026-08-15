@@ -1587,6 +1587,50 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * A lower bound on the partitioning column, for queries that select fact
+     * rows belonging to a known session.
+     *
+     * Partition pruning reads only the partitioning column, so a query
+     * constrained on session_id alone has to visit every partition. A row
+     * belonging to a session cannot be older than the session itself, so the
+     * session's own date is a lower bound that can never exclude a valid row --
+     * it only tells the optimizer which partitions cannot possibly hold one.
+     *
+     * The date must be the one stored on the session row, which the server
+     * assigned. Not the current event's date, which is later for a session
+     * running past midnight, and not a date taken from an id, which the tracker
+     * mints from the browser's clock.
+     *
+     * A day of slack absorbs a backwards clock step on the server, the only way
+     * a row could carry an earlier date than the session containing it. Returns
+     * null where the date is unusable, in which case the caller simply does not
+     * constrain -- slower, never wrong.
+     *
+     * @param mixed $session_yyyymmdd
+     * @return string|null yyyymmdd
+     */
+    static function factLowerBound( $session_yyyymmdd ) {
+
+        $value = (string) $session_yyyymmdd;
+
+        // Installations carry rows with a yyyymmdd of 0, and anything that is
+        // not a plausible date cannot bound anything.
+        if ( ! preg_match( '/^\d{8}$/', $value ) || $value <= '19700101' ) {
+
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat( 'Ymd|', $value );
+
+        if ( ! $date ) {
+
+            return null;
+        }
+
+        return $date->modify( '-1 day' )->format( 'Ymd' );
+    }
+
+    /**
      * Work out the granularity a table is already using.
      *
      * Taken from the boundaries rather than the partition names. The names
