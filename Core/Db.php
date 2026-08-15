@@ -1089,6 +1089,96 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Can this driver partition tables? Assume not.
+     *
+     * @return bool
+     */
+    function supportsPartitioning() {
+
+        return false;
+    }
+
+    /**
+     * The partitions on a table. Nothing, where partitioning is unsupported.
+     *
+     * @param string $table_name
+     * @return array
+     */
+    function listPartitions( $table_name ) {
+
+        return array();
+    }
+
+    /**
+     * Is this table partitioned?
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function isPartitioned( $table_name ) {
+
+        return (bool) $this->listPartitions( $table_name );
+    }
+
+    /**
+     * Partition boundaries for a date range, at the given granularity.
+     *
+     * Each partition is named for the first day it holds and bounded by the
+     * first day it does not, which is the form RANGE wants. Rows whose date is
+     * malformed -- a handful of installs carry yyyymmdd values of 0 or 1 --
+     * land in the first partition, since RANGE has no lower bound.
+     *
+     * @param int    $start_yyyymmdd
+     * @param int    $end_yyyymmdd
+     * @param string $granularity  daily|weekly|monthly
+     * @return array name => less_than, in range order
+     */
+    public static function makePartitionRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
+
+        $step = array(
+            'daily'   => '+1 day',
+            'weekly'  => '+1 week',
+            'monthly' => '+1 month',
+        );
+
+        if ( ! isset( $step[ $granularity ] ) ) {
+
+            return array();
+        }
+
+        $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
+        $end   = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $end_yyyymmdd );
+
+        if ( ! $start || ! $end || $end < $start ) {
+
+            return array();
+        }
+
+        // Align to the start of the period so boundaries land on period edges
+        // however the range was given. Weeks start Monday.
+        if ( $granularity === 'monthly' ) {
+
+            $start = $start->modify( 'first day of this month' );
+
+        } elseif ( $granularity === 'weekly' ) {
+
+            $start = $start->modify( 'monday this week' );
+        }
+
+        $ranges = array();
+        $cursor = $start;
+
+        while ( $cursor <= $end ) {
+
+            $next = $cursor->modify( $step[ $granularity ] );
+            $ranges[ 'p' . $cursor->format( 'Ymd' ) ] = $next->format( 'Ymd' );
+            $cursor = $next;
+        }
+
+        return $ranges;
+    }
+
+    /**
      * Indexes that duplicate another index on the same table, exactly.
      *
      * Same columns in the same order, same uniqueness, same type. The first by
@@ -1132,6 +1222,350 @@ class Db extends \OWA\Core\Base {
         }
 
         return $dupes;
+    }
+
+    /**
+     * Partition boundaries that exactly tile a half-open span.
+     *
+     * REORGANIZE requires the replacement partitions to cover precisely the
+     * span of the ones they replace -- no gap, no overhang. So unlike
+     * makePartitionRanges() this does not align backwards to a period edge: it
+     * starts at the span start and clamps the final boundary to the span end.
+     * Aligning would push the first boundary below the span (1 Feb 2026 is a
+     * Sunday, so 'monday this week' lands in January) and the statement fails.
+     *
+     * @param string $start_yyyymmdd  first day the span holds
+     * @param string $end_yyyymmdd    first day it does not
+     * @param string $granularity     daily|weekly|monthly
+     * @return array name => less_than
+     */
+    public static function makePartitionRangesForSpan( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
+
+        $step = array(
+            'daily'   => '+1 day',
+            'weekly'  => '+1 week',
+            'monthly' => '+1 month',
+        );
+
+        if ( ! isset( $step[ $granularity ] ) ) {
+
+            return array();
+        }
+
+        $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
+        $end   = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $end_yyyymmdd );
+
+        if ( ! $start || ! $end || $end <= $start ) {
+
+            return array();
+        }
+
+        $ranges = array();
+        $cursor = $start;
+
+        while ( $cursor < $end ) {
+
+            $next = $cursor->modify( $step[ $granularity ] );
+
+            // Keep weeks inside their month. A week that straddles a month
+            // boundary would leave the two sequences with no shared boundary
+            // between them, forcing every affected month to be rewritten in one
+            // statement instead of one month at a time. The cost is a short
+            // final week per month, which is a fair trade for being able to
+            // convert a large table incrementally.
+            if ( $granularity === 'weekly' ) {
+
+                $month_end = $cursor->modify( 'first day of next month' )->setTime( 0, 0 );
+
+                if ( $next > $month_end ) {
+
+                    $next = $month_end;
+                }
+            }
+
+            // Never overhang the span; the last partition closes on it exactly.
+            if ( $next > $end ) {
+
+                $next = $end;
+            }
+
+            $ranges[ 'p' . $cursor->format( 'Ymd' ) ] = $next->format( 'Ymd' );
+            $cursor = $next;
+        }
+
+        return $ranges;
+    }
+
+    /**
+     * Build the clause that partitions a table by range.
+     *
+     * @param string $column
+     * @param array  $ranges  name => less_than
+     * @param bool   $with_maxvalue  append the catch-all
+     * @return string  empty when the driver cannot partition
+     */
+    function makePartitionClause( $column, $ranges, $with_maxvalue = true ) {
+
+        if ( ! $this->supportsPartitioning() || ! $ranges ) {
+
+            return '';
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        if ( $with_maxvalue ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, 'pmax', OWA_DTD_PARTITION_MAXVALUE );
+        }
+
+        return sprintf( OWA_DTD_PARTITION_BY_RANGE, $column, implode( ', ', $parts ) );
+    }
+
+    /**
+     * Partition an existing table by range.
+     *
+     * The partitioning column has to be part of every unique key, so the
+     * primary key is widened first. Both statements rebuild the table, which is
+     * why this belongs in a deliberate operation rather than on a request path.
+     *
+     * @param string $table_name
+     * @param string $column
+     * @param array  $ranges
+     * @return bool
+     */
+    function partitionTable( $table_name, $column, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $column ) ) {
+
+            return false;
+        }
+
+        $clause = $this->makePartitionClause( $column, $ranges );
+
+        if ( ! $clause ) {
+
+            return false;
+        }
+
+        return $this->query( sprintf( 'ALTER TABLE %s%s', $table_name, $clause ) );
+    }
+
+    /**
+     * Drop the named partition.
+     *
+     * @param string $table_name
+     * @param string $partition
+     * @return bool
+     */
+    function dropPartition( $table_name, $partition ) {
+
+        if ( ! $this->supportsPartitioning()
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $partition ) ) {
+
+            return false;
+        }
+
+        return $this->query( sprintf( OWA_SQL_DROP_PARTITION, $table_name, $partition ) );
+    }
+
+    /**
+     * Replace one or more contiguous partitions with a different set.
+     *
+     * Only the named partitions are rewritten, so changing granularity can be
+     * done a period at a time rather than rebuilding the whole table.
+     *
+     * @param string $table_name
+     * @param array  $from   partition names being replaced
+     * @param array  $ranges name => less_than to replace them with
+     * @return bool
+     */
+    function reorganizePartitions( $table_name, $from, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() || ! $from || ! $ranges
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $from as $name ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $name ) ) {
+
+                return false;
+            }
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        return $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $from ), implode( ', ', $parts )
+        ) );
+    }
+
+    /**
+     * The partitions of a table as spans, excluding the catch-all.
+     *
+     * RANGE gives each partition an upper bound only, so a partition's lower
+     * bound is the previous partition's upper bound. The first one has none --
+     * it holds everything below its boundary -- and is reported with the start
+     * encoded in its name, which is what this class's own naming provides.
+     *
+     * @param string $table_name
+     * @return array of ['name','start','less_than']
+     */
+    function getPartitionSpans( $table_name ) {
+
+        $spans = array();
+        $prev  = null;
+
+        foreach ( $this->listPartitions( $table_name ) as $p ) {
+
+            if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                continue;
+            }
+
+            $start = $prev;
+
+            if ( $start === null ) {
+
+                // No lower bound; recover the intended start from the name.
+                $start = preg_match( '/^p(\d{8})$/', $p['name'], $m ) ? $m[1] : $p['less_than'];
+            }
+
+            $spans[] = array(
+                'name'      => $p['name'],
+                'start'     => (string) $start,
+                'less_than' => (string) $p['less_than'],
+            );
+
+            $prev = $p['less_than'];
+        }
+
+        return $spans;
+    }
+
+    /**
+     * Change a table's partition granularity.
+     *
+     * Existing partitions and target ranges are walked together and grouped
+     * into the smallest chunks whose boundaries agree, so each REORGANIZE
+     * rewrites only the periods it has to. A partition that already matches the
+     * target exactly is left untouched, which makes re-running this a no-op.
+     *
+     * @param string $table_name
+     * @param string $granularity  daily|weekly|monthly
+     * @param bool   $dry_run      report the statements without running them
+     * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
+     */
+    function repartitionTable( $table_name, $granularity, $dry_run = false ) {
+
+        $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array() );
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans ) {
+
+            return $result;
+        }
+
+        $span_start = $spans[0]['start'];
+        $span_end   = $spans[ count( $spans ) - 1 ]['less_than'];
+
+        $target = self::makePartitionRangesForSpan( $span_start, $span_end, $granularity );
+
+        if ( ! $target ) {
+
+            return $result;
+        }
+
+        // Cut only where both sequences agree on a boundary. Every such cut
+        // consumes at least one partition from each side, and the span end is
+        // always shared, so this terminates.
+        $existing_bounds = array();
+
+        foreach ( $spans as $s ) {
+
+            $existing_bounds[ (string) $s['less_than'] ] = true;
+        }
+
+        $cuts = array();
+
+        foreach ( $target as $less_than ) {
+
+            if ( isset( $existing_bounds[ (string) $less_than ] ) ) {
+
+                $cuts[] = (string) $less_than;
+            }
+        }
+
+        $i = 0; // index into $spans
+        $j = 0; // index into target, as a list
+        $t_names = array_keys( $target );
+
+        foreach ( $cuts as $cut ) {
+
+            $from = array();
+            $into = array();
+
+            while ( $i < count( $spans ) && (string) $spans[ $i ]['less_than'] <= $cut ) {
+
+                $from[] = $spans[ $i ]['name'];
+                $i++;
+            }
+
+            while ( $j < count( $t_names ) && (string) $target[ $t_names[ $j ] ] <= $cut ) {
+
+                $into[ $t_names[ $j ] ] = $target[ $t_names[ $j ] ];
+                $j++;
+            }
+
+            if ( ! $from || ! $into ) {
+
+                continue;
+            }
+
+            // Already in the target shape: nothing to rewrite.
+            if ( count( $from ) === 1 && count( $into ) === 1 && key( $into ) === $from[0] ) {
+
+                $result['skipped']++;
+                continue;
+            }
+
+            if ( $dry_run ) {
+
+                $result['changed'][] = sprintf( '%s -> %s', implode( ',', $from ), implode( ',', array_keys( $into ) ) );
+                continue;
+            }
+
+            if ( $this->reorganizePartitions( $table_name, $from, $into ) ) {
+
+                $result['changed'][] = sprintf( '%s -> %s', implode( ',', $from ), implode( ',', array_keys( $into ) ) );
+
+            } else {
+
+                $result['failed'][] = implode( ',', $from );
+            }
+        }
+
+        return $result;
     }
 
     /**

@@ -58,6 +58,17 @@ define('OWA_DTD_TABLE_TYPE_DEFAULT', 'INNODB');
 define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB');
 define('OWA_DTD_TABLE_TYPE_MEMORY', 'MEMORY');
 define('OWA_SQL_ALTER_TABLE_TYPE', 'ALTER TABLE %s ENGINE = %s');
+// Partitioning. A driver that cannot partition simply leaves these undefined,
+// and the table is created and managed unpartitioned -- the feature is absent
+// rather than broken. The syntax differs enough between platforms (Postgres
+// declares the parent then creates each partition as its own table) that only
+// the fragments belong here; the sequencing stays in Db.
+define('OWA_DTD_PARTITION_BY_RANGE', ' PARTITION BY RANGE (%s) (%s)');
+define('OWA_DTD_PARTITION_LESS_THAN', 'PARTITION %s VALUES LESS THAN (%s)');
+define('OWA_DTD_PARTITION_MAXVALUE', 'MAXVALUE');
+define('OWA_SQL_PARTITION_TABLE', 'ALTER TABLE %s' . OWA_DTD_PARTITION_BY_RANGE);
+define('OWA_SQL_DROP_PARTITION', 'ALTER TABLE %s DROP PARTITION %s');
+define('OWA_SQL_REORGANIZE_PARTITION', 'ALTER TABLE %s REORGANIZE PARTITION %s INTO (%s)');
 define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN');
 define('OWA_SQL_JOIN_LEFT_INNER', 'LEFT INNER JOIN');
 define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN');
@@ -290,6 +301,50 @@ class Mysql extends \OWA\Core\Db {
         $row = mysqli_fetch_assoc($this->new_result);
 
         return $row;
+    }
+
+    /**
+     * Can this driver partition tables?
+     *
+     * @return bool
+     */
+    function supportsPartitioning() {
+
+        return defined( 'OWA_DTD_PARTITION_BY_RANGE' );
+    }
+
+    /**
+     * The partitions on a table, in range order.
+     *
+     * @param string $table_name
+     * @return array of ['name' => string, 'less_than' => string, 'rows' => int]
+     */
+    function listPartitions( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return array();
+        }
+
+        $sql = "SELECT PARTITION_NAME AS name, PARTITION_DESCRIPTION AS less_than, TABLE_ROWS AS rows_ "
+             . "FROM information_schema.PARTITIONS "
+             . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND PARTITION_NAME IS NOT NULL "
+             . "ORDER BY PARTITION_ORDINAL_POSITION";
+
+        $rows = $this->get_results( sprintf( $sql, $table_name ) );
+
+        $out = array();
+
+        foreach ( (array) $rows as $row ) {
+
+            $out[] = array(
+                'name'      => $row['name'],
+                'less_than' => $row['less_than'],
+                'rows'      => (int) $row['rows_'],
+            );
+        }
+
+        return $out;
     }
 
     /**
