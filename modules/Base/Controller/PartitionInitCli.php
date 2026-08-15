@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Controller;
  * upgrade nobody scheduled.
  *
  *   cmd=partition-init                      partition every fact table, monthly
- *   cmd=partition-init granularity=daily    a different granularity
+ *   cmd=partition-init granularity=half-month   a finer granularity
  *   cmd=partition-init table=owa_request    one table
  *   cmd=partition-init dry-run=1            report the plan, change nothing
  */
@@ -35,7 +35,7 @@ class PartitionInitCli extends PartitionsCli {
         if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly.', $granularity
+                'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
             ) );
 
             return;
@@ -49,6 +49,8 @@ class PartitionInitCli extends PartitionsCli {
 
             return;
         }
+
+        $budget = $this->partitionLimit( count( $tables ) );
 
         foreach ( $tables as $table ) {
 
@@ -86,7 +88,7 @@ class PartitionInitCli extends PartitionsCli {
                 continue;
             }
 
-            if ( ! $this->withinPartitionBudget( $table, count( $ranges ) ) ) {
+            if ( ! $this->withinPartitionBudget( $table, count( $ranges ), $budget ) ) {
 
                 continue;
             }

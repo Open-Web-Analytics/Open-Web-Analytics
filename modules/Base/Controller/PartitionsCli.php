@@ -105,31 +105,67 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * Refuse a plan that would leave a table with an unreasonable number of
-     * partitions, unless it is explicitly confirmed.
+     * The most partitions one table may be given in this run.
      *
-     * Each partition is a file, and the count is what bites -- not the
-     * granularity. Daily over a month is 31 and entirely sensible; daily over
-     * five years is ~1,825 per table, and a schema of fact tables would want
-     * far more open files than an instance typically allows.
+     * Each partition is a file, and InnoDB caps how many tablespaces it holds
+     * open through innodb_open_files -- a cap shared with every table already
+     * on the server. Where that can be read, the budget is derived from what is
+     * actually left rather than guessed: half the spare slots, divided by the
+     * number of tables about to be partitioned. Half, because the reading is a
+     * snapshot and the schema will grow.
+     *
+     * Where it cannot be read the constant stands in.
+     *
+     * @param int $table_count  tables this run will partition
+     * @return array  limit, and how it was arrived at
+     */
+    protected function partitionLimit( $table_count ) {
+
+        $spare = \OWA\Core\CoreAPI::dbSingleton()->getPartitionBudget();
+
+        if ( $spare === null ) {
+
+            return array(
+                'limit'  => \OWA\Core\Db::PARTITION_COUNT_LIMIT,
+                'reason' => 'default limit; this server does not report its open-file budget',
+            );
+        }
+
+        // A floor, so that a server reporting almost no headroom still permits
+        // a couple of years of monthly rather than refusing everything.
+        $limit = max( 24, intdiv( $spare, 2 * max( 1, $table_count ) ) );
+
+        return array(
+            'limit'  => $limit,
+            'reason' => sprintf(
+                '%d spare open-file slots on this server, half of them shared across %d table(s)',
+                $spare, $table_count
+            ),
+        );
+    }
+
+    /**
+     * Refuse a plan that would leave a table with more partitions than the
+     * server has the open files to carry.
      *
      * @param string $table
      * @param int    $planned
+     * @param array  $budget   from partitionLimit()
      * @return bool  true when it is safe to proceed
      */
-    protected function withinPartitionBudget( $table, $planned ) {
+    protected function withinPartitionBudget( $table, $planned, $budget ) {
 
-        if ( $planned <= \OWA\Core\Db::PARTITION_COUNT_LIMIT || $this->getParam( 'force' ) ) {
+        if ( $planned <= $budget['limit'] || $this->getParam( 'force' ) ) {
 
             return true;
         }
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            '%s: refusing to create %d partitions (limit %d). Each partition is a file, and a '
-          . 'schema of fact tables at that count needs more open files than an instance usually '
-          . 'allows. Narrow it with from/to, choose a coarser granularity, or re-run with force=1 '
-          . 'if you have checked innodb_open_files.',
-            $table, $planned, \OWA\Core\Db::PARTITION_COUNT_LIMIT
+            '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
+          . 'past the budget MySQL closes and reopens tablespaces under load, which slows '
+          . 'everything on the instance. Narrow it with from/to, choose a coarser granularity, or '
+          . 're-run with force=1 if you have done the arithmetic.',
+            $table, $planned, $budget['limit'], $budget['reason']
         ) );
 
         return false;

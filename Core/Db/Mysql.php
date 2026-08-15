@@ -361,6 +361,30 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * Spare open-file slots on this server, or null if it cannot be read.
+     *
+     * Each partition is a file, and InnoDB caps how many tablespaces it keeps
+     * open at once. That cap is shared with every table already present, so the
+     * headroom for partitions is what is left after them -- not the cap itself.
+     *
+     * @return int|null
+     */
+    function getPartitionBudget() {
+
+        $row = $this->get_row(
+            "SELECT @@innodb_open_files AS cap, "
+          . "(SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_TYPE = 'BASE TABLE') AS used"
+        );
+
+        if ( ! $row || ! isset( $row['cap'] ) || ! $row['cap'] ) {
+
+            return null;
+        }
+
+        return max( 0, (int) $row['cap'] - (int) $row['used'] );
+    }
+
+    /**
      * The columns of a table's primary key, in key order.
      *
      * @param string $table_name

@@ -166,8 +166,8 @@ final class PartitionOperationsTest extends TestCase
     /**
      * A range converts only the periods it touches, which is what allows one
      * table to be coarse for old data and fine for recent. Converting
-     * everything to daily would give years of history one partition per day,
-     * and each partition is a file.
+     * a whole table finely would give years of history a partition -- and so a
+     * file -- for every period.
      */
     public function testRepartitionHonoursARange()
     {
@@ -177,7 +177,7 @@ final class PartitionOperationsTest extends TestCase
         $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260415, 'monthly'));
         $db->query(sprintf('INSERT INTO %s VALUES (1,20260105),(2,20260205),(3,20260305),(4,20260405)', $t));
 
-        $result = $db->repartitionTable($t, 'daily', false, '20260301', '20260401');
+        $result = $db->repartitionTable($t, 'quarter-month', false, '20260301', '20260401');
 
         $this->assertCount(1, $result['changed'], 'only March should be rewritten');
         $this->assertEmpty($result['failed']);
@@ -188,7 +188,7 @@ final class PartitionOperationsTest extends TestCase
         $this->assertContains('p20260101', $names, 'January must still be monthly');
         $this->assertContains('p20260201', $names, 'February must still be monthly');
         $this->assertContains('p20260401', $names, 'April must be untouched');
-        $this->assertContains('p20260331', $names, 'March must now be daily');
+        $this->assertContains('p20260322', $names, 'March must now be quarter-month');
     }
 
     /** A range matching no partition changes nothing rather than everything. */
@@ -200,7 +200,7 @@ final class PartitionOperationsTest extends TestCase
         $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260131, 'monthly'));
         $before = $this->partitionNames($t);
 
-        $result = $db->repartitionTable($t, 'daily', false, '20200101', '20200201');
+        $result = $db->repartitionTable($t, 'quarter-month', false, '20200101', '20200201');
 
         $this->assertEmpty($result['changed']);
         $this->assertSame($before, $this->partitionNames($t));
@@ -218,10 +218,10 @@ final class PartitionOperationsTest extends TestCase
         // Three months, monthly.
         $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
 
-        // Converting only March to daily: 31 days for March, plus Jan and Feb.
-        $plan = $db->repartitionTable($t, 'daily', true, '20260301', '20260401');
+        // Converting only March: four parts for March, plus January and February.
+        $plan = $db->repartitionTable($t, 'quarter-month', true, '20260301', '20260401');
 
-        $this->assertSame(33, $plan['planned'], 'March daily (31) plus January and February');
+        $this->assertSame(6, $plan['planned'], 'March in four parts, plus January and February');
 
         // Whole table to half-month: two parts for each of three months.
         $all = $db->repartitionTable($t, 'half-month', true);

@@ -9,7 +9,7 @@ namespace OWA\Module\Base\Controller;
  * Change the partition granularity of the fact tables.
  *
  * Granularity is named for how many parts a month is divided into -- monthly,
- * half-month, quarter-month, daily -- never for a length, because months are 28
+ * half-month, quarter-month -- never for a length, because months are 28
  * to 31 days and any name carrying a day count would be wrong in some month.
  *
  * Cut points are days of the month, so every boundary falls on a month start
@@ -18,7 +18,7 @@ namespace OWA\Module\Base\Controller;
  * for old data and fine for recent:
  *
  *   cmd=partition-reorganize granularity=half-month
- *   cmd=partition-reorganize granularity=daily from=20260801 to=20260901
+ *   cmd=partition-reorganize granularity=quarter-month from=20260801 to=20260901
  *   cmd=partition-reorganize granularity=monthly dry-run=1
  */
 class PartitionReorganizeCli extends PartitionsCli {
@@ -49,7 +49,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         if ( ! $granularity ) {
 
             \OWA\Core\CoreAPI::notice(
-                'granularity is required: daily, quarter-month, half-month or monthly.'
+                'granularity is required: quarter-month, half-month or monthly.'
             );
 
             return;
@@ -58,14 +58,17 @@ class PartitionReorganizeCli extends PartitionsCli {
         if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly. '
+                'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly. '
               . '(There is no "weekly": a week does not divide a month.)', $granularity
             ) );
 
             return;
         }
 
-        foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
+        $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
+        $budget = $this->partitionLimit( count( $tables ) );
+
+        foreach ( $tables as $table ) {
 
             if ( ! $db->isPartitioned( $table ) ) {
 
@@ -79,7 +82,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             // Plan first so the count can be judged before anything is rewritten.
             $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
 
-            if ( ! $this->withinPartitionBudget( $table, $plan['planned'] ) ) {
+            if ( ! $this->withinPartitionBudget( $table, $plan['planned'], $budget ) ) {
 
                 continue;
             }

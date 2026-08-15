@@ -25,12 +25,15 @@ final class PartitionRangesTest extends TestCase
     /** Only divisions of a month are granularities. */
     public function testAcceptedGranularities()
     {
-        foreach (['daily', 'quarter-month', 'half-month', 'monthly'] as $g) {
+        foreach (['quarter-month', 'half-month', 'monthly'] as $g) {
             $this->assertTrue(\OWA\Core\Db::isPartitionGranularity($g), "$g should be accepted");
         }
 
-        // Rejected because they claim a length a month cannot honour.
-        foreach (['weekly', '7day', 'tenday', 'hourly', ''] as $g) {
+        // 'weekly', '7day' and 'tenday' claim a length a month cannot honour.
+        // 'daily' is honest but not offered: a partition per day is a file per
+        // day, and the yyyymmdd index already selects rows within a period, so
+        // it bought retention precision at a cost in open files.
+        foreach (['weekly', '7day', 'tenday', 'daily', 'hourly', ''] as $g) {
             $this->assertFalse(\OWA\Core\Db::isPartitionGranularity($g), "$g should be rejected");
         }
     }
@@ -43,11 +46,9 @@ final class PartitionRangesTest extends TestCase
             ['monthly',       20260101, 20260131, 1],
             ['half-month',    20260101, 20260131, 2],
             ['quarter-month', 20260101, 20260131, 4],
-            ['daily',         20260101, 20260131, 31],
             ['monthly',       20260201, 20260228, 1],
             ['half-month',    20260201, 20260228, 2],
             ['quarter-month', 20260201, 20260228, 4],
-            ['daily',         20260201, 20260228, 28],
         ];
 
         foreach ($cases as [$g, $from, $to, $expected]) {
@@ -74,7 +75,7 @@ final class PartitionRangesTest extends TestCase
      */
     public function testNoPartitionCrossesAMonthBoundary()
     {
-        foreach (['daily', 'quarter-month', 'half-month', 'monthly'] as $g) {
+        foreach (['quarter-month', 'half-month', 'monthly'] as $g) {
 
             foreach (\OWA\Core\Db::makePartitionRanges(20251215, 20260315, $g) as $name => $less_than) {
 

@@ -1121,6 +1121,16 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Spare open-file slots on this server. Unknown, without introspection.
+     *
+     * @return int|null
+     */
+    function getPartitionBudget() {
+
+        return null;
+    }
+
+    /**
      * Is this table partitioned?
      *
      * @param string $table_name
@@ -1146,15 +1156,15 @@ class Db extends \OWA\Core\Base {
     /**
      * Partitions per table beyond which an operation asks to be confirmed.
      *
-     * Each partition is a file. A five-year table converted to daily is ~1,825
-     * of them, and a schema with eight fact tables would want ~14,600 against an
-     * innodb_open_files that is typically 4,000 and already shared with every
-     * other table. Past that limit MySQL closes and reopens tablespaces under
-     * load, which degrades everything on the instance, and metadata operations
-     * slow in proportion to the count.
+     * Each partition is a file, and they are shared with every other table
+     * through innodb_open_files, which is typically 4,000. Past that limit
+     * MySQL closes and reopens tablespaces under load, which degrades
+     * everything on the instance, and metadata operations slow in proportion to
+     * the count. Quarter-month over a decade is 480 per table, so this is
+     * reachable without trying.
      *
-     * It is a prompt, not a ceiling: a range makes fine granularity perfectly
-     * reasonable, and force=1 is there for someone who has done the arithmetic.
+     * It is a prompt, not a ceiling: force=1 is there for someone who has done
+     * the arithmetic.
      */
     const PARTITION_COUNT_LIMIT = 400;
 
@@ -1162,7 +1172,6 @@ class Db extends \OWA\Core\Base {
         'monthly'       => array( 1 ),
         'half-month'    => array( 1, 16 ),
         'quarter-month' => array( 1, 8, 15, 22 ),
-        // 'daily' is every day of the month, so it is generated rather than listed.
     );
 
     /**
@@ -1173,7 +1182,7 @@ class Db extends \OWA\Core\Base {
      */
     public static function isPartitionGranularity( $granularity ) {
 
-        return $granularity === 'daily' || isset( self::PARTITION_CUTS[ $granularity ] );
+        return isset( self::PARTITION_CUTS[ $granularity ] );
     }
 
     /**
@@ -1184,11 +1193,6 @@ class Db extends \OWA\Core\Base {
      * @return int[] ascending days of the month
      */
     private static function cutsForMonth( $month, $granularity ) {
-
-        if ( $granularity === 'daily' ) {
-
-            return range( 1, (int) $month->format( 't' ) );
-        }
 
         if ( ! isset( self::PARTITION_CUTS[ $granularity ] ) ) {
 
@@ -1558,7 +1562,7 @@ class Db extends \OWA\Core\Base {
      * A partition is droppable only when everything in it precedes the cutoff,
      * so a partition straddling that date is kept: dropping it would remove
      * data on or after the date, which is more than was asked for. With
-     * anything coarser than daily partitions that means the boundary actually
+     * partitions being periods rather than days that means the boundary actually
      * reached is usually earlier than the one requested, so it is reported --
      * 'effective' is the date before which data no longer exists once these are
      * dropped.
@@ -1608,13 +1612,13 @@ class Db extends \OWA\Core\Base {
      * target exactly is left untouched, which makes re-running this a no-op.
      *
      * A range restricts it to part of the table, which is how an installation
-     * ends up coarse for old data and fine for recent: converting everything to
-     * daily would give a table years of history one partition per day, and each
-     * partition is a file. The range is snapped outwards to the boundaries of
-     * the partitions it touches, since a partition can only be rewritten whole.
+     * ends up coarse for old data and fine for recent without carrying a
+     * partition -- and so a file -- for every period of its whole history. The
+     * range is snapped outwards to the boundaries of the partitions it touches,
+     * since a partition can only be rewritten whole.
      *
      * @param string      $table_name
-     * @param string      $granularity  daily|quarter-month|half-month|monthly
+     * @param string      $granularity  quarter-month|half-month|monthly
      * @param bool        $dry_run      report the statements without running them
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd

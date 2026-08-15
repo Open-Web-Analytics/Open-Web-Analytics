@@ -14,7 +14,7 @@ namespace OWA\Module\Base\Controller;
  *
  * ONLY WHOLE PARTITIONS ARE DROPPED. A partition straddling the cutoff is kept,
  * because dropping it would remove data on or after that date -- more than was
- * asked for. With partitions coarser than daily the boundary actually reached
+ * asked for. Since a partition is a period rather than a day, the boundary reached
  * is therefore usually earlier than the one requested, and the command reports
  * it: the date before which data no longer exists.
  *
