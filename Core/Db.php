@@ -1143,6 +1143,21 @@ class Db extends \OWA\Core\Base {
      * aligned to a month start, which is what lets a granularity change rewrite
      * one month at a time instead of the whole table.
      */
+    /**
+     * Partitions per table beyond which an operation asks to be confirmed.
+     *
+     * Each partition is a file. A five-year table converted to daily is ~1,825
+     * of them, and a schema with eight fact tables would want ~14,600 against an
+     * innodb_open_files that is typically 4,000 and already shared with every
+     * other table. Past that limit MySQL closes and reopens tablespaces under
+     * load, which degrades everything on the instance, and metadata operations
+     * slow in proportion to the count.
+     *
+     * It is a prompt, not a ceiling: a range makes fine granularity perfectly
+     * reasonable, and force=1 is there for someone who has done the arithmetic.
+     */
+    const PARTITION_COUNT_LIMIT = 400;
+
     const PARTITION_CUTS = array(
         'monthly'       => array( 1 ),
         'half-month'    => array( 1, 16 ),
@@ -1607,7 +1622,7 @@ class Db extends \OWA\Core\Base {
      */
     function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null ) {
 
-        $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array() );
+        $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array(), 'planned' => 0 );
 
         $spans = $this->getPartitionSpans( $table_name );
 
@@ -1655,6 +1670,10 @@ class Db extends \OWA\Core\Base {
 
             return $result;
         }
+
+        // What the table would end up with: the converted span, plus whatever
+        // partitions the range left alone.
+        $result['planned'] = count( $target ) + ( count( $this->getPartitionSpans( $table_name ) ) - count( $spans ) );
 
         // Cut only where both sequences agree on a boundary. Every such cut
         // consumes at least one partition from each side, and the span end is

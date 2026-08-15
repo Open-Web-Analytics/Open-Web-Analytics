@@ -76,7 +76,15 @@ class PartitionReorganizeCli extends PartitionsCli {
                 continue;
             }
 
-            $result = $db->repartitionTable( $table, $granularity, $dry_run, $from, $to );
+            // Plan first so the count can be judged before anything is rewritten.
+            $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
+
+            if ( ! $this->withinPartitionBudget( $table, $plan['planned'] ) ) {
+
+                continue;
+            }
+
+            $result = $dry_run ? $plan : $db->repartitionTable( $table, $granularity, false, $from, $to );
 
             if ( ! $result['changed'] && ! $result['failed'] ) {
 

@@ -104,6 +104,37 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return null;
     }
 
+    /**
+     * Refuse a plan that would leave a table with an unreasonable number of
+     * partitions, unless it is explicitly confirmed.
+     *
+     * Each partition is a file, and the count is what bites -- not the
+     * granularity. Daily over a month is 31 and entirely sensible; daily over
+     * five years is ~1,825 per table, and a schema of fact tables would want
+     * far more open files than an instance typically allows.
+     *
+     * @param string $table
+     * @param int    $planned
+     * @return bool  true when it is safe to proceed
+     */
+    protected function withinPartitionBudget( $table, $planned ) {
+
+        if ( $planned <= \OWA\Core\Db::PARTITION_COUNT_LIMIT || $this->getParam( 'force' ) ) {
+
+            return true;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: refusing to create %d partitions (limit %d). Each partition is a file, and a '
+          . 'schema of fact tables at that count needs more open files than an instance usually '
+          . 'allows. Narrow it with from/to, choose a coarser granularity, or re-run with force=1 '
+          . 'if you have checked innodb_open_files.',
+            $table, $planned, \OWA\Core\Db::PARTITION_COUNT_LIMIT
+        ) );
+
+        return false;
+    }
+
     /** Is the driver able to partition at all? Report once, clearly. */
     protected function assertPartitioningSupported() {
 

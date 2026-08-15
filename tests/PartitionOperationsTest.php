@@ -205,4 +205,27 @@ final class PartitionOperationsTest extends TestCase
         $this->assertEmpty($result['changed']);
         $this->assertSame($before, $this->partitionNames($t));
     }
+
+    /**
+     * The planned count is what the budget guard judges, so it must describe
+     * the whole table -- the converted span plus whatever the range left alone.
+     */
+    public function testRepartitionReportsThePlannedCount()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        // Three months, monthly.
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
+
+        // Converting only March to daily: 31 days for March, plus Jan and Feb.
+        $plan = $db->repartitionTable($t, 'daily', true, '20260301', '20260401');
+
+        $this->assertSame(33, $plan['planned'], 'March daily (31) plus January and February');
+
+        // Whole table to half-month: two parts for each of three months.
+        $all = $db->repartitionTable($t, 'half-month', true);
+
+        $this->assertSame(6, $all['planned']);
+    }
 }

@@ -86,6 +86,11 @@ class PartitionInitCli extends PartitionsCli {
                 continue;
             }
 
+            if ( ! $this->withinPartitionBudget( $table, count( $ranges ) ) ) {
+
+                continue;
+            }
+
             if ( $dry_run ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
