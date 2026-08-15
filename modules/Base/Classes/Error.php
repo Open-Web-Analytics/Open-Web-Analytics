@@ -339,7 +339,15 @@ class Error {
             return;
         }
 
-        $stream = new StreamHandler($path, $level);
+        // Set the mode explicitly. Without it the file inherits the umask of
+        // whichever process happens to create it, and both the web server user
+        // and the account running the CLI write to this same path. A file
+        // created under umask 022 is 0644, so the other one can no longer append
+        // -- and a log write that cannot open its file raises, which turns a
+        // notice into a fatal. The path changes whenever the instance hash does,
+        // so a new file (and a new race over who creates it) appears on every
+        // credential rotation.
+        $stream = new StreamHandler($path, $level, true, 0664);
 
 		$stream->setFormatter($formatter);
 
