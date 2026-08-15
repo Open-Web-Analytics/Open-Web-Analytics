@@ -66,6 +66,25 @@ class Update013 extends \OWA\Core\Update {
     }
 
     /**
+     * Not reversible, deliberately.
+     *
+     * Reversing it means recreating indexes that were exact copies of ones the
+     * table still has. They could never be chosen over the original, so putting
+     * them back would restore the cost -- space, and a write on every INSERT --
+     * without restoring any capability. Nothing was lost that could be wanted
+     * back, so this reports and succeeds rather than failing the rollback.
+     */
+    function down() {
+
+        \OWA\Core\CoreAPI::notice(
+            'Update013 is not reversible: it only removed indexes that duplicated '
+            . 'another index on the same table, which changes no query behaviour.'
+        );
+
+        return true;
+    }
+
+    /**
      * Drop every duplicate, keeping one index per column list.
      *
      * Separated from up() so it can be exercised against a single table. The

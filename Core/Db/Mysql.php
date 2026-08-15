@@ -72,26 +72,6 @@ define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
 // Named form. The unnamed one above lets MySQL pick the name, so repeating it
 // yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.
 define('OWA_SQL_ADD_NAMED_INDEX', 'ALTER TABLE %s ADD INDEX %s (%s) %s');
-// Does an index covering exactly this column list already exist? Matched on the
-// columns, not the name, so indexes MySQL auto-named are recognised too.
-// Every non-primary index on the OWA tables, with the column list that
-// identifies it. Grouped in PHP rather than SQL so the "keep one" decision is
-// visible and testable. Uniqueness and type are reported so indexes that merely
-// share columns are not mistaken for copies of each other.
-define('OWA_SQL_LIST_INDEXES',
-    "SELECT TABLE_NAME AS t, INDEX_NAME AS i, NON_UNIQUE AS nu, INDEX_TYPE AS ty, "
-  . "GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols "
-  . "FROM information_schema.STATISTICS "
-  . "WHERE TABLE_SCHEMA = DATABASE() AND INDEX_NAME <> 'PRIMARY' "
-  . "AND TABLE_NAME LIKE 'owa\\\\_%%' "
-  . "GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE, INDEX_TYPE "
-  . "ORDER BY TABLE_NAME, INDEX_NAME");
-define('OWA_SQL_INDEX_EXISTS',
-    "SELECT COUNT(*) AS n FROM ( "
-  . "SELECT INDEX_NAME FROM information_schema.STATISTICS "
-  . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' "
-  . "GROUP BY INDEX_NAME "
-  . "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = '%s' ) x");
 define('OWA_SQL_COUNT', 'COUNT(%s)');
 define('OWA_SQL_SUM', 'SUM(%s)');
 define('OWA_SQL_ROUND', 'ROUND(%s)');
@@ -331,8 +311,16 @@ class Mysql extends \OWA\Core\Db {
             return false;
         }
 
+        // Matched on the column list, which is what GROUP_CONCAT returns in
+        // SEQ_IN_INDEX order, so the name MySQL happened to assign is irrelevant.
+        $sql = "SELECT COUNT(*) AS n FROM ( "
+             . "SELECT INDEX_NAME FROM information_schema.STATISTICS "
+             . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' "
+             . "GROUP BY INDEX_NAME "
+             . "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = '%s' ) x";
+
         $row = $this->get_row(
-            sprintf( OWA_SQL_INDEX_EXISTS, $table_name, implode( ',', $cols ) )
+            sprintf( $sql, $table_name, implode( ',', $cols ) )
         );
 
         return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
@@ -350,7 +338,20 @@ class Mysql extends \OWA\Core\Db {
      */
     function listIndexes() {
 
-        $rows = $this->get_results( OWA_SQL_LIST_INDEXES );
+        // Scoped to the 'owa_' prefix: an installation may share its database
+        // with another application. Uniqueness and type come back too, so
+        // indexes that merely share columns are not mistaken for copies of each
+        // other. The grouping is left to the caller so the "keep one" decision
+        // stays in PHP, where it can be read and tested.
+        $sql = "SELECT TABLE_NAME AS t, INDEX_NAME AS i, NON_UNIQUE AS nu, INDEX_TYPE AS ty, "
+             . "GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols "
+             . "FROM information_schema.STATISTICS "
+             . "WHERE TABLE_SCHEMA = DATABASE() AND INDEX_NAME <> 'PRIMARY' "
+             . "AND TABLE_NAME LIKE 'owa\\\\_%' "
+             . "GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE, INDEX_TYPE "
+             . "ORDER BY TABLE_NAME, INDEX_NAME";
+
+        $rows = $this->get_results( $sql );
 
         return is_array( $rows ) ? $rows : array();
     }

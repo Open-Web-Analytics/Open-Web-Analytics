@@ -43,6 +43,11 @@ class FactTable extends \OWA\Core\Entity {
         
         $columns['visitor_id'] = new \OWA\Module\Base\Classes\DbColumn('visitor_id', OWA_DTD_BIGINT);
         $columns['visitor_id']->setForeignKey('base.visitor');
+        // Reports filter on this: a visitor-scoped request reaches
+        // where('visitor_id', ...) in the REST controller. Without an index
+        // that is a full scan of the fact table, which is the largest one there
+        // is. session_id and site_id below have always had one.
+        $columns['visitor_id']->setIndex();
     
         $columns['session_id'] = new \OWA\Module\Base\Classes\DbColumn('session_id', OWA_DTD_BIGINT);
         $columns['session_id']->setForeignKey('base.session');
