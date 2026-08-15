@@ -1461,6 +1461,53 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Which partitions hold only data older than a cutoff.
+     *
+     * A partition is droppable only when everything in it precedes the cutoff,
+     * so a partition straddling that date is kept: dropping it would remove
+     * data on or after the date, which is more than was asked for. With
+     * anything coarser than daily partitions that means the boundary actually
+     * reached is usually earlier than the one requested, so it is reported --
+     * 'effective' is the date before which data no longer exists once these are
+     * dropped.
+     *
+     * The catch-all is never droppable: it has no upper bound, and it holds
+     * current traffic.
+     *
+     * @param string $table_name
+     * @param int    $older_than_yyyymmdd
+     * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
+     */
+    function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
+
+        $drop       = array();
+        $effective  = null;
+        $straddling = null;
+        $cutoff     = (string) $older_than_yyyymmdd;
+
+        foreach ( $this->getPartitionSpans( $table_name ) as $span ) {
+
+            if ( (string) $span['less_than'] <= $cutoff ) {
+
+                $drop[]    = $span['name'];
+                $effective = (string) $span['less_than'];
+
+                continue;
+            }
+
+            // The first partition that reaches past the cutoff. Report it when
+            // it also holds older rows, so the caller can say why the boundary
+            // reached is earlier than the one asked for.
+            if ( $straddling === null && (string) $span['start'] < $cutoff ) {
+
+                $straddling = $span;
+            }
+        }
+
+        return array( 'drop' => $drop, 'effective' => $effective, 'straddling' => $straddling );
+    }
+
+    /**
      * Change a table's partition granularity.
      *
      * Existing partitions and target ranges are walked together and grouped
