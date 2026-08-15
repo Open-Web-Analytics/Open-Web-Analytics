@@ -1089,20 +1089,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * OWA tables that carry the given column.
-     *
-     * Schema introspection is driver-specific. A driver that cannot introspect
-     * reports nothing, so callers index nothing rather than guess.
-     *
-     * @param string $column_name
-     * @return string[]
-     */
-    function getTablesWithColumn( $column_name ) {
-
-        return array();
-    }
-
-    /**
      * Indexes that duplicate another index on the same table, exactly.
      *
      * Same columns in the same order, same uniqueness, same type. The first by
