@@ -68,14 +68,14 @@ class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
 
             if ($id) {
 
-                // See Db::factLowerBound(): the session's own date bounds which
+                // See Db::factDateRange(): the session's own date bounds which
                 // partitions its fact rows can be in, without excluding any.
                 $constraints = array( 'session_id' => $id );
-                $since = \OWA\Core\Db::factLowerBound( $s->get( 'yyyymmdd' ) );
+                $range = \OWA\Core\Db::factDateRange( $s->get( 'yyyymmdd' ) );
 
-                if ( $since ) {
+                if ( $range ) {
 
-                    $constraints['yyyymmdd'] = array( 'value' => $since, 'operator' => '>=' );
+                    $constraints['yyyymmdd'] = array( 'value' => $range, 'operator' => 'between' );
                 }
 
                 // summarze the transaction

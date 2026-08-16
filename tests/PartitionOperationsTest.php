@@ -502,30 +502,46 @@ final class PartitionOperationsTest extends TestCase
      * own server-assigned date, so the only thing it can remove is a partition
      * the session cannot be in.
      */
-    public function testFactLowerBoundNeverExcludesTheSessionsOwnRows()
+    public function testFactDateRangeNeverExcludesTheSessionsOwnRows()
     {
         // Slack for queue lag: a session is dated when its event was processed,
         // so a delayed event can be dated after requests that belong to it.
         $slack = \OWA\Core\Db::FACT_LOWER_BOUND_SLACK_DAYS;
 
-        foreach (['20260815', '20260101', '20260301', '20280301'] as $date) {
+        foreach ([date('Ymd'), date('Ymd', strtotime('-6 months')), date('Ymd', strtotime('-2 years'))] as $date) {
+            $range = \OWA\Core\Db::factDateRange($date);
+
             $this->assertSame(
                 date('Ymd', strtotime("$date -$slack days")),
-                \OWA\Core\Db::factLowerBound($date),
+                $range['start'],
                 "must subtract $slack days from $date across month, year and leap boundaries"
             );
+
+            // The upper bound is today, not the session's date: rows are added
+            // to a session as it runs, and a replayed row lands on the day it
+            // was processed. It also prunes the lead, which a floor cannot.
+            $this->assertSame(date('Ymd', strtotime('tomorrow')), $range['end'], 'closes at today');
+            $this->assertGreaterThan($range['start'], $range['end']);
         }
 
-        $this->assertGreaterThanOrEqual(2, $slack, 'must cover at least the queue lag observed in the field');
+        $this->assertGreaterThanOrEqual(2, $slack, 'must cover at least the anomaly observed in the field');
+
+        // A session dated ahead of the server inverts the range. BETWEEN would
+        // then match nothing, turning a summary into a zero rather than a slow
+        // query, so no bound is applied at all.
+        $this->assertNull(
+            \OWA\Core\Db::factDateRange(date('Ymd', strtotime('+2 years'))),
+            'a future-dated session must not produce an inverted range'
+        );
 
         // Unusable dates yield no bound at all, so the caller queries unconstrained.
         foreach ([0, '0', '', null, 'garbage', '19700101', '2026081', '202608155'] as $bad) {
-            $this->assertNull(\OWA\Core\Db::factLowerBound($bad), var_export($bad, true) . ' should not bound');
+            $this->assertNull(\OWA\Core\Db::factDateRange($bad), var_export($bad, true) . ' should not bound');
         }
     }
 
     /** The bound prunes on a partitioned table and changes no result. */
-    public function testFactLowerBoundPrunesWithoutChangingTheAnswer()
+    public function testFactDateRangePrunesWithoutChangingTheAnswer()
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
@@ -539,16 +555,18 @@ final class PartitionOperationsTest extends TestCase
             $t
         ));
 
-        $since = \OWA\Core\Db::factLowerBound('20250615');
+        $range = \OWA\Core\Db::factDateRange('20250615');
 
         $unbounded = $db->get_row("SELECT COUNT(DISTINCT id) AS n FROM $t WHERE session_id = 77");
-        $bounded   = $db->get_row("SELECT COUNT(DISTINCT id) AS n FROM $t WHERE session_id = 77 AND yyyymmdd >= $since");
+        $bounded   = $db->get_row("SELECT COUNT(DISTINCT id) AS n FROM $t WHERE session_id = 77
+                                   AND yyyymmdd BETWEEN {$range['start']} AND {$range['end']}");
 
         $this->assertSame(3, (int) $unbounded['n']);
         $this->assertSame((int) $unbounded['n'], (int) $bounded['n'], 'the bound must not change the count');
 
         // And it really does prune.
-        $plan = $db->get_results("EXPLAIN SELECT COUNT(DISTINCT id) FROM $t WHERE session_id = 77 AND yyyymmdd >= $since");
+        $plan = $db->get_results("EXPLAIN SELECT COUNT(DISTINCT id) FROM $t WHERE session_id = 77
+                                  AND yyyymmdd BETWEEN {$range['start']} AND {$range['end']}");
         $scanned = count(explode(',', $plan[0]['partitions']));
         $all     = count($db->getPartitionSpans($t));
 

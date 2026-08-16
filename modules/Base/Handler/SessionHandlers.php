@@ -277,11 +277,11 @@ class SessionHandlers extends \OWA\Core\Observer {
         // a partitioned table it is the difference between visiting every
         // partition and visiting the few the session can be in. Left off where
         // the date is unusable.
-        $since = \OWA\Core\Db::factLowerBound( $session_yyyymmdd );
+        $range = \OWA\Core\Db::factDateRange( $session_yyyymmdd );
 
-        if ( $since ) {
+        if ( $range ) {
 
-            $constraints['yyyymmdd'] = array( 'value' => $since, 'operator' => '>=' );
+            $constraints['yyyymmdd'] = array( 'value' => $range, 'operator' => 'between' );
         }
 
         $ret = \OWA\Core\CoreAPI::summarize(array(

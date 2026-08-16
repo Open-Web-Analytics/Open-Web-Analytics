@@ -1596,8 +1596,8 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * A lower bound on the partitioning column, for queries that select fact
-     * rows belonging to a known session.
+     * The range of the partitioning column that a known session's fact rows can
+     * occupy, for queries that select them.
      *
      * Partition pruning reads only the partitioning column, so a query
      * constrained on session_id alone has to visit every partition. A row
@@ -1631,9 +1631,9 @@ class Db extends \OWA\Core\Base {
      * does not constrain -- slower, never wrong.
      *
      * @param mixed $session_yyyymmdd
-     * @return string|null yyyymmdd
+     * @return array|null ['start','end'] as yyyymmdd, or null where unusable
      */
-    static function factLowerBound( $session_yyyymmdd ) {
+    static function factDateRange( $session_yyyymmdd ) {
 
         $value = (string) $session_yyyymmdd;
 
@@ -1651,7 +1651,27 @@ class Db extends \OWA\Core\Base {
             return null;
         }
 
-        return $date->modify( '-' . self::FACT_LOWER_BOUND_SLACK_DAYS . ' days' )->format( 'Ymd' );
+        // The upper bound is today, not the session's date: rows are added to a
+        // session as it runs, and one replayed or backfilled later still lands
+        // on the day it was processed. Nothing can be dated ahead of the server
+        // clock that stamps it, so today closes the range -- with a day of
+        // slack, which costs nothing and survives a forward clock step.
+        //
+        // Without it a floor alone leaves the whole lead in play, since every
+        // future partition sits above it: on a table with two years of history
+        // and a year ahead, 15 partitions of 37 rather than 2.
+        $start = $date->modify( '-' . self::FACT_LOWER_BOUND_SLACK_DAYS . ' days' )->format( 'Ymd' );
+        $end   = ( new \DateTimeImmutable( 'tomorrow' ) )->format( 'Ymd' );
+
+        // A session dated in the future inverts the range, and BETWEEN would
+        // then match nothing at all -- turning a summary into a zero rather
+        // than a slow query. Refuse to bound instead.
+        if ( $start > $end ) {
+
+            return null;
+        }
+
+        return array( 'start' => $start, 'end' => $end );
     }
 
     /**
