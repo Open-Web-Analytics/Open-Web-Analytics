@@ -35,7 +35,7 @@ class PartitionStatusCli extends PartitionsCli {
             return;
         }
 
-        $tables = $this->factTables( $this->getParam( 'table' ) );
+        $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
 
         if ( ! $tables ) {
 
@@ -72,9 +72,36 @@ class PartitionStatusCli extends PartitionsCli {
         $lines[] = '';
         $lines   = array_merge( $lines, $this->summarise( $layouts, $budget ) );
 
+        $this->write( $lines );
+    }
+
+    /**
+     * Put the report on standard output.
+     *
+     * The other commands report through CoreAPI::notice(), and should: what they
+     * did is a record worth keeping, and the console handler puts it on stdout as
+     * well as in the log. A report is not that. It is terminal output, it is read
+     * once, and routing it through the logger would stamp every line with a
+     * timestamp, a pid and a level, interleave it with debug output on an
+     * installation running the development handler, and write fifty lines into
+     * the error log on each run -- which, scheduled beside partition-rotate,
+     * would make the status of the partitions the noisiest thing in it.
+     *
+     * Refusals still go through notice(), because those are events.
+     *
+     * @param string[] $lines
+     * @return void
+     */
+    protected function write( $lines ) {
+
+        // The base controller exits unless this is a CLI request, so STDOUT is
+        // the CLI SAPI's own constant. The fallback is for a test harness that
+        // has not defined it.
+        $out = defined( 'STDOUT' ) ? STDOUT : fopen( 'php://output', 'w' );
+
         foreach ( $lines as $line ) {
 
-            \OWA\Core\CoreAPI::notice( $line );
+            fwrite( $out, $line . PHP_EOL );
         }
     }
 
