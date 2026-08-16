@@ -117,8 +117,17 @@ test.describe('web-access hardening policy @server-config', () => {
     for (const p of PUBLIC_PATHS) {
         test(`public: ${p} is served`, async ({ request }) => {
             const code = await statusOf(request, ROOT + p);
-            // Served = 2xx or a redirect (login flow / legacy-tracker 301). NOT 403/404.
-            expect(code, `${p} should be publicly reachable`).toBeLessThan(400);
+
+            // This suite is about the web server's deny rules, so "served"
+            // means the request reached PHP -- 2xx, a redirect (login flow /
+            // legacy-tracker 301), or an application-level rejection. It does
+            // NOT mean 2xx: api/index.php answers a request that names no
+            // route with a well-formed 400, which is the endpoint working, and
+            // asserting `< 400` failed it for doing so.
+            expect([403, 404], `${p} should be publicly reachable, not blocked`).not.toContain(code);
+
+            // Reachable but broken is a different failure, and still one.
+            expect(code, `${p} should not be a server error`).toBeLessThan(500);
         });
     }
 
