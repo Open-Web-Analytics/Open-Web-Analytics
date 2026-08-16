@@ -52,8 +52,19 @@ class ReportVisitorsRoster extends \OWA\Core\ReportController {
 
         $db->where('site_id', $this->getParam('site_id'));
 
-        // make new timeperiod of a day
-        $period = \OWA\Core\CoreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+        // A single day, expressed as a date range whose ends are equal.
+        //
+        // NOT makeTimePeriod('day', ...): there is no period named 'day' --
+        // the set is in TimePeriod::getPeriodLabels() -- so isValid() rejected
+        // it, TimePeriod fell back to the default reporting period, and the
+        // requested date was dropped on the floor. This report titled itself
+        // "New Visitors from <day>" while listing the default window instead.
+        $first_session = $this->getParam('first_session');
+
+        $period = \OWA\Core\CoreAPI::makeTimePeriod('date_range', array(
+            'startDate' => $first_session,
+            'endDate'   => $first_session,
+        ));
         $start = $period->getStartDate();
         $end = $period->getEndDate();
         //print_r($period);
