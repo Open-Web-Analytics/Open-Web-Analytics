@@ -23,7 +23,7 @@ namespace OWA\Module\Base\Controller;
  *
  *   cmd=partition-rotate keep=24                  keep two years, twelve ahead
  *   cmd=partition-rotate keep=12 months-ahead=6   a shorter lead
- *   cmd=partition-rotate keep=36 dry-run=1        report the plan, change nothing
+ *   cmd=partition-rotate keep=36 --dry-run        report the plan, change nothing
  *
  * Run it monthly:
  *   0 4 1 * *  php /path/to/owa/cli.php cmd=partition-rotate keep=24

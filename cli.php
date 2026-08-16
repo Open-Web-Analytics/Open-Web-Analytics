@@ -44,18 +44,14 @@ if (!OWA_CLI)
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa.php');
 
-$params = [];
-// get params from the command line args
-// $argv is a php super global variable
-for ($i=1; $i<count($argv); $i++)
-{
-    $it = explode("=",$argv[$i]);
-    if (count($it) !== 2) {
-        fwrite(STDERR, "Invalid argument '{$argv[$i]}'. Syntax is key=value\n");
-        exit(1);
-    }
-    $params[$it[0]] = $it[1];
+// Parse the command line. See owa_lib::parseCliArgs() for the accepted forms.
+$params = \OWA\Core\Lib::parseCliArgs($argv);
+
+if (!is_array($params)) {
+    fwrite(STDERR, $params . "\n");
+    exit(1);
 }
+
 unset($params['action']);
 unset($params['do']);
 if (empty($params)) {

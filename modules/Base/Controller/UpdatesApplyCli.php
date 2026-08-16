@@ -107,8 +107,15 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
         
         // check for force command param
+        //
+        // The key is 'force', not '--force'. The dashes used to be part of the
+        // parameter NAME because cli.php required key=value and stored whatever
+        // was left of the '=' verbatim, so 'cmd=update --force=1' produced a
+        // parameter literally called '--force'. cli.php now strips a leading --
+        // and treats a valueless switch as true, so all three spellings arrive
+        // here as 'force': --force, --force=1 and force=1.
         $force = false;
-        if ($this->isParam('--force')) {
+        if ($this->isParam('force')) {
             
             $force = true;
         }

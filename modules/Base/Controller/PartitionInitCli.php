@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
  *   cmd=partition-init granularity=half-month   override it
  *   cmd=partition-init months-ahead=6           keep six months ahead, not twelve
  *   cmd=partition-init table=owa_request        one table
- *   cmd=partition-init dry-run=1                report the plan, change nothing
+ *   cmd=partition-init --dry-run                report the plan, change nothing
  *
  * Run it monthly:
  *   0 4 1 * *  php /path/to/owa/cli.php cmd=partition-init

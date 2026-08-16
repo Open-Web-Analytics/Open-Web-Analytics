@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
  *
  *   cmd=partition-reorganize granularity=half-month
  *   cmd=partition-reorganize granularity=quarter-month from=20260801 to=20260901
- *   cmd=partition-reorganize granularity=monthly dry-run=1
+ *   cmd=partition-reorganize granularity=monthly --dry-run
  */
 class PartitionReorganizeCli extends PartitionsCli {
 
