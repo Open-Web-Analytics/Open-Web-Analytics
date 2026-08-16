@@ -366,6 +366,87 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return $dropped;
     }
 
+    /**
+     * Merge old periods so the table fits its partition budget, deleting nothing.
+     *
+     * This is what decouples partition count from retention. Without it the only
+     * way back under an open-file budget is to drop history, which turns a
+     * resource limit into a data-loss decision.
+     *
+     * @param string $table
+     * @param array  $budget  from partitionLimit()
+     * @param bool   $dry_run
+     * @return int merges performed, or that would be
+     */
+    protected function compactTable( $table, $budget, $dry_run ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $plan = $db->planPartitionCompaction( $table, $budget['limit'], $this->detailMonths() );
+
+        if ( ! $plan['merges'] ) {
+
+            // Worth saying when the table cannot fit even fully merged: the
+            // remedy is a shorter detail window, and nothing else the operator
+            // does to this command will help.
+            if ( ! $plan['fits'] ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: %d partitions exceeds the budget of %d and cannot be merged below %d, '
+                  . 'because everything within the last %d months is kept at full granularity. '
+                  . 'Lower OWA_PARTITION_DETAIL_MONTHS to reduce it further.',
+                    $table, $plan['projected'], $budget['limit'], $plan['floor'], $this->detailMonths()
+                ) );
+            }
+
+            return 0;
+        }
+
+        $first = $plan['merges'][0];
+        $last  = $plan['merges'][ count( $plan['merges'] ) - 1 ];
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: %s %d group(s) of old periods covering %s to %s into one partition each, '
+          . 'leaving %d partitions. No data is deleted.',
+            $table, $dry_run ? 'would merge' : 'merging', count( $plan['merges'] ),
+            $first['start'], $last['less_than'], $plan['projected']
+        ) );
+
+        if ( $dry_run ) {
+
+            return count( $plan['merges'] );
+        }
+
+        $done = 0;
+
+        foreach ( $plan['merges'] as $merge ) {
+
+            if ( $db->mergePartitions( $table, $merge['names'], $merge['start'], $merge['less_than'] ) ) {
+
+                $done++;
+
+            } else {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: FAILED to merge %s..%s; see the database error above.',
+                    $table, $merge['start'], $merge['less_than']
+                ) );
+            }
+        }
+
+        if ( ! $plan['fits'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: still %d partitions against a budget of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
+              . 'to reduce it further; no more can be merged while the last %d months are kept '
+              . 'at full granularity.',
+                $table, $plan['projected'], $budget['limit'], $this->detailMonths()
+            ) );
+        }
+
+        return $done;
+    }
+
     /** Is the driver able to partition at all? Report once, clearly. */
     protected function assertPartitioningSupported() {
 

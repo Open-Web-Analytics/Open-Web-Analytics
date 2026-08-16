@@ -120,12 +120,12 @@ class PartitionInitCli extends PartitionsCli {
 
             $min = ( $row && $row['mn'] ) ? $row['mn'] : $today;
 
-            // The lead decides the upper end; -1 day because the boundary is
-            // exclusive and makePartitionRanges() covers the period its end
-            // falls in.
-            $max = date( 'Ymd', strtotime( $through . ' -1 day' ) );
-
-            $ranges = \OWA\Core\Db::makePartitionRanges( $min, $max, $table_granularity );
+            // Coarse over old history, fine over the detail window and the
+            // lead. A flat layout over a long-running installation asks for one
+            // partition per month of history and simply cannot be created.
+            $ranges = \OWA\Core\Db::makeTieredPartitionRanges(
+                $min, $through, $table_granularity, $this->detailMonths()
+            );
 
             if ( ! $ranges ) {
 
@@ -142,8 +142,9 @@ class PartitionInitCli extends PartitionsCli {
             if ( $dry_run ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: would create %d %s partitions covering %s to %s, plus a catch-all.',
-                    $table, count( $ranges ), $table_granularity, $min, $through
+                    '%s: would create %d partitions covering %s to %s (%s within the last %d months, '
+                  . 'whole years before that), plus a catch-all.',
+                    $table, count( $ranges ), $min, $through, $table_granularity, $this->detailMonths()
                 ) );
 
                 continue;

@@ -1932,6 +1932,66 @@ class Db extends \OWA\Core\Base {
     const PARTITION_MIN_LIMIT = 24;       // default; OWA_PARTITION_MIN_LIMIT
 
     /**
+     * Ranges for a table that is being partitioned for the first time: coarse
+     * over old history, fine over the detail window and the lead.
+     *
+     * A flat monthly layout over a long-running installation asks for one
+     * partition per month of history -- over three hundred on a twenty-five year
+     * table -- which exceeds any reasonable open-file budget and leaves the
+     * operator no way through, since monthly is already the coarsest granularity
+     * and old data cannot be pruned before partitions exist to prune.
+     *
+     * Building the tiers up front avoids partitioning flat and merging
+     * afterwards, which would mean writing every old row twice.
+     *
+     * Whole calendar years are used for the old tier because a year is the unit
+     * an operator reasons about, and because retention still means something:
+     * history ages out a year at a time. Lumping it all into one partition
+     * instead would leave a table whose first routine retention run discards
+     * decades in a single statement.
+     *
+     * @param string $min_yyyymmdd    oldest data present
+     * @param string $through         upper boundary to reach (exclusive)
+     * @param string $granularity     granularity for the detail window
+     * @param int    $detail_months   how much recent history stays fine
+     * @return array name => less_than, ascending
+     */
+    static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months ) {
+
+        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
+
+        // Nothing old enough to coarsen: this is just the flat layout.
+        if ( (string) $min_yyyymmdd >= $boundary ) {
+
+            return self::makePartitionRanges(
+                $min_yyyymmdd, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
+            );
+        }
+
+        $ranges = array();
+
+        // Old tier: whole calendar years, from the year the data starts in up to
+        // the year the detail window opens in.
+        $year      = (int) substr( $min_yyyymmdd, 0, 4 );
+        $last_year = (int) substr( $boundary, 0, 4 );
+
+        for ( ; $year < $last_year; $year++ ) {
+
+            $ranges[ 'p' . $year . '0101' ] = ( $year + 1 ) . '0101';
+        }
+
+        // Detail tier: from the start of the boundary year through the lead, at
+        // the table's own granularity. Starting at the year boundary rather than
+        // at $boundary itself keeps every partition inside one calendar year,
+        // so the old tier can never overlap the new one.
+        $fine = self::makePartitionRanges(
+            $last_year . '0101', date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
+        );
+
+        return array_merge( $ranges, $fine );
+    }
+
+    /**
      * Largest run of calendar years that may be merged into one partition.
      *
      * A cap, not a target. Without one, a budget that cannot be met would drive

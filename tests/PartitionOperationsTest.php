@@ -671,4 +671,130 @@ final class PartitionOperationsTest extends TestCase
             $db->query(sprintf("DELETE FROM owa_session WHERE id = '%s'", $db->prepare($id)));
         }
     }
+
+    /**
+     * A long-running installation must be partitionable at all.
+     *
+     * A flat monthly layout over decades asks for one partition per month, which
+     * no open-file budget accommodates — and there is no way out, since monthly
+     * is already the coarsest granularity and old data cannot be pruned before
+     * partitions exist to prune. The old tier is what makes it possible.
+     */
+    public function testTieredRangesMakeALongHistoryPartitionable()
+    {
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+        $min     = date('Ymd', strtotime(date('Ym') . '01 -300 months'));
+
+        $flat   = \OWA\Core\Db::makePartitionRanges($min, date('Ymd', strtotime($through . ' -1 day')), 'monthly');
+        $tiered = \OWA\Core\Db::makeTieredPartitionRanges($min, $through, 'monthly', 36);
+
+        $this->assertGreaterThan(300, count($flat), '25 years flat should be unmanageable');
+        $this->assertLessThan(100, count($tiered), 'tiered should be manageable');
+
+        // Ascending, contiguous, and every boundary a real date.
+        $prev = null;
+        foreach ($tiered as $name => $less_than) {
+            $this->assertMatchesRegularExpression('/^p\d{8}$/', $name, 'names must stay p<yyyymmdd>');
+            if ($prev !== null) {
+                $this->assertSame($prev, substr($name, 1), 'tiers must not leave a gap or overlap');
+            }
+            $prev = $less_than;
+        }
+
+        // Recent history keeps its granularity.
+        $recent = array_slice(array_keys($tiered), -12);
+        foreach ($recent as $name) {
+            $this->assertSame('01', substr($name, 7, 2), 'detail-window partitions are monthly');
+        }
+    }
+
+    /** An install with only recent data gets no old tier at all. */
+    public function testTieredRangesAreFlatWhenAllDataIsRecent()
+    {
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+        $min     = date('Ymd', strtotime(date('Ym') . '01 -6 months'));
+
+        $this->assertSame(
+            count(\OWA\Core\Db::makePartitionRanges($min, date('Ymd', strtotime($through . ' -1 day')), 'monthly')),
+            count(\OWA\Core\Db::makeTieredPartitionRanges($min, $through, 'monthly', 36)),
+            'nothing outside the detail window means nothing to coarsen'
+        );
+    }
+
+    /**
+     * Compaction keeps a table within its budget by merging, never by deleting.
+     *
+     * This is the property the whole design rests on: partition count stops
+     * being a reason to discard data.
+     */
+    public function testCompactionMergesWithoutLosingRows()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $start = date('Ymd', strtotime(date('Ym') . '01 -120 months'));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
+
+        for ($m = -120; $m <= 0; $m += 6) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, $m + 200,
+                date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+        }
+
+        $before = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+        $count  = count($db->getPartitionSpans($t));
+
+        $plan = $db->planPartitionCompaction($t, 60, 36);
+        $this->assertNotEmpty($plan['merges'], 'a 10-year monthly table should have something to merge');
+
+        foreach ($plan['merges'] as $m) {
+            $this->assertTrue($db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']));
+        }
+
+        $after = count($db->getPartitionSpans($t));
+
+        $this->assertLessThan($count, $after, 'compaction must reduce the partition count');
+        $this->assertSame($before, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no row may be lost');
+        $this->assertSame($plan['projected'], $after, 'the plan must predict the outcome');
+
+        // The detail window is untouched, so recent retention stays precise.
+        $boundary = date('Ymd', strtotime(date('Ym') . '01 -36 months'));
+        foreach ($db->getPartitionSpans($t) as $span) {
+            if ($span['start'] >= $boundary) {
+                $this->assertSame('01', substr($span['start'], 6, 2), 'recent partitions stay monthly');
+            }
+        }
+    }
+
+    /**
+     * An unreachable budget must not collapse all of history into one partition.
+     *
+     * That would fit no better and would leave a table whose entire past ages
+     * out in a single drop — the cliff this design exists to avoid.
+     */
+    public function testCompactionRefusesToBuildACliff()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $start = date('Ymd', strtotime(date('Ym') . '01 -240 months'));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
+
+        // A budget below the floor: the detail window alone exceeds it.
+        $plan = $db->planPartitionCompaction($t, 5, 36);
+
+        $this->assertFalse($plan['fits'], 'this budget is not reachable');
+        $this->assertGreaterThan(1, count($plan['merges']), 'must not merge everything into one partition');
+        $this->assertGreaterThan(0, $plan['floor'], 'must report the floor so a caller can explain why');
+
+        foreach ($plan['merges'] as $m) {
+            $span = (strtotime($m['less_than']) - strtotime($m['start'])) / 86400 / 365;
+            $this->assertLessThanOrEqual(
+                \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK + 0.1,
+                $span,
+                'no merged block may exceed the configured maximum span'
+            );
+        }
+    }
 }

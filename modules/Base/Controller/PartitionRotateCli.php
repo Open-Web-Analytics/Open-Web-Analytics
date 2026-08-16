@@ -21,6 +21,8 @@ namespace OWA\Module\Base\Controller;
  * Where the lead is refused for want of open files, it is retried after the
  * drop, since dropping is what frees them.
  *
+ *   cmd=partition-rotate                          retain everything; merge old
+ *                                                 periods to stay within budget
  *   cmd=partition-rotate keep=24                  keep two years, twelve ahead
  *   cmd=partition-rotate keep=12 months-ahead=6   a shorter lead
  *   cmd=partition-rotate keep=36 --dry-run        report the plan, change nothing
@@ -45,27 +47,36 @@ class PartitionRotateCli extends PartitionsCli {
         $dry_run = (bool) $this->getParam( 'dry-run' );
         $keep    = $this->getParam( 'keep' );
 
-        if ( ! $keep || ! ctype_digit( (string) $keep ) || (int) $keep < 1 ) {
+        // keep is optional. Without it nothing is ever deleted: the lead is
+        // maintained and old periods are merged into coarser ones to stay within
+        // the open-file budget. That is a complete, safe policy for an
+        // installation that wants to retain everything -- partition count stops
+        // being a reason to discard data.
+        $cutoff = null;
 
-            \OWA\Core\CoreAPI::notice(
-                'keep is required: the number of months of data to retain, such as keep=24.'
-            );
+        if ( $keep !== null && $keep !== '' ) {
 
-            return;
-        }
+            if ( ! ctype_digit( (string) $keep ) || (int) $keep < 1 ) {
 
-        $keep = (int) $keep;
+                \OWA\Core\CoreAPI::notice(
+                    'keep must be a number of months to retain, such as keep=24. '
+                  . 'Omit it entirely to retain everything.'
+                );
 
-        // Expressed as a period rather than a date on purpose. A fixed date in
-        // a scheduled job stops pruning the moment it is passed, and does so
-        // silently.
-        $cutoff = $this->resolveCutoff( $keep . 'months' );
+                return;
+            }
 
-        if ( ! $cutoff ) {
+            // Expressed as a period rather than a date on purpose. A fixed date
+            // in a scheduled job stops pruning the moment it is passed, and does
+            // so silently.
+            $cutoff = $this->resolveCutoff( (int) $keep . 'months' );
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Could not work out a cutoff for keep=%d.', $keep ) );
+            if ( ! $cutoff ) {
 
-            return;
+                \OWA\Core\CoreAPI::notice( sprintf( 'Could not work out a cutoff for keep=%s.', $keep ) );
+
+                return;
+            }
         }
 
         $months_ahead = $this->getParam( 'months-ahead' );
@@ -96,11 +107,17 @@ class PartitionRotateCli extends PartitionsCli {
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
         $budget  = $this->partitionLimit( count( $tables ) );
 
-        \OWA\Core\CoreAPI::notice( sprintf(
-            'Rotating: keeping %d month(s) of data (nothing before %s), and %d month(s) of '
-          . 'partitions ahead (through %s).',
-            $keep, $cutoff, $months_ahead, $through
-        ) );
+        \OWA\Core\CoreAPI::notice( $cutoff
+            ? sprintf(
+                'Rotating: keeping %s month(s) of data (nothing before %s), and %d month(s) of '
+              . 'partitions ahead (through %s).',
+                $keep, $cutoff, $months_ahead, $through )
+            : sprintf(
+                'Rotating: RETAINING EVERYTHING (no keep given, so nothing will be dropped), '
+              . 'and %d month(s) of partitions ahead (through %s). Old periods are merged, not '
+              . 'deleted, to stay within the partition budget.',
+                $months_ahead, $through )
+        );
 
         foreach ( $tables as $table ) {
 
@@ -121,7 +138,12 @@ class PartitionRotateCli extends PartitionsCli {
             // Ahead first: see the class comment.
             $extended = $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
 
-            $dropped = $this->dropOlderThan( $table, $cutoff, $dry_run );
+            // Coarsen old periods so partition count stays under the budget
+            // without deleting anything. This is what allows a table to hold
+            // decades of history within a modest open-file allowance.
+            $this->compactTable( $table, $budget, $dry_run );
+
+            $dropped = $cutoff ? $this->dropOlderThan( $table, $cutoff, $dry_run ) : 0;
 
             // Dropping frees the open files the lead was refused for, so a
             // refusal is worth revisiting once the old periods have gone.
