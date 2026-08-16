@@ -149,6 +149,29 @@ namespace OWA\Module\Base\Classes;
             $this->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
         }
 
+        /* FACT-TABLE PARTITIONING */
+
+        // These describe the shape of an installation -- how much history stays
+        // finely partitioned, and how much of the server's open-file budget this
+        // may claim -- rather than the behaviour of a single command, so they are
+        // set once in owa-config.php:
+        //
+        //   define('OWA_PARTITION_DETAIL_MONTHS', 24);
+        //
+        // See the Partitioning Fact Tables page in the wiki.
+        foreach (array(
+            'OWA_PARTITION_DETAIL_MONTHS'       => 'partition_detail_months',
+            'OWA_PARTITION_BUDGET_RESERVE'      => 'partition_budget_reserve',
+            'OWA_PARTITION_MIN_LIMIT'           => 'partition_min_limit',
+            'OWA_PARTITION_MAX_YEARS_PER_BLOCK' => 'partition_max_years_per_block',
+            'OWA_PARTITION_MAX_PARTITIONS'      => 'partition_max_partitions',
+        ) as $constant => $key) {
+
+            if (defined($constant)) {
+                $this->set('base', $key, constant($constant));
+            }
+        }
+
         /* CONFIGURATION ID */
 
         if (defined('OWA_CONFIGURATION_ID')) {
@@ -922,6 +945,29 @@ namespace OWA\Module\Base\Classes;
                 'modules'                            => array('base'),
                 'mailer-from'                        => '',  // Set default address, because sending from root@localhost wont work
                 'mailer-fromName'                    => 'OWA Server',
+
+                // Fact-table partitioning. Defaults; override with a constant in
+                // owa-config.php -- see applyConfigConstants().
+                //
+                // How recent a period must be to keep fine granularity. Older
+                // periods may be merged into coarser ones to stay within the
+                // server's open-file budget -- merged, never dropped.
+                'partition_detail_months'            => 36,
+                // Fraction of the server's spare open-file slots partitioning may
+                // claim, as a divisor: 2 means half. The cap is shared with every
+                // other table on the instance, and the schema grows.
+                'partition_budget_reserve'           => 2,
+                // Fewest partitions a table may be limited to, whatever the
+                // budget arithmetic says.
+                'partition_min_limit'                => 24,
+                // Largest run of calendar years that may be merged into a single
+                // partition. A cap: without it, an unreachable budget would drive
+                // everything into one partition, which fits no better and means
+                // all of history ages out at once.
+                'partition_max_years_per_block'      => 5,
+                // Set to a positive integer to state the per-table partition
+                // budget outright instead of deriving it from innodb_open_files.
+                'partition_max_partitions'           => 0,
                 'mailer-host'                        => '',
                 'mailer-port'                        => '',
                 'mailer-use-smtp'                    => false,

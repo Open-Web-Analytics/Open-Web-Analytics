@@ -1902,6 +1902,11 @@ class Db extends \OWA\Core\Base {
      * Inside this window partitions keep whatever granularity the table uses, so
      * recent reporting and recent retention stay precise. Outside it they may be
      * merged, because old periods are queried rarely and pruned in bulk.
+     *
+     * This is the code-level default. An installation overrides it with
+     * OWA_PARTITION_DETAIL_MONTHS in owa-config.php; the commands read the
+     * setting and pass the result in, so this value applies only to a direct
+     * caller that supplies nothing.
      */
     const PARTITION_DETAIL_MONTHS = 36;
 
@@ -1914,7 +1919,7 @@ class Db extends \OWA\Core\Base {
      * would be planning for a server that no longer exists by the time the
      * partitions are created.
      */
-    const PARTITION_BUDGET_RESERVE = 2;
+    const PARTITION_BUDGET_RESERVE = 2;   // default; OWA_PARTITION_BUDGET_RESERVE
 
     /**
      * Fewest partitions a table is allowed regardless of what the budget says.
@@ -1924,7 +1929,7 @@ class Db extends \OWA\Core\Base {
      * useless -- the feature would be unavailable exactly where retention matters
      * most.
      */
-    const PARTITION_MIN_LIMIT = 24;
+    const PARTITION_MIN_LIMIT = 24;       // default; OWA_PARTITION_MIN_LIMIT
 
     /**
      * Largest run of calendar years that may be merged into one partition.
@@ -1935,7 +1940,7 @@ class Db extends \OWA\Core\Base {
      * since a partition can only be dropped as a unit. Better to return the best
      * plan available and report that it does not fit.
      */
-    const PARTITION_MAX_YEARS_PER_BLOCK = 5;
+    const PARTITION_MAX_YEARS_PER_BLOCK = 5;  // default; OWA_PARTITION_MAX_YEARS_PER_BLOCK
 
     /**
      * Plan how to coarsen the partitions outside the detail window so the table

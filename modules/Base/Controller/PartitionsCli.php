@@ -121,17 +121,19 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function partitionLimit( $table_count ) {
 
-        // An explicit budget wins over the derived one. This is the considered
-        // escape hatch: unlike force, it makes the operator name the number they
-        // are accepting, which means looking at innodb_open_files to pick it, and
-        // it lands in the log as a number the next person can evaluate.
-        $override = $this->getParam( 'max-partitions' );
+        // Partitioning is shaped by settings, not by command arguments: how much
+        // history stays finely partitioned and how much of the server's open-file
+        // budget this may claim are properties of an installation, and an
+        // operator should not be able to change them per invocation. They are set
+        // once with a constant in owa-config.php -- see
+        // owa_settings::applyConfigConstants().
+        $stated = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' );
 
-        if ( $override !== null && $override !== '' && ctype_digit( (string) $override ) && (int) $override > 0 ) {
+        if ( $stated > 0 ) {
 
             return array(
-                'limit'  => (int) $override,
-                'reason' => 'max-partitions given explicitly',
+                'limit'  => $stated,
+                'reason' => 'set by OWA_PARTITION_MAX_PARTITIONS',
             );
         }
 
@@ -145,20 +147,31 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $limit = max(
-            \OWA\Core\Db::PARTITION_MIN_LIMIT,
-            intdiv( $spare, \OWA\Core\Db::PARTITION_BUDGET_RESERVE * max( 1, $table_count ) )
-        );
+        $reserve = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_budget_reserve' ) );
+        $floor   = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_min_limit' ) );
+
+        $limit = max( $floor, intdiv( $spare, $reserve * max( 1, $table_count ) ) );
 
         return array(
             'limit'  => $limit,
             'reason' => sprintf(
-                '%d spare open-file slots on this server, %s of them shared across %d table(s)',
-                $spare,
-                \OWA\Core\Db::PARTITION_BUDGET_RESERVE === 2 ? 'half' : '1/' . \OWA\Core\Db::PARTITION_BUDGET_RESERVE,
-                $table_count
+                '%d spare open-file slots on this server, 1/%d of them shared across %d table(s)',
+                $spare, $reserve, $table_count
             ),
         );
+    }
+
+    /**
+     * How recent a period must be to keep its fine granularity. Older ones may be
+     * merged to stay within the budget.
+     *
+     * @return int months
+     */
+    protected function detailMonths() {
+
+        $months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' );
+
+        return $months > 0 ? $months : \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
     }
 
     /**

@@ -229,28 +229,37 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * The budget can be stated outright.
+     * The budget is a setting, not an argument.
      *
-     * This is the considered escape hatch, as opposed to force: it makes the
-     * operator name the number they are accepting -- which means looking at
-     * innodb_open_files to choose it -- and it lands in the log as a figure the
-     * next person can evaluate rather than as "the guard was switched off".
+     * How much of a server's open-file capacity partitioning may claim is a
+     * property of the installation, so it is set once with a constant in
+     * owa-config.php rather than chosen per invocation. Passing it as an
+     * argument must have no effect at all.
      */
-    public function testAnExplicitBudgetOverridesTheDerivedOne()
+    public function testTheBudgetComesFromSettingsNotArguments()
     {
         $derived = $this->callProtected($this->rotate(), 'partitionLimit', [7]);
 
-        $stated = $this->callProtected($this->rotate(['max-partitions' => '500']), 'partitionLimit', [7]);
-        $this->assertSame(500, $stated['limit']);
-        $this->assertStringContainsString('explicitly', $stated['reason']);
+        $this->assertSame(
+            $derived['limit'],
+            $this->callProtected($this->rotate(['max-partitions' => '500']), 'partitionLimit', [7])['limit'],
+            'an argument must not be able to change the budget'
+        );
 
-        // Junk falls back to the derived budget rather than to something permissive.
-        foreach (['abc', '0', '-5', ''] as $bad) {
-            $this->assertSame(
-                $derived['limit'],
-                $this->callProtected($this->rotate(['max-partitions' => $bad]), 'partitionLimit', [7])['limit'],
-                var_export($bad, true) . ' should not be accepted as a budget'
-            );
+        $original = \OWA\Core\CoreAPI::getSetting('base', 'partition_max_partitions');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'partition_max_partitions', 500);
+            $stated = $this->callProtected($this->rotate(), 'partitionLimit', [7]);
+            $this->assertSame(500, $stated['limit']);
+            $this->assertStringContainsString('OWA_PARTITION_MAX_PARTITIONS', $stated['reason']);
+
+            // Zero means "derive it", not "no partitions allowed".
+            \OWA\Core\CoreAPI::setSetting('base', 'partition_max_partitions', 0);
+            $this->assertSame($derived['limit'], $this->callProtected($this->rotate(), 'partitionLimit', [7])['limit']);
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'partition_max_partitions', $original);
         }
     }
 
