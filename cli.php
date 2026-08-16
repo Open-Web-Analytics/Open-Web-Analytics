@@ -44,38 +44,14 @@ if (!OWA_CLI)
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa.php');
 
-$params = [];
-// get params from the command line args
-// $argv is a php super global variable
-for ($i=1; $i<count($argv); $i++)
-{
-    $arg = $argv[$i];
+// Parse the command line. See owa_lib::parseCliArgs() for the accepted forms.
+$params = \OWA\Core\Lib::parseCliArgs($argv);
 
-    // A leading -- is optional, and marks a switch when no value follows.
-    // Nobody writes dry-run=0; they leave it off. So --dry-run means true and
-    // its absence means false, which is how a switch is expected to behave.
-    // key=value and --key=value both still work.
-    $is_switch = (strpos($arg, '--') === 0);
-
-    if ($is_switch) {
-        $arg = substr($arg, 2);
-    }
-
-    $it = explode("=", $arg, 2);
-
-    if (count($it) === 2) {
-        $params[$it[0]] = $it[1];
-        continue;
-    }
-
-    if ($is_switch && $it[0] !== '') {
-        $params[$it[0]] = true;
-        continue;
-    }
-
-    fwrite(STDERR, "Invalid argument '{$argv[$i]}'. Use key=value, or --switch for a flag\n");
+if (!is_array($params)) {
+    fwrite(STDERR, $params . "\n");
     exit(1);
 }
+
 unset($params['action']);
 unset($params['do']);
 if (empty($params)) {

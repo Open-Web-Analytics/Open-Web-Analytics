@@ -1063,6 +1063,62 @@ class Lib {
         return hash_hmac( $hash_type, $data, $salt );
     }
 
+    /**
+     * Turn command-line arguments into a parameter map.
+     *
+     * Three spellings, because a switch and a value want different shapes and
+     * older invocations must keep working:
+     *
+     *   --switch        true          nobody writes switch=0; they leave it off
+     *   --key=value     'value'
+     *   key=value       'value'       the original form
+     *
+     * A leading -- is stripped from the name. It used to survive into the key,
+     * so a parameter could be literally called '--force'; anything relying on
+     * that reads its value under the undashed name now.
+     *
+     * @param array $argv raw arguments, including the script name at index 0
+     * @return array|string the parameter map, or a message describing the first
+     *                      argument that could not be read
+     */
+    public static function parseCliArgs( $argv ) {
+
+        $params = array();
+
+        for ( $i = 1; $i < count( $argv ); $i++ ) {
+
+            $arg       = $argv[ $i ];
+            $is_switch = ( strpos( $arg, '--' ) === 0 );
+
+            if ( $is_switch ) {
+
+                $arg = substr( $arg, 2 );
+            }
+
+            $it = explode( '=', $arg, 2 );
+
+            if ( count( $it ) === 2 && $it[0] !== '' ) {
+
+                $params[ $it[0] ] = $it[1];
+
+                continue;
+            }
+
+            if ( $is_switch && $it[0] !== '' ) {
+
+                $params[ $it[0] ] = true;
+
+                continue;
+            }
+
+            return sprintf(
+                "Invalid argument '%s'. Use key=value, or --switch for a flag", $argv[ $i ]
+            );
+        }
+
+        return $params;
+    }
+
     public static function timestampToYyyymmdd($timestamp = '') {
 
         if(empty($timestamp)) {
