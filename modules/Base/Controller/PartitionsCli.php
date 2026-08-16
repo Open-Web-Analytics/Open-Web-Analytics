@@ -193,8 +193,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         \OWA\Core\CoreAPI::notice( sprintf(
             '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
           . 'past the budget MySQL closes and reopens tablespaces under load, which slows '
-          . 'everything on the instance. Narrow it with from/to, choose a coarser granularity, or '
-          . 're-run with force=1 if you have done the arithmetic.',
+          . 'everything on the instance. Lower OWA_PARTITION_DETAIL_MONTHS so less history is '
+          . 'kept at full granularity, choose a coarser granularity, or set '
+          . 'OWA_PARTITION_MAX_PARTITIONS if you have checked innodb_open_files yourself.',
             $table, $planned, $budget['limit'], $budget['reason']
         ) );
 
