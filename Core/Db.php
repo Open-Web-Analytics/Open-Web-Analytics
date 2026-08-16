@@ -1675,6 +1675,27 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * factDateRange() as a constraint array, ready to hand to a lookup.
+     *
+     * Empty where no usable range exists, so a caller can pass it
+     * unconditionally and simply get an unconstrained query.
+     *
+     * @param mixed $yyyymmdd
+     * @return array
+     */
+    static function factDateConstraint( $yyyymmdd ) {
+
+        $range = self::factDateRange( $yyyymmdd );
+
+        if ( ! $range ) {
+
+            return array();
+        }
+
+        return array( 'yyyymmdd' => array( 'value' => $range, 'operator' => 'between' ) );
+    }
+
+    /**
      * The range a session's fact rows can occupy, derived from the session id
      * alone, for callers that have no date at all.
      *

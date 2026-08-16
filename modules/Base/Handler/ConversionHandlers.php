@@ -54,7 +54,7 @@ class ConversionHandlers extends \OWA\Core\Observer {
                    // load session
                 $s = \OWA\Core\CoreAPI::entityFactory('base.session');
 
-                $s->load( $event->get( 'session_id' ) );
+                $s->load( $event->get( 'session_id' ), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
 
                 // if session exists
                 if ( $s->wasPersisted() ) {

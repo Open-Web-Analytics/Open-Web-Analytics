@@ -62,6 +62,21 @@ class ReportVisitorsRoster extends \OWA\Core\ReportController {
                    array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()),
                    'BETWEEN');
 
+        // Also bound the partitioning column, which the timestamp above cannot
+        // prune on. Safe for this query specifically: it selects DISTINCT
+        // visitor_id, and a visitor whose first session falls in this day has
+        // a session row dated that day by construction. Their later sessions
+        // carry the same first_session_timestamp and are excluded here, but
+        // they contribute no visitor the first session has not already.
+        //
+        // A day either side absorbs a session opened just before midnight.
+        $db->where('yyyymmdd',
+                   array(
+                       'start' => date('Ymd', $start->getTimestamp() - 86400),
+                       'end'   => date('Ymd', $end->getTimestamp() + 86400),
+                   ),
+                   'BETWEEN');
+
         $ret = $db->getAllRows();
 
         $this->set('visitors', $ret);

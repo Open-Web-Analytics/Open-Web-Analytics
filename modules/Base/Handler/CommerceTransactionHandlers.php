@@ -44,7 +44,7 @@ class CommerceTransactionHandlers extends \OWA\Core\Observer {
         $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
         $ct = \OWA\Core\CoreAPI::entityFactory('base.commerce_transaction_fact');
         $pk = $ct->generateId( $event->get( 'ct_order_id' ) );
-        $ct->getByPk( 'id', $pk );
+        $ct->getByPk( 'id', $pk, \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
         $id = $ct->get('id');
         $resulting_event_name = 'ecommerce.transaction_persisted';
 

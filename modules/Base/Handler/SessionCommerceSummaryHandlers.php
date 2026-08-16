@@ -63,7 +63,7 @@ class SessionCommerceSummaryHandlers extends \OWA\Core\Observer {
 
             $s = \OWA\Core\CoreAPI::entityFactory( 'base.session' );
 
-            $s->getByPk( 'id', $pk );
+            $s->getByPk( 'id', $pk, \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
             $id = $s->get('id');
 
             if ($id) {

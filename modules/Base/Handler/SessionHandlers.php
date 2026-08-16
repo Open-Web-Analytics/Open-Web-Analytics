@@ -63,7 +63,7 @@ class SessionHandlers extends \OWA\Core\Observer {
 
             $s = \OWA\Core\CoreAPI::entityFactory('base.session');
 
-            $s->load( $event->get('session_id') );
+            $s->load( $event->get('session_id'), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
 
             if ( ! $s->wasPersisted() ) {
 
@@ -155,7 +155,7 @@ class SessionHandlers extends \OWA\Core\Observer {
             $s = \OWA\Core\CoreAPI::entityFactory('base.session');
 
             // Fetch from session from database
-            $s->getByPk('id', $event->get('session_id'));
+            $s->getByPk('id', $event->get('session_id'), \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ));
 
             $id = $s->get('id');
             // fail safe for when there is no existing session in DB

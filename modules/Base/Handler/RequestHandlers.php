@@ -43,7 +43,7 @@ class RequestHandlers extends \OWA\Core\Observer {
     
         $r = \OWA\Core\CoreAPI::entityFactory('base.request');
 
-        $r->load( $event->get('guid') );
+        $r->load( $event->get('guid'), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
 
         if ( ! $r->wasPersisted() ) {
 

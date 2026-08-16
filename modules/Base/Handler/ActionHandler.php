@@ -43,7 +43,7 @@ class ActionHandler extends \OWA\Core\Observer {
         
         $a = \OWA\Core\CoreAPI::entityFactory('base.action_fact');
         
-        $a->load( $event->get( 'guid' ) );
+        $a->load( $event->get( 'guid' ), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
         
         if ( ! $a->wasPersisted() ) {
             
