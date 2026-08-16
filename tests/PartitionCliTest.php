@@ -415,4 +415,59 @@ final class PartitionCliTest extends CliControllerTestCase
             $db->query("DROP TABLE IF EXISTS $t");
         }
     }
+
+    /**
+     * partition-init is a one-time conversion, not a maintenance command.
+     *
+     * Everything it could usefully do to an already-partitioned table belongs to
+     * another command: extending the lead and coarsening the tail is exactly
+     * partition-rotate, and applying a granularity would convert only the
+     * periods being added, leaving the rest as they were -- a silent, partial
+     * reorganisation. So it reports and skips, and names the command that does
+     * the job being asked for.
+     */
+    public function testInitLeavesAnAlreadyPartitionedTableAlone()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (! $db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $t = 'owa_test_initonce_' . $this->tok;
+
+        try {
+            $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
+
+            // A deliberately stale layout: short lead, fine tail. A maintaining
+            // command would change all of it.
+            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                date('Ymd', strtotime(date('Ym') . '01 -60 months')),
+                date('Ymd', strtotime(date('Ym') . '01 +1 month')),
+                'monthly'
+            ));
+
+            $before = array_map(
+                fn($s) => $s['name'] . ':' . $s['less_than'],
+                $db->getPartitionSpans($t)
+            );
+
+            // Neither a plain run nor one asking for a different granularity may
+            // touch it.
+            foreach ([[], ['granularity' => 'half-month'], ['months-ahead' => '24']] as $params) {
+
+                $ctrl = new \OWA\Module\Base\Controller\PartitionInitCli($params + ['table' => $t]);
+                $ctrl->action();
+
+                $this->assertSame(
+                    $before,
+                    array_map(fn($s) => $s['name'] . ':' . $s['less_than'], $db->getPartitionSpans($t)),
+                    'init must not modify a partitioned table, whatever it is asked for: ' . json_encode($params)
+                );
+            }
+
+        } finally {
+            $db->query("DROP TABLE IF EXISTS $t");
+        }
+    }
 }

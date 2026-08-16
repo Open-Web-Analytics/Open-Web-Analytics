@@ -8,16 +8,17 @@ namespace OWA\Module\Base\Controller;
 /**
  * Partition the fact tables, and keep a lead of future partitions ahead of them.
  *
- * Run once, this converts an installation that predates partitioning. Run
- * repeatedly -- which it is meant to be, from cron -- it tops the lead back up
- * and otherwise does nothing, so the layout depends on the date rather than on
- * how many times it has run.
+ * A one-time conversion for an installation that predates partitioning. Running
+ * it again does nothing: a table that is already partitioned is reported and
+ * skipped, with a pointer to the command that does the job being asked for.
  *
- * The lead is what makes retention work. A write past the last boundary goes to
- * the catch-all, and the catch-all can never be dropped by a cutoff, since with
- * no upper bound it is never wholly older than any date. Keeping a year of
- * partitions ahead means writes always find a real partition, so nothing
- * accumulates anywhere retention cannot reach.
+ * That keeps one job per command. Maintaining the lead and coarsening old
+ * periods is partition-rotate; changing granularity is partition-reorganize.
+ *
+ * The layout it creates is tiered: whole calendar years over old history, and
+ * the table's own granularity over recent history and the lead. A flat layout
+ * over a long-running installation asks for one partition per month of history,
+ * which no open-file budget accommodates.
  *
  * Granularity is inferred from each table unless given, so a table converted
  * with partition-reorganize keeps extending at the granularity it was given
@@ -28,15 +29,12 @@ namespace OWA\Module\Base\Controller;
  * run deliberately rather than firing inside an upgrade nobody scheduled.
  * Later runs only split an empty catch-all and are cheap.
  *
- *   cmd=partition-init                          partition/top up, keeping
- *                                               each table's own granularity
+ *   cmd=partition-init                          partition every fact table
  *   cmd=partition-init granularity=half-month   override it
  *   cmd=partition-init months-ahead=6           keep six months ahead, not twelve
  *   cmd=partition-init table=owa_request        one table
  *   cmd=partition-init --dry-run                report the plan, change nothing
  *
- * Run it monthly:
- *   0 4 1 * *  php /path/to/owa/cli.php cmd=partition-init
  */
 class PartitionInitCli extends PartitionsCli {
 
@@ -77,7 +75,8 @@ class PartitionInitCli extends PartitionsCli {
             return;
         }
 
-        $budget = $this->partitionLimit( count( $tables ) );
+        $budget  = $this->partitionLimit( count( $tables ) );
+        $already = 0;
 
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
 
@@ -96,9 +95,27 @@ class PartitionInitCli extends PartitionsCli {
             // This is the case on every run after the first, and is what makes
             // repeated runs converge on the same layout instead of doing
             // nothing.
+            // init converts; it does not maintain. A table that is already
+            // partitioned is left entirely alone, because every way of "topping
+            // it up" here duplicates another command: extending the lead and
+            // coarsening the tail is exactly partition-rotate, and applying a
+            // granularity would convert only the periods being added, leaving
+            // the rest as they were -- a silent, partial reorganisation.
+            //
+            // One job each: init sets a table up, rotate keeps it in shape,
+            // reorganize changes its granularity.
             if ( $db->isPartitioned( $table ) ) {
 
-                $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s is already partitioned (%s, %d periods). Nothing to do here -- use '
+                  . 'cmd=partition-rotate to extend the lead and prune, or '
+                  . 'cmd=partition-reorganize granularity=... to change its granularity.',
+                    $table,
+                    $db->inferPartitionGranularity( $table ) ?: 'unrecognised granularity',
+                    count( $db->getPartitionSpans( $table ) )
+                ) );
+
+                $already++;
 
                 continue;
             }
@@ -124,7 +141,7 @@ class PartitionInitCli extends PartitionsCli {
             // lead. A flat layout over a long-running installation asks for one
             // partition per month of history and simply cannot be created.
             $ranges = \OWA\Core\Db::makeTieredPartitionRanges(
-                $min, $through, $table_granularity, $this->detailMonths()
+                $min, $through, $table_granularity, $this->detailMonths(), $budget['limit']
             );
 
             if ( ! $ranges ) {
@@ -162,6 +179,14 @@ class PartitionInitCli extends PartitionsCli {
                     '%s: FAILED to partition. The primary key must contain yyyymmdd; see the database error above.', $table
                 ) );
             }
+        }
+
+        if ( $already && $already === count( $tables ) ) {
+
+            \OWA\Core\CoreAPI::notice(
+                'Every fact table is already partitioned, so there was nothing for partition-init '
+              . 'to do. It is a one-time conversion; partition-rotate is the command to schedule.'
+            );
         }
     }
 }

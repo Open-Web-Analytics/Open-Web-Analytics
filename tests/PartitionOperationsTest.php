@@ -1184,4 +1184,155 @@ final class PartitionOperationsTest extends TestCase
         $this->assertGreaterThan($squeezed, count($db->getPartitionSpans($t)), 'the tail should have been split');
         $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'splitting must not lose a row');
     }
+
+    /** Layout as a comparable string, for asserting two paths agree. */
+    private function shapeOf($table)
+    {
+        return implode(',', array_map(
+            fn($s) => $s['name'] . ':' . $s['less_than'],
+            \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans($table)
+        ));
+    }
+
+    /** What partition-init does to an unpartitioned table. */
+    private function runInit($table, $granularity = 'monthly', $history = 120, $limit = 200)
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+            date('Ymd', strtotime(date('Ym') . "01 -$history months")),
+            \OWA\Core\Db::partitionLeadBoundary(),
+            $granularity,
+            \OWA\Core\Db::PARTITION_DETAIL_MONTHS,
+            $limit
+        ));
+    }
+
+    /** What partition-rotate does: extend the lead, then converge the tail. */
+    private function runRotate($table, $limit = 200)
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->extendPartitions($table, $db->inferPartitionGranularity($table) ?: 'monthly',
+            \OWA\Core\Db::partitionLeadBoundary());
+
+        foreach ($db->planPartitionCompaction($table, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS)['operations'] as $op) {
+            $db->reshapePartitions($table, $op['names'], $op['ranges']);
+        }
+    }
+
+    /**
+     * A freshly initialised table must already be in the shape rotation
+     * converges on.
+     *
+     * If the two disagree about where the coarse tail ends, every scheduled
+     * rotate rewrites what init built -- the table is reorganised on each run
+     * for no change in shape, and on a large installation that is an expensive
+     * no-op with writes blocked.
+     */
+    public function testInitProducesTheShapeRotationWouldConvergeOn()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (['monthly', 'half-month', 'quarter-month'] as $granularity) {
+
+            $t = $this->makeTable();
+            $this->runInit($t, $granularity);
+
+            $before = $this->shapeOf($t);
+            $plan   = $db->planPartitionCompaction($t, 200, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
+
+            $this->assertEmpty(
+                $plan['operations'],
+                "$granularity: rotation should find nothing to reshape straight after init"
+            );
+
+            $this->runRotate($t);
+
+            $this->assertSame($before, $this->shapeOf($t), "$granularity: rotation must not churn a fresh table");
+        }
+    }
+
+    /**
+     * The three commands compose in any order and settle on the same layout.
+     *
+     * They are separate entry points onto one piece of state, so the risk is
+     * that each undoes another's work: reorganise refining the tail rotation
+     * coarsened, rotation reverting the granularity reorganise chose, init
+     * disagreeing with both.
+     */
+    public function testInitReorganiseAndRotateComposeInAnyOrder()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        // init -> reorganise -> rotate
+        $a = $this->makeTable();
+        $this->runInit($a);
+        $db->repartitionTable($a, 'half-month');
+        $this->runRotate($a);
+
+        // init -> rotate -> reorganise -> rotate
+        $b = $this->makeTable();
+        $this->runInit($b);
+        $this->runRotate($b);
+        $db->repartitionTable($b, 'half-month');
+        $this->runRotate($b);
+
+        $this->assertSame($this->shapeOf($a), $this->shapeOf($b), 'order must not change the destination');
+
+        $this->assertSame('half-month', $db->inferPartitionGranularity($a),
+            'rotation must not revert the granularity reorganise chose');
+        $this->assertSame('half-month', $db->inferPartitionGranularity($b));
+
+        // And it is settled: another full pass changes nothing.
+        $settled = $this->shapeOf($a);
+        $this->runRotate($a);
+        $db->repartitionTable($a, 'half-month');
+        $this->runRotate($a);
+
+        $this->assertSame($settled, $this->shapeOf($a), 'repeating the sequence must not drift');
+    }
+
+    /**
+     * Running every command repeatedly on a table with data must never lose a
+     * row, whatever order they are invoked in.
+     */
+    public function testTheCommandsNeverLoseDataHoweverTheyAreSequenced()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        $this->runInit($t, 'monthly', 96);
+
+        $id = 0;
+        for ($m = -96; $m <= 12; $m += 3) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id,
+                date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+        }
+
+        $rows = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+        $this->assertGreaterThan(0, $rows, 'the fixture needs rows to be a test');
+
+        // A deliberately awkward sequence, including a tight budget in the middle.
+        $this->runRotate($t, 45);
+        $db->repartitionTable($t, 'quarter-month');
+        $this->runRotate($t, 200);
+        $db->repartitionTable($t, 'monthly');
+        $this->runRotate($t, 60);
+        $this->runRotate($t, 60);
+
+        $this->assertSame(
+            $rows,
+            (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+            'no sequence of these commands may lose a row'
+        );
+
+        // The lead is still maintained after all of that.
+        $spans = $db->getPartitionSpans($t);
+        $this->assertSame(
+            \OWA\Core\Db::partitionLeadBoundary(),
+            end($spans)['less_than'],
+            'the lead must survive the sequence'
+        );
+    }
 }

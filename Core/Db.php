@@ -1956,7 +1956,7 @@ class Db extends \OWA\Core\Base {
      * @param int    $detail_months   how much recent history stays fine
      * @return array name => less_than, ascending
      */
-    static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months ) {
+    static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months, $limit = null ) {
 
         $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
 
@@ -1970,23 +1970,56 @@ class Db extends \OWA\Core\Base {
 
         $ranges = array();
 
-        // Old tier: whole calendar years, from the year the data starts in up to
-        // the year the detail window opens in.
-        $year      = (int) substr( $min_yyyymmdd, 0, 4 );
-        $last_year = (int) substr( $boundary, 0, 4 );
+        // Old tier: whole calendar years, except the last, which closes on the
+        // month the detail window opens rather than on a January.
+        //
+        // That boundary has to be the one planPartitionCompaction() uses, or the
+        // two disagree about which periods are old: init would leave the months
+        // between January and the detail window as separate partitions, and the
+        // next rotate would immediately merge them. The table would be rewritten
+        // on every scheduled run, for no change in shape.
+        $first_year = (int) substr( $min_yyyymmdd, 0, 4 );
+        $last_year  = (int) substr( $boundary, 0, 4 );
 
-        for ( ; $year < $last_year; $year++ ) {
+        // Detail tier first, because its size decides how much room the tail has.
+        $fine = self::makePartitionRanges(
+            $boundary, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
+        );
 
-            $ranges[ 'p' . $year . '0101' ] = ( $year + 1 ) . '0101';
+        // Widen the tail blocks until the whole layout fits, exactly as
+        // planPartitionCompaction() does. Building 1-year blocks regardless and
+        // leaving the next rotation to coarsen them would mean the first
+        // scheduled run rewrote everything init had just created.
+        $years = max( 1, $last_year - $first_year + ( $boundary > $last_year . '0101' ? 1 : 0 ) );
+        $block = 1;
+
+        if ( $limit !== null ) {
+
+            for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
+
+                if ( count( $fine ) + (int) ceil( $years / $block ) <= $limit ) {
+
+                    break;
+                }
+            }
         }
 
-        // Detail tier: from the start of the boundary year through the lead, at
-        // the table's own granularity. Starting at the year boundary rather than
-        // at $boundary itself keeps every partition inside one calendar year,
-        // so the old tier can never overlap the new one.
-        $fine = self::makePartitionRanges(
-            $last_year . '0101', date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
-        );
+        for ( $y = $first_year; ; $y += $block ) {
+
+            $end = ( $y + $block ) . '0101';
+
+            if ( $end >= $boundary ) {
+
+                $end = $boundary;
+            }
+
+            $ranges[ 'p' . $y . '0101' ] = $end;
+
+            if ( $end >= $boundary ) {
+
+                break;
+            }
+        }
 
         return array_merge( $ranges, $fine );
     }
