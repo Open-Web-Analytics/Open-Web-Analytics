@@ -414,9 +414,23 @@ class ReportsRest extends \OWA\Core\ReportController {
         
         $rsm->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'document_id', 'document.id');
 
+        // Narrow to the days the session can have run, so a partitioned
+        // owa_request is pruned rather than every partition being visited and
+        // then sorted. There is no date on this request to use, so the range
+        // comes from the timestamp the session id carries -- which the tracker
+        // mints from the browser's clock, making it a hint only. Hence the
+        // retry below.
+        $range = null;
+
         if ($this->get( 'sessionId' ) ) {
             $rsm->db->where('session_id', $this->get( 'sessionId' ) );
             $rsm->setQueryStringParam('sessionId', $this->get( 'sessionId' ) );
+
+            $range = \OWA\Core\Db::factDateRangeFromId( $this->get( 'sessionId' ) );
+
+            if ( $range ) {
+                $rsm->db->where('yyyymmdd', $range, 'between');
+            }
         }
 
         $rsm->db->orderBy('timestamp','DESC');
@@ -431,6 +445,25 @@ class ReportsRest extends \OWA\Core\ReportController {
 		
 		// fetch results
 		$rs = $rsm->queryResults();
+
+        // A clock set to the wrong decade puts the session outside the window,
+        // and the visit would come back empty rather than merely slow. Repeat
+        // without it. First page only: further in, no rows is a real answer.
+        if ( $range && $page <= 1 && empty( $rs->resultsRows ) ) {
+
+            $retry = new \OWA\Module\Base\Classes\ResultSetManager;
+
+            $retry->db->selectFrom('owa_request', 'request');
+            $retry->db->selectColumn("*");
+            $retry->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'document_id', 'document.id');
+            $retry->db->where('session_id', $this->get( 'sessionId' ) );
+            $retry->db->orderBy('timestamp','DESC');
+            $retry->setQueryStringParam('sessionId', $this->get( 'sessionId' ) );
+            $retry->setLimit( $resultsPerPage );
+            $retry->setPage( $this->get('page') );
+
+            $rs = $retry->queryResults();
+        }
 
         return $rs;
     }

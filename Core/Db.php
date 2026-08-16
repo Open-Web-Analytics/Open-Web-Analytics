@@ -1089,6 +1089,424 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Can this driver partition tables? Assume not.
+     *
+     * @return bool
+     */
+    function supportsPartitioning() {
+
+        return false;
+    }
+
+    /**
+     * The partitions on a table. Nothing, where partitioning is unsupported.
+     *
+     * @param string $table_name
+     * @return array
+     */
+    function listPartitions( $table_name ) {
+
+        return array();
+    }
+
+    /**
+     * The columns of a table's primary key. Unknown, without introspection.
+     *
+     * @param string $table_name
+     * @return string[]
+     */
+    function getPrimaryKeyColumns( $table_name ) {
+
+        return array();
+    }
+
+    /**
+     * Spare open-file slots on this server. Unknown, without introspection.
+     *
+     * @return int|null
+     */
+    function getPartitionBudget() {
+
+        return null;
+    }
+
+    /**
+     * Is this table partitioned?
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function isPartitioned( $table_name ) {
+
+        return (bool) $this->listPartitions( $table_name );
+    }
+
+    /**
+     * Where a month is cut, by day of month.
+     *
+     * Named for how many parts a month is divided into, never for a duration:
+     * months vary from 28 to 31 days, so any name carrying a day count would be
+     * wrong in some month. A third of January is 11 days and a third of
+     * February is 8; both are still a third of their month.
+     *
+     * Cutting only on days of the month is also what keeps every boundary
+     * aligned to a month start, which is what lets a granularity change rewrite
+     * one month at a time instead of the whole table.
+     */
+    /**
+     * Partitions per table beyond which an operation asks to be confirmed.
+     *
+     * Each partition is a file, and they are shared with every other table
+     * through innodb_open_files, which is typically 4,000. Past that limit
+     * MySQL closes and reopens tablespaces under load, which degrades
+     * everything on the instance, and metadata operations slow in proportion to
+     * the count. Quarter-month over a decade is 480 per table, so this is
+     * reachable without trying.
+     *
+     * It is a prompt, not a ceiling: force=1 is there for someone who has done
+     * the arithmetic.
+     */
+    const PARTITION_COUNT_LIMIT = 400;
+
+    /**
+     * How many whole future months of partitions to keep ahead of today.
+     *
+     * The catch-all exists so that a write past the last boundary is accepted
+     * rather than rejected, but anything landing in it cannot be dropped by a
+     * retention cutoff -- it has no upper bound, so it is never wholly older
+     * than any date. Keeping a year of partitions ahead means the catch-all
+     * stays empty in normal operation: every write finds a real bounded
+     * partition, retention reaches the date asked for, and the periodic top-up
+     * splits an empty catch-all, which is cheap. It also means a top-up that
+     * stops running has a year of slack before anything is affected.
+     */
+    const PARTITION_MONTHS_AHEAD = 12;
+
+    /**
+     * Days of slack on the lower bound used to prune per-session queries.
+     *
+     * See factLowerBound(). Sized empirically against observed anomalies, not
+     * from a known mechanism -- the one unexplained case measured in the field
+     * was two days.
+     */
+    const FACT_LOWER_BOUND_SLACK_DAYS = 30;
+
+    const PARTITION_CUTS = array(
+        'monthly'       => array( 1 ),
+        'half-month'    => array( 1, 16 ),
+        'quarter-month' => array( 1, 8, 15, 22 ),
+    );
+
+    /**
+     * The upper boundary a table needs for a given lead of whole future months.
+     *
+     * Counted from the start of the current month, so the result does not move
+     * within a month: the current period plus the lead. Twelve months ahead of
+     * mid-August 2026 is 1 September 2027 -- September 2026 through August 2027
+     * being the twelve future months.
+     *
+     * @param int $months
+     * @return string yyyymmdd
+     */
+    static function partitionLeadBoundary( $months = self::PARTITION_MONTHS_AHEAD ) {
+
+        return date( 'Ymd', strtotime( date( 'Ym' ) . '01 +' . ( (int) $months + 1 ) . ' months' ) );
+    }
+
+    /**
+     * Is this a granularity we can partition by?
+     *
+     * @param string $granularity
+     * @return bool
+     */
+    public static function isPartitionGranularity( $granularity ) {
+
+        return isset( self::PARTITION_CUTS[ $granularity ] );
+    }
+
+    /**
+     * The day-of-month cut points for one month.
+     *
+     * @param \DateTimeImmutable $month  any day within the month
+     * @param string $granularity
+     * @return int[] ascending days of the month
+     */
+    private static function cutsForMonth( $month, $granularity ) {
+
+        if ( ! isset( self::PARTITION_CUTS[ $granularity ] ) ) {
+
+            return array();
+        }
+
+        $days = (int) $month->format( 't' );
+        $cuts = array();
+
+        foreach ( self::PARTITION_CUTS[ $granularity ] as $day ) {
+
+            // A short month cannot be cut past its end.
+            if ( $day <= $days ) {
+
+                $cuts[] = $day;
+            }
+        }
+
+        return $cuts;
+    }
+
+    /**
+     * Partition boundaries covering a date range.
+     *
+     * Each partition is named for the first day it holds and bounded by the
+     * first day it does not. Rows whose date is malformed -- a handful of
+     * installs carry yyyymmdd values of 0 or 1 -- land in the first partition,
+     * since RANGE has no lower bound.
+     *
+     * @param int    $start_yyyymmdd
+     * @param int    $end_yyyymmdd
+     * @param string $granularity
+     * @return array name => less_than, in range order
+     */
+    public static function makePartitionRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
+
+        return self::buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, false );
+    }
+
+    /**
+     * Partition boundaries that exactly tile a half-open span.
+     *
+     * REORGANIZE requires the replacement partitions to cover precisely the
+     * span of the ones they replace -- no gap, no overhang -- so boundaries
+     * outside the span are clamped to it.
+     *
+     * @param int    $start_yyyymmdd  first day the span holds
+     * @param int    $end_yyyymmdd    first day it does not
+     * @param string $granularity
+     * @return array name => less_than
+     */
+    public static function makePartitionRangesForSpan( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
+
+        return self::buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, true );
+    }
+
+    /**
+     * Walk the months in a range, emitting a partition per cut point.
+     *
+     * @param int    $start_yyyymmdd
+     * @param int    $end_yyyymmdd
+     * @param string $granularity
+     * @param bool   $exact  treat the end as exclusive and clamp to it
+     * @return array
+     */
+    private static function buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, $exact ) {
+
+        if ( ! self::isPartitionGranularity( $granularity ) ) {
+
+            return array();
+        }
+
+        $start = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start_yyyymmdd );
+        $end   = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $end_yyyymmdd );
+
+        if ( ! $start || ! $end ) {
+
+            return array();
+        }
+
+        if ( $exact ? ( $end <= $start ) : ( $end < $start ) ) {
+
+            return array();
+        }
+
+        $ranges = array();
+        $month  = $start->modify( 'first day of this month' )->setTime( 0, 0 );
+        $limit  = $end->modify( 'first day of next month' )->setTime( 0, 0 );
+
+        while ( $month < $limit ) {
+
+            $next_month = $month->modify( 'first day of next month' );
+
+            $cuts = self::cutsForMonth( $month, $granularity );
+
+            foreach ( $cuts as $i => $day ) {
+
+                $from = $month->setDate( (int) $month->format( 'Y' ), (int) $month->format( 'n' ), $day );
+
+                $to = isset( $cuts[ $i + 1 ] )
+                    ? $month->setDate( (int) $month->format( 'Y' ), (int) $month->format( 'n' ), $cuts[ $i + 1 ] )
+                    : $next_month;
+
+                if ( $exact ) {
+
+                    // Nothing outside the span the replacement has to tile.
+                    if ( $to <= $start || $from >= $end ) {
+
+                        continue;
+                    }
+
+                    if ( $from < $start ) {
+
+                        $from = $start;
+                    }
+
+                    if ( $to > $end ) {
+
+                        $to = $end;
+                    }
+                }
+
+                $ranges[ 'p' . $from->format( 'Ymd' ) ] = $to->format( 'Ymd' );
+            }
+
+            $month = $next_month;
+        }
+
+        return $ranges;
+    }
+
+    /**
+     * Build the clause that partitions a table by range.
+     *
+     * @param string $column
+     * @param array  $ranges  name => less_than
+     * @param bool   $with_maxvalue  append the catch-all
+     * @return string  empty when the driver cannot partition
+     */
+    function makePartitionClause( $column, $ranges, $with_maxvalue = true ) {
+
+        if ( ! $this->supportsPartitioning() || ! $ranges ) {
+
+            return '';
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        if ( $with_maxvalue ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, 'pmax', OWA_DTD_PARTITION_MAXVALUE );
+        }
+
+        return sprintf( OWA_DTD_PARTITION_BY_RANGE, $column, implode( ', ', $parts ) );
+    }
+
+    /**
+     * Partition an existing table by range.
+     *
+     * The partitioning column has to be part of every unique key, so the
+     * primary key is widened first. Both statements rebuild the table, which is
+     * why this belongs in a deliberate operation rather than on a request path.
+     *
+     * @param string $table_name
+     * @param string $column
+     * @param array  $ranges
+     * @return bool
+     */
+    function partitionTable( $table_name, $column, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $column ) ) {
+
+            return false;
+        }
+
+        $clause = $this->makePartitionClause( $column, $ranges );
+
+        if ( ! $clause ) {
+
+            return false;
+        }
+
+        // Every unique key has to contain the partitioning column, so widen the
+        // primary key first where it does not. A table built by createTable()
+        // already has it; one that predates partitioning does not.
+        $pk = $this->getPrimaryKeyColumns( $table_name );
+
+        if ( $pk && ! in_array( $column, $pk, true ) ) {
+
+            $widened = array_merge( $pk, array( $column ) );
+
+            $ret = $this->query( sprintf(
+                'ALTER TABLE %s DROP PRIMARY KEY, ADD PRIMARY KEY (%s)',
+                $table_name, implode( ', ', $widened )
+            ) );
+
+            if ( ! $ret ) {
+
+                return false;
+            }
+        }
+
+        return $this->query( sprintf( 'ALTER TABLE %s%s', $table_name, $clause ) );
+    }
+
+    /**
+     * Drop the named partition.
+     *
+     * @param string $table_name
+     * @param string $partition
+     * @return bool
+     */
+    function dropPartition( $table_name, $partition ) {
+
+        if ( ! $this->supportsPartitioning()
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $partition ) ) {
+
+            return false;
+        }
+
+        return $this->query( sprintf( OWA_SQL_DROP_PARTITION, $table_name, $partition ) );
+    }
+
+    /**
+     * Replace one or more contiguous partitions with a different set.
+     *
+     * Only the named partitions are rewritten, so changing granularity can be
+     * done a period at a time rather than rebuilding the whole table.
+     *
+     * @param string $table_name
+     * @param array  $from   partition names being replaced
+     * @param array  $ranges name => less_than to replace them with
+     * @return bool
+     */
+    function reorganizePartitions( $table_name, $from, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() || ! $from || ! $ranges
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $from as $name ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $name ) ) {
+
+                return false;
+            }
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        return $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $from ), implode( ', ', $parts )
+        ) );
+    }
+
+    /**
      * Indexes that duplicate another index on the same table, exactly.
      *
      * Same columns in the same order, same uniqueness, same type. The first by
@@ -1132,6 +1550,592 @@ class Db extends \OWA\Core\Base {
         }
 
         return $dupes;
+    }
+
+    /**
+     * The partitions of a table as spans, excluding the catch-all.
+     *
+     * RANGE gives each partition an upper bound only, so a partition's lower
+     * bound is the previous partition's upper bound. The first one has none --
+     * it holds everything below its boundary -- and is reported with the start
+     * encoded in its name, which is what this class's own naming provides.
+     *
+     * @param string $table_name
+     * @return array of ['name','start','less_than']
+     */
+    function getPartitionSpans( $table_name ) {
+
+        $spans = array();
+        $prev  = null;
+
+        foreach ( $this->listPartitions( $table_name ) as $p ) {
+
+            if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                continue;
+            }
+
+            $start = $prev;
+
+            if ( $start === null ) {
+
+                // No lower bound; recover the intended start from the name.
+                $start = preg_match( '/^p(\d{8})$/', $p['name'], $m ) ? $m[1] : $p['less_than'];
+            }
+
+            $spans[] = array(
+                'name'      => $p['name'],
+                'start'     => (string) $start,
+                'less_than' => (string) $p['less_than'],
+            );
+
+            $prev = $p['less_than'];
+        }
+
+        return $spans;
+    }
+
+    /**
+     * The range of the partitioning column that a known session's fact rows can
+     * occupy, for queries that select them.
+     *
+     * Partition pruning reads only the partitioning column, so a query
+     * constrained on session_id alone has to visit every partition. A row
+     * belonging to a session cannot be older than the session itself, so the
+     * session's own date is a lower bound that can never exclude a valid row --
+     * it only tells the optimizer which partitions cannot possibly hold one.
+     *
+     * The date must be the one stored on the session row, which the server
+     * assigned. Not the current event's date, which is later for a session
+     * running past midnight, and not a date taken from an id, which the tracker
+     * mints from the browser's clock.
+     *
+     * The slack is empirical, and deliberately generous, because the ways this
+     * invariant can be broken are not fully known.
+     *
+     * Both dates are server-assigned from the same clock: an event takes its
+     * timestamp in Event::__construct(), before it is persisted to the queue,
+     * and yyyymmdd is derived from that timestamp -- so neither queue lag nor a
+     * client clock can move them apart. On a 685,623-row installation four rows
+     * were nonetheless dated before their session. Three are explained: a
+     * sentinel session_id of -1, and two rows joined through a collided 32-bit
+     * crc32 id, which is not a real session at all. The fourth, two days out
+     * with a modern id, has no established cause.
+     *
+     * A month costs one extra partition on a monthly layout, which is cheap
+     * against an anomaly whose mechanism has not been identified. Narrow it
+     * only with evidence about that mechanism, not on the reasoning that both
+     * dates ought to agree -- they ought to, and in one case did not.
+     *
+     * Returns null where the date is unusable, in which case the caller simply
+     * does not constrain -- slower, never wrong.
+     *
+     * @param mixed $session_yyyymmdd
+     * @return array|null ['start','end'] as yyyymmdd, or null where unusable
+     */
+    static function factDateRange( $session_yyyymmdd ) {
+
+        $value = (string) $session_yyyymmdd;
+
+        // Installations carry rows with a yyyymmdd of 0, and anything that is
+        // not a plausible date cannot bound anything.
+        if ( ! preg_match( '/^\d{8}$/', $value ) || $value <= '19700101' ) {
+
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat( 'Ymd|', $value );
+
+        if ( ! $date ) {
+
+            return null;
+        }
+
+        // The upper bound is today, not the session's date: rows are added to a
+        // session as it runs, and one replayed or backfilled later still lands
+        // on the day it was processed. Nothing can be dated ahead of the server
+        // clock that stamps it, so today closes the range -- with a day of
+        // slack, which costs nothing and survives a forward clock step.
+        //
+        // Without it a floor alone leaves the whole lead in play, since every
+        // future partition sits above it: on a table with two years of history
+        // and a year ahead, 15 partitions of 37 rather than 2.
+        $start = $date->modify( '-' . self::FACT_LOWER_BOUND_SLACK_DAYS . ' days' )->format( 'Ymd' );
+        $end   = ( new \DateTimeImmutable( 'tomorrow' ) )->format( 'Ymd' );
+
+        // A session dated in the future inverts the range, and BETWEEN would
+        // then match nothing at all -- turning a summary into a zero rather
+        // than a slow query. Refuse to bound instead.
+        if ( $start > $end ) {
+
+            return null;
+        }
+
+        return array( 'start' => $start, 'end' => $end );
+    }
+
+    /**
+     * factDateRange() as a constraint array, ready to hand to a lookup.
+     *
+     * Empty where no usable range exists, so a caller can pass it
+     * unconditionally and simply get an unconstrained query.
+     *
+     * @param mixed $yyyymmdd
+     * @return array
+     */
+    static function factDateConstraint( $yyyymmdd ) {
+
+        $range = self::factDateRange( $yyyymmdd );
+
+        if ( ! $range ) {
+
+            return array();
+        }
+
+        return array( 'yyyymmdd' => array( 'value' => $range, 'operator' => 'between' ) );
+    }
+
+    /**
+     * The range a session's fact rows can occupy, derived from the session id
+     * alone, for callers that have no date at all.
+     *
+     * Ids minted by generateRandomUid() and by the tracker's matching JS begin
+     * with a unix timestamp, so the id carries roughly when its session began.
+     * "Roughly" is the operative word: the tracker mints session, visitor and
+     * domstream ids from the BROWSER's clock, which is not ours. Measured
+     * across two installations of 193,057 and 282,109 tracker-minted sessions,
+     * a window of two days either side covers 99.93% and 99.91% of them; the
+     * tail runs to 5,707 and 88,421 days out, which is a clock set to the wrong
+     * decade rather than drift.
+     *
+     * So this is a hint and never an answer. A caller MUST fall back to an
+     * unbounded query when the bounded one finds nothing, or it will lose rows
+     * for whoever has the wrong clock. Prefer factDateRange() wherever a
+     * server-assigned date is in reach -- it is exact, and it cannot be
+     * influenced from outside.
+     *
+     * @param mixed $id
+     * @param int   $days  window either side
+     * @return array|null ['start','end'] as yyyymmdd, or null where unusable
+     */
+    static function factDateRangeFromId( $id, $days = 2 ) {
+
+        $id = (string) $id;
+
+        // Only the timestamp-prefixed form carries a date. A crc32-era id is
+        // a hash and its leading digits mean nothing.
+        if ( ! preg_match( '/^\d{19}$/', $id ) ) {
+
+            return null;
+        }
+
+        $seconds = (int) substr( $id, 0, 10 );
+
+        if ( $seconds <= 0 ) {
+
+            return null;
+        }
+
+        $date = new \DateTimeImmutable( '@' . $seconds );
+        $date = $date->setTimezone( new \DateTimeZone( date_default_timezone_get() ) );
+
+        return array(
+            'start' => $date->modify( '-' . (int) $days . ' days' )->format( 'Ymd' ),
+            'end'   => $date->modify( '+' . (int) $days . ' days' )->format( 'Ymd' ),
+        );
+    }
+
+    /**
+     * Work out the granularity a table is already using.
+     *
+     * Taken from the boundaries rather than the partition names. The names
+     * encode the same dates -- p20261008 is the period starting on the 8th --
+     * but a name is a label this class chose, while VALUES LESS THAN is what
+     * MySQL enforces and what actually decides where a row goes. Where the two
+     * could disagree, the boundary is the truth.
+     *
+     * Since every cut is a day of the month, the days a month is cut on are
+     * exactly the granularity's entry in PARTITION_CUTS, so this is a lookup
+     * rather than a calculation.
+     *
+     * Only the most recent month is considered. A table is allowed to be coarse
+     * in history and finer over recent periods, and it is the recent end that
+     * says what new periods should look like.
+     *
+     * @param string $table_name
+     * @return string|null  null where it does not match a known scheme
+     */
+    function inferPartitionGranularity( $table_name ) {
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans ) {
+
+            return null;
+        }
+
+        $month = substr( $spans[ count( $spans ) - 1 ]['start'], 0, 6 );
+        $days  = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( substr( $span['start'], 0, 6 ) === $month ) {
+
+                $days[] = (int) substr( $span['start'], 6, 2 );
+            }
+        }
+
+        sort( $days );
+
+        foreach ( self::PARTITION_CUTS as $granularity => $cuts ) {
+
+            if ( $days === $cuts ) {
+
+                return $granularity;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * One row by id, optionally narrowed. Test seam for the constrained-load
+     * behaviour in Entity::getByColumn(), which is otherwise reachable only
+     * through the entity registry.
+     *
+     * @param string $table_name
+     * @param mixed  $id
+     * @param array  $constraints
+     * @return array
+     */
+    function getOneRowFromTable( $table_name, $id, $constraints = array() ) {
+
+        $this->selectFrom( $table_name );
+        $this->selectColumn( '*' );
+        $this->where( 'id', $id );
+
+        foreach ( $constraints as $name => $constraint ) {
+
+            $this->where( $name, $constraint['value'], $constraint['operator'] );
+        }
+
+        return (array) $this->getOneRow();
+    }
+
+    /**
+     * The name of the catch-all partition, or null where there is none.
+     *
+     * @param string $table_name
+     * @return string|null
+     */
+    function getCatchAllPartition( $table_name ) {
+
+        foreach ( $this->listPartitions( $table_name ) as $p ) {
+
+            if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                return $p['name'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Add whatever partitions are missing between the last boundary and a date.
+     *
+     * The new periods are cut out of the catch-all, which is the only partition
+     * holding anything above the last boundary, and a fresh catch-all is put
+     * back on the end so writes beyond the new range are still accepted. Where
+     * the catch-all is empty -- the normal case when this is run often enough --
+     * the rewrite moves no rows.
+     *
+     * Doing nothing when the range is already covered is what makes this safe
+     * to run on a schedule: the result depends on the date, not on how many
+     * times it has run.
+     *
+     * @param string $table_name
+     * @param string $granularity
+     * @param string $through      yyyymmdd the partitions must reach
+     * @param bool   $dry_run
+     * @return array ['added','planned','top','covered']
+     */
+    function extendPartitions( $table_name, $granularity, $through, $dry_run = false ) {
+
+        $result = array( 'added' => array(), 'planned' => 0, 'top' => null, 'covered' => false );
+
+        $spans     = $this->getPartitionSpans( $table_name );
+        $catch_all = $this->getCatchAllPartition( $table_name );
+
+        if ( ! $spans || ! $catch_all ) {
+
+            return $result;
+        }
+
+        $top = $spans[ count( $spans ) - 1 ]['less_than'];
+
+        $result['top'] = (string) $top;
+
+        if ( (string) $top >= (string) $through ) {
+
+            $result['covered'] = true;
+
+            return $result;
+        }
+
+        $ranges = self::makePartitionRangesForSpan( $top, $through, $granularity );
+
+        if ( ! $ranges ) {
+
+            return $result;
+        }
+
+        $result['planned'] = count( $ranges );
+
+        if ( $dry_run ) {
+
+            $result['added'] = array_keys( $ranges );
+
+            return $result;
+        }
+
+        // The replacements must tile exactly what they replace, and the
+        // catch-all reaches to MAXVALUE, so one has to go back on the end.
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $catch_all, OWA_DTD_PARTITION_MAXVALUE );
+
+        $sql = sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, $catch_all, implode( ', ', $parts )
+        );
+
+        if ( $this->query( $sql ) ) {
+
+            $result['added'] = array_keys( $ranges );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Which partitions hold only data older than a cutoff.
+     *
+     * A partition is droppable only when everything in it precedes the cutoff,
+     * so a partition straddling that date is kept: dropping it would remove
+     * data on or after the date, which is more than was asked for. With
+     * partitions being periods rather than days that means the boundary actually
+     * reached is usually earlier than the one requested, so it is reported --
+     * 'effective' is the date before which data no longer exists once these are
+     * dropped.
+     *
+     * The catch-all is never droppable: it has no upper bound, and it holds
+     * current traffic.
+     *
+     * A cutoff later than today is clamped to today. Data up to and including
+     * today is being written right now, so no cutoff may reach it -- a date in
+     * the future is a mistyped year, not a request to discard the current
+     * period. With the cutoff clamped, the partition holding today straddles it
+     * and is kept by the rule above, which leaves exactly the current period in
+     * place. 'requested' reports the original where it differed, so the caller
+     * can say the date was not taken literally.
+     *
+     * @param string $table_name
+     * @param int    $older_than_yyyymmdd
+     * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
+     */
+    function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
+
+        $drop       = array();
+        $effective  = null;
+        $straddling = null;
+        $cutoff     = (string) $older_than_yyyymmdd;
+        $requested  = null;
+        $today      = date( 'Ymd' );
+
+        if ( $cutoff > $today ) {
+
+            $requested = $cutoff;
+            $cutoff    = $today;
+        }
+
+        foreach ( $this->getPartitionSpans( $table_name ) as $span ) {
+
+            if ( (string) $span['less_than'] <= $cutoff ) {
+
+                $drop[]    = $span['name'];
+                $effective = (string) $span['less_than'];
+
+                continue;
+            }
+
+            // The first partition that reaches past the cutoff. Report it when
+            // it also holds older rows, so the caller can say why the boundary
+            // reached is earlier than the one asked for.
+            if ( $straddling === null && (string) $span['start'] < $cutoff ) {
+
+                $straddling = $span;
+            }
+        }
+
+        return array(
+            'drop'       => $drop,
+            'effective'  => $effective,
+            'straddling' => $straddling,
+            'requested'  => $requested,
+        );
+    }
+
+    /**
+     * Change a table's partition granularity.
+     *
+     * Existing partitions and target ranges are walked together and grouped
+     * into the smallest chunks whose boundaries agree, so each REORGANIZE
+     * rewrites only the periods it has to. A partition that already matches the
+     * target exactly is left untouched, which makes re-running this a no-op.
+     *
+     * A range restricts it to part of the table, which is how an installation
+     * ends up coarse for old data and fine for recent without carrying a
+     * partition -- and so a file -- for every period of its whole history. The
+     * range is snapped outwards to the boundaries of the partitions it touches,
+     * since a partition can only be rewritten whole.
+     *
+     * @param string      $table_name
+     * @param string      $granularity  quarter-month|half-month|monthly
+     * @param bool        $dry_run      report the statements without running them
+     * @param string|null $from         first day to convert, yyyymmdd
+     * @param string|null $to           first day not to convert, yyyymmdd
+     * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
+     */
+    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null ) {
+
+        $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array(), 'planned' => 0 );
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans ) {
+
+            return $result;
+        }
+
+        // Keep only the partitions the range touches. A partition is rewritten
+        // whole or not at all, so one that merely overlaps the range is
+        // included and the range effectively widens to its boundaries.
+        if ( $from !== null || $to !== null ) {
+
+            $wanted = array();
+
+            foreach ( $spans as $span ) {
+
+                if ( $to !== null && (string) $span['start'] >= (string) $to ) {
+
+                    continue;
+                }
+
+                if ( $from !== null && (string) $span['less_than'] <= (string) $from ) {
+
+                    continue;
+                }
+
+                $wanted[] = $span;
+            }
+
+            $spans = array_values( $wanted );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
+        }
+
+        $span_start = $spans[0]['start'];
+        $span_end   = $spans[ count( $spans ) - 1 ]['less_than'];
+
+        $target = self::makePartitionRangesForSpan( $span_start, $span_end, $granularity );
+
+        if ( ! $target ) {
+
+            return $result;
+        }
+
+        // What the table would end up with: the converted span, plus whatever
+        // partitions the range left alone.
+        $result['planned'] = count( $target ) + ( count( $this->getPartitionSpans( $table_name ) ) - count( $spans ) );
+
+        // Cut only where both sequences agree on a boundary. Every such cut
+        // consumes at least one partition from each side, and the span end is
+        // always shared, so this terminates.
+        $existing_bounds = array();
+
+        foreach ( $spans as $s ) {
+
+            $existing_bounds[ (string) $s['less_than'] ] = true;
+        }
+
+        $cuts = array();
+
+        foreach ( $target as $less_than ) {
+
+            if ( isset( $existing_bounds[ (string) $less_than ] ) ) {
+
+                $cuts[] = (string) $less_than;
+            }
+        }
+
+        $i = 0; // index into $spans
+        $j = 0; // index into target, as a list
+        $t_names = array_keys( $target );
+
+        foreach ( $cuts as $cut ) {
+
+            $from = array();
+            $into = array();
+
+            while ( $i < count( $spans ) && (string) $spans[ $i ]['less_than'] <= $cut ) {
+
+                $from[] = $spans[ $i ]['name'];
+                $i++;
+            }
+
+            while ( $j < count( $t_names ) && (string) $target[ $t_names[ $j ] ] <= $cut ) {
+
+                $into[ $t_names[ $j ] ] = $target[ $t_names[ $j ] ];
+                $j++;
+            }
+
+            if ( ! $from || ! $into ) {
+
+                continue;
+            }
+
+            // Already in the target shape: nothing to rewrite.
+            if ( count( $from ) === 1 && count( $into ) === 1 && key( $into ) === $from[0] ) {
+
+                $result['skipped']++;
+                continue;
+            }
+
+            if ( $dry_run ) {
+
+                $result['changed'][] = sprintf( '%s -> %s', implode( ',', $from ), implode( ',', array_keys( $into ) ) );
+                continue;
+            }
+
+            if ( $this->reorganizePartitions( $table_name, $from, $into ) ) {
+
+                $result['changed'][] = sprintf( '%s -> %s', implode( ',', $from ), implode( ',', array_keys( $into ) ) );
+
+            } else {
+
+                $result['failed'][] = implode( ',', $from );
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -1184,6 +2188,16 @@ class Db extends \OWA\Core\Base {
 
         //create column defs
 
+        // A partitioned table cannot carry the primary key inline: the
+        // partitioning column has to be part of it, so it is declared at table
+        // level below. Only when the driver can actually partition.
+        $partition_column = null;
+
+        if ( method_exists( $entity, 'getPartitionColumn' ) && $this->supportsPartitioning() ) {
+
+            $partition_column = $entity->getPartitionColumn();
+        }
+
         $all_cols = $entity->getColumns();
 
         $columns = '';
@@ -1198,7 +2212,7 @@ class Db extends \OWA\Core\Base {
         foreach ($all_cols as $k => $v){
 
             // get column definition
-            $columns .= $v.' '.$entity->getColumnDefinition($v);
+            $columns .= $v.' '.$entity->getColumnDefinition($v, (bool) $partition_column);
 
             // Add commas to column statement
             if ($i < $count - 1):
@@ -1240,6 +2254,29 @@ class Db extends \OWA\Core\Base {
         }
 
         $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+
+        if ( $partition_column ) {
+
+            $pk = $entity->getPrimaryKeyColumn();
+
+            if ( $pk && $pk !== $partition_column ) {
+
+                $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
+            }
+
+            // Cover the current month and a year ahead, so that the catch-all
+            // stays empty until the lead runs down. partition-init tops this up
+            // and is meant to run periodically; a table created and never
+            // topped up still has a year before anything reaches the catch-all.
+            $table_options .= $this->makePartitionClause(
+                $partition_column,
+                self::makePartitionRanges(
+                    date( 'Ymd' ),
+                    date( 'Ymd', strtotime( self::partitionLeadBoundary() . ' -1 day' ) ),
+                    'monthly'
+                )
+            );
+        }
 
         return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));
     }

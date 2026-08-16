@@ -42,7 +42,7 @@ class DomstreamHandlers extends \OWA\Core\Observer {
     function notify($event) {
 
         $ds = \OWA\Core\CoreAPI::entityFactory('base.domstream');
-        $ds->load( $event->get('guid') );
+        $ds->load( $event->get('guid'), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
 
         if ( ! $ds->wasPersisted() ) {
 

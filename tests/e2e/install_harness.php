@@ -475,6 +475,51 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
                 && (bool) preg_match('/install_complete[^;]*;b:1/', $blob);
         }
     }
+    // 5. Fact tables are born partitioned, with a lead of future periods.
+    //
+    // This is the one part of the schema whose absence is silent: if the
+    // partition clause is never emitted -- a driver that cannot partition, an
+    // entity that stops declaring its column, a clause dropped from
+    // createTable() -- the install still succeeds, every other check above
+    // still passes, and the installation simply has no retention story. It
+    // would surface much later, as a DELETE nobody can afford to run.
+    //
+    // Asserted on owa_request as the representative fact table: it is the one
+    // every installation writes to first.
+    $checks['request_partitioned'] = false;
+    $checks['request_has_lead']    = false;
+
+    $r = mysqli_query($m, "SELECT PARTITION_NAME, PARTITION_DESCRIPTION
+        FROM information_schema.PARTITIONS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'owa_request'
+          AND PARTITION_NAME IS NOT NULL");
+
+    if ($r) {
+        $bounds = [];
+        $catchAll = false;
+
+        while ($row = mysqli_fetch_assoc($r)) {
+            if (strtoupper(trim((string) $row['PARTITION_DESCRIPTION'])) === 'MAXVALUE') {
+                $catchAll = true;
+                continue;
+            }
+            $bounds[] = (string) $row['PARTITION_DESCRIPTION'];
+        }
+
+        // Partitioned at all, and with somewhere for a write past the last
+        // boundary to go -- without the catch-all, tracking stops dead the day
+        // the range runs out.
+        $checks['request_partitioned'] = ($bounds && $catchAll);
+
+        // And covering future periods, not just today. A single current period
+        // would mean everything from next month landing in the catch-all,
+        // where no retention cutoff can ever reach it.
+        if ($bounds) {
+            sort($bounds);
+            $checks['request_has_lead'] = (end($bounds) > date('Ymd', strtotime('+60 days')));
+        }
+    }
+
     mysqli_close($m);
 
     $ok = !in_array(false, $checks, true);

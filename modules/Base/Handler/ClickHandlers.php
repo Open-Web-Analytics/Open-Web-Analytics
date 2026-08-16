@@ -41,7 +41,7 @@ class ClickHandlers extends \OWA\Core\Observer {
 
         $c = \OWA\Core\CoreAPI::entityFactory('base.click');
 
-        $c->load( $event->get( 'guid' ) );
+        $c->load( $event->get( 'guid' ), 'id', \OWA\Core\Db::factDateConstraint( $event->get('yyyymmdd') ) );
 
         if (! $c->wasPersisted() ) {
             $c->set('id', $event->get('guid') );
