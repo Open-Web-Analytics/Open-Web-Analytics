@@ -7,7 +7,7 @@ import { Util } from '../common/Util.js';
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
  */
-class Event {
+class OwaEvent {
 	
 	constructor() {
 		
@@ -61,4 +61,4 @@ class Event {
     }
 }
 
-export { Event };
+export { OwaEvent };

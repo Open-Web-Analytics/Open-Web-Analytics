@@ -1,6 +1,6 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
-import { Event } from '../../modules/Base/src/tracker/Event.js';
+import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Assorted tracker helpers: URL/anchor param readers, page-property
@@ -162,7 +162,7 @@ describe('setCampaignRelatedProperties (thirdParty promotion)', () => {
         setUrl('/p?owa_source=news&owa_medium=email');
         const t = newTracker();
 
-        t.setCampaignRelatedProperties(new Event());
+        t.setCampaignRelatedProperties(new OwaEvent());
 
         // Upstream reads the full-name globals; the private-key map resolves
         // owa_source -> source, owa_medium -> medium.
@@ -175,7 +175,7 @@ describe('manageState one-shot guard', () => {
 
     test('runs the identity pipeline once and sets stateInit', () => {
         const t = newTracker();
-        const event = new Event();
+        const event = new OwaEvent();
         event.set('timestamp', 1700000000);
 
         t.manageState(event, null);
@@ -186,7 +186,7 @@ describe('manageState one-shot guard', () => {
 
     test('does not re-run once stateInit is true', () => {
         const t = newTracker();
-        const event = new Event();
+        const event = new OwaEvent();
         event.set('timestamp', 1700000000);
 
         // Simulate a prior run and plant a sentinel the pipeline would overwrite.

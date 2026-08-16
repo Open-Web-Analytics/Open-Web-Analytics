@@ -34,16 +34,28 @@ const MANIFEST = 'build.manifest.json';
 
 const minimizer = [new TerserPlugin({ extractComments: false })];
 
-// Build the webpack `output` block shared by both JS product types. Kept exactly
-// as the two inline JS configs used it: emit `[name]` verbatim (the package name
-// IS the filename, so no PHP path churn) into the module's output dir, with
-// iife:false so a vendors split emits a sibling entry chunk rather than a runtime
-// import() (see the tracker note below).
+// Build the webpack `output` block shared by both JS product types: emit `[name]`
+// verbatim (the package name IS the filename, so no PHP path churn) into the
+// module's output dir.
+//
+// `output.iife` is deliberately LEFT AT ITS DEFAULT (true for target:web). It used
+// to be forced to false, carried over unexplained from the original webpack
+// migration (0592fcb6). That is not a safe setting for a bundle that ships as a
+// classic <script>: production mode enables scope hoisting, so webpack concatenates
+// the entry's whole module graph into one scope, and without the IIFE that scope IS
+// the page's global scope. Every top-level declaration in every concatenated source
+// file then becomes a global binding -- the tracker's event class, then still
+// named `Event` (it is OwaEvent now, in tracker/OwaEvent.js), shadowed the DOM's
+// window.Event for the entire page, breaking any library that does `new Event(...)`
+// (Bootstrap's dropdowns, modals and tabs, for instance).
+//
+// The flag also does not do what the old comment claimed. `output.iife` controls
+// only the wrapper; whether a vendors split lands in a sibling chunk or an async
+// import() is governed by `optimization.splitChunks` below, which is unchanged.
 function jsOutput(moduleDir, pkg) {
 	return {
 		path: path.resolve(moduleDir, pkg.outputDir),
 		chunkFilename: '[name].js',
-		iife: false,
 		filename: '[name]',
 	};
 }

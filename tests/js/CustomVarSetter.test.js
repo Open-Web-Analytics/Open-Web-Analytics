@@ -1,6 +1,6 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
-import { Event } from '../../modules/Base/src/tracker/Event.js';
+import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Custom variables, sender side (setCustomVar / getCustomVar / deleteCustomVar).
@@ -202,7 +202,7 @@ describe('addGlobalPropertiesToEvent pulls stored custom vars onto an event', ()
         t.setCustomVar(2, 'Tier', 'Gold', 'session');
         t.setCustomVar(3, 'Cohort', 'Beta', 'visitor');
 
-        const event = new Event();
+        const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
         expect(event.get('cv1')).toBe('Plan=Pro');
@@ -214,7 +214,7 @@ describe('addGlobalPropertiesToEvent pulls stored custom vars onto an event', ()
         const t = newTracker();
         t.setCustomVar(1, 'Plan', 'Global', 'session');
 
-        const event = new Event();
+        const event = new OwaEvent();
         event.set('cv1', 'Plan=Local');
         t.addGlobalPropertiesToEvent(event);
 

@@ -1,6 +1,6 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
-import { Event } from '../../modules/Base/src/tracker/Event.js';
+import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Beacon transport + the trackEvent() state orchestration.
@@ -167,7 +167,7 @@ describe('addDefaultsToEvent', () => {
 
     test('backfills site_id, page_url, page_title and timestamp', () => {
         const t = newTracker();
-        const event = new Event();
+        const event = new OwaEvent();
 
         t.addDefaultsToEvent(event, null);
         const p = event.getProperties();
@@ -180,7 +180,7 @@ describe('addDefaultsToEvent', () => {
 
     test('does not overwrite a value the event already carries', () => {
         const t = newTracker();
-        const event = new Event();
+        const event = new OwaEvent();
         event.set('page_url', 'http://cv.example/explicit');
 
         t.addDefaultsToEvent(event, null);
@@ -194,7 +194,7 @@ describe('addGlobalPropertiesToEvent', () => {
     test('copies a global property onto an event that lacks it', () => {
         const t = newTracker();
         t.setGlobalEventProperty('visitor_id', 'vid-1');
-        const event = new Event();
+        const event = new OwaEvent();
 
         t.addGlobalPropertiesToEvent(event, null);
 
@@ -204,7 +204,7 @@ describe('addGlobalPropertiesToEvent', () => {
     test('never clobbers a value the event set locally', () => {
         const t = newTracker();
         t.setGlobalEventProperty('visitor_id', 'vid-global');
-        const event = new Event();
+        const event = new OwaEvent();
         event.set('visitor_id', 'vid-local-wins');
 
         t.addGlobalPropertiesToEvent(event, null);
@@ -217,7 +217,7 @@ describe('trackEvent: end-to-end orchestration', () => {
 
     test('emits one beacon carrying identity + core params in first-party mode', () => {
         const t = newTracker();
-        const event = new Event();
+        const event = new OwaEvent();
         event.setEventType('base.page_request');
         event.set('page_url', 'http://cv.example/page');
 
@@ -234,7 +234,7 @@ describe('trackEvent: end-to-end orchestration', () => {
 
     test('thirdParty mode flags the event for upstream and skips client state management', () => {
         const t = newTracker({ thirdParty: true });
-        const event = new Event();
+        const event = new OwaEvent();
         event.setEventType('base.page_request');
 
         t.trackEvent(event);
