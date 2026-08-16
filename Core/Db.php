@@ -1992,6 +1992,62 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Replace a run of adjacent partitions with a different set of ranges.
+     *
+     * The general form of both merging and splitting: REORGANIZE requires only
+     * that the replacements tile exactly the span they replace, so N partitions
+     * can become one, or one can become N, or five can become three.
+     *
+     * Splitting matters as much as merging. Without it the layout would depend
+     * on the order operations happened in rather than on the current settings --
+     * a table coarsened under a tight budget would stay coarse after the budget
+     * grew, while an identical installation partitioned fresh would not. Same
+     * inputs, different result.
+     *
+     * @param string $table_name
+     * @param array  $names   partitions to replace, ascending and adjacent
+     * @param array  $ranges  name => less_than, ascending, tiling the same span
+     * @return bool
+     */
+    function reshapePartitions( $table_name, $names, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() || ! $names || ! $ranges ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $names as $n ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $n ) ) {
+
+                return false;
+            }
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $name )
+              || ! preg_match( '/^\d{8}$/', (string) $less_than ) ) {
+
+                return false;
+            }
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), implode( ', ', $parts )
+        ) );
+    }
+
+    /**
      * Largest run of calendar years that may be merged into one partition.
      *
      * A cap, not a target. Without one, a budget that cannot be met would drive
@@ -2003,28 +2059,39 @@ class Db extends \OWA\Core\Base {
     const PARTITION_MAX_YEARS_PER_BLOCK = 5;  // default; OWA_PARTITION_MAX_YEARS_PER_BLOCK
 
     /**
-     * Plan how to coarsen the partitions outside the detail window so the table
-     * fits a partition budget, WITHOUT deleting anything.
+     * Work out the tail layout the current settings imply, and how to get there
+     * from whatever the table looks like now.
      *
-     * This is what lets an installation keep decades of history on a server that
-     * cannot afford a file per month. Old periods are merged, not dropped: whole
-     * calendar years first, then runs of years if that is not enough. The detail
-     * window is never touched.
+     * The result is a function of the budget and the detail window ALONE, never
+     * of the order operations happened in. That is deliberate: a table coarsened
+     * under a tight budget must go back to finer blocks when the budget grows,
+     * or an installation's layout would depend on its history rather than its
+     * configuration, and two identical installations could differ permanently.
      *
-     * Budget-driven rather than calendar-driven on purpose. A yearly tail is
-     * enough for any plausible history on a generous server, but a host with a
-     * small innodb_open_files can exceed its limit on yearly partitions alone,
-     * and a fixed calendar rule would simply fail there.
+     * So this both merges and splits. Blocks are whole calendar years, widened
+     * only as far as the budget requires and never past
+     * PARTITION_MAX_YEARS_PER_BLOCK -- a cap, because a budget that cannot be
+     * met would otherwise drive everything into one partition, which fits no
+     * better and means all of history ages out in a single drop.
+     *
+     * Nothing is ever deleted. The detail window is never touched.
      *
      * @param string $table_name
      * @param int    $limit          most partitions this table may have
      * @param int    $detail_months  periods newer than this are left alone
-     * @return array ['merges','projected','fits','floor']
+     * @return array ['operations','projected','fits','floor','block_years']
      */
     function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS ) {
 
         $spans  = $this->getPartitionSpans( $table_name );
-        $result = array( 'merges' => array(), 'projected' => count( $spans ), 'fits' => true, 'floor' => count( $spans ) );
+        $result = array(
+            'operations'  => array(),
+            'merges'      => array(),
+            'projected'   => count( $spans ),
+            'fits'        => true,
+            'floor'       => count( $spans ),
+            'block_years' => 1,
+        );
 
         if ( ! $spans ) {
 
@@ -2043,110 +2110,189 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        // Everything inside the detail window, plus at least one tail partition,
-        // is the fewest this table can have without narrowing the window.
-        $kept           = count( $spans ) - count( $old );
+        $kept            = count( $spans ) - count( $old );
         $result['floor'] = $kept + ( $old ? 1 : 0 );
 
-        if ( count( $spans ) <= $limit || count( $old ) < 2 ) {
+        if ( ! $old ) {
 
             $result['fits'] = count( $spans ) <= $limit;
 
             return $result;
         }
 
-        // Group by calendar year, but measure a group by the span it COVERS, not
-        // by how many groups it contains. A partition that is already a merged
-        // block of years counts for all of them, so re-running cannot merge it
-        // past the cap. Without that, each run compounds the previous one --
-        // five years, then ten, then twenty -- and an unreachable budget
-        // collapses all of history into one partition over several runs, which
-        // is the cliff the cap exists to prevent.
-        $years = array();
+        // The tail runs from the first old partition to wherever the last one
+        // ends -- which is usually mid-year, because the detail window opens on
+        // a month rather than a January. The final block therefore closes on
+        // that boundary rather than on a year end, or the remaining months would
+        // belong to no block and stay unmerged.
+        $tail_start = (int) substr( $old[0]['start'], 0, 4 );
+        $tail_limit = (string) $old[ count( $old ) - 1 ]['less_than'];
+
+        $years = max( 1, (int) ceil(
+            ( strtotime( $tail_limit ) - strtotime( $tail_start . '0101' ) ) / ( 86400 * 365.25 )
+        ) );
+
+        // Smallest block size that fits, capped. One year is the finest the tail
+        // is ever cut to: below that it is the detail window's job.
+        $block = 1;
+
+        for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
+
+            if ( $kept + (int) ceil( $years / $block ) <= $limit ) {
+
+                break;
+            }
+        }
+
+        $result['block_years'] = $block;
+
+        // The layout those settings imply.
+        $target = array();
+
+        for ( $y = $tail_start; ; $y += $block ) {
+
+            $end = ( $y + $block ) . '0101';
+
+            if ( $end >= $tail_limit ) {
+
+                $end = $tail_limit;
+            }
+
+            $target[ 'p' . $y . '0101' ] = $end;
+
+            if ( $end >= $tail_limit ) {
+
+                break;
+            }
+        }
+
+        $result['projected'] = $kept + count( $target );
+        $result['fits']      = $result['projected'] <= $limit;
+
+        // Already in that shape? Then there is nothing to do, however many times
+        // this runs.
+        $current = array();
 
         foreach ( $old as $span ) {
 
-            $years[ substr( $span['start'], 0, 4 ) ][] = $span;
+            $current[ $span['name'] ] = (string) $span['less_than'];
         }
 
-        $keys = array_keys( $years );
-        sort( $keys );
+        if ( $current === array_map( 'strval', $target ) ) {
 
-        // Years actually covered by each group, so an existing block is not
-        // mistaken for a single year.
-        $weight = array();
-
-        foreach ( $keys as $year ) {
-
-            $first = $years[ $year ][0];
-            $last  = $years[ $year ][ count( $years[ $year ] ) - 1 ];
-
-            $span = ( (int) substr( $last['less_than'], 0, 4 ) ) - ( (int) substr( $first['start'], 0, 4 ) );
-
-            $weight[ $year ] = max( 1, $span );
+            return $result;
         }
 
-        $max_block = min( self::PARTITION_MAX_YEARS_PER_BLOCK, count( $keys ) );
+        // One reorganisation per target block, over whichever partitions it
+        // covers. That merges where the tail is too fine and splits where it is
+        // too coarse, in the same operation.
+        $names_by_block = array();
 
-        for ( $per_block = 1; $per_block <= $max_block; $per_block++ ) {
+        foreach ( $target as $name => $less_than ) {
 
-            // Fill blocks up to $per_block years of coverage. A group already
-            // that wide stands alone rather than being absorbed into a wider one.
-            $blocks  = array();
-            $current = array();
-            $carried = 0;
+            $from = substr( $name, 1 );
 
-            foreach ( $keys as $year ) {
+            $names_by_block[ $name ] = array(
+                'names'     => array(),
+                'start'     => $from,
+                'less_than' => $less_than,
+                'ranges'    => array( $name => $less_than ),
+            );
+        }
 
-                if ( $current && $carried + $weight[ $year ] > $per_block ) {
+        foreach ( $old as $span ) {
 
-                    $blocks[]  = $current;
-                    $current   = array();
-                    $carried   = 0;
-                }
+            foreach ( $names_by_block as $name => &$block_def ) {
 
-                $current[] = $year;
-                $carried  += $weight[ $year ];
-            }
+                // A partition belongs to the block its start falls in. A block
+                // that is coarser than the target is claimed by the first target
+                // block it overlaps, and split by the reorganisation.
+                if ( (string) $span['start'] >= $block_def['start']
+                  && (string) $span['start'] < $block_def['less_than'] ) {
 
-            if ( $current ) {
+                    $block_def['names'][] = $span['name'];
 
-                $blocks[] = $current;
-            }
+                    if ( (string) $span['less_than'] > $block_def['less_than'] ) {
 
-            if ( $kept + count( $blocks ) <= $limit || $per_block === $max_block ) {
-
-                $merges = array();
-
-                foreach ( $blocks as $block ) {
-
-                    $names = array();
-                    $start = null;
-                    $end   = null;
-
-                    foreach ( $block as $year ) {
-
-                        foreach ( $years[ $year ] as $span ) {
-
-                            $names[] = $span['name'];
-                            $start   = $start ?? $span['start'];
-                            $end     = $span['less_than'];
-                        }
+                        // This partition reaches past the block, so the block and
+                        // everything it spans are reshaped together.
+                        $block_def['less_than'] = (string) $span['less_than'];
                     }
 
-                    if ( count( $names ) > 1 ) {
+                    break;
+                }
+            }
 
-                        $merges[] = array( 'names' => $names, 'start' => $start, 'less_than' => $end );
-                    }
+            unset( $block_def );
+        }
+
+        foreach ( $names_by_block as $name => $block_def ) {
+
+            if ( ! $block_def['names'] ) {
+
+                continue;
+            }
+
+            // Ranges covering exactly what the named partitions span.
+            $ranges = array();
+
+            for ( $y = (int) substr( $block_def['start'], 0, 4 ); ; $y += $block ) {
+
+                $end = ( $y + $block ) . '0101';
+
+                if ( $end >= $block_def['less_than'] ) {
+
+                    $end = (string) $block_def['less_than'];
                 }
 
-                $result['merges']    = $merges;
-                $result['projected'] = $kept + count( $blocks );
-                $result['fits']      = $result['projected'] <= $limit;
+                $ranges[ 'p' . $y . '0101' ] = $end;
 
-                return $result;
+                if ( $end >= $block_def['less_than'] ) {
+
+                    break;
+                }
             }
+
+            if ( ! $ranges ) {
+
+                continue;
+            }
+
+            // No change needed where the shape already matches.
+            $same = ( count( $block_def['names'] ) === count( $ranges ) );
+
+            if ( $same ) {
+
+                $i = 0;
+
+                foreach ( $ranges as $rname => $rless ) {
+
+                    if ( $block_def['names'][ $i ] !== $rname ) {
+
+                        $same = false;
+
+                        break;
+                    }
+
+                    $i++;
+                }
+            }
+
+            if ( $same ) {
+
+                continue;
+            }
+
+            $result['operations'][] = array(
+                'names'  => $block_def['names'],
+                'ranges' => $ranges,
+                'start'  => $block_def['start'],
+                'less_than' => $block_def['less_than'],
+            );
         }
+
+        // Kept for callers that only care about the coarsening case.
+        $result['merges'] = $result['operations'];
 
         return $result;
     }

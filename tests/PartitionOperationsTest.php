@@ -745,10 +745,10 @@ final class PartitionOperationsTest extends TestCase
         $count  = count($db->getPartitionSpans($t));
 
         $plan = $db->planPartitionCompaction($t, 60, 36);
-        $this->assertNotEmpty($plan['merges'], 'a 10-year monthly table should have something to merge');
+        $this->assertNotEmpty($plan['operations'], 'a 10-year monthly table should have something to reshape');
 
-        foreach ($plan['merges'] as $m) {
-            $this->assertTrue($db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']));
+        foreach ($plan['operations'] as $op) {
+            $this->assertTrue($db->reshapePartitions($t, $op['names'], $op['ranges']));
         }
 
         $after = count($db->getPartitionSpans($t));
@@ -785,10 +785,10 @@ final class PartitionOperationsTest extends TestCase
         $plan = $db->planPartitionCompaction($t, 5, 36);
 
         $this->assertFalse($plan['fits'], 'this budget is not reachable');
-        $this->assertGreaterThan(1, count($plan['merges']), 'must not merge everything into one partition');
+        $this->assertGreaterThan(1, count($plan['operations']), 'must not merge everything into one partition');
         $this->assertGreaterThan(0, $plan['floor'], 'must report the floor so a caller can explain why');
 
-        foreach ($plan['merges'] as $m) {
+        foreach ($plan['operations'] as $m) {
             $span = (strtotime($m['less_than']) - strtotime($m['start'])) / 86400 / 365;
             $this->assertLessThanOrEqual(
                 \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK + 0.1,
@@ -865,11 +865,11 @@ final class PartitionOperationsTest extends TestCase
         $plan = $db->planPartitionCompaction($t, 2, 36);
 
         $this->assertFalse($plan['fits'], 'this budget is unreachable by design');
-        $this->assertGreaterThan(1, count($plan['merges']), 'must not collapse into a single partition');
+        $this->assertGreaterThan(1, count($plan['operations']), 'must not collapse into a single partition');
 
         $cap = \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK;
 
-        foreach ($plan['merges'] as $m) {
+        foreach ($plan['operations'] as $m) {
             $years = (strtotime($m['less_than']) - strtotime($m['start'])) / 86400 / 365.25;
             $this->assertLessThanOrEqual($cap + 0.05, $years, "no block may exceed $cap years");
         }
@@ -934,8 +934,8 @@ final class PartitionOperationsTest extends TestCase
             // step is covered in PartitionCliTest, which boots the CLI role.
             $cycle = function () use ($db, $t, $cutoff) {
                 $db->extendPartitions($t, 'monthly', \OWA\Core\Db::partitionLeadBoundary());
-                foreach ($db->planPartitionCompaction($t, 50, 36)['merges'] as $m) {
-                    $db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']);
+                foreach ($db->planPartitionCompaction($t, 50, 36)['operations'] as $op) {
+                    $db->reshapePartitions($t, $op['names'], $op['ranges']);
                 }
                 if ($cutoff) {
                     foreach ($db->getDroppablePartitions($t, $cutoff)['drop'] as $p) {
@@ -1080,9 +1080,9 @@ final class PartitionOperationsTest extends TestCase
 
             $plan = $db->planPartitionCompaction($t, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
 
-            foreach ($plan['merges'] as $m) {
-                $this->assertTrue($db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']),
-                    "budget $limit: every planned merge must succeed");
+            foreach ($plan['operations'] as $op) {
+                $this->assertTrue($db->reshapePartitions($t, $op['names'], $op['ranges']),
+                    "budget $limit: every planned reshape must succeed");
             }
 
             $spans = $db->getPartitionSpans($t);
@@ -1100,7 +1100,88 @@ final class PartitionOperationsTest extends TestCase
 
             // Settles regardless of budget.
             $again = $db->planPartitionCompaction($t, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
-            $this->assertEmpty($again['merges'], "budget $limit: a second pass must find nothing to do");
+            $this->assertEmpty($again['operations'], "budget $limit: a second pass must find nothing to do");
         }
+    }
+
+    /**
+     * The layout is a function of the settings, not of the order things
+     * happened in.
+     *
+     * Without splitting as well as merging, a table coarsened under a tight
+     * budget would stay coarse after the budget grew, while an identical
+     * installation partitioned fresh would not -- so two installations with the
+     * same data and the same configuration would differ permanently, and
+     * reorganising would never be safe to repeat.
+     */
+    public function testTheLayoutIsDeterministicWhateverThePath()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $shape = fn($t) => implode(',', array_map(
+            fn($s) => $s['name'] . ':' . $s['less_than'],
+            $db->getPartitionSpans($t)
+        ));
+
+        $apply = function ($t, $limit) use ($db) {
+            foreach ($db->planPartitionCompaction($t, $limit, 36)['operations'] as $op) {
+                $db->reshapePartitions($t, $op['names'], $op['ranges']);
+            }
+        };
+
+        // Squeezed hard, then given room.
+        $a = $this->tieredTable(120);
+        $fresh = count($db->getPartitionSpans($a));
+        $apply($a, 45);
+        $squeezed = count($db->getPartitionSpans($a));
+        $this->assertLessThan($fresh, $squeezed, 'sanity: the squeeze must actually coarsen the table');
+        $apply($a, 200);
+
+        // Only ever generous.
+        $b = $this->tieredTable(120);
+        $apply($b, 200);
+
+        $this->assertGreaterThan($squeezed, count($db->getPartitionSpans($a)), 'and relaxing must undo it');
+        $this->assertSame($shape($b), $shape($a), 'the same settings must produce the same layout by either path');
+
+        // And a third path: relaxed, squeezed, relaxed again.
+        $c = $this->tieredTable(120);
+        $apply($c, 200);
+        $apply($c, 45);
+        $apply($c, 200);
+
+        $this->assertSame($shape($b), $shape($c), 'repeated reorganisation must converge, not drift');
+    }
+
+    /** A coarse tail is split back to finer blocks when the budget allows. */
+    public function testACoarseTailIsUnpackedWhenTheBudgetGrows()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->tieredTable(180);
+
+        $rows = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+
+        // Squeeze: the tail should end up in multi-year blocks.
+        foreach ($db->planPartitionCompaction($t, 45, 36)['operations'] as $op) {
+            $db->reshapePartitions($t, $op['names'], $op['ranges']);
+        }
+
+        $tight = $db->planPartitionCompaction($t, 45, 36);
+        $this->assertGreaterThan(1, $tight['block_years'], 'a tight budget should need multi-year blocks');
+
+        $squeezed = count($db->getPartitionSpans($t));
+
+        // Relax: it must come back to one-year blocks.
+        $plan = $db->planPartitionCompaction($t, 300, 36);
+
+        $this->assertNotEmpty($plan['operations'], 'a grown budget must produce work, not nothing');
+        $this->assertSame(1, $plan['block_years'], 'with room, the tail should be one year per block');
+
+        foreach ($plan['operations'] as $op) {
+            $this->assertTrue($db->reshapePartitions($t, $op['names'], $op['ranges']));
+        }
+
+        $this->assertGreaterThan($squeezed, count($db->getPartitionSpans($t)), 'the tail should have been split');
+        $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'splitting must not lose a row');
     }
 }

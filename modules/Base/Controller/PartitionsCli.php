@@ -385,7 +385,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         $plan = $db->planPartitionCompaction( $table, $budget['limit'], $this->detailMonths() );
 
-        if ( ! $plan['merges'] ) {
+        if ( ! $plan['operations'] ) {
 
             // Worth saying when the table cannot fit even fully merged: the
             // remedy is a shorter detail window, and nothing else the operator
@@ -403,34 +403,34 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             return 0;
         }
 
-        $first = $plan['merges'][0];
-        $last  = $plan['merges'][ count( $plan['merges'] ) - 1 ];
+        $first = $plan['operations'][0];
+        $last  = $plan['operations'][ count( $plan['operations'] ) - 1 ];
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            '%s: %s %d group(s) of old periods covering %s to %s into one partition each, '
+            '%s: %s %d group(s) of old periods covering %s to %s into blocks of %d year(s), '
           . 'leaving %d partitions. No data is deleted.',
-            $table, $dry_run ? 'would merge' : 'merging', count( $plan['merges'] ),
-            $first['start'], $last['less_than'], $plan['projected']
+            $table, $dry_run ? 'would reshape' : 'reshaping', count( $plan['operations'] ),
+            $first['start'], $last['less_than'], $plan['block_years'], $plan['projected']
         ) );
 
         if ( $dry_run ) {
 
-            return count( $plan['merges'] );
+            return count( $plan['operations'] );
         }
 
         $done = 0;
 
-        foreach ( $plan['merges'] as $merge ) {
+        foreach ( $plan['operations'] as $op ) {
 
-            if ( $db->mergePartitions( $table, $merge['names'], $merge['start'], $merge['less_than'] ) ) {
+            if ( $db->reshapePartitions( $table, $op['names'], $op['ranges'] ) ) {
 
                 $done++;
 
             } else {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: FAILED to merge %s..%s; see the database error above.',
-                    $table, $merge['start'], $merge['less_than']
+                    '%s: FAILED to reshape %s..%s; see the database error above.',
+                    $table, $op['start'], $op['less_than']
                 ) );
             }
         }
