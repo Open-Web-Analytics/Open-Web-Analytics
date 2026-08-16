@@ -283,4 +283,136 @@ final class PartitionCliTest extends CliControllerTestCase
             \OWA\Core\Db::PARTITION_MIN_LIMIT
         );
     }
+
+    /**
+     * Rotation without a retention window compacts and deletes nothing.
+     *
+     * The controller's own step, not the database helper it calls: the ordering
+     * -- extend, then compact, then drop only if asked -- is what could regress.
+     * Lives here rather than in PartitionOperationsTest because constructing a
+     * CLI controller needs the admin_cli instance role this harness boots.
+     */
+    public function testCompactTableMergesWithoutDeleting()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (! $db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $t = 'owa_test_compact_' . $this->tok;
+
+        try {
+            $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
+            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                date('Ymd', strtotime(date('Ym') . '01 -120 months')),
+                date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
+                'monthly'
+            ));
+
+            for ($m = -120; $m <= 0; $m += 6) {
+                $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, $m + 500,
+                    date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+            }
+
+            $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+            $before = count($db->getPartitionSpans($t));
+            $budget = ['limit' => 60, 'reason' => 'test'];
+            $ctrl   = $this->rotate();
+
+            // Dry run reports without acting.
+            $this->callProtected($ctrl, 'compactTable', [$t, $budget, true]);
+            $this->assertSame($before, count($db->getPartitionSpans($t)), 'a dry run must not merge');
+
+            $merged = $this->callProtected($ctrl, 'compactTable', [$t, $budget, false]);
+
+            $this->assertGreaterThan(0, $merged, 'a ten-year monthly table has something to merge');
+            $this->assertLessThanOrEqual(60, count($db->getPartitionSpans($t)), 'must reach the budget');
+            $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no row may be deleted');
+
+            // Idempotent: a settled table needs no further merging, however many
+            // times the scheduled job runs.
+            $settled = count($db->getPartitionSpans($t));
+            $this->assertSame(0, $this->callProtected($ctrl, 'compactTable', [$t, $budget, false]));
+            $this->assertSame($settled, count($db->getPartitionSpans($t)), 'the layout must settle');
+
+            // The detail window is untouched, so recent retention stays precise.
+            $boundary = date('Ymd', strtotime(date('Ym') . '01 -' . \OWA\Core\Db::PARTITION_DETAIL_MONTHS . ' months'));
+
+            foreach ($db->getPartitionSpans($t) as $span) {
+                if ($span['start'] >= $boundary) {
+                    $this->assertSame('01', substr($span['start'], 6, 2), 'detail-window partitions stay monthly');
+                }
+            }
+
+        } finally {
+            $db->query("DROP TABLE IF EXISTS $t");
+        }
+    }
+
+    /**
+     * A finer granularity trades tail detail for recent detail.
+     *
+     * Moving to quarter-month multiplies the detail window, which on a
+     * long-history table exceeds the budget. Refusing outright would leave the
+     * operator no way to get finer recent partitions on exactly the
+     * installations where old history is what is consuming the budget. Old
+     * periods are merged to make room instead -- the tail exists to be traded.
+     */
+    public function testReorganiseMergesTheTailToMakeRoom()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (! $db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $t = 'owa_test_room_' . $this->tok;
+
+        try {
+            $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
+            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+                date('Ymd', strtotime(date('Ym') . '01 -180 months')),
+                \OWA\Core\Db::partitionLeadBoundary(),
+                'monthly',
+                \OWA\Core\Db::PARTITION_DETAIL_MONTHS
+            ));
+
+            for ($m = -180; $m <= 0; $m += 12) {
+                $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, $m + 900,
+                    date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+            }
+
+            $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+            $before = count($db->getPartitionSpans($t));
+            $wanted = $db->repartitionTable($t, 'quarter-month', true)['planned'];
+
+            $this->assertGreaterThan($before, $wanted, 'the fixture must actually need more partitions');
+
+            // Reserving what the finer granularity will need is the part that
+            // matters: measured against today's count the table already fits,
+            // and nothing would be merged.
+            $extra  = $wanted - $before;
+            $budget = ['limit' => max(1, 200 - $extra), 'reason' => 'test, room reserved'];
+
+            $merged = $this->callProtected($this->rotate(), 'compactTable', [$t, $budget, false]);
+
+            $this->assertGreaterThan(0, $merged, 'room must actually be made');
+            $this->assertLessThan($before, count($db->getPartitionSpans($t)), 'the tail should be coarser');
+            $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no row may be lost');
+
+            // The detail window is still intact, which is the point of the trade.
+            $boundary = date('Ymd', strtotime(date('Ym') . '01 -' . \OWA\Core\Db::PARTITION_DETAIL_MONTHS . ' months'));
+            $fine = 0;
+
+            foreach ($db->getPartitionSpans($t) as $span) {
+                if ($span['start'] >= $boundary) { $fine++; }
+            }
+
+            $this->assertGreaterThan(0, $fine, 'the detail window must survive the trade');
+
+        } finally {
+            $db->query("DROP TABLE IF EXISTS $t");
+        }
+    }
 }

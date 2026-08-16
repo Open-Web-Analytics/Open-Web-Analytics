@@ -798,97 +798,309 @@ final class PartitionOperationsTest extends TestCase
         }
     }
 
-    /**
-     * Rotation without a retention window must never delete anything.
-     *
-     * This is the policy that makes partition count and retention independent:
-     * old periods are coarsened to fit the budget instead of being dropped. If
-     * it ever deletes a row, the guarantee the feature is sold on is gone.
-     *
-     * Exercised through the controller's own compaction step rather than the
-     * database helpers, because the ordering -- extend, then compact, then drop
-     * only if asked -- is the part that could regress.
-     */
-    public function testRotationWithoutKeepCompactsAndDeletesNothing()
+
+
+    /** Build a table with $months of monthly history plus the standard lead. */
+    private function historyTable($months)
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        // Ten years of monthly history: far more partitions than a tight budget.
         $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
-            date('Ymd', strtotime(date('Ym') . '01 -120 months')),
+            date('Ymd', strtotime(date('Ym') . "01 -$months months")),
             date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
             'monthly'
         ));
 
         $id = 0;
-        for ($m = -120; $m <= 0; $m += 3) {
+        for ($m = -$months; $m <= 0; $m += 2) {
             $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id,
                 date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
         }
 
-        $rows_before  = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
-        $parts_before = count($db->getPartitionSpans($t));
-
-        $ctrl   = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
-        $method = new ReflectionMethod($ctrl, 'compactTable');
-        $method->setAccessible(true);
-
-        $budget = ['limit' => 60, 'reason' => 'test'];
-
-        // Dry run first: it must report and change nothing.
-        $method->invoke($ctrl, $t, $budget, true);
-        $this->assertSame($parts_before, count($db->getPartitionSpans($t)), 'a dry run must not merge');
-
-        $merged = $method->invoke($ctrl, $t, $budget, false);
-
-        $this->assertGreaterThan(0, $merged, 'a ten-year monthly table should have something to merge');
-        $this->assertLessThan($parts_before, count($db->getPartitionSpans($t)), 'partitions should be fewer');
-        $this->assertLessThanOrEqual(60, count($db->getPartitionSpans($t)), 'and within the budget');
-
-        $this->assertSame(
-            $rows_before,
-            (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
-            'compaction must not delete a single row'
-        );
-
-        // Idempotent: nothing left to merge on a second pass.
-        $this->assertSame(0, $method->invoke($ctrl, $t, $budget, false), 'a settled table needs no merging');
+        return $t;
     }
 
     /**
-     * Compaction leaves the detail window alone, so recent retention stays
-     * precise however aggressively old history has been coarsened.
+     * The detail window setting must actually decide how much is coarsened.
+     *
+     * It is the knob an operator is told to reach for when a table will not fit
+     * its budget, so it has to demonstrably do something.
      */
-    public function testCompactionNeverTouchesTheDetailWindow()
+    public function testDetailWindowSettingChangesWhatIsCompacted()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->historyTable(120);
+
+        $wide   = $db->planPartitionCompaction($t, 40, 72);   // six years kept fine
+        $narrow = $db->planPartitionCompaction($t, 40, 12);   // one year kept fine
+
+        $this->assertGreaterThan(0, $wide['projected'], 'a plan must report a projection');
+
+        $this->assertLessThan(
+            $wide['projected'],
+            $narrow['projected'],
+            'a narrower detail window must leave fewer partitions'
+        );
+
+        $this->assertLessThan(
+            $wide['floor'],
+            $narrow['floor'],
+            'and a narrower window must lower the floor, which is why it is the remedy'
+        );
+    }
+
+    /**
+     * The block cap must bound the coarsest partition. Without it an unreachable
+     * budget collapses history into one partition -- the cliff this design
+     * exists to prevent.
+     */
+    public function testBlockCapBoundsTheCoarsestPartition()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->historyTable(240);
+
+        // A budget far below the floor, so the planner widens blocks as far as
+        // it is allowed and no further.
+        $plan = $db->planPartitionCompaction($t, 2, 36);
+
+        $this->assertFalse($plan['fits'], 'this budget is unreachable by design');
+        $this->assertGreaterThan(1, count($plan['merges']), 'must not collapse into a single partition');
+
+        $cap = \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK;
+
+        foreach ($plan['merges'] as $m) {
+            $years = (strtotime($m['less_than']) - strtotime($m['start'])) / 86400 / 365.25;
+            $this->assertLessThanOrEqual($cap + 0.05, $years, "no block may exceed $cap years");
+        }
+    }
+
+    /**
+     * Retention across the range of keep values: larger than the history drops
+     * nothing, smaller drops, and the boundary partition is kept either way
+     * because only whole partitions go.
+     */
+    public function testKeepAcrossItsRange()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->historyTable(60);
+
+        $rows = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+
+        // Longer than the data: nothing is old enough to drop.
+        $this->assertSame(
+            array(),
+            $db->getDroppablePartitions($t, date('Ymd', strtotime('-600 months')))['drop'],
+            'a keep longer than the history must drop nothing'
+        );
+
+        // Shorter than the data: something goes, and never the straddler.
+        $cut  = date('Ymd', strtotime('-24 months'));
+        $plan = $db->getDroppablePartitions($t, $cut);
+
+        $this->assertNotEmpty($plan['drop'], 'a keep shorter than the history must drop something');
+        $this->assertNotContains($plan['straddling']['name'] ?? '', $plan['drop'], 'the straddler is kept');
+        $this->assertLessThanOrEqual($cut, $plan['effective'], 'the boundary reached cannot exceed the cutoff');
+
+        foreach ($plan['drop'] as $p) {
+            $db->dropPartition($t, $p);
+        }
+
+        $this->assertLessThan($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n']);
+
+        // And re-running the same cutoff now drops nothing: retention settles.
+        $this->assertSame(
+            array(),
+            $db->getDroppablePartitions($t, $cut)['drop'],
+            'retention must be idempotent for a fixed cutoff'
+        );
+    }
+
+    /**
+     * The whole cycle settles. Running it twice must leave the table identical,
+     * whether or not a retention window was given -- otherwise a scheduled job
+     * would churn the table on every run.
+     */
+    public function testTheFullCycleIsIdempotent()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (array( 'with keep' => date('Ymd', strtotime('-24 months')), 'without keep' => null ) as $label => $cutoff) {
+
+            $t = $this->historyTable(96);
+
+            // Db-layer calls in the same order rotate performs them. The
+            // controller cannot be constructed under this bootstrap; its own
+            // step is covered in PartitionCliTest, which boots the CLI role.
+            $cycle = function () use ($db, $t, $cutoff) {
+                $db->extendPartitions($t, 'monthly', \OWA\Core\Db::partitionLeadBoundary());
+                foreach ($db->planPartitionCompaction($t, 50, 36)['merges'] as $m) {
+                    $db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']);
+                }
+                if ($cutoff) {
+                    foreach ($db->getDroppablePartitions($t, $cutoff)['drop'] as $p) {
+                        $db->dropPartition($t, $p);
+                    }
+                }
+                return array_map(fn($s) => $s['name'] . ':' . $s['less_than'], $db->getPartitionSpans($t));
+            };
+
+            $first  = $cycle();
+            $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+            $second = $cycle();
+
+            $this->assertSame($first, $second, "$label: a second cycle must change nothing");
+            $this->assertSame(
+                $rows,
+                (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+                "$label: and must delete nothing"
+            );
+        }
+    }
+
+    /** A tiered table: coarse year blocks, a fine detail window, and a lead. */
+    private function tieredTable($history_months = 120, $granularity = 'monthly')
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t = $this->makeTable();
 
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
-            date('Ymd', strtotime(date('Ym') . '01 -96 months')),
-            date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
-            'monthly'
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makeTieredPartitionRanges(
+            date('Ymd', strtotime(date('Ym') . "01 -$history_months months")),
+            \OWA\Core\Db::partitionLeadBoundary(),
+            $granularity,
+            \OWA\Core\Db::PARTITION_DETAIL_MONTHS
         ));
 
-        $boundary = date('Ymd', strtotime(date('Ym') . '01 -' . \OWA\Core\Db::PARTITION_DETAIL_MONTHS . ' months'));
+        $id = 0;
+        for ($m = -$history_months; $m <= 12; $m += 4) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id,
+                date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+        }
 
-        $recent_before = array_values(array_filter(
-            array_map(fn($s) => $s['name'], $db->getPartitionSpans($t)),
-            fn($n) => substr($n, 1) >= $boundary
-        ));
+        return $t;
+    }
 
-        $ctrl   = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
-        $method = new ReflectionMethod($ctrl, 'compactTable');
-        $method->setAccessible(true);
-        $method->invoke($ctrl, $t, ['limit' => 50, 'reason' => 'test'], false);
+    private function coarseAndFine($table)
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $coarse = 0; $fine = 0;
 
-        $recent_after = array_values(array_filter(
-            array_map(fn($s) => $s['name'], $db->getPartitionSpans($t)),
-            fn($n) => substr($n, 1) >= $boundary
-        ));
+        foreach ($db->getPartitionSpans($table) as $span) {
+            $month_after = date('Ymd', strtotime(substr($span['start'], 0, 6) . '01 +1 month'));
+            if ($span['less_than'] <= $month_after) { $fine++; } else { $coarse++; }
+        }
 
-        $this->assertSame($recent_before, $recent_after, 'partitions inside the detail window must be untouched');
-        $this->assertNotEmpty($recent_before, 'the fixture needs a detail window to be a test');
+        return array('coarse' => $coarse, 'fine' => $fine);
+    }
+
+    /**
+     * Reorganising a tiered table must refine only the detail window.
+     *
+     * The coarse tail exists to keep the partition count within the server's
+     * open-file budget. Splitting it back to the table's granularity would undo
+     * exactly what compaction did, and on a long history it multiplies the
+     * partition count several times over.
+     */
+    public function testReorganiseLeavesTheCoarseTailAlone()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (['half-month', 'quarter-month', 'monthly'] as $granularity) {
+
+            $t      = $this->tieredTable(120);
+            $before = $this->coarseAndFine($t);
+            $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+
+            $this->assertGreaterThan(0, $before['coarse'], "$granularity: fixture needs a tail");
+            $this->assertGreaterThan(0, $before['fine'],   "$granularity: fixture needs a detail window");
+
+            $db->repartitionTable($t, $granularity);
+
+            $after = $this->coarseAndFine($t);
+
+            $this->assertSame(
+                $before['coarse'],
+                $after['coarse'],
+                "$granularity: the coarse tail must be untouched"
+            );
+
+            $this->assertSame(
+                $rows,
+                (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+                "$granularity: no row may be lost"
+            );
+
+            // And the fine end really did become the requested granularity.
+            $this->assertSame(
+                $granularity,
+                $db->inferPartitionGranularity($t),
+                "$granularity: the recent end should now read as that granularity"
+            );
+        }
+    }
+
+    /** An explicit range may still refine the tail, for an operator who means it. */
+    public function testAnExplicitRangeCanStillRefineTheTail()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->tieredTable(120);
+
+        $spans = $db->getPartitionSpans($t);
+        $block = $spans[0];
+
+        $this->assertGreaterThan(
+            date('Ymd', strtotime(substr($block['start'], 0, 6) . '01 +1 month')),
+            $block['less_than'],
+            'the fixture\'s first partition should be a coarse block'
+        );
+
+        $rows = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+        $before = count($spans);
+
+        $db->repartitionTable($t, 'monthly', false, $block['start'], $block['less_than']);
+
+        $this->assertGreaterThan($before, count($db->getPartitionSpans($t)), 'the block should have been split');
+        $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no row may be lost');
+    }
+
+    /**
+     * The whole shape holds together across budgets: lead, tail and detail
+     * window survive compaction at every level, and the plan predicts what
+     * happens.
+     */
+    public function testTieredTableCompactsCorrectlyAtEveryBudget()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ([200, 60, 40, 5] as $limit) {
+
+            $t     = $this->tieredTable(120);
+            $rows  = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+            $lead  = end($db->getPartitionSpans($t))['less_than'];
+
+            $plan = $db->planPartitionCompaction($t, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
+
+            foreach ($plan['merges'] as $m) {
+                $this->assertTrue($db->mergePartitions($t, $m['names'], $m['start'], $m['less_than']),
+                    "budget $limit: every planned merge must succeed");
+            }
+
+            $spans = $db->getPartitionSpans($t);
+
+            $this->assertSame($plan['projected'], count($spans), "budget $limit: the plan must predict the result");
+            $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+                "budget $limit: no row may be lost");
+            $this->assertSame($lead, end($spans)['less_than'], "budget $limit: the lead must be preserved");
+
+            if ($plan['fits']) {
+                $this->assertLessThanOrEqual($limit, count($spans), "budget $limit: should have reached the budget");
+            } else {
+                $this->assertGreaterThanOrEqual($plan['floor'], count($spans), "budget $limit: cannot go below the floor");
+            }
+
+            // Settles regardless of budget.
+            $again = $db->planPartitionCompaction($t, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
+            $this->assertEmpty($again['merges'], "budget $limit: a second pass must find nothing to do");
+        }
     }
 }

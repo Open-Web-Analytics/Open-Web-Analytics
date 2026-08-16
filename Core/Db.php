@@ -2055,6 +2055,13 @@ class Db extends \OWA\Core\Base {
             return $result;
         }
 
+        // Group by calendar year, but measure a group by the span it COVERS, not
+        // by how many groups it contains. A partition that is already a merged
+        // block of years counts for all of them, so re-running cannot merge it
+        // past the cap. Without that, each run compounds the previous one --
+        // five years, then ten, then twenty -- and an unreachable budget
+        // collapses all of history into one partition over several runs, which
+        // is the cliff the cap exists to prevent.
         $years = array();
 
         foreach ( $old as $span ) {
@@ -2065,11 +2072,47 @@ class Db extends \OWA\Core\Base {
         $keys = array_keys( $years );
         sort( $keys );
 
+        // Years actually covered by each group, so an existing block is not
+        // mistaken for a single year.
+        $weight = array();
+
+        foreach ( $keys as $year ) {
+
+            $first = $years[ $year ][0];
+            $last  = $years[ $year ][ count( $years[ $year ] ) - 1 ];
+
+            $span = ( (int) substr( $last['less_than'], 0, 4 ) ) - ( (int) substr( $first['start'], 0, 4 ) );
+
+            $weight[ $year ] = max( 1, $span );
+        }
+
         $max_block = min( self::PARTITION_MAX_YEARS_PER_BLOCK, count( $keys ) );
 
         for ( $per_block = 1; $per_block <= $max_block; $per_block++ ) {
 
-            $blocks = array_chunk( $keys, $per_block );
+            // Fill blocks up to $per_block years of coverage. A group already
+            // that wide stands alone rather than being absorbed into a wider one.
+            $blocks  = array();
+            $current = array();
+            $carried = 0;
+
+            foreach ( $keys as $year ) {
+
+                if ( $current && $carried + $weight[ $year ] > $per_block ) {
+
+                    $blocks[]  = $current;
+                    $current   = array();
+                    $carried   = 0;
+                }
+
+                $current[] = $year;
+                $carried  += $weight[ $year ];
+            }
+
+            if ( $current ) {
+
+                $blocks[] = $current;
+            }
 
             if ( $kept + count( $blocks ) <= $limit || $per_block === $max_block ) {
 
@@ -2287,6 +2330,36 @@ class Db extends \OWA\Core\Base {
         if ( ! $spans ) {
 
             return $result;
+        }
+
+        // Leave coarsened history alone unless a range explicitly asks for it.
+        //
+        // A tail block spans whole years by design, to keep the partition count
+        // within the server's open-file budget. Refining it back to the table's
+        // granularity would undo that -- on a ten-year table, sixty-odd
+        // partitions become nearly three hundred -- and would be the opposite of
+        // what compaction just did. A partition covering at most one calendar
+        // month is a normal period and is fair game; anything wider is a block.
+        if ( $from === null && $to === null ) {
+
+            $fine = array();
+
+            foreach ( $spans as $span ) {
+
+                $month_after = date( 'Ymd', strtotime( substr( $span['start'], 0, 6 ) . '01 +1 month' ) );
+
+                if ( (string) $span['less_than'] <= $month_after ) {
+
+                    $fine[] = $span;
+                }
+            }
+
+            $spans = array_values( $fine );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
         }
 
         // Keep only the partitions the range touches. A partition is rewritten
