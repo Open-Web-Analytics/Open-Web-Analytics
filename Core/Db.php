@@ -1675,6 +1675,56 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * The range a session's fact rows can occupy, derived from the session id
+     * alone, for callers that have no date at all.
+     *
+     * Ids minted by generateRandomUid() and by the tracker's matching JS begin
+     * with a unix timestamp, so the id carries roughly when its session began.
+     * "Roughly" is the operative word: the tracker mints session, visitor and
+     * domstream ids from the BROWSER's clock, which is not ours. Measured
+     * across two installations of 193,057 and 282,109 tracker-minted sessions,
+     * a window of two days either side covers 99.93% and 99.91% of them; the
+     * tail runs to 5,707 and 88,421 days out, which is a clock set to the wrong
+     * decade rather than drift.
+     *
+     * So this is a hint and never an answer. A caller MUST fall back to an
+     * unbounded query when the bounded one finds nothing, or it will lose rows
+     * for whoever has the wrong clock. Prefer factDateRange() wherever a
+     * server-assigned date is in reach -- it is exact, and it cannot be
+     * influenced from outside.
+     *
+     * @param mixed $id
+     * @param int   $days  window either side
+     * @return array|null ['start','end'] as yyyymmdd, or null where unusable
+     */
+    static function factDateRangeFromId( $id, $days = 2 ) {
+
+        $id = (string) $id;
+
+        // Only the timestamp-prefixed form carries a date. A crc32-era id is
+        // a hash and its leading digits mean nothing.
+        if ( ! preg_match( '/^\d{19}$/', $id ) ) {
+
+            return null;
+        }
+
+        $seconds = (int) substr( $id, 0, 10 );
+
+        if ( $seconds <= 0 ) {
+
+            return null;
+        }
+
+        $date = new \DateTimeImmutable( '@' . $seconds );
+        $date = $date->setTimezone( new \DateTimeZone( date_default_timezone_get() ) );
+
+        return array(
+            'start' => $date->modify( '-' . (int) $days . ' days' )->format( 'Ymd' ),
+            'end'   => $date->modify( '+' . (int) $days . ' days' )->format( 'Ymd' ),
+        );
+    }
+
+    /**
      * Work out the granularity a table is already using.
      *
      * Taken from the boundaries rather than the partition names. The names
@@ -1725,6 +1775,30 @@ class Db extends \OWA\Core\Base {
         }
 
         return null;
+    }
+
+    /**
+     * One row by id, optionally narrowed. Test seam for the constrained-load
+     * behaviour in Entity::getByColumn(), which is otherwise reachable only
+     * through the entity registry.
+     *
+     * @param string $table_name
+     * @param mixed  $id
+     * @param array  $constraints
+     * @return array
+     */
+    function getOneRowFromTable( $table_name, $id, $constraints = array() ) {
+
+        $this->selectFrom( $table_name );
+        $this->selectColumn( '*' );
+        $this->where( 'id', $id );
+
+        foreach ( $constraints as $name => $constraint ) {
+
+            $this->where( $name, $constraint['value'], $constraint['operator'] );
+        }
+
+        return (array) $this->getOneRow();
     }
 
     /**

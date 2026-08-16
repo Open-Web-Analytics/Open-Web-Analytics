@@ -113,11 +113,38 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         $d = \OWA\Core\CoreAPI::entityFactory('base.domstream');
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->select('*');
-        $db->from( $d->getTableName() );
-        $db->where( 'domstream_guid', $domstream_guid );
-        $db->orderBy('timestamp', 'ASC');
-        $ret = $db->getAllRows();
+
+        // Narrow to the days the recording can span. Without it a partitioned
+        // owa_domstream is visited partition by partition, and this table is
+        // the heaviest of them -- it holds serialised DOM events, so scanning
+        // it is expensive per row as well as per partition.
+        //
+        // The range comes from the timestamp the guid carries, which the
+        // tracker mints from the browser's clock. It is a hint, so a miss is
+        // repeated unbounded below rather than reported as no recording.
+        $range = \OWA\Core\Db::factDateRangeFromId( $domstream_guid );
+
+        $fetch = function ( $bounds ) use ( $db, $d, $domstream_guid ) {
+
+            $db->select('*');
+            $db->from( $d->getTableName() );
+            $db->where( 'domstream_guid', $domstream_guid );
+
+            if ( $bounds ) {
+                $db->where( 'yyyymmdd', $bounds, 'between' );
+            }
+
+            $db->orderBy('timestamp', 'ASC');
+
+            return $db->getAllRows();
+        };
+
+        $ret = $fetch( $range );
+
+        if ( ! $ret && $range ) {
+
+            $ret = $fetch( null );
+        }
         //print_r($ret);
         $combined = '';
 

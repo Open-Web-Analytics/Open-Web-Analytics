@@ -572,4 +572,57 @@ final class PartitionOperationsTest extends TestCase
 
         $this->assertLessThan($all, $scanned, 'the bound should reduce the partitions scanned');
     }
+
+    /**
+     * The id-derived range is a hint drawn from a clock we do not control, so
+     * it must be usable only where a miss can fall back. These pin the shape
+     * and the refusals; the fallback itself is at the call sites.
+     */
+    public function testFactDateRangeFromId()
+    {
+        // generateRandomUid(): 10 digits of unix time, 6 random, 3 server.
+        $ts = strtotime('2026-08-15 12:00:00');
+        $id = $ts . '611353' . '957';
+
+        $this->assertSame(19, strlen($id), 'the fixture must be a well-formed uid');
+
+        $range = \OWA\Core\Db::factDateRangeFromId($id, 2);
+
+        $this->assertSame(date('Ymd', strtotime('2026-08-13')), $range['start']);
+        $this->assertSame(date('Ymd', strtotime('2026-08-17')), $range['end']);
+        $this->assertLessThan($range['end'], $range['start']);
+
+        // The window is configurable, and always brackets the id's own day.
+        $wide = \OWA\Core\Db::factDateRangeFromId($id, 10);
+        $this->assertLessThan($range['start'], $wide['start']);
+        $this->assertGreaterThan($range['end'], $wide['end']);
+
+        // A crc32-era id is a hash: its leading digits are not a date, and
+        // reading one as a timestamp would send the query to a wrong partition.
+        foreach (['71927192', '-1', '', null, 'abc', '123', str_repeat('1', 18), str_repeat('1', 20)] as $bad) {
+            $this->assertNull(\OWA\Core\Db::factDateRangeFromId($bad), var_export($bad, true) . ' must not yield a range');
+        }
+    }
+
+    /** A constrained entity load still finds a row the constraint excludes. */
+    public function testConstrainedLoadFallsBackWhenTheHintIsWrong()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20250101, 20251231, 'monthly'));
+        $db->query(sprintf('INSERT INTO %s (id, yyyymmdd) VALUES (42, 20250615)', $t));
+
+        // Deliberately wrong window -- as a skewed browser clock would give.
+        $wrong = array('yyyymmdd' => array(
+            'value' => array('start' => '20251101', 'end' => '20251130'), 'operator' => 'between'
+        ));
+
+        $bounded = $db->getOneRowFromTable($t, 42, $wrong);
+        $this->assertEmpty($bounded, 'the wrong window must genuinely exclude the row');
+
+        // What getByColumn() does on a miss: repeat without the constraint.
+        $unbounded = $db->getOneRowFromTable($t, 42, array());
+        $this->assertSame(42, (int) $unbounded['id'], 'the row must still be reachable');
+    }
 }

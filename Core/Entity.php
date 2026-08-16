@@ -456,19 +456,39 @@ class Entity {
         
     }
     
-    function load($value, $col = 'id') {
+    function load($value, $col = 'id', $constraints = array()) {
 
-        return $this->getByColumn($col, $value);
+        return $this->getByColumn($col, $value, $constraints);
         
     }
     
-    function getByPk($col, $value) {
+    function getByPk($col, $value, $constraints = array()) {
         
-        return $this->getByColumn($col, $value);
+        return $this->getByColumn($col, $value, $constraints);
         
     }
     
-    function getByColumn($col, $value) {
+    /**
+     * Fetch one row by a column value.
+     *
+     * $constraints narrows the query without changing which row is being asked
+     * for -- it exists so that a partitioned table can be pruned, since pruning
+     * reads only the partitioning column and a lookup by id names no date. It
+     * is a hint: if nothing is found with it, the query is repeated without it
+     * before reporting a miss.
+     *
+     * That retry is here rather than at the call sites on purpose. A miss on a
+     * session lookup is not a slow path, it is a duplicate session, so the
+     * safety cannot depend on every caller remembering to fall back.
+     *
+     * The cache key deliberately ignores $constraints: the answer is the same
+     * row either way, so a bounded and an unbounded lookup share an entry.
+     *
+     * @param string $col
+     * @param mixed  $value
+     * @param array  $constraints  name => ['value' => mixed, 'operator' => string]
+     */
+    function getByColumn($col, $value, $constraints = array()) {
                 
         if ( ! $col ) {
             throw new \Exception("No column name passed.");
@@ -494,13 +514,15 @@ class Entity {
                     
         } else {
         
-            $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->selectFrom($this->getTableName());
-            $db->selectColumn('*');
-            \OWA\Core\CoreAPI::debug("Col: $col, value: $value");
-            $db->where($col, $value);
-            $properties = $db->getOneRow();
-            
+            $properties = $this->fetchOneRow($col, $value, $constraints);
+
+            // The constraints only narrow where to look. Not finding a row
+            // under them says nothing about whether one exists.
+            if (empty($properties) && $constraints) {
+
+                $properties = $this->fetchOneRow($col, $value, array());
+            }
+
             if (!empty($properties)) {
                 
                 $this->setProperties($properties);
@@ -510,6 +532,30 @@ class Entity {
                 \OWA\Core\CoreAPI::debug('entity loaded from db');
             }
         }
+    }
+
+    /**
+     * One row by column value, optionally narrowed. See getByColumn().
+     *
+     * @param string $col
+     * @param mixed  $value
+     * @param array  $constraints
+     * @return array
+     */
+    protected function fetchOneRow($col, $value, $constraints = array()) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom($this->getTableName());
+        $db->selectColumn('*');
+        \OWA\Core\CoreAPI::debug("Col: $col, value: $value");
+        $db->where($col, $value);
+
+        foreach ($constraints as $name => $constraint) {
+
+            $db->where($name, $constraint['value'], $constraint['operator']);
+        }
+
+        return (array) $db->getOneRow();
     }
 
     function getTableName() {
