@@ -58,7 +58,7 @@ class PasswordResetRequest extends \OWA\Core\Controller {
         // return view
         $this->setView('base.passwordResetForm');
         $email_address = trim((string) $this->getParam('email_address'));
-        $msg = $this->getMsg(2000, ['message' => $email_address]);
+        $msg = $this->getMsg(2000, ['message' => [$email_address]]);
         $this->set('status_msg', $msg);
     }
 
@@ -66,7 +66,7 @@ class PasswordResetRequest extends \OWA\Core\Controller {
 
         $this->setView('base.passwordResetForm');
         $email_address = trim((string) $this->getParam('email_address'));
-        $this->set('error_msg', $this->getMsg(2001, ['message' => $email_address]));
+        $this->set('error_msg', $this->getMsg(2001, ['message' => [$email_address]]));
     }
 }
 
