@@ -162,6 +162,23 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * The budget, sized against every fact table rather than the ones this run
+     * happens to touch.
+     *
+     * The open-file budget is a property of the server and the schema: the other
+     * fact tables hold their partitions open whether or not this invocation
+     * mentions them. Sizing it from the filtered set would hand a single-table
+     * run the whole allowance -- so `table=owa_session` would report, and permit,
+     * several times the partitions that the same command without a filter would.
+     *
+     * @return array  from partitionLimit()
+     */
+    protected function factTableBudget() {
+
+        return $this->partitionLimit( max( 1, count( $this->factTables() ) ) );
+    }
+
+    /**
      * How recent a period must be to keep its fine granularity. Older ones may be
      * merged to stay within the budget.
      *

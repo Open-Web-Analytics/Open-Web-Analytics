@@ -801,6 +801,338 @@ final class PartitionOperationsTest extends TestCase
 
 
     /** Build a table with $months of monthly history plus the standard lead. */
+    // -----------------------------------------------------------------------
+    // Describing a layout -- what partition-status reads
+    // -----------------------------------------------------------------------
+
+    /**
+     * A period is named in the vocabulary the commands use.
+     *
+     * partition-status has to describe a tiered table, where the tail holds
+     * years per partition and the head holds fractions of a month. Naming a
+     * sub-month period after the granularity that cuts it there keeps the report
+     * in the same words as the reorganize command's argument.
+     */
+    public function testPeriodsAreNamedAsOperatorsNameThem()
+    {
+        $cases = array(
+            // monthly
+            array('20260101', '20260201', 'monthly'),
+            array('20260201', '20260301', 'monthly'),   // short month
+            array('20241201', '20250101', 'monthly'),   // across a year end
+            // sub-month, by the cuts that produce them
+            array('20260101', '20260116', 'half-month'),
+            array('20260116', '20260201', 'half-month'),
+            array('20260216', '20260301', 'half-month'),
+            array('20260101', '20260108', 'quarter-month'),
+            array('20260108', '20260115', 'quarter-month'),
+            array('20260115', '20260122', 'quarter-month'),
+            array('20260122', '20260201', 'quarter-month'),
+            // merged blocks
+            array('20260101', '20270101', '1 year'),
+            array('20200101', '20250101', '5 years'),
+            array('20200101', '20300101', '10 years'),
+            array('20260101', '20260401', '3 months'),
+            array('20260101', '20261101', '10 months'),
+            // a block that begins mid-month, which merging never produces but
+            // a hand-altered table can
+            array('20260116', '20260316', '59 days'),
+            // unreadable
+            array('20260101', '20260101', 'unknown'),   // empty
+            array('20260201', '20260101', 'unknown'),   // reversed
+            array('garbage',  '20260101', 'unknown'),
+            array('20260101', '',         'unknown'),
+        );
+
+        foreach ($cases as list($start, $less_than, $expected)) {
+            $this->assertSame(
+                $expected,
+                \OWA\Core\Db::describePartitionPeriod($start, $less_than),
+                "$start .. $less_than"
+            );
+        }
+    }
+
+    /** An unpartitioned table reports as such, and nothing else claims to know. */
+    public function testLayoutOfAnUnpartitionedTable()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $layout = $db->describePartitionLayout($this->makeTable());
+
+        $this->assertFalse($layout['partitioned']);
+        $this->assertSame(0, $layout['total']);
+        $this->assertSame(0, $layout['spans']);
+        $this->assertNull($layout['covers']);
+        $this->assertNull($layout['granularity']);
+        $this->assertNull($layout['catch_all']);
+        $this->assertNull($layout['ahead']);
+        $this->assertSame(array(), $layout['tiers']);
+    }
+
+    /**
+     * A uniform table is one tier, and the counts add up: the catch-all is
+     * counted in the total and excluded from the bounded spans, because that is
+     * the distinction the budget and the retention rules both turn on.
+     */
+    public function testLayoutOfAUniformTable()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -6 months')),
+            date('Ymd', strtotime(date('Ym') . '01 +3 months')),
+            'monthly'
+        ));
+
+        $layout = $db->describePartitionLayout($t);
+
+        $this->assertTrue($layout['partitioned']);
+        $this->assertSame($layout['spans'] + 1, $layout['total'], 'catch-all is in the total');
+        $this->assertSame('monthly', $layout['granularity']);
+        $this->assertNotNull($layout['catch_all']);
+        $this->assertCount(1, $layout['tiers']);
+        $this->assertSame('monthly', $layout['tiers'][0]['period']);
+        $this->assertSame($layout['spans'], $layout['tiers'][0]['count'], 'every span is in a tier');
+        $this->assertSame($layout['covers']['start'], $layout['tiers'][0]['start']);
+        $this->assertSame($layout['covers']['end'], $layout['tiers'][0]['end']);
+    }
+
+    /**
+     * The reason this is reported as tiers rather than a granularity.
+     *
+     * A rotated table is coarse at the tail and fine at the head. One word
+     * cannot describe it without being wrong about one end, so the report gives
+     * each run of equal-length partitions with the span it covers -- and the
+     * tiers must tile the whole range without a gap.
+     */
+    public function testLayoutOfATieredTableIsReportedAsTiers()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (array('monthly', 'half-month', 'quarter-month') as $granularity) {
+
+            $t      = $this->tieredTable(180, $granularity);
+            $layout = $db->describePartitionLayout($t);
+
+            $this->assertGreaterThan(1, count($layout['tiers']),
+                "$granularity: 15 years of history must produce a coarse tail and a fine head");
+
+            // The finest tier is the newest, and is the granularity in force.
+            $newest = $layout['tiers'][count($layout['tiers']) - 1];
+            $this->assertSame($granularity, $newest['period'],
+                "$granularity: the head keeps the table's granularity");
+            $this->assertSame($granularity, $layout['granularity'],
+                "$granularity: inference agrees with the newest tier");
+
+            // The tail is coarser than a month.
+            $this->assertNotSame($granularity, $layout['tiers'][0]['period'],
+                "$granularity: the tail must have been merged");
+
+            // Tiers tile the covered range end to end.
+            $this->assertSame($layout['covers']['start'], $layout['tiers'][0]['start']);
+            $this->assertSame($layout['covers']['end'], $newest['end']);
+
+            $counted = 0;
+            $previous = null;
+
+            foreach ($layout['tiers'] as $tier) {
+                if ($previous !== null) {
+                    $this->assertSame($previous, $tier['start'],
+                        "$granularity: tiers must be contiguous");
+                }
+                $previous = $tier['end'];
+                $counted += $tier['count'];
+            }
+
+            $this->assertSame($layout['spans'], $counted,
+                "$granularity: every bounded partition belongs to exactly one tier");
+        }
+    }
+
+    /**
+     * The lead is what running out of costs, so it is counted as partitions
+     * bought in advance and as days until the last boundary.
+     */
+    public function testLayoutCountsTheLead()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (array(0, 1, 3, 12) as $ahead) {
+
+            $t = $this->makeTable();
+
+            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                date('Ymd', strtotime(date('Ym') . '01 -6 months')),
+                date('Ymd', strtotime(date('Ym') . "01 +$ahead months")),
+                'monthly'
+            ));
+
+            $layout = $db->describePartitionLayout($t);
+
+            // The end date names the last period to create, so the boundary
+            // above it is a month later.
+            $top = date('Ymd', strtotime(date('Ym') . '01 +' . ($ahead + 1) . ' months'));
+
+            $this->assertSame($top, $layout['through'], "lead of $ahead months: top boundary");
+
+            // Partitions that begin after today. The current month's began on
+            // the 1st, so it is not lead however early in the month this runs.
+            $this->assertSame($ahead, $layout['lead'],
+                "lead of $ahead months: partitions wholly in the future");
+
+            $this->assertSame(
+                (int) (new DateTimeImmutable('today'))
+                    ->diff(DateTimeImmutable::createFromFormat('Ymd|', $top))->format('%r%a'),
+                $layout['ahead'],
+                "lead of $ahead months: days to the top boundary"
+            );
+        }
+    }
+
+    /**
+     * A lead that has run out reports as negative days, not as zero or as an
+     * absence. That sign is what the command turns into "rotate now".
+     */
+    public function testLayoutReportsAnExpiredLeadAsNegative()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -12 months')),
+            date('Ymd', strtotime(date('Ym') . '01 -3 months')),
+            'monthly'
+        ));
+
+        $layout = $db->describePartitionLayout($t);
+
+        $this->assertLessThan(0, $layout['ahead'], 'a boundary in the past is negative days ahead');
+        $this->assertSame(0, $layout['lead'], 'no partition begins in the future');
+        $this->assertSame(date('Ymd', strtotime(date('Ym') . '01 -2 months')), $layout['through'],
+            'the last period created is -3 months, so its upper bound is -2');
+    }
+
+    /**
+     * Counting the catch-all reads the partition, not the InnoDB row estimate.
+     *
+     * The question being asked -- has real data collected outside the dated
+     * partitions -- cannot be answered by an estimate that is routinely out by
+     * a wide margin, and is zero for a freshly loaded table.
+     */
+    public function testCatchAllContentsAreCountedExactly()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -6 months')),
+            date('Ymd', strtotime(date('Ym') . '01 +1 month')),
+            'monthly'
+        ));
+
+        $catch_all = $db->getCatchAllPartition($t);
+
+        $empty = $db->getPartitionContents($t, $catch_all);
+        $this->assertSame(0, $empty['rows']);
+        $this->assertNull($empty['min'], 'an empty partition has no bounds');
+        $this->assertNull($empty['max']);
+
+        // Rows past the top boundary land in the catch-all.
+        $dates = array();
+        $id = 0;
+
+        foreach (array(3, 6, 9) as $months) {
+            $d = date('Ymd', strtotime(date('Ym') . "01 +$months months +5 days"));
+            $dates[] = $d;
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id, $d));
+        }
+
+        // ...and one that does not, to prove the count is scoped to the partition.
+        $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id,
+            date('Ymd', strtotime(date('Ym') . '01 -2 months +5 days'))));
+
+        $filled = $db->getPartitionContents($t, $catch_all);
+
+        $this->assertSame(3, $filled['rows'], 'only the catch-all is counted');
+        $this->assertSame(min($dates), $filled['min']);
+        $this->assertSame(max($dates), $filled['max']);
+    }
+
+    /**
+     * Identifiers are interpolated into the statement, so they are validated --
+     * and validated before the statement is built, not after MySQL rejects it.
+     *
+     * Asserting only that a bad identifier yields null proves nothing: an
+     * unvalidated identifier produces a syntax error, and that yields null too.
+     * The observable difference is whether a query is issued at all, so the
+     * driver is watched rather than its return value.
+     */
+    public function testPartitionContentsValidatesIdentifiersBeforeQuerying()
+    {
+        $spy = new class extends \OWA\Core\Db\Mysql {
+
+            /** @var string[] */
+            public $sql = array();
+
+            public function __construct() {}
+
+            function get_row($sql)
+            {
+                $this->sql[] = $sql;
+
+                return array('n' => 0, 'lo' => null, 'hi' => null);
+            }
+        };
+
+        $bad = array(
+            array('owa_t',  'pmax; DROP TABLE x', 'yyyymmdd'),
+            array('owa_t',  'p max',              'yyyymmdd'),
+            array('owa_t',  "p'max",              'yyyymmdd'),
+            array('owa_t',  '',                   'yyyymmdd'),
+            array('owa t',  'pmax',               'yyyymmdd'),
+            array('x; DROP TABLE y', 'pmax',      'yyyymmdd'),
+            array('owa_t',  'pmax',               'yyyymmdd; DROP TABLE x'),
+            array('owa_t',  'pmax',               '1) OR (1'),
+        );
+
+        foreach ($bad as list($table, $partition, $column)) {
+            $this->assertNull(
+                $spy->getPartitionContents($table, $partition, $column),
+                sprintf('%s / %s / %s should be refused', $table, $partition, $column)
+            );
+        }
+
+        $this->assertSame(array(), $spy->sql,
+            'a refused identifier must not reach the database at all');
+
+        // ...and a well-formed one does query, so the guard is not simply
+        // refusing everything.
+        $this->assertNotNull($spy->getPartitionContents('owa_t', 'pmax', 'yyyymmdd'));
+        $this->assertCount(1, $spy->sql);
+        $this->assertStringContainsString('PARTITION (pmax)', $spy->sql[0],
+            'the count must be scoped to the one partition');
+    }
+
+    /** The same validation, exercised against a real table. */
+    public function testPartitionContentsRefusesUnsafeIdentifiers()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -2 months')),
+            date('Ymd', strtotime(date('Ym') . '01 +1 month')),
+            'monthly'
+        ));
+
+        foreach (array('pmax; DROP TABLE ' . $t, 'p max', "p'max", '') as $bad) {
+            $this->assertNull($db->getPartitionContents($t, $bad), var_export($bad, true));
+        }
+
+        $this->assertNotEmpty($db->listPartitions($t), 'the table is still there');
+    }
+
     private function historyTable($months)
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();

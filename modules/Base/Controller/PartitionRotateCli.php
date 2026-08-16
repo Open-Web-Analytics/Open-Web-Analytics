@@ -105,7 +105,7 @@ class PartitionRotateCli extends PartitionsCli {
         }
 
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
-        $budget  = $this->partitionLimit( count( $tables ) );
+        $budget  = $this->factTableBudget();
 
         \OWA\Core\CoreAPI::notice( $cutoff
             ? sprintf(

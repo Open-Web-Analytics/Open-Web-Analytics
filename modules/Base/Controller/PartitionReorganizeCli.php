@@ -66,7 +66,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
-        $budget = $this->partitionLimit( count( $tables ) );
+        $budget = $this->factTableBudget();
 
         foreach ( $tables as $table ) {
 

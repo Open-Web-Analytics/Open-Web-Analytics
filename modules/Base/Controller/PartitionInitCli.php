@@ -75,7 +75,7 @@ class PartitionInitCli extends PartitionsCli {
             return;
         }
 
-        $budget  = $this->partitionLimit( count( $tables ) );
+        $budget  = $this->factTableBudget();
         $already = 0;
 
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );

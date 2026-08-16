@@ -385,6 +385,49 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * Row count and date range within one partition.
+     *
+     * Reads the partition itself rather than information_schema, because
+     * TABLE_ROWS is an InnoDB estimate that can be out by a wide margin -- and
+     * the whole point of asking about the catch-all is to know whether real data
+     * has collected there. The extension restricts the scan to that one
+     * partition, and the fact tables carry an index on the partitioning column,
+     * which on a partitioned table is local to each partition: the bounds are a
+     * seek, not a scan.
+     *
+     * @param string $table_name
+     * @param string $partition
+     * @param string $column
+     * @return array|null  ['rows','min','max'], or null where it cannot be read
+     */
+    function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
+
+        foreach ( array( $table_name, $partition, $column ) as $identifier ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $identifier ) ) {
+
+                return null;
+            }
+        }
+
+        $row = $this->get_row( sprintf(
+            'SELECT COUNT(*) AS n, MIN(%1$s) AS lo, MAX(%1$s) AS hi FROM %2$s PARTITION (%3$s)',
+            $column, $table_name, $partition
+        ) );
+
+        if ( ! $row ) {
+
+            return null;
+        }
+
+        return array(
+            'rows' => (int) $row['n'],
+            'min'  => $row['lo'] === null ? null : (string) $row['lo'],
+            'max'  => $row['hi'] === null ? null : (string) $row['hi'],
+        );
+    }
+
+    /**
      * The columns of a table's primary key, in key order.
      *
      * @param string $table_name

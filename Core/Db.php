@@ -1131,6 +1131,19 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Row count and date range within one partition. Unknown, without support.
+     *
+     * @param string $table_name
+     * @param string $partition
+     * @param string $column
+     * @return array|null
+     */
+    function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
+
+        return null;
+    }
+
+    /**
      * Is this table partitioned?
      *
      * @param string $table_name
@@ -1796,6 +1809,177 @@ class Db extends \OWA\Core\Base {
         }
 
         return null;
+    }
+
+    /**
+     * Name the period one partition spans.
+     *
+     * A tiered table does not have "a granularity": recent months are cut at the
+     * granularity in force, older ones have been merged into blocks of months or
+     * years to stay inside the open-file budget. Describing such a table with one
+     * word is wrong in both directions -- it either overstates the resolution of
+     * the tail or understates the head.
+     *
+     * A sub-month period is named by the granularity whose cuts it falls between,
+     * so the vocabulary is the one the reorganize command takes. Anything longer
+     * is named by its own length.
+     *
+     * @param string $start      yyyymmdd
+     * @param string $less_than  yyyymmdd
+     * @return string
+     */
+    static function describePartitionPeriod( $start, $less_than ) {
+
+        $a = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start );
+        $b = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $less_than );
+
+        if ( ! $a || ! $b || $b <= $a ) {
+
+            return 'unknown';
+        }
+
+        // Whole months from the 1st: one calendar month is "monthly", and longer
+        // blocks are named in years where they divide evenly, because that is how
+        // the merged tail is built and how an operator thinks about it.
+        if ( $a->format( 'd' ) === '01' && $b->format( 'd' ) === '01' ) {
+
+            $months = ( (int) $b->format( 'Y' ) - (int) $a->format( 'Y' ) ) * 12
+                    + ( (int) $b->format( 'n' ) - (int) $a->format( 'n' ) );
+
+            if ( $months === 1 ) {
+
+                return 'monthly';
+            }
+
+            if ( $months % 12 === 0 ) {
+
+                $years = intdiv( $months, 12 );
+
+                return $years === 1 ? '1 year' : $years . ' years';
+            }
+
+            return $months . ' months';
+        }
+
+        // Within a month: the granularity that cuts it here.
+        foreach ( self::PARTITION_CUTS as $granularity => $cuts ) {
+
+            $day  = (int) $a->format( 'j' );
+            $at   = array_search( $day, $cuts, true );
+
+            if ( $at === false ) {
+
+                continue;
+            }
+
+            $next = isset( $cuts[ $at + 1 ] )
+                  ? $a->setDate( (int) $a->format( 'Y' ), (int) $a->format( 'n' ), $cuts[ $at + 1 ] )
+                  : $a->modify( 'first day of next month' );
+
+            if ( $next->format( 'Ymd' ) === $b->format( 'Ymd' ) ) {
+
+                return $granularity;
+            }
+        }
+
+        return $a->diff( $b )->days . ' days';
+    }
+
+    /**
+     * What a table's partitioning actually looks like right now.
+     *
+     * Reports the layout as tiers -- runs of adjacent partitions covering the
+     * same length of time -- because that is the shape the commands produce and
+     * a single granularity cannot describe it. The lead is separated out, since
+     * how far the bounded partitions reach into the future is what determines
+     * when the next rotate is due.
+     *
+     * Reads only metadata: no table is scanned. Catch-all contents are counted
+     * separately, by the caller that wants them.
+     *
+     * @param string $table_name
+     * @return array
+     */
+    function describePartitionLayout( $table_name ) {
+
+        $out = array(
+            'partitioned' => false,
+            'spans'       => 0,
+            'total'       => 0,
+            'covers'      => null,
+            'granularity' => null,
+            'tiers'       => array(),
+            'catch_all'   => null,
+            'through'     => null,
+            'ahead'       => null,
+            'lead'        => 0,
+        );
+
+        $all = $this->listPartitions( $table_name );
+
+        if ( ! $all ) {
+
+            return $out;
+        }
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        $out['partitioned'] = true;
+        $out['total']       = count( $all );
+        $out['spans']       = count( $spans );
+        $out['catch_all']   = $this->getCatchAllPartition( $table_name );
+        $out['granularity'] = $this->inferPartitionGranularity( $table_name );
+
+        if ( ! $spans ) {
+
+            // A catch-all and nothing else: everything is unbounded.
+            return $out;
+        }
+
+        $out['covers']  = array( 'start' => $spans[0]['start'], 'end' => end( $spans )['less_than'] );
+        $out['through'] = end( $spans )['less_than'];
+
+        $today = date( 'Ymd' );
+
+        foreach ( $spans as $span ) {
+
+            $period = self::describePartitionPeriod( $span['start'], $span['less_than'] );
+            $last   = count( $out['tiers'] ) - 1;
+
+            if ( $last >= 0 && $out['tiers'][ $last ]['period'] === $period ) {
+
+                $out['tiers'][ $last ]['count']++;
+                $out['tiers'][ $last ]['end'] = $span['less_than'];
+
+            } else {
+
+                $out['tiers'][] = array(
+                    'period' => $period,
+                    'count'  => 1,
+                    'start'  => $span['start'],
+                    'end'    => $span['less_than'],
+                );
+            }
+
+            // Lead is the partitions that begin after today: periods bought in
+            // advance, which is what running out of them costs.
+            if ( $span['start'] > $today ) {
+
+                $out['lead']++;
+            }
+        }
+
+        $a = \DateTimeImmutable::createFromFormat( 'Ymd|', $today );
+        $b = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $out['through'] );
+
+        if ( $a && $b ) {
+
+            // Negative where the top boundary is already behind us, which is the
+            // state that matters: new rows are landing in the catch-all.
+            $out['ahead'] = (int) $a->diff( $b )->format( '%r%a' );
+        }
+
+        return $out;
     }
 
     /**
