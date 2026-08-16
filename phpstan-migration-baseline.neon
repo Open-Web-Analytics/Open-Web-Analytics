@@ -63,7 +63,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
-			count: 20
+			count: 22
 			path: Core/Db.php
 
 		-

@@ -66,7 +66,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
-        $budget = $this->partitionLimit( count( $tables ) );
+        $budget = $this->factTableBudget();
 
         foreach ( $tables as $table ) {
 
@@ -81,6 +81,39 @@ class PartitionReorganizeCli extends PartitionsCli {
 
             // Plan first so the count can be judged before anything is rewritten.
             $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
+
+            // A finer granularity multiplies the detail window, which can put the
+            // table over its budget. Coarsening old history is what makes room:
+            // the tail exists to be traded for detail where detail is wanted.
+            // Without this, moving to quarter-month on a long-history table would
+            // simply be refused, with nothing the operator could do about it.
+            if ( $plan['planned'] > $budget['limit'] && ! $this->getParam( 'force' ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: %s needs %d partitions, over the budget of %d. Merging old periods to '
+                  . 'make room.', $table, $granularity, $plan['planned'], $budget['limit']
+                ) );
+
+                // Compaction has to be told what the table is about to need, not
+                // what it currently holds: a finer granularity is not applied
+                // yet, so measured against today's count the table may already
+                // fit and nothing would be merged. Reserve the difference.
+                $extra = $plan['planned'] - count( $db->getPartitionSpans( $table ) );
+
+                $this->compactTable(
+                    $table,
+                    array(
+                        'limit'  => max( 1, $budget['limit'] - max( 0, $extra ) ),
+                        'reason' => sprintf(
+                            '%s, less %d reserved for the finer granularity', $budget['reason'], max( 0, $extra )
+                        ),
+                    ),
+                    $dry_run
+                );
+
+                // Re-plan against what the table now looks like.
+                $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
+            }
 
             if ( ! $this->withinPartitionBudget( $table, $plan['planned'], $budget ) ) {
 

@@ -121,6 +121,22 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function partitionLimit( $table_count ) {
 
+        // Partitioning is shaped by settings, not by command arguments: how much
+        // history stays finely partitioned and how much of the server's open-file
+        // budget this may claim are properties of an installation, and an
+        // operator should not be able to change them per invocation. They are set
+        // once with a constant in owa-config.php -- see
+        // owa_settings::applyConfigConstants().
+        $stated = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' );
+
+        if ( $stated > 0 ) {
+
+            return array(
+                'limit'  => $stated,
+                'reason' => 'set by OWA_PARTITION_MAX_PARTITIONS',
+            );
+        }
+
         $spare = \OWA\Core\CoreAPI::dbSingleton()->getPartitionBudget();
 
         if ( $spare === null ) {
@@ -131,17 +147,48 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        // A floor, so that a server reporting almost no headroom still permits
-        // a couple of years of monthly rather than refusing everything.
-        $limit = max( 24, intdiv( $spare, 2 * max( 1, $table_count ) ) );
+        $reserve = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_budget_reserve' ) );
+        $floor   = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_min_limit' ) );
+
+        $limit = max( $floor, intdiv( $spare, $reserve * max( 1, $table_count ) ) );
 
         return array(
             'limit'  => $limit,
             'reason' => sprintf(
-                '%d spare open-file slots on this server, half of them shared across %d table(s)',
-                $spare, $table_count
+                '%d spare open-file slots on this server, 1/%d of them shared across %d table(s)',
+                $spare, $reserve, $table_count
             ),
         );
+    }
+
+    /**
+     * The budget, sized against every fact table rather than the ones this run
+     * happens to touch.
+     *
+     * The open-file budget is a property of the server and the schema: the other
+     * fact tables hold their partitions open whether or not this invocation
+     * mentions them. Sizing it from the filtered set would hand a single-table
+     * run the whole allowance -- so `table=owa_session` would report, and permit,
+     * several times the partitions that the same command without a filter would.
+     *
+     * @return array  from partitionLimit()
+     */
+    protected function factTableBudget() {
+
+        return $this->partitionLimit( max( 1, count( $this->factTables() ) ) );
+    }
+
+    /**
+     * How recent a period must be to keep its fine granularity. Older ones may be
+     * merged to stay within the budget.
+     *
+     * @return int months
+     */
+    protected function detailMonths() {
+
+        $months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' );
+
+        return $months > 0 ? $months : \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
     }
 
     /**
@@ -163,8 +210,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         \OWA\Core\CoreAPI::notice( sprintf(
             '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
           . 'past the budget MySQL closes and reopens tablespaces under load, which slows '
-          . 'everything on the instance. Narrow it with from/to, choose a coarser granularity, or '
-          . 're-run with force=1 if you have done the arithmetic.',
+          . 'everything on the instance. Lower OWA_PARTITION_DETAIL_MONTHS so less history is '
+          . 'kept at full granularity, choose a coarser granularity, or set '
+          . 'OWA_PARTITION_MAX_PARTITIONS if you have checked innodb_open_files yourself.',
             $table, $planned, $budget['limit'], $budget['reason']
         ) );
 
@@ -334,6 +382,87 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         }
 
         return $dropped;
+    }
+
+    /**
+     * Merge old periods so the table fits its partition budget, deleting nothing.
+     *
+     * This is what decouples partition count from retention. Without it the only
+     * way back under an open-file budget is to drop history, which turns a
+     * resource limit into a data-loss decision.
+     *
+     * @param string $table
+     * @param array  $budget  from partitionLimit()
+     * @param bool   $dry_run
+     * @return int merges performed, or that would be
+     */
+    protected function compactTable( $table, $budget, $dry_run ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $plan = $db->planPartitionCompaction( $table, $budget['limit'], $this->detailMonths() );
+
+        if ( ! $plan['operations'] ) {
+
+            // Worth saying when the table cannot fit even fully merged: the
+            // remedy is a shorter detail window, and nothing else the operator
+            // does to this command will help.
+            if ( ! $plan['fits'] ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: %d partitions exceeds the budget of %d and cannot be merged below %d, '
+                  . 'because everything within the last %d months is kept at full granularity. '
+                  . 'Lower OWA_PARTITION_DETAIL_MONTHS to reduce it further.',
+                    $table, $plan['projected'], $budget['limit'], $plan['floor'], $this->detailMonths()
+                ) );
+            }
+
+            return 0;
+        }
+
+        $first = $plan['operations'][0];
+        $last  = $plan['operations'][ count( $plan['operations'] ) - 1 ];
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: %s %d group(s) of old periods covering %s to %s into blocks of %d year(s), '
+          . 'leaving %d partitions. No data is deleted.',
+            $table, $dry_run ? 'would reshape' : 'reshaping', count( $plan['operations'] ),
+            $first['start'], $last['less_than'], $plan['block_years'], $plan['projected']
+        ) );
+
+        if ( $dry_run ) {
+
+            return count( $plan['operations'] );
+        }
+
+        $done = 0;
+
+        foreach ( $plan['operations'] as $op ) {
+
+            if ( $db->reshapePartitions( $table, $op['names'], $op['ranges'] ) ) {
+
+                $done++;
+
+            } else {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: FAILED to reshape %s..%s; see the database error above.',
+                    $table, $op['start'], $op['less_than']
+                ) );
+            }
+        }
+
+        if ( ! $plan['fits'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: still %d partitions against a budget of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
+              . 'to reduce it further; no more can be merged while the last %d months are kept '
+              . 'at full granularity.',
+                $table, $plan['projected'], $budget['limit'], $this->detailMonths()
+            ) );
+        }
+
+        return $done;
     }
 
     /** Is the driver able to partition at all? Report once, clearly. */

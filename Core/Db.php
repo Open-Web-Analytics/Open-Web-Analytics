@@ -1131,6 +1131,19 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Row count and date range within one partition. Unknown, without support.
+     *
+     * @param string $table_name
+     * @param string $partition
+     * @param string $column
+     * @return array|null
+     */
+    function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
+
+        return null;
+    }
+
+    /**
      * Is this table partitioned?
      *
      * @param string $table_name
@@ -1799,6 +1812,177 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Name the period one partition spans.
+     *
+     * A tiered table does not have "a granularity": recent months are cut at the
+     * granularity in force, older ones have been merged into blocks of months or
+     * years to stay inside the open-file budget. Describing such a table with one
+     * word is wrong in both directions -- it either overstates the resolution of
+     * the tail or understates the head.
+     *
+     * A sub-month period is named by the granularity whose cuts it falls between,
+     * so the vocabulary is the one the reorganize command takes. Anything longer
+     * is named by its own length.
+     *
+     * @param string $start      yyyymmdd
+     * @param string $less_than  yyyymmdd
+     * @return string
+     */
+    static function describePartitionPeriod( $start, $less_than ) {
+
+        $a = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $start );
+        $b = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $less_than );
+
+        if ( ! $a || ! $b || $b <= $a ) {
+
+            return 'unknown';
+        }
+
+        // Whole months from the 1st: one calendar month is "monthly", and longer
+        // blocks are named in years where they divide evenly, because that is how
+        // the merged tail is built and how an operator thinks about it.
+        if ( $a->format( 'd' ) === '01' && $b->format( 'd' ) === '01' ) {
+
+            $months = ( (int) $b->format( 'Y' ) - (int) $a->format( 'Y' ) ) * 12
+                    + ( (int) $b->format( 'n' ) - (int) $a->format( 'n' ) );
+
+            if ( $months === 1 ) {
+
+                return 'monthly';
+            }
+
+            if ( $months % 12 === 0 ) {
+
+                $years = intdiv( $months, 12 );
+
+                return $years === 1 ? '1 year' : $years . ' years';
+            }
+
+            return $months . ' months';
+        }
+
+        // Within a month: the granularity that cuts it here.
+        foreach ( self::PARTITION_CUTS as $granularity => $cuts ) {
+
+            $day  = (int) $a->format( 'j' );
+            $at   = array_search( $day, $cuts, true );
+
+            if ( $at === false ) {
+
+                continue;
+            }
+
+            $next = isset( $cuts[ $at + 1 ] )
+                  ? $a->setDate( (int) $a->format( 'Y' ), (int) $a->format( 'n' ), $cuts[ $at + 1 ] )
+                  : $a->modify( 'first day of next month' );
+
+            if ( $next->format( 'Ymd' ) === $b->format( 'Ymd' ) ) {
+
+                return $granularity;
+            }
+        }
+
+        return $a->diff( $b )->days . ' days';
+    }
+
+    /**
+     * What a table's partitioning actually looks like right now.
+     *
+     * Reports the layout as tiers -- runs of adjacent partitions covering the
+     * same length of time -- because that is the shape the commands produce and
+     * a single granularity cannot describe it. The lead is separated out, since
+     * how far the bounded partitions reach into the future is what determines
+     * when the next rotate is due.
+     *
+     * Reads only metadata: no table is scanned. Catch-all contents are counted
+     * separately, by the caller that wants them.
+     *
+     * @param string $table_name
+     * @return array
+     */
+    function describePartitionLayout( $table_name ) {
+
+        $out = array(
+            'partitioned' => false,
+            'spans'       => 0,
+            'total'       => 0,
+            'covers'      => null,
+            'granularity' => null,
+            'tiers'       => array(),
+            'catch_all'   => null,
+            'through'     => null,
+            'ahead'       => null,
+            'lead'        => 0,
+        );
+
+        $all = $this->listPartitions( $table_name );
+
+        if ( ! $all ) {
+
+            return $out;
+        }
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        $out['partitioned'] = true;
+        $out['total']       = count( $all );
+        $out['spans']       = count( $spans );
+        $out['catch_all']   = $this->getCatchAllPartition( $table_name );
+        $out['granularity'] = $this->inferPartitionGranularity( $table_name );
+
+        if ( ! $spans ) {
+
+            // A catch-all and nothing else: everything is unbounded.
+            return $out;
+        }
+
+        $out['covers']  = array( 'start' => $spans[0]['start'], 'end' => end( $spans )['less_than'] );
+        $out['through'] = end( $spans )['less_than'];
+
+        $today = date( 'Ymd' );
+
+        foreach ( $spans as $span ) {
+
+            $period = self::describePartitionPeriod( $span['start'], $span['less_than'] );
+            $last   = count( $out['tiers'] ) - 1;
+
+            if ( $last >= 0 && $out['tiers'][ $last ]['period'] === $period ) {
+
+                $out['tiers'][ $last ]['count']++;
+                $out['tiers'][ $last ]['end'] = $span['less_than'];
+
+            } else {
+
+                $out['tiers'][] = array(
+                    'period' => $period,
+                    'count'  => 1,
+                    'start'  => $span['start'],
+                    'end'    => $span['less_than'],
+                );
+            }
+
+            // Lead is the partitions that begin after today: periods bought in
+            // advance, which is what running out of them costs.
+            if ( $span['start'] > $today ) {
+
+                $out['lead']++;
+            }
+        }
+
+        $a = \DateTimeImmutable::createFromFormat( 'Ymd|', $today );
+        $b = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $out['through'] );
+
+        if ( $a && $b ) {
+
+            // Negative where the top boundary is already behind us, which is the
+            // state that matters: new rows are landing in the catch-all.
+            $out['ahead'] = (int) $a->diff( $b )->format( '%r%a' );
+        }
+
+        return $out;
+    }
+
+    /**
      * One row by id, optionally narrowed. Test seam for the constrained-load
      * behaviour in Entity::getByColumn(), which is otherwise reachable only
      * through the entity registry.
@@ -1839,6 +2023,495 @@ class Db extends \OWA\Core\Base {
         }
 
         return null;
+    }
+
+    /**
+     * Merge a run of adjacent partitions into one.
+     *
+     * The inverse of extendPartitions(): that splits, this combines. It exists so
+     * that partition count can be kept under the server's open-file budget
+     * WITHOUT deleting anything -- old periods are coarsened rather than dropped.
+     * A table can then hold decades of history in a few dozen files.
+     *
+     * The replacement keeps the p<yyyymmdd> naming, because getPartitionSpans()
+     * recovers the first partition's lower bound from its name and
+     * inferPartitionGranularity() reads the day-of-month out of it. A partition
+     * named anything else reads back as having no usable start.
+     *
+     * The partitions must be adjacent and given in order: REORGANIZE requires the
+     * replacement to tile exactly the range being replaced, so the new upper
+     * bound has to be the last one's.
+     *
+     * @param string $table_name
+     * @param array  $names      partition names, in ascending order
+     * @param string $start      yyyymmdd the merged partition begins at (its name)
+     * @param string $less_than  yyyymmdd upper bound -- the last partition's
+     * @return bool
+     */
+    function mergePartitions( $table_name, $names, $start, $less_than ) {
+
+        if ( ! $this->supportsPartitioning() || count( $names ) < 2 ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $names as $n ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $n ) ) {
+
+                return false;
+            }
+        }
+
+        if ( ! preg_match( '/^\d{8}$/', (string) $start ) || ! preg_match( '/^\d{8}$/', (string) $less_than ) ) {
+
+            return false;
+        }
+
+        $replacement = sprintf( OWA_DTD_PARTITION_LESS_THAN, 'p' . $start, $less_than );
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), $replacement
+        ) );
+    }
+
+    /**
+     * How old a period must be before it is eligible to be coarsened, in months.
+     *
+     * Inside this window partitions keep whatever granularity the table uses, so
+     * recent reporting and recent retention stay precise. Outside it they may be
+     * merged, because old periods are queried rarely and pruned in bulk.
+     *
+     * This is the code-level default. An installation overrides it with
+     * OWA_PARTITION_DETAIL_MONTHS in owa-config.php; the commands read the
+     * setting and pass the result in, so this value applies only to a direct
+     * caller that supplies nothing.
+     */
+    const PARTITION_DETAIL_MONTHS = 36;
+
+    /**
+     * Fraction of the server's spare open-file slots this feature may claim,
+     * expressed as a divisor: 2 means half of them.
+     *
+     * The reading is a snapshot of a shared resource -- every other table on the
+     * instance draws on the same cap, and the schema grows -- so taking all of it
+     * would be planning for a server that no longer exists by the time the
+     * partitions are created.
+     */
+    const PARTITION_BUDGET_RESERVE = 2;   // default; OWA_PARTITION_BUDGET_RESERVE
+
+    /**
+     * Fewest partitions a table is allowed regardless of what the budget says.
+     *
+     * A server reporting almost no headroom would otherwise derive a limit that
+     * refuses even a couple of years of monthly partitions, which is worse than
+     * useless -- the feature would be unavailable exactly where retention matters
+     * most.
+     */
+    const PARTITION_MIN_LIMIT = 24;       // default; OWA_PARTITION_MIN_LIMIT
+
+    /**
+     * Ranges for a table that is being partitioned for the first time: coarse
+     * over old history, fine over the detail window and the lead.
+     *
+     * A flat monthly layout over a long-running installation asks for one
+     * partition per month of history -- over three hundred on a twenty-five year
+     * table -- which exceeds any reasonable open-file budget and leaves the
+     * operator no way through, since monthly is already the coarsest granularity
+     * and old data cannot be pruned before partitions exist to prune.
+     *
+     * Building the tiers up front avoids partitioning flat and merging
+     * afterwards, which would mean writing every old row twice.
+     *
+     * Whole calendar years are used for the old tier because a year is the unit
+     * an operator reasons about, and because retention still means something:
+     * history ages out a year at a time. Lumping it all into one partition
+     * instead would leave a table whose first routine retention run discards
+     * decades in a single statement.
+     *
+     * @param string $min_yyyymmdd    oldest data present
+     * @param string $through         upper boundary to reach (exclusive)
+     * @param string $granularity     granularity for the detail window
+     * @param int    $detail_months   how much recent history stays fine
+     * @return array name => less_than, ascending
+     */
+    static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months, $limit = null ) {
+
+        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
+
+        // Nothing old enough to coarsen: this is just the flat layout.
+        if ( (string) $min_yyyymmdd >= $boundary ) {
+
+            return self::makePartitionRanges(
+                $min_yyyymmdd, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
+            );
+        }
+
+        $ranges = array();
+
+        // Old tier: whole calendar years, except the last, which closes on the
+        // month the detail window opens rather than on a January.
+        //
+        // That boundary has to be the one planPartitionCompaction() uses, or the
+        // two disagree about which periods are old: init would leave the months
+        // between January and the detail window as separate partitions, and the
+        // next rotate would immediately merge them. The table would be rewritten
+        // on every scheduled run, for no change in shape.
+        $first_year = (int) substr( $min_yyyymmdd, 0, 4 );
+        $last_year  = (int) substr( $boundary, 0, 4 );
+
+        // Detail tier first, because its size decides how much room the tail has.
+        $fine = self::makePartitionRanges(
+            $boundary, date( 'Ymd', strtotime( $through . ' -1 day' ) ), $granularity
+        );
+
+        // Widen the tail blocks until the whole layout fits, exactly as
+        // planPartitionCompaction() does. Building 1-year blocks regardless and
+        // leaving the next rotation to coarsen them would mean the first
+        // scheduled run rewrote everything init had just created.
+        $years = max( 1, $last_year - $first_year + ( $boundary > $last_year . '0101' ? 1 : 0 ) );
+        $block = 1;
+
+        if ( $limit !== null ) {
+
+            for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
+
+                if ( count( $fine ) + (int) ceil( $years / $block ) <= $limit ) {
+
+                    break;
+                }
+            }
+        }
+
+        for ( $y = $first_year; ; $y += $block ) {
+
+            $end = ( $y + $block ) . '0101';
+
+            if ( $end >= $boundary ) {
+
+                $end = $boundary;
+            }
+
+            $ranges[ 'p' . $y . '0101' ] = $end;
+
+            if ( $end >= $boundary ) {
+
+                break;
+            }
+        }
+
+        return array_merge( $ranges, $fine );
+    }
+
+    /**
+     * Replace a run of adjacent partitions with a different set of ranges.
+     *
+     * The general form of both merging and splitting: REORGANIZE requires only
+     * that the replacements tile exactly the span they replace, so N partitions
+     * can become one, or one can become N, or five can become three.
+     *
+     * Splitting matters as much as merging. Without it the layout would depend
+     * on the order operations happened in rather than on the current settings --
+     * a table coarsened under a tight budget would stay coarse after the budget
+     * grew, while an identical installation partitioned fresh would not. Same
+     * inputs, different result.
+     *
+     * @param string $table_name
+     * @param array  $names   partitions to replace, ascending and adjacent
+     * @param array  $ranges  name => less_than, ascending, tiling the same span
+     * @return bool
+     */
+    function reshapePartitions( $table_name, $names, $ranges ) {
+
+        if ( ! $this->supportsPartitioning() || ! $names || ! $ranges ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $names as $n ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $n ) ) {
+
+                return false;
+            }
+        }
+
+        $parts = array();
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $name )
+              || ! preg_match( '/^\d{8}$/', (string) $less_than ) ) {
+
+                return false;
+            }
+
+            $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
+        }
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), implode( ', ', $parts )
+        ) );
+    }
+
+    /**
+     * Largest run of calendar years that may be merged into one partition.
+     *
+     * A cap, not a target. Without one, a budget that cannot be met would drive
+     * the planner to collapse the entire tail into a single partition -- which
+     * fits nothing better and destroys retention granularity for all of history,
+     * since a partition can only be dropped as a unit. Better to return the best
+     * plan available and report that it does not fit.
+     */
+    const PARTITION_MAX_YEARS_PER_BLOCK = 5;  // default; OWA_PARTITION_MAX_YEARS_PER_BLOCK
+
+    /**
+     * Work out the tail layout the current settings imply, and how to get there
+     * from whatever the table looks like now.
+     *
+     * The result is a function of the budget and the detail window ALONE, never
+     * of the order operations happened in. That is deliberate: a table coarsened
+     * under a tight budget must go back to finer blocks when the budget grows,
+     * or an installation's layout would depend on its history rather than its
+     * configuration, and two identical installations could differ permanently.
+     *
+     * So this both merges and splits. Blocks are whole calendar years, widened
+     * only as far as the budget requires and never past
+     * PARTITION_MAX_YEARS_PER_BLOCK -- a cap, because a budget that cannot be
+     * met would otherwise drive everything into one partition, which fits no
+     * better and means all of history ages out in a single drop.
+     *
+     * Nothing is ever deleted. The detail window is never touched.
+     *
+     * @param string $table_name
+     * @param int    $limit          most partitions this table may have
+     * @param int    $detail_months  periods newer than this are left alone
+     * @return array ['operations','projected','fits','floor','block_years']
+     */
+    function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS ) {
+
+        $spans  = $this->getPartitionSpans( $table_name );
+        $result = array(
+            'operations'  => array(),
+            'merges'      => array(),
+            'projected'   => count( $spans ),
+            'fits'        => true,
+            'floor'       => count( $spans ),
+            'block_years' => 1,
+        );
+
+        if ( ! $spans ) {
+
+            return $result;
+        }
+
+        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
+
+        $old = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( (string) $span['less_than'] <= $boundary ) {
+
+                $old[] = $span;
+            }
+        }
+
+        $kept            = count( $spans ) - count( $old );
+        $result['floor'] = $kept + ( $old ? 1 : 0 );
+
+        if ( ! $old ) {
+
+            $result['fits'] = count( $spans ) <= $limit;
+
+            return $result;
+        }
+
+        // The tail runs from the first old partition to wherever the last one
+        // ends -- which is usually mid-year, because the detail window opens on
+        // a month rather than a January. The final block therefore closes on
+        // that boundary rather than on a year end, or the remaining months would
+        // belong to no block and stay unmerged.
+        $tail_start = (int) substr( $old[0]['start'], 0, 4 );
+        $tail_limit = (string) $old[ count( $old ) - 1 ]['less_than'];
+
+        $years = max( 1, (int) ceil(
+            ( strtotime( $tail_limit ) - strtotime( $tail_start . '0101' ) ) / ( 86400 * 365.25 )
+        ) );
+
+        // Smallest block size that fits, capped. One year is the finest the tail
+        // is ever cut to: below that it is the detail window's job.
+        $block = 1;
+
+        for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
+
+            if ( $kept + (int) ceil( $years / $block ) <= $limit ) {
+
+                break;
+            }
+        }
+
+        $result['block_years'] = $block;
+
+        // The layout those settings imply.
+        $target = array();
+
+        for ( $y = $tail_start; ; $y += $block ) {
+
+            $end = ( $y + $block ) . '0101';
+
+            if ( $end >= $tail_limit ) {
+
+                $end = $tail_limit;
+            }
+
+            $target[ 'p' . $y . '0101' ] = $end;
+
+            if ( $end >= $tail_limit ) {
+
+                break;
+            }
+        }
+
+        $result['projected'] = $kept + count( $target );
+        $result['fits']      = $result['projected'] <= $limit;
+
+        // Already in that shape? Then there is nothing to do, however many times
+        // this runs.
+        $current = array();
+
+        foreach ( $old as $span ) {
+
+            $current[ $span['name'] ] = (string) $span['less_than'];
+        }
+
+        if ( $current === array_map( 'strval', $target ) ) {
+
+            return $result;
+        }
+
+        // One reorganisation per target block, over whichever partitions it
+        // covers. That merges where the tail is too fine and splits where it is
+        // too coarse, in the same operation.
+        $names_by_block = array();
+
+        foreach ( $target as $name => $less_than ) {
+
+            $from = substr( $name, 1 );
+
+            $names_by_block[ $name ] = array(
+                'names'     => array(),
+                'start'     => $from,
+                'less_than' => $less_than,
+                'ranges'    => array( $name => $less_than ),
+            );
+        }
+
+        foreach ( $old as $span ) {
+
+            foreach ( $names_by_block as $name => &$block_def ) {
+
+                // A partition belongs to the block its start falls in. A block
+                // that is coarser than the target is claimed by the first target
+                // block it overlaps, and split by the reorganisation.
+                if ( (string) $span['start'] >= $block_def['start']
+                  && (string) $span['start'] < $block_def['less_than'] ) {
+
+                    $block_def['names'][] = $span['name'];
+
+                    if ( (string) $span['less_than'] > $block_def['less_than'] ) {
+
+                        // This partition reaches past the block, so the block and
+                        // everything it spans are reshaped together.
+                        $block_def['less_than'] = (string) $span['less_than'];
+                    }
+
+                    break;
+                }
+            }
+
+            unset( $block_def );
+        }
+
+        foreach ( $names_by_block as $name => $block_def ) {
+
+            if ( ! $block_def['names'] ) {
+
+                continue;
+            }
+
+            // Ranges covering exactly what the named partitions span.
+            $ranges = array();
+
+            for ( $y = (int) substr( $block_def['start'], 0, 4 ); ; $y += $block ) {
+
+                $end = ( $y + $block ) . '0101';
+
+                if ( $end >= $block_def['less_than'] ) {
+
+                    $end = (string) $block_def['less_than'];
+                }
+
+                $ranges[ 'p' . $y . '0101' ] = $end;
+
+                if ( $end >= $block_def['less_than'] ) {
+
+                    break;
+                }
+            }
+
+            if ( ! $ranges ) {
+
+                continue;
+            }
+
+            // No change needed where the shape already matches.
+            $same = ( count( $block_def['names'] ) === count( $ranges ) );
+
+            if ( $same ) {
+
+                $i = 0;
+
+                foreach ( $ranges as $rname => $rless ) {
+
+                    if ( $block_def['names'][ $i ] !== $rname ) {
+
+                        $same = false;
+
+                        break;
+                    }
+
+                    $i++;
+                }
+            }
+
+            if ( $same ) {
+
+                continue;
+            }
+
+            $result['operations'][] = array(
+                'names'  => $block_def['names'],
+                'ranges' => $ranges,
+                'start'  => $block_def['start'],
+                'less_than' => $block_def['less_than'],
+            );
+        }
+
+        // Kept for callers that only care about the coarsening case.
+        $result['merges'] = $result['operations'];
+
+        return $result;
     }
 
     /**
@@ -2020,6 +2693,36 @@ class Db extends \OWA\Core\Base {
         if ( ! $spans ) {
 
             return $result;
+        }
+
+        // Leave coarsened history alone unless a range explicitly asks for it.
+        //
+        // A tail block spans whole years by design, to keep the partition count
+        // within the server's open-file budget. Refining it back to the table's
+        // granularity would undo that -- on a ten-year table, sixty-odd
+        // partitions become nearly three hundred -- and would be the opposite of
+        // what compaction just did. A partition covering at most one calendar
+        // month is a normal period and is fair game; anything wider is a block.
+        if ( $from === null && $to === null ) {
+
+            $fine = array();
+
+            foreach ( $spans as $span ) {
+
+                $month_after = date( 'Ymd', strtotime( substr( $span['start'], 0, 6 ) . '01 +1 month' ) );
+
+                if ( (string) $span['less_than'] <= $month_after ) {
+
+                    $fine[] = $span;
+                }
+            }
+
+            $spans = array_values( $fine );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
         }
 
         // Keep only the partitions the range touches. A partition is rewritten
