@@ -1,6 +1,6 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
-import { Event } from '../../modules/Base/src/tracker/Event.js';
+import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Session / visitor identity state machine.
@@ -60,7 +60,7 @@ function newTracker() {
 }
 
 function eventAt(timestamp) {
-    const e = new Event();
+    const e = new OwaEvent();
     if (timestamp) {
         e.set('timestamp', timestamp);
     }

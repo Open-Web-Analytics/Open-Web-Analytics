@@ -8,7 +8,7 @@
  
 import { OWA_instance as OWA } from '../common/owa.js';
 import { Util } from '../common/Util.js';
-import { Event } from './Event.js';
+import { OwaEvent } from './OwaEvent.js';
 import { Uri } from './Uri.js';
  
 class OWATracker  {
@@ -551,7 +551,7 @@ class OWATracker  {
      */
     log() {
 
-        var event = new Event
+        var event = new OwaEvent
         event.setEventType("base.page_request");
         return this.logEvent(event);
     }
@@ -1072,7 +1072,7 @@ class OWATracker  {
         // hack for IE
         e = e || window.event;
 
-        var click = new Event();
+        var click = new OwaEvent();
         // set event type
         click.setEventType("dom.click");
 
@@ -1166,7 +1166,7 @@ class OWATracker  {
         var now = this.getTime();
         if (now > this.last_movement + this.getOption('movementInterval')) {
             // set event type
-            this.movement = new Event();
+            this.movement = new OwaEvent();
             this.movement.setEventType("dom.movement");
             var coords = this.getCoords(e);
             this.movement.set('cursor_x', coords.x);
@@ -1190,7 +1190,7 @@ class OWATracker  {
 
         var now = this.getTimestamp();
 
-        var event = new Event();
+        var event = new OwaEvent();
         event.setEventType('dom.scroll');
         var coords = this.getScrollingPosition();
         event.set('x', coords.x);
@@ -1245,7 +1245,7 @@ class OWATracker  {
 
         var key_code = e.keyCode? e.keyCode : e.charCode
         var key_value = String.fromCharCode(key_code);
-        var event = new Event();
+        var event = new OwaEvent();
         event.setEventType('dom.keypress');
         event.set('key_value', key_value);
         event.set('key_code', key_code);
@@ -1330,7 +1330,7 @@ class OWATracker  {
 
     // Event object Factory
     makeEvent() {
-        return new Event();
+        return new OwaEvent();
     }
 
     // adds a new Domstream event binding. takes function name
@@ -1587,7 +1587,7 @@ class OWATracker  {
 
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 	    
-        this.ecommerce_transaction = new Event();
+        this.ecommerce_transaction = new OwaEvent();
         this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
         this.ecommerce_transaction.set( 'ct_order_id', order_id );
         this.ecommerce_transaction.set( 'ct_order_source', order_source );
@@ -2129,7 +2129,7 @@ class OWATracker  {
      */
     trackPageView( url ) {
 
-        var event = new Event;
+        var event = new OwaEvent;
 
         if (url) {
             event.set('page_url', url);
@@ -2142,7 +2142,7 @@ class OWATracker  {
 
     trackAction(action_group, action_name, action_label, numeric_value) {
 
-        var event = new Event;
+        var event = new OwaEvent;
 
         event.setEventType('track.action');
         event.set('action_group', action_group);
@@ -2162,7 +2162,7 @@ class OWATracker  {
 
     logDomStream() {
 
-        var domstream = new Event;
+        var domstream = new OwaEvent;
 		
         if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
 
