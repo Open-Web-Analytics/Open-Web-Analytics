@@ -154,26 +154,31 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * Rotation needs a window. Without one it must do nothing at all -- not
-     * fall back to a default that silently discards more than intended.
+     * An unreadable keep is refused; an absent one is not.
      *
-     * A smoke test by nature: it asserts the absence of a side effect and that
-     * nothing fatals on bad input. The parsing it depends on is pinned properly
-     * by the resolveCutoff tests above, which fail under mutation; this one
-     * would not catch a command that did nothing for some unrelated reason.
+     * The two mean opposite things. Omitting keep asks to retain everything;
+     * "lots" is a mistake, and treating it as absent would silently turn a
+     * botched retention policy into no retention policy at all.
      */
-    public function testRotateRequiresAUsableWindow()
+    public function testAnUnreadableKeepIsRefusedButAnAbsentOneIsNot()
     {
         $before = $this->partitionCount('owa_request');
 
-        foreach ([[], ['keep' => ''], ['keep' => '0'], ['keep' => 'lots'], ['keep' => '-4']] as $params) {
-            $this->rotate($params)->action();
+        foreach ([['keep' => 'lots'], ['keep' => '-4'], ['keep' => '0'], ['keep' => '2.5']] as $params) {
+            $this->rotate($params + ['table' => 'owa_request'])->action();
         }
 
         $this->assertSame(
             $before,
             $this->partitionCount('owa_request'),
-            'a rotation without a usable window must change nothing'
+            'an unreadable keep must stop the command, not be ignored'
+        );
+
+        // Absent is a valid policy, and must be accepted: it reaches the cutoff
+        // resolution path at all only when keep is present.
+        $this->assertNull(
+            $this->callProtected($this->rotate(), 'resolveCutoff', ['']),
+            'nothing to resolve when keep is absent'
         );
     }
 

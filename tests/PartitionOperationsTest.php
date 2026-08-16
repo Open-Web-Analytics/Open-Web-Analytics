@@ -797,4 +797,98 @@ final class PartitionOperationsTest extends TestCase
             );
         }
     }
+
+    /**
+     * Rotation without a retention window must never delete anything.
+     *
+     * This is the policy that makes partition count and retention independent:
+     * old periods are coarsened to fit the budget instead of being dropped. If
+     * it ever deletes a row, the guarantee the feature is sold on is gone.
+     *
+     * Exercised through the controller's own compaction step rather than the
+     * database helpers, because the ordering -- extend, then compact, then drop
+     * only if asked -- is the part that could regress.
+     */
+    public function testRotationWithoutKeepCompactsAndDeletesNothing()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        // Ten years of monthly history: far more partitions than a tight budget.
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -120 months')),
+            date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
+            'monthly'
+        ));
+
+        $id = 0;
+        for ($m = -120; $m <= 0; $m += 3) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id,
+                date('Ymd', strtotime(date('Ym') . "01 $m months +14 days"))));
+        }
+
+        $rows_before  = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+        $parts_before = count($db->getPartitionSpans($t));
+
+        $ctrl   = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
+        $method = new ReflectionMethod($ctrl, 'compactTable');
+        $method->setAccessible(true);
+
+        $budget = ['limit' => 60, 'reason' => 'test'];
+
+        // Dry run first: it must report and change nothing.
+        $method->invoke($ctrl, $t, $budget, true);
+        $this->assertSame($parts_before, count($db->getPartitionSpans($t)), 'a dry run must not merge');
+
+        $merged = $method->invoke($ctrl, $t, $budget, false);
+
+        $this->assertGreaterThan(0, $merged, 'a ten-year monthly table should have something to merge');
+        $this->assertLessThan($parts_before, count($db->getPartitionSpans($t)), 'partitions should be fewer');
+        $this->assertLessThanOrEqual(60, count($db->getPartitionSpans($t)), 'and within the budget');
+
+        $this->assertSame(
+            $rows_before,
+            (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+            'compaction must not delete a single row'
+        );
+
+        // Idempotent: nothing left to merge on a second pass.
+        $this->assertSame(0, $method->invoke($ctrl, $t, $budget, false), 'a settled table needs no merging');
+    }
+
+    /**
+     * Compaction leaves the detail window alone, so recent retention stays
+     * precise however aggressively old history has been coarsened.
+     */
+    public function testCompactionNeverTouchesTheDetailWindow()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            date('Ymd', strtotime(date('Ym') . '01 -96 months')),
+            date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')),
+            'monthly'
+        ));
+
+        $boundary = date('Ymd', strtotime(date('Ym') . '01 -' . \OWA\Core\Db::PARTITION_DETAIL_MONTHS . ' months'));
+
+        $recent_before = array_values(array_filter(
+            array_map(fn($s) => $s['name'], $db->getPartitionSpans($t)),
+            fn($n) => substr($n, 1) >= $boundary
+        ));
+
+        $ctrl   = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
+        $method = new ReflectionMethod($ctrl, 'compactTable');
+        $method->setAccessible(true);
+        $method->invoke($ctrl, $t, ['limit' => 50, 'reason' => 'test'], false);
+
+        $recent_after = array_values(array_filter(
+            array_map(fn($s) => $s['name'], $db->getPartitionSpans($t)),
+            fn($n) => substr($n, 1) >= $boundary
+        ));
+
+        $this->assertSame($recent_before, $recent_after, 'partitions inside the detail window must be untouched');
+        $this->assertNotEmpty($recent_before, 'the fixture needs a detail window to be a test');
+    }
 }
