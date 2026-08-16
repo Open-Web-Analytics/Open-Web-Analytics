@@ -286,7 +286,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s: %s would drop all %d historical partition(s), leaving only what is being '
               . 'collected now. Everything before %s would be gone. If that is intended, '
-              . 're-run with force=1.',
+              . 're-run with --force.',
                 $table, $cutoff, count( $plan['drop'] ), $plan['effective']
             ) );
 

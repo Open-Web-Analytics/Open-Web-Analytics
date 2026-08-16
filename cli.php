@@ -49,12 +49,32 @@ $params = [];
 // $argv is a php super global variable
 for ($i=1; $i<count($argv); $i++)
 {
-    $it = explode("=",$argv[$i]);
-    if (count($it) !== 2) {
-        fwrite(STDERR, "Invalid argument '{$argv[$i]}'. Syntax is key=value\n");
-        exit(1);
+    $arg = $argv[$i];
+
+    // A leading -- is optional, and marks a switch when no value follows.
+    // Nobody writes dry-run=0; they leave it off. So --dry-run means true and
+    // its absence means false, which is how a switch is expected to behave.
+    // key=value and --key=value both still work.
+    $is_switch = (strpos($arg, '--') === 0);
+
+    if ($is_switch) {
+        $arg = substr($arg, 2);
     }
-    $params[$it[0]] = $it[1];
+
+    $it = explode("=", $arg, 2);
+
+    if (count($it) === 2) {
+        $params[$it[0]] = $it[1];
+        continue;
+    }
+
+    if ($is_switch && $it[0] !== '') {
+        $params[$it[0]] = true;
+        continue;
+    }
+
+    fwrite(STDERR, "Invalid argument '{$argv[$i]}'. Use key=value, or --switch for a flag\n");
+    exit(1);
 }
 unset($params['action']);
 unset($params['do']);

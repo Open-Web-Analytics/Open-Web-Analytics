@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
  *
  *   cmd=partition-drop older-than=20260101    a date
  *   cmd=partition-drop older-than=12months    a period back from today
- *   cmd=partition-drop older-than=18m dry-run=1
+ *   cmd=partition-drop older-than=18m --dry-run
  */
 class PartitionDropCli extends PartitionsCli {
 
