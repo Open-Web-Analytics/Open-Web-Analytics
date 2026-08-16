@@ -121,6 +121,20 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function partitionLimit( $table_count ) {
 
+        // An explicit budget wins over the derived one. This is the considered
+        // escape hatch: unlike force, it makes the operator name the number they
+        // are accepting, which means looking at innodb_open_files to pick it, and
+        // it lands in the log as a number the next person can evaluate.
+        $override = $this->getParam( 'max-partitions' );
+
+        if ( $override !== null && $override !== '' && ctype_digit( (string) $override ) && (int) $override > 0 ) {
+
+            return array(
+                'limit'  => (int) $override,
+                'reason' => 'max-partitions given explicitly',
+            );
+        }
+
         $spare = \OWA\Core\CoreAPI::dbSingleton()->getPartitionBudget();
 
         if ( $spare === null ) {
@@ -131,15 +145,18 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        // A floor, so that a server reporting almost no headroom still permits
-        // a couple of years of monthly rather than refusing everything.
-        $limit = max( 24, intdiv( $spare, 2 * max( 1, $table_count ) ) );
+        $limit = max(
+            \OWA\Core\Db::PARTITION_MIN_LIMIT,
+            intdiv( $spare, \OWA\Core\Db::PARTITION_BUDGET_RESERVE * max( 1, $table_count ) )
+        );
 
         return array(
             'limit'  => $limit,
             'reason' => sprintf(
-                '%d spare open-file slots on this server, half of them shared across %d table(s)',
-                $spare, $table_count
+                '%d spare open-file slots on this server, %s of them shared across %d table(s)',
+                $spare,
+                \OWA\Core\Db::PARTITION_BUDGET_RESERVE === 2 ? 'half' : '1/' . \OWA\Core\Db::PARTITION_BUDGET_RESERVE,
+                $table_count
             ),
         );
     }

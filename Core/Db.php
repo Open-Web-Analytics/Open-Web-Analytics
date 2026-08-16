@@ -1842,6 +1842,208 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Merge a run of adjacent partitions into one.
+     *
+     * The inverse of extendPartitions(): that splits, this combines. It exists so
+     * that partition count can be kept under the server's open-file budget
+     * WITHOUT deleting anything -- old periods are coarsened rather than dropped.
+     * A table can then hold decades of history in a few dozen files.
+     *
+     * The replacement keeps the p<yyyymmdd> naming, because getPartitionSpans()
+     * recovers the first partition's lower bound from its name and
+     * inferPartitionGranularity() reads the day-of-month out of it. A partition
+     * named anything else reads back as having no usable start.
+     *
+     * The partitions must be adjacent and given in order: REORGANIZE requires the
+     * replacement to tile exactly the range being replaced, so the new upper
+     * bound has to be the last one's.
+     *
+     * @param string $table_name
+     * @param array  $names      partition names, in ascending order
+     * @param string $start      yyyymmdd the merged partition begins at (its name)
+     * @param string $less_than  yyyymmdd upper bound -- the last partition's
+     * @return bool
+     */
+    function mergePartitions( $table_name, $names, $start, $less_than ) {
+
+        if ( ! $this->supportsPartitioning() || count( $names ) < 2 ) {
+
+            return false;
+        }
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        foreach ( $names as $n ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $n ) ) {
+
+                return false;
+            }
+        }
+
+        if ( ! preg_match( '/^\d{8}$/', (string) $start ) || ! preg_match( '/^\d{8}$/', (string) $less_than ) ) {
+
+            return false;
+        }
+
+        $replacement = sprintf( OWA_DTD_PARTITION_LESS_THAN, 'p' . $start, $less_than );
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), $replacement
+        ) );
+    }
+
+    /**
+     * How old a period must be before it is eligible to be coarsened, in months.
+     *
+     * Inside this window partitions keep whatever granularity the table uses, so
+     * recent reporting and recent retention stay precise. Outside it they may be
+     * merged, because old periods are queried rarely and pruned in bulk.
+     */
+    const PARTITION_DETAIL_MONTHS = 36;
+
+    /**
+     * Fraction of the server's spare open-file slots this feature may claim,
+     * expressed as a divisor: 2 means half of them.
+     *
+     * The reading is a snapshot of a shared resource -- every other table on the
+     * instance draws on the same cap, and the schema grows -- so taking all of it
+     * would be planning for a server that no longer exists by the time the
+     * partitions are created.
+     */
+    const PARTITION_BUDGET_RESERVE = 2;
+
+    /**
+     * Fewest partitions a table is allowed regardless of what the budget says.
+     *
+     * A server reporting almost no headroom would otherwise derive a limit that
+     * refuses even a couple of years of monthly partitions, which is worse than
+     * useless -- the feature would be unavailable exactly where retention matters
+     * most.
+     */
+    const PARTITION_MIN_LIMIT = 24;
+
+    /**
+     * Largest run of calendar years that may be merged into one partition.
+     *
+     * A cap, not a target. Without one, a budget that cannot be met would drive
+     * the planner to collapse the entire tail into a single partition -- which
+     * fits nothing better and destroys retention granularity for all of history,
+     * since a partition can only be dropped as a unit. Better to return the best
+     * plan available and report that it does not fit.
+     */
+    const PARTITION_MAX_YEARS_PER_BLOCK = 5;
+
+    /**
+     * Plan how to coarsen the partitions outside the detail window so the table
+     * fits a partition budget, WITHOUT deleting anything.
+     *
+     * This is what lets an installation keep decades of history on a server that
+     * cannot afford a file per month. Old periods are merged, not dropped: whole
+     * calendar years first, then runs of years if that is not enough. The detail
+     * window is never touched.
+     *
+     * Budget-driven rather than calendar-driven on purpose. A yearly tail is
+     * enough for any plausible history on a generous server, but a host with a
+     * small innodb_open_files can exceed its limit on yearly partitions alone,
+     * and a fixed calendar rule would simply fail there.
+     *
+     * @param string $table_name
+     * @param int    $limit          most partitions this table may have
+     * @param int    $detail_months  periods newer than this are left alone
+     * @return array ['merges','projected','fits','floor']
+     */
+    function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS ) {
+
+        $spans  = $this->getPartitionSpans( $table_name );
+        $result = array( 'merges' => array(), 'projected' => count( $spans ), 'fits' => true, 'floor' => count( $spans ) );
+
+        if ( ! $spans ) {
+
+            return $result;
+        }
+
+        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
+
+        $old = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( (string) $span['less_than'] <= $boundary ) {
+
+                $old[] = $span;
+            }
+        }
+
+        // Everything inside the detail window, plus at least one tail partition,
+        // is the fewest this table can have without narrowing the window.
+        $kept           = count( $spans ) - count( $old );
+        $result['floor'] = $kept + ( $old ? 1 : 0 );
+
+        if ( count( $spans ) <= $limit || count( $old ) < 2 ) {
+
+            $result['fits'] = count( $spans ) <= $limit;
+
+            return $result;
+        }
+
+        $years = array();
+
+        foreach ( $old as $span ) {
+
+            $years[ substr( $span['start'], 0, 4 ) ][] = $span;
+        }
+
+        $keys = array_keys( $years );
+        sort( $keys );
+
+        $max_block = min( self::PARTITION_MAX_YEARS_PER_BLOCK, count( $keys ) );
+
+        for ( $per_block = 1; $per_block <= $max_block; $per_block++ ) {
+
+            $blocks = array_chunk( $keys, $per_block );
+
+            if ( $kept + count( $blocks ) <= $limit || $per_block === $max_block ) {
+
+                $merges = array();
+
+                foreach ( $blocks as $block ) {
+
+                    $names = array();
+                    $start = null;
+                    $end   = null;
+
+                    foreach ( $block as $year ) {
+
+                        foreach ( $years[ $year ] as $span ) {
+
+                            $names[] = $span['name'];
+                            $start   = $start ?? $span['start'];
+                            $end     = $span['less_than'];
+                        }
+                    }
+
+                    if ( count( $names ) > 1 ) {
+
+                        $merges[] = array( 'names' => $names, 'start' => $start, 'less_than' => $end );
+                    }
+                }
+
+                $result['merges']    = $merges;
+                $result['projected'] = $kept + count( $blocks );
+                $result['fits']      = $result['projected'] <= $limit;
+
+                return $result;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Add whatever partitions are missing between the last boundary and a date.
      *
      * The new periods are cut out of the catch-all, which is the only partition

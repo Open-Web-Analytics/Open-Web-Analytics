@@ -227,4 +227,46 @@ final class PartitionCliTest extends CliControllerTestCase
     {
         return count(\OWA\Core\CoreAPI::dbSingleton()->listPartitions($table));
     }
+
+    /**
+     * The budget can be stated outright.
+     *
+     * This is the considered escape hatch, as opposed to force: it makes the
+     * operator name the number they are accepting -- which means looking at
+     * innodb_open_files to choose it -- and it lands in the log as a figure the
+     * next person can evaluate rather than as "the guard was switched off".
+     */
+    public function testAnExplicitBudgetOverridesTheDerivedOne()
+    {
+        $derived = $this->callProtected($this->rotate(), 'partitionLimit', [7]);
+
+        $stated = $this->callProtected($this->rotate(['max-partitions' => '500']), 'partitionLimit', [7]);
+        $this->assertSame(500, $stated['limit']);
+        $this->assertStringContainsString('explicitly', $stated['reason']);
+
+        // Junk falls back to the derived budget rather than to something permissive.
+        foreach (['abc', '0', '-5', ''] as $bad) {
+            $this->assertSame(
+                $derived['limit'],
+                $this->callProtected($this->rotate(['max-partitions' => $bad]), 'partitionLimit', [7])['limit'],
+                var_export($bad, true) . ' should not be accepted as a budget'
+            );
+        }
+    }
+
+    /** The numbers behind the budget are named constants, not literals. */
+    public function testBudgetConstantsAreExposed()
+    {
+        $this->assertGreaterThanOrEqual(1, \OWA\Core\Db::PARTITION_BUDGET_RESERVE);
+        $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_MIN_LIMIT);
+        $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
+        $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK);
+
+        // The floor must not exceed what a derived budget could yield, or it
+        // would silently become the only value this ever returns.
+        $this->assertLessThan(
+            \OWA\Core\Db::PARTITION_COUNT_LIMIT,
+            \OWA\Core\Db::PARTITION_MIN_LIMIT
+        );
+    }
 }
