@@ -782,6 +782,18 @@ namespace OWA\Module\Base\Classes;
      
      function setMailerDomain() {
 
+	     // Only a fallback. This runs from the constructor, BEFORE load() merges
+	     // the stored settings in, so overwriting unconditionally would clobber
+	     // an address set by the config file or by an operator editing the
+	     // defaults -- and the auto-computed value is 'owa@' . SERVER_NAME,
+	     // which an authenticating relay rejects as an envelope sender the
+	     // account does not own ("553 Sender address rejected"). A stored value
+	     // still wins either way; this is about the two earlier layers.
+	     if ( $this->get( 'base', 'mailer-from' ) ) {
+
+		     return;
+	     }
+
 	     // Fall back to a valid domain: neither SERVER_NAME (CLI/cron have no
 	     // web server context) nor a usable PUBLIC_URL host is guaranteed, and
 	     // mailer-from below reads this unconditionally.

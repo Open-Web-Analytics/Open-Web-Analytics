@@ -101,15 +101,18 @@ class Base {
 
             $msg = $_owa_messages[$code];
 			
-			if ( $substitutions ) {
-	            if (isset($msg['headline'])) {
-	                $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
-	            }
-	
-	            if (isset($msg['message'])) {
-	                $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
-	            }
-	        }
+			// Substitutions are keyed by the message part they fill in, and each
+			// value is that part's vsprintf() argument list. A caller that fills
+			// in only one part must leave the other one untouched, and a caller
+			// passing a bare scalar means a single argument -- handing either of
+			// those straight to vsprintf() is a TypeError on PHP 8.
+			foreach ( ['headline', 'message'] as $part ) {
+
+				if ( isset( $msg[ $part ] ) && isset( $substitutions[ $part ] ) ) {
+
+					$msg[ $part ] = vsprintf( $msg[ $part ], (array) $substitutions[ $part ] );
+				}
+			}
         }
 
         return $msg;
