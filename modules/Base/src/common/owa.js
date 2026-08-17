@@ -175,7 +175,7 @@ class OWA {
         var that = this;
         
         // load css for heatmap class
-        Util.loadCss(this.getSetting('baseUrl')+'/public/base/css/owa.overlay.css', function(){});
+        Util.loadCss(this.getSetting('baseUrl')+'public/base/css/owa.overlay.css', function(){});
         
         // dynamic import of the Heatmap class
 	    import(/* webpackChunkName: "owa.heatmap" */ '../tracker/Heatmap.js').then( ( { Heatmap } ) => { 
@@ -194,7 +194,7 @@ class OWA {
         
         var that = this;
 
-        Util.loadCss(this.getSetting('baseUrl')+'/public/base/css/owa.overlay.css', function(){});
+        Util.loadCss(this.getSetting('baseUrl')+'public/base/css/owa.overlay.css', function(){});
 
 	    // dynamic import of the Player class
 	    import(/* webpackChunkName: "owa.player" */ '../tracker/Player.js').then( ( { Player } ) => { 
