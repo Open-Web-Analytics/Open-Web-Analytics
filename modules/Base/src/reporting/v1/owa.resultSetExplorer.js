@@ -464,7 +464,7 @@ OWA.resultSetExplorer.prototype = {
     },
 
     showLoader: function() {
-        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'/public/base/i/loader.gif"></div>');
+        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'public/base/i/loader.gif"></div>');
     },
 
     hideLoader: function() {
