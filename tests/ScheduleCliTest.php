@@ -38,6 +38,11 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->jobs = [];
 
+        // The stub command is registered on the module, which is a singleton
+        // shared with every later test.
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        unset($s->modules['base']->cli_commands['owa-test-lease-stub']);
+
         // Settings are global; restore anything a case changed.
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
         \OWA\Core\CoreAPI::setSetting('base', 'scheduler_enabled', true);
@@ -746,5 +751,249 @@ final class ScheduleCliTest extends CliControllerTestCase
         $ctrl->action();
 
         $this->assertSame('ok', $ctrl->getCliOutcome()['outcome']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Overrun: the lease running out while a job is still working
+    // -----------------------------------------------------------------------
+
+    /**
+     * heartbeat() is what PREVENTS an overrun, and is the command's own job to
+     * call -- the dispatcher is blocked inside the job and has no thread to do
+     * it from.
+     */
+    public function testHeartbeatExtendsTheLease()
+    {
+        $name = $this->track('owa_test_hb_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $lease = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($lease->acquire(300));
+
+        $before = (int) $db->getJobLock($name)['expires_at'];
+
+        $ctrl = new \OWA\Module\Base\Controller\PartitionStatusCli([]);
+        $ctrl->setJobLease($lease);
+
+        $this->callProtected($ctrl, 'heartbeat');
+
+        $after = (int) $db->getJobLock($name)['expires_at'];
+
+        $this->assertGreaterThan($before, $after, 'a heartbeat must push the expiry out');
+        $this->assertSame(
+            $lease->getOwner(), $db->getJobLock($name)['owner'],
+            'and must not change who holds it'
+        );
+
+        $lease->release();
+    }
+
+    /**
+     * A heartbeat from a run that has already been superseded reports false, so
+     * a long job can notice it lost the lock and stop rather than carrying on
+     * alongside its replacement.
+     */
+    public function testHeartbeatReportsWhenTheLockHasBeenLost()
+    {
+        $name = $this->track('owa_test_hb_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $overrunning = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($overrunning->acquire(300));
+
+        // Its lease runs out while it is still working, and the next tick takes
+        // the lock over.
+        $db->query(sprintf(
+            "UPDATE owa_job_lock SET expires_at = %d WHERE job_name = '%s'",
+            time() - 10, $db->prepare($name)
+        ));
+
+        $replacement = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($replacement->acquire(300));
+
+        $this->assertFalse(
+            $overrunning->refresh(300),
+            'the superseded run must be told it no longer holds the lock'
+        );
+
+        $this->assertSame(
+            $replacement->getOwner(), $db->getJobLock($name)['owner'],
+            'and must not have stolen it back'
+        );
+
+        $replacement->release();
+    }
+
+    /** Run by hand, with no lease injected, heartbeat() does nothing at all. */
+    public function testHeartbeatIsANoOpWhenRunByHand()
+    {
+        $ctrl = new \OWA\Module\Base\Controller\PartitionStatusCli([]);
+
+        // No setJobLease() call: this is the hand-run case. It must not raise,
+        // because a scheduled command and a hand-run one have to behave alike.
+        $this->assertNull($this->callProtected($ctrl, 'heartbeat'));
+    }
+
+    /**
+     * The dispatcher skips a job whose lock is live -- it does not wait, and it
+     * does not start a second copy.
+     *
+     * This is the overrun case as the dispatcher sees it: a job that is still
+     * working when the next tick arrives.
+     */
+    public function testTheDispatcherSkipsAJobThatIsStillRunning()
+    {
+        $name = $this->track('owa_test_busy_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
+            $name => ['command' => 'flush-cache', 'schedule' => '* * * * *'],
+        ]);
+
+        $ctrl = $this->runner();
+        $jobs = $this->callProtected($ctrl, 'jobs');
+
+        // Someone else is mid-run.
+        $held = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($held->acquire(3600));
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $jobs[$name], false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+
+        $this->assertNotNull($state, 'the state row is still materialised');
+        $this->assertSame(0, (int) $state->get('run_count'), 'but no run was recorded');
+        $this->assertSame(
+            $held->getOwner(), $db->getJobLock($name)['owner'],
+            'the running job keeps its lock'
+        );
+
+        $held->release();
+    }
+
+    /**
+     * ...and once the lock is gone, the same job runs on the next tick. The
+     * skip is a deferral, not a loss: the occurrence stays unsatisfied.
+     */
+    public function testASkippedJobRunsOnceTheLockClears()
+    {
+        $name = $this->track('owa_test_defer_' . bin2hex(random_bytes(3)));
+
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
+            $name => ['command' => 'flush-cache', 'schedule' => '* * * * *'],
+        ]);
+
+        $ctrl = $this->runner();
+        $jobs = $this->callProtected($ctrl, 'jobs');
+
+        $held = new \OWA\Module\Base\Classes\JobLease($name);
+        $held->acquire(3600);
+        $this->callProtected($ctrl, 'considerJob', [$name, $jobs[$name], false, false]);
+        $held->release();
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $jobs[$name], false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+
+        $this->assertSame(1, (int) $state->get('run_count'), 'the deferred occurrence still ran');
+        $this->assertSame('ok', $state->get('last_status'));
+    }
+
+    /**
+     * The lock is taken with the COMMAND's lease, not a fixed default -- which
+     * is what lets partition-rotate ask for longer when it has more to do.
+     *
+     * Goes through the dispatcher on purpose. Constructing a JobLease directly
+     * and handing it a number only proves the lease object honours what it is
+     * given; it says nothing about whether runJob() asked the controller. That
+     * distinction is not academic -- hardcoding the lease in the dispatcher
+     * passed an earlier version of this test.
+     */
+    public function testTheDispatcherTakesTheLockWithTheCommandsOwnLease()
+    {
+        $name = $this->track('owa_test_lease_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $s    = \OWA\Core\CoreAPI::serviceSingleton();
+
+        // A command whose lease is unmistakable, so a hardcoded one cannot
+        // masquerade as it.
+        // Registered on the MODULE, not just the service map: loadJobs()
+        // rebuilds the command map from the modules on every call, so anything
+        // set only on the map is wiped before the registry is read.
+        $s->modules['base']->cli_commands['owa-test-lease-stub'] = 'base.owaTestLeaseStub';
+        $s->setMapValue('actions', 'base.owaTestLeaseStub', [
+            'class_name' => 'OwaTestLeaseStubCli',
+            'file'       => '',
+        ]);
+
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
+            $name => ['command' => 'owa-test-lease-stub', 'schedule' => '* * * * *'],
+        ]);
+
+        $ctrl = $this->runner();
+        $jobs = $this->callProtected($ctrl, 'jobs');
+
+        $this->assertArrayHasKey($name, $jobs, 'the stub job should be registered');
+
+        // Hold the lock ourselves so the dispatcher's acquire fails and the row
+        // it would have written is the one we can inspect... no: instead let it
+        // run, and read the lock back from inside the job.
+        OwaTestLeaseStubCli::$seen_expiry = 0;
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $jobs[$name], false, false]);
+
+        $this->assertGreaterThan(
+            0, OwaTestLeaseStubCli::$seen_expiry,
+            'the job should have observed its own lock while running'
+        );
+
+        $this->assertEqualsWithDelta(
+            time() + OwaTestLeaseStubCli::LEASE,
+            OwaTestLeaseStubCli::$seen_expiry,
+            10,
+            'the lock must expire at the lease the COMMAND asked for, not a fixed default'
+        );
+    }
+
+}
+
+/**
+ * A command with a distinctive lease, used to prove the dispatcher asks the
+ * controller rather than using a constant. It records the lock's expiry as it
+ * sees it from inside its own run.
+ */
+class OwaTestLeaseStubCli extends \OWA\Core\Controller\Cli {
+
+    const LEASE = 4321;
+
+    /** @var int */
+    public static $seen_expiry = 0;
+
+    function __construct( $params ) {
+
+        $this->setRequiredCapability( 'edit_modules' );
+
+        parent::__construct( $params );
+    }
+
+    public function getJobLease() {
+
+        return self::LEASE;
+    }
+
+    function action() {
+
+        $lock = \OWA\Core\CoreAPI::dbSingleton()->getJobLock( 'x' );
+
+        // The dispatcher names the lock after the JOB, which this stub does not
+        // know -- so find the one held right now.
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(
+            'SELECT expires_at FROM owa_job_lock ORDER BY acquired_at DESC LIMIT 1'
+        );
+
+        foreach ( (array) $rows as $row ) {
+
+            self::$seen_expiry = (int) ( (array) $row )['expires_at'];
+        }
     }
 }
