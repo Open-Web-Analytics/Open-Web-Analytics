@@ -119,7 +119,7 @@ class Error {
             $this->make_console_logger();
         }
         
-        set_exception_handler( [ $this, 'logException' ] );
+        set_exception_handler( [ $this, 'handleUncaughtException' ] );
 
     }
 
@@ -133,6 +133,46 @@ class Error {
 
             $this->make_console_logger();
         }
+
+        set_exception_handler( [ $this, 'handleUncaughtException' ] );
+    }
+
+    /**
+     * Record an exception nothing else caught, and answer with a server error.
+     *
+     * Only the development handler used to register one, which had the effect
+     * backwards: the installation exposed to the internet was the one running
+     * without an exception handler. An uncaught exception there became a PHP
+     * fatal -- recorded in the web server's log rather than OWA's own, where an
+     * administrator would look for it -- and OWA_MAIL_EXCEPTIONS, whose whole
+     * purpose is to tell somebody about an error on a live installation, never
+     * fired anywhere but on a developer's machine.
+     *
+     * The status is set deliberately rather than inherited from PHP's fatal, and
+     * the response body is left empty: the message and stack trace go to the log,
+     * never to the visitor.
+     *
+     * @param \Throwable $exception
+     * @return void
+     */
+    function handleUncaughtException( $exception ) {
+
+        $this->logException( $exception );
+
+        // The CLI reports through its own console logger and exit status.
+        if ( defined( 'OWA_CLI' ) ) {
+
+            return;
+        }
+
+        // Output already began, so the status line is long gone; changing it
+        // now would emit a warning on top of the error being handled.
+        if ( headers_sent() ) {
+
+            return;
+        }
+
+        http_response_code( 500 );
     }
 
     function debug($message) {
