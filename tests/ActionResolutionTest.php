@@ -216,12 +216,21 @@ final class ActionResolutionTest extends TestCase
                 . "'page' => \$page, 'body' => \$body, 'status' => http_response_code()"
                 . "])) . '>>');";
 
+        // The child runs the full bootstrap, which needs the database. Where
+        // there is none -- the unit job in CI -- skip alongside the rest of the
+        // suite rather than report a missing database as a broken behaviour.
+        if (! owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; the subprocess cannot boot.');
+        }
+
+        // stderr is kept: without it a child that dies during boot reports as
+        // "no payload" with nothing to say why.
         $out = (string) shell_exec(
-            escapeshellarg(PHP_BINARY) . ' -d error_reporting=0 -r ' . escapeshellarg($script) . ' 2>/dev/null'
+            escapeshellarg(PHP_BINARY) . ' -d error_reporting=0 -r ' . escapeshellarg($script) . ' 2>&1'
         );
 
-        $this->assertSame(1, preg_match('/<<([A-Za-z0-9+\/=]+)>>/', $out, $m),
-            'subprocess produced no payload: ' . substr($out, 0, 300));
+        $this->assertSame(1, preg_match('/<<([A-Za-z0-9+\\/=]+)>>/', $out, $m),
+            'subprocess produced no payload. Output was: ' . substr($out, 0, 600));
 
         $result = json_decode((string) base64_decode($m[1]), true);
 
