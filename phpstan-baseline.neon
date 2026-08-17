@@ -49,6 +49,12 @@ parameters:
 			path: Core/CoreAPI.php
 
 		-
+			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Core/Db.php
+
+		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 3
@@ -147,7 +153,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
-			count: 22
+			count: 26
 			path: Core/Db.php
 
 		-
@@ -227,6 +233,12 @@ parameters:
 			identifier: class.notFound
 			count: 1
 			path: Core/View.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_row\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Db.php
 
 		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_row\(\)\.$#'

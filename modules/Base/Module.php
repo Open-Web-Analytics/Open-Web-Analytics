@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 14;
+        $this->required_schema_version = 15;
         return parent::__construct();
     }
 
@@ -585,6 +585,8 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
+        $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
+        $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli',           'Controller/PartitionInitCli.php' );
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
@@ -713,6 +715,35 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
         $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
+        $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
+        $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
+    }
+
+    /**
+     * Register Scheduled Jobs
+     *
+     * Run by cmd=schedule-run, which belongs in cron every minute:
+     *
+     *   * * * * * php /path/to/owa/cli.php cmd=schedule-run
+     *
+     * Only partition-rotate ships registered. It is the one whose absence fails
+     * silently and slowly on every installation -- the partition lead expires,
+     * rows pile into the catch-all, reports keep working, and nobody notices
+     * until a rotate has to rewrite a year of data with writes blocked.
+     *
+     * Queue processing is deliberately NOT shipped: whether to drain the queue
+     * at all, and how often, depends on an installation's traffic and on whether
+     * it queues in the first place. It is added in OWA_SCHEDULED_JOBS when
+     * wanted -- see owa_settings::applyConfigConstants().
+     */
+    function registerJobs() {
+
+        // Registered with EMPTY params on purpose: no keep=, so nothing is ever
+        // deleted. An installation that wants retention states it in
+        // OWA_SCHEDULED_JOBS, which is the deliberate act it should be.
+        // Retention must never arrive as a side effect of turning the scheduler
+        // on. ScheduleCliTest pins the empty array for exactly that reason.
+        $this->registerJob( 'partition-rotate', 'partition-rotate', '@monthly', array() );
     }
 
     /**
@@ -2518,6 +2549,8 @@ class Module extends \OWA\Core\Module {
                 'commerce_transaction_fact',
                 'commerce_line_item_fact',
                 'queue_item',
+                'scheduled_job',
+                'job_lock',
                 'site_user')
             );
 

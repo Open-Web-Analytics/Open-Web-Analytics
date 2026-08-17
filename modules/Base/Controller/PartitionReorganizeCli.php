@@ -68,6 +68,8 @@ class PartitionReorganizeCli extends PartitionsCli {
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
         $budget = $this->factTableBudget();
 
+        $touched = 0;
+
         foreach ( $tables as $table ) {
 
             if ( ! $db->isPartitioned( $table ) ) {
@@ -78,6 +80,8 @@ class PartitionReorganizeCli extends PartitionsCli {
 
                 continue;
             }
+
+            $touched++;
 
             // Plan first so the count can be judged before anything is rewritten.
             $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
@@ -148,6 +152,14 @@ class PartitionReorganizeCli extends PartitionsCli {
                     $table, implode( '; ', $result['failed'] )
                 ) );
             }
+        }
+
+        // Same reasoning as partition-rotate: having skipped everything is not
+        // success, and a caller -- including the scheduler, since any command
+        // can be scheduled -- must be able to tell the difference.
+        if ( ! $touched ) {
+
+            $this->refuse( 'Nothing to reorganize: no fact table is partitioned. Run cmd=partition-init first.' );
         }
     }
 }

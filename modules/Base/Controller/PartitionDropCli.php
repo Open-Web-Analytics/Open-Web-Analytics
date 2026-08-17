@@ -57,6 +57,8 @@ class PartitionDropCli extends PartitionsCli {
 
         \OWA\Core\CoreAPI::notice( sprintf( 'Retention cutoff: %s (from "%s").', $cutoff, $raw ) );
 
+        $touched = 0;
+
         foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
 
             if ( ! $db->isPartitioned( $table ) ) {
@@ -66,7 +68,15 @@ class PartitionDropCli extends PartitionsCli {
                 continue;
             }
 
+            $touched++;
+
             $this->dropOlderThan( $table, $cutoff, $dry_run );
+        }
+
+        // Skipping everything is not success -- see partition-rotate.
+        if ( ! $touched ) {
+
+            $this->refuse( 'Nothing to drop: no fact table is partitioned. Run cmd=partition-init first.' );
         }
     }
 }

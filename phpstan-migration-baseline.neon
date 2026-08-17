@@ -61,9 +61,15 @@ parameters:
 			path: Core/Db.php
 
 		-
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_row\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Core/Db.php
+
+		-
 			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
-			count: 22
+			count: 26
 			path: Core/Db.php
 
 		-

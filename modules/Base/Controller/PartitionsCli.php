@@ -277,7 +277,10 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $done['added'] ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf( '%s: FAILED to extend; see the database error above.', $table ) );
+            // fail(), not notice(): Db::query() swallows SQL errors and returns
+            // falsy, so a rotate whose ALTER TABLE the server rejected would
+            // otherwise be recorded as a success while the lead quietly expired.
+            $this->fail( sprintf( '%s: FAILED to extend; see the database error above.', $table ) );
 
             return false;
         }
@@ -362,7 +365,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
                 } else {
 
-                    \OWA\Core\CoreAPI::notice( sprintf( '%s: failed to drop %s.', $table, $partition ) );
+                    $this->fail( sprintf( '%s: failed to drop %s.', $table, $partition ) );
                 }
             }
 
@@ -445,7 +448,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
             } else {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
+                $this->fail( sprintf(
                     '%s: FAILED to reshape %s..%s; see the database error above.',
                     $table, $op['start'], $op['less_than']
                 ) );

@@ -36,6 +36,128 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionRotateCli extends PartitionsCli {
 
+    /**
+     * How long this job's lock should be trusted without proof of life.
+     *
+     * A CRASH-RECOVERY TIMEOUT, not a runtime budget: on any normal path the
+     * lock is released in a finally and this is never consulted. It decides only
+     * how long after a process dies before another run may assume it is really
+     * dead. Too short lets a second copy start alongside a run still working;
+     * too long merely delays recovery, for which --force-release exists. Those
+     * costs are asymmetric, so this errs long.
+     *
+     * WHAT MAKES A ROTATE SLOW IS DATA REWRITTEN, NOT PARTITIONS COUNTED.
+     * Extending the lead is ONE `REORGANIZE PARTITION pmax INTO (...)` however
+     * many periods it creates -- measured here at 1.52s to create 31 of them --
+     * and its cost is proportional to what is sitting in the catch-all. Each
+     * merge is a separate REORGANIZE over the partitions it combines. Drops are
+     * not counted at all: DROP PARTITION discards a file and returns.
+     *
+     * Charging per partition created was wrong twice over, and produced a lease
+     * of 2.6 hours for that 1.52-second extension.
+     *
+     * Row counts come from information_schema and are estimates, which is
+     * appropriate: this is an estimate, and an exact COUNT(*) over a large
+     * catch-all before every rotate would cost more than it informs.
+     *
+     * Read-only, and taken before the lock, so two dispatchers estimating at
+     * once is harmless. partition-rotate cannot call heartbeat() to extend as it
+     * goes -- it sits inside one blocking ALTER TABLE and never returns to PHP
+     * mid-statement -- so this estimate has to stand on its own.
+     *
+     * @return int seconds
+     */
+    public function getJobLease() {
+
+        $statements = 0;
+        $rows       = 0;
+
+        try {
+
+            $db      = \OWA\Core\CoreAPI::dbSingleton();
+            $through = \OWA\Core\Db::partitionLeadBoundary();
+            $budget  = $this->factTableBudget();
+
+            foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
+
+                if ( ! $db->isPartitioned( $table ) ) {
+
+                    continue;
+                }
+
+                $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
+                $sizes       = array();
+                $catch_all   = 0;
+
+                foreach ( $db->listPartitions( $table ) as $p ) {
+
+                    $sizes[ $p['name'] ] = (int) $p['rows'];
+
+                    if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                        $catch_all = (int) $p['rows'];
+                    }
+                }
+
+                // One statement, rewriting whatever has collected in the
+                // catch-all -- which is nothing on a maintained installation and
+                // everything on a neglected one.
+                $extend = $db->extendPartitions( $table, $granularity, $through, true );
+
+                if ( ! empty( $extend['planned'] ) ) {
+
+                    $statements++;
+                    $rows += $catch_all;
+                }
+
+                // One statement per merge, over the partitions it combines.
+                $compact = $db->planPartitionCompaction( $table, $budget['limit'] );
+
+                foreach ( (array) ( $compact['merges'] ?? array() ) as $merge ) {
+
+                    $statements++;
+
+                    foreach ( (array) ( $merge['names'] ?? array() ) as $name ) {
+
+                        $rows += isset( $sizes[ $name ] ) ? $sizes[ $name ] : 0;
+                    }
+                }
+            }
+
+        } catch ( \Throwable $t ) {
+
+            // An estimate that cannot be made must not stop the job running.
+            // The base default errs long by design.
+            return parent::getJobLease();
+        }
+
+        return self::leaseFor( $statements, $rows );
+    }
+
+    /**
+     * The lease arithmetic, separated so it can be tested at sizes this
+     * installation does not have.
+     *
+     * Two minutes per statement covers fixed overhead and lock acquisition.
+     * Five minutes per million rows rewritten is around sixty times the
+     * ~5s/million measured when this partitioning was built -- the margin a
+     * crash-recovery timeout should carry. Scaled smoothly rather than rounded
+     * up per million, so a few hundred rows do not cost the same as a million.
+     * Half an hour floor, so a rotate with nothing to do still tolerates a slow
+     * instance.
+     *
+     * @param int $statements  ALTER TABLE statements the run will issue
+     * @param int $rows        rows those statements will rewrite
+     * @return int seconds
+     */
+    public static function leaseFor( $statements, $rows ) {
+
+        $seconds = ( (int) $statements * 120 )
+                 + (int) round( max( 0, (int) $rows ) / 1000000 * 300 );
+
+        return max( 1800, $seconds );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
@@ -58,12 +180,10 @@ class PartitionRotateCli extends PartitionsCli {
 
             if ( ! ctype_digit( (string) $keep ) || (int) $keep < 1 ) {
 
-                \OWA\Core\CoreAPI::notice(
+                return $this->refuse(
                     'keep must be a number of months to retain, such as keep=24. '
                   . 'Omit it entirely to retain everything.'
                 );
-
-                return;
             }
 
             // Expressed as a period rather than a date on purpose. A fixed date
@@ -73,7 +193,7 @@ class PartitionRotateCli extends PartitionsCli {
 
             if ( ! $cutoff ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( 'Could not work out a cutoff for keep=%s.', $keep ) );
+                return $this->refuse( sprintf( 'Could not work out a cutoff for keep=%s.', $keep ) );
 
                 return;
             }
@@ -88,20 +208,16 @@ class PartitionRotateCli extends PartitionsCli {
 
         if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            return $this->refuse( sprintf(
                 'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
             ) );
-
-            return;
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
 
         if ( ! $tables ) {
 
-            \OWA\Core\CoreAPI::notice( 'No fact tables found.' );
-
-            return;
+            return $this->refuse( 'No fact tables found.' );
         }
 
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
@@ -119,6 +235,8 @@ class PartitionRotateCli extends PartitionsCli {
                 $months_ahead, $through )
         );
 
+        $rotated = 0;
+
         foreach ( $tables as $table ) {
 
             // Rotation maintains a table; it does not convert one. The first
@@ -132,6 +250,8 @@ class PartitionRotateCli extends PartitionsCli {
 
                 continue;
             }
+
+            $rotated++;
 
             $table_granularity = $granularity ?: ( $db->inferPartitionGranularity( $table ) ?: 'monthly' );
 
@@ -159,6 +279,21 @@ class PartitionRotateCli extends PartitionsCli {
 
                 $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
             }
+        }
+
+        // Skipping every table is not success. Left as 'ok', a scheduled rotate
+        // on an installation that never ran partition-init would report a clean
+        // history forever while doing nothing at all -- exactly the silent
+        // failure this command exists to prevent, moved one level up. 'refused'
+        // rather than 'failed' so the occurrence is still consumed and the job
+        // is not retried every minute.
+        if ( ! $rotated ) {
+
+            return $this->refuse( sprintf(
+                'Nothing to rotate: %s not partitioned. Run cmd=partition-init once, in a '
+              . 'maintenance window, and this will start doing its job.',
+                count( $tables ) === 1 ? 'that table is' : 'no fact table is'
+            ) );
         }
     }
 }
