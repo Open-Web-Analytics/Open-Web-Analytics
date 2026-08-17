@@ -784,6 +784,18 @@ final class ScheduleCliTest extends CliControllerTestCase
             $this->assertSame('refused', $out['outcome'], 'skipping every table is not success');
             $this->assertStringContainsString('partition-init', $out['message'], 'name the missing step');
 
+            // The message is what an operator reads every month on an install
+            // that never ran partition-init, so it has to read as a sentence.
+            // The first version rendered "no fact table is not partitioned" --
+            // the plural branch supplied "no fact table is" into a template
+            // that already said "not partitioned".
+            $this->assertStringContainsString('that table is not partitioned', $out['message'],
+                'the single-table branch names the table it skipped');
+            $this->assertDoesNotMatchRegularExpression(
+                '/\bis not\b[^.]*\bnot\b/', $out['message'],
+                'no double negative in the sentence'
+            );
+
         } finally {
 
             // Put it back exactly as it was.
