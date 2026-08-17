@@ -808,7 +808,16 @@ final class ScheduleCliTest extends CliControllerTestCase
             }
         }
 
-        $this->assertTrue($db->isPartitioned($table), 'the fixture must be restored');
+        // This case mutates a REAL fact table, which other tests also read, so
+        // it asserts its own restore rather than leaving a lossy one to surface
+        // later as an unrelated failure somewhere else in the suite. A
+        // misattributed failure costs far more to diagnose than the assertion
+        // costs to write.
+        $this->assertTrue($db->isPartitioned($table), 'the fixture must be repartitioned');
+        $this->assertSame(
+            count($spans), count($db->getPartitionSpans($table)),
+            'the fixture must be restored to the SAME layout, not merely to some layout'
+        );
     }
 
     /** ...and reports ok when it did rotate something. */
