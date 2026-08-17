@@ -665,4 +665,86 @@ final class ScheduleCliTest extends CliControllerTestCase
             );
         }
     }
+
+    /**
+     * A scheduled rotate on an installation that never ran partition-init must
+     * report a REFUSAL, not success.
+     *
+     * This is the silent failure the scheduler exists to remove, relocated one
+     * level up: left as 'ok', a monthly rotate would show a clean history and a
+     * rising run count forever while skipping every table, and the operator
+     * would have no signal that partition-init is the missing step.
+     *
+     * 'refused' rather than 'failed' so the occurrence is still consumed and it
+     * is not retried every minute for a condition that will not change on its
+     * own.
+     */
+    public function testRotateRefusesWhenNothingIsPartitioned()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        // A fact table that is real but empty, so removing partitioning is
+        // cheap and reversible within the test.
+        $table = 'owa_commerce_line_item_fact';
+
+        if (! $db->isPartitioned($table)) {
+            $this->markTestSkipped("$table is not partitioned to begin with.");
+        }
+
+        if ((int) $db->get_row("SELECT COUNT(*) AS n FROM $table")['n'] > 0) {
+            $this->markTestSkipped("$table has rows; not rewriting it in a test.");
+        }
+
+        $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
+        $spans       = $db->getPartitionSpans($table);
+
+        try {
+            $db->query("ALTER TABLE $table REMOVE PARTITIONING");
+            $this->assertFalse($db->isPartitioned($table), 'the fixture should be unpartitioned now');
+
+            $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['table' => $table]);
+            $ctrl->action();
+
+            $out = $ctrl->getCliOutcome();
+
+            $this->assertSame('refused', $out['outcome'], 'skipping every table is not success');
+            $this->assertStringContainsString('partition-init', $out['message'], 'name the missing step');
+
+        } finally {
+
+            // Put it back exactly as it was.
+            if ($spans) {
+                $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                    $spans[0]['start'],
+                    date('Ymd', strtotime(end($spans)['less_than'] . ' -1 day')),
+                    $granularity
+                ));
+            }
+        }
+
+        $this->assertTrue($db->isPartitioned($table), 'the fixture must be restored');
+    }
+
+    /** ...and reports ok when it did rotate something. */
+    public function testRotateReportsOkWhenItActuallyRotates()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $partitioned = null;
+
+        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
+
+        foreach ($this->callProtected($ctrl, 'factTables') as $t) {
+            if ($db->isPartitioned($t)) { $partitioned = $t; break; }
+        }
+
+        if (! $partitioned) {
+            $this->markTestSkipped('no partitioned fact table to rotate.');
+        }
+
+        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['table' => $partitioned, 'dry-run' => true]);
+        $ctrl->action();
+
+        $this->assertSame('ok', $ctrl->getCliOutcome()['outcome']);
+    }
 }

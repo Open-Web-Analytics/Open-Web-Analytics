@@ -167,6 +167,8 @@ class PartitionRotateCli extends PartitionsCli {
                 $months_ahead, $through )
         );
 
+        $rotated = 0;
+
         foreach ( $tables as $table ) {
 
             // Rotation maintains a table; it does not convert one. The first
@@ -180,6 +182,8 @@ class PartitionRotateCli extends PartitionsCli {
 
                 continue;
             }
+
+            $rotated++;
 
             $table_granularity = $granularity ?: ( $db->inferPartitionGranularity( $table ) ?: 'monthly' );
 
@@ -207,6 +211,21 @@ class PartitionRotateCli extends PartitionsCli {
 
                 $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
             }
+        }
+
+        // Skipping every table is not success. Left as 'ok', a scheduled rotate
+        // on an installation that never ran partition-init would report a clean
+        // history forever while doing nothing at all -- exactly the silent
+        // failure this command exists to prevent, moved one level up. 'refused'
+        // rather than 'failed' so the occurrence is still consumed and the job
+        // is not retried every minute.
+        if ( ! $rotated ) {
+
+            return $this->refuse( sprintf(
+                'Nothing to rotate: %s not partitioned. Run cmd=partition-init once, in a '
+              . 'maintenance window, and this will start doing its job.',
+                count( $tables ) === 1 ? 'that table is' : 'no fact table is'
+            ) );
         }
     }
 }
