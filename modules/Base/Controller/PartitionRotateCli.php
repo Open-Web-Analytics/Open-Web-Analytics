@@ -39,30 +39,42 @@ class PartitionRotateCli extends PartitionsCli {
     /**
      * How long this job's lock should be trusted without proof of life.
      *
-     * Derived rather than hardcoded, because the cost of a rotate is dominated
-     * by how many partitions it must add, merge or drop -- each an ALTER TABLE
-     * -- and that count is knowable before any of them runs. An installation
-     * catching up after a year of neglect legitimately needs far longer than one
-     * rotating on schedule, and guessing a single number for both would either
-     * duplicate the long run or leave the short one wedged after a crash.
+     * A CRASH-RECOVERY TIMEOUT, not a runtime budget: on any normal path the
+     * lock is released in a finally and this is never consulted. It decides only
+     * how long after a process dies before another run may assume it is really
+     * dead.
      *
-     * partition-rotate cannot call heartbeat() to extend as it goes: it spends
-     * its time inside one blocking ALTER TABLE and never returns to PHP
-     * mid-statement. That is exactly why it needs a generous estimate up front.
+     * Derived from the work actually PLANNED -- the partitions this run will
+     * create and the groups it will merge, each of which is an ALTER TABLE.
+     * Counting the partitions a table already HAS would be wrong and was: a
+     * routine rotate with nothing to do would have asked for hours because the
+     * tables happen to hold a few hundred partitions between them, when the run
+     * takes seconds.
      *
-     * The estimate is read-only and is taken before the lock, so two dispatchers
-     * asking at once is harmless.
+     * Drops are deliberately not counted. DROP PARTITION discards a file and
+     * returns; it is not what makes a rotate slow.
+     *
+     * Uncapped on purpose. Too long merely delays recovery, and
+     * `schedule-run --force-release` is there for that; too short lets a second
+     * copy start alongside a run that is still working, which is the direction
+     * worth avoiding. partition-rotate cannot call heartbeat() to extend as it
+     * goes -- it sits inside one blocking ALTER TABLE and never returns to PHP
+     * mid-statement -- so the estimate has to stand on its own.
+     *
+     * Read-only, and taken before the lock, so two dispatchers estimating at
+     * once is harmless.
      *
      * @return int seconds
      */
     public function getJobLease() {
 
-        $planned = 0;
+        $operations = 0;
 
         try {
 
             $db      = \OWA\Core\CoreAPI::dbSingleton();
             $through = \OWA\Core\Db::partitionLeadBoundary();
+            $budget  = $this->factTableBudget();
 
             foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
 
@@ -72,22 +84,26 @@ class PartitionRotateCli extends PartitionsCli {
                 }
 
                 $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
-                $plan        = $db->extendPartitions( $table, $granularity, $through, true );
 
-                $planned += (int) ( $plan['planned'] ?? 0 );
-                $planned += count( $db->getPartitionSpans( $table ) );
+                $extend = $db->extendPartitions( $table, $granularity, $through, true );
+                $compact = $db->planPartitionCompaction( $table, $budget['limit'] );
+
+                $operations += (int) ( $extend['planned'] ?? 0 );
+                $operations += count( $compact['merges'] ?? array() );
             }
 
         } catch ( \Throwable $t ) {
 
             // An estimate that cannot be made must not stop the job running.
-            // Fall back to the base default, which errs long by design.
+            // The base default errs long by design.
             return parent::getJobLease();
         }
 
-        // Roughly two minutes per partition touched, floored at half an hour so
-        // a trivial rotate still tolerates a slow instance.
-        return max( 1800, $planned * 120 );
+        // Five minutes an operation is generous for a REORGANIZE, which is the
+        // right direction for a timeout whose only cost when too large is a
+        // slower recovery. Half an hour floor, so a rotate with nothing to do
+        // still tolerates a slow instance.
+        return max( 1800, $operations * 300 );
     }
 
     function action() {

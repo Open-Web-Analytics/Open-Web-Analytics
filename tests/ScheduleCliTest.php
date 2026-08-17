@@ -331,13 +331,57 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
     }
 
-    /** Rotate derives a lease from the work it can see, not a constant. */
-    public function testRotateDerivesItsLeaseFromPlannedWork()
+    /**
+     * Rotate's lease reflects the work PLANNED, not the partitions that happen
+     * to exist.
+     *
+     * The distinction is the whole point, and getting it wrong is not
+     * theoretical: an earlier version added the count of existing partitions on
+     * every table, so a routine rotate with nothing whatsoever to do asked for
+     * 8.3 hours on an installation whose rotate takes 3 seconds. Asserting only
+     * "at least the floor" would have passed that happily.
+     */
+    public function testRotateDerivesItsLeaseFromPlannedWorkNotExistingPartitions()
     {
-        $lease = (new \OWA\Module\Base\Controller\PartitionRotateCli([]))->getJobLease();
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
 
-        $this->assertGreaterThanOrEqual(1800, $lease, 'never below the floor');
-        $this->assertIsInt($lease);
+        // How much work is genuinely outstanding right now?
+        $through = \OWA\Core\Db::partitionLeadBoundary();
+        $budget  = $this->callProtected($ctrl, 'factTableBudget');
+
+        $operations = 0;
+        $existing   = 0;
+
+        foreach ($this->callProtected($ctrl, 'factTables') as $table) {
+
+            if (! $db->isPartitioned($table)) {
+                continue;
+            }
+
+            $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
+
+            $operations += (int) ($db->extendPartitions($table, $granularity, $through, true)['planned'] ?? 0);
+            $operations += count($db->planPartitionCompaction($table, $budget['limit'])['merges'] ?? []);
+            $existing   += count($db->getPartitionSpans($table));
+        }
+
+        $lease = $ctrl->getJobLease();
+
+        $this->assertSame(max(1800, $operations * 300), $lease, 'the lease must follow planned operations');
+
+        if ($operations === 0) {
+            $this->assertSame(1800, $lease, 'nothing to do means the floor, however many partitions exist');
+        }
+
+        // The guard that would have caught the original defect: an installation
+        // with hundreds of partitions and nothing to do must not ask for hours.
+        if ($existing > 50 && $operations === 0) {
+            $this->assertLessThan(
+                3600, $lease,
+                sprintf('%d existing partitions with no work planned must not inflate the lease', $existing)
+            );
+        }
     }
 
     // -----------------------------------------------------------------------
