@@ -1,0 +1,668 @@
+<?php
+
+require_once __DIR__ . '/CliControllerTestCase.php';
+
+/**
+ * The scheduler's own decisions: what it runs, what it refuses, what it records,
+ * and what it says when a job is not running.
+ *
+ * CronTest covers the schedule arithmetic and runs everywhere. This covers the
+ * layer above -- the registry, the config merge, the lock, outcome recording and
+ * the diagnosis -- and needs a database, so it skips in CI alongside its 232
+ * siblings.
+ */
+final class ScheduleCliTest extends CliControllerTestCase
+{
+    /** @var string[] job names to clean up */
+    private $jobs = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (['scheduled_job', 'job_lock'] as $e) {
+            \OWA\Core\CoreAPI::entityFactory('base.' . $e)->createTable();
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ($this->jobs as $name) {
+            $db->query(sprintf("DELETE FROM owa_scheduled_job WHERE job_name = '%s'", $db->prepare($name)));
+            $db->query(sprintf("DELETE FROM owa_job_lock WHERE job_name = '%s'", $db->prepare($name)));
+        }
+
+        $this->jobs = [];
+
+        // Settings are global; restore anything a case changed.
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduler_enabled', true);
+
+        parent::tearDown();
+    }
+
+    /** @return mixed */
+    private function callProtected(object $ctrl, string $method, array $args = [])
+    {
+        $m = new ReflectionMethod($ctrl, $method);
+        $m->setAccessible(true);
+
+        return $m->invokeArgs($ctrl, $args);
+    }
+
+    private function runner(array $params = []): object
+    {
+        return new \OWA\Module\Base\Controller\ScheduleRunCli($params);
+    }
+
+    private function statusCli(array $params = []): object
+    {
+        return new \OWA\Module\Base\Controller\ScheduleStatusCli($params);
+    }
+
+    /** Load the registry with a given OWA_SCHEDULED_JOBS-shaped override. */
+    private function jobsWith(array $configured): array
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', $configured);
+
+        return $this->callProtected($this->runner(), 'jobs');
+    }
+
+    private function track(string $name): string
+    {
+        $this->jobs[] = $name;
+
+        return $name;
+    }
+
+    // -----------------------------------------------------------------------
+    // What ships
+    // -----------------------------------------------------------------------
+
+    /**
+     * partition-rotate is registered with EMPTY params.
+     *
+     * The most valuable assertion in this file. It reddens if anyone later adds
+     * keep=24 to the REGISTRATION, which would quietly turn "nothing is deleted
+     * by default" into a retention policy that starts deleting data on upgrade.
+     * Adding keep in config is the supported path and has its own case below.
+     */
+    public function testRotateShipsWithNoArgumentsSoNothingIsEverDeleted()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertArrayHasKey('partition-rotate', $jobs);
+        $this->assertSame([], $jobs['partition-rotate']['params'], 'no keep= may be registered in code');
+        $this->assertSame('@monthly', $jobs['partition-rotate']['schedule']);
+        $this->assertSame('code', $jobs['partition-rotate']['source']);
+    }
+
+    /** Only that one job ships; everything else is opt-in. */
+    public function testOnlyPartitionRotateIsRegisteredByDefault()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertSame(['partition-rotate'], array_keys($jobs));
+    }
+
+    /** Every registered job must name a real command and parse. */
+    public function testEveryRegisteredJobIsUsable()
+    {
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ($this->callProtected($this->runner(), 'jobs') as $name => $job) {
+            $this->assertNotEmpty($s->getCliCommandClass($job['command']), "$name names an unregistered command");
+            $this->assertIsArray(\OWA\Core\Cron::parse($job['schedule']), "$name has an unparseable schedule");
+        }
+    }
+
+    /** Building the registry twice does not duplicate or drop anything. */
+    public function testLoadingJobsIsIdempotent()
+    {
+        $once  = $this->callProtected($this->runner(), 'jobs');
+        $twice = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertSame($once, $twice);
+    }
+
+    // -----------------------------------------------------------------------
+    // OWA_SCHEDULED_JOBS -- every row of the merge table
+    // -----------------------------------------------------------------------
+
+    /** Giving only params keeps the shipped schedule, and vice versa. */
+    public function testConfigOverridesPerKey()
+    {
+        $jobs = $this->jobsWith(['partition-rotate' => ['params' => ['keep' => 24]]]);
+
+        $this->assertSame(['keep' => 24], $jobs['partition-rotate']['params']);
+        $this->assertSame('@monthly', $jobs['partition-rotate']['schedule'], 'the shipped schedule survives');
+        $this->assertSame('config-override', $jobs['partition-rotate']['source']);
+
+        $jobs = $this->jobsWith(['partition-rotate' => ['schedule' => '@daily']]);
+
+        $this->assertSame('@daily', $jobs['partition-rotate']['schedule']);
+        $this->assertSame([], $jobs['partition-rotate']['params'], 'the shipped params survive');
+    }
+
+    /** A job the release never registered can be added outright. */
+    public function testConfigCanAddAJob()
+    {
+        $jobs = $this->jobsWith([
+            'nightly-flush' => ['command' => 'flush-cache', 'schedule' => '@daily'],
+        ]);
+
+        $this->assertArrayHasKey('nightly-flush', $jobs);
+        $this->assertSame('flush-cache', $jobs['nightly-flush']['command']);
+        $this->assertSame('config', $jobs['nightly-flush']['source']);
+    }
+
+    /**
+     * The same command twice under different names: two jobs, two state rows,
+     * two locks — so one instance running never blocks the other.
+     */
+    public function testTheSameCommandCanBeScheduledTwice()
+    {
+        $jobs = $this->jobsWith([
+            'rotate-one-table' => [
+                'command'  => 'partition-rotate',
+                'params'   => ['table' => 'owa_click'],
+                'schedule' => '@weekly',
+            ],
+        ]);
+
+        $this->assertSame('partition-rotate', $jobs['partition-rotate']['command']);
+        $this->assertSame('partition-rotate', $jobs['rotate-one-table']['command']);
+        $this->assertSame([], $jobs['partition-rotate']['params']);
+        $this->assertSame(['table' => 'owa_click'], $jobs['rotate-one-table']['params']);
+        $this->assertNotSame($jobs['partition-rotate']['schedule'], $jobs['rotate-one-table']['schedule']);
+    }
+
+    /**
+     * A bad entry disables itself and nothing else. A typo in one line of
+     * config must never stop the other jobs running.
+     */
+    public function testABadEntryDisablesOnlyItself()
+    {
+        $cases = [
+            'no command'        => ['schedule' => '@daily'],
+            'no schedule'       => ['command' => 'flush-cache'],
+            'unknown command'   => ['command' => 'no-such-command', 'schedule' => '@daily'],
+            'not an array'      => 'nonsense',
+        ];
+
+        foreach ($cases as $label => $spec) {
+            $jobs = $this->jobsWith(['broken' => $spec, 'ok-one' => ['command' => 'flush-cache', 'schedule' => '@daily']]);
+
+            $this->assertArrayNotHasKey('broken', $jobs, "$label should be refused");
+            $this->assertArrayHasKey('ok-one', $jobs, "$label must not take the other jobs down");
+            $this->assertArrayHasKey('partition-rotate', $jobs, "$label must not take the shipped job down");
+        }
+    }
+
+    /**
+     * The denylist is checked against the COMMAND, not the job name, so a
+     * friendly label cannot smuggle one past.
+     */
+    public function testDangerousCommandsAreRefusedEvenFromConfig()
+    {
+        foreach (['install', 'update', 'reset-secrets'] as $command) {
+            $jobs = $this->jobsWith(['harmless-sounding' => ['command' => $command, 'schedule' => '@daily']]);
+
+            $this->assertArrayNotHasKey('harmless-sounding', $jobs, "$command must never be schedulable");
+        }
+    }
+
+    /** 'off' leaves a job registered and listed, just never due. */
+    public function testOffLeavesAJobListedButNeverDue()
+    {
+        $jobs = $this->jobsWith(['partition-rotate' => ['schedule' => 'off']]);
+
+        $this->assertArrayHasKey('partition-rotate', $jobs, 'off is a state, not an absence');
+        $this->assertTrue($this->callProtected($this->runner(), 'isDisabled', [$jobs['partition-rotate']]));
+        $this->assertNull($this->callProtected($this->runner(), 'parsedSchedule', [$jobs['partition-rotate']]));
+    }
+
+    // -----------------------------------------------------------------------
+    // Locking
+    // -----------------------------------------------------------------------
+
+    public function testALockIsExclusiveAndReleasableOnlyByItsOwner()
+    {
+        $name = $this->track('owa_test_lock_' . bin2hex(random_bytes(3)));
+
+        $mine   = new \OWA\Module\Base\Classes\JobLease($name);
+        $theirs = new \OWA\Module\Base\Classes\JobLease($name);
+
+        $this->assertTrue($mine->acquire(3600));
+        $this->assertFalse($theirs->acquire(3600), 'a second holder must be refused');
+
+        $this->assertTrue($mine->refresh(3600), 'the owner may extend');
+        $this->assertFalse($theirs->refresh(3600), 'a stranger may not');
+
+        $theirs->release();
+        $this->assertNotNull(\OWA\Core\CoreAPI::dbSingleton()->getJobLock($name), 'a stranger cannot release it');
+
+        $mine->release();
+        $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->getJobLock($name));
+    }
+
+    /**
+     * An expired lock is taken over, and the original holder finishing late
+     * cannot then release the lock belonging to the run that replaced it.
+     */
+    public function testAnExpiredLockIsTakenOverSafely()
+    {
+        $name = $this->track('owa_test_lock_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $dead = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($dead->acquire(3600));
+
+        $db->query(sprintf(
+            "UPDATE owa_job_lock SET expires_at = %d WHERE job_name = '%s'",
+            time() - 10, $db->prepare($name)
+        ));
+
+        $next = new \OWA\Module\Base\Classes\JobLease($name);
+        $this->assertTrue($next->acquire(3600), 'an abandoned lock must be reclaimable');
+
+        $dead->release();
+        $this->assertNotNull($db->getJobLock($name), 'the late finisher must not release the new holder');
+
+        $next->release();
+    }
+
+    // -----------------------------------------------------------------------
+    // Outcome recording
+    // -----------------------------------------------------------------------
+
+    /** The default: a command that says nothing ran to completion. */
+    public function testACommandThatSaysNothingReportsOk()
+    {
+        $ctrl = new \OWA\Module\Base\Controller\PartitionStatusCli([]);
+
+        $this->assertSame('ok', $ctrl->getCliOutcome()['outcome']);
+    }
+
+    /** refuse() and fail() are distinct, and the FIRST message wins. */
+    public function testRefuseAndFailAreDistinctAndKeepTheFirstMessage()
+    {
+        $ctrl = $this->runner();
+
+        $this->callProtected($ctrl, 'refuse', ['first reason']);
+        $this->callProtected($ctrl, 'refuse', ['second reason']);
+
+        $out = $ctrl->getCliOutcome();
+        $this->assertSame('refused', $out['outcome']);
+        $this->assertSame('first reason', $out['message'], 'the first thing that went wrong is what is recorded');
+
+        $ctrl2 = $this->runner();
+        $this->callProtected($ctrl2, 'fail', ['it broke']);
+        $this->assertSame('failed', $ctrl2->getCliOutcome()['outcome']);
+    }
+
+    /**
+     * partition-rotate reports a refusal rather than looking like a success.
+     *
+     * Before the outcome channel, a refused run and a completed one were
+     * indistinguishable to any caller.
+     */
+    public function testRotateReportsItsRefusals()
+    {
+        foreach (['abc', '0', '-4'] as $bad) {
+            $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['keep' => $bad]);
+            $ctrl->action();
+
+            $this->assertSame('refused', $ctrl->getCliOutcome()['outcome'], "keep=$bad should be refused");
+        }
+
+        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['granularity' => 'fortnightly']);
+        $ctrl->action();
+
+        $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
+    }
+
+    /** Rotate derives a lease from the work it can see, not a constant. */
+    public function testRotateDerivesItsLeaseFromPlannedWork()
+    {
+        $lease = (new \OWA\Module\Base\Controller\PartitionRotateCli([]))->getJobLease();
+
+        $this->assertGreaterThanOrEqual(1800, $lease, 'never below the floor');
+        $this->assertIsInt($lease);
+    }
+
+    // -----------------------------------------------------------------------
+    // The dispatcher
+    // -----------------------------------------------------------------------
+
+    /** A disabled scheduler runs nothing and says so. */
+    public function testADisabledSchedulerRefusesToRun()
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduler_enabled', false);
+
+        $ctrl = $this->runner();
+        $ctrl->action();
+
+        $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
+        $this->assertStringContainsString('disabled', $ctrl->getCliOutcome()['message']);
+    }
+
+    /** An unknown job name is refused, with the valid names offered. */
+    public function testAnUnknownJobNameIsRefused()
+    {
+        $ctrl = $this->runner(['job' => 'no-such-job']);
+        $ctrl->action();
+
+        $out = $ctrl->getCliOutcome();
+        $this->assertSame('refused', $out['outcome']);
+        $this->assertStringContainsString('partition-rotate', $out['message'], 'say what the valid names are');
+    }
+
+    /** --dry-run changes no state at all. */
+    public function testDryRunWritesNothing()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $before = $db->get_results('SELECT * FROM owa_scheduled_job ORDER BY job_name');
+
+        $this->runner(['dry-run' => true])->action();
+
+        $this->assertEquals(
+            $before,
+            $db->get_results('SELECT * FROM owa_scheduled_job ORDER BY job_name'),
+            'a dry run must leave the state table untouched'
+        );
+    }
+
+    /**
+     * The state row is materialised for EVERY registered job, not only due
+     * ones -- which is what lets "a row exists" prove the dispatcher has run.
+     */
+    public function testStateIsMaterialisedForEveryJob()
+    {
+        $name = $this->track('owa_test_never_due_' . bin2hex(random_bytes(3)));
+
+        // Registered but never due: a schedule in the past cannot recur.
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
+            $name => ['command' => 'flush-cache', 'schedule' => '0 0 1 1 *'],
+        ]);
+
+        $ctrl = $this->runner(['dry-run' => false, 'job' => $name]);
+        $this->callProtected($ctrl, 'ensureState', [$name, false]);
+
+        $this->assertNotNull(
+            $this->callProtected($ctrl, 'state', [$name]),
+            'a row must exist even before the job is ever due'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Diagnosis
+    // -----------------------------------------------------------------------
+
+    /**
+     * A job registered in code whose command has been removed can never run,
+     * and must say so rather than reporting a next-due time.
+     */
+    public function testDiagnosisNamesAnUnregisteredCommand()
+    {
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'ghost',
+            ['command' => 'no-such-command', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            null, null, \OWA\Core\Cron::parse('@daily'), time(), true, false, true, time(),
+        ]);
+
+        $this->assertStringContainsString('not registered', (string) $reason);
+    }
+
+    /** A held lock reads as "running now", not as a fault. */
+    public function testDiagnosisReportsARunningJob()
+    {
+        $now = time();
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'busy',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            null,
+            ['job_name' => 'busy', 'owner' => 'x', 'acquired_at' => $now - 60, 'expires_at' => $now + 3600],
+            \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now,
+        ]);
+
+        $this->assertStringContainsString('Running now', (string) $reason);
+    }
+
+    /** An expired lock names the fix. */
+    public function testDiagnosisReportsAStuckLock()
+    {
+        $now = time();
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'stuck',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            null,
+            ['job_name' => 'stuck', 'owner' => 'x', 'acquired_at' => $now - 99999, 'expires_at' => $now - 60],
+            \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now,
+        ]);
+
+        $this->assertStringContainsString('died', (string) $reason);
+        $this->assertStringContainsString('--force-release', (string) $reason);
+    }
+
+    /**
+     * By elimination: overdue, with nothing else true, means the dispatcher is
+     * not running -- and it must say so and print the crontab line.
+     */
+    public function testDiagnosisBlamesTheDispatcherOnlyByElimination()
+    {
+        $now  = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'lonely', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago, 'last_status' => 'ok', 'last_message' => '-',
+            'last_success_at' => $long_ago, 'last_failure_at' => 0, 'run_count' => 1, 'failure_count' => 0,
+        ];
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'lonely',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+        ]);
+
+        $this->assertStringContainsString('does not appear to be running', (string) $reason);
+        $this->assertStringContainsString('cmd=schedule-run', (string) $reason, 'print the fix');
+    }
+
+    /**
+     * ...and its inverse: with a sibling having run moments ago, the dispatcher
+     * is demonstrably alive and must NOT be blamed.
+     */
+    public function testDiagnosisDoesNotBlameTheDispatcherWhenAnotherJobJustRan()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'lonely', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago, 'last_status' => 'ok', 'last_message' => '-',
+            'last_success_at' => $long_ago, 'last_failure_at' => 0, 'run_count' => 1, 'failure_count' => 0,
+        ];
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'lonely',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now - 30,
+        ]);
+
+        $this->assertStringNotContainsString('does not appear to be running', (string) $reason);
+        $this->assertStringContainsString('specific to this job', (string) $reason);
+    }
+
+    /** A failing job is reported as failing, with when and why. */
+    public function testDiagnosisReportsAFailingJob()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'sad', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago, 'last_status' => 'failed', 'last_message' => 'the disk is full',
+            'last_success_at' => $long_ago - 100, 'last_failure_at' => $long_ago,
+            'run_count' => 9, 'failure_count' => 3,
+        ];
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'sad',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+        ]);
+
+        $this->assertStringContainsString('Failing since', (string) $reason);
+        $this->assertStringContainsString('the disk is full', (string) $reason);
+    }
+
+    /** A crashed run is distinguishable from a failed one. */
+    public function testDiagnosisReportsARunThatNeverFinished()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'gone', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago - 500,      // finished BEFORE it started == died mid-run
+            'last_status' => 'ok', 'last_message' => '-',
+            'last_success_at' => $long_ago, 'last_failure_at' => 0, 'run_count' => 1, 'failure_count' => 0,
+        ];
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'gone',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+        ]);
+
+        $this->assertStringContainsString('never finished', (string) $reason);
+    }
+
+    /** Due but inside the tolerance of a normal tick is not a fault. */
+    public function testAJobDueMomentsAgoIsNotReportedAsBehind()
+    {
+        $now = time();
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'fresh',
+            ['command' => 'flush-cache', 'schedule' => '* * * * *', 'params' => [], 'source' => 'code'],
+            null, null, \OWA\Core\Cron::parse('* * * * *'), $now, true, false, true, $now,
+        ]);
+
+        $this->assertNull($reason, 'a job due within the grace period is simply waiting for the next tick');
+    }
+
+    /** An unreadable schedule is named as the reason, never defaulted. */
+    public function testDiagnosisNamesAnUnreadableSchedule()
+    {
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'wonky',
+            ['command' => 'flush-cache', 'schedule' => 'every thursday-ish', 'params' => [], 'source' => 'config'],
+            null, null, null, time(), true, false, true, time(),
+        ]);
+
+        $this->assertStringContainsString('cannot be read', (string) $reason);
+    }
+
+    // -----------------------------------------------------------------------
+    // Job lifecycle
+    // -----------------------------------------------------------------------
+
+    /**
+     * A de-registered job keeps its row, is never run, and is listed as
+     * orphaned. Auto-deleting would let a config typo destroy real history.
+     */
+    public function testAnOrphanedJobKeepsItsRowAndIsListed()
+    {
+        $name = $this->track('owa_test_orphan_' . bin2hex(random_bytes(3)));
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->query(sprintf(
+            "INSERT INTO owa_scheduled_job (id, job_name, last_status, last_message, last_params, last_run_at, run_count)
+             VALUES (%d, '%s', 'ok', '-', '-', %d, 4)",
+            crc32($name), $db->prepare($name), time() - 100
+        ));
+
+        $lines = $this->callProtected($this->statusCli(), 'describeOrphans', [
+            ['partition-rotate' => []],
+            $this->callProtected($this->statusCli(), 'allState'),
+        ]);
+
+        $this->assertStringContainsString($name, implode("\n", $lines));
+        $this->assertStringContainsString('Orphaned', implode("\n", $lines));
+
+        // Still there: nothing pruned it behind our back.
+        $this->assertNotNull($this->callProtected($this->statusCli(), 'state', [$name]));
+    }
+
+    /**
+     * A re-registered job resumes from its stored occurrence: due ONCE when the
+     * slot is stale, rather than reading as never-run or firing repeatedly.
+     */
+    public function testAReRegisteredJobResumesFromItsStoredSlot()
+    {
+        $parsed = \OWA\Core\Cron::parse('@daily');
+        $tz     = $this->callProtected($this->statusCli(), 'timezone');
+        $stale  = time() - (10 * 86400);
+
+        $slot = \OWA\Core\Cron::dueSlot($parsed, $stale, time(), $tz);
+        $this->assertNotNull($slot, 'a ten-day-old slot must be due');
+
+        // Once satisfied, not due again until the next occurrence.
+        $this->assertNull(
+            \OWA\Core\Cron::dueSlot($parsed, $slot, time(), $tz),
+            'it must run once on return, not repeatedly'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Documentation is a fixture
+    // -----------------------------------------------------------------------
+
+    /**
+     * The OWA_SCHEDULED_JOBS example in the shipped config template must satisfy
+     * the merge rules it documents.
+     *
+     * Documentation fails silently: the prose says one thing and the
+     * copy-pasteable block says another. While this feature was being designed
+     * the example twice acquired a defect the rules forbid -- a duplicated key,
+     * then an entry with no command.
+     */
+    public function testTheDocumentedExampleObeysItsOwnRules()
+    {
+        $template = OWA_DIR . 'owa-config-dist.php';
+
+        if (! is_readable($template)) {
+            $this->markTestSkipped('no config template to check');
+        }
+
+        $body = file_get_contents($template);
+
+        if (strpos($body, 'OWA_SCHEDULED_JOBS') === false) {
+            $this->markTestSkipped('the template does not document OWA_SCHEDULED_JOBS');
+        }
+
+        // Every commented example line naming a command must name a real one.
+        preg_match_all("/'command'\s*=>\s*'([^']+)'/", $body, $m);
+
+        $this->assertNotEmpty($m[1], 'the example should show at least one command');
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+
+        foreach ($m[1] as $command) {
+            $this->assertNotEmpty(
+                $s->getCliCommandClass($command),
+                "the documented example names '$command', which is not a registered command"
+            );
+        }
+    }
+}

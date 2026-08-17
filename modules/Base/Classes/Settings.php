@@ -172,6 +172,29 @@ namespace OWA\Module\Base\Classes;
             }
         }
 
+        /* SCHEDULED JOBS */
+
+        // A single array rather than a constant per job, so an installation can
+        // retune a shipped job, add one the release never registered, or run the
+        // same command twice under different names -- without a code change and
+        // without a new constant each time:
+        //
+        //   define('OWA_SCHEDULED_JOBS', array(
+        //       'partition-rotate' => array( 'params' => array( 'keep' => 24 ) ),
+        //       'drain-queue'      => array( 'command'  => 'processEventQueue',
+        //                                    'schedule' => '*/2 * * * *' ),
+        //   ));
+        //
+        // Keyed by job name; see owa_service::applyConfiguredJobs() for how an
+        // entry is merged and why a bad one disables only itself.
+        if (defined('OWA_SCHEDULED_JOBS') && is_array(OWA_SCHEDULED_JOBS)) {
+            $this->set('base', 'scheduled_jobs', OWA_SCHEDULED_JOBS);
+        }
+
+        if (defined('OWA_SCHEDULER_ENABLED')) {
+            $this->set('base', 'scheduler_enabled', (bool) OWA_SCHEDULER_ENABLED);
+        }
+
         /* CONFIGURATION ID */
 
         if (defined('OWA_CONFIGURATION_ID')) {
@@ -1052,7 +1075,11 @@ namespace OWA\Module\Base\Classes;
                 'cacheType'                            => '', // file, memory, memcache
                 'disabledEndpoints'                    => array('queue.php'),
                 'disableAllEndpoints'                => false,
-                'processQueuesJobSchedule'            => '10 * * * *',
+                // Scheduler. Jobs themselves are registered in code by each
+                // module; this holds only what OWA_SCHEDULED_JOBS overlays on
+                // top. See owa_service::loadJobs().
+                'scheduled_jobs'                    => array(),
+                'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
                 'update_session_user_name'            => true, // updates the session with latest user_name value
                 'log_owa_user_names'                => true,  // logs the OWA user name as the user_name property on events

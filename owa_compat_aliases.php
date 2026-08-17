@@ -154,6 +154,8 @@ function owa_compat_class_map(): array
         'owa_location_dim' => 'OWA\\Module\\Base\\Entity\\LocationDim',
         'owa_os' => 'OWA\\Module\\Base\\Entity\\Os',
         'owa_queue_item' => 'OWA\\Module\\Base\\Entity\\QueueItem',
+        'owa_job_lock' => 'OWA\\Module\\Base\\Entity\\JobLock',
+        'owa_scheduled_job' => 'OWA\\Module\\Base\\Entity\\ScheduledJob',
         'owa_referer' => 'OWA\\Module\\Base\\Entity\\Referer',
         'owa_request' => 'OWA\\Module\\Base\\Entity\\Request',
         'owa_search_term_dim' => 'OWA\\Module\\Base\\Entity\\SearchTermDim',

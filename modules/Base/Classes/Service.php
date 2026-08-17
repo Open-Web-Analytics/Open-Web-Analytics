@@ -229,6 +229,167 @@ class Service extends \OWA\Core\Base {
         $this->setMap('cli_commands', $command_map);
     }
 
+    /**
+     * Commands that must never be scheduled, however they are named.
+     *
+     * install and update re-run schema installation and mutate the schema out
+     * from under the running process; reset-secrets rewrites owa-config.php.
+     * Checked against the COMMAND rather than the job name, so a friendly label
+     * cannot smuggle one past.
+     */
+    const NEVER_SCHEDULE = array( 'install', 'update', 'reset-secrets' );
+
+    /**
+     * Build the job registry: what modules registered, overlaid with what
+     * OWA_SCHEDULED_JOBS says.
+     *
+     * Idempotent, and called only by the scheduler commands and tests -- there
+     * is no reason for every CLI invocation to build this map.
+     *
+     * A malformed entry disables THAT job and nothing else. A typo in one line
+     * of config must never stop the other jobs running, so every rejection here
+     * is per-entry and noticed by name.
+     *
+     * @return void
+     */
+    function loadJobs() {
+
+        // The merge validates commands, so the command map must be built first.
+        // Both are idempotent.
+        $this->loadCliCommands();
+
+        $jobs = array();
+
+        foreach ($this->modules as $k => $module) {
+
+            if (is_array($module->scheduled_jobs)) {
+                $jobs = array_merge($jobs, $module->scheduled_jobs);
+            }
+        }
+
+        $jobs = $this->applyConfiguredJobs( $jobs );
+
+        $this->setMap('scheduled_jobs', $jobs);
+    }
+
+    /**
+     * Overlay OWA_SCHEDULED_JOBS onto the registered jobs.
+     *
+     * Keyed by job name rather than a list of arrays each carrying a 'name', so
+     * a name cannot be missing and PHP itself rejects two entries claiming the
+     * same job -- a whole class of merge rule deleted rather than documented.
+     *
+     * Overrides are PER KEY: giving only 'params' keeps the registered schedule,
+     * giving only 'schedule' keeps the registered params. Forcing an operator to
+     * restate values they did not mean to change is how config drifts away from
+     * code.
+     *
+     * @param array $jobs  registered jobs, keyed by name
+     * @return array
+     */
+    protected function applyConfiguredJobs( $jobs ) {
+
+        $configured = \OWA\Core\CoreAPI::getSetting( 'base', 'scheduled_jobs' );
+
+        if ( ! is_array( $configured ) ) {
+
+            return $jobs;
+        }
+
+        foreach ( $configured as $name => $spec ) {
+
+            $name = trim( (string) $name );
+
+            if ( $name === '' || ! is_array( $spec ) ) {
+
+                \OWA\Core\CoreAPI::notice(
+                    'OWA_SCHEDULED_JOBS: entries must be keyed by job name with an array value. Skipping one.'
+                );
+
+                continue;
+            }
+
+            $known = isset( $jobs[ $name ] );
+
+            // A new job has nothing to inherit, so it must say what it runs and
+            // when. Guessing the command from the key is exactly the ambiguity
+            // separating name from command removes.
+            if ( ! $known ) {
+
+                foreach ( array( 'command', 'schedule' ) as $required ) {
+
+                    if ( empty( $spec[ $required ] ) ) {
+
+                        \OWA\Core\CoreAPI::notice( sprintf(
+                            'OWA_SCHEDULED_JOBS: "%s" is not a registered job, so it needs a "%s". Skipping it.',
+                            $name, $required
+                        ) );
+
+                        continue 2;
+                    }
+                }
+            }
+
+            $job = $known ? $jobs[ $name ] : array(
+                'name'   => $name,
+                'module' => 'config',
+                'params' => array(),
+            );
+
+            $job['source'] = $known ? 'config-override' : 'config';
+
+            if ( isset( $spec['command'] ) )  { $job['command']  = (string) $spec['command']; }
+            if ( isset( $spec['schedule'] ) ) { $job['schedule'] = (string) $spec['schedule']; }
+            if ( isset( $spec['params'] ) )   { $job['params']   = (array) $spec['params']; }
+
+            // A command nothing answers to would otherwise be listed as a
+            // healthy job with a next-due time, and only fail silently at
+            // dispatch. Refusing it here keeps the registry honest.
+            if ( ! $this->getCliCommandClass( $job['command'] ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'OWA_SCHEDULED_JOBS: "%s" names command "%s", which is not registered. Skipping it.',
+                    $name, $job['command']
+                ) );
+
+                continue;
+            }
+
+            if ( in_array( $job['command'], self::NEVER_SCHEDULE, true ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'OWA_SCHEDULED_JOBS: "%s" runs %s, which must never be scheduled. Skipping it.',
+                    $name, $job['command']
+                ) );
+
+                continue;
+            }
+
+            $jobs[ $name ] = $job;
+        }
+
+        return $jobs;
+    }
+
+    /**
+     * @param string $name
+     * @return array|false
+     */
+    function getJob( $name ) {
+
+        return $this->getMapValue('scheduled_jobs', $name);
+    }
+
+    /**
+     * @return array  every job, keyed by name
+     */
+    function getJobs() {
+
+        $jobs = $this->getMap('scheduled_jobs');
+
+        return is_array( $jobs ) ? $jobs : array();
+    }
+
     function _loadApiMethods() {
 
         $method_map = array();

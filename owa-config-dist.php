@@ -118,4 +118,73 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_USE_STATIC_CONFIG_ONLY', true);
 
+
+/**
+ * SCHEDULED JOBS
+ *
+ * OWA runs its periodic maintenance from a SINGLE cron entry:
+ *
+ *   * * * * * php /path/to/owa/cli.php cmd=schedule-run
+ *
+ * Every minute, because that line is not the schedule -- it is the finest
+ * resolution the schedules below can use. Each job decides for itself how often
+ * it actually runs. A boot costs about 66ms, so a day of ticks is roughly 95
+ * seconds of CPU.
+ *
+ * Out of the box exactly one job is registered: partition-rotate, monthly, with
+ * NO arguments -- it extends the fact tables' partition lead and merges old
+ * periods to stay within the open-file budget, and never deletes anything.
+ *
+ * Use OWA_SCHEDULED_JOBS to retune what ships, to add jobs the release does not
+ * register, or to turn one off. It is keyed by JOB NAME; 'command' is the CLI
+ * command that actually runs. They are separate so one command can be scheduled
+ * more than once with different arguments.
+ *
+ * Overrides are per key: giving only 'params' keeps the shipped schedule, and
+ * giving only 'schedule' keeps the shipped arguments.
+ *
+ * Schedules are standard five-field cron expressions, or the usual @hourly,
+ * @daily, @weekly, @monthly and @yearly shorthands, or 'off'. They are read in
+ * this installation's configured timezone. An entry that cannot be read disables
+ * THAT job and nothing else -- it is never given a default, because running
+ * something on a cadence nobody chose is worse than not running it.
+ *
+ * Check what is registered, and why anything is not running, with:
+ *
+ *   php cli.php cmd=schedule-status
+ */
+
+//define('OWA_SCHEDULED_JOBS', array(
+//
+//    // Keep two years of history. NOTHING is deleted unless you ask for it
+//    // here: the shipped job runs with no keep= at all.
+//    'partition-rotate' => array( 'params' => array( 'keep' => 24 ) ),
+//
+//    // Drain the event queue every two minutes. Not registered by default,
+//    // because whether to drain at all depends on whether you queue events.
+//    'drain-queue' => array(
+//        'command'  => 'processEventQueue',
+//        'schedule' => '*/2 * * * *',
+//    ),
+//
+//    // The same command a second time, under its own name, with its own
+//    // arguments and cadence.
+//    'rotate-request-table' => array(
+//        'command'  => 'partition-rotate',
+//        'params'   => array( 'table' => 'owa_request' ),
+//        'schedule' => '@weekly',
+//    ),
+//
+//    // Turn a shipped job off.
+//    // 'partition-rotate' => array( 'schedule' => 'off' ),
+//));
+
+/**
+ * DISABLE THE SCHEDULER
+ *
+ * Stops every job without touching crontab -- for a migration or an incident.
+ */
+
+//define('OWA_SCHEDULER_ENABLED', false);
+
 ?>

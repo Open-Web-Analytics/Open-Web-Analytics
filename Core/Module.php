@@ -192,6 +192,13 @@ abstract class Module {
     var $cli_commands = array();
 
     /**
+     * Scheduled jobs this module contributes, keyed by job name.
+     *
+     * @var array
+     */
+    var $scheduled_jobs = array();
+
+    /**
      * API Methods
      *
      * @var array
@@ -258,6 +265,11 @@ abstract class Module {
          * Register CLI Commands
          */
         $this->registerCliCommands();
+
+        /**
+         * Register Scheduled Jobs -- after the commands they name
+         */
+        $this->registerJobs();
 
         /**
          * Register API Methods
@@ -990,6 +1002,48 @@ abstract class Module {
         $this->cli_commands[$command] = $class;
     }
 
+    /**
+     * Register a CLI command to be run on a schedule by cmd=schedule-run.
+     *
+     * A JOB IS A CLI COMMAND. Whatever the scheduler runs, an operator can run
+     * by hand with the same name and see the same output -- a job that cannot be
+     * reproduced from a terminal cannot be debugged from one either. It also
+     * means every job already has a capability check and its own tests.
+     *
+     * All four arguments are stated every time. $command is deliberately NOT
+     * defaulted to $name: a registration you can read without consulting the CLI
+     * registry to work out whether the first argument is a label or a command is
+     * worth two repeated words.
+     *
+     * $name is identity -- what the state row keys on, what schedule-status
+     * prints, what `schedule-run job=<name>` takes. $command is what runs. They
+     * are separate so one command can be scheduled more than once with different
+     * arguments and cadences.
+     *
+     * A SCHEDULED JOB MUST BE CONVERGENT, NOT INCREMENTAL. The scheduler does not
+     * backfill: a job missed for three days runs once, not three times. That is
+     * safe for partition-rotate, which extends *to* a boundary computed from
+     * today. A job that processes "yesterday's data" is incremental and will
+     * quietly skip days -- make it convergent before registering it.
+     *
+     * @param string $name      job identity, unique across all modules
+     * @param string $command   a name registered with registerCliCommand()
+     * @param string $schedule  a cron expression, an @alias, or 'off'
+     * @param array  $params    arguments passed to the controller verbatim
+     * @return void
+     */
+    function registerJob( $name, $command, $schedule, $params ) {
+
+        $this->scheduled_jobs[ $name ] = array(
+            'name'     => $name,
+            'command'  => $command,
+            'schedule' => $schedule,
+            'params'   => (array) $params,
+            'module'   => $this->name,
+            'source'   => 'code',
+        );
+    }
+
     function registerFormatter($type, $formatter) {
 
         $this->formatters[$type] = $formatter;
@@ -1107,6 +1161,16 @@ abstract class Module {
      * and should be redefined in a concrete module class.
      */
     function registerCliCommands() {
+
+        return false;
+    }
+
+    /**
+     * Abstract method for registering scheduled jobs.
+     *
+     * Called by a module's constructor; redefine in a concrete module class.
+     */
+    function registerJobs() {
 
         return false;
     }

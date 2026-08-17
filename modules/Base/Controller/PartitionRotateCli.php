@@ -36,6 +36,60 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionRotateCli extends PartitionsCli {
 
+    /**
+     * How long this job's lock should be trusted without proof of life.
+     *
+     * Derived rather than hardcoded, because the cost of a rotate is dominated
+     * by how many partitions it must add, merge or drop -- each an ALTER TABLE
+     * -- and that count is knowable before any of them runs. An installation
+     * catching up after a year of neglect legitimately needs far longer than one
+     * rotating on schedule, and guessing a single number for both would either
+     * duplicate the long run or leave the short one wedged after a crash.
+     *
+     * partition-rotate cannot call heartbeat() to extend as it goes: it spends
+     * its time inside one blocking ALTER TABLE and never returns to PHP
+     * mid-statement. That is exactly why it needs a generous estimate up front.
+     *
+     * The estimate is read-only and is taken before the lock, so two dispatchers
+     * asking at once is harmless.
+     *
+     * @return int seconds
+     */
+    public function getJobLease() {
+
+        $planned = 0;
+
+        try {
+
+            $db      = \OWA\Core\CoreAPI::dbSingleton();
+            $through = \OWA\Core\Db::partitionLeadBoundary();
+
+            foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
+
+                if ( ! $db->isPartitioned( $table ) ) {
+
+                    continue;
+                }
+
+                $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
+                $plan        = $db->extendPartitions( $table, $granularity, $through, true );
+
+                $planned += (int) ( $plan['planned'] ?? 0 );
+                $planned += count( $db->getPartitionSpans( $table ) );
+            }
+
+        } catch ( \Throwable $t ) {
+
+            // An estimate that cannot be made must not stop the job running.
+            // Fall back to the base default, which errs long by design.
+            return parent::getJobLease();
+        }
+
+        // Roughly two minutes per partition touched, floored at half an hour so
+        // a trivial rotate still tolerates a slow instance.
+        return max( 1800, $planned * 120 );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
@@ -58,12 +112,10 @@ class PartitionRotateCli extends PartitionsCli {
 
             if ( ! ctype_digit( (string) $keep ) || (int) $keep < 1 ) {
 
-                \OWA\Core\CoreAPI::notice(
+                return $this->refuse(
                     'keep must be a number of months to retain, such as keep=24. '
                   . 'Omit it entirely to retain everything.'
                 );
-
-                return;
             }
 
             // Expressed as a period rather than a date on purpose. A fixed date
@@ -73,7 +125,7 @@ class PartitionRotateCli extends PartitionsCli {
 
             if ( ! $cutoff ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( 'Could not work out a cutoff for keep=%s.', $keep ) );
+                return $this->refuse( sprintf( 'Could not work out a cutoff for keep=%s.', $keep ) );
 
                 return;
             }
@@ -88,20 +140,16 @@ class PartitionRotateCli extends PartitionsCli {
 
         if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            return $this->refuse( sprintf(
                 'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
             ) );
-
-            return;
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
 
         if ( ! $tables ) {
 
-            \OWA\Core\CoreAPI::notice( 'No fact tables found.' );
-
-            return;
+            return $this->refuse( 'No fact tables found.' );
         }
 
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
