@@ -42,33 +42,35 @@ class PartitionRotateCli extends PartitionsCli {
      * A CRASH-RECOVERY TIMEOUT, not a runtime budget: on any normal path the
      * lock is released in a finally and this is never consulted. It decides only
      * how long after a process dies before another run may assume it is really
-     * dead.
+     * dead. Too short lets a second copy start alongside a run still working;
+     * too long merely delays recovery, for which --force-release exists. Those
+     * costs are asymmetric, so this errs long.
      *
-     * Derived from the work actually PLANNED -- the partitions this run will
-     * create and the groups it will merge, each of which is an ALTER TABLE.
-     * Counting the partitions a table already HAS would be wrong and was: a
-     * routine rotate with nothing to do would have asked for hours because the
-     * tables happen to hold a few hundred partitions between them, when the run
-     * takes seconds.
+     * WHAT MAKES A ROTATE SLOW IS DATA REWRITTEN, NOT PARTITIONS COUNTED.
+     * Extending the lead is ONE `REORGANIZE PARTITION pmax INTO (...)` however
+     * many periods it creates -- measured here at 1.52s to create 31 of them --
+     * and its cost is proportional to what is sitting in the catch-all. Each
+     * merge is a separate REORGANIZE over the partitions it combines. Drops are
+     * not counted at all: DROP PARTITION discards a file and returns.
      *
-     * Drops are deliberately not counted. DROP PARTITION discards a file and
-     * returns; it is not what makes a rotate slow.
+     * Charging per partition created was wrong twice over, and produced a lease
+     * of 2.6 hours for that 1.52-second extension.
      *
-     * Uncapped on purpose. Too long merely delays recovery, and
-     * `schedule-run --force-release` is there for that; too short lets a second
-     * copy start alongside a run that is still working, which is the direction
-     * worth avoiding. partition-rotate cannot call heartbeat() to extend as it
-     * goes -- it sits inside one blocking ALTER TABLE and never returns to PHP
-     * mid-statement -- so the estimate has to stand on its own.
+     * Row counts come from information_schema and are estimates, which is
+     * appropriate: this is an estimate, and an exact COUNT(*) over a large
+     * catch-all before every rotate would cost more than it informs.
      *
      * Read-only, and taken before the lock, so two dispatchers estimating at
-     * once is harmless.
+     * once is harmless. partition-rotate cannot call heartbeat() to extend as it
+     * goes -- it sits inside one blocking ALTER TABLE and never returns to PHP
+     * mid-statement -- so this estimate has to stand on its own.
      *
      * @return int seconds
      */
     public function getJobLease() {
 
-        $operations = 0;
+        $statements = 0;
+        $rows       = 0;
 
         try {
 
@@ -84,12 +86,42 @@ class PartitionRotateCli extends PartitionsCli {
                 }
 
                 $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
+                $sizes       = array();
+                $catch_all   = 0;
 
+                foreach ( $db->listPartitions( $table ) as $p ) {
+
+                    $sizes[ $p['name'] ] = (int) $p['rows'];
+
+                    if ( strtoupper( $p['less_than'] ) === OWA_DTD_PARTITION_MAXVALUE ) {
+
+                        $catch_all = (int) $p['rows'];
+                    }
+                }
+
+                // One statement, rewriting whatever has collected in the
+                // catch-all -- which is nothing on a maintained installation and
+                // everything on a neglected one.
                 $extend = $db->extendPartitions( $table, $granularity, $through, true );
+
+                if ( ! empty( $extend['planned'] ) ) {
+
+                    $statements++;
+                    $rows += $catch_all;
+                }
+
+                // One statement per merge, over the partitions it combines.
                 $compact = $db->planPartitionCompaction( $table, $budget['limit'] );
 
-                $operations += (int) ( $extend['planned'] ?? 0 );
-                $operations += count( $compact['merges'] ?? array() );
+                foreach ( (array) ( $compact['merges'] ?? array() ) as $merge ) {
+
+                    $statements++;
+
+                    foreach ( (array) ( $merge['names'] ?? array() ) as $name ) {
+
+                        $rows += isset( $sizes[ $name ] ) ? $sizes[ $name ] : 0;
+                    }
+                }
             }
 
         } catch ( \Throwable $t ) {
@@ -99,11 +131,31 @@ class PartitionRotateCli extends PartitionsCli {
             return parent::getJobLease();
         }
 
-        // Five minutes an operation is generous for a REORGANIZE, which is the
-        // right direction for a timeout whose only cost when too large is a
-        // slower recovery. Half an hour floor, so a rotate with nothing to do
-        // still tolerates a slow instance.
-        return max( 1800, $operations * 300 );
+        return self::leaseFor( $statements, $rows );
+    }
+
+    /**
+     * The lease arithmetic, separated so it can be tested at sizes this
+     * installation does not have.
+     *
+     * Two minutes per statement covers fixed overhead and lock acquisition.
+     * Five minutes per million rows rewritten is around sixty times the
+     * ~5s/million measured when this partitioning was built -- the margin a
+     * crash-recovery timeout should carry. Scaled smoothly rather than rounded
+     * up per million, so a few hundred rows do not cost the same as a million.
+     * Half an hour floor, so a rotate with nothing to do still tolerates a slow
+     * instance.
+     *
+     * @param int $statements  ALTER TABLE statements the run will issue
+     * @param int $rows        rows those statements will rewrite
+     * @return int seconds
+     */
+    public static function leaseFor( $statements, $rows ) {
+
+        $seconds = ( (int) $statements * 120 )
+                 + (int) round( max( 0, (int) $rows ) / 1000000 * 300 );
+
+        return max( 1800, $seconds );
     }
 
     function action() {

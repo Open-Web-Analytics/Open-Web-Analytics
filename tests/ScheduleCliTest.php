@@ -332,26 +332,29 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * Rotate's lease reflects the work PLANNED, not the partitions that happen
-     * to exist.
+     * Rotate's lease reflects the DATA a run will rewrite, not the partitions
+     * that happen to exist and not the number of periods it will create.
      *
-     * The distinction is the whole point, and getting it wrong is not
-     * theoretical: an earlier version added the count of existing partitions on
-     * every table, so a routine rotate with nothing whatsoever to do asked for
-     * 8.3 hours on an installation whose rotate takes 3 seconds. Asserting only
-     * "at least the floor" would have passed that happily.
+     * Both mistakes were made and both were expensive. Counting existing
+     * partitions gave 8.3 hours for a rotate with nothing to do. Counting
+     * created partitions gave 2.6 hours for an extension measured at 1.52
+     * seconds -- because extending the lead is ONE statement however many
+     * periods it produces, and its cost follows what is in the catch-all.
+     *
+     * A test asserting only "at least the floor" passed both.
      */
-    public function testRotateDerivesItsLeaseFromPlannedWorkNotExistingPartitions()
+    public function testRotateLeaseFollowsDataRewrittenNotPartitionCount()
     {
         $db   = \OWA\Core\CoreAPI::dbSingleton();
         $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
 
-        // How much work is genuinely outstanding right now?
         $through = \OWA\Core\Db::partitionLeadBoundary();
         $budget  = $this->callProtected($ctrl, 'factTableBudget');
 
-        $operations = 0;
+        $statements = 0;
+        $rows       = 0;
         $existing   = 0;
+        $creating   = 0;
 
         foreach ($this->callProtected($ctrl, 'factTables') as $table) {
 
@@ -360,27 +363,49 @@ final class ScheduleCliTest extends CliControllerTestCase
             }
 
             $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
+            $sizes       = [];
+            $catch_all   = 0;
 
-            $operations += (int) ($db->extendPartitions($table, $granularity, $through, true)['planned'] ?? 0);
-            $operations += count($db->planPartitionCompaction($table, $budget['limit'])['merges'] ?? []);
-            $existing   += count($db->getPartitionSpans($table));
+            foreach ($db->listPartitions($table) as $p) {
+                $sizes[$p['name']] = (int) $p['rows'];
+
+                if (strtoupper($p['less_than']) === OWA_DTD_PARTITION_MAXVALUE) {
+                    $catch_all = (int) $p['rows'];
+                }
+            }
+
+            $extend = $db->extendPartitions($table, $granularity, $through, true);
+
+            if (! empty($extend['planned'])) {
+                $statements++;
+                $rows     += $catch_all;
+                $creating += (int) $extend['planned'];
+            }
+
+            foreach ((array) ($db->planPartitionCompaction($table, $budget['limit'])['merges'] ?? []) as $merge) {
+                $statements++;
+
+                foreach ((array) ($merge['names'] ?? []) as $n) {
+                    $rows += $sizes[$n] ?? 0;
+                }
+            }
+
+            $existing += count($db->getPartitionSpans($table));
         }
 
-        $lease = $ctrl->getJobLease();
+        $expected = max(1800, ($statements * 120) + (int) ceil($rows / 1000000) * 300);
 
-        $this->assertSame(max(1800, $operations * 300), $lease, 'the lease must follow planned operations');
+        $this->assertSame($expected, $ctrl->getJobLease(), 'the lease must follow statements and rows');
 
-        if ($operations === 0) {
-            $this->assertSame(1800, $lease, 'nothing to do means the floor, however many partitions exist');
+        // The two guards that would each have caught a past defect.
+        if ($existing > 50 && $statements === 0) {
+            $this->assertSame(1800, $ctrl->getJobLease(),
+                sprintf('%d existing partitions with nothing planned must give the floor', $existing));
         }
 
-        // The guard that would have caught the original defect: an installation
-        // with hundreds of partitions and nothing to do must not ask for hours.
-        if ($existing > 50 && $operations === 0) {
-            $this->assertLessThan(
-                3600, $lease,
-                sprintf('%d existing partitions with no work planned must not inflate the lease', $existing)
-            );
+        if ($creating > 10 && $rows < 100000) {
+            $this->assertLessThan(3600, $ctrl->getJobLease(),
+                sprintf('creating %d periods over %d rows is one cheap statement', $creating, $rows));
         }
     }
 
@@ -999,7 +1024,96 @@ final class ScheduleCliTest extends CliControllerTestCase
         );
     }
 
+    /**
+     * The lease arithmetic at sizes this installation does not have.
+     *
+     * Tested through leaseFor() because the interesting terms are both zero on
+     * a maintained install -- so a test that only recomputes the estimate from
+     * live state agrees with every wrong version of the formula. Two mutants
+     * survived exactly that way before this was split out.
+     */
+    public function testTheLeaseArithmetic()
+    {
+        $lease = fn(int $st, int $rows) => \OWA\Module\Base\Controller\PartitionRotateCli::leaseFor($st, $rows);
+
+        // Nothing to do, and a few hundred rows, are both the floor.
+        $this->assertSame(1800, $lease(0, 0));
+        $this->assertSame(1800, $lease(1, 569), 'one cheap statement is still the floor');
+        $this->assertSame(1800, $lease(0, 999999), 'sub-million never reaches the floor');
+
+        // Rows drive it, and drive it smoothly.
+        $this->assertSame(3120, $lease(1, 10000000), '10M rows: 120 + 3000');
+        $this->assertSame(15120, $lease(1, 50000000), '50M rows: 120 + 15000');
+        $this->assertGreaterThan($lease(1, 10000000), $lease(1, 20000000), 'more data means a longer lease');
+
+        // Statements matter, but far less than data -- which is the whole point.
+        $this->assertSame(1800, $lease(5, 0), 'five empty merges are still the floor');
+        $this->assertLessThan($lease(1, 50000000), $lease(20, 0), 'twenty statements cost less than 50M rows');
+
+        // Never negative, never below the floor.
+        $this->assertSame(1800, $lease(0, -1));
+        $this->assertSame(1800, $lease(-3, 0));
+    }
+
+    /**
+     * A real lead gap: one statement creating many periods over a tiny table
+     * must NOT be priced per period.
+     *
+     * This is the case that produced a 2.6-hour lease for 1.52 seconds of work.
+     */
+    public function testCreatingManyPeriodsOverLittleDataIsCheap()
+    {
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = 'owa_domstream';
+
+        if (! $db->isPartitioned($table)) {
+            $this->markTestSkipped("$table is not partitioned.");
+        }
+
+        $spans = $db->getPartitionSpans($table);
+
+        if (count($spans) < 10) {
+            $this->markTestSkipped("$table has too few partitions to open a gap in.");
+        }
+
+        $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
+        $keep        = array_slice($spans, 0, 6);
+
+        try {
+            // Strip the lead, leaving a gap a rotate would have to rebuild.
+            $db->query("ALTER TABLE $table REMOVE PARTITIONING");
+            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                $keep[0]['start'],
+                date('Ymd', strtotime(end($keep)['less_than'] . ' -1 day')),
+                $granularity
+            ));
+
+            $planned = (int) $db->extendPartitions(
+                $table, $granularity, \OWA\Core\Db::partitionLeadBoundary(), true
+            )['planned'];
+
+            $this->assertGreaterThan(10, $planned, 'the fixture should leave real work to do');
+
+            $lease = (new \OWA\Module\Base\Controller\PartitionRotateCli(['table' => $table]))->getJobLease();
+
+            $this->assertSame(
+                1800, $lease,
+                sprintf('%d periods over a few hundred rows is one cheap statement, not %ds of work', $planned, $lease)
+            );
+
+        } finally {
+            $db->query("ALTER TABLE $table REMOVE PARTITIONING");
+            $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+                $spans[0]['start'],
+                date('Ymd', strtotime(end($spans)['less_than'] . ' -1 day')),
+                $granularity
+            ));
+        }
+
+        $this->assertCount(count($spans), $db->getPartitionSpans($table), 'the fixture must be restored');
+    }
 }
+
 
 /**
  * A command with a distinctive lease, used to prove the dispatcher asks the
