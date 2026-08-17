@@ -290,9 +290,11 @@ class PartitionRotateCli extends PartitionsCli {
         if ( ! $rotated ) {
 
             return $this->refuse( sprintf(
-                'Nothing to rotate: %s not partitioned. Run cmd=partition-init once, in a '
-              . 'maintenance window, and this will start doing its job.',
-                count( $tables ) === 1 ? 'that table is' : 'no fact table is'
+                'Nothing to rotate: %s. Run cmd=partition-init once, in a maintenance '
+              . 'window, and this will start doing its job.',
+                count( $tables ) === 1
+                    ? 'that table is not partitioned'
+                    : 'no fact table is partitioned'
             ) );
         }
     }

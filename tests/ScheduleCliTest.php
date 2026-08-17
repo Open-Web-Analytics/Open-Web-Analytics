@@ -784,6 +784,18 @@ final class ScheduleCliTest extends CliControllerTestCase
             $this->assertSame('refused', $out['outcome'], 'skipping every table is not success');
             $this->assertStringContainsString('partition-init', $out['message'], 'name the missing step');
 
+            // The message is what an operator reads every month on an install
+            // that never ran partition-init, so it has to read as a sentence.
+            // The first version rendered "no fact table is not partitioned" --
+            // the plural branch supplied "no fact table is" into a template
+            // that already said "not partitioned".
+            $this->assertStringContainsString('that table is not partitioned', $out['message'],
+                'the single-table branch names the table it skipped');
+            $this->assertDoesNotMatchRegularExpression(
+                '/\bis not\b[^.]*\bnot\b/', $out['message'],
+                'no double negative in the sentence'
+            );
+
         } finally {
 
             // Put it back exactly as it was.
@@ -796,7 +808,16 @@ final class ScheduleCliTest extends CliControllerTestCase
             }
         }
 
-        $this->assertTrue($db->isPartitioned($table), 'the fixture must be restored');
+        // This case mutates a REAL fact table, which other tests also read, so
+        // it asserts its own restore rather than leaving a lossy one to surface
+        // later as an unrelated failure somewhere else in the suite. A
+        // misattributed failure costs far more to diagnose than the assertion
+        // costs to write.
+        $this->assertTrue($db->isPartitioned($table), 'the fixture must be repartitioned');
+        $this->assertSame(
+            count($spans), count($db->getPartitionSpans($table)),
+            'the fixture must be restored to the SAME layout, not merely to some layout'
+        );
     }
 
     /** ...and reports ok when it did rotate something. */
