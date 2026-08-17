@@ -451,7 +451,7 @@ class CoreAPI {
 
             \OWA\Core\CoreAPI::notice( 'Refusing to resolve action: expected <module>.<action>.' );
 
-            throw new \Exception( 'Invalid action.' );
+            throw new \OWA\Core\Exception\InvalidAction( 'Invalid action.' );
         }
 
         list( $module, $file ) = $segments;
@@ -464,7 +464,7 @@ class CoreAPI {
                     sprintf( 'Refusing to resolve action: %s segment is not a bare identifier.', $part )
                 );
 
-                throw new \Exception( 'Invalid action.' );
+                throw new \OWA\Core\Exception\InvalidAction( 'Invalid action.' );
             }
         }
 
@@ -971,12 +971,76 @@ class CoreAPI {
         } else {
         
             // attempt to use old style convention
-            $controller = \OWA\Core\CoreAPI::moduleFactory($action, 'Controller', $params);
+            //
+            // This is the fallback for third-party modules that predate the
+            // action registry, and it is the only resolution path a request can
+            // reach with a name nothing answers to. Both ways it can fail --
+            // a name that is not a bare <module>.<action>, and one that is but
+            // names no controller -- raise, and until this was caught they left
+            // the request as an uncaught exception: a 500 and a PHP fatal for
+            // what is a missing page.
+            try {
+
+                $controller = \OWA\Core\CoreAPI::moduleFactory($action, 'Controller', $params);
+
+            } catch ( \OWA\Core\Exception\InvalidAction $e ) {
+
+                return self::actionNotResolved( $action, 400, $e );
+
+            } catch ( \Exception $e ) {
+
+                return self::actionNotResolved( $action, 404, $e );
+            }
         }
 		
 		return \OWA\Core\CoreAPI::runController( $controller );
     }
     
+    /**
+     * Answer a request whose action resolves to nothing.
+     *
+     * A name nothing answers to is a client error, not a server fault, so it
+     * gets a 4xx and the ordinary error page rather than a 500 and a fatal in
+     * the log. Which 4xx depends on how it failed: a malformed name was never a
+     * route anywhere (400), a well-formed one simply is not present here (404).
+     *
+     * The action is recorded server-side, where an administrator can see what
+     * was asked for, and deliberately kept out of the response: it is
+     * request-supplied, and reflecting it would put attacker-chosen text on the
+     * page.
+     *
+     * @param string     $action
+     * @param int        $code
+     * @param \Exception $exception
+     * @return string|null  the rendered page, or null under the CLI
+     */
+    public static function actionNotResolved( $action, $code, $exception = null ) {
+
+        self::notice( sprintf(
+            'No controller for action "%s" (%d): %s',
+            $action,
+            $code,
+            $exception ? $exception->getMessage() : 'not registered'
+        ) );
+
+        // The CLI has already reported through notice(); rendering an HTML
+        // error page into a terminal would help nobody.
+        if ( defined( 'OWA_CLI' ) ) {
+
+            return null;
+        }
+
+        if ( ! headers_sent() ) {
+
+            http_response_code( $code );
+        }
+
+        return self::displayView(
+            array( 'error_msg' => 'The page you requested could not be found.' ),
+            'base.error'
+        );
+    }
+
     public static function runController( $controller ) {
 	    
 	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
