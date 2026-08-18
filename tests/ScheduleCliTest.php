@@ -153,6 +153,30 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame([], $jobs['partition-rotate']['params'], 'the shipped params survive');
     }
 
+    /**
+     * ...and both keys together, which is the common real request: keep two
+     * years of data AND run the job at 4am on the 1st rather than midnight.
+     *
+     * There is one configuration form, not a short one and a long one. Every key
+     * is independently optional on a job that is already registered, and
+     * 'command' is what a NEW job additionally has to supply because it has
+     * nothing to inherit.
+     */
+    public function testScheduleAndParamsCanBeOverriddenTogether()
+    {
+        $jobs = $this->jobsWith(['partition-rotate' => [
+            'schedule' => '0 4 1 * *',
+            'params'   => ['keep' => 24],
+        ]]);
+
+        $this->assertSame('0 4 1 * *', $jobs['partition-rotate']['schedule']);
+        $this->assertSame(['keep' => 24], $jobs['partition-rotate']['params']);
+        $this->assertSame('partition-rotate', $jobs['partition-rotate']['command'],
+            'the registered command survives: config never has to restate it');
+        $this->assertSame('config-override', $jobs['partition-rotate']['source']);
+        $this->assertNotNull(\OWA\Core\Cron::parse('0 4 1 * *'), 'the documented expression must parse');
+    }
+
     /** A job the release never registered can be added outright. */
     public function testConfigCanAddAJob()
     {
