@@ -155,6 +155,7 @@ function owa_compat_class_map(): array
         'owa_os' => 'OWA\\Module\\Base\\Entity\\Os',
         'owa_queue_item' => 'OWA\\Module\\Base\\Entity\\QueueItem',
         'owa_job_lock' => 'OWA\\Module\\Base\\Entity\\JobLock',
+        'owa_guid_map' => 'OWA\\Module\\Base\\Entity\\GuidMap',
         'owa_scheduled_job' => 'OWA\\Module\\Base\\Entity\\ScheduledJob',
         'owa_referer' => 'OWA\\Module\\Base\\Entity\\Referer',
         'owa_request' => 'OWA\\Module\\Base\\Entity\\Request',
