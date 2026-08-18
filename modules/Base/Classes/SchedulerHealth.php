@@ -90,10 +90,12 @@ class SchedulerHealth {
 
             return array(
                 'headline' => 'Scheduled maintenance is not running',
+                // The line itself is NOT appended here. The caller decides how to
+                // present it -- the banner gives it its own <code> block, and
+                // running them together produced it twice on the page.
                 'message'  => 'OWA needs one cron entry to run its scheduled jobs -- without it '
                             . 'the fact tables stop being maintained and nothing says so. Add this '
-                            . 'line to the crontab of the user that owns your OWA files: '
-                            . self::cronLine(),
+                            . 'line to the crontab of the user that owns your OWA files:',
             );
         }
 

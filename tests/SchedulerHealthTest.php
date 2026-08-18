@@ -211,8 +211,11 @@ final class SchedulerHealthTest extends CliControllerTestCase
             if ($capable) {
                 $this->assertStringContainsString('Scheduled maintenance is not running', $html,
                     'an admin must be told the cron entry is missing');
-                $this->assertStringContainsString('cmd=schedule-run', $html,
-                    'and given the line to paste');
+                // Exactly once. The message used to carry the line as well as
+                // the code block below it, which printed it twice on the page --
+                // invisible to a "contains" assertion, obvious on screen.
+                $this->assertSame(1, substr_count($html, 'cmd=schedule-run'),
+                    'the crontab line belongs on the page once, not once per author');
                 $this->assertStringContainsString('owa-scheduler-nag', $html);
             } else {
                 $this->assertSame('', trim($html),
