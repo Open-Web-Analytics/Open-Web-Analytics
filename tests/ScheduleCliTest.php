@@ -193,6 +193,45 @@ final class ScheduleCliTest extends CliControllerTestCase
      * The same command twice under different names: two jobs, two state rows,
      * two locks — so one instance running never blocks the other.
      */
+    /**
+     * The configuration key is the JOB NAME, never the command name.
+     *
+     * The shipped job is registered as registerJob('partition-rotate',
+     * 'partition-rotate', ...), so its name and its command are the same string
+     * and every example is ambiguous about which one the key matches. This uses
+     * a job whose name differs from its command, so the two cannot be confused:
+     * the name reaches it, and the command does not.
+     */
+    public function testTheConfigKeyIsTheJobNameNotTheCommand()
+    {
+        $jobs = $this->jobsWith([
+            'nightly-cache-flush' => ['command' => 'flush-cache', 'schedule' => '@daily'],
+
+            // Keyed by the COMMAND. There is no job of this name, so this is
+            // read as a NEW job -- which needs a schedule, has none, and is
+            // refused. What it must not do is reach nightly-cache-flush.
+            'flush-cache'         => ['params' => ['reached' => 'the wrong job']],
+        ]);
+
+        $this->assertArrayHasKey('nightly-cache-flush', $jobs);
+        $this->assertSame([], $jobs['nightly-cache-flush']['params'],
+            'an entry keyed by the command name must not modify the job that runs it');
+
+        $this->assertArrayNotHasKey('flush-cache', $jobs,
+            'a key that is neither a registered job nor a complete new entry is refused');
+
+        // ...and the name does reach it.
+        $jobs = $this->jobsWith([
+            'nightly-cache-flush' => [
+                'command'  => 'flush-cache',
+                'schedule' => '@daily',
+                'params'   => ['reached' => 'the right job'],
+            ],
+        ]);
+
+        $this->assertSame(['reached' => 'the right job'], $jobs['nightly-cache-flush']['params']);
+    }
+
     public function testTheSameCommandCanBeScheduledTwice()
     {
         $jobs = $this->jobsWith([
