@@ -724,7 +724,7 @@ class Module extends \OWA\Core\Module {
      *
      * Run by cmd=schedule-run, which belongs in cron every minute:
      *
-     *   * * * * * php /path/to/owa/cli.php cmd=schedule-run
+     *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
      *
      * Only partition-rotate ships registered. It is the one whose absence fails
      * silently and slowly on every installation -- the partition lead expires,

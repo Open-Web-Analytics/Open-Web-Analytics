@@ -16,7 +16,7 @@
 // $Id$
 //
 
-include_once('owa_env.php');
+include_once(__DIR__ . '/owa_env.php');
 
 
 /**

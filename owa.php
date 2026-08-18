@@ -6,7 +6,7 @@
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
 
-require_once('owa_env.php');
+require_once(__DIR__ . '/owa_env.php');
 
 /**
  * OWA Core

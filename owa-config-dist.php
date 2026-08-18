@@ -124,7 +124,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *
  * OWA runs its periodic maintenance from a SINGLE cron entry:
  *
- *   * * * * * php /path/to/owa/cli.php cmd=schedule-run
+ *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
  *
  * Every minute, because that line is not the schedule -- it is the finest
  * resolution the schedules below can use. Each job decides for itself how often

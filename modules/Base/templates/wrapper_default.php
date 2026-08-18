@@ -19,6 +19,8 @@
 
         <?php include($view->getTemplatePath('base', 'msgs.php'));?>
 
+        <?php include($view->getTemplatePath('base', 'scheduler_nag.php'));?>
+
         <?php echo $view->body;?>
 
         <?php include($view->getTemplatePath('base', 'footer.php'));?>
