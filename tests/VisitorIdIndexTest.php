@@ -112,9 +112,32 @@ final class VisitorIdIndexTest extends TestCase
         $update->up();
         $this->assertTrue($db->indexExists($table, 'visitor_id'), 'up() should leave it indexed');
 
+        // Whether down() should remove anything depends on WHO created the index.
+        // up() adds one called idx_visitor_id; a freshly installed database
+        // already carries a visitor_id index from the table definition, under
+        // its own name. down() deliberately drops only the former, because
+        // removing an index it never created would be destroying part of the
+        // schema. Both are correct, and which one this installation has is not
+        // something the test gets to assume.
+        $ours = false;
+
+        foreach ($db->listIndexes() as $row) {
+            if ($row['t'] === $table && $row['i'] === 'idx_visitor_id') {
+                $ours = true;
+                break;
+            }
+        }
+
         try {
             $this->assertTrue($update->down(), 'down() should report success');
-            $this->assertFalse($db->indexExists($table, 'visitor_id'), 'down() should remove the index');
+
+            if ($ours) {
+                $this->assertFalse($db->indexExists($table, 'visitor_id'),
+                    'down() should remove the index that up() created');
+            } else {
+                $this->assertTrue($db->indexExists($table, 'visitor_id'),
+                    'down() must leave an index it did not create');
+            }
 
             $this->assertTrue($update->up(), 'up() should report success');
             $this->assertTrue($db->indexExists($table, 'visitor_id'), 'up() should put it back');

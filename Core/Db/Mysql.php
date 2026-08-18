@@ -248,7 +248,19 @@ class Mysql extends \OWA\Core\Db {
 
     function close() {
 
-        @mysqli_close( $this->connection );
+        // mysqli_close() on a handle that is already closed raises an Error in
+        // PHP 8, and @ cannot suppress an Error. Db::__destruct() closes when
+        // isConnectionEstablished() is still true, so without clearing both of
+        // these here an explicit close() followed by shutdown closes twice and
+        // the second one is an uncaught fatal -- which also makes the process
+        // exit 255 after it has done its work correctly.
+        if ( $this->connection instanceof \mysqli ) {
+
+            @mysqli_close( $this->connection );
+        }
+
+        $this->connection        = null;
+        $this->connection_status = false;
     }
 
     /**

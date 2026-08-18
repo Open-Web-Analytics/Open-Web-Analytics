@@ -47,6 +47,9 @@ namespace OWA\Module\Base\Classes;
 
      var $is_dirty;
 
+    /** @var bool  whether the shutdown save has been registered for this process */
+    protected $shutdown_registered = false;
+
      var $config_id;
 
      var $config_from_db;
@@ -180,7 +183,7 @@ namespace OWA\Module\Base\Classes;
         // without a new constant each time:
         //
         //   define('OWA_SCHEDULED_JOBS', array(
-        //       'partition-rotate' => array( 'params' => array( 'keep' => 24 ) ),
+        //       'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
         //       'drain-queue'      => array( 'command'  => 'processEventQueue',
         //                                    'schedule' => '*/2 * * * *' ),
         //   ));
@@ -582,14 +585,14 @@ namespace OWA\Module\Base\Classes;
              // the next time the setting is written.
              if ( isset( $this->db_settings[ $module ][ $key ] ) ) {
                  unset( $this->db_settings[ $module ][ $key ] );
-                 $this->is_dirty = true;
+                 $this->markDirty();
              }
 
              return;
          }
 
          $this->db_settings[$module][$key] = $value;
-         $this->is_dirty = true;
+         $this->markDirty();
      }
 
      /**
@@ -782,7 +785,7 @@ namespace OWA\Module\Base\Classes;
 
                      unset( $this->db_settings[ $module ][ $key ] );
                      $removed[] = $module . '.' . $key;
-                     $this->is_dirty = true;
+                     $this->markDirty();
                  }
              }
          }
@@ -1312,11 +1315,64 @@ namespace OWA\Module\Base\Classes;
          }
      }
 
+    /**
+     * Flag unsaved settings, and arrange for them to be written while the
+     * database is still reachable.
+     *
+     * PHP runs shutdown functions BEFORE object destructors, so saving from
+     * __destruct races the database handle's own teardown. When the handle is
+     * destroyed first the save throws "mysqli object is already closed": the
+     * setting is silently lost, and because the Error is uncaught in a
+     * destructor it also turns a CLI command that did its job into exit
+     * status 255. Registering here fixes both, and costs one callback per
+     * process that actually changes a setting.
+     */
+    protected function markDirty() {
+
+        $this->is_dirty = true;
+
+        if (!$this->shutdown_registered) {
+
+            $this->shutdown_registered = true;
+            register_shutdown_function(array($this, 'saveIfDirty'));
+        }
+    }
+
+    /**
+     * Write unsaved settings, if there are any.
+     *
+     * Runs during shutdown, from a registered function and again from the
+     * destructor, so it must not be able to take the process down. There is no
+     * caller left to hand a failure to, and an uncaught Throwable here would
+     * change the exit status of a process that had already done its work --
+     * which is the exact defect this class was changed to stop causing. A save
+     * can legitimately fail at this point: an installation with no config file
+     * has no auth key to hash a cache entry with, and a process that is shutting
+     * down because the database went away has nothing to write to.
+     *
+     * The failure is logged rather than swallowed, because a lost setting is
+     * worth a line in the log even when nothing can be done about it.
+     *
+     * @return void
+     */
+    public function saveIfDirty() {
+
+        if (!$this->is_dirty) {
+            return;
+        }
+
+        try {
+            $this->save();
+        } catch (\Throwable $e) {
+            error_log('OWA: could not save settings during shutdown: ' . $e->getMessage());
+        }
+    }
+
     function __destruct() {
 
-        if ($this->is_dirty) {
-            $this->save();
-        }
+        // Fallback only: saveIfDirty() has normally already run as a shutdown
+        // function, while the database was still reachable.
+        $this->saveIfDirty();
     }
 
     /**

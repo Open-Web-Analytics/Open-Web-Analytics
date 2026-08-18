@@ -158,7 +158,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //
 //    // Keep two years of history. NOTHING is deleted unless you ask for it
 //    // here: the shipped job runs with no keep= at all.
-//    'partition-rotate' => array( 'params' => array( 'keep' => 24 ) ),
+//    'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
 //
 //    // Drain the event queue every two minutes. Not registered by default,
 //    // because whether to drain at all depends on whether you queue events.
@@ -176,7 +176,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //    ),
 //
 //    // Turn a shipped job off.
-//    // 'partition-rotate' => array( 'schedule' => 'off' ),
+//    // 'rotate-partitions' => array( 'schedule' => 'off' ),
 //));
 
 /**

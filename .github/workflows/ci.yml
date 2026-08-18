@@ -71,6 +71,62 @@ jobs:
       - name: JS unit tests (Jest — tracker + reporting bundle)
         run: npm test
 
+  isolation:
+    name: Test isolation sweep (each file alone)
+    runs-on: ubuntu-latest
+    # A test that passes in the suite but fails alone is inheriting state an
+    # earlier test set up -- a registry the dispatcher builds lazily, or a legacy
+    # owa_* alias that only exists once something has autoloaded it. PHPUnit runs
+    # the whole suite in one process, so neither is visible in a normal run.
+    # This job is deterministic where randomised ordering is not.
+    #
+    # It needs a real database: two of the registries that have caused this are
+    # only read by DB-backed cases, which skip without one.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      OWA_E2E_DB_HOST: 127.0.0.1
+      OWA_E2E_DB_PORT: '3306'
+      OWA_E2E_DB_USER: root
+      OWA_E2E_DB_PASSWORD: ''
+      OWA_E2E_DB_NAME: owa_isolation_sweep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, json, mysqli, gd
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Reuses the self-hosted e2e harness: it writes a scratch owa-config.php
+      # and runs the real CLI installer. No web server and no Playwright -- the
+      # unit suite only needs the schema and a config to connect with.
+      - name: Provision a scratch install
+        run: php tests/e2e/selfhost_harness.php up
+
+      - name: Run every test file in its own process
+        run: composer run-script test:isolation
+
+      - name: Tear down the scratch install
+        if: always()
+        run: php tests/e2e/selfhost_harness.php down
+
   e2e:
     name: E2E (self-hosted, php -S + MySQL)
     runs-on: ubuntu-latest

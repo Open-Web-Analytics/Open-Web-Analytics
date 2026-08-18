@@ -25,13 +25,6 @@ final class ScheduleCliTest extends CliControllerTestCase
         foreach (['scheduled_job', 'job_lock'] as $e) {
             \OWA\Core\CoreAPI::entityFactory('base.' . $e)->createTable();
         }
-
-        // The CLI command map is built by the dispatcher, not at boot, so under
-        // the test runner it is empty until something asks for it. diagnose()
-        // resolves a job's command through that map -- without this, whether a
-        // case passes depends on whether an EARLIER case in the file happened to
-        // populate it, and running one case with --filter fails.
-        \OWA\Core\CoreAPI::serviceSingleton()->loadCliCommands();
     }
 
     protected function tearDown(): void
@@ -96,7 +89,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     // -----------------------------------------------------------------------
 
     /**
-     * partition-rotate is registered with EMPTY params.
+     * The rotate job is registered with EMPTY params.
      *
      * The most valuable assertion in this file. It reddens if anyone later adds
      * keep=24 to the REGISTRATION, which would quietly turn "nothing is deleted
@@ -107,10 +100,10 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertArrayHasKey('partition-rotate', $jobs);
-        $this->assertSame([], $jobs['partition-rotate']['params'], 'no keep= may be registered in code');
-        $this->assertSame('@monthly', $jobs['partition-rotate']['schedule']);
-        $this->assertSame('code', $jobs['partition-rotate']['source']);
+        $this->assertArrayHasKey('rotate-partitions', $jobs);
+        $this->assertSame([], $jobs['rotate-partitions']['params'], 'no keep= may be registered in code');
+        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule']);
+        $this->assertSame('code', $jobs['rotate-partitions']['source']);
     }
 
     /** Only that one job ships; everything else is opt-in. */
@@ -118,7 +111,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertSame(['partition-rotate'], array_keys($jobs));
+        $this->assertSame(['rotate-partitions'], array_keys($jobs));
     }
 
     /** Every registered job must name a real command and parse. */
@@ -148,16 +141,40 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** Giving only params keeps the shipped schedule, and vice versa. */
     public function testConfigOverridesPerKey()
     {
-        $jobs = $this->jobsWith(['partition-rotate' => ['params' => ['keep' => 24]]]);
+        $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['keep' => 24]]]);
 
-        $this->assertSame(['keep' => 24], $jobs['partition-rotate']['params']);
-        $this->assertSame('@monthly', $jobs['partition-rotate']['schedule'], 'the shipped schedule survives');
-        $this->assertSame('config-override', $jobs['partition-rotate']['source']);
+        $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
+        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
+        $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
 
-        $jobs = $this->jobsWith(['partition-rotate' => ['schedule' => '@daily']]);
+        $jobs = $this->jobsWith(['rotate-partitions' => ['schedule' => '@daily']]);
 
-        $this->assertSame('@daily', $jobs['partition-rotate']['schedule']);
-        $this->assertSame([], $jobs['partition-rotate']['params'], 'the shipped params survive');
+        $this->assertSame('@daily', $jobs['rotate-partitions']['schedule']);
+        $this->assertSame([], $jobs['rotate-partitions']['params'], 'the shipped params survive');
+    }
+
+    /**
+     * ...and both keys together, which is the common real request: keep two
+     * years of data AND run the job at 4am on the 1st rather than midnight.
+     *
+     * There is one configuration form, not a short one and a long one. Every key
+     * is independently optional on a job that is already registered, and
+     * 'command' is what a NEW job additionally has to supply because it has
+     * nothing to inherit.
+     */
+    public function testScheduleAndParamsCanBeOverriddenTogether()
+    {
+        $jobs = $this->jobsWith(['rotate-partitions' => [
+            'schedule' => '0 4 1 * *',
+            'params'   => ['keep' => 24],
+        ]]);
+
+        $this->assertSame('0 4 1 * *', $jobs['rotate-partitions']['schedule']);
+        $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
+        $this->assertSame('partition-rotate', $jobs['rotate-partitions']['command'],
+            'the registered command survives: config never has to restate it');
+        $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
+        $this->assertNotNull(\OWA\Core\Cron::parse('0 4 1 * *'), 'the documented expression must parse');
     }
 
     /** A job the release never registered can be added outright. */
@@ -176,6 +193,44 @@ final class ScheduleCliTest extends CliControllerTestCase
      * The same command twice under different names: two jobs, two state rows,
      * two locks — so one instance running never blocks the other.
      */
+    /**
+     * The configuration key is the JOB NAME, never the command name.
+     *
+     * The shipped job now demonstrates this itself -- rotate-partitions runs
+     * partition-rotate -- but this keeps its own fixture so the rule is pinned
+     * independently of how the shipped job happens to be registered: the name
+     * reaches a job, and the command does not.
+     */
+    public function testTheConfigKeyIsTheJobNameNotTheCommand()
+    {
+        $jobs = $this->jobsWith([
+            'nightly-cache-flush' => ['command' => 'flush-cache', 'schedule' => '@daily'],
+
+            // Keyed by the COMMAND. There is no job of this name, so this is
+            // read as a NEW job -- which needs a schedule, has none, and is
+            // refused. What it must not do is reach nightly-cache-flush.
+            'flush-cache'         => ['params' => ['reached' => 'the wrong job']],
+        ]);
+
+        $this->assertArrayHasKey('nightly-cache-flush', $jobs);
+        $this->assertSame([], $jobs['nightly-cache-flush']['params'],
+            'an entry keyed by the command name must not modify the job that runs it');
+
+        $this->assertArrayNotHasKey('flush-cache', $jobs,
+            'a key that is neither a registered job nor a complete new entry is refused');
+
+        // ...and the name does reach it.
+        $jobs = $this->jobsWith([
+            'nightly-cache-flush' => [
+                'command'  => 'flush-cache',
+                'schedule' => '@daily',
+                'params'   => ['reached' => 'the right job'],
+            ],
+        ]);
+
+        $this->assertSame(['reached' => 'the right job'], $jobs['nightly-cache-flush']['params']);
+    }
+
     public function testTheSameCommandCanBeScheduledTwice()
     {
         $jobs = $this->jobsWith([
@@ -186,11 +241,11 @@ final class ScheduleCliTest extends CliControllerTestCase
             ],
         ]);
 
-        $this->assertSame('partition-rotate', $jobs['partition-rotate']['command']);
+        $this->assertSame('partition-rotate', $jobs['rotate-partitions']['command']);
         $this->assertSame('partition-rotate', $jobs['rotate-one-table']['command']);
-        $this->assertSame([], $jobs['partition-rotate']['params']);
+        $this->assertSame([], $jobs['rotate-partitions']['params']);
         $this->assertSame(['table' => 'owa_click'], $jobs['rotate-one-table']['params']);
-        $this->assertNotSame($jobs['partition-rotate']['schedule'], $jobs['rotate-one-table']['schedule']);
+        $this->assertNotSame($jobs['rotate-partitions']['schedule'], $jobs['rotate-one-table']['schedule']);
     }
 
     /**
@@ -211,7 +266,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
             $this->assertArrayNotHasKey('broken', $jobs, "$label should be refused");
             $this->assertArrayHasKey('ok-one', $jobs, "$label must not take the other jobs down");
-            $this->assertArrayHasKey('partition-rotate', $jobs, "$label must not take the shipped job down");
+            $this->assertArrayHasKey('rotate-partitions', $jobs, "$label must not take the shipped job down");
         }
     }
 
@@ -231,11 +286,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** 'off' leaves a job registered and listed, just never due. */
     public function testOffLeavesAJobListedButNeverDue()
     {
-        $jobs = $this->jobsWith(['partition-rotate' => ['schedule' => 'off']]);
+        $jobs = $this->jobsWith(['rotate-partitions' => ['schedule' => 'off']]);
 
-        $this->assertArrayHasKey('partition-rotate', $jobs, 'off is a state, not an absence');
-        $this->assertTrue($this->callProtected($this->runner(), 'isDisabled', [$jobs['partition-rotate']]));
-        $this->assertNull($this->callProtected($this->runner(), 'parsedSchedule', [$jobs['partition-rotate']]));
+        $this->assertArrayHasKey('rotate-partitions', $jobs, 'off is a state, not an absence');
+        $this->assertTrue($this->callProtected($this->runner(), 'isDisabled', [$jobs['rotate-partitions']]));
+        $this->assertNull($this->callProtected($this->runner(), 'parsedSchedule', [$jobs['rotate-partitions']]));
     }
 
     // -----------------------------------------------------------------------
@@ -440,7 +495,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $out = $ctrl->getCliOutcome();
         $this->assertSame('refused', $out['outcome']);
-        $this->assertStringContainsString('partition-rotate', $out['message'], 'say what the valid names are');
+        $this->assertStringContainsString('rotate-partitions', $out['message'], 'say what the valid names are');
     }
 
     /** --dry-run changes no state at all. */
@@ -673,7 +728,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         ));
 
         $lines = $this->callProtected($this->statusCli(), 'describeOrphans', [
-            ['partition-rotate' => []],
+            ['rotate-partitions' => []],
             $this->callProtected($this->statusCli(), 'allState'),
         ]);
 
@@ -1100,12 +1155,17 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $spans = $db->getPartitionSpans($table);
 
-        if (count($spans) < 10) {
+        if (count($spans) < 2) {
             $this->markTestSkipped("$table has too few partitions to open a gap in.");
         }
 
         $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
-        $keep        = array_slice($spans, 0, 6);
+
+        // Keep ONE span, so the gap is the whole lead however much history this
+        // installation has. Keeping six worked on a table with years behind it
+        // and left only seven periods to rebuild on a freshly installed one,
+        // where the six covered half of everything there was.
+        $keep = array_slice($spans, 0, 1);
 
         try {
             // Strip the lead, leaving a gap a rotate would have to rebuild.
@@ -1120,7 +1180,7 @@ final class ScheduleCliTest extends CliControllerTestCase
                 $table, $granularity, \OWA\Core\Db::partitionLeadBoundary(), true
             )['planned'];
 
-            $this->assertGreaterThan(10, $planned, 'the fixture should leave real work to do');
+            $this->assertGreaterThanOrEqual(10, $planned, 'the fixture should leave real work to do');
 
             $lease = (new \OWA\Module\Base\Controller\PartitionRotateCli(['table' => $table]))->getJobLease();
 
