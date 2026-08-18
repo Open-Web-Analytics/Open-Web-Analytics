@@ -851,6 +851,71 @@ class Entity {
         //require_once(OWA_DIR.'owa_lib.php');
         return \OWA\Core\Lib::setStringGuid($string);
     }
+
+    /**
+     * Report a dimension row that was found by a content-derived id but does
+     * NOT hold that content.
+     *
+     * Dimension handlers all share one shape: derive an id from the content,
+     * load the row at that id, and if a row comes back, reuse it. That last
+     * step silently assumes the row IS the content it was derived from, which
+     * is true right up until two different values hash to the same id. Then the
+     * fact row's foreign key points at somebody else's dimension, and the two
+     * are merged in every report that touches them, permanently and invisibly.
+     *
+     * Widening the hash makes this rare rather than impossible: at 63 bits, a
+     * table of ten million dimension rows carries roughly a 0.0005% chance of
+     * one collision. Rare and silent is a bad combination, so it is worth one
+     * comparison to turn it into something that leaves a trace.
+     *
+     * Deliberately does NOT refuse or alter the row. There is no correct
+     * recovery to perform here -- both values legitimately own that id under
+     * this scheme -- and dropping the event would lose data over an event this
+     * rare. Reporting is the whole job.
+     *
+     * @param string $column  the property holding the content the id came from
+     * @param string $source  the content the id was just derived from
+     * @return bool  true when a collision was detected
+     */
+    public function detectIdCollision( $column, $source ) {
+
+        $stored = $this->get( $column );
+
+        // A row that was not found, or content we cannot compare, tells us
+        // nothing. Only a row that exists AND disagrees is evidence.
+        if ( ! $this->wasPersisted() || $stored === null || $stored === '' || $source === null || $source === '' ) {
+
+            return false;
+        }
+
+        if ( (string) $stored === (string) $source ) {
+
+            return false;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            'ID COLLISION on %s id %s: stored %s = "%s" but this event derived the same id from "%s". '
+          . 'Both are now recorded against one dimension row and reports will merge them.',
+            $this->getTableName(),
+            (string) $this->get( 'id' ),
+            $column,
+            self::truncateForLog( $stored ),
+            self::truncateForLog( $source )
+        ) );
+
+        return true;
+    }
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    protected static function truncateForLog( $value ) {
+
+        $value = (string) $value;
+
+        return strlen( $value ) > 120 ? substr( $value, 0, 120 ) . '...' : $value;
+    }
     
     function setCacheExpirationPeriod($seconds) {
         

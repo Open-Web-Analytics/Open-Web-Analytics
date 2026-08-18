@@ -66,6 +66,8 @@ class OsHandlers extends \OWA\Core\Observer {
 
             } else {
 
+                $os->detectIdCollision( 'name', $event->get( 'os' ) );
+
                 \OWA\Core\CoreAPI::debug('Not persisting. Operating system already exists.');
 
                 return OWA_EHS_EVENT_HANDLED;

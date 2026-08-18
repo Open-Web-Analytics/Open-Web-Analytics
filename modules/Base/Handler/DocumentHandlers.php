@@ -90,6 +90,9 @@ class DocumentHandlers extends \OWA\Core\Observer {
                 }
 
             } else {
+
+                $d->detectIdCollision( 'url', $event->get( 'page_url' ) );
+
                 if (\OWA\Core\CoreAPI::getSetting('base', 'allow_slowly_changing_dimensions') &&
                     in_array(get_class($d), \OWA\Core\CoreAPI::getSetting('base', 'slowly_changing_dimension_entities'))
                 ) {
