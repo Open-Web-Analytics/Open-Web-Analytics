@@ -75,6 +75,52 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * owa_click.target_id is a document key and must be DECLARED as one.
+     *
+     * It held a content-derived document id -- ClickHandlers sets it with
+     * setStringGuid( target_url ) -- while carrying no foreign key declaration,
+     * so anything enumerating a fact table's keys skipped it. The migration did
+     * exactly that and left 59,083 working references on one installation
+     * pointing at ids that had moved, and its completion check, reading the same
+     * metadata, reported success.
+     *
+     * Undeclaring it would reintroduce silent data corruption, so it is pinned
+     * here rather than trusted to stay.
+     */
+    public function testClickTargetIdIsDeclaredAsADocumentKey(): void
+    {
+        $click = \OWA\Core\CoreAPI::entityFactory('base.click');
+
+        $this->assertArrayHasKey('target_id', $click->properties);
+
+        $property = $click->properties['target_id'];
+
+        $this->assertTrue($property->isForeignKey(),
+            'target_id holds a document id and must be declared as a foreign key, or key '
+            . 'enumeration silently skips it');
+
+        $this->assertSame(array('base.document', 'id'), (array) $property->getForeignKey());
+    }
+
+    /**
+     * ...and declaring it must not change which column report joins use. The
+     * relatedEntities map keeps one column per target entity, last declaration
+     * winning, so a careless declaration could repoint every document join on
+     * clicks from document_id to target_id.
+     */
+    public function testDeclaringTargetIdDidNotStealTheDocumentJoin(): void
+    {
+        $click = \OWA\Core\CoreAPI::entityFactory('base.click');
+
+        $properties = new ReflectionProperty($click, '_tableProperties');
+        $properties->setAccessible(true);
+        $table = $properties->getValue($click);
+
+        $this->assertSame('document_id', $table['relatedEntities']['base.document'] ?? null,
+            'report joins to base.document must still go through document_id');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".

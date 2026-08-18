@@ -69,8 +69,18 @@ class Click extends \OWA\Core\Entity\FactTable {
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
+        // The click's target URL, hashed the same way a page_url is -- see
+        // ClickHandlers, which sets it with setStringGuid( target_url ). It is a
+        // document key in everything but name, and declaring it matters: anything
+        // that walks a fact table's foreign keys (the id migration, for one) will
+        // otherwise skip it and leave it pointing at ids that have moved.
+        //
+        // Assigned directly rather than through setProperty(), as the surrounding
+        // columns are, so this does not touch _tableProperties['relatedEntities']
+        // and no report join changes.
         $this->properties['target_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['target_id']->setForeignKey('base.document');
 
         $this->properties['target_url'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['target_url']->setDataType(OWA_DTD_VARCHAR255);
