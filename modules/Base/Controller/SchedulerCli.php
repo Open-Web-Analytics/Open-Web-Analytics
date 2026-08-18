@@ -87,7 +87,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      * The state row for a job, or null.
      *
      * READ BY job_name, NEVER BY id. Lib::setStringGuid() branches on the
-     * use_64bit_hash setting, so flipping that on a live installation would
+     * id scheme in force, so a change to it on a live installation would
      * change what generateId() returns for the same name -- a read by id would
      * then miss the existing row and insert a second one, colliding on job_name
      * but not on id.

@@ -840,19 +840,61 @@ class Lib {
         return ( $high << 32 ) | $low;
     }
 
+    /**
+     * The schema version at which dimension ids became 63-bit.
+     *
+     * An installation whose stored version is BELOW this predates the change and
+     * still holds crc32 ids, whether or not it has applied the update yet.
+     */
+    const WIDE_GUID_SCHEMA_VERSION = 16;
+
+    /**
+     * Should this installation still derive the old 32-bit crc32 ids?
+     *
+     * TWO WAYS TO SAY YES, AND BOTH ARE NEEDED.
+     *
+     * The flag is the durable answer: Update016 sets it on an existing
+     * installation, and the migration command removes it once every id has been
+     * re-derived, at which point the installation falls through to 63-bit.
+     *
+     * The schema check covers the gap the flag cannot. New code lands on disk
+     * before anyone runs cmd=update, and tracking does not stop for a pending
+     * update -- log.php keeps ingesting the moment the files are replaced. In
+     * that window an existing installation has no flag yet, so the flag alone
+     * would have it derive 63-bit ids against crc32 history, and then revert to
+     * crc32 once the update finally ran. Every dimension touched in between
+     * would be duplicated at an id the migration then has to merge rather than
+     * rewrite. Reading the stored schema version closes the window: it is
+     * already in the settings loaded at boot, so this costs no query.
+     *
+     * A missing version means an installation being created right now, which
+     * has no history to be consistent with and starts wide.
+     *
+     * @return bool
+     */
+    public static function useNarrowGuid() {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
+
+            return true;
+        }
+
+        $applied = \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
+
+        return $applied && (int) $applied < self::WIDE_GUID_SCHEMA_VERSION;
+    }
+
     public static function setStringGuid($string) {
 
         if ( $string ) {
 
 
-            if ( \OWA\Core\CoreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_SIZE >= 8 ) {
-
-                return (string) self::wideStringGuid( $string );
-
-            } else {
+            if ( self::useNarrowGuid() ) {
                 // make 32 bit ID from crc32
                 return crc32( strtolower( $string ) );
             }
+
+            return (string) self::wideStringGuid( $string );
         }
 
         return null;

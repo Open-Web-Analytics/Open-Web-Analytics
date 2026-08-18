@@ -128,22 +128,89 @@ final class StringGuidTest extends TestCase
             'almost every id should land beyond the 32-bit range, or the extra bits are not being used');
     }
 
-    /** The switch still decides which scheme is in force. */
-    public function testSetStringGuidFollowsTheSetting(): void
+    /**
+     * Wide is the default, and the flag is what holds an installation back.
+     *
+     * Inverted deliberately: the value that needs explaining is the legacy one,
+     * and it is removable. Once the migration clears the flag an installation
+     * falls through to the default with nothing left behind to explain.
+     */
+    public function testWideIsTheDefaultAndTheFlagIsTheException(): void
     {
-        $was = \OWA\Core\CoreAPI::getSetting('base', 'use_64bit_hash');
+        $flag   = \OWA\Core\CoreAPI::getSetting('base', 'use_32bit_hash');
+        $schema = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
 
         try {
-            \OWA\Core\CoreAPI::setSetting('base', 'use_64bit_hash', false);
-            $this->assertSame((string) crc32('https://example.com/'), (string) \OWA\Core\Lib::setStringGuid('https://example.com/'));
+            // An installation that is up to date and unflagged: wide.
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', false);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', \OWA\Core\Lib::WIDE_GUID_SCHEMA_VERSION);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'use_64bit_hash', true);
+            $this->assertFalse(\OWA\Core\Lib::useNarrowGuid());
             $this->assertSame(
                 (string) \OWA\Core\Lib::wideStringGuid('https://example.com/'),
                 (string) \OWA\Core\Lib::setStringGuid('https://example.com/')
             );
+
+            // Flagged: the old scheme, whatever the schema says.
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', true);
+
+            $this->assertTrue(\OWA\Core\Lib::useNarrowGuid());
+            $this->assertSame(
+                (string) crc32('https://example.com/'),
+                (string) \OWA\Core\Lib::setStringGuid('https://example.com/')
+            );
         } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'use_64bit_hash', $was);
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', $flag);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $schema);
+        }
+    }
+
+    /**
+     * The gap this exists for: new files are on disk, cmd=update has NOT run,
+     * and log.php is still ingesting. Without the schema check such an
+     * installation would derive wide ids against crc32 history and then revert
+     * once the update finally ran, duplicating every dimension touched in
+     * between at an id the migration would have to merge rather than rewrite.
+     */
+    public function testAnInstallationBehindOnUpdatesStaysNarrowWithoutTheFlag(): void
+    {
+        $flag   = \OWA\Core\CoreAPI::getSetting('base', 'use_32bit_hash');
+        $schema = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', false);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', \OWA\Core\Lib::WIDE_GUID_SCHEMA_VERSION - 1);
+
+            $this->assertTrue(\OWA\Core\Lib::useNarrowGuid(),
+                'an installation that has not applied the update yet still holds crc32 ids');
+
+            $this->assertSame(
+                (string) crc32('https://example.com/'),
+                (string) \OWA\Core\Lib::setStringGuid('https://example.com/')
+            );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', $flag);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $schema);
+        }
+    }
+
+    /**
+     * A brand new installation is mid-create and has no stored version yet. It
+     * has no history to stay consistent with, so it starts wide.
+     */
+    public function testAnInstallationWithNoStoredVersionStartsWide(): void
+    {
+        $flag   = \OWA\Core\CoreAPI::getSetting('base', 'use_32bit_hash');
+        $schema = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', false);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', null);
+
+            $this->assertFalse(\OWA\Core\Lib::useNarrowGuid());
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'use_32bit_hash', $flag);
+            \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $schema);
         }
     }
 

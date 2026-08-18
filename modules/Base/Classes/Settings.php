@@ -1087,7 +1087,14 @@ namespace OWA\Module\Base\Classes;
                 'update_session_user_name'            => true, // updates the session with latest user_name value
                 'log_owa_user_names'                => true,  // logs the OWA user name as the user_name property on events
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
-                'use_64bit_hash'                    => false,
+                // Content-derived dimension ids are 63-bit. This flag marks an
+                // installation whose existing ids are the old 32-bit crc32
+                // values, so it keeps deriving them until its data has been
+                // migrated. It is a FACT ABOUT THE DATA rather than a
+                // preference: set by Update016 on an existing installation,
+                // and removed by the migration command once every id has been
+                // re-derived. A new installation never has it.
+                'use_32bit_hash'                    => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.
                 'request_mode'						=> 'web_app',
