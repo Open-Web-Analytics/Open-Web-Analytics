@@ -25,6 +25,13 @@ final class ScheduleCliTest extends CliControllerTestCase
         foreach (['scheduled_job', 'job_lock'] as $e) {
             \OWA\Core\CoreAPI::entityFactory('base.' . $e)->createTable();
         }
+
+        // The CLI command map is built by the dispatcher, not at boot, so under
+        // the test runner it is empty until something asks for it. diagnose()
+        // resolves a job's command through that map -- without this, whether a
+        // case passes depends on whether an EARLIER case in the file happened to
+        // populate it, and running one case with --filter fails.
+        \OWA\Core\CoreAPI::serviceSingleton()->loadCliCommands();
     }
 
     protected function tearDown(): void
@@ -1133,6 +1140,89 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->assertCount(count($spans), $db->getPartitionSpans($table), 'the fixture must be restored');
     }
+
+    // -----------------------------------------------------------------------
+    // One cron line, from one place
+    // -----------------------------------------------------------------------
+
+    /**
+     * The crontab line is emitted on four surfaces -- the status command, the
+     * admin banner, the install page and the docblocks -- and an installation
+     * shown two different lines for the same install has to guess which is
+     * right. SchedulerHealth::cronLine() is the one source; this reddens if
+     * anyone hand-rolls another.
+     *
+     * Two rules, because they fail differently. A doc example cannot call the
+     * helper, so it is held to the FORM; runtime code can, so it is held to the
+     * helper itself.
+     */
+    public function testEveryCronLineComesFromTheOneHelper()
+    {
+        $root  = dirname(__DIR__);
+        $files = ['owa-config-dist.php'];
+
+        foreach (['modules', 'Core'] as $dir) {
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $dir));
+            foreach ($it as $f) {
+                if ($f->isFile() && $f->getExtension() === 'php') {
+                    $files[] = substr($f->getPathname(), strlen($root) + 1);
+                }
+            }
+        }
+
+        $runtime = [];
+
+        foreach ($files as $rel) {
+            foreach (explode("\n", (string) file_get_contents($root . '/' . $rel)) as $n => $line) {
+
+                // Only lines that actually present a crontab entry. Prose that
+                // merely mentions the expression is not one.
+                if (strpos($line, '* * * * *') === false || strpos($line, 'cmd=schedule-run') === false) {
+                    continue;
+                }
+
+                $where = $rel . ':' . ($n + 1);
+
+                $this->assertStringContainsString('&& php cli.php cmd=schedule-run', $line,
+                    $where . ' presents a crontab line in a different form from '
+                    . 'SchedulerHealth::cronLine(). Every surface must show the same line.');
+
+                // A docblock cannot call the helper; runtime code has no excuse.
+                $trimmed = ltrim($line);
+                if ($trimmed[0] !== '*' && strpos($trimmed, '//') !== 0 && strpos($trimmed, '#') !== 0) {
+                    $runtime[] = $where;
+                }
+            }
+        }
+
+        $this->assertCount(1, $runtime,
+            'Exactly one place may BUILD the cron line at runtime; found: ' . implode(', ', $runtime));
+        $this->assertStringContainsString('SchedulerHealth.php', $runtime[0],
+            'The one place that builds it must be SchedulerHealth::cronLine().');
+    }
+
+    /**
+     * ...and the diagnosis that tells an operator the dispatcher is dead prints
+     * that exact line, not an approximation of it. This is the copy-paste the
+     * whole feature exists to deliver.
+     */
+    public function testTheDispatcherDiagnosisPrintsTheCanonicalCronLine()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $reason = (string) $this->callProtected($this->statusCli(), 'diagnose', [
+            'lonely',
+            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            null, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, false, 0,
+        ]);
+
+        $this->assertStringContainsString(
+            \OWA\Module\Base\Classes\SchedulerHealth::cronLine(), $reason,
+            'The never-run diagnosis must print the same line the banner does.'
+        );
+    }
+
 }
 
 

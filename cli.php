@@ -41,7 +41,7 @@ if (!OWA_CLI)
     exit();
 }
 
-require_once('owa_env.php');
+require_once(__DIR__ . '/owa_env.php');
 require_once(OWA_DIR.'owa.php');
 
 // Parse the command line. See owa_lib::parseCliArgs() for the accepted forms.

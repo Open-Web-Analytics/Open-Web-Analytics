@@ -8,7 +8,7 @@ namespace OWA\Module\Base\Controller;
 /**
  * Run whatever is due. The one command that belongs in cron.
  *
- *   * * * * * php /path/to/owa/cli.php cmd=schedule-run
+ *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
  *
  * Every minute, matching Laravel, because the crontab line is not the schedule
  * -- it is the RESOLUTION FLOOR. A minute is the finest thing cron expresses, so

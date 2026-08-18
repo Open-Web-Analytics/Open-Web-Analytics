@@ -45,7 +45,11 @@ class ScheduleStatusCli extends SchedulerCli {
             $this->readable( $now ), $this->timezone(), count( $jobs )
         ) );
 
-        $lines[] = 'Expected cron entry:  * * * * * php ' . OWA_DIR . 'cli.php cmd=schedule-run';
+        // One source for this string, shared with the admin banner and the
+        // install page -- an installation told two different cron lines depending
+        // on which screen it read has to guess which one is right.
+        $lines[] = 'Expected cron entry:  '
+                 . \OWA\Module\Base\Classes\SchedulerHealth::cronLine();
 
         if ( ! $enabled ) {
 
@@ -272,9 +276,8 @@ class ScheduleStatusCli extends SchedulerCli {
 
             return sprintf(
                 'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at '
-              . 'all. That almost always means the cron entry is missing or wrong. Add:  '
-              . '* * * * * php %scli.php cmd=schedule-run',
-                $late, OWA_DIR
+              . 'all. That almost always means the cron entry is missing or wrong. Add:  %s',
+                $late, \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
             );
         }
 
@@ -289,9 +292,9 @@ class ScheduleStatusCli extends SchedulerCli {
 
         return sprintf(
             'Overdue by %s and nothing above explains it. The dispatcher does not appear to be '
-          . 'running -- the last activity of any kind was %s. Check the cron entry:  '
-          . '* * * * * php %scli.php cmd=schedule-run',
-            $late, $this->readable( $last_activity ), OWA_DIR
+          . 'running -- the last activity of any kind was %s. Check the cron entry:  %s',
+            $late, $this->readable( $last_activity ),
+            \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
         );
     }
 
