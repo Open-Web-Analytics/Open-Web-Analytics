@@ -48,6 +48,15 @@ final class RegisteredClassResolutionTest extends TestCase
      */
     public function testEveryRegisteredEntityResolves(): void
     {
+        // instanceof does NOT autoload. A legacy alias that nothing has touched
+        // yet is simply undefined, and `$obj instanceof owa_entity` then reads
+        // false for EVERY entity -- so this case failed when run alone and
+        // passed in the suite only because some earlier test had loaded the
+        // alias first. Assert the precondition here, where it also loads it,
+        // rather than inheriting it from whatever ran before.
+        $this->assertTrue(class_exists('owa_entity'),
+            'owa_entity must resolve through the compat bridge before instanceof can see it.');
+
         $entities = self::$service->entities;
         $this->assertGreaterThan(
             20,

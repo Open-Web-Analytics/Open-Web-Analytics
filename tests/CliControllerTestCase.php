@@ -61,6 +61,14 @@ abstract class CliControllerTestCase extends TestCase
         if (!$this->dbAvailable()) {
             $this->markTestSkipped('OWA database not reachable; skipping CLI command test.');
         }
+        // The CLI command map is built by the dispatcher (cli.php's resolve
+        // path, SchedulerCli::action()), NOT at boot -- so under the test runner
+        // it stays empty until something asks for it. commandClass() below warms
+        // it as a side effect, which means any case that reads the map without
+        // calling that helper passes or fails depending on whether an EARLIER
+        // case in the process happened to. Warm it once, for every subclass.
+        owa_coreAPI::serviceSingleton()->loadCliCommands();
+
         $this->tok = substr(md5(uniqid('owacli', true)), 0, 12);
         // Start every test as an authenticated admin, matching cli.php's
         // setCurrentUser('admin', ...). Individual tests drop privileges when

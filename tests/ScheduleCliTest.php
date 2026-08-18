@@ -25,13 +25,6 @@ final class ScheduleCliTest extends CliControllerTestCase
         foreach (['scheduled_job', 'job_lock'] as $e) {
             \OWA\Core\CoreAPI::entityFactory('base.' . $e)->createTable();
         }
-
-        // The CLI command map is built by the dispatcher, not at boot, so under
-        // the test runner it is empty until something asks for it. diagnose()
-        // resolves a job's command through that map -- without this, whether a
-        // case passes depends on whether an EARLIER case in the file happened to
-        // populate it, and running one case with --filter fails.
-        \OWA\Core\CoreAPI::serviceSingleton()->loadCliCommands();
     }
 
     protected function tearDown(): void
