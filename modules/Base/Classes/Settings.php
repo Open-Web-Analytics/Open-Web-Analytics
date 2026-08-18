@@ -1339,26 +1339,40 @@ namespace OWA\Module\Base\Classes;
     }
 
     /**
+     * Write unsaved settings, if there are any.
+     *
+     * Runs during shutdown, from a registered function and again from the
+     * destructor, so it must not be able to take the process down. There is no
+     * caller left to hand a failure to, and an uncaught Throwable here would
+     * change the exit status of a process that had already done its work --
+     * which is the exact defect this class was changed to stop causing. A save
+     * can legitimately fail at this point: an installation with no config file
+     * has no auth key to hash a cache entry with, and a process that is shutting
+     * down because the database went away has nothing to write to.
+     *
+     * The failure is logged rather than swallowed, because a lost setting is
+     * worth a line in the log even when nothing can be done about it.
+     *
      * @return void
      */
     public function saveIfDirty() {
 
-        if ($this->is_dirty) {
+        if (!$this->is_dirty) {
+            return;
+        }
+
+        try {
             $this->save();
+        } catch (\Throwable $e) {
+            error_log('OWA: could not save settings during shutdown: ' . $e->getMessage());
         }
     }
 
     function __destruct() {
 
         // Fallback only: saveIfDirty() has normally already run as a shutdown
-        // function. A destructor has no caller left to handle a throw, and an
-        // uncaught one would change the process exit status, so anything that
-        // escapes here is swallowed deliberately.
-        try {
-            $this->saveIfDirty();
-        } catch (\Throwable $e) {
-            // Nothing can be done about it at this point in shutdown.
-        }
+        // function, while the database was still reachable.
+        $this->saveIfDirty();
     }
 
     /**

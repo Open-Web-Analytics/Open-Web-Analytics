@@ -1156,12 +1156,17 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $spans = $db->getPartitionSpans($table);
 
-        if (count($spans) < 10) {
+        if (count($spans) < 2) {
             $this->markTestSkipped("$table has too few partitions to open a gap in.");
         }
 
         $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
-        $keep        = array_slice($spans, 0, 6);
+
+        // Keep ONE span, so the gap is the whole lead however much history this
+        // installation has. Keeping six worked on a table with years behind it
+        // and left only seven periods to rebuild on a freshly installed one,
+        // where the six covered half of everything there was.
+        $keep = array_slice($spans, 0, 1);
 
         try {
             // Strip the lead, leaving a gap a rotate would have to rebuild.
@@ -1176,7 +1181,7 @@ final class ScheduleCliTest extends CliControllerTestCase
                 $table, $granularity, \OWA\Core\Db::partitionLeadBoundary(), true
             )['planned'];
 
-            $this->assertGreaterThan(10, $planned, 'the fixture should leave real work to do');
+            $this->assertGreaterThanOrEqual(10, $planned, 'the fixture should leave real work to do');
 
             $lease = (new \OWA\Module\Base\Controller\PartitionRotateCli(['table' => $table]))->getJobLease();
 

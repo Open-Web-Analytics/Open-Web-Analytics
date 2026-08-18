@@ -97,6 +97,48 @@ final class SettingsShutdownSaveTest extends TestCase
             . 'shutdown. Losing it is silent: there is no caller left to report to.');
     }
 
+    /**
+     * ...and when the save genuinely cannot succeed, that is still not allowed
+     * to change the exit status.
+     *
+     * This is not hypothetical. Registering the save as a shutdown function made
+     * it run RELIABLY, which turned an intermittent failure on installations
+     * with no config file into a consistent one: no config means no
+     * OWA_AUTH_KEY, the cache read inside save() raises "Undefined constant",
+     * and a green test suite exited 255 on PHP 8.2. A save that cannot happen
+     * must be reported, not fatal.
+     *
+     * Driven directly rather than through a subprocess, because the failure has
+     * to be guaranteed. Closing the database does not do it: the driver simply
+     * reconnects on the next query.
+     */
+    public function testAFailingShutdownSaveIsLoggedRatherThanFatal(): void
+    {
+        $settings = (new ReflectionClass(OwaThrowingSettings::class))->newInstanceWithoutConstructor();
+
+        $dirty = new ReflectionProperty($settings, 'is_dirty');
+        $dirty->setAccessible(true);
+        $dirty->setValue($settings, true);
+
+        $log = tempnam(sys_get_temp_dir(), 'owa_settings_log_');
+        $was = ini_get('error_log');
+        ini_set('error_log', $log);
+
+        try {
+            $settings->saveIfDirty();   // must return, not throw
+        } finally {
+            ini_set('error_log', $was === false ? '' : $was);
+        }
+
+        $this->assertSame(1, $settings->save_attempts, 'the save should have been attempted');
+
+        $this->assertStringContainsString('could not save settings during shutdown',
+            (string) file_get_contents($log),
+            'The failure must leave a trace: a lost setting is worth a line in the log.');
+
+        @unlink($log);
+    }
+
     public function testShutdownDoesNotChangeTheExitStatus(): void
     {
         $result = $this->probe('write', 'probe-' . bin2hex(random_bytes(4)));
@@ -107,5 +149,21 @@ final class SettingsShutdownSaveTest extends TestCase
         $this->assertSame(0, $result['status'],
             'A process that did its work must exit 0. An uncaught Error in shutdown '
             . 'makes it 255, which reports failure to cron for a command that succeeded.');
+    }
+}
+
+/**
+ * A settings object whose save() always fails, standing in for an installation
+ * that cannot complete one during shutdown.
+ */
+final class OwaThrowingSettings extends \OWA\Module\Base\Classes\Settings
+{
+    public $save_attempts = 0;
+
+    function save()
+    {
+        $this->save_attempts++;
+
+        throw new \Error('Undefined constant "OWA\\Module\\Base\\Classes\\OWA_AUTH_KEY"');
     }
 }
