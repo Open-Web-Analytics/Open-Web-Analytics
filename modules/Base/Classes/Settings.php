@@ -183,7 +183,7 @@ namespace OWA\Module\Base\Classes;
         // without a new constant each time:
         //
         //   define('OWA_SCHEDULED_JOBS', array(
-        //       'partition-rotate' => array( 'params' => array( 'keep' => 24 ) ),
+        //       'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
         //       'drain-queue'      => array( 'command'  => 'processEventQueue',
         //                                    'schedule' => '*/2 * * * *' ),
         //   ));

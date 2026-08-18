@@ -738,12 +738,18 @@ class Module extends \OWA\Core\Module {
      */
     function registerJobs() {
 
+        // The NAME is deliberately not the command name. They are separate
+        // fields -- a command can be scheduled more than once under different
+        // names -- and when the only shipped job used the same string for both,
+        // nothing in the documentation could show which one OWA_SCHEDULED_JOBS
+        // keys on. It keys on the name.
+        //
         // Registered with EMPTY params on purpose: no keep=, so nothing is ever
         // deleted. An installation that wants retention states it in
         // OWA_SCHEDULED_JOBS, which is the deliberate act it should be.
         // Retention must never arrive as a side effect of turning the scheduler
         // on. ScheduleCliTest pins the empty array for exactly that reason.
-        $this->registerJob( 'partition-rotate', 'partition-rotate', '@monthly', array() );
+        $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
     }
 
     /**
