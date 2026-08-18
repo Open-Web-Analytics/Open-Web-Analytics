@@ -26,9 +26,7 @@
         <p>
             OWA runs its scheduled maintenance -- keeping the fact tables' date
             partitions ahead of incoming data, and anything else you schedule later --
-            from a single cron entry. Without it that maintenance never runs, and
-            because a scheduler that is not running produces no output, nothing will
-            tell you so.
+            from a single cron entry. Without it that maintenance never runs.
         </p>
         <p>Add this to the crontab of the user that owns your OWA files:</p>
         <p><code><?php $view->out( \OWA\Module\Base\Classes\SchedulerHealth::cronLine() ); ?></code></p>
