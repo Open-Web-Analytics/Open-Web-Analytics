@@ -97,11 +97,6 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
         $planned = $this->buildMap( $dry_run );
 
-        if ( ! $planned ) {
-
-            return $this->refuse( 'No dimension rows need a new id.' );
-        }
-
         $this->write( sprintf( '%s %s dimension id(s).',
             $dry_run ? 'Would convert' : 'Converting', number_format( $planned ) ) );
 
@@ -110,20 +105,55 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             $this->reportFactWork();
 
             $this->write( '' );
+            $this->write( sprintf( '%s key(s) still on a narrow id.',
+                number_format( $this->countNarrowKeys() ) ) );
             $this->write( 'Dry run: nothing was changed.' );
 
             return;
         }
 
+        // EVERY PHASE RUNS EVERY TIME, and every phase is a no-op once its work
+        // is done. That is what makes a killed run recoverable: there is no
+        // resume point to record and none to get wrong. Note that "nothing left
+        // to plan" is NOT a reason to stop -- a run that died after dropping the
+        // old dimension rows has nothing to plan and may still have fact keys
+        // to repoint, and the map table is the only remaining record of what
+        // they should become.
         $this->copyDimensionRows();
         $this->rewriteFactKeys();
         $this->dropOldDimensionRows();
 
-        // Last, and only once every key has moved: the installation stops being
-        // a 32-bit one and falls through to the default.
+        // Completion is VERIFIED, not assumed from having reached this line. A
+        // run that died before here leaves the flag set, and the flag is what
+        // keeps ingestion deriving ids that match the data. Clearing it while
+        // anything is still narrow would split every dimension it touched.
+        $remaining = $this->countNarrowKeys();
+
+        if ( $remaining ) {
+
+            return $this->fail( sprintf(
+                '%s key(s) are still on a narrow id, so this installation stays on 32-bit ids '
+              . 'for now. Nothing is inconsistent: run this command again to finish.',
+                number_format( $remaining )
+            ) );
+        }
+
         \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
 
+        $dangling = $this->countDanglingKeys();
+
         $this->write( '' );
+
+        if ( $dangling ) {
+
+            $this->write( sprintf(
+                '%s fact key(s) reference a dimension row that does not exist. They were already '
+              . 'unresolvable before this ran and are left alone: there is no content to derive '
+              . 'an id from, and inventing a row would be inventing data.',
+                number_format( $dangling )
+            ) );
+        }
+
         $this->write( 'Done. This installation now derives 63-bit ids.' );
     }
 
@@ -381,6 +411,96 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         }
 
         $this->write( 'Old dimension rows removed.' );
+    }
+
+    /**
+     * Narrow ids that this command can still do something about.
+     *
+     * The completion test, and it reads the DATA rather than any record of what
+     * the command believes it did. A killed run, a partition added by rotation
+     * mid-run, or rows ingestion wrote while the flag was still set are all
+     * invisible to bookkeeping and all visible here.
+     *
+     * A fact key only counts if the map can convert it. Keys pointing at a
+     * dimension row that does not exist cannot be converted by anything: there
+     * is no content to derive an id from. They are pre-existing breakage that
+     * this command neither caused nor can repair -- measured on one installation
+     * at 14,097 of them, every single owa_session dimension key, referencing
+     * 3,440 distinct document ids that never had a row. Counting those as
+     * unfinished work would pin such an installation to 32-bit ids forever.
+     *
+     * @return int
+     */
+    protected function countNarrowKeys() {
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $map   = $this->mapTable();
+        $total = 0;
+
+        // A dimension row on a narrow id always has content to re-derive from,
+        // so it always counts.
+        foreach ( $this->dimensionNames() as $entity_name ) {
+
+            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+
+            $rows = $db->get_results( sprintf(
+                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
+            ) );
+
+            $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+        }
+
+        foreach ( $this->factKeyColumns() as $table => $cols ) {
+
+            foreach ( $cols as $column => $entity_name ) {
+
+                $rows = $db->get_results( sprintf(
+                    "SELECT COUNT(*) AS n FROM %s f JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
+                  . 'WHERE f.%s > 0 AND f.%s < %d',
+                    $table, $map, $db->prepare( $entity_name ), $column,
+                    $column, $column, self::NARROW_CEILING
+                ) );
+
+                $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Fact keys on a narrow id that reference a dimension row which does not
+     * exist, so nothing can convert them.
+     *
+     * Reported rather than fixed. They are already broken -- a report following
+     * one of these resolves nothing today, before any migration -- and inventing
+     * a dimension row for an id whose content nobody recorded would be inventing
+     * data.
+     *
+     * @return int
+     */
+    protected function countDanglingKeys() {
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $map     = $this->mapTable();
+        $total   = 0;
+
+        foreach ( $this->factKeyColumns() as $table => $cols ) {
+
+            foreach ( $cols as $column => $entity_name ) {
+
+                $rows = $db->get_results( sprintf(
+                    "SELECT COUNT(*) AS n FROM %s f LEFT JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
+                  . 'WHERE f.%s > 0 AND f.%s < %d AND m.old_id IS NULL',
+                    $table, $map, $db->prepare( $entity_name ), $column,
+                    $column, $column, self::NARROW_CEILING
+                ) );
+
+                $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+            }
+        }
+
+        return $total;
     }
 
     /** What the fact side would do, for --dry-run. */
