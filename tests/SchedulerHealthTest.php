@@ -69,7 +69,7 @@ final class SchedulerHealthTest extends CliControllerTestCase
         $nag = \OWA\Module\Base\Classes\SchedulerHealth::problem();
 
         $this->assertIsArray($nag, 'an empty table must raise the banner');
-        $this->assertStringContainsString('not running', $nag['headline']);
+        $this->assertSame("OWA's Job Scheduler is not running.", $nag['headline']);
         $this->assertStringContainsString('cron', $nag['message']);
     }
 
@@ -109,9 +109,9 @@ final class SchedulerHealthTest extends CliControllerTestCase
         $nag = \OWA\Module\Base\Classes\SchedulerHealth::problem();
 
         $this->assertIsArray($nag);
-        $this->assertStringContainsString('may have stopped', $nag['headline'],
+        $this->assertSame("OWA's Job Scheduler may have stopped.", $nag['headline'],
             'a scheduler that ran once and stopped is a different problem from one never installed');
-        $this->assertStringNotContainsString('not running', $nag['headline']);
+        $this->assertStringNotContainsString('is not running', $nag['headline']);
     }
 
     /**
@@ -209,8 +209,17 @@ final class SchedulerHealthTest extends CliControllerTestCase
             $html = ob_get_clean();
 
             if ($capable) {
-                $this->assertStringContainsString('Scheduled maintenance is not running', $html,
+                // The apostrophe is escaped on the way out, so match the part
+                // that survives verbatim and assert the escaping separately --
+                // it is the more important of the two.
+                $this->assertStringContainsString('Job Scheduler is not running.', $html,
                     'an admin must be told the cron entry is missing');
+                $this->assertStringNotContainsString("OWA's", $html,
+                    "the apostrophe must be escaped, not emitted raw");
+
+                // The headline carries its own full stop, so the template must
+                // not append one of its own.
+                $this->assertStringNotContainsString('running.!', $html);
                 // Exactly once. The message used to carry the line as well as
                 // the code block below it, which printed it twice on the page --
                 // invisible to a "contains" assertion, obvious on screen.

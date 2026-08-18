@@ -89,7 +89,7 @@ class SchedulerHealth {
         if ( ! (int) $row['jobs'] ) {
 
             return array(
-                'headline' => 'Scheduled maintenance is not running',
+                'headline' => "OWA's Job Scheduler is not running.",
                 // The line itself is NOT appended here. The caller decides how to
                 // present it -- the banner gives it its own <code> block, and
                 // running them together produced it twice on the page.
@@ -104,7 +104,7 @@ class SchedulerHealth {
         if ( $last && ( time() - $last ) > self::SILENT_FOR ) {
 
             return array(
-                'headline' => 'Scheduled maintenance may have stopped',
+                'headline' => "OWA's Job Scheduler may have stopped.",
                 'message'  => sprintf(
                     'The scheduler last ran on %s. It has run before, so the cron entry was '
                   . 'working at some point -- check that it is still there and that the user it '

@@ -11,7 +11,7 @@
 ?>
 <?php if ( $nag ): ?>
 <div class="error owa-scheduler-nag">
-    <b><?php $view->out( $nag['headline'] ); ?>!</b>
+    <b><?php $view->out( $nag['headline'] ); ?></b>
     <?php $view->out( $nag['message'] ); ?>
     <div class="owa-scheduler-nag-cron"><code><?php $view->out( \OWA\Module\Base\Classes\SchedulerHealth::cronLine() ); ?></code></div>
 </div>
