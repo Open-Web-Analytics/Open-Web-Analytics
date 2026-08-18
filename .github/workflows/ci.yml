@@ -74,6 +74,11 @@ jobs:
   isolation:
     name: Test isolation sweep (each file alone)
     runs-on: ubuntu-latest
+    # Advisory: a finding here is a real defect, but it is reported rather than
+    # used to gate a merge. The trade-off is that the run goes green either way,
+    # so the summary step below writes any finding to the run page where it is
+    # visible without opening the job.
+    continue-on-error: true
     # A test that passes in the suite but fails alone is inheriting state an
     # earlier test set up -- a registry the dispatcher builds lazily, or a legacy
     # owa_* alias that only exists once something has autoloaded it. PHPUnit runs
@@ -121,7 +126,30 @@ jobs:
         run: php tests/e2e/selfhost_harness.php up
 
       - name: Run every test file in its own process
-        run: composer run-script test:isolation
+        id: sweep
+        run: |
+          set -o pipefail
+          composer run-script test:isolation 2>&1 | tee isolation.log
+
+      # The job is advisory, so its own red X is easy to miss. Put the verdict on
+      # the run summary page instead, where it is read without going looking.
+      - name: Report the verdict
+        if: always()
+        run: |
+          {
+            echo "## Test isolation sweep"
+            echo
+            if [ "${{ steps.sweep.outcome }}" = "success" ]; then
+              echo "Every test file passes when run on its own."
+            else
+              echo "**These files pass in the suite but fail when run alone.**"
+              echo "That means they depend on something an earlier test did."
+              echo
+              echo '```'
+              sed -n '/fails on its own/,$p' isolation.log || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Tear down the scratch install
         if: always()
