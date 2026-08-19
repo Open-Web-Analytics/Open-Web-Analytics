@@ -458,62 +458,75 @@ Sources: [no pagesPerSession in the Data API](https://accs-net.com/glossary/page
 [session_engaged is client-set and sticky](https://accs-net.com/glossary/engaged-sessions/),
 [engagement thresholds](https://support.google.com/analytics/answer/12798876?hl=en).
 
-## Addendum 3: marker events replace the rollup
+## Addendum 3: measured -- an incremental rollup, not marker events
 
-The remaining cost of dropping the session table was that session-scoped
-metrics had to be computed from the raw stream — `COUNT(DISTINCT session_id)`
-over every event in range rather than `COUNT(*)` over a pre-aggregated table
-roughly a quarter the size. That cost, and the last argument for a rollup,
-both dissolve the same way: **GA4 emits marker events.**
+Two rounds of this analysis argued the rollup away: first because session
+metrics looked like ratios of aggregates, then because GA4's `session_start`
+marker looked like it made visits an indexed count. Measurement and a closer
+reading of GA settle it the other way.
 
-`session_start` fires automatically as the first event of every session and
-carries the session's attribution — UTM parameters, source and medium — along
-with `page_location`, referrer, title and language. GA's Landing Page report is
-exactly "sessions by their first `page_location`". So:
+### The measurements
 
-```sql
--- visits: one indexed row per session, no DISTINCT, no full-stream scan
-SELECT COUNT(*) FROM owa_event
-WHERE site_id = ? AND event_type = 'session_start' AND yyyymmdd BETWEEN ? AND ?
+Corpus of 1,192,454 events across 312,518 sessions, same hardware as the rest
+of this document.
 
--- visits by source: one row per session, one value per session, additive
-SELECT source, COUNT(*) FROM owa_event
-WHERE event_type = 'session_start' AND ... GROUP BY source
-```
-
-This also settles attribution drift, which was the last thing a rollup was
-still wanted for. Splitting visits by a dimension that varies across a
-session's events double-counts; splitting `session_start` rows cannot, because
-there is exactly one per session carrying the session's canonical value. That
-is the additivity rule the wiki already states — visits are summable over entry
-page but not over page — enforced by which event type is being counted.
-
-The pattern generalises: **anything that would have been a rollup column is
-emitted as a marker event instead.**
-
-| question | marker | query |
+| question | raw event table | rollup |
 |---|---|---|
-| visits, entry page, session attribution | `session_start` | `COUNT(*)` filtered |
-| engaged sessions, bounce rate | `session_engaged` (once, at threshold) | `COUNT(*)` filtered |
-| exit page | `session_end`, or an `is_exit` flag set by a closer job | `COUNT(*)` filtered |
+| visits, one month | 106.2 ms | **2.9 ms** |
+| visits, whole corpus | **39,184.7 ms** | **206.5 ms** |
+| pages per visit, one month | 52.9 ms | 7.7 ms |
+| engaged sessions, one month | 114.4 ms | 7.6 ms |
 
-Each is one indexed row per session, written when the fact becomes known, in
-the same table as everything else. So there is no second source of truth, the
-one-source-per-query rule holds by construction, and the reconciliation
-invariant a rollup would have needed does not arise.
+`COUNT(DISTINCT session_id)` over the corpus is **39 seconds**. That is not a
+slow report, it is a broken one, and it is the number that disproves the
+earlier "probably fine at query time" -- which had been generalised from a
+118 ms measurement over a single month of a small site.
 
-A marker is not free — `session_start` adds roughly one event per session — but
-it is the same order as the terminal engagement beacon already planned, and it
-buys back the entire class of session-scoped queries.
+Rollup economics: **50.4 s** for a full rebuild, **377 ms** incrementally for
+the busiest day's 3,095 events, **50.2 MB** against the event table's 1.3 GB.
+Sessions close after the inactivity timeout and can never change again, so a
+scheduled job only ever recomputes sessions still open -- bounded per tick
+regardless of how much history exists.
 
-The known gap remains exit: a `session_end` marker is lost whenever the
-terminal beacon is, so exit page wants the server-side closer job rather than
-client trust. That is one scheduled job over recently-closed sessions, against
-1.x updating `owa_session.last_page_id` on every event.
+### Why not marker events
 
-Sources: [session_start is the first event and carries attribution](https://affectgroup.com/blog/sessions-and-the-session-start-event-in-google-analytics-4/),
-[its parameters](https://www.mbadv.agency/google-analytics-4/events-and-parameters),
-[landing page = first page_location of the session](https://www.bounteous.com/insights/2021/12/02/understanding-sessions-google-analytics-4/).
+GA4 does fire `session_start` as a separate row (a `page_view` carrying the
+`_ss` flag causes it to be generated), so a marker is one extra event per
+session, not a replacement. But **GA4 does not count `session_start` to count
+sessions**; it estimates the number of distinct session ids instead. The marker
+is known to go missing -- consent mode, app lifecycle, and similar -- and a
+missing marker erases a session from the visit count while every other event
+from that session remains in the table.
+
+Approximate distinct counting is how GA escapes the 39-second problem, and it
+is not available here: MySQL has no HyperLogLog.
+
+So the three options are exact-and-unusable (39 s), fast-and-lossy (markers),
+or exact-and-cheap (a rollup derived from every event, immune to any single
+event going missing). The last one wins, and at 377 ms per tick the cost is not
+a consideration.
+
+Markers remain useful for what they transport rather than what they count --
+first-touch attribution and entry page at the moment those are known -- but a
+rollup row can carry the same values derived server-side, so they are optional
+rather than load-bearing.
+
+### What this restores
+
+With a rollup, session-scoped metrics return to 1.x speed or better, and the
+attribution-drift problem disappears with them: one row per session carries one
+canonical value per session, so splitting visits by source is additive, exactly
+as the wiki's additivity rule requires.
+
+The rollup that follows from all this is small -- one row per session, counts,
+bounds, engagement sum, and the session-scoped dimensions -- against
+`owa_session`'s 121 columns. It is derived rather than write-path maintained,
+so it is rebuildable, and the invariant
+`SUM(rollup.pageviews) == COUNT(pageview events)` belongs in the test suite.
+
+Sources: [session_start and page_view are separate rows](https://www.optizent.com/blog/introduction-to-google-analytics-4-data-in-bigquery/),
+[GA4 estimates distinct session ids rather than counting session_start](https://www.ga4bigquery.com/how-to-sessionize-your-ga4-event-data-in-bigquery-part-1-default-session-definition/),
+[session_start goes missing](https://www.analyticsmania.com/post/session-start-event-is-missing-in-google-analytics-4/).
 
 ## Rebuilding this experiment
 
