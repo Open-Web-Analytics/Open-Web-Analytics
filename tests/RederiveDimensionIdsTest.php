@@ -660,6 +660,79 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * Completion is recorded before anything optional runs.
+     *
+     * The third time work ABOUT the migration outran the migration. A run on a
+     * real installation passed every gate -- nothing left to convert, nothing
+     * stale -- and then spent longer counting dangling keys than it had spent
+     * converting, was killed by a timeout partway through, and left the flag set.
+     * The installation was fully converted and could not say so, so ingestion
+     * kept deriving 32-bit ids against 63-bit data and site lookups stayed broken.
+     *
+     * Gates decide whether the migration succeeded. Reports describe it. A report
+     * must never be positioned where it can withhold a verified success.
+     */
+    public function testCompletionIsRecordedBeforeAnythingOptional(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
+
+        $clears  = strrpos($action, "persistSetting( 'base', 'use_32bit_hash', false )");
+        $reports = strpos($action, '$this->countDanglingKeys()');
+
+        $this->assertNotFalse($clears, 'the flag must be cleared on the completion path');
+        $this->assertNotFalse($reports, 'the dangling report must still exist');
+
+        $this->assertLessThan($reports, $clears,
+            'the flag must be cleared before the dangling count, or a slow report can '
+          . 'withhold a conversion that already passed every gate');
+
+        // The gates themselves must still come first -- this must not become
+        // "clear the flag early and check afterwards".
+        foreach (['countNarrowKeys()', 'findStaleDerivedIds()'] as $gate) {
+
+            $at = strpos($action, $gate);
+            $this->assertNotFalse($at, $gate . ' must still gate the completion path');
+            $this->assertLessThan($clears, $at, $gate . ' must run before the flag is cleared');
+        }
+    }
+
+    /**
+     * The dangling count is asked for, not assumed.
+     *
+     * It reads every fact table a second time to produce a number that changes
+     * nothing and prompts no action: a dangling key was unresolvable before this
+     * command ran and stays that way after. On a real installation that second
+     * pass cost about as much as the entire rest of the migration.
+     */
+    public function testTheDanglingCountIsOptIn(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
+
+        $guard = strpos($action, "getParam( 'report-dangling' )");
+        $call  = strpos($action, '$this->countDanglingKeys()');
+
+        $this->assertNotFalse($guard, 'the dangling count must be behind an opt-in flag');
+        $this->assertNotFalse($call);
+
+        $this->assertLessThan($call, $guard,
+            'the opt-in must be tested before the count is issued, not after');
+
+        // A routine conversion must not pay for it.
+        $this->assertSame(1, substr_count($action, '$this->countDanglingKeys()'),
+            'exactly one call site, and it is the guarded one');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".
