@@ -144,23 +144,57 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
-     * A fresh installation must not get the migration's scratch table.
+     * The map is scratch, not schema.
      *
-     * It is born deriving 63-bit ids and will never run the migration, so the
-     * table would be created empty and stay that way forever. The command
-     * creates it on demand instead.
+     * A new installation derives 63-bit ids from its first event and never runs
+     * this command, so registering the table as an entity only created an empty
+     * one on every install that would never be used. The command builds it with
+     * DDL when it needs it and drops it when it does not.
      */
-    public function testAFreshInstallDoesNotCreateTheMapTable(): void
+    public function testTheMapIsNotPartOfAnyInstallationSchema(): void
     {
         $entities = \OWA\Core\CoreAPI::serviceSingleton()->modules['base']->getEntities();
 
-        $this->assertNotContains('guid_map', $entities,
-            'the map is migration scratch, not part of a new installation schema');
+        $this->assertNotContains('guid_map', $entities);
 
-        // ...but it must still be resolvable, since the command builds it on demand.
-        $map = \OWA\Core\CoreAPI::entityFactory('base.guid_map');
+        $this->assertFileDoesNotExist(dirname(__DIR__) . '/modules/Base/Entity/GuidMap.php',
+            'the map is scratch built by the command, not an entity');
+    }
 
-        $this->assertSame('owa_guid_map', $map->getTableName());
+    /**
+     * Two gates, answering different questions.
+     *
+     * The flag decides whether this installation should be converting at all,
+     * and it comes first so an ordinary rerun stops without touching a fact
+     * table -- that is what makes running the command repeatedly harmless.
+     *
+     * --force skips only that gate. What is actually LEFT to do is always read
+     * from the rows, so a forced run and a resumed run both get a truthful
+     * answer, and an installation whose flag was cleared while keys were still
+     * unconverted can still be finished.
+     */
+    public function testTheFlagGatesTheRunAndTheDataDecidesTheWork(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
+
+        $force = strpos($action, "getParam( 'force' )");
+        $flag  = strpos($action, "getSetting( 'base', 'use_32bit_hash' )");
+        $data  = strpos($action, '$this->workRemains()');
+
+        $this->assertNotFalse($force, '--force must be available');
+        $this->assertNotFalse($flag, 'the flag must gate an ordinary run');
+        $this->assertNotFalse($data, 'what remains must be read from the data');
+
+        $this->assertLessThan($data, $flag,
+            'the cheap flag check must come before anything that scans rows');
+
+        $this->assertStringContainsString('! $force && !', $action,
+            '--force must skip the flag gate and nothing else');
     }
 
     /**
@@ -180,24 +214,41 @@ final class RederiveDimensionIdsTest extends TestCase
             dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
         );
 
-        $this->assertSame(1, substr_count($source, '$this->dropMap();'),
-            'exactly one call site, or the map can vanish while a run still needs it');
-
         $action = substr($source, strpos($source, 'function action()'));
         $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
 
+        // Every drop lives in action(), never inside a phase.
+        $this->assertSame(
+            substr_count($source, '$this->dropMap();'),
+            substr_count($action, '$this->dropMap();'),
+            'dropMap() must not be called from any phase, only from action()'
+        );
+
+        // There are two legitimate call sites -- the early "already finished but
+        // the flag was never cleared" path, and the main completion path -- and
+        // both must come after something has established there is nothing left.
+        $gate = strpos($action, '$this->workRemains()');
+        $this->assertNotFalse($gate, 'the data-driven gate must come first');
+
+        $offset = 0;
+        $drops  = 0;
+
+        while (($at = strpos($action, '$this->dropMap();', $offset)) !== false) {
+            $this->assertGreaterThan($gate, $at,
+                'the map must never be dropped before the work-remaining check');
+            $drops++;
+            $offset = $at + 1;
+        }
+
+        $this->assertGreaterThan(0, $drops, 'the map has to be dropped somewhere');
+
+        // The main path drops only after completion is verified by counting.
         $verify = strpos($action, 'countNarrowKeys()');
-        $drop   = strpos($action, '$this->dropMap();');
-        $clear  = strpos($action, "persistSetting( 'base', 'use_32bit_hash', false )");
+        $last   = strrpos($action, '$this->dropMap();');
 
         $this->assertNotFalse($verify);
-        $this->assertNotFalse($drop);
-        $this->assertNotFalse($clear);
-
-        $this->assertLessThan($drop, $verify,
-            'the map must not be dropped before completion has been verified');
-        $this->assertLessThan($clear, $drop,
-            'drop and flag-clear belong to the same completed step');
+        $this->assertLessThan($last, $verify,
+            'the completing drop must follow the verification count');
     }
 
     /**

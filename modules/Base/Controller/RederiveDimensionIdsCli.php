@@ -10,6 +10,7 @@ namespace OWA\Module\Base\Controller;
  *
  *   php cli.php cmd=rederive-dimension-ids --dry-run
  *   php cli.php cmd=rederive-dimension-ids
+ *   php cli.php cmd=rederive-dimension-ids --force
  *
  * WHY THIS IS A COMMAND AND NOT A SCHEMA UPDATE
  * Same reason partition-init is not one. It rewrites foreign key columns across
@@ -96,22 +97,62 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         $dry_run = (bool) $this->getParam( 'dry-run' );
         $db      = \OWA\Core\CoreAPI::dbSingleton();
 
-        if ( ! \OWA\Core\Lib::useNarrowGuid() ) {
+        $force = (bool) $this->getParam( 'force' );
+
+        // TWO GATES, AND THEY ANSWER DIFFERENT QUESTIONS.
+        //
+        // The flag answers "should this installation be converting at all", and
+        // it is the cheap one: an ordinary rerun stops here without touching a
+        // fact table. That is what makes running this repeatedly harmless.
+        //
+        // --force skips it and lets the DATA decide instead, for the case the
+        // flag cannot describe: an installation whose flag was cleared while keys
+        // were still unconverted, by hand or by a mishap, which would otherwise
+        // be refused help precisely when it needs it.
+        if ( ! $force && ! \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
+
+            if ( \OWA\Core\Lib::useNarrowGuid() ) {
+
+                return $this->refuse(
+                    'This installation still derives 32-bit ids because its schema updates have '
+                  . 'not been applied. Run cli.php cmd=update first: it records what needs '
+                  . 'converting, and this command clears it again at the end.'
+                );
+            }
 
             return $this->refuse(
                 'This installation already derives 63-bit ids, so there is nothing to convert. '
-              . 'A new installation is born this way and never needs this command.'
+              . 'A new installation is born this way and never needs this command. Use --force '
+              . 'to check the data anyway.'
             );
         }
 
-        $map = \OWA\Core\CoreAPI::entityFactory( 'base.guid_map' );
+        // The second gate reads the rows, so --force and a resumed run both get
+        // a truthful answer about what is actually left.
+        if ( ! $this->workRemains() ) {
+
+            // Nothing to convert. If the flag is still set the work finished
+            // without it being cleared, which is exactly the killed-run case, so
+            // finish the job rather than leaving the installation pinned.
+            if ( ! $dry_run && \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
+
+                $this->dropMap();
+                \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
+
+                $this->write( 'Nothing left to convert. This installation now derives 63-bit ids.' );
+
+                return;
+            }
+
+            return $this->refuse(
+                'Nothing to convert: no dimension row and no convertible key is still on a '
+              . '32-bit id. A new installation is born this way and never needs this command.'
+            );
+        }
 
         if ( ! $dry_run ) {
 
-            // createTable() is CREATE TABLE IF NOT EXISTS, so a false here on a
-            // rerun is not necessarily a failure. The insert below is what would
-            // actually break, and Db::query() reports that.
-            $map->createTable();
+            $this->createMap();
         }
 
         $planned = $this->buildMap( $dry_run );
@@ -230,7 +271,73 @@ class RederiveDimensionIdsCli extends PartitionsCli {
     /** @return string  the map table's real name */
     protected function mapTable() {
 
-        return \OWA\Core\CoreAPI::entityFactory( 'base.guid_map' )->getTableName();
+        return \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . 'guid_map';
+    }
+
+    /**
+     * Build the scratch table the fact-side rewrite joins against.
+     *
+     * Raw DDL rather than an entity. It is not part of anyone's schema: a new
+     * installation never runs this command, so registering it as an entity only
+     * created an empty table on every install that would never be used. It is
+     * also not portable in any meaningful sense -- the rewrite around it uses
+     * UPDATE ... PARTITION, INSERT IGNORE and multi-table DELETE, and the
+     * partitioning it walks is MySQL-only to begin with.
+     *
+     * @return void
+     */
+    protected function createMap() {
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            'CREATE TABLE IF NOT EXISTS %s ('
+          . ' id BIGINT NOT NULL,'
+          . ' entity VARCHAR(255) NOT NULL,'
+          . ' old_id BIGINT NOT NULL,'
+          . ' new_id BIGINT NOT NULL,'
+          . ' PRIMARY KEY (id),'
+          . ' KEY entity_old_id (entity, old_id)'
+          . ')',
+            $this->mapTable()
+        ) );
+    }
+
+    /**
+     * Is there anything left for this command to do?
+     *
+     * Two sources, and both are read from the data. A dimension row still on a
+     * narrow id has content to re-derive from. A map with rows means a previous
+     * run got as far as planning and may have died before finishing the rewrite,
+     * and the map is the only record of what those keys should become.
+     *
+     * @return bool
+     */
+    protected function workRemains() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( $this->dimensionNames() as $entity_name ) {
+
+            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+
+            $rows = $db->get_results( sprintf(
+                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d LIMIT 1',
+                $table, self::NARROW_CEILING
+            ) );
+
+            if ( (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 ) ) {
+
+                return true;
+            }
+        }
+
+        if ( ! $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $this->mapTable() ) ) ) {
+
+            return false;
+        }
+
+        $rows = $db->get_results( sprintf( 'SELECT COUNT(*) AS n FROM %s', $this->mapTable() ) );
+
+        return (bool) (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
     }
 
     /** Every dimension this command converts, including the composite one. */
