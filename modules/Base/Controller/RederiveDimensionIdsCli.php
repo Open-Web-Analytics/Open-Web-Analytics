@@ -131,6 +131,20 @@ class RederiveDimensionIdsCli extends PartitionsCli {
     /** Rows sampled per table when checking for ids that were never converted. */
     const VERIFY_SAMPLE = 25;
 
+    /**
+     * Map rows per INSERT.
+     *
+     * One statement per row is what this replaced, and it is the whole cost of
+     * the planning phase: measured at roughly 145 rows a second on a real
+     * installation, which is about fifteen minutes to plan 136,462 ids and would
+     * be hours on an installation with millions of dimension rows.
+     *
+     * 500 keeps each statement comfortably inside any sane max_allowed_packet --
+     * four integers and a short entity name per row, so on the order of 30KB --
+     * while removing 499 round trips out of every 500.
+     */
+    const INSERT_BATCH = 500;
+
     /** Anything at or below this is a crc32 id and still needs converting. */
     const NARROW_CEILING = 4294967296;   // 2^32
 
@@ -542,7 +556,8 @@ class RederiveDimensionIdsCli extends PartitionsCli {
                 'SELECT * FROM %s WHERE id < %d', $table, self::NARROW_CEILING
             ) );
 
-            $n = 0;
+            $n      = 0;
+            $values = array();
 
             foreach ( (array) $rows as $row ) {
 
@@ -562,15 +577,27 @@ class RederiveDimensionIdsCli extends PartitionsCli {
                     continue;
                 }
 
-                $db->query( sprintf(
-                    "INSERT INTO %s (id, entity, old_id, new_id) VALUES (%d, '%s', %d, %s) "
-                  . "ON DUPLICATE KEY UPDATE new_id = VALUES(new_id)",
-                    $this->mapTable(),
+                $values[] = sprintf(
+                    "(%d, '%s', %d, %s)",
                     \OWA\Core\Lib::wideStringGuid( $entity_name . '|' . $row['id'] ),
                     $db->prepare( $entity_name ),
                     (int) $row['id'],
                     $new_id
-                ) );
+                );
+
+                if ( count( $values ) >= self::INSERT_BATCH ) {
+
+                    $this->insertMapRows( $values );
+
+                    $values = array();
+                }
+            }
+
+            if ( $values ) {
+
+                $this->insertMapRows( $values );
+
+                $values = array();
             }
 
             if ( $n ) {
@@ -582,6 +609,31 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         }
 
         return $planned;
+    }
+
+    /**
+     * Write one batch of map rows.
+     *
+     * ON DUPLICATE KEY UPDATE keeps this re-runnable: a resumed run re-plans
+     * rows it already planned, and rewriting them with the same value is a
+     * no-op rather than a duplicate-key failure.
+     *
+     * @param string[] $values  pre-formatted VALUES tuples
+     * @return void
+     */
+    protected function insertMapRows( array $values ) {
+
+        if ( ! $values ) {
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            'INSERT INTO %s (id, entity, old_id, new_id) VALUES %s '
+          . 'ON DUPLICATE KEY UPDATE new_id = VALUES(new_id)',
+            $this->mapTable(),
+            implode( ', ', $values )
+        ) );
     }
 
     /**

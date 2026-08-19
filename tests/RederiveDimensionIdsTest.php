@@ -470,6 +470,58 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * The map is written in batches, not one statement per row.
+     *
+     * One INSERT per dimension row was the entire cost of the planning phase:
+     * measured at about 145 rows a second on a real installation, so roughly
+     * fifteen minutes to plan 136,462 ids, and hours on an installation with
+     * millions of dimension rows. The work is trivial; the round trips are not.
+     */
+    public function testMapRowsAreInsertedInBatches(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function buildMap(');
+        $end   = strpos($source, 'protected function insertMapRows(');
+
+        $this->assertNotFalse($start);
+        $this->assertNotFalse($end);
+
+        $body = substr($source, $start, $end - $start);
+
+        $this->assertStringNotContainsString('INSERT INTO', $body,
+            'buildMap must accumulate rows, not issue an INSERT per row');
+        $this->assertStringContainsString('self::INSERT_BATCH', $body,
+            'it must flush on a batch size');
+
+        $batch = \OWA\Module\Base\Controller\RederiveDimensionIdsCli::INSERT_BATCH;
+
+        $this->assertGreaterThan(1, $batch);
+        $this->assertLessThanOrEqual(1000, $batch,
+            'large enough to matter, small enough to stay inside max_allowed_packet');
+    }
+
+    /**
+     * Batching must not cost the property that makes a killed run resumable:
+     * re-planning a row already in the map has to be a no-op, not a
+     * duplicate-key failure.
+     */
+    public function testABatchedInsertStillToleratesRePlanning(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function insertMapRows(');
+        $body  = substr($source, $start, 900);
+
+        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', $body,
+            'a resumed run re-plans rows it already planned, and that must be harmless');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".
