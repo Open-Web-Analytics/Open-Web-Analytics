@@ -1,0 +1,172 @@
+{
+    "pageviews_per_day": {
+        "star": {
+            "cold_ms": 134.3,
+            "warm_ms": 39.7,
+            "rows": 31
+        },
+        "event": {
+            "cold_ms": 54.1,
+            "warm_ms": 18.4,
+            "rows": 31
+        },
+        "wide": {
+            "cold_ms": 62.7,
+            "warm_ms": 18.1,
+            "rows": 31
+        }
+    },
+    "top_pages": {
+        "star": {
+            "cold_ms": 176.4,
+            "warm_ms": 73.3,
+            "rows": 20
+        },
+        "event": {
+            "cold_ms": 1905.4,
+            "warm_ms": 64.1,
+            "rows": 20
+        },
+        "wide": {
+            "cold_ms": 2188.5,
+            "warm_ms": 65.5,
+            "rows": 20
+        }
+    },
+    "top_referers": {
+        "star": {
+            "cold_ms": 178.5,
+            "warm_ms": 80.4,
+            "rows": 20
+        },
+        "event": {
+            "cold_ms": 66.6,
+            "warm_ms": 66,
+            "rows": 20
+        },
+        "wide": {
+            "cold_ms": 66.5,
+            "warm_ms": 66.6,
+            "rows": 20
+        }
+    },
+    "uniques_per_month": {
+        "star": {
+            "cold_ms": 271.3,
+            "warm_ms": 259.5,
+            "rows": 12
+        },
+        "event": {
+            "cold_ms": 454.2,
+            "warm_ms": 161.9,
+            "rows": 12
+        },
+        "wide": {
+            "cold_ms": 572.2,
+            "warm_ms": 168.5,
+            "rows": 12
+        }
+    },
+    "sessions_bounce": {
+        "star": {
+            "cold_ms": 733.4,
+            "warm_ms": 18.7,
+            "rows": 1
+        },
+        "event": {
+            "cold_ms": 387,
+            "warm_ms": 118.2,
+            "rows": 1
+        },
+        "wide": {
+            "cold_ms": 429.1,
+            "warm_ms": 119.8,
+            "rows": 1
+        }
+    },
+    "avg_session_secs": {
+        "star": {
+            "cold_ms": 18.9,
+            "warm_ms": 19,
+            "rows": 1
+        },
+        "event": {
+            "cold_ms": 120.7,
+            "warm_ms": 120.1,
+            "rows": 1
+        },
+        "wide": {
+            "cold_ms": 120.4,
+            "warm_ms": 119.2,
+            "rows": 1
+        }
+    },
+    "browser_breakdown": {
+        "star": {
+            "cold_ms": 417.7,
+            "warm_ms": 418.9,
+            "rows": 15
+        },
+        "event": {
+            "cold_ms": 141.9,
+            "warm_ms": 144.3,
+            "rows": 15
+        },
+        "wide": {
+            "cold_ms": 142.8,
+            "warm_ms": 143.2,
+            "rows": 15
+        }
+    },
+    "revenue_by_campaign": {
+        "star": {
+            "cold_ms": 37.3,
+            "warm_ms": 36,
+            "rows": 1
+        },
+        "event": {
+            "cold_ms": 36202.5,
+            "warm_ms": 35277.5,
+            "rows": 1
+        },
+        "wide": {
+            "cold_ms": 34065.9,
+            "warm_ms": 34013.7,
+            "rows": 1
+        }
+    },
+    "clicks_for_page": {
+        "star": {
+            "cold_ms": 287.6,
+            "warm_ms": 39,
+            "rows": 3247
+        },
+        "event": {
+            "cold_ms": 181.9,
+            "warm_ms": 179.6,
+            "rows": 3247
+        },
+        "wide": {
+            "cold_ms": 174,
+            "warm_ms": 171.1,
+            "rows": 3247
+        }
+    },
+    "pageviews_per_month_year": {
+        "star": {
+            "cold_ms": 67.4,
+            "warm_ms": 65.1,
+            "rows": 12
+        },
+        "event": {
+            "cold_ms": 454.3,
+            "warm_ms": 140,
+            "rows": 12
+        },
+        "wide": {
+            "cold_ms": 452,
+            "warm_ms": 141.5,
+            "rows": 12
+        }
+    }
+}
