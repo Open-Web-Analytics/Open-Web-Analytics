@@ -330,17 +330,22 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             ) );
         }
 
-        $dangling = $this->countDanglingKeys();
-
-        // Completion verified, so the map has done its job. It is only needed
-        // BETWEEN runs -- once nothing is left to resume and the flag is about to
-        // clear, keeping it would leave one row per converted dimension behind
-        // for good. Counted before dropping, since countDanglingKeys() reads it.
-        $this->dropMap();
-
+        // EVERYTHING ABOVE IS A GATE. EVERYTHING BELOW IS A REPORT.
+        //
+        // The gates have passed, so this installation IS converted, and the flag
+        // is how it knows. Write it now, before anything optional runs, because a
+        // report that is slow or interrupted must not be able to undo a
+        // conversion that has already been verified.
+        //
+        // It used to be written after countDanglingKeys(), and that was the third
+        // time work ABOUT the migration outran the migration itself: a run whose
+        // gates had all passed spent longer counting a number nobody had asked
+        // for than it had spent converting, was killed partway through, and left
+        // the installation pinned to 32-bit ids over 63-bit data.
         \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
 
         $this->write( '' );
+        $this->write( 'Done. This installation now derives 63-bit ids.' );
 
         $unconvertible = $this->countUnconvertibleDimensionRows();
 
@@ -354,17 +359,34 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             ) );
         }
 
-        if ( $dangling ) {
+        // ASKED FOR, NOT ASSUMED, BECAUSE IT COSTS A SECOND FULL PASS.
+        //
+        // The gates above already read every fact table once. This reads them all
+        // again to produce a number that changes nothing and prompts no action:
+        // dangling keys were unresolvable before this command ran and stay that
+        // way after it. On a real installation the second pass cost as much as
+        // the entire rest of the migration, so a routine conversion no longer
+        // pays for it.
+        if ( $this->getParam( 'report-dangling' ) ) {
 
-            $this->write( sprintf(
-                '%s fact key(s) reference a dimension row that does not exist. They were already '
-              . 'unresolvable before this ran and are left alone: there is no content to derive '
-              . 'an id from, and inventing a row would be inventing data.',
-                number_format( $dangling )
-            ) );
+            $dangling = $this->countDanglingKeys();
+
+            if ( $dangling ) {
+
+                $this->write( sprintf(
+                    '%s fact key(s) reference a dimension row that does not exist. They were already '
+                  . 'unresolvable before this ran and are left alone: there is no content to derive '
+                  . 'an id from, and inventing a row would be inventing data.',
+                    number_format( $dangling )
+                ) );
+            }
         }
 
-        $this->write( 'Done. This installation now derives 63-bit ids.' );
+        // The map has done its job. Dropped last because countDanglingKeys()
+        // reads it, and after the flag is cleared so that an interrupted report
+        // leaves a stray table rather than an installation that still looks
+        // unconverted. A later --force run drops it.
+        $this->dropMap();
     }
 
     /**
