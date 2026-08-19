@@ -328,6 +328,18 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
         $this->write( '' );
 
+        $unconvertible = $this->countUnconvertibleDimensionRows();
+
+        if ( $unconvertible ) {
+
+            $this->write( sprintf(
+                '%s dimension row(s) hold no content to derive an id from -- an owa_host row with '
+              . 'only an IP, for instance -- so nothing can convert them. Nothing will ever derive '
+              . 'those ids again either, so they are left where they are.',
+                number_format( $unconvertible )
+            ) );
+        }
+
         if ( $dangling ) {
 
             $this->write( sprintf(
@@ -764,22 +776,41 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // subsequent run refuse on a perfectly healthy database.
         $have_map = (bool) $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $map ) );
 
-        // A dimension row on a narrow id always has content to re-derive from,
-        // so it always counts.
+        // A dimension row only counts if its content can still produce an id.
+        //
+        // Some cannot: 5,198 owa_host rows on a real installation carry an empty
+        // host and nothing else but an IP, so deriveFor() has nothing to hash and
+        // the row can never be planned. Counting those as outstanding work makes
+        // completion unreachable -- the migration converts everything it can,
+        // refuses to clear the flag because the count is non-zero, and the
+        // installation is stuck part-converted for good. That is not theoretical:
+        // it is what happened, and it left site lookups broken because owa_site
+        // HAD converted while the flag still said 32-bit.
+        //
+        // Nothing will ever derive those ids again either, since hashing empty
+        // content yields no id at all, so leaving them where they are costs
+        // nothing.
         foreach ( $this->dimensionNames() as $entity_name ) {
 
             $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
 
-            $n = $this->countOrNull( sprintf(
-                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
+            $rows = $db->get_results( sprintf(
+                'SELECT * FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
             ) );
 
-            if ( $n === null ) {
+            // Distinguish "no rows" from "the query did not run".
+            if ( $rows === null && $this->countOrNull( sprintf( 'SELECT COUNT(*) AS n FROM %s', $table ) ) === null ) {
 
                 return null;
             }
 
-            $total += $n;
+            foreach ( (array) $rows as $row ) {
+
+                if ( $this->deriveFor( $entity_name, (array) $row ) !== null ) {
+
+                    $total++;
+                }
+            }
         }
 
         if ( ! $have_map ) {
@@ -804,6 +835,38 @@ class RederiveDimensionIdsCli extends PartitionsCli {
                 }
 
                 $total += $n;
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Dimension rows still on a narrow id that have nothing to re-derive from.
+     *
+     * Reported so the number is visible rather than silently skipped.
+     *
+     * @return int
+     */
+    protected function countUnconvertibleDimensionRows() {
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $total = 0;
+
+        foreach ( $this->dimensionNames() as $entity_name ) {
+
+            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+
+            $rows = $db->get_results( sprintf(
+                'SELECT * FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
+            ) );
+
+            foreach ( (array) $rows as $row ) {
+
+                if ( $this->deriveFor( $entity_name, (array) $row ) === null ) {
+
+                    $total++;
+                }
             }
         }
 

@@ -433,6 +433,43 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * A dimension row with nothing to hash must not block completion.
+     *
+     * On a real installation 5,198 owa_host rows carry an empty host and nothing
+     * but an IP, so there is no content to derive an id from and the row can
+     * never be planned. Counting them as outstanding work made completion
+     * unreachable: the migration converted everything it could, refused to clear
+     * the flag because the count stayed non-zero, and the installation was stuck
+     * part-converted -- with site lookups broken, because owa_site HAD converted
+     * while the flag still said 32-bit.
+     *
+     * Same treatment as a dangling fact key: nothing can fix it, nothing will
+     * ever derive that id again, so report it and move on.
+     */
+    public function testDimensionRowsWithNoContentDoNotBlockCompletion(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function countNarrowKeys()');
+        $end   = strpos($source, 'protected function countUnconvertibleDimensionRows()');
+
+        $this->assertNotFalse($start);
+        $this->assertNotFalse($end, 'unconvertible rows must be counted separately');
+
+        $body = substr($source, $start, $end - $start);
+
+        $this->assertStringContainsString('$this->deriveFor(', $body,
+            'the count must ask whether each row CAN be converted, not just whether it is narrow');
+
+        // And the operator is told, rather than the rows being silently skipped.
+        $action = substr($source, strpos($source, 'function action()'));
+        $this->assertStringContainsString('countUnconvertibleDimensionRows()', $action,
+            'the number left behind must be reported');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".
