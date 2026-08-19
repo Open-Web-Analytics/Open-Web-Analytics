@@ -75,40 +75,30 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
-     * owa_click.target_id is a document key and must be DECLARED as one.
+     * owa_click.target_id must be migrated, and must NOT be a declared key.
      *
-     * It held a content-derived document id -- ClickHandlers sets it with
-     * setStringGuid( target_url ) -- while carrying no foreign key declaration,
-     * so anything enumerating a fact table's keys skipped it. The migration did
-     * exactly that and left 59,083 working references on one installation
-     * pointing at ids that had moved, and its completion check, reading the same
-     * metadata, reported success.
-     *
-     * Undeclaring it would reintroduce silent data corruption, so it is pinned
-     * here rather than trusted to stay.
+     * It holds setStringGuid( target_url ), which is a document id when the click
+     * went to a page of this site and meaningless when it went anywhere else --
+     * 59,083 of 266,498 resolved on one installation. A foreign key asserts a
+     * referential guarantee and there is none, so the entity does not declare it
+     * and key enumeration cannot see it. The migration therefore has to name it,
+     * or the values that DO resolve are left pointing at ids that have moved.
      */
-    public function testClickTargetIdIsDeclaredAsADocumentKey(): void
+    public function testTargetIdIsMigratedWithoutBeingDeclaredAKey(): void
     {
         $click = \OWA\Core\CoreAPI::entityFactory('base.click');
 
-        $this->assertArrayHasKey('target_id', $click->properties);
+        $this->assertFalse($click->properties['target_id']->isForeignKey(),
+            'a click target can be any URL on the web, so this is not a foreign key');
 
-        $property = $click->properties['target_id'];
+        $undeclared = \OWA\Module\Base\Controller\RederiveDimensionIdsCli::UNDECLARED_KEYS;
 
-        $this->assertTrue($property->isForeignKey(),
-            'target_id holds a document id and must be declared as a foreign key, or key '
-            . 'enumeration silently skips it');
-
-        $this->assertSame(array('base.document', 'id'), (array) $property->getForeignKey());
+        $this->assertSame('base.document', $undeclared['click']['target_id'] ?? null,
+            'the migration must name target_id explicitly, since nothing can infer it');
     }
 
-    /**
-     * ...and declaring it must not change which column report joins use. The
-     * relatedEntities map keeps one column per target entity, last declaration
-     * winning, so a careless declaration could repoint every document join on
-     * clicks from document_id to target_id.
-     */
-    public function testDeclaringTargetIdDidNotStealTheDocumentJoin(): void
+    /** Declaring it would have repointed every document join on clicks. */
+    public function testReportJoinsToDocumentsStillGoThroughDocumentId(): void
     {
         $click = \OWA\Core\CoreAPI::entityFactory('base.click');
 
@@ -116,8 +106,7 @@ final class RederiveDimensionIdsTest extends TestCase
         $properties->setAccessible(true);
         $table = $properties->getValue($click);
 
-        $this->assertSame('document_id', $table['relatedEntities']['base.document'] ?? null,
-            'report joins to base.document must still go through document_id');
+        $this->assertSame('document_id', $table['relatedEntities']['base.document'] ?? null);
     }
 
     /**

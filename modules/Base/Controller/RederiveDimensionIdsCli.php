@@ -69,6 +69,25 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         'base.source_dim'      => array( 'column' => 'source_domain', 'trim' => true  ),
     );
 
+    /**
+     * Content-derived dimension keys that are NOT declared foreign keys.
+     *
+     * owa_click.target_id holds setStringGuid( target_url ), which is a document
+     * id whenever the click went to a page of this site and meaningless when it
+     * went anywhere else -- 59,083 of 266,498 resolved on one installation. That
+     * is a conditional reference, not a referential guarantee, so the entity does
+     * not declare it and key enumeration cannot see it.
+     *
+     * It still has to be rewritten. Leaving it behind would break every one of
+     * those 59,083 working references, silently, at the moment the documents
+     * they point at move.
+     *
+     * @var array  table => array( column => dimension entity )
+     */
+    const UNDECLARED_KEYS = array(
+        'click' => array( 'target_id' => 'base.document' ),
+    );
+
     /** Anything at or below this is a crc32 id and still needs converting. */
     const NARROW_CEILING = 4294967296;   // 2^32
 
@@ -324,6 +343,24 @@ class RederiveDimensionIdsCli extends PartitionsCli {
                 }
 
                 $out[ $table ][ $column ] = $fk[0];
+            }
+        }
+
+        // Columns that are dimension keys in practice but carry no declaration.
+        $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+
+        foreach ( self::UNDECLARED_KEYS as $suffix => $cols ) {
+
+            $table = $ns . $suffix;
+
+            if ( $only_table && $table !== $only_table ) {
+
+                continue;
+            }
+
+            foreach ( $cols as $column => $entity_name ) {
+
+                $out[ $table ][ $column ] = $entity_name;
             }
         }
 
