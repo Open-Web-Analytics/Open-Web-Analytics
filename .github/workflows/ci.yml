@@ -230,13 +230,20 @@ jobs:
       - name: Build JS bundles
         run: npm run build
 
-      - name: Install Playwright Chromium + OS deps
-        # The step that hangs, so it carries its own ceiling as well as the
-        # job's. Healthy runs finish in a couple of minutes; failing here names
-        # the browser download directly instead of leaving a job that looks like
-        # the tests are slow.
+      # NO --with-deps. That flag runs apt-get update && apt-get install against
+      # Ubuntu's archive on every run, and that apt step is what has been
+      # hanging: five times in one day, latterly on every single run, stalling
+      # for the full ten minutes with no output after reaching noble-security.
+      # The browser download itself has never been the problem.
+      #
+      # The ubuntu-latest image already ships the shared libraries Chromium
+      # needs, so the flag was buying a re-check of packages that are present.
+      # If a future image drops one, Playwright fails immediately and loudly
+      # with the missing library named -- a better failure than a ten-minute
+      # stall in apt.
+      - name: Install Playwright Chromium
         timeout-minutes: 10
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       # STEP 1: exercise the INSTALLER itself (web wizard + CLI), each into its own
       # scratch DB on the service, self-served by php -S. This certifies the exact
