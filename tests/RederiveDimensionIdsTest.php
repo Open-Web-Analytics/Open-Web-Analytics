@@ -613,6 +613,53 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * Every read of a fact table goes one partition at a time.
+     *
+     * Not an optimisation detail -- it decides whether a correct migration can
+     * report that it succeeded. The fact key carries no index, so each of these
+     * is a scan, and every row scanned probes the map by ( entity, old_id ).
+     * Scanning a whole fact table evicts the map's index pages from the buffer
+     * pool and those probes become disk reads: measured at 470,718 rows in 226
+     * seconds, against the identical join issued per partition by
+     * rewriteFactKeys() covering all nine tables in thirteen minutes.
+     *
+     * Whole-table, the verification outran the rewrite it was verifying and was
+     * killed by a timeout with everything already converted -- so the flag stayed
+     * set, ingestion kept deriving 32-bit ids against 63-bit data, and site
+     * lookups stayed broken. The rewrite was never the slow part.
+     */
+    public function testEveryFactTableReadIsScopedToOnePartition(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        // Every statement that reads or writes a fact table joined to the map.
+        // %s%s is the table followed by its PARTITION clause; a bare %s is a
+        // whole-table scan.
+        preg_match_all('/"(?:SELECT COUNT\(\*\) AS n|UPDATE) FROM |"UPDATE /', $source, $ignored);
+
+        foreach (['countNarrowKeys', 'countDanglingKeys', 'rewriteFactKeys'] as $method) {
+
+            $start = strpos($source, 'protected function ' . $method . '(');
+            $this->assertNotFalse($start, $method . ' must exist');
+
+            $body = substr($source, $start);
+            $body = substr($body, 0, strpos($body, "\n    }\n") + 6);
+
+            $this->assertStringContainsString('$db->listPartitions(', $body,
+                $method . ' must enumerate partitions rather than read the table whole');
+
+            $this->assertStringContainsString('PARTITION (%s)', $body,
+                $method . ' must scope each statement to one partition');
+
+            // An unpartitioned table still has to work: one statement, no clause.
+            $this->assertStringContainsString("array( array( 'name' => null ) )", $body,
+                $method . ' must still issue one unscoped statement for an unpartitioned table');
+        }
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".
