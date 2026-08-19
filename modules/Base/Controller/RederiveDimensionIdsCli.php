@@ -68,6 +68,16 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         'base.ad_dim'          => array( 'column' => 'name',          'trim' => true  ),
         'base.campaign_dim'    => array( 'column' => 'name',          'trim' => true  ),
         'base.source_dim'      => array( 'column' => 'source_domain', 'trim' => true  ),
+
+        // Not a reporting dimension, but its id is content-derived exactly like
+        // one: owa_site.id is generateId( site_id ), and nine call sites load a
+        // site that way -- makeUrlCanonical among them. Leaving it behind breaks
+        // every one of them silently, and makeUrlCanonical failing means URLs
+        // stop being canonicalised at all: no query-string filters, no default
+        // page, no domain aliases. Every document id derived after that differs
+        // from the ones derived before, which splits the dimension on the very
+        // installation that just migrated.
+        'base.site'            => array( 'column' => 'site_id',       'trim' => false ),
     );
 
     /**
@@ -86,7 +96,12 @@ class RederiveDimensionIdsCli extends PartitionsCli {
      * @var array  table => array( column => dimension entity )
      */
     const UNDECLARED_KEYS = array(
-        'click' => array( 'target_id' => 'base.document' ),
+        'click'     => array( 'target_id' => 'base.document' ),
+
+        // owa_site_user.site_id is a BIGINT holding owa_site.id, not the site_id
+        // string the fact tables carry. Undeclared, and the only other place a
+        // derived site id is stored.
+        'site_user' => array( 'site_id'   => 'base.site' ),
     );
 
     /** Anything at or below this is a crc32 id and still needs converting. */

@@ -68,10 +68,46 @@ final class RederiveDimensionIdsTest extends TestCase
     {
         $dims = $this->dimensions();
 
-        foreach (['base.visitor', 'base.session', 'base.site'] as $name) {
+        foreach (['base.visitor', 'base.session'] as $name) {
             $this->assertArrayNotHasKey($name, $dims,
-                "$name's id is not derived from its content and must never be re-derived");
+                "$name's id is an event guid, not derived from content, and must never be re-derived");
         }
+    }
+
+    /**
+     * base.site IS content-derived and must be converted, despite not being a
+     * reporting dimension.
+     *
+     * owa_site.id is generateId( site_id ), and nine call sites load a site that
+     * way -- makeUrlCanonical among them. Leaving it behind breaks all of them
+     * silently, and a failing makeUrlCanonical means URLs stop being
+     * canonicalised at all: no query-string filters, no default page, no domain
+     * aliases. Every document id derived afterwards then differs from the ones
+     * derived before, splitting the dimension on the installation that just
+     * migrated.
+     */
+    public function testTheSiteIdIsConvertedEvenThoughItIsNotADimension(): void
+    {
+        $dims = $this->dimensions();
+
+        $this->assertArrayHasKey('base.site', $dims,
+            'owa_site.id is derived from site_id and breaks nine call sites if left behind');
+        $this->assertSame('site_id', $dims['base.site']['column']);
+        $this->assertFalse($dims['base.site']['trim']);
+    }
+
+    /**
+     * ...and the one other place a derived site id is stored.
+     *
+     * owa_site_user.site_id is a BIGINT holding owa_site.id, not the site_id
+     * string the fact tables carry, and it carries no key declaration.
+     */
+    public function testSiteGrantsFollowTheSiteId(): void
+    {
+        $undeclared = \OWA\Module\Base\Controller\RederiveDimensionIdsCli::UNDECLARED_KEYS;
+
+        $this->assertSame('base.site', $undeclared['site_user']['site_id'] ?? null,
+            'access grants key on the derived site id and must follow it');
     }
 
     /**
