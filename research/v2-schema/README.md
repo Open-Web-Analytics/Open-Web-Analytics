@@ -284,6 +284,51 @@ A single event table, GA4-shaped, with two deliberate impurities:
 Everything else — dimension tables, per-type fact tables, session goal
 columns, dual metric implementations — goes.
 
+## Addendum: pushing session state onto the tracker
+
+Raised after the first round of this research: could the tracker fire a
+`session_update` event periodically (and before navigation) so the server
+needs neither query-time sessionization nor a materialized rollup?
+
+"Session state" is three separable things, and the answer differs per part:
+
+1. **Identity and lifecycle — client-side already, keep it.** GA4 mints the
+   session id and number in the cookie, times out sessions client-side, and
+   fires `session_start` itself. The 1.x state manager already carries the
+   identity half.
+
+2. **Engagement time — the tracker is the only honest witness.** Server-side
+   duration cannot see time spent on the final page; a bounce reads as zero
+   seconds after ten minutes of reading, in 1.x and in every server-derived
+   variant alike. A tracker accumulating visible-engagement time fixes what no
+   server-side design can. Delivery matters: GA4 does not heartbeat — it
+   piggybacks `engagement_time_msec` on whatever event goes out next and fires
+   a standalone terminal beacon (sendBeacon on pagehide / visibilitychange:
+   hidden, not beforeunload, which mobile skips) only when a session ends with
+   unsent time. On this corpus (2.1 pageviews/session): a 30 s heartbeat would
+   add ~20 events per session, a per-navigation update ~+100% event volume,
+   piggyback-plus-terminal ~+1 event per session (~+27%).
+
+3. **Counters (pageviews-in-session, bounce, pages/visit) — keep these
+   server-derivable.** Four independent reasons: client death makes asserted
+   state stale with unbounded loss (heartbeats bound it at the volume cost
+   above); multi-tab sessions fragment client-side counts; the client is an
+   untrusted witness for facts the server observed itself (the same principle
+   behind server-assigned event time); and non-JS event sources (PHP tracker,
+   log replay, queue-fed nodes) produce sessions with no session_update rows,
+   so the derivation must exist as a fallback regardless.
+
+Net effect: with identity and engagement client-side, the rollup's job shrinks
+from "reconstruct sessions" to "count events per session" — measured at
+~118 ms per month on deliberately small hardware. That is likely acceptable at
+query time, demoting the materialized rollup from architectural requirement to
+an optional optimization for large installations.
+
+Design guards if adopted: terminal updates append rather than upsert (the
+event stream stays immutable, which queue/replay semantics want), latest-per-
+session resolves at read time, and updates carry a client sequence number so
+delayed out-of-order arrivals cannot clobber later state.
+
 ## Rebuilding this experiment
 
 ```
