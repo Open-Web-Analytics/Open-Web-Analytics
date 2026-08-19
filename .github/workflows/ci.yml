@@ -4,10 +4,25 @@ on:
     branches: [ master ]
   pull_request:
 
+# One run per branch. Pushing again while a run is in flight cancels the older
+# one, which is almost always what you want while iterating on a pull request --
+# and it stops superseded runs sitting on the runners. Three hung e2e jobs on
+# commits that had already been replaced once queued everything else in the
+# repository behind them for over an hour.
+#
+# master is excluded from cancellation: its runs are the record of what the
+# default branch does, so they finish even if another merge lands behind them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   test:
     name: Lint, analyse & test (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    # Observed around 1m15s. A ceiling this far above it only ever trips on a
+    # hang, never on a slow runner.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +65,8 @@ jobs:
   js:
     name: Tracker JS tests (Jest)
     runs-on: ubuntu-latest
+    # Observed around 35s.
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,6 +91,8 @@ jobs:
   isolation:
     name: Test isolation sweep (each file alone)
     runs-on: ubuntu-latest
+    # Observed between 1m38s and 3m23s.
+    timeout-minutes: 20
     # A test that passes in the suite but fails alone is inheriting state an
     # earlier test set up -- a registry the dispatcher builds lazily, or a legacy
     # owa_* alias that only exists once something has autoloaded it. PHPUnit runs
@@ -153,6 +172,12 @@ jobs:
   e2e:
     name: E2E (self-hosted, php -S + MySQL)
     runs-on: ubuntu-latest
+    # THE ONE THAT ACTUALLY HANGS. Observed between 4m27s and 10m25s when
+    # healthy, and three times today it stopped dead inside "Install Playwright
+    # Chromium + OS deps" -- a browser download plus apt, neither of ours -- and
+    # sat there for hours, holding a runner and queueing every other run in the
+    # repository behind it. 30 minutes turns that into a fast, legible failure.
+    timeout-minutes: 30
     # A throwaway MySQL for the scratch install the self-hosted runner creates.
     # The runner CREATEs/DROPs its own scratch schema on this server; nothing here
     # is a real install, so root with an empty password is fine and matches the
@@ -206,6 +231,11 @@ jobs:
         run: npm run build
 
       - name: Install Playwright Chromium + OS deps
+        # The step that hangs, so it carries its own ceiling as well as the
+        # job's. Healthy runs finish in a couple of minutes; failing here names
+        # the browser download directly instead of leaving a job that looks like
+        # the tests are slow.
+        timeout-minutes: 10
         run: npx playwright install --with-deps chromium
 
       # STEP 1: exercise the INSTALLER itself (web wizard + CLI), each into its own
