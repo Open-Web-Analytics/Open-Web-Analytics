@@ -324,10 +324,38 @@ from "reconstruct sessions" to "count events per session" — measured at
 query time, demoting the materialized rollup from architectural requirement to
 an optional optimization for large installations.
 
-Design guards if adopted: terminal updates append rather than upsert (the
-event stream stays immutable, which queue/replay semantics want), latest-per-
-session resolves at read time, and updates carry a client sequence number so
-delayed out-of-order arrivals cannot clobber later state.
+**Report engagement as a delta, not a running total.** GA4's
+`engagement_time_msec` carries the time accrued *since the previous event*, and
+the server SUMs the deltas; it is not a cumulative figure resolved by
+last-writer-wins. The delta form is the better fit here for two reasons that
+matter more than they might elsewhere: addition commutes, so out-of-order
+arrival — which the async queue path makes ordinary rather than exceptional —
+cannot corrupt the total; and deltas compose across concurrent tabs, where
+per-tab running totals cannot be summed at all.
+
+The trade accepted in exchange, worth stating rather than discovering later:
+deltas are **not idempotent**, so a retried beacon double-counts, and a dropped
+one is a permanent small undercount that no later event repairs. A cumulative
+value has the opposite profile — self-healing on mid-session loss, idempotent
+on retry, but it needs ordering and does not compose across tabs. GA chose
+deltas; so should this, but with deduplication treated as a real requirement
+rather than a theoretical one, since OWA's queue can redeliver where GA's
+HTTP-only path does not.
+
+Deduplication needs only a **unique event id**, which the event model already
+carries — `(session_id, event_id)` is sufficient. A monotonic per-session
+sequence number is therefore *not* required for correctness. Its one remaining
+capability is gap detection: `…3, 4, 6` is positive evidence of a dropped
+event, which is diagnostic value for a self-hosted product where "my numbers
+look low" is a recurring support question. Worth one integer, but as an
+option, not a foundation.
+
+Remaining design guards: terminal updates append rather than upsert (the event
+stream stays immutable, which queue and replay semantics want), and any state
+that genuinely is last-writer-wins rather than additive resolves at read time.
+
+Sources: [engagement_time_msec is a delta, summed server-side](https://optimizesmart.com/blog/understanding-engagement_time_msec-in-ga4-bigquery/),
+[how engagement time accrues](https://accs-net.com/glossary/engagement-time/).
 
 ## Rebuilding this experiment
 
