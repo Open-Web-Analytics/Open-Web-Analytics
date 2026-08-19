@@ -399,6 +399,40 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * A database that stops answering must never read as a finished migration.
+     *
+     * This happened. On a real run the connection dropped near the end: the drop
+     * phase silently did nothing, every COUNT came back empty and was read as
+     * zero, the completion check concluded there was nothing left, clearing the
+     * flag failed silently too, and the command printed "Done. This installation
+     * now derives 63-bit ids." over a half-converted database. Db::query()
+     * swallows errors, so failure and emptiness were the same value.
+     *
+     * A COUNT(*) always returns exactly one row, so an empty result means the
+     * query did not run. Nothing may turn that into a zero.
+     */
+    public function testAFailedCountIsNeverReadAsZero(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $this->assertStringNotContainsString("['n'] ?? 0", $source,
+            'defaulting a missing count to zero turns a dead connection into "nothing left to do"');
+
+        $this->assertStringContainsString('protected function countOrNull(', $source,
+            'counts must be able to report that they did not run');
+
+        // Every conclusion of "nothing left" must be backed by proof the
+        // database is still there.
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function countOrNull'));
+
+        $this->assertSame(2, substr_count($action, '$this->databaseIsAnswering()'),
+            'both paths that clear the flag must first prove the database is answering');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".

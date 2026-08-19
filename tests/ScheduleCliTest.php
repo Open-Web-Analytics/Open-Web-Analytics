@@ -1271,10 +1271,22 @@ final class ScheduleCliTest extends CliControllerTestCase
         $now      = time();
         $long_ago = $now - (40 * 86400);
 
+        // A stale row, not a missing one. With no row at all, dueSlot() returns
+        // TODAY's occurrence, so a daily job is at most 24 hours late -- inside
+        // its own one-interval grace period, therefore not behind, and diagnose()
+        // correctly says nothing. Reaching the never-run branch needs a job that
+        // is genuinely overdue.
+        $row = [
+            'job_name' => 'lonely', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago, 'last_status' => 'ok', 'last_message' => '-',
+            'last_success_at' => $long_ago, 'last_failure_at' => 0, 'run_count' => 1,
+            'failure_count' => 0,
+        ];
+
         $reason = (string) $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            null, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, false, 0,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, false, 0,
         ]);
 
         $this->assertStringContainsString(

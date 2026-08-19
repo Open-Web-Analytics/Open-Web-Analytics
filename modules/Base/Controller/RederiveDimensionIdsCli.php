@@ -194,6 +194,17 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             // rather than leaving the installation pinned.
             if ( ! $dry_run && \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
 
+                // workRemains() said no and findStaleDerivedIds() found nothing,
+                // but both read queries that return nothing when they fail.
+                if ( ! $this->databaseIsAnswering() ) {
+
+                    return $this->fail(
+                        'The database stopped answering, so "nothing left to convert" cannot be '
+                      . 'trusted. This installation keeps deriving 32-bit ids until a run finishes '
+                      . 'cleanly. Run the command again once the database is healthy.'
+                    );
+                }
+
                 $this->dropMap();
                 \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
 
@@ -223,8 +234,11 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             $this->reportFactWork();
 
             $this->write( '' );
-            $this->write( sprintf( '%s key(s) still on a narrow id.',
-                number_format( $this->countNarrowKeys() ) ) );
+            $left = $this->countNarrowKeys();
+
+            $this->write( $left === null
+                ? 'Could not count what is left: the database stopped answering.'
+                : sprintf( '%s key(s) still on a narrow id.', number_format( $left ) ) );
             $this->write( 'Dry run: nothing was changed.' );
 
             return;
@@ -247,6 +261,15 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // anything is still narrow would split every dimension it touched.
         $remaining = $this->countNarrowKeys();
 
+        if ( $remaining === null ) {
+
+            return $this->fail(
+                'Could not confirm what is left to convert -- the database stopped answering. '
+              . 'Nothing is inconsistent: this installation keeps deriving 32-bit ids until a run '
+              . 'finishes cleanly, so run this command again once the database is healthy.'
+            );
+        }
+
         if ( $remaining ) {
 
             return $this->fail( sprintf(
@@ -254,6 +277,17 @@ class RederiveDimensionIdsCli extends PartitionsCli {
               . 'for now. Nothing is inconsistent: run this command again to finish.',
                 number_format( $remaining )
             ) );
+        }
+
+        // Everything above concluded "nothing left" from queries that return
+        // nothing when they fail. Prove the connection is alive before acting on
+        // that, or a database that died mid-run reads as a finished migration.
+        if ( ! $this->databaseIsAnswering() ) {
+
+            return $this->fail(
+                'The database stopped answering before this could be confirmed. Run the command '
+              . 'again once it is healthy; nothing is inconsistent in the meantime.'
+            );
         }
 
         // A STRONGER CHECK THAN "NOTHING IS STILL NARROW".
@@ -352,6 +386,51 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         return $key === '' ? null : (string) \OWA\Core\Lib::wideStringGuid( $key );
     }
 
+    /**
+     * Run a COUNT query, refusing to read failure as zero.
+     *
+     * A COUNT(*) ALWAYS returns exactly one row. An empty result therefore means
+     * the query did not run -- and Db::query() swallows errors, so a dropped
+     * connection looks identical to a table with nothing in it.
+     *
+     * That is not hypothetical. On a real migration the database became briefly
+     * unreachable near the end of the run: the drop phase silently did nothing,
+     * every count came back "empty" and was read as zero, the completion check
+     * concluded there was nothing left, the flag failed to clear -- silently --
+     * and the command printed "Done. This installation now derives 63-bit ids."
+     * over a half-converted database.
+     *
+     * @param string $sql
+     * @return int|null  null when the query did not run
+     */
+    protected function countOrNull( $sql ) {
+
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql );
+
+        if ( ! $rows || ! isset( $rows[0] ) ) {
+
+            return null;
+        }
+
+        $row = (array) $rows[0];
+
+        return array_key_exists( 'n', $row ) ? (int) $row['n'] : null;
+    }
+
+    /**
+     * Is the database still answering?
+     *
+     * Checked before believing any "there is nothing left to do" conclusion,
+     * because every one of those conclusions is drawn from a query that returns
+     * nothing when it fails.
+     *
+     * @return bool
+     */
+    protected function databaseIsAnswering() {
+
+        return $this->countOrNull( 'SELECT COUNT(*) AS n FROM DUAL' ) !== null;
+    }
+
     /** @return string  the map table's real name */
     protected function mapTable() {
 
@@ -403,12 +482,14 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
             $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
 
-            $rows = $db->get_results( sprintf(
-                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d LIMIT 1',
+            $n = $this->countOrNull( sprintf(
+                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d',
                 $table, self::NARROW_CEILING
             ) );
 
-            if ( (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 ) ) {
+            // A query that did not run tells us nothing, so assume there IS work
+            // rather than concluding there is none.
+            if ( $n === null || $n > 0 ) {
 
                 return true;
             }
@@ -419,9 +500,9 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             return false;
         }
 
-        $rows = $db->get_results( sprintf( 'SELECT COUNT(*) AS n FROM %s', $this->mapTable() ) );
+        $n = $this->countOrNull( sprintf( 'SELECT COUNT(*) AS n FROM %s', $this->mapTable() ) );
 
-        return (bool) (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+        return $n === null ? true : $n > 0;
     }
 
     /** Every dimension this command converts, including the composite one. */
@@ -663,7 +744,12 @@ class RederiveDimensionIdsCli extends PartitionsCli {
      * 3,440 distinct document ids that never had a row. Counting those as
      * unfinished work would pin such an installation to 32-bit ids forever.
      *
-     * @return int
+     * Returns NULL when a count could not be run at all, which must never be
+     * confused with "nothing left": a dropped connection produced exactly that
+     * confusion on a real migration and the command declared success over a
+     * half-converted database.
+     *
+     * @return int|null
      */
     protected function countNarrowKeys() {
 
@@ -671,31 +757,53 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         $map   = $this->mapTable();
         $total = 0;
 
+        // No map means nothing can be converted -- every fact key below is
+        // counted through a join to it. That is a legitimate zero, not a failed
+        // query, and the difference matters: the map is dropped once a migration
+        // completes, so treating its absence as an error would make every
+        // subsequent run refuse on a perfectly healthy database.
+        $have_map = (bool) $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $map ) );
+
         // A dimension row on a narrow id always has content to re-derive from,
         // so it always counts.
         foreach ( $this->dimensionNames() as $entity_name ) {
 
             $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
 
-            $rows = $db->get_results( sprintf(
+            $n = $this->countOrNull( sprintf(
                 'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
             ) );
 
-            $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+            if ( $n === null ) {
+
+                return null;
+            }
+
+            $total += $n;
+        }
+
+        if ( ! $have_map ) {
+
+            return $total;
         }
 
         foreach ( $this->factKeyColumns() as $table => $cols ) {
 
             foreach ( $cols as $column => $entity_name ) {
 
-                $rows = $db->get_results( sprintf(
+                $n = $this->countOrNull( sprintf(
                     "SELECT COUNT(*) AS n FROM %s f JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
                   . 'WHERE f.%s > 0 AND f.%s < %d',
                     $table, $map, $db->prepare( $entity_name ), $column,
                     $column, $column, self::NARROW_CEILING
                 ) );
 
-                $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+                if ( $n === null ) {
+
+                    return null;
+                }
+
+                $total += $n;
             }
         }
 
@@ -723,14 +831,16 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
             foreach ( $cols as $column => $entity_name ) {
 
-                $rows = $db->get_results( sprintf(
+                $n = $this->countOrNull( sprintf(
                     "SELECT COUNT(*) AS n FROM %s f LEFT JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
                   . 'WHERE f.%s > 0 AND f.%s < %d AND m.old_id IS NULL',
                     $table, $map, $db->prepare( $entity_name ), $column,
                     $column, $column, self::NARROW_CEILING
                 ) );
 
-                $total += (int) ( ( (array) ( $rows[0] ?? array() ) )['n'] ?? 0 );
+                // Reported for information only, so an unrunnable count is
+                // simply not counted rather than aborting the run.
+                $total += (int) $n;
             }
         }
 
