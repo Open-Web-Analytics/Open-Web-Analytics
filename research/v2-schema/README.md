@@ -344,11 +344,39 @@ HTTP-only path does not.
 
 Deduplication needs only a **unique event id**, which the event model already
 carries — `(session_id, event_id)` is sufficient. A monotonic per-session
-sequence number is therefore *not* required for correctness. Its one remaining
-capability is gap detection: `…3, 4, 6` is positive evidence of a dropped
-event, which is diagnostic value for a self-hosted product where "my numbers
-look low" is a recurring support question. Worth one integer, but as an
-option, not a foundation.
+sequence number is therefore *not* required for correctness.
+
+**Carry a per-tab running total alongside the delta.** One extra integer buys
+back everything the delta form gives up, and more than a sequence number would.
+Scope it to the tab — `sessionStorage` is tab-scoped by definition, so this
+costs no invention — and the invariant is exact:
+
+```
+SUM(delta) WHERE session=S AND tab=T  ==  MAX(total) WHERE session=S AND tab=T
+```
+
+Equal means that tab's stream arrived intact. `SUM < MAX` means events were
+lost, and the difference quantifies how much engagement time went missing
+rather than merely flagging that a gap exists. `SUM > MAX` means duplicates
+were delivered — the likelier failure here, since the queue can redeliver.
+
+Scoping matters: a session-scoped total in `localStorage` would break the
+invariant legitimately as soon as a second tab opened, making real loss
+indistinguishable from ordinary multi-tab use.
+
+The total also serves as a **repair value**, which is the part that makes it
+worth carrying. Deltas cannot self-heal a loss; a running total can, because
+any later event in that tab carries the full figure. So both robustness
+profiles are available at once — `SUM(deltas)` across tabs as the primary
+figure, composing correctly and order-independent, with per-tab `MAX(total)`
+repairing any tab whose invariant fails.
+
+Two limits worth stating rather than discovering. Neither this nor any other
+client-side mechanism can detect loss of a tab's **final** beacon, since
+nothing later carries a higher total — tab crashes and dropped terminal
+beacons stay invisible. And two numbers that can disagree need a stated
+precedent: deltas are authoritative, the total repairs, and a disagreement is
+logged rather than silently reconciled.
 
 Remaining design guards: terminal updates append rather than upsert (the event
 stream stays immutable, which queue and replay semantics want), and any state
