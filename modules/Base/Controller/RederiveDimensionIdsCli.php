@@ -157,9 +157,15 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             ) );
         }
 
-        \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
-
         $dangling = $this->countDanglingKeys();
+
+        // Completion verified, so the map has done its job. It is only needed
+        // BETWEEN runs -- once nothing is left to resume and the flag is about to
+        // clear, keeping it would leave one row per converted dimension behind
+        // for good. Counted before dropping, since countDanglingKeys() reads it.
+        $this->dropMap();
+
+        \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
 
         $this->write( '' );
 
@@ -538,6 +544,20 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         }
 
         return $total;
+    }
+
+    /**
+     * Remove the map, once there is nothing left to resume.
+     *
+     * Deliberately NOT called on any other path. While a migration is
+     * incomplete this table is the only thing linking an old id to its new one,
+     * and it cannot be rebuilt after the old dimension rows are gone.
+     *
+     * @return void
+     */
+    protected function dropMap() {
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s', $this->mapTable() ) );
     }
 
     /** What the fact side would do, for --dry-run. */

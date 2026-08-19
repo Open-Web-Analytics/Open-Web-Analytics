@@ -8,10 +8,27 @@ namespace OWA\Module\Base\Entity;
 /**
  * old id -> new id, for the 32-bit to 63-bit dimension id migration.
  *
- * Exists so the fact-side rewrite can be a JOIN rather than millions of
- * individual statements. It is scratch: the migration builds it, uses it, and
- * leaves it in place as a record of what was changed, which is the only thing
- * that can answer "what did this id used to be" after the fact.
+ * DELIBERATELY NOT IN THE MODULE'S ENTITY LIST, so a fresh installation does not
+ * create it. A new installation derives 63-bit ids from its first event and will
+ * never run the migration, so the table would sit there empty forever. The
+ * command creates it on demand instead; entityFactory() resolves this class
+ * through the compat alias map rather than the entity list, so nothing else
+ * changes.
+ *
+ * It exists so the fact-side rewrite can be a JOIN rather than millions of
+ * individual statements.
+ *
+ * A REAL table, not a MySQL TEMPORARY one, because a temporary table is scoped
+ * to one connection and would not survive a killed run -- and surviving one is
+ * the point. Between runs it is the only record linking an old id to its new
+ * one: once the old dimension rows have been dropped it cannot be rebuilt, since
+ * rebuilding reads dimension rows and by then they are all wide.
+ *
+ * It lives exactly as long as it is needed. The command drops it at the moment
+ * completion is verified, in the same step that clears use_32bit_hash, because
+ * from then on there is nothing to resume and a further run refuses on the flag.
+ * Keeping it beyond that would leave a six-figure row count behind on a large
+ * installation to answer a question nobody asks.
  *
  * Keyed by (entity, old_id) rather than old_id alone, because two dimensions can
  * legitimately hold the same crc32 value for different content.

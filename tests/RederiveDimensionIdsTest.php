@@ -110,6 +110,97 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * Keys that cannot be converted must not stop the command finishing.
+     *
+     * A fact key pointing at a dimension row that does not exist has no content
+     * to derive an id from, so nothing can convert it -- 14,097 of them on one
+     * installation. They are left in place deliberately: nulling them would
+     * change what the data asserts, from "there was a prior page we cannot
+     * identify" to "there was no prior page".
+     *
+     * That only works because the completion test counts narrow keys JOINED to
+     * the map. A dangling key fails that join, contributes nothing, and so can
+     * never hold the flag set forever. Counting all narrow keys instead would
+     * pin such an installation to 32-bit ids permanently.
+     */
+    public function testTheCompletionTestIgnoresKeysItCannotConvert(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function countNarrowKeys()');
+        $end   = strpos($source, 'protected function countDanglingKeys()');
+
+        $this->assertNotFalse($start);
+        $this->assertNotFalse($end);
+
+        $body = substr($source, $start, $end - $start);
+
+        $this->assertStringContainsString('JOIN', $body,
+            'the completion test must join the map, so unconvertible keys are excluded');
+        $this->assertStringNotContainsString('LEFT JOIN', $body,
+            'a LEFT JOIN would count dangling keys and the flag could never clear');
+    }
+
+    /**
+     * A fresh installation must not get the migration's scratch table.
+     *
+     * It is born deriving 63-bit ids and will never run the migration, so the
+     * table would be created empty and stay that way forever. The command
+     * creates it on demand instead.
+     */
+    public function testAFreshInstallDoesNotCreateTheMapTable(): void
+    {
+        $entities = \OWA\Core\CoreAPI::serviceSingleton()->modules['base']->getEntities();
+
+        $this->assertNotContains('guid_map', $entities,
+            'the map is migration scratch, not part of a new installation schema');
+
+        // ...but it must still be resolvable, since the command builds it on demand.
+        $map = \OWA\Core\CoreAPI::entityFactory('base.guid_map');
+
+        $this->assertSame('owa_guid_map', $map->getTableName());
+    }
+
+    /**
+     * The map lives exactly as long as it is needed: dropped when completion is
+     * verified, and never before.
+     *
+     * While a migration is incomplete it is the only thing linking an old id to
+     * its new one, and it cannot be rebuilt -- rebuilding reads dimension rows,
+     * which are all wide by then. So a drop on any earlier path would make a
+     * killed run unrecoverable. Equally, keeping it after completion leaves one
+     * row per converted dimension behind for good, to answer a question nobody
+     * asks.
+     */
+    public function testTheMapIsDroppedOnlyAfterCompletionIsVerified(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $this->assertSame(1, substr_count($source, '$this->dropMap();'),
+            'exactly one call site, or the map can vanish while a run still needs it');
+
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
+
+        $verify = strpos($action, 'countNarrowKeys()');
+        $drop   = strpos($action, '$this->dropMap();');
+        $clear  = strpos($action, "persistSetting( 'base', 'use_32bit_hash', false )");
+
+        $this->assertNotFalse($verify);
+        $this->assertNotFalse($drop);
+        $this->assertNotFalse($clear);
+
+        $this->assertLessThan($drop, $verify,
+            'the map must not be dropped before completion has been verified');
+        $this->assertLessThan($clear, $drop,
+            'drop and flag-clear belong to the same completed step');
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".

@@ -2559,7 +2559,6 @@ class Module extends \OWA\Core\Module {
                 'queue_item',
                 'scheduled_job',
                 'job_lock',
-                'guid_map',
                 'site_user')
             );
 
