@@ -33,6 +33,10 @@ namespace OWA\Core;
 
 class CoreAPI {
 
+    /** @var array  site id => is it registered. See isSiteRegistered(). */
+    protected static $registered_sites = array();
+
+
 
     // @depricated
     // @todo remove
@@ -230,6 +234,57 @@ class CoreAPI {
 
             return $site->getSiteSetting($name);
         }
+    }
+
+    /**
+     * Is this site id one this installation actually knows about?
+     *
+     * Tracking accepts a site id from the request and has never checked it, so
+     * an event naming a site that does not exist is recorded in full: fact rows,
+     * sessions, the lot. Nothing ever reads them, because reporting is entered
+     * through a site that cannot be selected, and nothing ever removes them. Two
+     * real installations carry 165 and 15,173 such rows.
+     *
+     * The values are not hypothetical either. Observed in production data:
+     * 'yoursiteidgoeshere' and 'your_site_id' (the documentation placeholder,
+     * pasted into live tracking code), 'No options are available.' (a select-box
+     * label submitted as a value), and one real site id truncated at six
+     * different lengths.
+     *
+     * MEMOISED, because a queue worker processes many events per process and the
+     * answer cannot change within one. A single request pays one lookup at most.
+     *
+     * @param string $site_id
+     * @return bool
+     */
+    public static function isSiteRegistered( $site_id ) {
+
+        $site_id = (string) $site_id;
+
+        if ( $site_id === '' ) {
+
+            return false;
+        }
+
+        if ( ! array_key_exists( $site_id, self::$registered_sites ) ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $site->load( $site->generateId( $site_id ) );
+
+            self::$registered_sites[ $site_id ] = (bool) $site->wasPersisted();
+        }
+
+        return self::$registered_sites[ $site_id ];
+    }
+
+    /**
+     * Test seam: forget which site ids have been checked.
+     *
+     * @return void
+     */
+    public static function forgetRegisteredSites() {
+
+        self::$registered_sites = array();
     }
 
     public static function getRegisteredDomain( $full_domain ) {
@@ -1158,6 +1213,35 @@ class CoreAPI {
 	        
             \OWA\Core\CoreAPI::debug("Not logging event. IP address found in exclusion list.");
             
+            return false;
+        }
+
+        // Refuse an event for a site this installation does not have.
+        //
+        // The site id arrives in the request and, until now, was written to
+        // every fact row without ever being checked. Such rows are unreachable
+        // by design -- reporting is entered through a site, and the site does
+        // not exist -- so they are recorded, never read, and never removed.
+        //
+        // That also made tracking an unauthenticated write: anyone could post
+        // events naming any site id and add rows indefinitely, invisible in
+        // every report while consuming partitions and open-file budget.
+        //
+        // Placed after the robot and IP gates so a rejected request costs no
+        // lookup, and before queueing so bad events cannot fill the queue.
+        // Nothing on this path creates sites -- they come only from the admin
+        // UI, cmd=add-site and install -- so nothing legitimate is being
+        // refused.
+        $site_id = $event->getSiteId();
+
+        if ( ! \OWA\Core\CoreAPI::isSiteRegistered( $site_id ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Not logging event: site id "%s" is not registered on this installation. '
+              . 'Check the site id in your tracking code against cmd=add-site or the Sites admin page.',
+                (string) $site_id
+            ) );
+
             return false;
         }
         

@@ -72,6 +72,46 @@ abstract class IngestionTestCase extends TestCase
         }
     }
 
+    /** @var array<string, bool>  site ids already registered in this process */
+    private static $registeredSites = [];
+
+    /**
+     * Make sure a site exists for this site id, creating it once per process.
+     *
+     * Tracking refuses events for unregistered sites, so an ingestion fixture
+     * needs a real site behind it. Created through SiteManager rather than by
+     * hand, so the row is built exactly as the admin UI and cmd=add-site build
+     * one -- SiteManager derives site_id as md5( domain ), which is the same
+     * shape these tests already use.
+     *
+     * Left in place afterwards rather than torn down: it is a fixture shared by
+     * every ingestion test in the process, and creating and dropping it around
+     * each one would be churn for no benefit.
+     */
+    protected function ensureSiteRegistered(string $site_id): void
+    {
+        if (isset(self::$registeredSites[$site_id])) {
+            return;
+        }
+
+        $site = owa_coreAPI::entityFactory('base.site');
+        $site->load($site->generateId($site_id));
+
+        if (!$site->wasPersisted()) {
+
+            // md5( domain ) is what SiteManager stores as site_id, so passing
+            // the value these tests already hash gives exactly their site id.
+            $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+            $sm->createNewSite('owa-test-site', 'OWA ingestion test site');
+        }
+
+        self::$registeredSites[$site_id] = true;
+
+        // The gate memoises its answers, and it may have been asked about this
+        // site before it existed.
+        owa_coreAPI::forgetRegisteredSites();
+    }
+
     /**
      * Register a row for deletion in tearDown.
      */
@@ -162,6 +202,15 @@ abstract class IngestionTestCase extends TestCase
         // Anonymous, non-robotic request so logEvent does not drop the event.
         if (!isset($props['HTTP_USER_AGENT'])) {
             $props['HTTP_USER_AGENT'] = $_SERVER['HTTP_USER_AGENT'];
+        }
+
+        // logEvent refuses an event naming a site this installation does not
+        // have, exactly as the beacon endpoint now does in production. These
+        // tests had been relying on that check not existing: they fire events
+        // for md5('owa-test-site'), which no installation has ever registered.
+        // Registering it makes the fixture match what a real tracked site is.
+        if (!empty($props['site_id'])) {
+            $this->ensureSiteRegistered((string) $props['site_id']);
         }
 
         $event = owa_coreAPI::supportClassFactory('base', 'event');

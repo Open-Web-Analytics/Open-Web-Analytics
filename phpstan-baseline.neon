@@ -21,7 +21,7 @@ parameters:
 		-
 			message: '#^Call to method generateId\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 3
+			count: 4
 			path: Core/CoreAPI.php
 
 		-
@@ -57,7 +57,7 @@ parameters:
 		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 3
+			count: 4
 			path: Core/CoreAPI.php
 
 		-
@@ -81,7 +81,7 @@ parameters:
 		-
 			message: '#^Call to method wasPersisted\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 3
+			count: 4
 			path: Core/CoreAPI.php
 
 		-

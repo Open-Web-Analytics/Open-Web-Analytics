@@ -274,6 +274,8 @@ function up(string $repoRoot): array
         fail("CLI installer did not report success:\n" . $install['output']);
     }
 
+    registerHarnessSite($repoRoot);
+
     return [
         'status'      => 'up',
         'scratch_db'  => $db,
@@ -281,6 +283,46 @@ function up(string $repoRoot): array
         'base_url'    => baseUrl(),
         'stashed_live'=> $stashed,
     ];
+}
+
+/**
+ * Register the site the tracker fixtures beacon to.
+ *
+ * The tracker harness pages send owa_site_id=e2e-tracker-harness, a literal
+ * baked into the fixtures, and tracking now refuses events naming a site the
+ * installation does not have. Until that check existed the specs relied on OWA
+ * accepting an unregistered id, which is exactly the behaviour being removed.
+ *
+ * Written directly rather than through SiteManager because that derives
+ * site_id as md5( domain ) and cannot produce an arbitrary literal. The row is
+ * otherwise identical to one the admin UI creates.
+ */
+function registerHarnessSite(string $repoRoot): void
+{
+    $site_id = 'e2e-tracker-harness';
+
+    $php = escapeshellarg(PHP_BINARY);
+    $cmd = $php . ' -r ' . escapeshellarg(
+        'require "' . $repoRoot . 'owa.php";'
+      . ' new owa(["instance_role" => "cli"]);'
+      . ' $s = owa_coreAPI::entityFactory("base.site");'
+      . ' $id = $s->generateId("' . $site_id . '");'
+      . ' $s->load($id);'
+      . ' if (!$s->wasPersisted()) {'
+      . '   $s->set("id", $id);'
+      . '   $s->set("site_id", "' . $site_id . '");'
+      . '   $s->set("name", "E2E tracker harness");'
+      . '   $s->set("domain", "http://127.0.0.1");'
+      . '   $s->create();'
+      . ' }'
+      . ' echo "harness site registered\n";'
+    ) . ' 2>&1';
+
+    $out = shell_exec($cmd);
+
+    if (strpos((string) $out, 'harness site registered') === false) {
+        fail("Could not register the tracker harness site:\n" . $out);
+    }
 }
 
 /** Write owa-config.php from the dist template, pointed at the scratch DB + URL. */
