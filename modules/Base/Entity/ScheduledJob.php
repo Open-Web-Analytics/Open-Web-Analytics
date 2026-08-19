@@ -35,7 +35,7 @@ class ScheduledJob extends \OWA\Core\Entity {
 
         // Derived from the job name so a duplicate state row is impossible at
         // the storage layer. NEVER USED AS A LOOKUP KEY: Lib::setStringGuid()
-        // branches on the use_64bit_hash setting, so flipping that on a live
+        // branches on the id scheme in force, so a change to it on a live
         // install would change what generateId() returns for the same name, and
         // a read by id would miss the existing row and then insert a second one
         // colliding on job_name but not on id. Every read and write keys on

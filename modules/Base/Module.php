@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 15;
+        $this->required_schema_version = 16;
         return parent::__construct();
     }
 
@@ -585,6 +585,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
+        $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli',           'Controller/PartitionInitCli.php' );
@@ -707,6 +708,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
+        $this->registerCliCommand('rederive-dimension-ids', 'base.rederiveDimensionIdsCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');

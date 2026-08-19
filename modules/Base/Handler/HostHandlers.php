@@ -68,6 +68,8 @@ class HostHandlers extends \OWA\Core\Observer {
 
         } else {
 
+            $h->detectIdCollision( 'host', $event->get( 'host' ) );
+
             \OWA\Core\CoreAPI::debug('Not Persisting. Host already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }

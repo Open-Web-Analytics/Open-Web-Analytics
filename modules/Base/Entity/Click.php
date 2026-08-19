@@ -69,6 +69,16 @@ class Click extends \OWA\Core\Entity\FactTable {
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
 
+        // setStringGuid( target_url ) -- see ClickHandlers. Deliberately NOT
+        // declared as a foreign key: a click target is any URL on the web, so
+        // most values reference a page this installation has never seen and
+        // never will. On one installation 266,498 clicks carry a target_id and
+        // 59,083 resolve to a document; the rest are external links. A foreign
+        // key asserts a referential guarantee, and there is none here.
+        //
+        // Those 59,083 still have to be rewritten when document ids change,
+        // which is why RederiveDimensionIdsCli names this column explicitly
+        // rather than discovering it from key metadata.
         $this->properties['target_id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
 

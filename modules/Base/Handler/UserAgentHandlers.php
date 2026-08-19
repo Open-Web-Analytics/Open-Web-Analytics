@@ -62,6 +62,8 @@ class UserAgentHandlers extends \OWA\Core\Observer {
 
             } else {
 
+                $ua->detectIdCollision( 'ua', $event->get('HTTP_USER_AGENT') );
+
                 $old = $ua->get('browser_type');
                 $new = $event->get('browser_type');
 				

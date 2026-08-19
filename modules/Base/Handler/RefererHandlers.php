@@ -50,6 +50,8 @@ class RefererHandlers extends \OWA\Core\Observer {
         $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
 
         $r->load( $event->get( 'referer_id' ) );
+
+        $r->detectIdCollision( 'url', $event->get( 'session_referer' ) );
         
         $medium = $event->get('medium');
 
