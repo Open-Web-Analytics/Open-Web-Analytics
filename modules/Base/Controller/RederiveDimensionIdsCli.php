@@ -904,23 +904,48 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             return $total;
         }
 
+        // Counted one partition at a time, for the same reason rewriteFactKeys()
+        // writes one partition at a time -- and it is not about how many rows are
+        // read, which is identical either way.
+        //
+        // The fact key has no index, so this is a scan whatever else changes, and
+        // every row scanned probes the map by ( entity, old_id ). Scanning a whole
+        // fact table evicts the map's index pages from the buffer pool, so those
+        // probes stop being memory reads and become disk reads. Measured on a real
+        // installation: 470,718 rows counted in 226 seconds, about 2,000 rows a
+        // second, while the identical join issued per partition by rewriteFactKeys()
+        // covered all nine tables in thirteen minutes. Same work, an order of
+        // magnitude apart, because a partition-sized scan leaves the map resident.
+        //
+        // Left whole, the verification of a migration outruns the rewrite it is
+        // verifying, and on a large installation outruns any sane timeout -- so a
+        // run that converted everything correctly gets killed before it can say so
+        // and clear the flag.
         foreach ( $this->factKeyColumns() as $table => $cols ) {
 
-            foreach ( $cols as $column => $entity_name ) {
+            $partitions = $db->listPartitions( $table );
+            $units      = $partitions ? $partitions : array( array( 'name' => null ) );
 
-                $n = $this->countOrNull( sprintf(
-                    "SELECT COUNT(*) AS n FROM %s f JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
-                  . 'WHERE f.%s > 0 AND f.%s < %d',
-                    $table, $map, $db->prepare( $entity_name ), $column,
-                    $column, $column, self::NARROW_CEILING
-                ) );
+            foreach ( $units as $unit ) {
 
-                if ( $n === null ) {
+                $scope = $unit['name'] ? sprintf( ' PARTITION (%s)', $unit['name'] ) : '';
 
-                    return null;
+                foreach ( $cols as $column => $entity_name ) {
+
+                    $n = $this->countOrNull( sprintf(
+                        "SELECT COUNT(*) AS n FROM %s%s f JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
+                      . 'WHERE f.%s > 0 AND f.%s < %d',
+                        $table, $scope, $map, $db->prepare( $entity_name ), $column,
+                        $column, $column, self::NARROW_CEILING
+                    ) );
+
+                    if ( $n === null ) {
+
+                        return null;
+                    }
+
+                    $total += $n;
                 }
-
-                $total += $n;
             }
         }
 
@@ -958,20 +983,31 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         $map     = $this->mapTable();
         $total   = 0;
 
+        // Per partition, for the buffer-pool reason set out in countNarrowKeys().
+        // This one is only informational, but it reads the same fact tables the
+        // same way, so left whole it would undo there whatever was gained here.
         foreach ( $this->factKeyColumns() as $table => $cols ) {
 
-            foreach ( $cols as $column => $entity_name ) {
+            $partitions = $db->listPartitions( $table );
+            $units      = $partitions ? $partitions : array( array( 'name' => null ) );
 
-                $n = $this->countOrNull( sprintf(
-                    "SELECT COUNT(*) AS n FROM %s f LEFT JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
-                  . 'WHERE f.%s > 0 AND f.%s < %d AND m.old_id IS NULL',
-                    $table, $map, $db->prepare( $entity_name ), $column,
-                    $column, $column, self::NARROW_CEILING
-                ) );
+            foreach ( $units as $unit ) {
 
-                // Reported for information only, so an unrunnable count is
-                // simply not counted rather than aborting the run.
-                $total += (int) $n;
+                $scope = $unit['name'] ? sprintf( ' PARTITION (%s)', $unit['name'] ) : '';
+
+                foreach ( $cols as $column => $entity_name ) {
+
+                    $n = $this->countOrNull( sprintf(
+                        "SELECT COUNT(*) AS n FROM %s%s f LEFT JOIN %s m ON m.entity = '%s' AND m.old_id = f.%s "
+                      . 'WHERE f.%s > 0 AND f.%s < %d AND m.old_id IS NULL',
+                        $table, $scope, $map, $db->prepare( $entity_name ), $column,
+                        $column, $column, self::NARROW_CEILING
+                    ) );
+
+                    // Reported for information only, so an unrunnable count is
+                    // simply not counted rather than aborting the run.
+                    $total += (int) $n;
+                }
             }
         }
 
