@@ -346,51 +346,31 @@ Deduplication needs only a **unique event id**, which the event model already
 carries — `(session_id, event_id)` is sufficient. A monotonic per-session
 sequence number is therefore *not* required for correctness.
 
-**Carry a running total alongside the delta, in the existing cookie state.**
-One extra integer buys back everything the delta form gives up. Each tab amends
-a shared `total_engagement_msec` in the state the tracker already keeps, and
-the server checks:
+**A running total alongside the delta was considered and rejected.** It would
+have served as a check digit (`SUM(delta)` vs `MAX(total)` per session) and as
+a repair value, since a total self-heals a dropped event where deltas cannot.
+Kept in the existing cookie state it would also have spanned subdomains as
+session identity does, which web storage cannot.
 
-```
-SUM(delta) WHERE session=S  ==  MAX(total) WHERE session=S
-```
+It is not worth what it costs. Tabs amending one shared counter race on
+read-modify-write, which needs `navigator.locks` to suppress same-origin and
+stays unfixable across subdomains; the resulting false positives mean the
+invariant has to be read in aggregate rather than per session; and a
+monotonically growing millisecond counter in a cookie rides on every HTTP
+request to the domain, assets included, where OWA users are sensitive to cookie
+weight for performance and privacy-policy reasons alike. That is a substantial
+amount of machinery to detect a failure not yet known to occur.
 
-Keep it in the **existing cookie-backed state**, not in `localStorage` or
-`sessionStorage`. The state manager is cookie-based with a configurable
-`cookie_domain`, so a cookie-held total spans subdomains exactly as session
-identity does; a total in web storage is origin-scoped and would silently fork
-when a session crosses from one subdomain to another — wrong precisely where
-cross-domain tracking is the point. Introducing a second client store with
-different scope semantics from the one holding the session id is its own bug
-source.
+So: **deltas only.** A lost beacon becomes a small silent undercount with
+nothing to detect or repair it, which is the ordinary tolerance for
+client-measured analytics and the same trade every comparable product makes.
+The total remains purely additive if evidence ever justifies it — better added
+against a known failure pattern than guessed at in advance.
 
-The trade is a read-modify-write race: two tabs read the same total, both add,
-one update is lost. Three things keep that tolerable. It corrupts only the
-diagnostic, never the metric, since `SUM(deltas)` is authoritative and the
-deltas are already separate events. The sign discriminates the failure classes
-— `SUM > MAX` is a client race, `SUM < MAX` is network loss. And
-`navigator.locks` provides real mutual exclusion for same-origin tabs, leaving
-a small undetectable window only across subdomains, where locks cannot reach.
-
-The total also serves as a **repair value**. Deltas cannot self-heal a loss; a
-running total can, because any later event carries the full figure. So both
-robustness profiles are available at once — `SUM(deltas)` as the primary
-figure, composing correctly and order-independent, with `MAX(total)` repairing
-sessions whose invariant fails.
-
-Three limits worth stating rather than discovering. **Read the invariant in
-aggregate, not per session**: races give per-session false positives, but
-across many sessions systematic `SUM < MAX` reads as network loss and scattered
-`SUM > MAX` as contention. Loss of a session's **final** beacon is undetectable
-by this or any client-side mechanism, since nothing later carries a higher
-total. And a value updated this often rides on every HTTP request to the
-domain, assets included — a monotonic millisecond counter reaches nine digits,
-and OWA users are cookie-size sensitive for performance and privacy-policy
-reasons alike.
-
-Precedence has to be stated once rather than left to whoever reads the two
-numbers next: deltas are authoritative, the total repairs, and a disagreement
-is logged rather than silently reconciled.
+**Deduplication is required regardless**, and is not part of what was dropped:
+deltas double-count on redelivery, and the event queue can redeliver.
+`(session_id, event_id)` is sufficient and costs nothing, since events carry
+ids already.
 
 Remaining design guards: terminal updates append rather than upsert (the event
 stream stays immutable, which queue and replay semantics want), and any state
