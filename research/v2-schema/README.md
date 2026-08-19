@@ -511,6 +511,25 @@ first-touch attribution and entry page at the moment those are known -- but a
 rollup row can carry the same values derived server-side, so they are optional
 rather than load-bearing.
 
+### Why a sticky flag survives this and a marker does not
+
+The distinction is redundancy, not reliability. A marker is carried by **one**
+event, so losing it erases the session from visit counts while every other
+event from that session remains in the table and still counts toward
+pageviews -- the numbers do not merely drift, they stop being internally
+consistent. A sticky flag is carried by **every** event after the threshold, so
+losing any one of them costs nothing; all of them would have to be lost, at
+which point the session is absent regardless.
+
+Same information, opposite failure shape, and the loss is not randomly
+distributed either -- ad blockers, consent gates and mobile backgrounding bias
+exactly which sessions lose their marker.
+
+The rule this leaves for v2: **never make a record's existence depend on a
+single packet.** Derive existence from any of the events that reference it, so
+that any one arriving is sufficient. Values may degrade; records must not
+vanish.
+
 ### What this restores
 
 With a rollup, session-scoped metrics return to 1.x speed or better, and the
