@@ -452,13 +452,17 @@ final class RederiveDimensionIdsTest extends TestCase
             dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
         );
 
-        $start = strpos($source, 'protected function countNarrowKeys()');
-        $end   = strpos($source, 'protected function countUnconvertibleDimensionRows()');
+        $this->assertNotFalse(strpos($source, 'protected function countUnconvertibleDimensionRows()'),
+            'unconvertible rows must be counted separately');
 
+        // The convertibility question is now asked once, in the shared tally that
+        // countNarrowKeys() reads -- see
+        // testOneImplementationDecidesWhatCountsAsOutstandingWork for why it moved.
+        $start = strpos($source, 'protected function tallyNarrowDimensionRows()');
         $this->assertNotFalse($start);
-        $this->assertNotFalse($end, 'unconvertible rows must be counted separately');
 
-        $body = substr($source, $start, $end - $start);
+        $body = substr($source, $start);
+        $body = substr($body, 0, strpos($body, "\n    }\n") + 6);
 
         $this->assertStringContainsString('$this->deriveFor(', $body,
             'the count must ask whether each row CAN be converted, not just whether it is narrow');
@@ -519,6 +523,93 @@ final class RederiveDimensionIdsTest extends TestCase
 
         $this->assertStringContainsString('ON DUPLICATE KEY UPDATE', $body,
             'a resumed run re-plans rows it already planned, and that must be harmless');
+    }
+
+    /**
+     * A converted table may still hold rows on a narrow id, and that must not
+     * stop the migration finishing.
+     *
+     * This happened, and it is the second half of the same story as
+     * testDimensionRowsWithNoContentDoNotBlockCompletion. 5,198 owa_host rows are
+     * stored at crc32( ip_address ) from an older derivation -- host_id now comes
+     * from the registered domain, which is empty for a bare IP, so nothing will
+     * ever compute those ids again. The stale-id verifier sampled 25 rows, found
+     * all 25 reproducible from ip_address, and concluded the entity had not been
+     * converted -- while 21,166 rows of the same table had been.
+     *
+     * The result was an installation that converted everything it could and then
+     * refused to clear its own flag: dimension rows wide, ingestion still deriving
+     * narrow, site lookups missing.
+     *
+     * The discriminator is whether the table holds any converted rows at all. None
+     * is the owa_site shape -- the entity was skipped and every lookup misses.
+     * Some means the entity was converted and these are remnants keyed on a column
+     * nothing hashes any more.
+     */
+    public function testALegacyRemnantInAConvertedTableDoesNotBlockCompletion(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function findStaleDerivedIds(');
+        $this->assertNotFalse($start);
+
+        $body = substr($source, $start);
+        $body = substr($body, 0, strpos($body, "\n    }\n") + 6);
+
+        $this->assertStringContainsString('id >= %d', $body,
+            'the verifier must ask whether the table holds converted rows before blaming it');
+
+        // The failure must be conditional on there being NO converted rows. If the
+        // count is merely reported and the run fails anyway, the bug is unchanged.
+        $guard = strpos($body, 'id >= %d');
+        $fail  = strpos($body, '$tables++');
+
+        $this->assertNotFalse($fail);
+        $this->assertLessThan($fail, $guard,
+            'the converted-row count must be taken before the entity is condemned');
+
+        $this->assertStringContainsString('continue;', substr($body, $guard, $fail - $guard),
+            'a table with converted rows must be reported and skipped, not counted as unconverted');
+    }
+
+    /**
+     * One implementation decides what counts as outstanding work.
+     *
+     * Three methods used to scan the narrow dimension rows -- workRemains(),
+     * countNarrowKeys() and countUnconvertibleDimensionRows() -- each with its own
+     * copy of the rule. The rule "a row with nothing to hash is not work" was
+     * added to one of them and not the others, so a migration converted everything
+     * it could and then failed its own completion check through the copy that was
+     * missed. Two releases fixed that rule in two different places for the same
+     * underlying reason.
+     *
+     * A shared tally is what stops there being a third occasion.
+     */
+    public function testOneImplementationDecidesWhatCountsAsOutstandingWork(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $this->assertSame(1, substr_count($source, 'id > 0 AND id < %d'),
+            'the narrow-dimension-row scan must exist in exactly one place');
+
+        $this->assertStringContainsString('protected function tallyNarrowDimensionRows(', $source,
+            'the shared tally is what the three callers agree through');
+
+        foreach (['workRemains', 'countNarrowKeys', 'countUnconvertibleDimensionRows'] as $method) {
+
+            $start = strpos($source, 'protected function ' . $method . '(');
+            $this->assertNotFalse($start, $method . ' must exist');
+
+            $body = substr($source, $start);
+            $body = substr($body, 0, strpos($body, "\n    }\n") + 6);
+
+            $this->assertStringContainsString('$this->tallyNarrowDimensionRows()', $body,
+                $method . ' must read the shared tally rather than scan the rows itself');
+        }
     }
 
     /**
