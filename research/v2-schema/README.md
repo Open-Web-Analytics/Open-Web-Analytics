@@ -346,37 +346,51 @@ Deduplication needs only a **unique event id**, which the event model already
 carries — `(session_id, event_id)` is sufficient. A monotonic per-session
 sequence number is therefore *not* required for correctness.
 
-**Carry a per-tab running total alongside the delta.** One extra integer buys
-back everything the delta form gives up, and more than a sequence number would.
-Scope it to the tab — `sessionStorage` is tab-scoped by definition, so this
-costs no invention — and the invariant is exact:
+**Carry a running total alongside the delta, in the existing cookie state.**
+One extra integer buys back everything the delta form gives up. Each tab amends
+a shared `total_engagement_msec` in the state the tracker already keeps, and
+the server checks:
 
 ```
-SUM(delta) WHERE session=S AND tab=T  ==  MAX(total) WHERE session=S AND tab=T
+SUM(delta) WHERE session=S  ==  MAX(total) WHERE session=S
 ```
 
-Equal means that tab's stream arrived intact. `SUM < MAX` means events were
-lost, and the difference quantifies how much engagement time went missing
-rather than merely flagging that a gap exists. `SUM > MAX` means duplicates
-were delivered — the likelier failure here, since the queue can redeliver.
+Keep it in the **existing cookie-backed state**, not in `localStorage` or
+`sessionStorage`. The state manager is cookie-based with a configurable
+`cookie_domain`, so a cookie-held total spans subdomains exactly as session
+identity does; a total in web storage is origin-scoped and would silently fork
+when a session crosses from one subdomain to another — wrong precisely where
+cross-domain tracking is the point. Introducing a second client store with
+different scope semantics from the one holding the session id is its own bug
+source.
 
-Scoping matters: a session-scoped total in `localStorage` would break the
-invariant legitimately as soon as a second tab opened, making real loss
-indistinguishable from ordinary multi-tab use.
+The trade is a read-modify-write race: two tabs read the same total, both add,
+one update is lost. Three things keep that tolerable. It corrupts only the
+diagnostic, never the metric, since `SUM(deltas)` is authoritative and the
+deltas are already separate events. The sign discriminates the failure classes
+— `SUM > MAX` is a client race, `SUM < MAX` is network loss. And
+`navigator.locks` provides real mutual exclusion for same-origin tabs, leaving
+a small undetectable window only across subdomains, where locks cannot reach.
 
-The total also serves as a **repair value**, which is the part that makes it
-worth carrying. Deltas cannot self-heal a loss; a running total can, because
-any later event in that tab carries the full figure. So both robustness
-profiles are available at once — `SUM(deltas)` across tabs as the primary
-figure, composing correctly and order-independent, with per-tab `MAX(total)`
-repairing any tab whose invariant fails.
+The total also serves as a **repair value**. Deltas cannot self-heal a loss; a
+running total can, because any later event carries the full figure. So both
+robustness profiles are available at once — `SUM(deltas)` as the primary
+figure, composing correctly and order-independent, with `MAX(total)` repairing
+sessions whose invariant fails.
 
-Two limits worth stating rather than discovering. Neither this nor any other
-client-side mechanism can detect loss of a tab's **final** beacon, since
-nothing later carries a higher total — tab crashes and dropped terminal
-beacons stay invisible. And two numbers that can disagree need a stated
-precedent: deltas are authoritative, the total repairs, and a disagreement is
-logged rather than silently reconciled.
+Three limits worth stating rather than discovering. **Read the invariant in
+aggregate, not per session**: races give per-session false positives, but
+across many sessions systematic `SUM < MAX` reads as network loss and scattered
+`SUM > MAX` as contention. Loss of a session's **final** beacon is undetectable
+by this or any client-side mechanism, since nothing later carries a higher
+total. And a value updated this often rides on every HTTP request to the
+domain, assets included — a monotonic millisecond counter reaches nine digits,
+and OWA users are cookie-size sensitive for performance and privacy-policy
+reasons alike.
+
+Precedence has to be stated once rather than left to whoever reads the two
+numbers next: deltas are authoritative, the total repairs, and a disagreement
+is logged rather than silently reconciled.
 
 Remaining design guards: terminal updates append rather than upsert (the event
 stream stays immutable, which queue and replay semantics want), and any state
