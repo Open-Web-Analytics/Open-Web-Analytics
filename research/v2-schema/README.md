@@ -379,6 +379,85 @@ that genuinely is last-writer-wins rather than additive resolves at read time.
 Sources: [engagement_time_msec is a delta, summed server-side](https://optimizesmart.com/blog/understanding-engagement_time_msec-in-ga4-bigquery/),
 [how engagement time accrues](https://accs-net.com/glossary/engagement-time/).
 
+## Addendum 2: session metrics without a rollup
+
+The first addendum concluded that dropping the precomputed session table costs
+a ~6x penalty on session metrics, and that a materialised rollup would be
+needed to recover it. That conclusion was wrong, and the reason is worth
+recording because it changes the shape of the design.
+
+**Most "per session" metrics are ratios of two independent aggregates, not
+averages over per-session groups.** An average over groups is the total divided
+by the group count:
+
+```
+AVG(pageviews per session) = SUM(per-session pageviews) / COUNT(sessions)
+                           = COUNT(pageview events) / COUNT(DISTINCT session_id)
+```
+
+So pages-per-visit never required grouping. Nor does events-per-session, nor
+average session duration when engagement is summed from per-event deltas
+(`SUM(engagement) / COUNT(DISTINCT session)` — which is exactly GA4's
+`userEngagementDuration / sessions`). GA4 confirms this by omission: there is
+no `pagesPerSession` metric in its Data API at all, because Views and Sessions
+are both already available and the ratio is the metric.
+
+What genuinely requires per-session evaluation is a **threshold or predicate** —
+a session must be examined as a unit before it can be counted:
+
+- bounce rate: sessions with exactly one pageview
+- engaged sessions: sessions past a time or depth threshold
+
+**GA4 pushes that evaluation to the client.** `session_engaged` is an automatic
+parameter set by the tracker, sticky once the session crosses the threshold
+(>10 s, two or more pageviews, or a key event), so every later event in the
+session carries it. The server then only counts:
+
+```sql
+COUNT(DISTINCT session_id) WHERE session_engaged = 1
+```
+
+With that, the whole session metric set is aggregates over the event table and
+no `GROUP BY session_id` appears anywhere:
+
+| metric | computation |
+|---|---|
+| visits | `COUNT(DISTINCT session_id)` |
+| pageViews | `COUNT(*) WHERE event_type='pageview'` |
+| pagesPerVisit | pageViews / visits |
+| avgSessionDuration | `SUM(engagement_delta)` / visits |
+| engagedSessions | `COUNT(DISTINCT session_id) WHERE engaged=1` |
+| engagementRate, bounceRate | engagedSessions / visits |
+
+A **sticky boolean is also race-free**, which is what makes it safe where the
+rejected running total was not: setting it from two tabs is idempotent, OR
+commutes, and there is no read-modify-write to lose. The client carries exactly
+two pieces of session state — an additive delta and a monotonic flag — and both
+are immune to the concurrency problems that sank the counter.
+
+So the rollup is **not required**. It remains worth building for one reason
+that is about semantics rather than cost: splitting visits by a dimension that
+can drift within a session (source, campaign, entry page) counts a session once
+per distinct value from the event table, so the parts exceed the total. A
+rollup assigns one value per session and the split sums correctly.
+
+Costs accepted, none fatal: bounce changes meaning from "one pageview" to "not
+engaged", which is the same change GA made and existing reports would notice;
+non-JS event sources carry no flag and need a defined fallback rather than a
+silent zero; and the client is trusted for the flag, though a session with five
+pageviews and `engaged=0` is trivially checkable server-side.
+
+**One rule stands regardless of source**: a single report resolves every metric
+from one source, never a mix, or two numbers in the same table can disagree.
+1.x violates this today — nine commerce metrics exist in fact-table and
+session-fact variants selected by the dimensions requested. If a rollup is
+introduced, the invariant `SUM(rollup.pageviews) == COUNT(pageview events)`
+belongs in the test suite rather than in anyone's assumptions.
+
+Sources: [no pagesPerSession in the Data API](https://accs-net.com/glossary/pages-per-session/),
+[session_engaged is client-set and sticky](https://accs-net.com/glossary/engaged-sessions/),
+[engagement thresholds](https://support.google.com/analytics/answer/12798876?hl=en).
+
 ## Rebuilding this experiment
 
 ```
