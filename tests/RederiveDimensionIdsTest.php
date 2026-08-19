@@ -288,6 +288,117 @@ final class RederiveDimensionIdsTest extends TestCase
     }
 
     /**
+     * A fact table can have a content-derived primary key, and this one does.
+     *
+     * CommerceTransactionHandlers sets owa_commerce_transaction_fact.id to
+     * generateId( ct_order_id ), which is how a repeat or corrected transaction
+     * finds the existing row instead of writing a second one. Leave it out of
+     * the migration and the same order derives a different id afterwards, finds
+     * nothing, and duplicates the transaction.
+     *
+     * Pinned because "fact tables do not have derived ids" is the assumption
+     * that made me miss it.
+     */
+    public function testTheCommerceTransactionKeyIsConverted(): void
+    {
+        $dims = $this->dimensions();
+
+        $this->assertArrayHasKey('base.commerce_transaction_fact', $dims,
+            'its primary key is generateId( order_id ) and duplicates transactions if left behind');
+        $this->assertSame('order_id', $dims['base.commerce_transaction_fact']['column']);
+    }
+
+    /**
+     * The verifier must not consult the list it is checking.
+     *
+     * A check that walks DIMENSIONS cannot notice an entity missing from
+     * DIMENSIONS, and an omitted entity also has no work to plan, so it sails
+     * through the "nothing to convert" path too. Both paths therefore run a
+     * check that reads the data instead.
+     */
+    public function testTheVerifierDoesNotReadTheListItIsChecking(): void
+    {
+        $source = (string) file_get_contents(
+            dirname(__DIR__) . '/modules/Base/Controller/RederiveDimensionIdsCli.php'
+        );
+
+        $start = strpos($source, 'protected function findStaleDerivedIds()');
+        $this->assertNotFalse($start);
+
+        $end  = strpos($source, 'protected function dropMap()', $start);
+        $body = substr($source, $start, $end - $start);
+
+        $this->assertStringNotContainsString('dimensionNames()', $body,
+            'the verifier must not walk the list, or it cannot see an omission');
+        $this->assertStringContainsString("getEntities()", $body,
+            'it must consider every entity, not only the ones already covered');
+        $this->assertStringContainsString('crc32(', $body,
+            'it detects ids left on the old scheme by reproducing them');
+
+        // Both exits check: the completing one and the nothing-to-plan one.
+        $action = substr($source, strpos($source, 'function action()'));
+        $action = substr($action, 0, strpos($action, 'protected function deriveFor'));
+
+        $this->assertSame(2, substr_count($action, '$this->findStaleDerivedIds()'),
+            'both the completion path and the nothing-to-plan path must verify');
+    }
+
+    /**
+     * The audit, kept executable.
+     *
+     * Every column a handler writes a derived id into must be covered, whether
+     * or not the entity declares it as a key. This list was built by walking
+     * every call site of setStringGuid() and generateId() in the codebase --
+     * there are about fifty and only a dozen set or write an id -- which is what
+     * should have been done at the start instead of discovering owa_site,
+     * owa_click.target_id, owa_commerce_transaction_fact and these four one at a
+     * time as each broke something.
+     *
+     * If a handler starts writing a derived id into a new column, add it here
+     * and to the command together.
+     */
+    public function testEveryColumnWrittenWithADerivedIdIsCovered(): void
+    {
+        // table => columns a handler demonstrably writes a derived id into
+        $written = [
+            'owa_feed_request' => ['ua_id', 'os_id', 'document_id', 'host_id'],
+            'owa_click'        => ['ua_id', 'document_id', 'target_id'],
+            'owa_request'      => [
+                'prior_document_id', 'document_id', 'ua_id', 'host_id', 'os_id', 'referer_id',
+                'campaign_id', 'ad_id', 'source_id', 'location_id', 'referring_search_term_id',
+            ],
+            'owa_session'      => [
+                'first_page_id', 'last_page_id', 'referer_id', 'ua_id', 'host_id', 'os_id',
+                'campaign_id', 'ad_id', 'source_id', 'location_id', 'referring_search_term_id',
+            ],
+            'owa_domstream'    => ['document_id'],
+            'owa_site_user'    => ['site_id'],
+        ];
+
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\RederiveDimensionIdsCli::class);
+        $method = $class->getMethod('factKeyColumns');
+        $method->setAccessible(true);
+        $covered = $method->invoke($class->newInstanceWithoutConstructor());
+
+        $gaps = [];
+
+        foreach ($written as $table => $columns) {
+            foreach ($columns as $column) {
+                if (!isset($covered[$table][$column])) {
+                    $gaps[] = $table . '.' . $column;
+                }
+            }
+        }
+
+        $this->assertSame([], $gaps,
+            "These columns are written with a content-derived id but the migration does not "
+            . "rewrite them, so they will keep pointing at ids that have moved:
+  "
+            . implode("
+  ", $gaps));
+    }
+
+    /**
      * The property that makes the migration re-runnable: crc32 ids are below
      * 2^32 and derived ids are 63-bit, so applying the map twice is a no-op and
      * "still narrow" is a usable definition of "still to do".

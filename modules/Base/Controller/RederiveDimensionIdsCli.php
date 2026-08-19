@@ -78,6 +78,20 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // from the ones derived before, which splits the dimension on the very
         // installation that just migrated.
         'base.site'            => array( 'column' => 'site_id',       'trim' => false ),
+
+        // A FACT table with a content-derived primary key:
+        // CommerceTransactionHandlers sets it to generateId( ct_order_id ), so a
+        // repeat or corrected transaction finds the existing row and updates it.
+        // Leave it behind and the same order derives a different id after the
+        // migration, finds nothing, and writes a DUPLICATE transaction. Line
+        // items reference the order_id string rather than this id, so nothing
+        // else has to follow.
+        'base.commerce_transaction_fact' => array( 'column' => 'order_id', 'trim' => false ),
+
+        // Read by job_name and never by id, so a stale value here is inert --
+        // but converting it costs a handful of rows and keeps one invariant
+        // instead of an invariant plus an exception nobody will remember.
+        'base.scheduled_job'   => array( 'column' => 'job_name',      'trim' => false ),
     );
 
     /**
@@ -102,7 +116,20 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // string the fact tables carry. Undeclared, and the only other place a
         // derived site id is stored.
         'site_user' => array( 'site_id'   => 'base.site' ),
+
+        // FeedRequestHandlers writes four derived ids straight onto the row
+        // (lines 64-73) and the entity declares none of them, so nothing that
+        // reads key metadata can see them.
+        'feed_request' => array(
+            'ua_id'       => 'base.ua',
+            'os_id'       => 'base.os',
+            'document_id' => 'base.document',
+            'host_id'     => 'base.host',
+        ),
     );
+
+    /** Rows sampled per table when checking for ids that were never converted. */
+    const VERIFY_SAMPLE = 25;
 
     /** Anything at or below this is a crc32 id and still needs converting. */
     const NARROW_CEILING = 4294967296;   // 2^32
@@ -146,9 +173,25 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // a truthful answer about what is actually left.
         if ( ! $this->workRemains() ) {
 
-            // Nothing to convert. If the flag is still set the work finished
-            // without it being cleared, which is exactly the killed-run case, so
-            // finish the job rather than leaving the installation pinned.
+            // Nothing PLANNED is not the same as nothing WRONG. An entity left
+            // out of this command's list has no work to plan and would sail
+            // straight through here, which is how owa_site was missed. Check the
+            // data before believing it.
+            $stale = $this->findStaleDerivedIds();
+
+            if ( $stale ) {
+
+                return $this->fail( sprintf(
+                    'Nothing left to plan, but %d table(s) still hold rows stored at a 32-bit '
+                  . 'derived id -- see the notices above. Those entities are not covered by this '
+                  . 'command, so it cannot convert them and will not pretend the job is done.',
+                    $stale
+                ) );
+            }
+
+            // If the flag is still set the work finished without it being
+            // cleared, which is exactly the killed-run case, so finish the job
+            // rather than leaving the installation pinned.
             if ( ! $dry_run && \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
 
                 $this->dropMap();
@@ -210,6 +253,32 @@ class RederiveDimensionIdsCli extends PartitionsCli {
                 '%s key(s) are still on a narrow id, so this installation stays on 32-bit ids '
               . 'for now. Nothing is inconsistent: run this command again to finish.',
                 number_format( $remaining )
+            ) );
+        }
+
+        // A STRONGER CHECK THAN "NOTHING IS STILL NARROW".
+        //
+        // Counting narrow keys proves the rewrite ran. It does not prove the
+        // result is USABLE: an entity left out of the migration entirely has no
+        // narrow keys to count, because nothing ever planned any for it. That is
+        // exactly how owa_site was missed -- its id is generateId( site_id ),
+        // nine call sites load a site by it, and the only symptom was that they
+        // silently stopped finding the row.
+        //
+        // So before declaring victory, re-derive each row's id from its own
+        // content and confirm it is the id the row is actually stored at. That
+        // is the property every lookup in the codebase depends on, and it is
+        // checked against whatever this installation really contains rather than
+        // against a fixture someone imagined.
+        $stale = $this->findStaleDerivedIds();
+
+        if ( $stale ) {
+
+            return $this->fail( sprintf(
+                'Converted, but %d table(s) still hold rows stored at a 32-bit derived id. Every '
+              . 'lookup that computes those ids will miss. This installation stays on 32-bit ids '
+              . 'until that is understood -- see the notices above.',
+                $stale
             ) );
         }
 
@@ -666,6 +735,91 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         }
 
         return $total;
+    }
+
+    /**
+     * Find rows still stored at a 32-bit derived id, WITHOUT consulting the list
+     * of entities this command knows about.
+     *
+     * This is the point. A check that walks DIMENSIONS cannot notice an entity
+     * missing from DIMENSIONS -- and an entity left out entirely also has no
+     * narrow keys to count, because nothing ever planned any for it. That is
+     * precisely how owa_site was missed: its id is generateId( site_id ), nine
+     * call sites load a site by it, and the only symptom was that they silently
+     * stopped finding the row.
+     *
+     * So this asks the data instead. For a sample of every entity's rows it
+     * tries to reproduce the stored id by hashing that row's own columns with
+     * the OLD scheme. Anything it reproduces is a content-derived id that did
+     * not get converted, whatever anyone believed about which entities count.
+     *
+     * Sampled rather than exhaustive: a fact table's id is an event guid and
+     * will not reproduce from any column, so it costs a few rows to rule out,
+     * and one surviving stale row in a dimension is enough to stop the run.
+     *
+     * @return int  tables holding stale derived ids
+     */
+    protected function findStaleDerivedIds() {
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $tables  = 0;
+
+        foreach ( $service->modules['base']->getEntities() as $name ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.' . $name );
+            $table  = $entity->getTableName();
+
+            $rows = $db->get_results( sprintf( 'SELECT * FROM %s LIMIT %d', $table, self::VERIFY_SAMPLE ) );
+
+            $stale  = 0;
+            $column = null;
+
+            foreach ( (array) $rows as $row ) {
+
+                $row = (array) $row;
+
+                if ( ! isset( $row['id'] ) ) {
+
+                    continue;
+                }
+
+                foreach ( $row as $col => $value ) {
+
+                    if ( $col === 'id' || ! is_string( $value ) || $value === '' ) {
+
+                        continue;
+                    }
+
+                    // Both forms ingestion uses. Case is irrelevant: the hash
+                    // lowercases internally.
+                    foreach ( array( $value, trim( strtolower( $value ) ) ) as $candidate ) {
+
+                        if ( (string) crc32( strtolower( $candidate ) ) === (string) $row['id'] ) {
+
+                            $stale++;
+                            $column = $col;
+
+                            continue 3;
+                        }
+                    }
+                }
+            }
+
+            if ( $stale ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: at least %d sampled row(s) are still stored at a 32-bit id derived from '
+                  . 'their own %s column. This entity was not converted. Every lookup that computes '
+                  . 'that id will miss.',
+                    $table, $stale, $column
+                ) );
+
+                $tables++;
+            }
+        }
+
+        return $tables;
     }
 
     /**
