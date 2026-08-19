@@ -504,21 +504,18 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ( $this->dimensionNames() as $entity_name ) {
+        // Convertible rows only -- the same rule countNarrowKeys() applies, and
+        // for the same reason. A row with nothing to hash is not work: no run can
+        // ever plan it, so counting it here would mean this command never reaches
+        // its no-op path and re-migrates an already-converted installation on
+        // every invocation.
+        $tally = $this->tallyNarrowDimensionRows();
 
-            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+        // A query that did not run tells us nothing, so assume there IS work
+        // rather than concluding there is none.
+        if ( $tally['convertible'] === null || $tally['convertible'] > 0 ) {
 
-            $n = $this->countOrNull( sprintf(
-                'SELECT COUNT(*) AS n FROM %s WHERE id > 0 AND id < %d',
-                $table, self::NARROW_CEILING
-            ) );
-
-            // A query that did not run tells us nothing, so assume there IS work
-            // rather than concluding there is none.
-            if ( $n === null || $n > 0 ) {
-
-                return true;
-            }
+            return true;
         }
 
         if ( ! $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $this->mapTable() ) ) ) {
@@ -535,6 +532,57 @@ class RederiveDimensionIdsCli extends PartitionsCli {
     protected function dimensionNames() {
 
         return array_merge( array_keys( self::DIMENSIONS ), array( 'base.location_dim' ) );
+    }
+
+    /**
+     * Split the narrow dimension rows into the ones this command can convert and
+     * the ones it never will.
+     *
+     * ONE place asks that question, because three places used to and they drifted.
+     * The rule "a row with nothing to hash is not outstanding work" was applied to
+     * countNarrowKeys() and not to workRemains(), so an installation whose only
+     * remaining rows were unconvertible converted everything it could, then failed
+     * its own completion check and stayed on 32-bit ids -- the exact failure the
+     * rule was introduced to fix, still reachable through the copy that was missed.
+     *
+     * @return array convertible int|null, unconvertible int. A null convertible
+     *               count means a query did not run, which is not the same as zero.
+     */
+    protected function tallyNarrowDimensionRows() {
+
+        $db            = \OWA\Core\CoreAPI::dbSingleton();
+        $convertible   = 0;
+        $unconvertible = 0;
+
+        foreach ( $this->dimensionNames() as $entity_name ) {
+
+            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+
+            $rows = $db->get_results( sprintf(
+                'SELECT * FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
+            ) );
+
+            // Distinguish "no rows" from "the query did not run".
+            if ( $rows === null
+              && $this->countOrNull( sprintf( 'SELECT COUNT(*) AS n FROM %s', $table ) ) === null ) {
+
+                return array( 'convertible' => null, 'unconvertible' => $unconvertible );
+            }
+
+            foreach ( (array) $rows as $row ) {
+
+                if ( $this->deriveFor( $entity_name, (array) $row ) === null ) {
+
+                    $unconvertible++;
+
+                } else {
+
+                    $convertible++;
+                }
+            }
+        }
+
+        return array( 'convertible' => $convertible, 'unconvertible' => $unconvertible );
     }
 
     /**
@@ -842,28 +890,14 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // Nothing will ever derive those ids again either, since hashing empty
         // content yields no id at all, so leaving them where they are costs
         // nothing.
-        foreach ( $this->dimensionNames() as $entity_name ) {
+        $tally = $this->tallyNarrowDimensionRows();
 
-            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
+        if ( $tally['convertible'] === null ) {
 
-            $rows = $db->get_results( sprintf(
-                'SELECT * FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
-            ) );
-
-            // Distinguish "no rows" from "the query did not run".
-            if ( $rows === null && $this->countOrNull( sprintf( 'SELECT COUNT(*) AS n FROM %s', $table ) ) === null ) {
-
-                return null;
-            }
-
-            foreach ( (array) $rows as $row ) {
-
-                if ( $this->deriveFor( $entity_name, (array) $row ) !== null ) {
-
-                    $total++;
-                }
-            }
+            return null;
         }
+
+        $total += $tally['convertible'];
 
         if ( ! $have_map ) {
 
@@ -902,27 +936,9 @@ class RederiveDimensionIdsCli extends PartitionsCli {
      */
     protected function countUnconvertibleDimensionRows() {
 
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $total = 0;
+        $tally = $this->tallyNarrowDimensionRows();
 
-        foreach ( $this->dimensionNames() as $entity_name ) {
-
-            $table = \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
-
-            $rows = $db->get_results( sprintf(
-                'SELECT * FROM %s WHERE id > 0 AND id < %d', $table, self::NARROW_CEILING
-            ) );
-
-            foreach ( (array) $rows as $row ) {
-
-                if ( $this->deriveFor( $entity_name, (array) $row ) === null ) {
-
-                    $total++;
-                }
-            }
-        }
-
-        return $total;
+        return $tally['unconvertible'];
     }
 
     /**
@@ -1033,10 +1049,47 @@ class RederiveDimensionIdsCli extends PartitionsCli {
 
             if ( $stale ) {
 
+                // A stale row proves this entity USED a content-derived id. It does
+                // not prove the entity was skipped -- and the difference decides
+                // whether the migration may finish.
+                //
+                // An entity that was skipped has no converted rows at all: that is
+                // the owa_site shape, and every lookup against it misses. An entity
+                // that was converted can still hold narrow rows keyed on a column
+                // ingestion no longer hashes. On a real installation 5,198 owa_host
+                // rows are keyed on crc32( ip_address ) from an older derivation,
+                // while the entity itself is 21,166 rows converted; host_id now
+                // comes from the registered domain, which is empty for an IP, so
+                // nothing will ever compute those ids again.
+                //
+                // Leaving those alone is not a compromise, it is the correct
+                // outcome: they were never planned, so their fact keys were never
+                // repointed, so fact rows still reference them and the joins still
+                // resolve. Converting them would break exactly what it looks like
+                // it would repair.
+                //
+                // Convertible leftovers are not let through here by accident --
+                // countNarrowKeys() counts those and blocks on them separately.
+                $converted = $this->countOrNull( sprintf(
+                    'SELECT COUNT(*) AS n FROM %s WHERE id >= %d', $table, self::NARROW_CEILING
+                ) );
+
+                if ( $converted ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        '%s: %d sampled row(s) remain at a 32-bit id derived from their %s column, '
+                      . 'alongside %s converted row(s). Nothing derives that id any more, and their '
+                      . 'fact keys still point at it, so they are left as they are.',
+                        $table, $stale, $column, number_format( $converted )
+                    ) );
+
+                    continue;
+                }
+
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: at least %d sampled row(s) are still stored at a 32-bit id derived from '
-                  . 'their own %s column. This entity was not converted. Every lookup that computes '
-                  . 'that id will miss.',
+                  . 'their own %s column, and this table holds no converted rows at all. This entity '
+                  . 'was not converted. Every lookup that computes that id will miss.',
                     $table, $stale, $column
                 ) );
 
