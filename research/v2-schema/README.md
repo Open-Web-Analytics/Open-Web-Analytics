@@ -2393,6 +2393,33 @@ not an oversight -- it is the declared default of required properties that are
 also reporting dimensions, so NULL would produce an unlabelled GROUP BY bucket
 and change `COUNT(column)` semantics. Changing it is a v2 design decision that
 comes with a presentation-layer answer, never a 1.x cleanup.
+
+**Decided for v2 (2026-08-20):** NULL in storage, the label at the edge.
+
+- **Storage**: NULL means absent. No sentinel strings written by the tracker or
+  the server. `COUNT(column)` becomes meaningful -- today it counts sentinels,
+  which is how `dom_element_id` reads as populated on 94% of clicks while
+  holding a real value on 0.09%.
+- **Query**: MySQL groups NULLs into a single bucket, so `GROUP BY` on a
+  dimension is unchanged; the row simply arrives with a null key.
+- **Presentation**: the result formatter renders a null dimension key as
+  `(not set)` on the way out -- the same string users and GA readers already
+  recognise, derived rather than stored.
+
+Two consequences worth stating:
+
+**Absence becomes distinguishable from the words.** Today the tracker stamps
+`(not set)` client-side for `dom_name`/`dom_id`/`dom_class`, so "the element had
+no id" and "the value is literally the words not set" are the same value -- and
+`Sanitize.php` carries an allowlist entry purely so that string survives the
+punctuation stripping applied to everything else. Both problems disappear when
+absence is typed rather than spelled.
+
+**There are two absences, and the formatter must keep them apart.** `(not set)`
+means "this event carried no value for this dimension". `(unknown)`, from the
+reconciliation rule, means "the total can see these sessions and the breakdown
+cannot attribute them". Rendering both as one label would hide a real
+attribution gap behind a routine empty field.
 ### Custom variables must stay segmentable -- by name, not by slot
 
 Custom variables are user-defined **dimensions**, so filtering and grouping on
