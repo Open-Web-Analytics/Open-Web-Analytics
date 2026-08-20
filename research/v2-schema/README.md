@@ -2531,6 +2531,127 @@ things freely from the first request.
 No step is irreversible until the last one, and the last one is the
 administrator's decision rather than an upgrade's side effect.
 
+## Schema versioning: one schema, one sequence
+
+**Decided.** There is one schema version and one numbered update sequence. An
+update class may touch v1 tables, v2 tables, or both, and the version number
+denotes a change to *either*. v1 and v2 are not two schemas that coexist; they
+are one schema that happens to contain both shapes.
+
+That is a smaller decision than it sounds, because the mechanism is already built
+that way.
+
+### Three things that already hold
+
+**There is effectively one sequence today.** Only Base has an `Update/` directory
+and a version above 1 (currently 16). The other six modules -- Domstream,
+FileCache, Hello, MaxmindGeoip, RemoteQueue, MemcachedCache -- all declare
+`required_schema_version = 1` and ship no updates at all. The per-module
+versioning in `Core/Module.php` is real but has only ever been exercised by one
+module, so "one sequence" is a continuation rather than a change.
+
+**The update sequence does not build the schema.** `Module::install()` iterates
+the module's registered entities and calls `createTable()` on each
+(`Core/Module.php:534`), then stamps `schema_version` straight to
+`getRequiredSchemaVersion()` (line 561) without replaying a single update. Updates
+exist *only* to migrate installs that already exist. So which tables a fresh
+install has is decided by **entity registration**, and the numbering is free to
+span both shapes because it was never what created either.
+
+**Ordering and resumability already work.** The apply loop sorts numerically,
+runs in order, and returns on the first failure (`Core/Module.php:648-658`);
+each update stamps its own sequence number as the new version. A failure
+therefore leaves the install at the last update that succeeded, and re-running
+resumes from there. `CREATE TABLE IF NOT EXISTS` (`Core/Db/Mysql.php:45`) makes
+creation idempotent, so a re-run is safe.
+
+Cross-schema ordering -- "must the v2 event table exist before this v1 backfill?"
+-- is answered by the sequence number, the same way it is answered within one
+schema today. That is the main thing a single sequence buys: there is no version
+*pair*, so there is no matrix of which v1 versions are compatible with which v2
+versions, and no ordering question between two independent sequences.
+
+### What a fresh install creates
+
+This is the one place the decision needs an explicit answer, because
+`install()` iterates registered entities: registering the v2 entities in Base
+means a brand-new install creates the full 1.x star **and** the v2 event table.
+
+Measured on a real install: **19 empty tables cost 27.0 MB**, and the cost is not
+the tables. 15 of the 19 are partitioned, and a partitioned table pays a
+tablespace per partition -- `owa_commerce_line_item_fact` holds zero rows and
+occupies 1.3 MB across 14 partitions. An unpartitioned empty table is 16-32 KB.
+So the bill for an unused v1 schema is roughly 27 MB, essentially all of it
+partition overhead on fact tables that will never receive a row.
+
+**Create both.** 27 MB is not a reason to add conditional entity registration,
+and creating both is what "one schema" means. It also preserves something the
+migration section already requires: an install that can accept a v1 tracker
+beacon without a schema change. A fresh install that had only v2 tables would
+have to be *migrated forward into v1* to serve an old snippet, which is absurd
+in exactly the way this decision exists to avoid.
+
+The real cost is presentational, not structural: on a fresh install the v1
+reporting UI renders empty reports rather than being absent. Since the two
+reporting UIs are already separate, the fix is that v2 does not link to v1's,
+not a schema change.
+
+### The sharp edge: a dropped v1 is a supported state
+
+Dropping v1 is the user's decision and can happen at any time, after which the
+schema version keeps advancing. So **every update written from that point on must
+tolerate the v1 tables being absent** -- not just updates that intend to touch
+them.
+
+This is sharper than it first reads, because of how the apply loop fails. It
+stops at the first failure and returns, so an update that assumes `owa_session`
+exists does not merely fail itself: it **blocks every later update** for every
+install that has dropped v1. And since `isUpdateRequired()` intercepts every
+controller, those installs are then wedged out of the admin entirely by an update
+about a table they deliberately removed.
+
+The mitigation is a convention, and it needs to be a stated one rather than a
+habit: an update that touches a table must first establish that the table is
+there, and treat absence as success rather than as an error. Tolerating a missing
+table is not defensive coding here -- absence is a *legitimate configuration*,
+not a fault, and the update has nothing to do.
+
+Worth building rather than documenting: a helper on the update base class that
+makes the tolerant form the short one. A convention that requires remembering is
+a convention that fails on the update written eighteen months from now, which is
+precisely when the installs that dropped v1 are most numerous.
+
+### One version gates both UIs
+
+`isUpdateRequired()` intercepts every controller, so a v2-only update holds back
+the v1 reporting UI, and a v1-only update holds back v2's. An install that has
+never enabled v2 tracking still has to apply v2 updates before it can report.
+
+That is the correct consequence of the decision rather than a defect of it -- one
+install has one state, and the alternative is two version numbers whose skew is
+itself a thing to reason about. But it should be said out loud, because it means
+v2 updates are not optional for v1-only users, and the update that creates the v2
+tables will land on installs that asked for none of it. That is an argument for
+creating those tables in **one** update rather than dribbling them across
+several, and for that update declaring `isCliModeRequired()` -- the mechanism
+already exists (`Core/Module.php:629`) -- so the expensive creation happens in a
+window someone chose.
+
+### Rejected
+
+- **A version per schema.** Produces a compatibility matrix, an ordering question
+  between two sequences with no shared clock, and a skew state to reason about,
+  in exchange for letting v1-only installs skip updates they can already apply as
+  no-ops.
+- **A separate module for v2.** Superficially clean -- its own entities, own
+  updates, own version -- and it reintroduces exactly the cross-sequence ordering
+  problem, while splitting handlers and the registry across a module boundary
+  that no longer matches how anything is deployed.
+- **Replaying updates on fresh installs** so one path builds every schema. The
+  install path deliberately does not do this, and making it do so would mean
+  every historical update stays executable forever against a schema it no longer
+  recognises.
+
 ## Pros and cons
 
 **For the single table:**
