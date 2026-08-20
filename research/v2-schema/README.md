@@ -770,9 +770,11 @@ That is wrong for this product, for two reasons.
 
 **`SameSite` is site-scoped, not origin-scoped.** It compares registrable
 domains, so `evil.example.com` is same-site as `analytics.example.com` and the
-cookie is sent. OWA ships as a WordPress plugin, often onto multisite and shared
-hosting where sibling subdomains are common and not all under one party's
-control -- which is precisely the attacker `SameSite` does not stop.
+cookie is sent. That matters wherever OWA shares a registrable domain with
+software it does not control -- an install at `analytics.example.com` beside the
+site it measures, or anything on shared hosting -- which is precisely the
+attacker `SameSite` does not stop. It is a property of sharing a domain, not of
+any particular install method.
 
 **`Strict` breaks ordinary navigation**, since following a link in from an email
 arrives logged out, so in practice it would be `Lax` -- which permits top-level
