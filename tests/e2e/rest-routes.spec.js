@@ -223,16 +223,21 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
      * a second file calling it destroys this one's fixture mid-run. That is what
      * broke seven of the signed cases above when these lived elsewhere.
      */
+    /**
+     * CORS: the API answers cross-origin, and only for configured sites.
+     *
+     * These reuse the describe's own fixture rather than provisioning their
+     * own. provision() calls cleanup() first, so calling it a second time in
+     * one run deletes the user and hands back an api_key belonging to no row --
+     * every request then 401s at the user lookup with a perfectly valid
+     * signature. One provision per run.
+     *
+     * They must also stay in this file for the same reason: a separate spec
+     * calling provision() destroys this one's fixture mid-run.
+     */
     test.describe('CORS', () => {
 
-        test.beforeAll(() => {
-            creds = helper('provision');
-            expect(creds.api_key, 'fixture user has no api key').toBeTruthy();
-            expect(creds.auth_key, 'OWA_AUTH_KEY is not readable, requests cannot be signed').toBeTruthy();
-            expect(creds.domain, 'fixture site has no domain to use as an Origin').toBeTruthy();
-        });
-
-        test('a configured site\'s Origin is echoed back, and the request still works', async ({ request }) => {
+    test('a configured site\'s Origin is echoed back, and the request still works', async ({ request }) => {
             const root = installRoot(test.info().project.use.baseURL);
             const url = routeUrl(root, 'base/v1/sites', '', creds);
 
