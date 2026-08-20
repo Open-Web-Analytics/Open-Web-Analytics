@@ -611,6 +611,39 @@ class Template extends TemplateEngine {
 		return \OWA\Core\CoreAPI::getCurrentUserApiKey();
     }
 
+    /**
+     * An API link for the heatmap overlay or the domstream player.
+     *
+     * These two are the only cross-origin API consumers: they run on the
+     * *tracked* site and call back to the OWA origin. They used to be built
+     * with makeApiLink( ..., $add_apiKey = true ), which put the signed-in
+     * user's long-lived apiKey into a URL that the tracker then wrote to a
+     * cookie on the tracked site's own domain -- readable by every other script
+     * on that page, and re-sent to that site on every subsequent request.
+     *
+     * They now carry a token scoped to one endpoint and one resource that
+     * expires in minutes, so what leaks is worth almost nothing. No signature:
+     * request signing exists to make a long-lived key survivable in a URL, and
+     * there is no longer a long-lived key here.
+     *
+     * @param    array    $params        the API request params
+     * @param    string    $resourceKey    which param names the resource
+     * @return    string
+     */
+    function makeOverlayApiLink( $params, $resourceKey ) {
+
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
+
+        $params['overlayToken'] = \OWA\Core\OverlayToken::mint(
+            $cu->getUserData('user_id'),
+            $params['do'],
+            $resourceKey,
+            $params[ $resourceKey ]
+        );
+
+        return $this->makeLink( $params, false, $this->config['rest_api_url'] );
+    }
+
     function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
 
         $url = $this->config['rest_api_url'];

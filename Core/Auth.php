@@ -136,6 +136,17 @@ class Auth extends \OWA\Core\Base {
             $ret = $this->authByInput(\OWA\Core\CoreAPI::getRequestParam('user_id'), \OWA\Core\CoreAPI::getRequestParam('password'));
              \OWA\Core\CoreAPI::debug('User authenticated via form input.');
     
+        } elseif ( \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
+            // auth by a scoped, short-lived overlay token.
+            //
+            // Checked BEFORE the apiKey branch so that a request carrying both
+            // is held to the narrower credential, and scope is enforced here
+            // rather than later: a request outside the token's scope does not
+            // authenticate at all, so there is no window in which a caller is
+            // authenticated but not yet constrained.
+            $this->setAuthMethod( 'overlay_token');
+            $ret = $this->authByOverlayToken( \OWA\Core\CoreAPI::getRequestParam('overlayToken') );
+            \OWA\Core\CoreAPI::debug('User authenticated via overlay token.');
         } elseif ( $apiKey ) {
             // auth user by api key
             $this->setAuthMethod( 'api_key');
@@ -158,6 +169,67 @@ class Auth extends \OWA\Core\Base {
 
         return array('auth_status' => $ret);
 
+    }
+
+    /**
+     * Authenticates a heatmap-overlay or domstream-player request.
+     *
+     * These run on the *tracked* site and call back to the OWA origin, so they
+     * are cross-origin: a session cookie would be a third-party cookie, and an
+     * Authorization header would turn a simple GET into a preflighted one. The
+     * credential has to sit in the URL, so what matters is that it is worth as
+     * little as possible to anyone who reads it there.
+     *
+     * It replaces the user's apiKey, which was long-lived and carried the whole
+     * account. This carries one user, one endpoint, one resource, and expires
+     * in minutes.
+     *
+     * **Scope is checked here, before the user is loaded**, so a request outside
+     * the token's scope never authenticates. Deferring the check to an
+     * authorisation layer would leave a window in which the caller is
+     * authenticated but unconstrained, and the constraint is the entire point.
+     *
+     * @param    string    $token
+     * @return    boolean
+     */
+    function authByOverlayToken( $token ) {
+
+        $action = \OWA\Core\CoreAPI::getRequestParam('do');
+
+        $permitted = \OWA\Core\OverlayToken::permits(
+            $token,
+            $action,
+            function( $name ) {
+
+                return \OWA\Core\CoreAPI::getRequestParam( $name );
+            }
+        );
+
+        if ( ! $permitted ) {
+
+            \OWA\Core\CoreAPI::debug('Overlay token missing, expired, or out of scope for this request.');
+
+            return false;
+        }
+
+        $claims = \OWA\Core\OverlayToken::verify( $token );
+
+        $this->u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+        $this->u->load( $claims['user_id'], 'user_id' );
+
+        if ( ! $this->u->get( 'user_id' ) ) {
+
+            \OWA\Core\CoreAPI::debug('Overlay token names a user that no longer exists.');
+
+            return false;
+        }
+
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
+        $cu->loadNewUserByObject( $this->u );
+        $cu->setAuthStatus( true );
+        $this->_is_user = true;
+
+        return true;
     }
 
     function authByApiKey( $key ) {

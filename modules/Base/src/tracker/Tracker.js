@@ -358,9 +358,11 @@ class OWATracker  {
             OWA.debug('overlay anchor value: ' + a);
             //var domain = this.getCookieDomain();
 
-            // set the overlay cookie
-            Util.setCookie( OWA.getSetting('ns') + 'overlay',a, '','/', document.domain );
-            //alert(Util.readCookie('owa_overlay') );
+            // Deliberately NOT written to a cookie. The payload carries a
+            // credential, and a cookie on the tracked site's own domain is
+            // readable by every other script there and re-sent to that site
+            // on every request. startOverlaySession() holds it in memory
+            // instead, which is all its lifetime requires.
             // pause tracker so we dont log anything during an overlay session
             this.pause();
             // start overlay session

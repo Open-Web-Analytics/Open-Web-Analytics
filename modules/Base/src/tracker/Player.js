@@ -53,8 +53,9 @@ class Player {
      */
     fetchData() {
 
-        var p = unescape(OWA_instance.state.getStateFromCookie('overlay'));
-        var params = JSON.parse(p);
+        // Overlay params live in memory for this page's lifetime;
+        // they are never written to a cookie on the tracked site.
+        var params = OWA_instance.getOverlayParams() || {};
         var url = params.api_url;
         
         //closure
