@@ -820,6 +820,51 @@ redelivered chunk silently appends its samples twice.
 Which is this redesign in miniature: much of it is not new capability, but
 replacing what works **by circumstance** with what works **by construction**.
 
+### Replace JSONP with CORS for playback
+
+Both playback surfaces still fetch over JSONP:
+
+```
+Player.js:66    dataType: 'jsonp',  jsonp: 'owa_jsonpCallback'
+Heatmap.js:217  dataType: 'jsonp',  jsonp: 'owa_jsonpCallback'
+```
+
+served by the `jsonp` branch in `ApiRequest` and `resultSetToJsonp()`.
+
+JSONP works by injecting a `<script>` tag, which means the response is
+**executed, not parsed**. The consequences are the reasons to remove it rather
+than merely modernise it:
+
+- the endpoint can only ever be `GET`, with the request in the query string
+- the same-origin policy is bypassed by design, so the response is readable by
+  any page that can name the callback -- there is no origin check to fail
+- an authenticated overlay session makes that a data-disclosure surface, since
+  the browser sends cookies with the script request
+- errors are invisible: a failed JSONP request cannot report a status code, only
+  a callback that never fires
+- the callback name is reflected into executable output, which is a class of
+  injection that only exists because of the mechanism
+
+None of this is theoretical for the overlay: it runs on the customer's own page,
+cross-origin from the OWA install, which is exactly why JSONP was reached for.
+
+**The replacement already exists in the tree.** `Core/View/RestApi.php` sets
+`Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials`, and
+`Base/View/CorsPreflight.php` answers preflight with the allowed methods and
+headers. So the REST API does real CORS today, and only these two playback
+callers still take the older path.
+
+For v2 that makes it a deletion rather than a project: point `Player.js` and
+`Heatmap.js` at the CORS endpoint, drop `dataType: 'jsonp'`, and remove the
+`jsonp` format branch from `ApiRequest` along with `resultSetToJsonp()`. The
+overlay gains real status codes and error handling, the API loses a response
+format whose whole purpose was evading a security boundary, and the allowed
+origins become something an administrator configures rather than a property of
+whoever can guess a callback name.
+
+Worth doing in 1.x if the opportunity arises -- it is independent of everything
+else here.
+
 ### On rrweb, and why "better" is not obvious
 
 The modern standard for this is rrweb: capture a DOM snapshot plus mutations,
