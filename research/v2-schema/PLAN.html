@@ -225,7 +225,11 @@ the single-pageview definition is retired. Measured: on a photo/blog install it 
 <strong>73.6%</strong> of sessions as bounces regardless of dwell, because 1.x cannot see
 final-page time — the exact thing engagement deltas measure. v1 history keeps the old definition
 in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and key events — the sole authority,
-with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). The
+with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). It is
+also a <strong>dimension</strong>, session-grain: &ldquo;top landing pages among non-engaged
+sessions&rdquo; measured at 210&nbsp;ms/year derived, sums to totals by construction, and is a
+query the removed flag could never have served — pre-threshold events (the landing page itself)
+carried no flag. The
 threshold is per-site, default 10&nbsp;s, and <em>retroactively tunable</em> — events are
 immutable, only the lens changes — with a UI annotation at any change date, since historical
 bounce numbers move with it. Parity expectation,

@@ -3763,6 +3763,26 @@ comparability wobble: a threshold change alters historical bounce numbers, and
 the UI must annotate the change date rather than let the step pass silently.
 Per-site threshold, default 10 s.
 
+**Engaged is a dimension, not only a metric -- Peter's sharpening, decided
+same day.** The non-engaged segment is the actionable one: "top landing pages
+among non-engaged sessions" is the query that turns a 73.6% number into a work
+list. Requirements and measurements:
+
+- **Session-grain semantics**: an event belongs to a session that *ended*
+  engaged, or did not. This is what the removed sticky flag could never have
+  provided -- it carried "engagement had begun by this event", leaving every
+  pre-threshold event unflagged, *including the landing page*: silently biased
+  worst in the exact query the dimension exists for. The flag's removal is
+  vindicated, not merely tolerated.
+- **Measured, derived at read time** (classify sessions in range, semi-join back
+  to events, group by anything; pv=1 proxy, warm): **62 ms/month, 210 ms/year,
+  744 ms/3 years**. Dimension-hood is affordable without materialization.
+- **Sums by construction**: engaged + non-engaged = total sessions, because both
+  sides come from one classification in one query. This dimension never needs
+  the `(unknown)` reconciliation row.
+- The skinny escape hatch stands: a derived `(session_id, engaged)` map if an
+  install outgrows these shapes; a threshold change rebuilds it, bounded.
+
 **Parity harness expectation, quantified in advance**: v2 bounce rate must come
 in *at or below* the v1 number, and the gap is exactly the single-pageview
 sessions that were engaged -- dwell past threshold or a key event. A v2 bounce
