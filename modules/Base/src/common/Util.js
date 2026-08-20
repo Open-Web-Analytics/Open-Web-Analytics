@@ -640,6 +640,27 @@ class Util {
         return this.crc32(value);
     }
     
+    /**
+     * A numeric id: 10 digits of unix seconds followed by 9 random digits.
+     *
+     * Takes no salt, and cannot. The result must fit a signed BIGINT -- a hard
+     * contract across this codebase -- and this construction already consumes
+     * 60.6 of the 63 available bits, so there is nothing to mix a salt into
+     * without either taking bits from the random half or making ids
+     * predictable from their inputs. Callers once passed one and it was
+     * silently discarded.
+     *
+     * The split between the time and random halves is not worth re-tuning
+     * either: coarsening the time bucket by k multiplies the ids sharing a
+     * bucket by k (candidate pairs by k^2), divides the bucket count by k and
+     * grows the random space by k, so k cancels and the collision rate is
+     * unchanged. It is a function of the total bit budget and the arrival rate
+     * alone -- roughly 0.8 expected collisions a year at 10 new visitors per
+     * second. Improving on that needs a wider id, which BIGINT forbids.
+     *
+     * The leading timestamp is load-bearing beyond ordering: it keeps inserts
+     * at the right edge of the primary key. See tests/js/GuidContract.test.js.
+     */
     static generateRandomGuid () {
 	    
         var time = this.getCurrentUnixTimestamp() + '';

@@ -1699,7 +1699,7 @@ class OWATracker  {
         }
 
         if ( ! visitor_id ) {
-            visitor_id = Util.generateRandomGuid( this.siteId );
+            visitor_id = Util.generateRandomGuid();
 
             this.globalEventProperties.is_new_visitor = true;
             OWA.debug('Creating new visitor id');
@@ -1774,7 +1774,7 @@ class OWATracker  {
 
             this.resetSessionState();
 
-            session_id = Util.generateRandomGuid( this.getSiteId() );
+            session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
                this.globalEventProperties.session_id = session_id;
                //mark new session flag on current request
@@ -1798,7 +1798,7 @@ class OWATracker  {
 
         // fail-safe just in case there is no session_id
         if ( ! this.getGlobalEventProperty( 'session_id' ) ) {
-            session_id = Util.generateRandomGuid( this.getSiteId() );
+            session_id = Util.generateRandomGuid();
             this.globalEventProperties.session_id = session_id;
             //mark new session flag on current request
             this.globalEventProperties.is_new_session = true;
@@ -2168,8 +2168,7 @@ class OWATracker  {
 
             // make an domstream_id if one does not exist. needed for upstream processing
             if ( ! this.domstream_guid ) {
-                var salt = 'domstream' + this.getCurrentUrl() + this.getSiteId();
-                this.domstream_guid = Util.generateRandomGuid( salt );
+                this.domstream_guid = Util.generateRandomGuid();
             }
             domstream.setEventType( 'dom.stream' );
             domstream.set( 'domstream_guid', this.domstream_guid );
