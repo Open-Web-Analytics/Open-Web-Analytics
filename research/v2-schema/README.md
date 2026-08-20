@@ -699,6 +699,80 @@ a custom interpolation syntax, inside PHP, addressing a JavaScript-shaped object
 path. Evidence that the seam between server and client rendering is currently
 drawn nowhere in particular.
 
+## Authentication and permissions
+
+### What is already right, and stays
+
+Enforcement is centralised -- one `checkCapabilityAndAuthenticateUser()` before
+every action in `Core/Controller.php` -- and permissions are **per site**, via
+`isCapable( $capability, $siteId )`, with four roles (`admin`, `analyst`,
+`viewer`, `everyone`) and a `capabilitiesThatRequireSiteAccess` list. A
+client-rendered UI changes none of that, and it should not be redesigned.
+
+Three authentication methods exist, chosen by which credentials arrive: session
+cookies, `api_key`, and password login.
+
+### Decisions
+
+**The session is shared between the v1 and v2 UIs** -- one login serves both
+during the overlap. **Existing API keys keep working** on their current path, so
+nothing anyone has integrated breaks. If v2 wants a different key system it is
+built **alongside**, not instead.
+
+**Auth cookies may change, but no server-side sessions.** Statelessness is the
+constraint; the current scheme is not.
+
+### A defect to fix rather than inherit
+
+```php
+createCookie( 'u', user_id,                  +10 years );
+createCookie( 'p', generateAuthCredential(), +2 days   );
+```
+
+`generateAuthCredential()` takes an `$expiration` argument and `saveCredentials()`
+**passes none**, so the credential is an HMAC over `user_id . ''` with no expiry
+inside it. The only expiry is the cookie attribute -- which the client enforces,
+not the server -- and verification is `$hash === $passed_credential` with no time
+check. A captured `p` cookie therefore stays valid indefinitely.
+
+What bounds it today is that `substr( $password, 8, 4 )` is mixed into the key,
+so changing a password invalidates outstanding credentials. That is a genuinely
+good property, statelessly achieved, and worth keeping. It is simply the only
+one.
+
+### The v2 shape, still stateless
+
+- **one signed token instead of two cookies**: user id, issued-at and expiry,
+  HMAC'd with the server secret -- fewer bytes per request, one thing to
+  validate, and no plaintext user id persisting for ten years after logout
+- **expiry inside the signature**, so the server enforces it rather than trusting
+  a cookie attribute; sliding renewal on use keeps it convenient
+- **keep the password linkage**, which gives logout-everywhere-on-password-change
+  for nothing
+- **optionally a `token_epoch` on the user row**, included in the HMAC, so
+  bumping it revokes outstanding tokens. That is not a session store -- it is one
+  value on a row already being loaded
+
+### Additive to 1.x
+
+- **Scoped tokens** -- site-scoped, read-only, expiring -- beside the existing
+  keys rather than replacing them. 1.x users gain a safe credential for a
+  dashboard integration immediately; v2 gains the credential model an API-first
+  product needs.
+- **A "describe my permissions" endpoint.** A client-rendered UI must know which
+  sites it may show before rendering a site picker, and 1.x's own JS can use it
+  too.
+
+### v2 path only
+
+Replacing the nonce with `SameSite` plus an `Origin` check. The nonce works well
+for server-rendered pages embedding a fresh one per render; it is a long-lived
+client application that struggles with it. So the v1 UI keeps nonces and the v2
+UI uses origin checking, **enforced per path rather than accepting either** --
+accepting both would reduce the protection to the weaker of the two. The origin
+check is the same one the CORS repair must get right, so it is one mechanism
+serving two purposes.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
