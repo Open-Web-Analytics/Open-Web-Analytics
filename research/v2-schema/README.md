@@ -918,16 +918,32 @@ Two foundations worth naming because they mean less new mechanism than expected:
 
 ### What is missing
 
-**Discovery.** There is no endpoint listing metrics, dimensions, or which
-combinations are legal -- measured earlier at 5,493 valid pairs out of 7,800. A
-client-rendered UI cannot build a segment picker without it, and today it would
-have to hardcode what the server already knows.
+**Discovery is present, and better designed than a catalogue would be.** It is
+not a separate endpoint -- it is embedded in every response. While resolving a
+query, `ResultSetManager` tests each dimension against the chosen base entity
+with `isDimensionRelated()`, collects the compatible ones through
+`setRelatedDimension()`, and `getAllRelatedDimensions()` attaches the list to the
+result set. `resultSetExplorer.js` reads `resultSet.relatedDimensions` to fill
+its picker, with `setExclusions()` removing those already in use.
 
-**Server-side enforcement of the combination rules.** The star schema refuses
-`bounceRate x pagePath` today by construction. A single event table will happily
-answer it with an inflated total, so the registry has to refuse it explicitly --
-and the API is where that refusal has to live, since the client cannot be
-trusted to self-censor.
+That is **contextual discovery** -- "what may I add to *this* query" -- rather
+than a static catalogue, and it is the right shape, because validity is a
+property of the combination and not of a dimension on its own. A flat list of
+metrics and dimensions would be less useful and more misleading.
+
+So the v2 requirement is not to build discovery but to **preserve it**, and that
+is harder than it sounds. Today the answer falls out of entity resolution: a
+dimension is offered because some fact table can join it. A single event table
+has no such structure, so the same list has to come from the metric and
+dimension registry enforcing the additivity rules explicitly -- the point made
+above about `bounceRate x pagePath`, seen from the other side. The registry must
+be able to answer "what is compatible with this selection" as a first-class
+question, not merely refuse an illegal request.
+
+What is genuinely missing alongside it is a **static catalogue for the empty
+case** -- before any query exists, a client still has to offer a starting set --
+and a machine-readable expression of the rules for integrators building queries
+outside the UI.
 
 **An error taxonomy.** Responses carry `status_code` and an `error` message
 string. A client needs codes it can act on -- an illegal metric and dimension
@@ -967,8 +983,9 @@ change does not reshape -- the same questions get asked of different storage.
 
 - **discovery, permissions and error codes** can ship in 1.x and be inherited
   whole; 1.x's own JS benefits from all three
-- **the combination rules** are enforceable in 1.x from the same registry, where
-  they currently exist only as a property of which fact table can answer
+- **the combination rules** are already computed in 1.x by entity resolution and
+  returned as `relatedDimensions`; what is additive is expressing them in the
+  registry directly, so the same answers survive the loss of the entity graph
 - **scoped tokens and rate limiting** pair with the auth work already described
 
 What cannot carry over is anything shaped by the star schema itself -- the
