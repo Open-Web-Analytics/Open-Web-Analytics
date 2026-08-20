@@ -488,6 +488,90 @@ Three constraints come with it, and the first is easy to get wrong:
 The domain then surfaces exactly once, where it belongs: on the site record, set
 when the site is configured.
 
+## The event queue, revisited
+
+Worth reopening for v2, and the groundwork is better than expected.
+
+### What is already right
+
+The interface is **already message-queue shaped**: `sendMessage`,
+`receiveMessage`, `deleteMessage`, `markAsBroken`, `hasExhaustedRetries`. That
+is the SQS vocabulary, so a managed-queue backend is not a new abstraction --
+it is a new implementation of an existing one. Three backends exist today: file
+(378 lines), database (274), HTTP forward (85).
+
+### What is wrong
+
+**The database queue has no atomic claim.** `is_assigned` is declared on the
+QueueItem entity and is **never read and never written** anywhere in the tree.
+Two concurrent drainers therefore fetch and process the same rows.
+
+The scheduler's per-job lock currently conceals this: one job, one lock, one
+drainer. But that makes the lock a workaround rather than a fix, and it caps
+throughput at a single worker forever -- which is the opposite of what adding a
+queue is for.
+
+The second known defect is the poison pill: a handler returning EVENT_FAILED on
+an item that will never succeed re-queues it indefinitely. That was diagnosed
+and fixed once at the handler level, but nothing structural prevents the next
+one.
+
+### What the scheduler changes
+
+Draining becomes a registered job on a cadence rather than a crontab line or a
+manual run, with the per-job lock providing mutual exclusion the queue itself
+lacks -- so *scheduling* the drain is already safer than running it from two
+cron entries. That is worth having, but it is compensation for a missing claim,
+not a substitute for one.
+
+### Why SQS fits, and what it demands back
+
+SQS supplies exactly what the database queue lacks, as primitives rather than
+code: a **visibility timeout** is lease-based claim, a **dead-letter queue with
+maxReceiveCount** is `markAsBroken` and `hasExhaustedRetries` without hand-rolling
+them -- and it is precisely the structural answer to the poison pill. Multiple
+workers stop needing a global lock.
+
+What it requires in exchange lines up with decisions already taken elsewhere in
+this document, which is the encouraging part:
+
+| SQS property | consequence | already planned? |
+|---|---|---|
+| at-least-once delivery | handlers must be idempotent | yes -- dedup on `(session_id, event_id)` |
+| no ordering guarantee (standard queues) | processing must be order-independent | yes -- engagement is additive deltas |
+| batch receive, max 10 | drain loop works in batches | minor |
+| approximate depth only | queue-depth reporting becomes approximate | affects `schedule-status` wording |
+| 256 KB message limit | **domstream events may exceed it** | needs checking |
+
+That last row is the one to verify before committing: DOM recordings are the
+largest events OWA produces, and a queue that silently rejects them would be
+worse than no queue.
+
+### The file queue is not a competing backend
+
+It serves a different purpose and should be reframed rather than replaced: a
+durable local **spool** for a logging node with no database, the
+`OWA_USE_STATIC_CONFIG_ONLY` case. Calling it a queue invites the assumption
+that it competes with the others; it is a write-ahead buffer that something
+else later drains.
+
+### The shape v2 wants
+
+One change carries most of the value: move the interface from *fetch and
+delete* to **lease semantics** -- `receive()` returns items with a lease,
+`ack()` deletes, and an unacked lease expires back onto the queue. Every backend
+can then be implemented correctly:
+
+- **database**: the lease is the claim the current implementation is missing,
+  and `is_assigned` finally does the job it was declared for
+- **SQS**: visibility timeout, natively
+- **file spool**: a rename or lock file
+
+Dead-lettering becomes first-class rather than a flag on a row, workers become
+scheduler jobs, and running several stops requiring a global lock. The
+scheduler that shipped in 1.11 is what makes worker jobs a configuration
+question rather than a deployment one.
+
 ## Pros and cons
 
 **For the single table:**
