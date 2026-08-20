@@ -286,6 +286,31 @@ the redundant floor for new-visitor.</div>
   rollup restores exactly that at the session grain.</p>
 </div>
 
+<h4>Three storage layers, and the reconciliation rule</h4>
+<p>Named honestly: the session-grain derived table is <code>owa_session</code>'s grain reborn —
+~30 columns, one row per session. What v2 deletes is the <em>synchronous write path</em> (the
+121-column upsert per request), not the grain, which is irreducible: measured, a day-grain table
+carrying just three dimensions already costs 63% of session-grain's rows (208,657 vs 329,319)
+while answering only those three. Day-grain-with-dimensions is session grain with the flexibility
+amputated.</p>
+<div class="scroll"><table>
+<thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th>Rows (measured)</th></tr></thead>
+<tbody>
+<tr><td>Fact table</td><td>event</td><td>realtime, and every rebuild below</td><td class="n">692,829</td></tr>
+<tr><td>Derived session table</td><td>session</td><td>breakdowns — every session × dimension pair</td><td class="n">329,319</td></tr>
+<tr><td>Day rollup</td><td><code>yyyymmdd</code></td><td>totals and trends, start-day attributed (0.23% of sessions cross midnight)</td><td class="n">5,785</td></tr>
+</tbody></table></div>
+<p><strong>Where a total and a breakdown meet on one screen, the total is authoritative and the
+API closes the gap</strong> — a synthetic row with dimension value <code>(unknown)</code> and the
+remainder as its metric value, which is simply true: sessions the total can see and the breakdown
+cannot attribute. The invariant &ldquo;breakdowns sum to totals&rdquo; is enforced at the API
+envelope rather than assumed from storage, and v1 already has the seam — result sets carry
+<code>aggregates</code> beside the dimensional rows. Two rules keep it honest: the row appears
+only for a <em>positive</em> remainder and is labelled <code>(unknown)</code>, never blended into
+<code>(not set)</code>; and a negative remainder is never clamped — breakdown exceeding total
+means a defect, and absorbing it would silently convert the parity harness's clearest bug signal
+into invisible correction.</p>
+
 <div class="flag">
   <p class="h">Measured — the cost depends on how rich the stream is</p>
   <p>1.x averages <strong>2.10 events per session</strong> and 1.15 sessions per visitor, measured

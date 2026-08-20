@@ -3523,6 +3523,71 @@ could be rewritten without touching facts. A derived rollup restores exactly tha
 property at the session grain: rewrite the summary, leave 1.19M events alone. The
 capability was never really lost, only relocated.
 
+### Corrected: it is the session table reborn, and the honest change is provenance
+
+The dimension-carrying rollup described above is, at ~30 columns and one row per
+session, **`owa_session`'s grain rebuilt** -- and the plan should say so rather
+than hide it behind the word "rollup". What v2 actually deletes is the
+**synchronous session write path**: the 121-column upsert on every tracked
+request. The grain is irreducible; the table becomes *derived, disposable state*
+built by a convergent job, rebuildable from retained events at any time.
+
+Measured, on why `yyyymmdd` grain cannot replace that table but belongs above it:
+
+| grain | rows | answers |
+|---|---|---|
+| day only | 5,785 | totals and trends, nothing else |
+| day x source x medium x host | 208,657 | those three dimensions only |
+| session grain | 329,319 | every session x dimension combination |
+
+Three dimensions already cost 63% of session-grain's row count while answering
+only themselves, and each added dimension multiplies the tuple space toward one
+row per session anyway. **Day-grain-with-dimensions is session grain with the
+flexibility amputated.** So: a day-grain rollup, tiny and start-day-attributed
+(0.23% of sessions cross midnight, measured), serves totals and trends; the
+session-grain derived table serves breakdowns; and the fact table serves realtime.
+
+### Reconciliation: the total is authoritative, and the API makes breakdowns sum to it
+
+**Decided.** Totals for session-scoped metrics come from the `yyyymmdd`-grain
+rollup, derived from distinct `session_id` over the fact table -- never from
+`session_start` events. Breakdowns come from the session-grain derived table.
+Where a total and a dimensional breakdown appear together and disagree, **the API
+closes the gap with a synthetic row** whose dimension value is `(unknown)` and
+whose metric value is the remainder:
+
+```
+unknown = total - SUM(breakdown rows)
+```
+
+Which is simply true: those are sessions the total can see and the breakdown
+cannot attribute. The invariant "every breakdown sums to its total" is thereby
+enforced at the API envelope rather than assumed from storage -- a stronger place
+to hold it, because it survives freshness skew between the two derived tables and
+any mixing of tiers (a realtime widget beside a rollup-fed one).
+
+**v1 already has the seam.** Result sets carry `aggregates` alongside the
+dimensional `rows` (`ResultSetManager.php:1548`), so both numbers already travel
+in one envelope and clients already render them together. v2 formalises the
+relationship between the two instead of leaving it coincidental.
+
+Two rules keep the synthetic row honest:
+
+- **It appears only when the remainder is positive**, and is labelled
+  `(unknown)`, not blended into `(not set)` -- absence of a dimension value and
+  unattributable remainder are different facts, and 1.x's habit of one sentinel
+  for every kind of absence is on the consolidation kill-list already.
+- **A negative remainder is never clamped.** Breakdown exceeding total cannot be
+  explained by attribution and means a defect (double-counted rows, inconsistent
+  date attribution between the two tables). Absorbing it silently would convert
+  the parity harness's clearest bug signal into invisible correction. It surfaces
+  as an error flag in the envelope instead.
+
+Start-day attribution makes the two tables *usually* agree exactly -- 0.23% of
+sessions cross midnight, and both tables attribute a session to its start day --
+so the synthetic row is normally absent or tiny. It exists for the cases the
+one-authority rule cannot reach: mixed freshness on one screen.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**
