@@ -629,17 +629,41 @@ case.
 the replay is against a page the visitor never saw, and the positions mean
 nothing. Nothing detects this; the replay simply misleads.
 
-**5. There is exactly one consumer, and it fetches one recording at a time.**
-Domstreams feed `Player.js` replay and nothing else. The heatmap overlay is a
-*click* visualisation drawn from `owa_click` -- `Heatmap.js` calls
-`plotClickData()` against its own API endpoint -- so the two features that look
-related in the tracker source share no data at all.
+**5. The recording list must be segmentable, and today it is not.**
 
-That is worth stating because it constrains the design more than it first
-appears: recordings are never scanned, filtered or aggregated. They are written
-once and fetched individually by id. Which is the easiest possible access
-pattern to satisfy, and means nothing about their storage needs to support
-querying.
+Choosing which replays to watch is the whole problem: an unfiltered list of
+229,663 recordings is unusable. The list needs the ordinary metric and dimension
+vocabulary -- recordings from mobile visitors, from a campaign, from sessions
+that converted or stayed engaged.
+
+Two things are true about that today, and they pull in opposite directions.
+
+The 46 columns exist to make a recording a reportable entity, and the wiki
+documents a `domstream` metric group combining with eight dimension families.
+But `DomstreamsRestController` hand-writes its query --
+
+```php
+$rsm->db->selectFrom('owa_domstream');
+$rsm->db->where('page_url', ...);
+$rsm->db->where('site_id', ...);
+$rsm->db->groupby('domstream_guid');
+```
+
+-- bypassing the resolver entirely and filtering on page URL, site and date
+only. So every row pays for forty context columns, and the one screen that
+would benefit from them cannot use them.
+
+**This is the clearest single argument for the event model in this whole
+document.** The duplication exists *because* domstream is a separate fact table
+that needs its own copy of context to be reportable at all. Make a recording an
+event and the cost disappears: context is on the event row already, the standard
+metric and dimension machinery applies with nothing special-cased, and
+metric-scoped filters -- "sessions that converted", "engaged sessions" -- resolve
+through session scope like any other session-scoped question.
+
+The payload is the part that needs no querying: written once, fetched by id, and
+never scanned. Metadata and payload therefore want different treatment, which is
+the distinction the current single blob-bearing fact table does not make.
 
 ### On rrweb, and why "better" is not obvious
 
@@ -664,10 +688,12 @@ keeping deliberately rather than an limitation to be corrected.
 1. **Keep coordinate-only capture** as the default, and say why in the docs --
    it is a feature.
 2. **Fix the encoding**: delta tuples plus gzip, measured at ~30x.
-3. **Retain on a window.** Recordings are replay-only, with no derived
-   artefact depending on them, so the retention question is simply how long
-   replays are useful -- a scheduler job expiring them is sufficient, and
-   nothing is lost downstream when they go.
+3. **Make the list segmentable through the normal machinery**, which
+   recording-as-event gives for free, and retain payloads on a window: nothing
+   is derived from them, so a scheduler job expiring them costs nothing
+   downstream. Metadata may outlive the payload it points at, which is worth
+   deciding deliberately -- a list entry whose recording has expired is
+   honest, a dangling player link is not.
 4. **Make a recording an attachment to an event**, not a parallel fact row --
    which deletes about forty duplicated context columns.
 5. **Store the payload outside the row**, so metadata queries do not drag it.
