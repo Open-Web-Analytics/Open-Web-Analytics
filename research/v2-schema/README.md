@@ -2490,6 +2490,48 @@ recorded on the event when it is accepted, or a handful of events land in v1
 after the switch. The first is tidy; the second is free and harmless, because by
 definition the switch happens when v1's numbers have stopped mattering.
 
+### Fan-out is per feature, and some features cut over early
+
+The tracker **evolves in place**. It is not rewritten and not forked: the same
+codebase is extended until it emits what both pipelines need, which is why the
+tracker-additive work above is worth shipping in 1.x rather than banked against
+a rewrite.
+
+But the fan-out itself is **per event type, not global**, and some features
+should skip the dual-write period entirely -- going to v2 only, from early on.
+A feature qualifies when both of these hold:
+
+1. **v1 has no history worth preserving for it** -- the reporting is thin or
+   unused, so there is nothing to strand and no oracle to compare against
+2. **keeping it dual-written would mean renovating v1's storage** to carry data
+   only v2 can use -- spending real work on a schema already being retired
+
+**Domstreams are the clear case, and qualify on both.** Everything v2 changes
+about them is storage-shaped: a recording becomes an attachment to an event
+rather than a parallel fact row, the payload moves outside the row, and the
+encoding becomes delta tuples plus gzip. Dual-writing leaves only bad options --
+either `owa_domstream` keeps its present shape, in which case the new capture
+has nowhere to land, or the table is renovated to accept a format v1 will never
+report on. The second is precisely the wasted work worth avoiding. And OWA's own
+domstream reporting has never exploited the dimensions that fact table already
+carries, so there is very little history to lose by cutting over.
+
+Heatmaps follow domstreams for the same reason, being built on the same capture.
+
+**This creates a second exclusion list for the parity harness, and it is not the
+same list.** Intended differences (bounce, visit duration, exit page, goals) are
+metrics that *are* compared and *are expected* to differ. Early-cutover features
+are **not compared at all**, because no v1 side exists. Conflating the two is how
+a real regression hides behind "that one's expected" -- so both lists are
+declared, separately, and the harness treats them differently: one is a diff with
+a tolerance, the other is an absence.
+
+**Early cutover is one-way in practice.** Once recordings exist only in v2, v1's
+player has nothing new to play. That is acceptable exactly when criterion 1
+holds, which is why the list should be decided deliberately per feature and
+written down, rather than arrived at by noticing that something stopped being
+dual-written.
+
 ### Work that is additive to 1.x, and is not redone for v2
 
 Much of what this document proposes can ship in 1.x, but "additive" needs
@@ -2604,7 +2646,8 @@ stops being a client-side compatibility problem.
 
 1. Ship the additive work in 1.x releases, each standing on its own
 2. v2 creates its tables alongside; the single tracker's events are fanned out
-   to both pipelines
+   to both pipelines, except for features on the early-cutover list, which go to
+   v2 only from the start
 3. The administrator runs both for an overlap period, comparing the two UIs over
    *the same events* -- not merely the same traffic, which is what makes the
    comparison a test rather than an impression, and is the only validation
@@ -2790,9 +2833,11 @@ events, so v1 *is* the oracle for everything v2 is not deliberately changing.
 
 The comparison surface is already enumerated: **5,493 valid metric x dimension
 pairs** from the live registry. That is a generated test matrix, not a hand-written
-one. For each pair, query both schemas over the same window and compare; subtract
-the declared intended-difference list (bounce, visit duration, exit page, goals,
-the 11 dead `*InVisit` dimensions); anything remaining is a defect with a name.
+one. For each pair, query both schemas over the same window and compare, then
+apply the two exclusion lists -- the intended differences (bounce, visit duration,
+exit page, goals, the 11 dead `*InVisit` dimensions), which are compared and
+expected to diverge, and the early-cutover features, which have no v1 side and
+are absent from the matrix entirely. Anything remaining is a defect with a name.
 
 Two properties make this stronger than any unit test that could be written
 instead. It runs against **real traffic**, so it exercises the distributions and
