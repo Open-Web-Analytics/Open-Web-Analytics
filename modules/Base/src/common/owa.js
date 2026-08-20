@@ -29,6 +29,7 @@ class OWA {
 	    
 	    this.state = {};
 	    this.overlayActive = false;
+	    this.overlayParams = null;
     }
     
     // depricated
@@ -225,15 +226,23 @@ class OWA {
         
         // set global is overlay actve flag
         this.overlayActive = true;
-        //alert(JSON.stringify(p));
+        
+        // Hold the overlay params for this page's lifetime.
+        //
+        // They used to be written to an owa_overlay cookie on the TRACKED
+        // site's own domain, so Heatmap.fetchData() and Player.fetchData()
+        // could read api_url back out -- which meant every other script on
+        // that page could read the credential in it, and the browser re-sent
+        // it to that site on every request. The params only ever need to
+        // survive from page load until the overlay fetches, so memory is the
+        // right lifetime and a cookie bought persistence nothing wanted.
+        this.overlayParams = p;
         
         if (p.hasOwnProperty('api_url')) {
                 
             this.setApiEndpoint(p.api_url);
         }
         
-        // get param from cookie    
-        //var params = Util.parseCookieStringToJson(p);
         var params = p;
         // evaluate the action param
         if (params.action === 'loadHeatmap') {
@@ -245,9 +254,25 @@ class OWA {
     }
     
     endOverlaySession() {
-                
+        
+        // Erase any owa_overlay cookie an older tracker left on this domain,
+        // then drop the in-memory copy.
         Util.eraseCookie(this.getSetting('ns') + 'overlay', document.domain);
+        this.overlayParams = null;
         this.overlayActive = false;
+    }
+    
+    /**
+     * The params for the overlay session running on this page, or null.
+     *
+     * Heatmap.fetchData() and Player.fetchData() read api_url from here. If
+     * this is missing they get undefined, jQuery.ajax is called with an
+     * undefined URL, and the overlay silently never draws -- so it is covered
+     * by tests/js/OverlayParamsInMemory.test.js rather than trusted.
+     */
+    getOverlayParams() {
+        
+        return this.overlayParams || null;
     }
     
     /**
