@@ -3441,6 +3441,72 @@ first-touch attribution and entry page at the moment those are known -- but a
 rollup row can carry the same values derived server-side, so they are optional
 rather than load-bearing.
 
+### The real argument for markers is grain, not payload
+
+An earlier framing here justified `session_start` and `first_visit` by what they
+*carry* -- attribution captured at the moment it is known. That is true and it is
+the weaker half. The stronger reason is **dimensional combination**, and it is
+the whole purpose `owa_session` serves in 1.x.
+
+A metric and a dimension can only be combined if a row exists at their shared
+grain. `owa_session`'s 121 columns are not hoarding: they are what makes
+"sessions by landing page", "sessions by campaign", "sessions by country"
+answerable at all. Strip the session-grain table out of the schema and those
+combinations do not become slower, they become **unavailable** -- so a single
+event table must put the session grain back somewhere, and there are only two
+places to put it.
+
+| | session grain lives in | breakdowns available by |
+|---|---|---|
+| **Marker events** | the event table itself | **every dimension an event carries** -- unbounded, no schema change |
+| **Rollup only** | the rollup's columns | only what the rollup denormalises |
+
+**The custom variables prove the point.** 1.x carries `cv1_name`/`cv1_value`
+through `cv5_name`/`cv5_value` on the session -- ten columns implementing exactly
+five slots. That fixed-slot design is not a preference; it is what a fixed-width
+session row forces. Ride the same data on an event's parameter map and the limit
+disappears, which is precisely the "segment reporting by custom variables without
+registering them first" capability wanted for v2. The five-slot wart *is* the
+cost of holding session grain in a fixed row.
+
+Excluding 46 goal columns and 12 date parts, `owa_session`'s remaining 63 columns
+are roughly 26 genuine dimensions, 10 custom-variable slots, 13 aggregates and a
+tail of prior-session bookkeeping. So a dimension-carrying rollup would not be
+121 columns -- but it would be about 30, and that number only grows.
+
+### Which leaves a consistency trap, and it decides the design
+
+If session *totals* come from the rollup and session *breakdowns* come from
+marker events, the two disagree whenever a marker is lost -- the breakdown will
+not sum to the total. That is the most corrosive class of reporting bug: both
+numbers are defensible, neither is wrong in isolation, and a user who notices
+stops trusting the whole product. **One authority per metric, no exceptions.**
+
+So the choice is forced, and it goes to the rollup:
+
+- **The rollup is the authority for session counts and their breakdowns.** It is
+  derived from every event, so it cannot be erased by a lost packet, and it is
+  exact where GA4 must approximate.
+- **It therefore carries the session's dimensional context**, taken from the
+  session's own events -- landing page, source, medium, campaign, device, geo --
+  plus a parameter map for custom variables rather than five slots.
+- **Markers keep the roles a rollup cannot fill**: something to mark as a key
+  event, a streaming signal, and the attribution the client knows at that instant
+  and the server cannot reconstruct.
+
+**The bounded-column objection is answered by the rebuild, and this is the part
+worth noticing.** A rollup's column list is not a ceiling; it is a current state.
+Because the rollup is *derived* from events that are retained, adding a
+session-scoped dimension later is a rebuild -- measured at 50.4 s over the full
+corpus -- and it applies **retroactively to all existing data**, with no change to
+what is collected.
+
+That is post-hoc enrichment, recovered. The star's one measured advantage in this
+document was enrichment at 589x, and the reason it won was that a dimension row
+could be rewritten without touching facts. A derived rollup restores exactly that
+property at the session grain: rewrite the summary, leave 1.19M events alone. The
+capability was never really lost, only relocated.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**

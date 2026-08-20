@@ -253,16 +253,38 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">feed_request</td><td class="ev-l">base.feed_request</td><td class="dash">—</td><td>OWA-specific; kept</td></tr>
 </tbody></table></div>
 
-<div class="note"><strong>Emit the markers; never count from them.</strong> These two carry
-something no other event can: the attribution for a scope, at the one moment it is known.
-Session-scoped source belongs on <code>session_start</code>, and user-scoped acquisition on
-<code>first_visit</code>, which is also what makes them markable as key events. What they must
-<em>not</em> be is the basis of a session or user count — GA4 emits <code>session_start</code> but
-counts sessions by estimating distinct session ids, precisely because the marker is known to go
-missing (consent mode, app lifecycle). v2 counts from the rollup for the same reason. Losing a
-marker then degrades that session's attribution and erases nothing, which satisfies the rule in
-§1.3. <code>fsts</code> stays carried on every event as the redundant floor, so new-visitor
-remains derivable even when a <code>first_visit</code> is lost.</div>
+<div class="note"><strong>Emit the markers; never count from them.</strong> They exist for
+<em>grain</em>, not merely for payload. A metric and a dimension combine only where a row exists at
+their shared grain — which is the entire job <code>owa_session</code>'s 121 columns do in 1.x, and
+why removing the session-grain table would make “sessions by landing page” not slow but
+<em>unavailable</em>. They are also the natural thing to mark as a key event, and they carry the
+attribution the client knows at that instant.<br><br>
+What they must <em>not</em> be is the basis of a count. GA4 emits <code>session_start</code> yet
+counts sessions by estimating distinct session ids, precisely because the marker goes missing
+(consent mode, app lifecycle). v2 counts from the rollup for the same reason, so a lost marker
+degrades that session's attribution and erases nothing. <code>fsts</code> stays on every event as
+the redundant floor for new-visitor.</div>
+
+<div class="flag">
+  <p class="h">One authority per metric — the trap this creates</p>
+  <p>If session <em>totals</em> come from the rollup while session <em>breakdowns</em> come from
+  marker events, the two disagree whenever a marker is lost and the breakdown stops summing to the
+  total. Both numbers are defensible, neither is wrong alone, and a user who notices stops trusting
+  the product. So the rollup is the authority for session counts <strong>and</strong> their
+  breakdowns, which means it carries the session's dimensional context — taken from the session's
+  own events — plus a parameter map for custom variables.</p>
+  <p><strong>That map matters more than it looks.</strong> 1.x spends ten columns
+  (<code>cv1_name</code>…<code>cv5_value</code>) implementing exactly five custom-variable slots.
+  The fixed slots are not a preference — they are what a fixed-width session row forces. On a
+  parameter map the limit disappears, which is the unregistered custom-variable segmentation v2
+  wants.</p>
+  <p><strong>The rollup's column list is a rebuild away, not a ceiling.</strong> Because it is
+  derived from retained events, adding a session dimension later costs one rebuild —
+  <strong>50.4 s</strong> over the full corpus — and applies retroactively to all existing data
+  with no change to collection. That is post-hoc enrichment recovered: the star's one measured
+  advantage in this research (589×) was rewriting a dimension without touching facts, and a derived
+  rollup restores exactly that at the session grain.</p>
+</div>
 
 <div class="flag">
   <p class="h">Measured — the cost depends on how rich the stream is</p>
