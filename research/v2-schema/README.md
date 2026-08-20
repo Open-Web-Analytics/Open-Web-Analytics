@@ -1170,6 +1170,42 @@ here, so a JSON path filter applied to an already-pruned set is very likely
 fine. If measurement later says otherwise, a virtual generated column and index
 on that path is available as **tuning**, not as a gate a user must pass first.
 
+**Measured, on 692,828 rows in MySQL 8.4.** The syntax is `->>`, which is
+`JSON_UNQUOTE(JSON_EXTRACT())` and returns text so it compares directly:
+
+```sql
+WHERE site_id = ? AND yyyymmdd BETWEEN ? AND ?
+  AND params->>'$.plan' = 'premium'
+```
+
+| | unindexed | with a generated column + index |
+|---|---|---|
+| one month | **46.9 ms** | 4.1 ms |
+| one year | 320.8 ms | 24.8 ms |
+| whole table | 883.1 ms | 1,300.3 ms |
+| `GROUP BY` the variable, one month | 484.9 ms | 555.0 ms |
+
+At the scope reports use, unindexed is 47 ms: the site and date index prunes
+first and the JSON extract runs on what remains. No index is needed to ship.
+
+The tuning lever, when a particular variable becomes hot:
+
+```sql
+ALTER TABLE ev ADD COLUMN cv_plan VARCHAR(64)
+  GENERATED ALWAYS AS (params->>'$.plan') VIRTUAL;          -- 63 ms
+ALTER TABLE ev ADD INDEX cv_plan_idx (site_id, cv_plan, yyyymmdd);  -- 13.3 s
+```
+
+Three properties matter. Adding the column is **instant and free in storage** --
+63 ms, table unchanged at 136.3 MB -- because `VIRTUAL` computes on read and
+never materialises, so no row is rewritten; only the index costs anything, once.
+It is **retroactive**: the column was added after the rows existed and matched
+173,123 of them immediately, which is the property GA cannot offer. And it is
+**not universally better** -- whole-table counts got slower (883 -> 1,300 ms) as
+the optimiser chose the index over a scan on an unselective filter, and
+`GROUP BY` barely moved. Indexes help selective lookups inside a scope, which is
+what reports do; adding them speculatively can hurt.
+
 Worth noting the contrast, since it is the reverse of the usual direction: GA4
 *does* require registering a custom dimension before it appears in reports, and
 registration is not retroactive -- the raw parameter sits in the export while
