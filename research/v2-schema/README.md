@@ -1486,26 +1486,49 @@ format-version machinery that a shared namespace would have required.
 
 ### Work that is additive to 1.x, and is not redone for v2
 
-The bulk of what this document proposes can ship in 1.x, benefit users
-immediately, and be inherited by v2 unchanged. Roughly in order of value:
+Much of what this document proposes can ship in 1.x, but "additive" needs
+splitting three ways, because some of it carries over whole and some leaves
+1.x-specific plumbing behind.
 
-| work | what it fixes in 1.x | why v2 inherits it |
+**Fully additive -- shipped once, inherited unchanged.**
+
+| work | what it fixes in 1.x |
+|---|---|
+| **CORS, replacing JSONP** | `addCorsHeaders()` compares row arrays to a string and has never emitted a header; playback runs on JSONP, which bypasses same-origin by design |
+| **PDO driver** | real bound parameters instead of `mysqli_real_escape_string`, and retires the hand-rolled connection handling |
+| **`Util.js` modernisation** | a smaller tracker for every 1.x user |
+| **`preconnect` and snippet placement** | removes DNS, TCP and TLS from the critical path on a cold origin, which matters far more for a self-hosted tracker than for GA |
+| **Bot filtering improvements** | data quality, unchanged by the schema |
+
+**Tracker-additive -- the client work is inherited, the 1.x server plumbing is
+discarded.** These are still worth doing, because the tracker half is the hard
+and novel part and shipping it first proves it against real traffic before v2
+depends on it. But the benefit in 1.x is smaller than it looks:
+
+| work | inherited | discarded in 1.x |
 |---|---|---|
-| **CORS, replacing JSONP** | `addCorsHeaders()` compares row arrays to a string and has never emitted a header; playback runs on JSONP, which bypasses same-origin by design | v2's API-first UI needs working CORS regardless |
-| **Transport: `sendBeacon` with a body / `fetch` keepalive** | removes the hidden-iframe POST that "gives us no delivery signal", so large payloads become confirmable | identical transport in v2 |
-| **Engagement deltas and the sticky `engaged` flag** | 1.x gains final-page dwell time, which no server-side design can measure, improving bounce and duration now | the v2 session model is exactly this |
-| **Chunk `seq` on recordings** | fixes the 223 recordings whose chunk order is currently undefined, and adds a dedup key | v2 requires it for the same three reasons |
-| **Element path capture for clicks** | heatmaps stop aggregating across 2,297 viewport widths; `dom_element_id` is real on 0.09% today | v2's element-based heatmaps depend on the same capture |
-| **Queue lease semantics** | `is_assigned` is declared and never read, so two drainers process the same rows | v2's queue design needs leases anyway; an SQS backend can land in 1.x too |
-| **PDO driver** | real bound parameters instead of `mysqli_real_escape_string`, and retires the hand-rolled connection handling | one backend family under v2's storage seam |
-| **`Util.js` modernisation** | smaller tracker for every 1.x user | same tracker source |
-| **`preconnect` hint and snippet placement** | removes DNS, TCP and TLS from the critical path on a cold origin | same snippet |
-| **Domstream list through the resolver** | lights up segmentation the 1.x schema already supports and the UI never used | v2 keeps segmentation as a requirement |
-| **Bot filtering improvements** | data quality now | unchanged by the schema |
+| **engagement deltas, sticky `engaged` flag** | accumulation, piggybacking, terminal beacon | a column to receive the delta, a `SessionHandlers` line to accumulate it, a metric to read it |
+| **chunk `seq`** | the page-scoped counter and its three uses | a column on `owa_domstream`; v2 keys a payload store instead |
+| **element path capture** | the selector or ancestor-chain logic | a column on `owa_click` |
+| **transport: `sendBeacon` with a body** | the client transport | the endpoint's body-parsing path is small but v1-shaped |
 
-Most of it is **tracker and transport work**, which is the part of the system
-the schema change does not touch -- so it is genuinely free of rework, and it
-de-risks v2 by proving each piece against real traffic first.
+One caution specific to engagement. Redefining `visitDuration` and `bounces` in
+1.x to use engagement would **break historical comparability** -- every existing
+trend steps at the release boundary, because the old values came from timestamps
+and the new ones do not. In 1.x these belong as *new* metrics beside the old
+ones, not as redefinitions, which mutes the reporting benefit further.
+
+**1.x improvements the requirement outlives, but the mechanism does not.**
+
+| work | note |
+|---|---|
+| **domstream list through the resolver** | lights up segmentation the 1.x schema already supports and the UI never used; v2 replaces the mechanism entirely, but carries the requirement |
+| **queue lease semantics** | `is_assigned` is declared and never read, so two drainers process the same rows -- a real 1.x bug fix, though v2's queue is a different implementation of the same design |
+
+The pattern worth noting: what carries over cleanly is **tracker, transport and
+security work** -- the parts the schema change does not touch. Anything that
+lands data in a v1 table is plumbing with a known expiry date, which is fine as
+long as it is chosen knowingly.
 
 ### What cannot be additive
 
