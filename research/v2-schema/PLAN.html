@@ -212,14 +212,15 @@ totals come from an incrementally-maintained rollup built by a scheduler job, pl
 client-carried state. (Marker events still exist — see §1.4 — but for what they carry, not for
 what they count.)</p>
 <ul>
-<li><strong>Engagement time</strong> — the tracker accumulates visible time per page and
-reports it as <code>user_engagement</code> events with <em>content-derived ids</em>
-(<code>hash(session_id + page_ref + seq)</code>): beaconed on every page-hide; any pending pair then rides the
-session's next request <em>as parameters</em> — never a separate catch-up beacon — with the
-server materializing the event, duplicates collapsing at the table. Mid-session dwell thereby
-survives beacon loss — which GA4's clear-on-flush design does not — and per-page attribution is
-correct by construction. Final-page dwell keeps the one irreducible lossy attempt, and is the
-thing 1.x structurally cannot measure at all.</li>
+<li><strong>Engagement time</strong> — <code>engagement_msec</code> rides <em>every</em> outgoing
+event, GA-style: the time accrued on the current page since the last report, so envelope
+attribution is automatically correct and loss granularity is one increment, not one page. The
+hide-time <code>user_engagement</code> event carries only the <em>residue</em> since the last
+event, with a content-derived id (<code>hash(session_id + page_ref + seq)</code>): beaconed at
+hide, then riding the session's next request <em>as parameters</em> — never a separate catch-up
+beacon — with the server materializing the row, duplicates collapsing at the table. Engaged is
+<code>SUM(engagement_msec)</code> across the session vs the threshold. Final-page dwell keeps the
+one irreducible lossy attempt, and is the thing 1.x structurally cannot measure at all.</li>
 <li><strong>Engaged is derived, not stored</strong> — classification at read time:
 <code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR key event</code>. An earlier draft carried a
 sticky client-set flag; it was removed — the pageview and key-event disjuncts are already
@@ -555,7 +556,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>~40 columns</
 <tr><td class="n">33</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td></tr>
 <tr><td class="n">34</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td></tr>
 <tr><td class="n">35</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percent bucket</td></tr>
-<tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the delta, on <code>user_engagement</code> rows; must not pay JSON extraction</td></tr>
+<tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>on <em>every</em> row: time accrued on the current page since the last report; <code>user_engagement</code> rows carry the hide-time residue. Must not pay JSON extraction</td></tr>
 <tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT</td><td>stamped at collection; the third engaged disjunct</td></tr>
 <tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
 <tr><td class="n">39</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>

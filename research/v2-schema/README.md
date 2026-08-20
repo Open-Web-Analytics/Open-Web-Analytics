@@ -4115,11 +4115,22 @@ final-page dwell remains exposed to a single lossy attempt, which is
 irreducible because nothing comes after it to carry a retry. Returning to a
 page accrues under the next `seq`, a distinct id, and sums correctly.
 
-This **replaces** the earlier "(page_ref, msec) pairs riding arbitrary events"
-sketch: engagement time lives only in `user_engagement` events, each carrying
-its own page's context, so envelope attribution is simply correct -- no special
-parameter format, no query-time dedup. The retry is carried as parameters of
-the next request and materialized server-side.
+**Amended (Peter's catch): deltas ride every event, GA-style; `user_engagement`
+carries only the residue.** An earlier version of this section put engagement
+time solely in `user_engagement` rows -- which contradicted the flag-removal
+argument above, whose robustness case relied on delta-carrying scroll events.
+The reconciled design: `engagement_msec` rides **every outgoing event** (time
+accrued on the current page since the last report -- envelope attribution is
+automatically correct, since in-page events fire on the page where the time
+accrued), and the hide-time `user_engagement` event carries only the residue
+since the last event. Loss granularity improves accordingly: a page with five
+scrolls spreads its dwell across five reliable carriers plus one lossy tail,
+instead of betting the whole page on the beacon-and-retry pair. Engaged is
+then `SUM(engagement_msec)` across all the session's events vs the threshold;
+per-page engagement is the same SUM grouped by `page_uri`. Piggybacked deltas
+are deduped by their carrier event's id; the seq-based derived id applies only
+to the residue rows, where the double-send exists. The residue retry is
+carried as parameters of the next request and materialized server-side.
 
 ### PII: closed -- the operator is the controller
 
