@@ -1140,9 +1140,36 @@ real value on 0.09%, because 439,839 rows say `(not set)`.
 Two changes follow. **Absent should be NULL**, not a sentinel string -- the
 distinction between "no value" and "the value is the words not set" is currently
 unavailable, and every count of populated columns is wrong by default.
-And **custom variables become JSON parameters**, so five unused slots cost
-nothing rather than ten columns; a sixth becomes possible, which the fixed slots
-have never allowed.
+### Custom variables must stay segmentable
+
+Custom variables are user-defined **dimensions**, so they have to be filterable
+and groupable -- which rules out simply moving them into JSON and stopping
+there, since a row store cannot index an arbitrary JSON path.
+
+The workable shape is storage plus **registration**:
+
+- values are stored as event parameters -- unlimited, and unused ones cost
+  nothing instead of ten placeholder columns per fact row
+- an administrator **registers** a variable to make it reportable, exactly as
+  GA4 requires custom dimensions to be registered before they appear in reports
+- registration creates a **virtual generated column and an index** on that JSON
+  path, so segmenting on it is an indexed lookup rather than a scan. Virtual
+  rather than stored means no row rewrite: the index is built once and the value
+  is never materialised
+- on a columnar backend registration is close to a no-op, since column pruning
+  already makes reading one path cheap
+
+**And OWA can beat GA on this.** GA4 registration is *not* retroactive: the raw
+parameter is present in the BigQuery export, but historical events never appear
+under that dimension, so a late registration leaves a permanent hole in
+reporting history. A generated column is computed from rows that already exist,
+so registering a variable in OWA would make **all history segmentable
+immediately** -- the value was always stored, registration only makes it
+indexable.
+
+A registration limit is still sensible, as GA's 50 event-scoped dimensions are:
+each registered variable costs an index to maintain. But the limit becomes a
+tuning decision rather than five slots baked into every fact table.
 
 ### Compatibility aliases
 
