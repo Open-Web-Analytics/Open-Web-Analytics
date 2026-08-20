@@ -209,4 +209,99 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         expect(fake.status, 'an unknown route must use the same status').toBe(real.status);
         expect(fake.body, 'an unknown route must be byte-identical').toBe(real.body);
     });
+
+    /**
+     * CORS lives in its own describe with a freshly provisioned fixture.
+     *
+     * The route loop above signs real requests that POST and DELETE against
+     * users and sites, so by the time these run the fixture credential has been
+     * through eight mutating calls. Re-provisioning here makes these cases
+     * independent of what the loop did rather than dependent on running last --
+     * and because they ARE last, re-provisioning cannot disturb anything above.
+     *
+     * It must not be a separate spec file: provision() calls cleanup() first, so
+     * a second file calling it destroys this one's fixture mid-run. That is what
+     * broke seven of the signed cases above when these lived elsewhere.
+     */
+    /**
+     * CORS: the API answers cross-origin, and only for configured sites.
+     *
+     * These reuse the describe's own fixture rather than provisioning their
+     * own. provision() calls cleanup() first, so calling it a second time in
+     * one run deletes the user and hands back an api_key belonging to no row --
+     * every request then 401s at the user lookup with a perfectly valid
+     * signature. One provision per run.
+     *
+     * They must also stay in this file for the same reason: a separate spec
+     * calling provision() destroys this one's fixture mid-run.
+     */
+    test.describe('CORS', () => {
+
+    test('a configured site\'s Origin is echoed back, and the request still works', async ({ request }) => {
+            const root = installRoot(test.info().project.use.baseURL);
+            const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+            const res = await request.fetch(url, { method: 'GET', headers: { Origin: creds.domain } });
+
+            expect(res.headers()['access-control-allow-origin'],
+                'a configured site must be allowed cross-origin').toBe(creds.domain);
+            expect(res.headers()['access-control-allow-credentials']).toBe('true');
+
+            // Asserted as well as the headers: a change that emitted CORS correctly
+            // while breaking the response would pass a headers-only test.
+            expect(res.status(), `cross-origin request failed: ${await res.text()}`).not.toBe(401);
+        });
+
+        test('an unrelated Origin gets no Allow-Origin header', async ({ request }) => {
+            const root = installRoot(test.info().project.use.baseURL);
+            const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+            const res = await request.fetch(url, {
+                method: 'GET',
+                headers: { Origin: 'https://evil.example.com' },
+            });
+
+            expect(res.headers()['access-control-allow-origin'],
+                'an origin this installation does not serve must not be allowed').toBeUndefined();
+        });
+
+        test('a suffix or subdomain of a configured host is not that host', async ({ request }) => {
+            // The classic allowlist bypass: prefix or substring matching lets
+            // evil-<host> and <host>.evil.net through.
+            const root = installRoot(test.info().project.use.baseURL);
+            const url = routeUrl(root, 'base/v1/sites', '', creds);
+            const host = new URL(creds.domain).host;
+
+            for (const forged of [`https://evil-${host}`, `https://${host}.evil.net`, `https://sub.${host}`]) {
+                const res = await request.fetch(url, { method: 'GET', headers: { Origin: forged } });
+
+                expect(res.headers()['access-control-allow-origin'],
+                    `${forged} must not be allowed`).toBeUndefined();
+            }
+        });
+
+        test('Vary: Origin is sent whether or not the Origin is allowed', async ({ request }) => {
+            // Without it a shared cache can hand one site's allowed-origin header to
+            // a request from another. Varnish sits in front of this application in
+            // production, and the refusal is origin-dependent too -- so it must be
+            // present on both responses, not just the permitted one.
+            const root = installRoot(test.info().project.use.baseURL);
+            const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+            for (const origin of [creds.domain, 'https://evil.example.com']) {
+                const res = await request.fetch(url, { method: 'GET', headers: { Origin: origin } });
+
+                expect(String(res.headers()['vary'] || ''),
+                    `Vary: Origin missing for ${origin}`).toMatch(/Origin/i);
+            }
+        });
+
+        test('a request with no Origin is unaffected', async ({ request }) => {
+            const root = installRoot(test.info().project.use.baseURL);
+            const res = await request.fetch(routeUrl(root, 'base/v1/sites', '', creds), { method: 'GET' });
+
+            expect(res.headers()['access-control-allow-origin']).toBeUndefined();
+            expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
+        });
+    });
 });
