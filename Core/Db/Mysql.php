@@ -106,7 +106,25 @@ define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
  */
 class Mysql extends \OWA\Core\Db {
 
+    /**
+     * A connect attempt has already failed and must not be repeated.
+     *
+     * Releasing the dead handle on failure is what stops it being mistaken for
+     * a connection -- but it also makes `! $this->connection` true again, so
+     * without this every query would re-dial a database that is down, and every
+     * attempt raises its own warning. Cleared by close(), so an explicit
+     * reconnect is still possible.
+     *
+     * @var bool
+     */
+    protected $connect_failed = false;
+
     function connect() {
+
+        if ( $this->connect_failed ) {
+
+            return false;
+        }
 
         if ( ! $this->connection ) {
 
@@ -138,8 +156,25 @@ class Mysql extends \OWA\Core\Db {
             
             $this->connection = mysqli_init();
 
-            // get a connection
-            mysqli_real_connect(
+            // A FAILED CONNECT IS NOT A CONNECTION.
+            //
+            // mysqli_init() always returns an object, so `$this->connection`
+            // is truthy whether or not the connect below succeeds, and the
+            // guard at the end of this method -- which exists precisely to
+            // report a failure -- can never fire. What happened instead was
+            // that mysqli_set_charset() was called on a handle that was never
+            // connected, which in PHP 8 raises "mysqli object is not fully
+            // initialized": an Error, not an Exception, so query()'s catch does
+            // not see it either. A refused connection therefore took out the
+            // whole request with an uncaught fatal rather than degrading.
+            //
+            // Observed in production: RDS refused a connection for a few
+            // seconds and every page and tracking request during that window
+            // fataled instead of logging and moving on.
+            //
+            // So the return value decides, and the dead handle is released
+            // before anything can touch it.
+            $connected = mysqli_real_connect(
                 $this->connection,
                 $host,
                 $this->getConnectionParam('user'),
@@ -149,6 +184,17 @@ class Mysql extends \OWA\Core\Db {
                 $socket,
                 $client_flags
             );
+
+            if ( ! $connected ) {
+
+                $this->connection = null;
+                $this->connection_status = false;
+                $this->connect_failed = true;
+
+                $this->e->alert( 'Could not connect to database.' );
+
+                return false;
+            }
 
             // explicitly set the character set as UTF-8
             if (function_exists('mysqli_set_charset')) {
@@ -192,9 +238,22 @@ class Mysql extends \OWA\Core\Db {
 
               \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
-              $this->connect();
+              $connected = $this->connect();
 
               \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
+
+                // Without a connection there is nothing to run the query
+                // against, and every mysqli_* call below would raise on the
+                // released handle. Report it the way a failed query reports
+                // itself, so callers that already handle a falsy result --
+                // get_row() and get_results() both do -- degrade rather than
+                // die.
+                if ( ! $connected ) {
+
+                    $this->new_result = false;
+
+                    return false;
+                }
           }
   
           \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
@@ -261,6 +320,10 @@ class Mysql extends \OWA\Core\Db {
 
         $this->connection        = null;
         $this->connection_status = false;
+
+        // An explicit close is a deliberate reset, so a later connect() may try
+        // again -- unlike the per-query retries connect() refuses.
+        $this->connect_failed    = false;
     }
 
     /**
