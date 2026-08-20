@@ -3588,6 +3588,77 @@ sessions cross midnight, and both tables attribute a session to its start day --
 so the synthetic row is normally absent or tiny. It exists for the cases the
 one-authority rule cannot reach: mixed freshness on one screen.
 
+### Superseded: the derived session table is unnecessary
+
+The three-layer design above lasted one review. Peter's question -- "if we have
+reconciliation, why do we need the session derived table at all?" -- survives
+measurement, and the answer restructures the query architecture. The session
+table was `owa_session` reintroduced by habit; the v2 session primitives were
+already designed to make it redundant, and I had not followed them to their own
+conclusion.
+
+**Every session metric is a single-pass aggregate over the fact table**, because
+each primitive was chosen (for other reasons) to have exactly the algebraic
+property that removes session assembly:
+
+| metric | one-pass form | enabled by |
+|---|---|---|
+| engagement time | `SUM(delta)` by anything | deltas are additive |
+| engaged sessions | `COUNT(DISTINCT IF(engaged, session_id, NULL))` | the flag is sticky |
+| bounce rate | 1 - engaged/sessions | both |
+| sessions by landing page / source / campaign | plain `GROUP BY` | session-scoped values stamped on every event |
+
+The last row is the decisive one. The attribution section already decided
+session-scoped values ride on every event; that decision turns out to govern
+*query shape*, not just attribution. Measured: "sessions by landing page" as a
+first-event join costs **3.1 s over a year and 8.6 s over three** (692k events,
+warm); with the value stamped on every event it is the plain group-by shape at
+**215 ms / 511 ms**. The grain argument dissolves -- with sticky dimensions the
+session's context is embedded in its event rows, so the event table *is* the
+session-grain table for combination purposes. (It is also why `owa_session`
+genuinely is necessary in 1.x: 1.x events carry none of this.)
+
+### And the markers make the interactive shape cheaper still
+
+With `session_start` in the stream, an interactive breakdown does not need
+`COUNT(DISTINCT)` at all: it counts marker rows -- `COUNT(*) WHERE event =
+'session_start' GROUP BY dimension`. No dedup hash, one row per session
+scanned. Proxied with 1.x's `is_entry_page` (one flagged event per session, the
+same shape), warm, sessions-by-host:
+
+| range | marker count | distinct count |
+|---|---|---|
+| one year | **92 ms** | 373 ms |
+| three years | **218 ms** | 1,855 ms |
+
+4x at a year, 8.5x at three, and the gap grows with range. So the division of
+labour lands as:
+
+- **Totals**: the `yyyymmdd` rollup, built by the job from
+  `COUNT(DISTINCT session_id)` -- exact, immune to lost markers, and the
+  expensive DISTINCT is confined to the trailing window where it is bounded
+- **Interactive breakdowns**: count marker rows -- the cheapest possible shape
+- **The gap**: a lost marker undercounts the breakdown, and the reconciliation
+  row absorbs it as `(unknown)` -- which resolves the earlier hedge that the
+  markers "are not carrying the reporting load". They are: they are the
+  breakdown fast path, and the rollup is the safety net under them.
+
+One honesty note from the proxy data: 1.x's flag over-counts slightly --
+28,809 flagged rows against 28,728 distinct sessions (**+0.28%**), duplicate
+flags within a session. Real `session_start` emission has the same failure mode
+(two tabs racing at session start), so a *negative* remainder -- breakdown
+exceeding total -- has a known benign cause at roughly that magnitude. The
+never-clamp rule stands, but the envelope flag should name duplicate markers as
+the first thing to check, with defect analysis reserved for remainders beyond
+that scale. Session-grain dedup of markers is the fallback if real traffic
+over-counts worse than the proxy suggests.
+
+**The derived session table demotes to an optional materialization.** Because it
+is derived from retained events, an install whose breakdown latency outgrows
+these shapes can add it later with one rebuild and no migration. It is a cache
+with a trigger condition, not architecture. All numbers above are warm on 692k
+events; a large cold install is exactly where the trigger fires.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**

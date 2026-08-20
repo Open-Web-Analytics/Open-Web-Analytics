@@ -286,20 +286,34 @@ the redundant floor for new-visitor.</div>
   rollup restores exactly that at the session grain.</p>
 </div>
 
-<h4>Three storage layers, and the reconciliation rule</h4>
-<p>Named honestly: the session-grain derived table is <code>owa_session</code>'s grain reborn —
-~30 columns, one row per session. What v2 deletes is the <em>synchronous write path</em> (the
-121-column upsert per request), not the grain, which is irreducible: measured, a day-grain table
-carrying just three dimensions already costs 63% of session-grain's rows (208,657 vs 329,319)
-while answering only those three. Day-grain-with-dimensions is session grain with the flexibility
-amputated.</p>
+<h4>Two storage layers — the session table proved unnecessary</h4>
+<p>An earlier draft kept a session-grain derived table (~30 columns, <code>owa_session</code>'s
+grain reborn). It did not survive review: the v2 session primitives already make every session
+metric a <strong>single-pass aggregate over the fact table</strong>. Deltas are additive, so
+engagement time is <code>SUM(delta)</code> by anything; the engaged flag is sticky, so engaged
+sessions are a <code>DISTINCT IF</code>; and session-scoped values (source, campaign, landing
+page) are stamped on every event — a decision made for attribution that turns out to govern query
+shape. Measured: &ldquo;sessions by landing page&rdquo; as a first-event join costs 3.1&nbsp;s over
+a year; as a plain group-by over sticky values, 215&nbsp;ms. The session's context is embedded in
+its event rows, so the event table <em>is</em> the session-grain table. (This is also why
+<code>owa_session</code> genuinely is needed in 1.x — its events carry none of this.)</p>
 <div class="scroll"><table>
 <thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th>Rows (measured)</th></tr></thead>
 <tbody>
-<tr><td>Fact table</td><td>event</td><td>realtime, and every rebuild below</td><td class="n">692,829</td></tr>
-<tr><td>Derived session table</td><td>session</td><td>breakdowns — every session × dimension pair</td><td class="n">329,319</td></tr>
+<tr><td>Fact table</td><td>event</td><td>realtime, and all breakdowns — one-pass</td><td class="n">692,829</td></tr>
 <tr><td>Day rollup</td><td><code>yyyymmdd</code></td><td>totals and trends, start-day attributed (0.23% of sessions cross midnight)</td><td class="n">5,785</td></tr>
 </tbody></table></div>
+<p><strong>The markers are the breakdown fast path.</strong> With <code>session_start</code> in the
+stream, an interactive breakdown counts marker rows instead of deduplicating session ids —
+measured via 1.x's <code>is_entry_page</code> proxy: <strong>92&nbsp;ms vs 373&nbsp;ms</strong>
+over a year, <strong>218&nbsp;ms vs 1,855&nbsp;ms</strong> over three. The expensive
+<code>DISTINCT</code> is confined to the rollup job, bounded to its trailing window. A lost marker
+undercounts the breakdown and lands in <code>(unknown)</code>; a duplicate marker (tab race)
+overcounts it — the proxy measured <strong>+0.28%</strong> — which is the benign first explanation
+for a negative remainder before it is read as a defect. The derived session table demotes to an
+<em>optional materialization</em>: derived state an install can add later with one rebuild if
+breakdown latency outgrows these shapes, a cache with a trigger condition rather than
+architecture.</p>
 <p><strong>Where a total and a breakdown meet on one screen, the total is authoritative and the
 API closes the gap</strong> — a synthetic row with dimension value <code>(unknown)</code> and the
 remainder as its metric value, which is simply true: sessions the total can see and the breakdown
