@@ -1542,24 +1542,38 @@ cookie format and `owa_`-prefixed parameters; v2 mode writes the consolidated
 format and unprefixed ones. Capture logic, transport and state management are
 shared; only serialisation at the edges differs.
 
-That also settles where the cookie and namespace cleanup belongs, and it
-inverts the usual direction. **Do not clean up v1's cookie format.** Because v2
-uses its own namespace, reworking v1's encoding buys existing users a few bytes
-and is then discarded -- and doing it in place means shipping a dual-format
-reader and a transition window in which a misread cookie costs a visitor
-identity. Real risk, no carry-over.
+**The state cleanup is additive, and should ship in 1.x.** Two facts settle it.
 
-In v2 the same cleanup is free: a new namespace has no legacy format to read, so
-the single serialisation format, the one-character keys, the domain hash as a
-short field and the dropped `owa_` parameter prefix all land on the first write.
-The same reasoning applies to parameter names -- v2's tracker talks to v2's
-ingestion path and can name things freely, where 1.x would have to accept both
-spellings during a transition.
+The keys already overlap almost entirely:
 
-The general rule this suggests, and the reverse of the additive list above:
-**anything whose cost is a migration should wait for v2, where there is nothing
-to migrate.** Anything whose cost is only the work itself should ship in 1.x,
-where it starts paying immediately.
+```
+v: vid, fsts, nps, dsfs          visitor identity and history
+s: sid, last_req, referer, dsps  session
+c: attribs                       attribution
+```
+
+v2 needs exactly this set plus an engagement accumulator and the engaged flag,
+so the state model is being *extended by two fields*, not replaced. They are
+also already short -- three and four characters, not the full words claimed
+earlier when comparing with GA, so the waste is in the separators (`|||` and
+`=>`) rather than the key names.
+
+And **the dual-format reader already exists**. `Util.getCookieValueFormat()`
+sniffs the first character -- `{` means JSON, anything else means `assoc` -- so
+changing what is *written* is safe today: existing cookies keep parsing, new
+ones use the chosen format, and visitors upgrade on their next write. The
+migration risk that would have justified deferring this is not present.
+
+So unifying on one write format, deleting the `format` argument on
+`registerStore`, collapsing the two encode paths and dropping the optionality of
+`hashCookiesToDomain` are all **shared StateManager work that v2 inherits**,
+with only the namespace prefix differing between modes. Doing it in 1.x means v2
+begins from clean code rather than inheriting the tangle or rewriting it.
+
+What genuinely does belong to v2 alone is the **`owa_` prefix on URL
+parameters**, since 1.x would have to accept both spellings on the ingestion
+side during a transition, while v2's tracker talks to v2's endpoint and can name
+things freely from the first request.
 
 ### What cannot be additive
 
