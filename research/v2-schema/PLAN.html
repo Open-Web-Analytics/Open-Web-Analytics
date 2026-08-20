@@ -568,12 +568,14 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
 decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
 dimension FKs — and bot rows entirely, refused at ingest.</p>
-<div class="note"><strong>The midnight rule.</strong> A partitioned table cannot have a unique key
-omitting the partition column, so a marker retried across midnight would insert twice under a
-receipt-derived date. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
-embedded in <code>session_id</code> — deterministic on every attempt. The entropy fix must keep
-the guid's leading-timestamp construction for this reason: widen the random suffix, keep the time
-prefix.</div>
+<div class="note"><strong>The midnight rule</strong> — re-derived after server materialization,
+still necessary. Dedup rides PK <code>(id, yyyymmdd)</code> (a partitioned table cannot have a
+unique key omitting the partition column), and two cases still hand a second attempt a fresh
+receipt date: the engagement residue (beacon and retry are independent arrivals) and racing tabs
+at session start. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
+embedded in <code>session_id</code> — deterministic on every attempt; the entropy fix must keep
+the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at edge receipt and
+travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
 <p><strong><code>owa_rollup_day</code></strong> — grain <code>(site_id, yyyymmdd)</code> and
 nothing else: <code>events</code>, <code>pageviews</code>, <code>sessions</code> (the reconciliation
 authority), <code>engaged_sessions</code> (threshold applied at build; a change rebuilds, ~50&nbsp;s

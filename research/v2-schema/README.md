@@ -3270,15 +3270,29 @@ undebuggable by construction. The refusal path logs UA and verdict at debug
 level; an ingest concern rather than a schema one, recorded here so it is not
 discovered the hard way.
 
-**The midnight rule.** A partitioned InnoDB table cannot carry a unique key
-that omits the partition column, so the PK is `(id, yyyymmdd)` -- and an
-idempotent event retried across midnight would insert twice under a
-receipt-derived date. Therefore: **idempotent events derive `yyyymmdd` from
-the timestamp embedded in `session_id`**, deterministic on every attempt, so
-both attempts produce the same key wherever they land. Non-idempotent events
-use server receipt time as usual. (The entropy fix must preserve the guid's
+**The midnight rule -- re-derived after the server-materialization changes,
+and still necessary.** A partitioned InnoDB table cannot carry a unique key
+that omits the partition column, so the PK is `(id, yyyymmdd)`: dedup breaks
+whenever a second attempt at the same logical event gets a fresh receipt date.
+Two live cases remain, and both are exactly the content-derived-id events:
+
+- the **engagement residue** -- hide beacon and params-carried retry are two
+  independent HTTP arrivals, each edge-stamped, straddling midnight when the
+  session ends near it
+- **racing tabs at session start** -- two new-session-flagged pageviews are
+  independent arrivals, so the two marker materializations can differ in date
+
+Therefore: **idempotent events derive `yyyymmdd` from the timestamp embedded
+in `session_id`**, deterministic on every attempt. Non-idempotent events use
+server receipt time as usual. (The entropy fix must preserve the guid's
 leading-timestamp construction for this reason -- widen the random suffix,
 keep the time prefix.)
+
+**Pinned alongside it, because the redelivery case depends on it:** `ts` is
+assigned **once, at edge receipt, and travels with the queue item**. Queue
+reprocessing then reuses the original `ts` -- same date, same derived ids --
+which is what removes at-least-once redelivery from the midnight cases. If a
+worker ever re-stamped time at processing, redelivery would rejoin the list.
 
 ### `owa_rollup_day`
 
