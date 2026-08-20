@@ -867,7 +867,9 @@ visitor, and must be deleted with them.
    part; what is missing is a policy that runs without being asked.
 3. **An erasure command** -- `forget visitor=<id>` -- deleting across events,
    recording payloads and rollups, and **tested**, because an erasure path that
-   silently misses a table is worse than none.
+   silently misses a table is worse than none. For declared PII specifically, see
+   the crypto-shredding subsection under visitor identity: destroying a
+   per-subject key reaches backups that a `DELETE` cannot.
 4. **Separate retention from erasure in the design.** Retention is time-based and
    bulk; erasure is subject-based and exact. They share mechanics and must not
    share a code path, or one will quietly satisfy neither.
@@ -1223,11 +1225,77 @@ only to display one specific person, or to erase them -- single-row lookups, not
 a join in the scan path. The objection to a lookup table for search engines was
 that it put a join in the hot path of every report; this puts nothing there.
 
-The payoff is that identity erasure becomes a **one-row delete**: remove the
-mapping and every event carrying that pseudonym is anonymous, permanently,
-without touching the event table at all. Behavioural erasure by `visitor_id`
-still scans, exactly as the privacy section describes -- but the PII half, which
-is the part with a legal clock attached, stops being a scan.
+The payoff is that identity erasure stops being a scan. Removing one subject's
+entry leaves every event carrying that pseudonym permanently anonymous without
+touching the event table at all. Behavioural erasure by `visitor_id` still scans,
+exactly as the privacy section describes -- but the PII half, which is the part
+with a legal clock attached, does not. The next subsection makes that removal
+stronger still.
+
+### Crypto-shredding: destroy the key, not the rows
+
+A better erasure primitive than deleting the mapping row: **encrypt the PII and,
+when erasure is requested, destroy the key**. This is an established technique --
+cryptographic erasure -- and it is the right instinct. It needs one correction
+about *where* the ciphertext lives.
+
+**It cannot go on the event row, for a reason unrelated to cryptography.**
+Reporting has to group by identity, and semantically secure encryption is
+randomised: the same email encrypts to different ciphertext every time, so
+`GROUP BY` is impossible. Making it groupable means deterministic encryption,
+which leaks equality across the whole table and opens frequency analysis -- and a
+deterministic ciphertext used as a grouping key *is* a keyed hash, only
+reversible. So the event would need a stable pseudonym **and** the ciphertext,
+with the pseudonym doing all the reporting work and the ciphertext repeated on
+every row for nothing. That is the denormalisation cost this design set out to
+avoid.
+
+**So the pseudonym stays on the event, and the mapping table holds ciphertext
+instead of plaintext.** Erasure destroys that subject's key. Nothing on the event
+table changes, and nothing is rewritten.
+
+**The real advantage is backups, and it is a large one.** Deleting a mapping row
+does not erase the copies you no longer control -- nightly dumps, a replica, an
+export someone took last quarter. Destroying a key makes every one of those
+unreadable too, including the ones you have forgotten about. That is a
+qualitatively stronger erasure guarantee than a `DELETE`, and it is the argument
+that makes this worth the machinery.
+
+**Two keys, with deliberately different lifetimes.** Conflating them breaks
+either grouping or erasure:
+
+| key | scope | lifetime |
+|---|---|---|
+| pseudonym HMAC key | install-wide | stable; rotating it re-keys every visitor and breaks grouping continuity |
+| PII encryption key | **per subject** | destroyed on erasure |
+
+The pseudonym must be an **HMAC, not a bare hash** -- `sha256(email)` is trivially
+reversible by dictionary, since the email space is guessable, so an unkeyed hash
+on the event table is PII wearing a costume.
+
+**Three caveats, all of which have to be honoured or the guarantee is theatre.**
+
+1. **Keys must be independently random and stored, never derived.** A key
+   computed as `KDF(master_secret, subject_id)` cannot be destroyed -- it is
+   recomputable from material that still exists. This is the mistake that turns
+   crypto-shredding into a no-op.
+2. **The key store inherits the backup problem in miniature.** Restore a
+   month-old key-store backup and the destroyed key returns. The key store needs
+   its own backup and retention policy, narrower than the database's, and that
+   policy is part of the feature rather than an operational detail.
+3. **It covers declared PII only.** An email in a page URL's query string, in a
+   referrer, or in a custom variable is plaintext on the event and denormalised
+   across every row that saw it. The privacy section's "erasure has to scan, not
+   look up" still applies to all of it. Crypto-shredding shrinks the erasure
+   problem to its most legally-loaded field; it does not eliminate it.
+
+**New machinery, but not much.** There is no encryption anywhere in the tree
+today -- no `openssl_encrypt`, no `sodium_crypto` -- so this is genuinely new,
+though libsodium has been in PHP core since 7.2 and the operation is one
+authenticated-encryption call in each direction. `OWA_SECRET`, `OWA_AUTH_KEY` and
+`OWA_NONCE_KEY` establish the config precedent for the install-wide HMAC key; the
+per-subject keys need a table, because there is one per subject and they must be
+individually destroyable.
 
 ### Rejected
 
