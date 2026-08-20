@@ -626,6 +626,25 @@ class Template extends TemplateEngine {
      * request signing exists to make a long-lived key survivable in a URL, and
      * there is no longer a long-lived key here.
      *
+     * **The full API URL must be built here and handed to the overlay. Do not
+     * be tempted to send only the token and let the tracker derive the URL.**
+     *
+     * It looks redundant -- the token already names its action and resource,
+     * and the tracker has a base URL -- but the tracker's base URL is where it
+     * *logs*, which need not be where reporting lives. OWA supports split
+     * deployment deliberately: setEndpoint(), setLoggerEndpoint() and
+     * setApiEndpoint() are independently settable, the RemoteQueue module
+     * exists so a node can receive events somewhere other than the reporting
+     * install, and OWA_USE_STATIC_CONFIG_ONLY exists for a logging-only node
+     * that never touches the reporting database. The admin interface can be on
+     * an entirely different domain from the collector.
+     *
+     * The reporting origin is the only party that knows where reporting lives,
+     * and it is already the party minting this link, so the API URL and the
+     * token both travel from here. Deriving it client-side works on a
+     * single-box install and fails silently on exactly the deployments that
+     * most need it right, by fetching from a host that never answers.
+     *
      * @param    array    $params        the API request params
      * @param    string    $resourceKey    which param names the resource
      * @return    string

@@ -35,6 +35,15 @@ namespace OWA\Core;
  * looking the token up, so there is no table, no schema version to bump and no
  * cleanup job. The usual objection to stateless tokens -- that they cannot be
  * revoked before they expire -- is answered by the expiry being minutes.
+ *
+ * **This token does not replace the API URL the admin interface sends with it.**
+ * The token names an action and a resource, so it looks as though the overlay
+ * could build its own request URL and the fragment could carry the token alone.
+ * It cannot: the tracker's base URL is where it *logs*, and OWA supports split
+ * deployment on purpose (independent logger/API endpoints, RemoteQueue,
+ * OWA_USE_STATIC_CONFIG_ONLY for a logging-only node). The reporting origin is
+ * the only party that knows where reporting lives. See the note on
+ * Template::makeOverlayApiLink().
  */
 class OverlayToken {
 
