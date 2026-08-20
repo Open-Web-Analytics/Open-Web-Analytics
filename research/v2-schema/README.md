@@ -572,6 +572,103 @@ scheduler jobs, and running several stops requiring a global lock. The
 scheduler that shipped in 1.11 is what makes worker jobs a configuration
 question rather than a deployment one.
 
+## Domstreams
+
+### Measured
+
+```
+229,663 recordings on a real installation
+  average    1,809 B      p99  6,098 B      max  52,521 B
+  blob total   396 MB     table total 656 MB
+```
+
+**Safely inside SQS's 256 KB limit** -- the largest recording measured is 20% of
+it, so the queue concern raised above does not apply to this data. Worth noting
+the caveat: the installation measured is not a heavy single-page application,
+where longer sessions could close that gap.
+
+What is stored is not a DOM recording. It is **pointer and scroll telemetry**:
+
+```json
+[{"timestamp":1422088758,"event_type":"dom.scroll","x":0,"y":290},
+ {"timestamp":1422088758,"event_type":"dom.scroll","x":0,"y":292},
+ {"timestamp":1422088758,"event_type":"dom.scroll","x":0,"y":294}, ...]
+```
+
+Replayed by `Player.js` (335 lines) as a cursor animated over a freshly loaded
+copy of the page.
+
+### Five things wrong with it
+
+**1. The encoding is grossly redundant, and this is measured.** Consecutive
+samples repeat every key and the whole timestamp to record two pixels of scroll
+-- roughly 50 bytes per sample. Over 200 recordings:
+
+| encoding | size | reduction |
+|---|---|---|
+| raw JSON as stored today | 637,441 B | 1.0x |
+| gzip only | 65,591 B | 9.7x |
+| delta-encoded tuples | 104,405 B | 6.1x |
+| delta tuples + gzip | 21,304 B | **29.9x** |
+
+396 MB becomes roughly 13 MB with no change to the feature at all.
+
+**2. It is a 46-column fact table wrapped around a blob.** About forty of those
+columns are session, campaign, geo and user-agent context copied from the page
+request the recording belongs to. A recording is an **attachment to a pageview**,
+not a parallel fact in its own right.
+
+**3. The payload is inline.** Any query against the table drags the blobs with
+it; the table is 656 MB for 229k rows. Metadata that is queried and payload that
+is streamed want separating -- and a payload is object-storage shaped, which
+matters more once a column store is in play, where large blobs are the worst
+case.
+
+**4. Replay is fragile by construction.** Coordinates are animated over a
+*currently loaded* page. When the page has changed -- content, CSS, layout --
+the replay is against a page the visitor never saw, and the positions mean
+nothing. Nothing detects this; the replay simply misleads.
+
+**5. Two different features share one mechanism.** Aggregate use (where do
+people scroll, click, hesitate) needs **density**, not individual streams.
+Individual use (watch one visitor) needs per-session detail. Both are served
+today by retaining every raw stream, so the aggregate feature pays individual
+storage costs forever. Aggregating into a per-page grid and expiring the raw
+streams after a short window would collapse most of the 396 MB -- and this is
+probably the single largest win available, larger even than the encoding.
+
+### On rrweb, and why "better" is not obvious
+
+The modern standard for this is rrweb: capture a DOM snapshot plus mutations,
+replay faithfully. It would replace `Heatmap.js` (614 lines) and `Player.js`
+(335) with a maintained library and fix the fragility in point 4.
+
+Two reasons not to reach for it reflexively:
+
+- **Payloads grow by one to two orders of magnitude.** The 256 KB queue limit
+  stops being comfortable, and 396 MB of storage becomes tens of gigabytes.
+- **It records page content.** Form values, names, anything on screen. rrweb
+  offers masking, but the default posture inverts.
+
+OWA's coordinate-only capture is **privacy-preserving by construction**: it
+records no content, because it never had any to record. For a self-hosted tool
+whose appeal is not sending visitor data to Google, that is a property worth
+keeping deliberately rather than an limitation to be corrected.
+
+### What v2 should do
+
+1. **Keep coordinate-only capture** as the default, and say why in the docs --
+   it is a feature.
+2. **Fix the encoding**: delta tuples plus gzip, measured at ~30x.
+3. **Split aggregate from individual**: compute scroll and movement density into
+   a per-page aggregate, retain that indefinitely, expire raw streams on a short
+   window. Different data, different lifetimes.
+4. **Make a recording an attachment to an event**, not a parallel fact row --
+   which deletes about forty duplicated context columns.
+5. **Store the payload outside the row**, so metadata queries do not drag it.
+6. If faithful replay is genuinely wanted, offer **rrweb as an opt-in backend**
+   with its storage and privacy costs stated plainly, rather than as the default.
+
 ## Pros and cons
 
 **For the single table:**
