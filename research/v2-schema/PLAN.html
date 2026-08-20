@@ -368,8 +368,8 @@ which turns the overlap period into a rubber stamp.</li>
 <ul>
 <li><strong>Anonymise by default.</strong> The implementation exists; the default is simply wrong
 for a privacy-positioned product.</li>
-<li><strong>Per-site retention, enforced by a scheduled job</strong>, with a real default rather
-than “forever”.</li>
+<li><strong>Installation-wide retention, enforced by a scheduled job</strong>, with a real
+default rather than “forever” — deliberately not per site, see §4.5.</li>
 <li><strong>An erasure command</strong> — <code>forget visitor=&lt;id&gt;</code> — reaching events,
 recording payloads and rollups, and <em>tested</em>, because an erasure path that silently misses
 a table is worse than none.</li>
@@ -503,7 +503,7 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     reads that as “revoke everyone”. Replace with checkbox rows and a rendered-ids field so
     absence stops meaning revocation</li>
     <li>Report config as JSON, retrofitted to v1 reports</li>
-    <li>Per-site retention as a scheduled job</li>
+    <li>Installation-wide retention as a scheduled job</li>
   </ul>
 </div>
 
@@ -665,9 +665,14 @@ would pass either way.</p>
 is a column, isolation is a <code>WHERE</code>, and it already leads the composite indexes.
 Permissions are already per-site.</p>
 <p>Two things change. <code>site_id</code> becomes more load-bearing — it scopes page identity as
-<code>hash(site_id + uri)</code> — so it must be immutable. And per-site retention moves from a
-nicety to a requirement. <code>site_family</code> is written by site creation and read nowhere;
-it was built for a UI that never shipped, and should be dropped rather than ported.</p>
+<code>hash(site_id + uri)</code> — so it must be immutable. And <code>site_family</code> is
+written by site creation and read nowhere; it was built for a UI that never shipped, and should be
+dropped rather than ported.</p>
+<p><strong>Retention stays installation-wide, not per site.</strong> A partition of the shared event
+table holds every site’s rows, so varying retention by site could not be a partition drop — it
+would need a row-level <code>DELETE</code> sweeping every partition, leaving fragmentation behind
+and competing with live writes. Uniform retention is a metadata-only partition drop, effectively
+instant, and already implemented. The single table makes the simpler policy the cheap one.</p>
 
 <h3 id="s46"><span class="num">4.6</span>Open questions <span class="chip c-open">Open</span></h3>
 <div class="scroll"><table>

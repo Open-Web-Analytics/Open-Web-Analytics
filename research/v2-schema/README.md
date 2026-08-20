@@ -862,9 +862,18 @@ visitor, and must be deleted with them.
 1. **Anonymise by default.** The implementation exists; the default is wrong. A
    privacy-positioned product should ship privacy-preserving and let an
    administrator opt out, not the reverse.
-2. **A retention policy per site**, enforced by a scheduled job, with a sane
-   default rather than "forever". `partition-drop` already does the mechanical
-   part; what is missing is a policy that runs without being asked.
+2. **An installation-wide retention policy**, enforced by a scheduled job, with a
+   sane default rather than "forever". `partition-drop` already does the
+   mechanical part; what is missing is a policy that runs without being asked.
+
+   **Deliberately not per site.** Retention that varies by site cannot be served
+   by dropping a partition, because a partition of the shared event table holds
+   every site's rows -- it would need `DELETE ... WHERE site_id = ? AND yyyymmdd
+   < ?`, a row-level delete sweeping every partition, leaving fragmentation
+   behind and competing with live writes. Installation-wide retention is a
+   partition drop: metadata-only, effectively instant, and already implemented.
+   The single event table makes uniform retention cheap and varying retention
+   expensive, so the simpler policy is also the one the storage model wants.
 3. **An erasure command** -- `forget visitor=<id>` -- deleting across events,
    recording payloads and rollups, and **tested**, because an erasure path that
    silently misses a table is worse than none. For declared PII specifically, see
