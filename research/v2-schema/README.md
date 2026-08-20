@@ -992,6 +992,88 @@ What cannot carry over is anything shaped by the star schema itself -- the
 `report_name` indirection, and any endpoint whose response embeds the six-table
 structure.
 
+## Bot filtering
+
+The largest single lever on data quality, and the weakest implementation
+measured.
+
+### How it works today
+
+`robotRegexCheck()` is a case-insensitive substring match against 17 hardcoded
+tokens:
+
+```
+bot, crawl, spider, curl, host, localhost, java, libcurl, libwww,
+lwp, perl, php, wget, search, slurp, robot, WordPress.com mShots
+```
+
+Matched traffic is discarded before logging unless `log_robots` is set. On the
+installation measured, 17,763 of 325,836 sessions are flagged -- 5.5%, against a
+web where automated traffic is routinely a third or more of raw hits.
+
+### A defect, verified
+
+```php
+$match = stripos( $this->ua, $robot );
+if ( $match ) { break; }
+```
+
+**`stripos()` returns `0` for a match at position 0, and `if ( $match )` treats
+that as false.** Any user agent that *begins* with a robot token is therefore
+missed:
+
+```
+curl/7.68.0                   ->  not detected
+Wget/1.21.3                   ->  not detected
+Java/17.0.1                   ->  not detected
+python-requests/2.31.0 curl   ->  detected  (match at position 23)
+```
+
+The same token is caught mid-string and missed at the start -- and `curl`,
+`wget`, `java`, `php`, `perl`, `lwp` and `libwww` are precisely the tokens that
+lead a user agent, so the misses concentrate on the most unambiguously
+non-human traffic. A one-character fix (`!== false`) closes it.
+
+### The other weaknesses
+
+**Substring matching is far too blunt.** `search` matches "Researcher",
+`host` matches any UA containing the word, `java` matches anything mentioning
+Java. Each is a false positive discarding real traffic silently, because
+non-logging leaves no record.
+
+**The list is hardcoded and unmaintained.** Modern crawlers that happen to
+contain `bot` are caught by luck; those that do not are invisible. There is no
+update path short of a release.
+
+**Detection happens once, at collection, and is final.** This is where bot
+filtering collides with a decision made elsewhere in this document: dropping
+post-hoc enrichment means a crawler recognised *later* can never be
+reclassified. That trade was accepted for referer titles. It is much harder to
+accept here, because bot misclassification is the single most common reason an
+analytics number is wrong, and the correction usually arrives after the fact.
+
+### What v2 should do
+
+1. **Fix the position-zero bug in 1.x now.** One character, and it recovers the
+   most obvious bots on every existing installation.
+2. **Match tokens, not substrings** -- anchored or delimiter-aware -- so
+   "Researcher" stops reading as a crawler.
+3. **Make the list updatable** without a release, and shipped with a sane
+   default. This is data, not code.
+4. **Record the verdict rather than acting on it silently.** Store an
+   `is_bot` determination with the reason and the rule version, instead of
+   discarding the event. Storage is cheap; a discarded event is unrecoverable
+   and unauditable, and "why did my traffic drop" is unanswerable today.
+5. **Keep reclassification possible.** Storing rather than discarding is what
+   makes a later correction feasible at all -- and it is the one place the
+   no-post-hoc-enrichment decision should be revisited, because the value of
+   fixing bot attribution retroactively is much higher than for a referer title.
+
+Points 1 to 3 are additive to 1.x and inherited whole. Point 4 changes what is
+stored, so it belongs with the schema; point 5 is a deliberate exception to a
+decision recorded elsewhere and should be argued on its own merits rather than
+assumed.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
