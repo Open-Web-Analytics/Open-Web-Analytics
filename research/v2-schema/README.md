@@ -886,6 +886,95 @@ does not carry over -- but the **command surface, the tests and the semantics do
 and having them defined against the harder schema first is a reasonable way to
 prove them.
 
+## The API as the contract
+
+Once reporting is client-rendered, the API stops being a side door and becomes
+the product's interface. Three things follow: it has to be complete enough to
+build a UI on, stable enough to build integrations on, and versioned so that
+neither commitment blocks the other.
+
+### What already exists, and is better than the route count suggests
+
+```
+v1  domstreams  GET
+v1  sites       GET, POST
+v1  users       GET, POST, DELETE
+v1  siteUsers   POST
+v1  reports     GET
+```
+
+Eight routes, but `reports` is the general-purpose one -- it accepts `metrics`,
+`dimensions`, `segment`, `period`, `startDate`, `endDate`, `sort`, `siteId`,
+`report_name` -- so the query interface the whole reporting UI needs is already
+there in outline, and already capability-gated on `view_reports`.
+
+Two foundations worth naming because they mean less new mechanism than expected:
+
+- **Routes are keyed by version, name and method**, so a `v2` namespace can be
+  registered beside `v1` and both serve simultaneously. The API supports the
+  same coexistence the schema strategy relies on, natively and today.
+- **Pagination is modelled already** -- `PaginatedResultSet` carries `page`,
+  `resultsPerPage`, `total_pages`, a total row count and a `more` flag.
+
+### What is missing
+
+**Discovery.** There is no endpoint listing metrics, dimensions, or which
+combinations are legal -- measured earlier at 5,493 valid pairs out of 7,800. A
+client-rendered UI cannot build a segment picker without it, and today it would
+have to hardcode what the server already knows.
+
+**Server-side enforcement of the combination rules.** The star schema refuses
+`bounceRate x pagePath` today by construction. A single event table will happily
+answer it with an inflated total, so the registry has to refuse it explicitly --
+and the API is where that refusal has to live, since the client cannot be
+trusted to self-censor.
+
+**An error taxonomy.** Responses carry `status_code` and an `error` message
+string. A client needs codes it can act on -- an illegal metric and dimension
+combination is a different thing from an expired token or a rate limit, and only
+one of them is worth retrying.
+
+**A permissions endpoint.** The client must know which sites it may show before
+rendering a site picker, and which capabilities the caller holds before offering
+actions it cannot perform.
+
+**Report and widget definitions**, served from the same place they are stored,
+per the UI section.
+
+**Rate limiting**, once scoped tokens exist and the API is a supported
+integration surface rather than an internal detail.
+
+### Query shape
+
+The existing style is a compact URL DSL -- `metrics=a,b&dimensions=c,d&constraints=...`
+-- which is cacheable, loggable and easy to hand-write. It should stay for
+ordinary queries. What it will not carry is a complex segment expression, so
+**POST with a JSON body** belongs alongside it for those, with identical
+semantics. Two encodings of one query language, not two query languages.
+
+### Versioning and stability
+
+The route registry already gives the mechanism. What is needed is the
+**commitment**: `v1` is frozen when `v2` opens, receiving fixes but no changes,
+so existing integrations keep working across the whole coexistence period. That
+is the same bargain the schema strategy makes -- nothing is taken away until the
+administrator chooses to remove it.
+
+### Additive to 1.x
+
+Most of it, and unusually cleanly, because the API is the one layer the schema
+change does not reshape -- the same questions get asked of different storage.
+
+- **discovery, permissions and error codes** can ship in 1.x and be inherited
+  whole; 1.x's own JS benefits from all three
+- **the combination rules** are enforceable in 1.x from the same registry, where
+  they currently exist only as a property of which fact table can answer
+- **scoped tokens and rate limiting** pair with the auth work already described
+
+What cannot carry over is anything shaped by the star schema itself -- the
+`report_name` indirection, and any endpoint whose response embeds the six-table
+structure.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
