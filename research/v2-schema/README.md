@@ -1530,6 +1530,37 @@ security work** -- the parts the schema change does not touch. Anything that
 lands data in a v1 table is plumbing with a known expiry date, which is fine as
 long as it is chosen knowingly.
 
+### One tracker, two protocol modes
+
+The additive argument above holds only if v2's tracker is an **evolution of the
+same source**, not a fork. If it were a fork, every row in the tracker-additive
+table -- engagement deltas, chunk `seq`, element paths, beacon transport --
+would have to be written twice, and the argument collapses.
+
+So: **one tracker codebase with a protocol mode.** v1 mode writes the existing
+cookie format and `owa_`-prefixed parameters; v2 mode writes the consolidated
+format and unprefixed ones. Capture logic, transport and state management are
+shared; only serialisation at the edges differs.
+
+That also settles where the cookie and namespace cleanup belongs, and it
+inverts the usual direction. **Do not clean up v1's cookie format.** Because v2
+uses its own namespace, reworking v1's encoding buys existing users a few bytes
+and is then discarded -- and doing it in place means shipping a dual-format
+reader and a transition window in which a misread cookie costs a visitor
+identity. Real risk, no carry-over.
+
+In v2 the same cleanup is free: a new namespace has no legacy format to read, so
+the single serialisation format, the one-character keys, the domain hash as a
+short field and the dropped `owa_` parameter prefix all land on the first write.
+The same reasoning applies to parameter names -- v2's tracker talks to v2's
+ingestion path and can name things freely, where 1.x would have to accept both
+spellings during a transition.
+
+The general rule this suggests, and the reverse of the additive list above:
+**anything whose cost is a migration should wait for v2, where there is nothing
+to migrate.** Anything whose cost is only the work itself should ship in 1.x,
+where it starts paying immediately.
+
 ### What cannot be additive
 
 - **the single event table**, and everything downstream of it: reports as data,
