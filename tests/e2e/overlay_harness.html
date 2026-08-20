@@ -66,15 +66,43 @@
             // containing "+" would be corrupted; percent-encoding the base64
             // (encodeURIComponent) is what survives that urldecode intact -- the
             // decode path is built to reverse a url-encoded base64.
+            // The overlay action and its API url may be supplied by the test.
+            //
+            // Without them this stays what it was: loadHeatmap against a
+            // well-formed but deliberately unreachable url, which is all the
+            // DOM-render assertions need.
+            //
+            // With them, the test can point the overlay at the REAL API on a
+            // DIFFERENT ORIGIN and assert the fetch itself. That is the case
+            // that matters now the transport is CORS rather than JSONP: JSONP
+            // failed silently by never calling back, so nothing here could tell
+            // a working fetch from a broken one.
             var overlayParams = {
-                action: 'loadHeatmap',
-                // A well-formed but deliberately unreachable API url. The heatmap
-                // builds its control panel + canvas BEFORE the first data fetch,
-                // and the fetch is JSONP (no CORS error, just never calls back),
-                // so an unresolved fetch does not affect what we assert.
-                api_url: base + 'api/?owa_do=base.reportHeatmap',
-                document_id: 'e2e-overlay-doc'
+                action: params.get('action') || 'loadHeatmap',
+                api_url: params.get('api') || (base + 'api/?owa_do=base.reportHeatmap'),
+                document_id: params.get('document_id') || 'e2e-overlay-doc'
             };
+
+            if (params.get('domstream_guid')) {
+                overlayParams.domstream_guid = params.get('domstream_guid');
+            }
+
+            // Record fetch outcomes so a test can assert the overlay actually
+            // received data, rather than inferring it from rendered DOM.
+            window.owaOverlayFetches = [];
+            (function (open) {
+                XMLHttpRequest.prototype.open = function (method, url) {
+                    this.addEventListener('loadend', function () {
+                        window.owaOverlayFetches.push({
+                            url: String(url),
+                            status: this.status,
+                            length: (this.responseText || '').length,
+                            body: (this.responseText || '').slice(0, 400)
+                        });
+                    });
+                    return open.apply(this, arguments);
+                };
+            })(XMLHttpRequest.prototype.open);
             var encoded = encodeURIComponent(btoa(JSON.stringify(overlayParams)));
             // Set the fragment BEFORE the tracker bundle loads so
             // checkForOverlaySession() (run from the Tracker constructor) sees it.

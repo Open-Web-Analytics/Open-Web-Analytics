@@ -214,8 +214,18 @@ class Heatmap {
         jQuery.ajax({
             url: url,
            
-            dataType: 'jsonp',
-            jsonp: 'owa_jsonpCallback',
+            // A plain cross-origin GET, not JSONP.
+            //
+            // JSONP returns the body as a <script> the browser executes, which
+            // makes the endpoint readable by any page on the internet. It was
+            // used here only because these run on the tracked site and call
+            // back to the OWA origin, and CORS did not work -- addCorsHeaders()
+            // never emitted a header, and isHttps() let a client's Origin flip
+            // the server's scheme and break the request signature. Both fixed.
+            //
+            // Credentials travel in the query string, so this stays a CORS
+            // "simple request" and costs no preflight round trip.
+            dataType: 'json',
             success: function(data) {
                 that.plotClickData(data);
             }
