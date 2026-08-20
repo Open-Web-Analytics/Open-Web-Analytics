@@ -1394,6 +1394,40 @@ returning-visitor metrics break permanently at that boundary. The fix is cheap
 window -- but only if it ships **before** the format changes, which means it
 belongs in 1.x rather than in v2.
 
+**The cookie domain hash stays.** `cdh` is `crc32(cookie_domain)` stored inside
+each store's value, and the load path iterates `cookie_values` -- plural,
+indexed -- because **several cookies can share one name**. A cookie called
+`owa_v` may exist at `example.com` and at `.example.com` simultaneously, and
+`document.cookie` returns both as bare `name=value` pairs: **JavaScript cannot
+read a cookie's domain attribute**, so without a marker inside the value there is
+no way to tell them apart.
+
+The Cookie Store API is the obvious modern replacement and explicitly declines
+the job. It is now supported in Safari 18.5+ and Firefox 138+ as well as
+Chromium, but **Safari and Firefox implemented only the subset matching
+`document.cookie` -- names and values, no domain** -- having agreed not to expose
+more than `document.cookie` already does. The limitation is not merely
+unchanged; it has been reaffirmed by the standards process.
+
+Two further reasons it earns its place. Duplicate-name cookies are routine
+rather than exotic: any change to `cookie_domain` -- apex to `.apex`, `www` to
+bare, adding a subdomain -- leaves the previous cookie in place and the browser
+sends both, and the WordPress-plugin installs sit on exactly the multisite and
+subdomain setups where that happens. And the fallback is arbitrary: with
+`hashCookiesToDomain` off the code takes "the last cookie set by that name",
+which is not reliably ordered, so it picks close to at random when duplicates
+exist.
+
+What should change is its encoding, not its existence:
+
+- it becomes a one-character key under the single format, rather than the four
+  bytes `cdh` costs on every request to the domain
+- **`hashCookiesToDomain` should go** -- the check is either necessary or
+  harmless, and making it optional only preserves a path on which the arbitrary
+  fallback is reachable
+- it belongs at the front alongside the format version marker: both are cookie
+  metadata, and both are read before the payload is trusted
+
 **Drop the `owa_` prefix from URL parameters.** It is a byproduct of OWA once
 being embeddable inside other applications, a design since removed, so the bytes
 are paid on every tracking request for a collision that can no longer occur. The
