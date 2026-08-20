@@ -41,3 +41,15 @@ if (!defined('OWA_DB_TYPE') && !file_exists(__DIR__ . '/../owa-config.php')) {
     // engine to load so the OWA_DTD_* column-type constants get defined.
     define('OWA_DB_TYPE', 'mysql');
 }
+
+if (!defined('OWA_AUTH_KEY') && !file_exists(__DIR__ . '/../owa-config.php')) {
+    // Same reason, different constant. Cache::makeCacheId() hashes with
+    // OWA_AUTH_KEY, so anything that touches the cache singleton -- Browscap
+    // does, in its constructor -- fatals without it. A developer machine has a
+    // config file supplying one, CI does not, which is exactly the shape of
+    // failure that passes locally and reddens on the runner.
+    //
+    // The value is irrelevant: nothing here verifies a signature, and no test
+    // may depend on a particular key.
+    define('OWA_AUTH_KEY', 'test-suite-not-a-real-key');
+}

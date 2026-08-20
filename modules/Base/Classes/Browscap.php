@@ -159,11 +159,14 @@ class Browscap extends \OWA\Core\Base {
 
         foreach ( $robots as $k => $robot ) {
 
-            $match = stripos( $this->ua , $robot );
-
-            if ( $match ) {
+            // stripos() returns int 0 for a match at the start of the string,
+            // which is falsy -- so a truthy check here let any UA *beginning*
+            // with a robot token (curl/..., Wget/..., Java/...) pass as human.
+            if ( stripos( $this->ua , $robot ) !== false ) {
 
                 \OWA\Core\CoreAPI::debug('Robot detect string found: ' . $robot );
+
+                $match = true;
 
                 break;
             }
