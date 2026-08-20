@@ -323,6 +323,109 @@ and its follow-ups, dimension rows that could not be derived, dangling
 references, two metric definitions disagreeing. None of those failure modes has
 anywhere to live in a single event table.
 
+## The data-access layer, PDO, and where the seam belongs
+
+Measured against the current tree:
+
+```
+Core/Db.php        3,171 lines, 118 methods -- a structural query builder
+                   (select / where / join / groupBy / orderBy / having / limit)
+Core/Db/Mysql.php    567 lines -- driver plus 65 dialect constants
+Core/Entity.php      966 lines -- active record
+raw mysqli_ calls outside the driver:  0
+```
+
+**Zero driver leakage** is the number that matters. The seam is already in the
+right place: a structural builder above a driver, with dialect fragments as
+constants. Homegrown and dated, but architecturally sound.
+
+### The single table barely helps PDO adoption -- it was already easy
+
+Swapping mysqli for PDO means rewriting **one 567-line file**, because nothing
+above it touches mysqli. The schema change does not move that.
+
+What the schema change alters is the **query vocabulary**, which is what
+portability actually turns on. Today the builder can emit arbitrary n-way joins
+across six fact and eleven dimension tables. In an event model it is: filter by
+site, date and event type, filter on a column or JSON parameter, group,
+aggregate, order, limit. A dozen constructs rather than an open-ended join
+graph -- the difference between a query layer that can be implemented three
+times and one that cannot.
+
+### PDO yes, but not as the abstraction
+
+PDO is a **connection and statement** abstraction. It is not a dialect
+abstraction, and it is not a transport abstraction. It covers MySQL, Postgres,
+SQLite and SQL Server -- SQL over a socket with prepared statements. It does
+**not** cover BigQuery, which is a REST API with no PDO driver; ClickHouse and
+DuckDB have third-party drivers of varying maturity.
+
+Adopting PDO *as the portability layer* is therefore the trap: PDO idioms leak
+upward -- placeholder styles, fetch modes, driver quirks -- and the first
+non-SQL backend forces a second re-abstraction. PDO belongs as one backend
+family **under** the existing seam:
+
+```
+reports / ResultSetManager
+        |  structural query description   <- the portability seam
+   +----+-----------------+
+ SQL backends          columnar backends
+ (via PDO)             (BigQuery REST, ClickHouse HTTP)
+```
+
+The one change that makes this real: `generateSelectQuerySql()` assembles a SQL
+**string** inside the builder today. A columnar backend needs the builder to
+hand over a query **object** that each backend compiles. That is a refactor of
+the emit stage, not of the `select()` / `where()` / `groupBy()` API.
+
+Two benefits worth having regardless of any of the above: `prepare()` is
+currently `mysqli_real_escape_string` -- escaping, not parameter binding -- so
+PDO brings real bound parameters and removes a class of review burden; and it
+retires the hand-rolled connection handling, including the failure path fixed
+in #1014.
+
+## A columnar store does not remove the need for a SQL one
+
+If tracking and reporting move to a column store, the administrative side still
+wants a transactional one. The two halves have opposite requirements:
+
+| | events | administration |
+|---|---|---|
+| shape | append-only, high volume | small, mutable |
+| access | scan and aggregate | read and update single rows |
+| examples | `owa_event` | sites, users, goals, configuration, event queue |
+| suits | columnar | row store |
+
+Column stores are poor at row-level update and delete, which is exactly what
+user management, goal editing, configuration and **the event queue** consist
+of -- a queue in particular claims and deletes individual rows, which is close
+to a worst case.
+
+The saving grace is scale: the administrative tables are tiny. On the
+installation measured here, `owa_site` holds one row and `owa_configuration`
+holds one. This is SQLite-scale data, not a second database cluster.
+
+Two consequences for the design:
+
+**Cross-store joins must not be required.** Reports that show a site's name or
+domain cannot join a columnar event table to a SQL site table. Both available
+answers are already in the plan: the site id is denormalised onto every event,
+and the administrative side is small enough to fetch and join in application
+code at single-digit row counts.
+
+**The split must be logical before it is physical.** The common deployment --
+one self-hosted MySQL -- must remain the default, with the columnar option for
+large installations. So the boundary belongs in code as two repositories, an
+administrative one and an event one, which may point at the same connection.
+Splitting them later then becomes configuration rather than a refactor, and the
+default install never pays for an option it does not use.
+
+Where the sessions rollup lives follows from its size rather than its origin:
+50.2 MB for 312,518 sessions is comfortably row-store scale, and it is rebuilt
+by a scheduled job rather than queried at high volume -- so it sits naturally
+with the administrative store, on the same side of the boundary as the job that
+maintains it.
+
 ## Pros and cons
 
 **For the single table:**
