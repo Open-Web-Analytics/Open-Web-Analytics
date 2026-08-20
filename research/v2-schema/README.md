@@ -3441,18 +3441,30 @@ dimensions), against the column spec above:
 
 ### Combinations gained -- and the guard they require
 
-1.x's entity boundaries made most cross-grain pairs *impossible*: the resolver
-intersects metric-component entity sets (`reduceTables`), so `bounceRate x
-pagePath` is refused today. One grain removes the wall:
+1.x's entity boundaries refuse cross-grain pairs unless someone hand-built a
+bridge: the resolver intersects metric-component entity sets (`reduceTables`),
+and the escape hatch is **registering the metric again on another entity** --
+which 1.x actually does. `visits` is registered twice (`base.session` distinct
+`id`, *and* `base.request` distinct `session_id`), which is precisely why
+`visits x pageUri` works in 1.x today (Peter's correction -- an earlier draft
+wrongly listed it as gained). The nine dual-implementation commerce metrics are
+the same mechanism: overlap support built by hand, one re-registration at a
+time, with the drift risk of every hand-built thing.
 
-- **session metrics x event dimensions**: `visits x pageUri` ("sessions that
-  touched this page"), `bounceRate x landing page` -- meaningful, common in
-  GA4, structurally unaskable in 1.x
-- **engagement x anything**: by source, by campaign, by country, by custom
-  param -- a whole metric class times every dimension
+So what v2 gains is not any single pair -- it is **every overlapping pair
+nobody hand-wrote a second registration for**, at zero marginal cost:
+
+- `visitDuration x pageUri`, `pagesPerVisit x source`-style pairs whose second
+  implementation was never written
+- **engagement x anything** -- a new metric class times every dimension
 - **commerce funnel x attribution**: abandonment by source/campaign
 - **any custom param x any metric**: v1's cv dimensions were pinned to the
-  entities that carried the slots
+  entities carrying the slots, and a params path can never be pre-registered
+
+And the scope algebra replaces the re-registration mechanism itself: one
+declaration per metric instead of N implementations, with the overlap verdict
+computed rather than hand-authored -- which also retires the drift between
+duplicate definitions that the commerce metrics already exhibit.
 
 The inversion, stated once more because it is now concrete: the schema no
 longer refuses nonsense, so the registry must. `bounceRate x pagePath` (any
