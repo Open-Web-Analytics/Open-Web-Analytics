@@ -629,18 +629,19 @@ case.
 the replay is against a page the visitor never saw, and the positions mean
 nothing. Nothing detects this; the replay simply misleads.
 
-**5. The recording list must be segmentable, and today it is not.**
+**5. The recording list is meant to be segmentable, and the UI has not caught
+up.**
 
 Choosing which replays to watch is the whole problem: an unfiltered list of
-229,663 recordings is unusable. The list needs the ordinary metric and dimension
+229,663 recordings is unusable. The list wants the ordinary metric and dimension
 vocabulary -- recordings from mobile visitors, from a campaign, from sessions
 that converted or stayed engaged.
 
-Two things are true about that today, and they pull in opposite directions.
-
-The 46 columns exist to make a recording a reportable entity, and the wiki
+The schema is already built for that, deliberately. A domstream is a first-class
+fact with the full context of the page request it belongs to, and the wiki
 documents a `domstream` metric group combining with eight dimension families.
-But `DomstreamsRestController` hand-writes its query --
+What has not happened is the UI: `DomstreamsRestController` hand-writes its
+query --
 
 ```php
 $rsm->db->selectFrom('owa_domstream');
@@ -649,21 +650,27 @@ $rsm->db->where('site_id', ...);
 $rsm->db->groupby('domstream_guid');
 ```
 
--- bypassing the resolver entirely and filtering on page URL, site and date
-only. So every row pays for forty context columns, and the one screen that
-would benefit from them cannot use them.
+-- so the recordings list filters on page URL, site and date only. The capability
+is present and unexercised, not absent.
 
-**This is the clearest single argument for the event model in this whole
-document.** The duplication exists *because* domstream is a separate fact table
-that needs its own copy of context to be reportable at all. Make a recording an
-event and the cost disappears: context is on the event row already, the standard
-metric and dimension machinery applies with nothing special-cased, and
-metric-scoped filters -- "sessions that converted", "engaged sessions" -- resolve
-through session scope like any other session-scoped question.
+Two consequences, one for each timeframe.
 
-The payload is the part that needs no querying: written once, fetched by id, and
+**In 1.x** this is reachable now: routing the endpoint through the resolver
+instead of hand-written SQL would light up segmentation that the schema already
+supports, with no schema work at all.
+
+**In v2** the same capability arrives without a parallel fact table to carry it.
+A recording becomes an event, so the context it needs for segmentation is on the
+row already, the standard metric and dimension machinery applies with nothing
+special-cased, and metric-scoped filters -- "sessions that converted", "engaged
+sessions" -- resolve through session scope like any other session-scoped
+question. The requirement must be carried forward deliberately rather than
+assumed: segmentation is the reason the fact table looks the way it does, and
+whatever replaces it has to serve the same purpose.
+
+The payload is the part that needs no querying: written once, fetched by id,
 never scanned. Metadata and payload therefore want different treatment, which is
-the distinction the current single blob-bearing fact table does not make.
+the distinction a single blob-bearing fact table cannot make.
 
 ### On rrweb, and why "better" is not obvious
 
