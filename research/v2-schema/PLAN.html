@@ -679,6 +679,18 @@ are the rewrite. Nothing above changes that; the point is to shrink it.</p>
 <p>Sequenced on three rules: <strong>bugs whose cost accrues daily go first</strong>, because every
 day of delay is data you cannot recover; <strong>foundations before the things built on
 them</strong>; and <strong>the expensive irreversible work last</strong>, when the most is known.</p>
+<div class="flag">
+  <p class="h">Standing precondition — coverage before development</p>
+  <p>No phase item starts until the behavior it touches is pinned by tests, in the form the work
+  demands. <strong>Bug fixes</strong> begin with a failing test demonstrating the defect — the test
+  is the bug report. <strong>Behavior-preserving work</strong> (PDO, cookie consolidation,
+  <code>Util.js</code>, CORS) begins with a characterization suite of current behavior — cookie
+  bytes in both formats, emitted beacons per event type, generated SQL text, endpoint headers —
+  because &ldquo;same behavior, different plumbing&rdquo; has no other definition of
+  <em>broke something</em>. Expect the pins to be most of the job; the swap under them is the
+  small half. Every pin is mutation-checked at creation (break the behavior, watch it fail,
+  restore) — a vacuous pin certifies the refactor didn't break what it broke.</p>
+</div>
 
 <div class="phase">
   <div class="phase-h"><span class="phase-n">Phase 1</span><span class="phase-t">Stop the bleeding</span></div>

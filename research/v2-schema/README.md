@@ -3165,6 +3165,19 @@ less. v2 creates a new schema on a fresh install, which is the path with no
 existing users to notice a break, and the self-hosted runner is what proves the
 result works somewhere other than the machine it was written on.
 
+### Coverage precedes development on the 1.x additive work
+
+Peter's requirement, and it splits by the shape of the work. Bug fixes begin
+with a failing test that demonstrates the defect. Behaviour-preserving work --
+PDO, cookie consolidation, `Util.js` modernisation, CORS -- begins with a
+characterization suite pinning current behaviour *before the first line
+changes*: cookie bytes in both formats, emitted beacons per event type,
+generated SQL text, endpoint headers. "Same behaviour, different plumbing" has
+no other definition of broke-something, so for refactor-shaped work the pins
+are most of the job and the swap is the small half. Every pin is
+mutation-checked at creation, because a vacuous pin certifies the refactor
+didn't break what it broke.
+
 ### Two pre-existing hazards that a rewrite amplifies
 
 Both are already known here, and both make a suite look healthier than it is --
