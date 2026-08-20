@@ -1386,13 +1386,13 @@ field, so a parser knows what it is reading, and Google migrated formats while
 running both during a coexistence phase. OWA carries `cdh`, a domain hash, but
 nothing identifying the format.
 
-That is a migration hazard rather than a nicety. Changing the cookie encoding in
-v2 without one would make every existing cookie unreadable, minting a new
-visitor id for everyone: the whole audience appears new on upgrade day, and
-returning-visitor metrics break permanently at that boundary. The fix is cheap
--- a leading version field, and a reader that accepts both during a coexistence
-window -- but only if it ships **before** the format changes, which means it
-belongs in 1.x rather than in v2.
+A leading version field is still worth having, so the format can change again
+without breaking parsers. But the coexistence strategy below removes the
+urgency: v2 uses its **own cookie namespace**, so v1 cookies are never
+reinterpreted and no visitor is orphaned by a format change. What v2 should do
+instead is **read the v1 visitor cookie once and adopt its id**, which preserves
+returning-visitor continuity across the switch without requiring either format
+to understand the other.
 
 **The cookie domain hash stays.** `cdh` is `crc32(cookie_domain)` stored inside
 each store's value, and the load path iterates `cookie_values` -- plural,
@@ -1433,6 +1433,107 @@ being embeddable inside other applications, a design since removed, so the bytes
 are paid on every tracking request for a collision that can no longer occur. The
 prefix should stay on **cookie names**, where other software on the same domain
 genuinely may collide -- the WordPress plugin install being the obvious case.
+
+## Migration: coexistence, not conversion
+
+**The strategy.** v2's schema is created alongside v1's in the same database.
+No 1.x data is converted. v1 keeps serving history through its own reporting UI
+until the administrator decides the history is no longer needed and drops it.
+Both trackers may report to the same installation during an overlap period; the
+two reporting UIs are entirely separate.
+
+This is a far better trade than in-place conversion, and today's exercise is the
+evidence: converting *one id width* on two installations took five pull
+requests, a storage upgrade and most of a day, with tracking dropped in the
+window where the flag and the data disagreed. A total schema change is not that
+problem scaled up -- it is a different and much worse problem.
+
+### What is shared and what is parallel
+
+```
+SHARED (admin)              6 tables      0.1 MB
+PARALLEL (facts, v1 keeps) 10 tables  2,358.7 MB
+PARALLEL (dims, v1 keeps)  10 tables     38.6 MB
+```
+
+Effectively all the volume is in the parallel set and the shared set is trivial,
+which is what makes coexistence cheap. Sites, users, goals and configuration are
+**shared** -- an administrator must not manage sites twice, and duplicating them
+would create two sources of truth for the one thing both halves agree on. Event
+storage is **parallel**: `owa_event` and its companions are new tables beside
+the existing ones, colliding with nothing.
+
+The constraint that follows: **v2 must not alter the shared admin tables
+destructively.** Additive columns are fine; changing how a site id is derived is
+not, because v1 would stop resolving its own data.
+
+### Tracker coexistence
+
+Both trackers post to the same endpoint, distinguished by a **version marker on
+the request**, and routed to their own ingestion path: v1 payloads to the
+existing handlers and star tables, v2 payloads to the event table. Neither path
+needs to understand the other.
+
+State stays separate too -- v2 uses its **own cookie namespace**, so the two
+trackers never contend for a format and v1 cookies are never reinterpreted.
+Since no data is migrated, nothing is lost by v2 starting with its own visitor
+identity.
+
+One refinement worth building: **v2 should read the v1 visitor cookie once and
+adopt its id**. Returning visitors then stay recognisable across the switch,
+without either cookie format needing to understand the other, and without the
+format-version machinery that a shared namespace would have required.
+
+### Work that is additive to 1.x, and is not redone for v2
+
+The bulk of what this document proposes can ship in 1.x, benefit users
+immediately, and be inherited by v2 unchanged. Roughly in order of value:
+
+| work | what it fixes in 1.x | why v2 inherits it |
+|---|---|---|
+| **CORS, replacing JSONP** | `addCorsHeaders()` compares row arrays to a string and has never emitted a header; playback runs on JSONP, which bypasses same-origin by design | v2's API-first UI needs working CORS regardless |
+| **Transport: `sendBeacon` with a body / `fetch` keepalive** | removes the hidden-iframe POST that "gives us no delivery signal", so large payloads become confirmable | identical transport in v2 |
+| **Engagement deltas and the sticky `engaged` flag** | 1.x gains final-page dwell time, which no server-side design can measure, improving bounce and duration now | the v2 session model is exactly this |
+| **Chunk `seq` on recordings** | fixes the 223 recordings whose chunk order is currently undefined, and adds a dedup key | v2 requires it for the same three reasons |
+| **Element path capture for clicks** | heatmaps stop aggregating across 2,297 viewport widths; `dom_element_id` is real on 0.09% today | v2's element-based heatmaps depend on the same capture |
+| **Queue lease semantics** | `is_assigned` is declared and never read, so two drainers process the same rows | v2's queue design needs leases anyway; an SQS backend can land in 1.x too |
+| **PDO driver** | real bound parameters instead of `mysqli_real_escape_string`, and retires the hand-rolled connection handling | one backend family under v2's storage seam |
+| **`Util.js` modernisation** | smaller tracker for every 1.x user | same tracker source |
+| **`preconnect` hint and snippet placement** | removes DNS, TCP and TLS from the critical path on a cold origin | same snippet |
+| **Domstream list through the resolver** | lights up segmentation the 1.x schema already supports and the UI never used | v2 keeps segmentation as a requirement |
+| **Bot filtering improvements** | data quality now | unchanged by the schema |
+
+Most of it is **tracker and transport work**, which is the part of the system
+the schema change does not touch -- so it is genuinely free of rework, and it
+de-risks v2 by proving each piece against real traffic first.
+
+### What cannot be additive
+
+- **the single event table**, and everything downstream of it: reports as data,
+  the API-first UI, the metric and dimension registry enforcing additivity
+- **URI-based page identity** -- changing id derivation in 1.x would require
+  precisely the migration this strategy exists to avoid
+- **custom variables as named parameters**, since the five fixed slots are the
+  schema
+- **cookie format consolidation and dropping the `owa_` parameter prefix**,
+  which belong to the v2 tracker's own namespace
+- **`NULL` instead of `(not set)`**, because 1.x reports and queries may test
+  for the sentinel; new data would be clean while old data is not, and the
+  inconsistency is worse than either state
+
+### Cutover
+
+1. Ship the additive work in 1.x releases, each standing on its own
+2. v2 creates its tables alongside; both trackers report to one installation
+3. The administrator runs both for an overlap period, comparing the two UIs on
+   the same traffic -- which is the only real validation available, since there
+   is no reference implementation to test a total schema change against
+4. When satisfied, they switch the tracker over and keep v1 reporting for history
+5. When the history is no longer wanted, a command drops the 20 parallel tables,
+   leaving the shared admin tables untouched
+
+No step is irreversible until the last one, and the last one is the
+administrator's decision rather than an upgrade's side effect.
 
 ## Pros and cons
 
