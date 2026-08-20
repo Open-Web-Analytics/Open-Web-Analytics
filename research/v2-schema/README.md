@@ -672,6 +672,154 @@ The payload is the part that needs no querying: written once, fetched by id,
 never scanned. Metadata and payload therefore want different treatment, which is
 the distinction a single blob-bearing fact table cannot make.
 
+### How a recording is actually stored, and what v2 should change
+
+Recordings are **streamed in chunks**, which is the fact the rest of the design
+turns on:
+
+```
+229,663 rows  =  82,861 recordings   ->  2.8 chunks per recording
+heaviest: 279 chunks, 294,244 bytes total, 1 document
+```
+
+One document per recording, so a recording is 1:1 with a page view rather than an
+occurrence in its own right.
+
+**A queue correction.** The earlier measurement -- max 52,521 B, comfortably
+inside SQS's 256 KB -- is per *chunk*. A complete recording reaches 294 KB and
+would exceed the limit. Chunks must stay the unit of transport; assembling a
+recording before queueing it would not fit.
+
+#### Chunks are payload, not events
+
+The samples inside a chunk carry an `event_type` and look like events, but
+nothing ever queries them individually. Counted:
+
+```
+5,767,986 pointer and scroll samples   (25.1 per chunk x 229,663)
+1,192,454 real events
+       -> 4.8x the entire fact table, for cursor telemetry alone
+```
+
+Promoting chunks -- or worse, their samples -- to events would leave the fact
+table roughly 83% mouse movement, dominating every scan, index and partition to
+serve data no report asks a question of. The test for what belongs in the event
+stream is not "is it an event?" but **"will anyone ever query it individually?"**
+
+#### The shape
+
+```
+owa_event        pageview row, carrying recording_id (NULL when none)
+                 <- all segmentation happens here, on every dimension
+payload store    chunks keyed by (recording_id, seq)   <- append-only
+owa_recording    small derived metadata: duration, chunks, bytes, expires_at
+```
+
+`recording_id` is a **reference, not a dimension foreign key**: no report joins
+on it, it is dereferenced only when a human presses play, and the row displays
+fine without it. The recordings list stays an ordinary event query --
+`WHERE event_type='pageview' AND recording_id IS NOT NULL AND <dimensions>` --
+so segmentation is native and join-free.
+
+#### Writes stay on the hot path only where they must
+
+Naively the first chunk costs three writes: the event, a recording row, and the
+payload. Two decisions remove the extra two:
+
+- the **tracker mints `recording_id`**, so it rides on the pageview event and no
+  separate write establishes the recording
+- **`owa_recording` is derived, not maintained** -- a scheduler sweep computes
+  duration, chunk count and bytes once the chunks stop arriving, exactly as the
+  sessions rollup is derived rather than maintained in the write path
+
+Leaving one event write plus one write per chunk: the same write *count* as
+today, without 46 columns of duplicated context on each, and nothing extra on
+the hot path. It also satisfies the rule from the session work -- `recording_id`
+is present from the first event, so a lost final chunk costs the tail of a
+replay rather than the recording.
+
+#### Append-only, never an update
+
+Each chunk is its own row. Updating one growing blob would cost, for the
+heaviest recording:
+
+```
+1055 B x (279 x 280 / 2)  =  ~41 MB written for a 294 KB recording   (~140x)
+```
+
+MySQL rewrites the row and its overflow pages on every BLOB update, so that is
+real I/O. **S3 has no append operation at all**, so chunk-per-object is forced
+there regardless -- designing around append-to-one-blob would rule out the
+object-store backend entirely. Today's implementation already writes one row per
+chunk; that part is right and should survive.
+
+An optional refinement, since the sweep exists anyway: **seal** a finished
+recording by concatenating its chunks, recompressing as one object and deleting
+the chunk rows. That earns the full ~30x ratio -- one gzip window instead of 279
+-- and collapses the row count. Gzip members also concatenate and still
+decompress, so even unsealed chunks can be streamed back in order without
+recompression.
+
+#### Where each piece lives
+
+By access pattern rather than by what the data resembles:
+
+| | access | store |
+|---|---|---|
+| `owa_event` | scan many rows, few columns | columnar, where it is worth it |
+| `owa_recording` | fetch ~50 rows by id | row store |
+| payload | fetch one blob by id | object store, or a blob column |
+
+A blob has no columns to scan, so columnar storage buys nothing there and
+actively hurts: large opaque values defeat the encoding and compression that
+make columnar worthwhile. The recordings list therefore spans stores in the only
+way that is safe -- filter events (columnar strength), paginate to 50, fetch 50
+metadata rows by id, stream one payload on play. Small-N application-side join,
+never a cross-store join over large sets. On the default single-MySQL install
+all three live in one database and the boundary is invisible.
+
+#### Where `seq` comes from, and what it replaces
+
+From the tracker: a counter in the page's JS context. A recording belongs to one
+page view, so it is a local variable -- none of the cross-tab races that ruled
+out a shared session counter apply.
+
+This is not the sequence number rejected in the session work, and the difference
+is principled:
+
+| | session engagement | recording chunks |
+|---|---|---|
+| does order matter? | no, deltas commute | **yes**, out-of-order replay is broken |
+| can the server derive it? | not needed | **no** -- arrival order is not emission order |
+| scope | shared across tabs, races | one page view, no sharing |
+
+One integer does three jobs: **ordering** for replay, **dedup** via
+`(recording_id, seq)` as a primary key -- which matters because an at-least-once
+queue will redeliver -- and **gap detection**, so a replay missing a chunk can
+say so rather than silently playing with a hole.
+
+**What it replaces.** There is no `seq` today. Chunks are ordered by
+`orderBy('timestamp', 'ASC')` on a second-resolution INT, and
+`mergeStreamEvents()` appends without re-sorting, so replay order rests entirely
+on that. Chunks sharing a second have undefined order. Measured:
+
+```
+240 (guid, timestamp) groups hold more than one chunk
+223 of 82,861 recordings affected  (0.3%)
+worst: 5 chunks within one second
+```
+
+0.3% is low enough that this is latent fragility rather than a live fault -- the
+tracker mostly flushes at intervals longer than a second, and a cursor animation
+with two slightly transposed segments is not obviously wrong. But it degrades in
+exactly the directions v2 moves: more engaged pages flush more often, routing
+chunks through an unordered at-least-once queue breaks the assumption that
+arrival order tracks emission order, and there is no dedup key at all, so a
+redelivered chunk silently appends its samples twice.
+
+Which is this redesign in miniature: much of it is not new capability, but
+replacing what works **by circumstance** with what works **by construction**.
+
 ### On rrweb, and why "better" is not obvious
 
 The modern standard for this is rrweb: capture a DOM snapshot plus mutations,
