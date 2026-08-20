@@ -660,7 +660,16 @@ class Template extends TemplateEngine {
             $params[ $resourceKey ]
         );
 
-        return $this->makeLink( $params, false, $this->config['rest_api_url'] );
+        // add_state MUST be true. It is what carries siteId and the reporting
+        // period onto the link, and both overlay call sites used
+        // makeApiLink( $params, true, true ) before this method existed.
+        //
+        // Dropping it fails asymmetrically, which is why it is worth a comment:
+        // the player's controller declares siteId required and answers a clean
+        // 422, but the heatmap's reports route does not, so it returns 200 for a
+        // query with no site filter and a defaulted period -- the wrong clicks,
+        // reported as success. Only the cross-origin e2e caught that half.
+        return $this->makeLink( $params, true, $this->config['rest_api_url'] );
     }
 
     function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
