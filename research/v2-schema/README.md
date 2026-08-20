@@ -3233,7 +3233,7 @@ nullable columns; the spec below shows the final placement:
 | `referer_url` | VARCHAR(1024) | 2 | |
 | `medium`, `source`, `campaign`, `ad`, `search_terms` | VARCHAR | 2 | attribution, identified server-side at event processing, stamped on every event of the session |
 | `browser`, `browser_type`, `os` | VARCHAR | 2 | parsed at collection |
-| `raw_ua` | VARCHAR(1024) | 1 | **on every row** (Peter's call, overriding a once-per-session draft). Debugging is a reader even though reporting is not: inspecting misparses, building bot/spam rules, evaluating parser upgrades (the `stripos` bug was found by reading raw UAs). Never in a reporting query |
+| `raw_ua` | VARCHAR(1024) | 1 | **on every row**, governed by a dedicated `store_raw_ua` setting, default on -- deliberately *not* coupled to debug mode, which drags verbose logging with it. Prospective debugging (reproducible misparses, parser-upgrade evaluation) survives a toggle; retrospective forensics (last night's bot wave, the `stripos` bug found in historical data) does not, which is why the default is on: opt out of evidence knowingly, never discover you were opted out. Off costs one NULL bit. Never in a reporting query |
 | `language`, `country`, `city`, `host` | VARCHAR | 2 | |
 | `ip_address` | VARCHAR(45) NULL | 2 | anonymised by default |
 | `engagement_msec` | INT UNSIGNED NULL | 3 | the delta, on `user_engagement` rows; "engagement by URL" is `SUM(engagement_msec) GROUP BY page_uri` and must not pay JSON extraction |
