@@ -800,6 +800,92 @@ UIs use the same enforcement, which is one fewer thing to get wrong.
 in depth** -- three inexpensive mechanisms rather than trading a proven one for
 two conditional ones.
 
+## Privacy, retention and erasure
+
+The weakest area measured, and the one where OWA's positioning and its behaviour
+diverge most. Self-hosting is the privacy story -- the data never reaches
+Google -- but self-hosting is not by itself a privacy *feature*, and everything
+below is about what the software does with data it holds.
+
+### What exists today
+
+**IP anonymisation exists and is off.** `anonymize_ips` defaults to `false`, and
+`Lib::anonymizeIp()` masks the final IPv4 octet (`255.255.255.0`) or the last 64
+bits of IPv6 -- a reasonable implementation, simply not enabled. On the
+installation measured, **691,680 full IP addresses** are stored.
+
+**Identifiable data is spread across seven tables**, which is what makes erasure
+hard rather than merely absent:
+
+```
+owa_request      visitor_id, inbound_visitor_id, user_name, user_email, ip_address
+owa_session      visitor_id, user_name, user_email, ip_address
+owa_click        visitor_id, ip_address, user_name
+owa_domstream    visitor_id, ip_address, user_name
+owa_visitor      user_name, user_email
+owa_host         ip_address, full_host
+owa_commerce_transaction_fact  visitor_id, ip_address, user_name
+```
+
+**There is no erasure path at all.** Of 23 registered CLI commands, none deletes
+a person's data -- `partition-drop` prunes by date, which is retention, not
+erasure. Answering "delete everything you hold about this visitor" today means
+hand-written SQL across seven tables.
+
+**There is no retention policy**, only the manual `partition-drop`. Nothing
+expires by default, and `partition-rotate` deliberately ships with no `keep`, so
+an untouched installation keeps everything forever.
+
+**There is no consent or Do Not Track handling** of any kind.
+
+### What v2 changes, for better and worse
+
+**Better: erasure becomes tractable.** Seven tables become one event table plus
+the recording payloads and any rollup. "Delete everything about this visitor" is
+a delete by `visitor_id` in one place, a delete of the recordings referenced by
+those events, and a rollup rebuild for the affected sessions. That is a command
+someone can actually write and test, which the current shape is not.
+
+**Worse: denormalisation multiplies what erasure must reach.** A referrer URL
+carrying a query string, a page URL with an email in it, a custom variable
+holding a user id -- in the star schema those sit in one dimension row; in the
+event model they are on every event that referenced them. Erasure has to scan,
+not look up.
+
+**And recordings need explicit handling.** A domstream is pointer telemetry with
+no page content, which is a genuine privacy advantage over DOM-recording tools
+and worth keeping deliberately -- but it is still behavioural data tied to a
+visitor, and must be deleted with them.
+
+### What v2 should do
+
+1. **Anonymise by default.** The implementation exists; the default is wrong. A
+   privacy-positioned product should ship privacy-preserving and let an
+   administrator opt out, not the reverse.
+2. **A retention policy per site**, enforced by a scheduled job, with a sane
+   default rather than "forever". `partition-drop` already does the mechanical
+   part; what is missing is a policy that runs without being asked.
+3. **An erasure command** -- `forget visitor=<id>` -- deleting across events,
+   recording payloads and rollups, and **tested**, because an erasure path that
+   silently misses a table is worse than none.
+4. **Separate retention from erasure in the design.** Retention is time-based and
+   bulk; erasure is subject-based and exact. They share mechanics and must not
+   share a code path, or one will quietly satisfy neither.
+5. **Honour Do Not Track and a consent signal**, configurable, and record the
+   decision rather than inferring it later.
+6. **Decide what a domstream is** in policy terms and document it, since a
+   session replay is the most sensitive thing OWA collects even without page
+   content.
+
+### Additive to 1.x
+
+Most of it. Anonymisation-by-default is a settings change plus a release note.
+A retention job is a scheduled job over the existing `partition-drop`. An
+erasure command in 1.x has to cross seven tables rather than one, so that work
+does not carry over -- but the **command surface, the tests and the semantics do**,
+and having them defined against the harder schema first is a reasonable way to
+prove them.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
