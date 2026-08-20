@@ -1360,6 +1360,40 @@ check on read rather than by cookie expiry. The same treatment gives `c` its
 construction, since a logical check on read cannot be silently dropped the way
 `set()` currently drops its `expiration_days` argument.
 
+**Compare GA4, which has solved this and migrated once already.**
+
+```
+_ga                    client id only, 2 years
+_ga_<MEASUREMENT_ID>   session state, 2 years
+
+GS1.1.SESSION_ID.TIMESTAMP.EVENT_COUNT.ENGAGEMENT_TIME      <- fixed positional
+GS2.1.s<id>$o<num>$g<engaged>$t<ts>$j..$l..$h..             <- labelled, $-delimited
+```
+
+Two cookies, and the session one moved **from positional to labelled key-value**
+because fixed positions are rigid: adding or removing a field breaks every
+parser. Their keys are single characters -- `s` session id, `o` session number,
+`g` session engaged, `t` last hit timestamp.
+
+So OWA already has the right *concept* -- `key=>value` is labelled -- and simply
+pays about five times too much for it: `|||` and `=>` against GA's single `$`,
+and full words against single characters, on a cookie sent with every request to
+the domain. Worth noting GA's `g` field is session-engaged, which independently
+confirms the sticky-flag design above.
+
+**What OWA lacks entirely is a format version marker.** `GS1`/`GS2` is the first
+field, so a parser knows what it is reading, and Google migrated formats while
+running both during a coexistence phase. OWA carries `cdh`, a domain hash, but
+nothing identifying the format.
+
+That is a migration hazard rather than a nicety. Changing the cookie encoding in
+v2 without one would make every existing cookie unreadable, minting a new
+visitor id for everyone: the whole audience appears new on upgrade day, and
+returning-visitor metrics break permanently at that boundary. The fix is cheap
+-- a leading version field, and a reader that accepts both during a coexistence
+window -- but only if it ships **before** the format changes, which means it
+belongs in 1.x rather than in v2.
+
 **Drop the `owa_` prefix from URL parameters.** It is a byproduct of OWA once
 being embeddable inside other applications, a design since removed, so the bytes
 are paid on every tracking request for a collision that can no longer occur. The
