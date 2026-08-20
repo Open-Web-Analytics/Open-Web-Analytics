@@ -2313,13 +2313,18 @@ field, so a parser knows what it is reading, and Google migrated formats while
 running both during a coexistence phase. OWA carries `cdh`, a domain hash, but
 nothing identifying the format.
 
-A leading version field is still worth having, so the format can change again
-without breaking parsers. But the coexistence strategy below removes the
-urgency: v2 uses its **own cookie namespace**, so v1 cookies are never
-reinterpreted and no visitor is orphaned by a format change. What v2 should do
-instead is **read the v1 visitor cookie once and adopt its id**, which preserves
-returning-visitor continuity across the switch without requiring either format
-to understand the other.
+A leading version field is worth having, and the single-tracker decision below
+makes it **more** important rather than less. An earlier sketch had v2 using its
+own cookie namespace, which would have meant v1 cookies were never reinterpreted
+and a marker was merely tidy. With one tracker there is one store, and its format
+changes underneath visitors who already hold the old one -- exactly the case a
+version marker exists for, and exactly what Google shipped `GS1`->`GS2` to
+handle. `Util.getCookieValueFormat()` sniffing `{` covers *this* change; a marker
+is what covers the one after it.
+
+Visitor continuity needs no special handling for the same reason: one tracker
+means one visitor id, written to both schemas, so there is nothing to adopt or
+reconcile.
 
 **The cookie domain hash stays.** `cdh` is `crc32(cookie_domain)` stored inside
 each store's value, and the load path iterates `cookie_values` -- plural,
@@ -2395,22 +2400,85 @@ The constraint that follows: **v2 must not alter the shared admin tables
 destructively.** Additive columns are fine; changing how a site id is derived is
 not, because v1 would stop resolving its own data.
 
-### Tracker coexistence
+### One tracker, two pipelines
 
-Both trackers post to the same endpoint, distinguished by a **version marker on
-the request**, and routed to their own ingestion path: v1 payloads to the
-existing handlers and star tables, v2 payloads to the event table. Neither path
-needs to understand the other.
+**Decided, and it replaces the two-tracker model sketched earlier.** There is a
+single tracker. It describes each event richly enough that *both* pipelines can
+consume it, and the server fans one received event out to both -- v1's handlers
+write the star, v2's write the event table. When v2 reaches feature parity, the
+fan-out to v1 is switched off. Nothing about the page changes on that day.
 
-State stays separate too -- v2 uses its **own cookie namespace**, so the two
-trackers never contend for a format and v1 cookies are never reinterpreted.
-Since no data is migrated, nothing is lost by v2 starting with its own visitor
-identity.
+Two trackers would have split each site's data by which snippet happened to be
+deployed, so v1's history would step or stop at the moment a site upgraded --
+destroying the value of the thing being kept. One tracker keeps v1's history
+continuous right up to the cutoff, which is the only reason retaining it is worth
+anything.
 
-One refinement worth building: **v2 should read the v1 visitor cookie once and
-adopt its id**. Returning visitors then stay recognisable across the switch,
-without either cookie format needing to understand the other, and without the
-format-version machinery that a shared namespace would have required.
+**The wire format is therefore free.** Because the fan-out happens server-side,
+the payload does not have to satisfy v1's parameter conventions; a shim presents
+each pipeline with the shape it expects. This is what rescues the tracker
+decisions taken above -- dropping the `owa_` namespacing and standardising on one
+cookie format are client-side changes, and v1's handlers never see the wire.
+Under a two-tracker model those changes would have been blocked until v1 was
+gone. The tracker sends a union of *information*, not a union of *formats*.
+
+Identity collapses the same way. One tracker means one cookie store and one
+visitor id, written to both schemas, so the earlier refinement about v2 adopting
+the v1 visitor id is unnecessary -- there are not two ids to reconcile.
+
+### Dual-write is a parity test, not just a migration step
+
+This is the part worth more than the migration convenience. Every production
+event passes through both pipelines against real traffic, so a metric that
+disagrees between the two schemas is **observable before anything is committed
+to**. That is a far stronger position than porting a metric definition and
+reasoning about whether it still means the same thing.
+
+For the comparison to mean anything, both pipelines must consume identical
+inputs: the same event id, the same server-assigned timestamp (1.x already
+assigns event time server-side rather than trusting the client), the same
+visitor and session identity. Divergence must be attributable to the *pipeline*,
+not to the input.
+
+**And the intended differences have to be declared in advance**, or every
+comparison is ambiguous -- an unexplained gap is indistinguishable from a bug,
+and a bug hiding behind an expected gap is invisible. v2 is deliberately
+different in at least these places, all of them decided elsewhere in this
+document:
+
+| metric | why it should differ |
+|---|---|
+| bounce rate | if redefined as "not engaged" rather than "one pageview" |
+| visit duration | derived from engagement deltas, not last-minus-first timestamps |
+| exit page | an `is_exit` flag set by a closer job, not derived at query time |
+| goals | key events marked at collection, not evaluated retroactively |
+| the 11 `*InVisit` dimensions | deliberately not ported |
+
+A parity report subtracts that list. Whatever is left over is a defect, and the
+list itself is the specification of what "parity" means -- without it, "we
+reached parity" is an opinion.
+
+**Failure isolation is deliberately asymmetric.** For the whole overlap, v1 is
+production and v2 is the one on trial. A failing v2 handler must not be able to
+fail v1's write, or the request, or the response to the browser. The converse
+matters far less, and pretending the two deserve equal protection is how a
+trial system takes down a working one. An event that one pipeline has nothing to
+do with is a **success** for that pipeline, not an error -- the same rule the
+schema-versioning section arrives at for a missing table.
+
+**The cost, from the measured write paths.** v1 is 7 statements per pageview at
+79 events/s; v2 is 1 statement at 202. Composed, dual-write lands near **57
+events/s -- roughly 28% below v1 alone**. That composition is pessimistic, since
+the two writes share connection, parse and request overhead rather than paying
+it twice. It is a real cost and it falls exactly during the period when
+confidence is lowest, which is an argument for the queue carrying the fan-out
+rather than the request doing it inline.
+
+**Switching off is a setting, and reversible** until v1 is dropped. The only
+ragged edge is events queued across the cutoff: either the fan-out decision is
+recorded on the event when it is accepted, or a handful of events land in v1
+after the switch. The first is tidy; the second is free and harmless, because by
+definition the switch happens when v1's numbers have stopped mattering.
 
 ### Work that is additive to 1.x, and is not redone for v2
 
@@ -2458,17 +2526,19 @@ security work** -- the parts the schema change does not touch. Anything that
 lands data in a v1 table is plumbing with a known expiry date, which is fine as
 long as it is chosen knowingly.
 
-### One tracker, two protocol modes
+### One tracker, one protocol
 
 The additive argument above holds only if v2's tracker is an **evolution of the
 same source**, not a fork. If it were a fork, every row in the tracker-additive
 table -- engagement deltas, chunk `seq`, element paths, beacon transport --
 would have to be written twice, and the argument collapses.
 
-So: **one tracker codebase with a protocol mode.** v1 mode writes the existing
-cookie format and `owa_`-prefixed parameters; v2 mode writes the consolidated
-format and unprefixed ones. Capture logic, transport and state management are
-shared; only serialisation at the edges differs.
+So: **one tracker codebase, and -- given server-side fan-out -- one protocol.**
+An earlier draft here proposed a v1/v2 protocol mode, the tracker serialising two
+ways at the edges. Fan-out removes the need for it: there is one wire format, and
+v1 compatibility is a translation the *server* performs rather than a mode the
+client carries. Capture, transport, state and serialisation are all simply
+shared.
 
 **The state cleanup is additive, and should ship in 1.x.** Two facts settle it.
 
@@ -2498,10 +2568,13 @@ So unifying on one write format, deleting the `format` argument on
 with only the namespace prefix differing between modes. Doing it in 1.x means v2
 begins from clean code rather than inheriting the tangle or rewriting it.
 
-What genuinely does belong to v2 alone is the **`owa_` prefix on URL
-parameters**, since 1.x would have to accept both spellings on the ingestion
-side during a transition, while v2's tracker talks to v2's endpoint and can name
-things freely from the first request.
+The **`owa_` prefix on URL parameters** was the one item held back as v2-only,
+on the reasoning that 1.x would otherwise have to accept both spellings on the
+ingestion side. Server-side fan-out dissolves that as well: the shim feeding v1's
+handlers is exactly where the prefix is reapplied, so the tracker can stop
+emitting it once and neither pipeline notices. It is additive after all -- which
+is the general shape of this decision, since anything the server can translate
+stops being a client-side compatibility problem.
 
 ### What cannot be additive
 
@@ -2520,11 +2593,15 @@ things freely from the first request.
 ### Cutover
 
 1. Ship the additive work in 1.x releases, each standing on its own
-2. v2 creates its tables alongside; both trackers report to one installation
-3. The administrator runs both for an overlap period, comparing the two UIs on
-   the same traffic -- which is the only real validation available, since there
-   is no reference implementation to test a total schema change against
-4. When satisfied, they switch the tracker over and keep v1 reporting for history
+2. v2 creates its tables alongside; the single tracker's events are fanned out
+   to both pipelines
+3. The administrator runs both for an overlap period, comparing the two UIs over
+   *the same events* -- not merely the same traffic, which is what makes the
+   comparison a test rather than an impression, and is the only validation
+   available with no reference implementation to check a total schema change
+   against
+4. When satisfied, they switch off the fan-out to v1 and keep v1 reporting for
+   history
 5. When the history is no longer wanted, a command drops the 20 parallel tables,
    leaving the shared admin tables untouched
 
