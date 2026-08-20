@@ -532,6 +532,81 @@ template}`. As data rather than classes they collapse to a registry and a few
 renderers, and reports become **user-definable**: today a custom report means
 writing and deploying a PHP class.
 
+### Reports as widget definitions, and the retrofit into 1.x
+
+Counting subviews shows how much of the reporting UI is one shape wearing
+different parameters:
+
+```
+49 of 69 controllers share three subviews
+  22  base.reportDimension
+  17  base.reportSimpleDimensional
+  10  base.reportDimensionDetail
+
+20 controllers have a subview of their own (one each)
+```
+
+The 49 differ only in the metrics, dimensions, sort and constraints they
+declare. The 20 look bespoke, but the templates say otherwise: the dashboard is
+eight `owa_reportSectionHeader` / `owa_reportSectionContent` pairs composed of
+widgets, and the reporting bundle already ships a widget vocabulary --
+`owa.kpibox.js`, `owa.areachart.js`, `owa.piechart.js`, `owa.sparkline.js`,
+`owa.resultSetExplorer.js`.
+
+**What is missing is any layout descriptor.** There is not a single column,
+span, grid or width class in the dashboard or traffic templates -- arrangement is
+implicit in hand-written HTML and CSS, written afresh each time. That, rather
+than any structural difference, is why each of the 20 needed its own template.
+
+So the format wants to describe **widgets in a grid**:
+
+```json
+{
+  "name": "dashboard",
+  "layout": [
+    { "cols": 4, "widgets": [ { "type": "kpi", "metric": "visits" } ] },
+    { "cols": 2, "widgets": [
+        { "type": "areachart", "metric": "pageViews", "period": "last_thirty_days" },
+        { "type": "piechart", "dimension": "medium", "metric": "visits" } ] },
+    { "cols": 2, "widgets": [
+        { "type": "table", "dimension": "pageUrl",
+          "metrics": ["pageViews", "uniquePageViews"], "limit": 10 } ] }
+  ]
+}
+```
+
+**One format, two levels.** A widget is a query plus a display type, and the 49
+dimensional reports are simply a page holding one widget. It is not "49 config
+records and 20 special cases" -- it is one format where some pages hold one
+widget and some hold several.
+
+That also bounds the vocabulary risk. The danger with definitions-as-data is
+drifting into a worse programming language; a widget-with-layout format has a
+natural edge -- a widget is a query and a rendering, and whatever is not
+expressible as those two things stays code. `ReportGoalFunnel`'s funnel maths is
+a genuine widget *type*, not a failure of the format.
+
+**JSON rather than PHP arrays**, because the same document then ships as a file,
+is stored in a table when user-defined, is served by the API, consumed by the
+client, and exported or imported. A PHP array only manages the first.
+
+**The retrofit is additive, with a clean split.** In 1.x, one generic controller
+loads a definition and performs the same `set()` calls into the same subview --
+behaviour identical, since the subview does not change. Roughly 49 classes
+become 49 documents, and reports become **user-definable in 1.x**, which today
+requires writing and deploying a PHP class.
+
+v2 discards that controller -- its API serves definitions to the client instead
+-- but **reuses the definitions unchanged**. The definitions are the durable
+artefact; only the renderer differs. And a client-rendered UI needs a layout
+description it can map onto components, which hand-written PHP templates cannot
+provide, so this is one artefact serving both.
+
+One decision the format must make rather than defer: **where responsive
+behaviour lives**. `"cols": 2` has to mean something on a phone, and with the v2
+client doing layout, breakpoint behaviour belongs in the definition rather than
+in CSS the client cannot see.
+
 ### Two parallel paths to the same data
 
 **150 web actions against 9 REST routes**, and only 7 of 69 report controllers
