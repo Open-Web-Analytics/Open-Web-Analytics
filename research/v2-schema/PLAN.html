@@ -591,7 +591,13 @@ DSN — a dedicated MySQL or the columnar path. The rule that makes the split re
 reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
 literal, key events are stamped at ingest — so the two stores are never assumed co-located.
 Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
-with orphaned events invisible to queries and reaped by retention.</div>
+with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives
+beside what it derives from</strong>: <code>owa_rollup_day</code> and any later materialization go
+in the reporting store, whichever engine that is — rebuildable from that store alone, so the store
+stays self-contained and a backend migration is &ldquo;copy events, rebuild summaries&rdquo;. The
+scheduler's job <em>state</em> stays in the application store; job state is not job output. The
+rollup's replace-whole-day-rows maintenance is also the batch shape columnar engines handle
+well.</div>
 
 <p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
 <code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is

@@ -1687,6 +1687,17 @@ Three consequences make the split real rather than aspirational:
   orphaned events are invisible to every query and reaped by retention.
 - **Erasure and retention run against the reporting store** and must be
   written against its connection, not "the" connection.
+- **Derived state lives beside what it derives from.** `owa_rollup_day` -- and
+  any later materialization (the session map, `is_exit`) -- belongs in the
+  reporting store, whichever engine that is: it is rebuildable from that store
+  alone, which keeps the reporting store self-contained and makes a backend
+  migration "copy events, rebuild summaries there". The scheduler's *job state*
+  stays in the application store -- machinery, not derived data; job state is
+  not job output. On columnar backends this placement works because the
+  rollup's maintenance pattern -- idempotent trailing-window recompute,
+  replacing whole day-rows -- is the batch-replace shape columnar engines
+  handle well; the rejected watermark-increment design would also have been
+  the row-update pattern they punish, a third reason for the same rejection.
 
 None of the three costs anything on a single-MySQL install, and all three are
 expensive to retrofit.
