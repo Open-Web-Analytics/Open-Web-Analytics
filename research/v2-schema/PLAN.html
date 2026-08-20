@@ -430,7 +430,8 @@ saw it. Erasure has to scan, not look up.</p>
 <div class="scroll"><table>
 <thead><tr><th>Not doing</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td><strong>Query-time sampling</strong></td><td>GA samples to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term. “Every number is exact” is a competitive property worth more than the scale it costs.</td></tr>
+<tr><td><strong>Query-time sampling</strong></td><td>GA samples to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term.</td></tr>
+<tr><td><strong>Approximate counting, cardinality caps, thresholding</strong></td><td>GA4 ships all three, which is why counting <code>session_start</code> and reading its Sessions metric give two different defensible numbers, and why a breakdown need not sum to its total. All are scale accommodations a single tenant does not need — so <strong>every number exact, every breakdown summing to its total</strong> is a property v2 gets by construction and Google structurally cannot offer.</td></tr>
 <tr><td><strong>Retroactive reprocessing</strong></td><td>No retroactive goal conversion, no bot reclassification, no identity stitching backwards. Collection-time accuracy is the only chance, which raises the value of getting collection right.</td></tr>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Joins in the reporting path</strong></td><td>The single table exists to remove them. Lookup tables that reintroduce a join into aggregate queries are refused.</td></tr>

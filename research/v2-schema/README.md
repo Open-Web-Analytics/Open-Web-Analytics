@@ -3494,6 +3494,22 @@ So the choice is forced, and it goes to the rollup:
   event, a streaming signal, and the attribution the client knows at that instant
   and the server cannot reconstruct.
 
+**GA4 does not escape this, which is worth knowing before copying it.** Google
+ships the inconsistency rather than solving it, through at least four independent
+mechanisms: the Sessions metric is an *approximate* distinct count of
+`ga_session_id`, not an exact one; a dimension past its cardinality limit
+collapses its tail into a single `(other)` row; explorations sample above
+threshold; and rows are withheld by data thresholding when they could identify
+individuals. Counting the `session_start` event and reading the Sessions metric
+give two different, individually defensible numbers.
+
+Every one of those is a **scale accommodation** -- necessary because GA answers
+for millions of properties on shared capacity. A self-hosted single tenant needs
+none of them, which is the same reason sampling was rejected. So exactness is not
+extra work here; it is what remains once the accommodations are unnecessary, and
+"every breakdown sums to its total" becomes a property v2 gets by construction
+and Google structurally cannot offer.
+
 **The bounded-column objection is answered by the rebuild, and this is the part
 worth noticing.** A rollup's column list is not a ceiling; it is a current state.
 Because the rollup is *derived* from events that are retained, adding a
