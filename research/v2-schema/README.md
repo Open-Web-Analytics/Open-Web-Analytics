@@ -1045,12 +1045,14 @@ non-logging leaves no record.
 contain `bot` are caught by luck; those that do not are invisible. There is no
 update path short of a release.
 
-**Detection happens once, at collection, and is final.** This is where bot
-filtering collides with a decision made elsewhere in this document: dropping
-post-hoc enrichment means a crawler recognised *later* can never be
-reclassified. That trade was accepted for referer titles. It is much harder to
-accept here, because bot misclassification is the single most common reason an
-analytics number is wrong, and the correction usually arrives after the fact.
+**Detection happens once, at collection, and is final** -- and that is
+**decided**, not merely current. Retroactive reclassification is too expensive
+to be worth it: a crawler recognised later stays misclassified, in the same way
+a referer whose title is crawled later stays unenriched.
+
+The consequence is that **collection-time accuracy is the only chance there is**,
+which raises the value of the three fixes below considerably. They are not
+tidying; they are the whole of the mechanism.
 
 ### What v2 should do
 
@@ -1060,19 +1062,19 @@ analytics number is wrong, and the correction usually arrives after the fact.
    "Researcher" stops reading as a crawler.
 3. **Make the list updatable** without a release, and shipped with a sane
    default. This is data, not code.
-4. **Record the verdict rather than acting on it silently.** Store an
-   `is_bot` determination with the reason and the rule version, instead of
-   discarding the event. Storage is cheap; a discarded event is unrecoverable
-   and unauditable, and "why did my traffic drop" is unanswerable today.
-5. **Keep reclassification possible.** Storing rather than discarding is what
-   makes a later correction feasible at all -- and it is the one place the
-   no-post-hoc-enrichment decision should be revisited, because the value of
-   fixing bot attribution retroactively is much higher than for a referer title.
+4. **Count what is filtered, without storing it.** Since bot events are
+   discarded and will not be reclassified, keeping them is not worth the volume
+   -- automated traffic can be a third or more of raw hits, so storing it to
+   never use it roughly doubles the table for nothing. But a **per-site, per-day
+   counter of filtered events, by the rule that matched**, is tiny and answers
+   the two questions that are currently unanswerable: "why did my traffic drop"
+   and "is my bot list actually working". It also gives the only feedback
+   available for tuning the list, which matters more once reclassification is
+   off the table.
 
-Points 1 to 3 are additive to 1.x and inherited whole. Point 4 changes what is
-stored, so it belongs with the schema; point 5 is a deliberate exception to a
-decision recorded elsewhere and should be argued on its own merits rather than
-assumed.
+Points 1 to 3 are additive to 1.x and inherited whole. Point 4 needs somewhere to
+put the counter, so it lands more naturally with the v2 schema, though a small
+table in 1.x would work equally well.
 
 ## Multiple backing stores is a requirement, not an option
 
