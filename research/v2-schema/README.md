@@ -3698,6 +3698,59 @@ Consequences:
 - The 1.x `is_entry_page` proxy's over-count was measured on a mechanism without
   this property; v2's marker counts should track distinct sessions exactly.
 
+### Settled: bounce means "not engaged"
+
+**Decided 2026-08-20.** v2 adopts the engagement-based definition: a bounce is a
+session that never became engaged -- no ~10 s of engagement time, no second
+pageview, no key event. Bounce rate is reported as the complement of engagement
+rate, keeping the familiar name.
+
+**The measurement that settles it.** Under the single-pageview definition, on
+real installs:
+
+| install | sessions | single-pageview "bounces" |
+|---|---|---|
+| demo | 325,838 | 59.2% |
+| photo/blog site | 199,176 | **73.6%** |
+
+On a content site, three-quarters of all sessions are "bounces" no matter what
+happens on the page -- a reader who studies a photo for two minutes and leaves
+counts the same as one who left in a second. The number cannot fall through
+better content, only through forced navigation. It is uninformative precisely
+where OWA's users live.
+
+The deeper reason is structural: 1.x *cannot* distinguish those two visitors,
+because it cannot see final-page dwell -- and final-page dwell is exactly what
+v2's engagement deltas exist to measure. Keeping single-pageview bounce in v2
+would mean ignoring v2's own flagship measurement in the one metric where it
+matters most.
+
+**The discontinuity is already absorbed.** The earlier caution against redefining
+bounce in 1.x stands -- every trend would step at a release boundary. But the
+coexistence design dissolves it for v2: v1 history stays in v1 reporting under
+the old definition, v2 starts fresh under the new one, and no trend inside either
+system ever steps. The definitional change lands exactly where a definitional
+change is expected: at a major version, in a separate UI.
+
+**One authority for "engaged", stated to prevent a rebuild of the two-numbers
+problem.** The client-set sticky flag *is* the definition. The engagement deltas
+are the measurement of time, not a second route to the flag -- deriving
+engaged-ness server-side at rollup time from summed deltas is **rejected**,
+because it would create two authorities for one metric (flag says bounced,
+summed deltas say engaged, whenever a delta event is lost) and would quietly
+reintroduce retroactive semantics through threshold changes.
+
+Which has one consequence to state plainly: **the threshold is a collection-time
+parameter, forward-only.** Per-site configurable, default 10 s (GA4's own
+default; GA allows 10-60 s). Changing it changes what the tracker stamps from
+that moment on and rewrites nothing -- the same no-retroactivity rule as goals,
+bots and identity.
+
+**Parity harness expectation, quantified in advance**: v2 bounce rate must come
+in *at or below* the v1 number, and the gap is exactly the single-pageview
+sessions that were engaged -- dwell past threshold or a key event. A v2 bounce
+rate *above* v1's is not an intended difference; it is a defect.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**

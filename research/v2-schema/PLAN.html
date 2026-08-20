@@ -216,6 +216,15 @@ and they compose across tabs. This gives v2 something 1.x structurally cannot me
 time on the final page of a visit.</li>
 <li><strong>Engaged</strong> — a <em>sticky boolean</em> set client-side at the threshold and
 carried on every subsequent event. Idempotent, so tab races are harmless.</li>
+<li><strong>Bounce means &ldquo;not engaged&rdquo;</strong> <span class="chip c-dec">Decided</span> —
+the single-pageview definition is retired. Measured: on a photo/blog install it marks
+<strong>73.6%</strong> of sessions as bounces regardless of dwell, because 1.x cannot see
+final-page time — the exact thing engagement deltas measure. v1 history keeps the old definition
+in its own UI, so no trend steps in either system. The client-set flag is the <em>sole</em>
+authority (server-side derivation from deltas is rejected — two authorities for one metric); the
+threshold is per-site, default 10&nbsp;s, collection-time and forward-only. Parity expectation,
+declared in advance: v2 bounce ≤ v1 bounce, and a v2 number <em>above</em> v1's is a defect, not
+an intended difference.</li>
 </ul>
 <div class="scroll"><table>
 <thead><tr><th>Query</th><th class="n">Raw events</th><th class="n">From rollup</th></tr></thead>
@@ -768,7 +777,6 @@ instant, and already implemented. The single table makes the simpler policy the 
 <thead><tr><th>Question</th><th>State</th></tr></thead>
 <tbody>
 <tr><td><strong>How v2 handles PII</strong></td><td>Crypto-shredding — encrypt per subject, erase by destroying the key — is recorded but explicitly <em>not settled</em>. See below.</td></tr>
-<tr><td><strong>Whether bounce changes meaning</strong></td><td>“Not engaged” rather than “one pageview”, as GA made it. A user-visible reporting decision, not a technical one.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon estimated at ~+27% events; never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td></tr>
 </tbody></table></div>
