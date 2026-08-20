@@ -58,6 +58,10 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
     test.beforeAll(() => {
         creds = helper('provision');
         expect(creds.api_key, 'fixture user has no api key').toBeTruthy();
+        // Without this the signature is computed with an empty key, every
+        // request 401s, and nothing says why -- rest-routes.spec.js guards it
+        // for exactly that reason and this spec originally did not.
+        expect(creds.auth_key, 'OWA_AUTH_KEY is not readable, requests cannot be signed').toBeTruthy();
         expect(creds.domain, 'fixture site has no domain to use as an Origin').toBeTruthy();
     });
 
@@ -65,9 +69,18 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
         helper('cleanup');
     });
 
-    /** A signed request to a route that exists and returns data. */
-    function signedUrl(baseURL) {
-        const base = installRoot(baseURL) + 'api/index.php'
+    /**
+     * A signed request to a route that exists and returns data.
+     *
+     * The base URL comes from test.info().project.use.baseURL, matching
+     * rest-routes.spec.js. Using the destructured `baseURL` fixture instead
+     * produces a URL that does not authenticate: the signature is computed over
+     * the request URL, so any difference between the string signed here and the
+     * one actually sent is a 401 -- with no hint that the cause was the URL
+     * rather than the credential.
+     */
+    function signedUrl() {
+        const base = installRoot(test.info().project.use.baseURL) + 'api/index.php'
             + '?owa_rest_params=base/v1/sites'
             + '&owa_apiKey=' + creds.api_key;
 
@@ -76,8 +89,8 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
         );
     }
 
-    test('a configured site\'s Origin is echoed back and the request succeeds', async ({ request, baseURL }) => {
-        const res = await request.get(signedUrl(baseURL), {
+    test('a configured site\'s Origin is echoed back and the request succeeds', async ({ request }) => {
+        const res = await request.get(signedUrl(), {
             headers: { Origin: creds.domain },
         });
 
@@ -90,12 +103,12 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
         // The request itself must still work -- CORS headers are additive, and a
         // fix that emitted them while breaking the response would pass a
         // headers-only assertion.
-        expect(res.status(), 'the cross-origin request itself must succeed').not.toBe(401);
+        expect(res.status(), `cross-origin request failed: ${await res.text()}`).not.toBe(401);
         expect(res.status()).toBeLessThan(500);
     });
 
-    test('an unrelated Origin gets no Allow-Origin header', async ({ request, baseURL }) => {
-        const res = await request.get(signedUrl(baseURL), {
+    test('an unrelated Origin gets no Allow-Origin header', async ({ request }) => {
+        const res = await request.get(signedUrl(), {
             headers: { Origin: 'https://evil.example.com' },
         });
 
@@ -103,21 +116,21 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
             'an origin this installation does not serve must not be allowed').toBeUndefined();
     });
 
-    test('Vary: Origin is sent whether or not the Origin is allowed', async ({ request, baseURL }) => {
+    test('Vary: Origin is sent whether or not the Origin is allowed', async ({ request }) => {
         // Without this a shared cache can serve one site's allowed-origin header
         // to a request from another. Varnish sits in front of this application in
         // production, so it is a live concern rather than a formality -- and the
         // refusal is origin-dependent too, which is why it must be present on
         // BOTH responses.
         for (const origin of [creds.domain, 'https://evil.example.com']) {
-            const res = await request.get(signedUrl(baseURL), { headers: { Origin: origin } });
+            const res = await request.get(signedUrl(), { headers: { Origin: origin } });
 
             expect(String(res.headers()['vary'] || ''),
                 `Vary: Origin missing for ${origin}`).toMatch(/Origin/i);
         }
     });
 
-    test('a suffix of a configured host is not a configured host', async ({ request, baseURL }) => {
+    test('a suffix of a configured host is not a configured host', async ({ request }) => {
         // The classic CORS allowlist bypass: matching by prefix or substring lets
         // evil-<site> and <site>.evil.net through.
         const host = new URL(creds.domain).host;
@@ -127,19 +140,19 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
             `https://${host}.evil.net`,
             `https://sub.${host}`,
         ]) {
-            const res = await request.get(signedUrl(baseURL), { headers: { Origin: forged } });
+            const res = await request.get(signedUrl(), { headers: { Origin: forged } });
 
             expect(res.headers()['access-control-allow-origin'],
                 `${forged} must not be allowed`).toBeUndefined();
         }
     });
 
-    test('a same-origin request is unaffected', async ({ request, baseURL }) => {
+    test('a same-origin request is unaffected', async ({ request }) => {
         // No Origin header at all: not a cross-origin request, so no CORS headers
         // and no change in behaviour.
-        const res = await request.get(signedUrl(baseURL));
+        const res = await request.get(signedUrl());
 
         expect(res.headers()['access-control-allow-origin']).toBeUndefined();
-        expect(res.status()).not.toBe(401);
+        expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
     });
 });
