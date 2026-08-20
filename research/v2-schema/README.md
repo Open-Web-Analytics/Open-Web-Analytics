@@ -1291,10 +1291,16 @@ What the redesign is actually worth, then, is not retroactivity:
 - **definitions become data**, editable and inspectable, rather than 45 columns
   and a `numGoals` constant.
 
-The trade accepted with it: defining a goal does not populate history, and
-editing one leaves earlier conversions describing the previous definition. Both
-are exactly GA's behaviour, and the second is why the definition should carry a
-version the stored match refers to.
+The rule is simply that **matching applies going forward**. Define a goal and
+future events are marked; delete or edit it and future events are not, or are
+marked differently. Past marks stay exactly as they were.
+
+No definition versioning, no snapshot of criteria on the event. **The mark is an
+observation, not a derivation** -- a record of what was determined at the moment
+the event arrived, like the event's timestamp or its URL. Nobody versions those
+either. A report may therefore show conversions for a goal that no longer
+exists, which is correct: it describes what happened, not what is currently
+configured.
 
 ### Where the cost lands
 
