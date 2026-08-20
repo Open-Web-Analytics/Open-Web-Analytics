@@ -3659,6 +3659,45 @@ these shapes can add it later with one rebuild and no migration. It is a cache
 with a trigger condition, not architecture. All numbers above are warm on 692k
 events; a large cold install is exactly where the trigger fires.
 
+### Marker dedup: content-derived ids make the tab race structurally impossible
+
+Peter's question -- can the two-tab race be stopped at the tracker? -- has a
+two-layer answer, and the second layer retires a caveat recorded above.
+
+**Tracker level: shrink, cannot close.** The race is read-modify-write on shared
+cookie state. The clean primitive, the Web Locks API, is **origin-scoped while
+OWA's cookie state is domain-scoped** -- two tabs on different subdomains share
+the session cookie but cannot share a lock, and cross-subdomain is exactly where
+OWA operates. What works domain-wide is re-read-and-verify: after writing the
+session id, read the cookie back; if it differs, another tab won -- adopt theirs
+and do not emit. Milliseconds of window remain.
+
+**Storage level: eliminate, using v2's own idiom.** Every other v2 id is
+content-derived, so derive the marker's event id from what it marks:
+
+```
+session_start id = hash(site_id + session_id + 'session_start')
+first_visit  id = hash(site_id + visitor_id + 'first_visit')
+```
+
+Racing tabs then produce **the same row**; the second insert is a duplicate-key
+no-op regardless of order or subdomain. No coordination anywhere. And it covers
+what no tracker fix can: **queue redelivery** -- the queue is at-least-once, so a
+redelivered marker would double-fire even from one well-behaved tab, and the
+derived id makes that a no-op through the same mechanism.
+
+Consequences:
+
+- **The +0.28% benign-negative-remainder caveat above is retired.** With
+  duplicate markers structurally impossible, a negative remainder is again a
+  pure defect signal, and the never-clamp rule needs no softening.
+- **One nondeterminism, named**: racing tabs may carry different payloads --
+  different referrers is *why* they raced. First writer wins; the loser's
+  attribution is discarded. One session, one attribution -- a choice, not an
+  accident.
+- The 1.x `is_entry_page` proxy's over-count was measured on a mechanism without
+  this property; v2's marker counts should track distinct sessions exactly.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**

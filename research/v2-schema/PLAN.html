@@ -308,9 +308,12 @@ stream, an interactive breakdown counts marker rows instead of deduplicating ses
 measured via 1.x's <code>is_entry_page</code> proxy: <strong>92&nbsp;ms vs 373&nbsp;ms</strong>
 over a year, <strong>218&nbsp;ms vs 1,855&nbsp;ms</strong> over three. The expensive
 <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing window. A lost marker
-undercounts the breakdown and lands in <code>(unknown)</code>; a duplicate marker (tab race)
-overcounts it — the proxy measured <strong>+0.28%</strong> — which is the benign first explanation
-for a negative remainder before it is read as a defect. The derived session table demotes to an
+undercounts the breakdown and lands in <code>(unknown)</code>. Duplicate markers (tab races, queue
+redelivery) are <strong>structurally impossible</strong>: the marker's event id is content-derived
+— <code>hash(site_id + session_id + 'session_start')</code> — so racing writers produce the same
+row and the second insert is a duplicate-key no-op, with no coordination and across subdomains,
+where the Web Locks API (origin-scoped) could not reach. A negative remainder is therefore a pure
+defect signal. The derived session table demotes to an
 <em>optional materialization</em>: derived state an install can add later with one rebuild if
 breakdown latency outgrows these shapes, a cache with a trigger condition rather than
 architecture.</p>
