@@ -3233,7 +3233,7 @@ nullable columns; the spec below shows the final placement:
 | `referer_url` | VARCHAR(1024) | 2 | |
 | `medium`, `source`, `campaign`, `ad`, `search_terms` | VARCHAR | 2 | attribution, identified server-side at event processing, stamped on every event of the session |
 | `browser`, `browser_type`, `os` | VARCHAR | 2 | parsed at collection |
-| `raw_ua` | VARCHAR(1024) NULL | 1 | **on `session_start` rows only** -- once per session, not per event. Debugging is a reader even though reporting is not: inspecting misparses, building bot/spam rules, evaluating parser upgrades (the `stripos` bug was found by reading raw UAs). Never in a reporting query |
+| `raw_ua` | VARCHAR(1024) | 1 | **on every row** (Peter's call, overriding a once-per-session draft). Debugging is a reader even though reporting is not: inspecting misparses, building bot/spam rules, evaluating parser upgrades (the `stripos` bug was found by reading raw UAs). Never in a reporting query |
 | `language`, `country`, `city`, `host` | VARCHAR | 2 | |
 | `ip_address` | VARCHAR(45) NULL | 2 | anonymised by default |
 | `engagement_msec` | INT UNSIGNED NULL | 3 | the delta, on `user_engagement` rows; "engagement by URL" is `SUM(engagement_msec) GROUP BY page_uri` and must not pay JSON extraction |

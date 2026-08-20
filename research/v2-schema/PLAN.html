@@ -540,7 +540,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">16</td><td><code>campaign</code></td><td>VARCHAR(255)</td></tr>
 <tr><td class="n">17</td><td><code>ad</code></td><td>VARCHAR(255)</td></tr>
 <tr><td class="n">18</td><td><code>search_terms</code></td><td>VARCHAR(255)</td></tr>
-<tr><td class="n">19</td><td><code>browser</code></td><td>VARCHAR(128)</td><td rowspan="3">parsed at collection; raw UA stored once per session — see row 40</td></tr>
+<tr><td class="n">19</td><td><code>browser</code></td><td>VARCHAR(128)</td><td rowspan="3">parsed at collection; raw UA on every row — see row 39</td></tr>
 <tr><td class="n">20</td><td><code>browser_type</code></td><td>VARCHAR(64)</td></tr>
 <tr><td class="n">21</td><td><code>os</code></td><td>VARCHAR(64)</td></tr>
 <tr><td class="n">22</td><td><code>language</code></td><td>VARCHAR(16)</td><td></td></tr>
@@ -560,7 +560,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>on <em>every</em> row: time accrued on the current page since the last report; <code>user_engagement</code> rows carry the hide-time residue. Must not pay JSON extraction</td></tr>
 <tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT</td><td>stamped at collection; the third engaged disjunct</td></tr>
 <tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
-<tr><td class="n">39</td><td><code>raw_ua</code></td><td>VARCHAR(1024) NULL</td><td>on <code>session_start</code> rows only — one per session. Debugging is a reader (misparses, bot/spam rule-building, parser-upgrade evaluation); reporting never touches it</td></tr>
+<tr><td class="n">39</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>on every row. Debugging is a reader (misparses, bot/spam rule-building, parser-upgrade evaluation); reporting never touches it</td></tr>
 <tr><td class="n">40</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>
 </tbody></table></div>
 <p>Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
