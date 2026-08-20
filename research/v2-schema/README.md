@@ -1117,6 +1117,88 @@ keeping deliberately rather than an limitation to be corrected.
 6. If faithful replay is genuinely wanted, offer **rrweb as an opt-in backend**
    with its storage and privacy costs stated plainly, rather than as the default.
 
+## Other consolidation worth doing
+
+Measured against the tree, in rough order of value.
+
+### The "(not set)" placeholder convention
+
+Ten custom-variable columns (`cv1_name`/`cv1_value` through `cv5`) exist on every
+fact table. On the installation measured:
+
+```
+cv1_name = '(not set)'   636,644 rows
+cv1_name = NULL           56,180 rows
+cv1_name with a real value:    0 rows
+```
+
+Zero real values, in all ten columns, on every row -- a nine-character
+placeholder stored six times over per event. The same convention explains the
+heatmap finding: `dom_element_id` is "populated" on 94% of clicks and holds a
+real value on 0.09%, because 439,839 rows say `(not set)`.
+
+Two changes follow. **Absent should be NULL**, not a sentinel string -- the
+distinction between "no value" and "the value is the words not set" is currently
+unavailable, and every count of populated columns is wrong by default.
+And **custom variables become JSON parameters**, so five unused slots cost
+nothing rather than ten columns; a sixth becomes possible, which the fixed slots
+have never allowed.
+
+### Compatibility aliases
+
+411 entries in `owa_compat_aliases.php`, each mapping a legacy class name onto a
+namespaced one, and mandatory -- `entityFactory()` throws without them. A major
+version is the one opportunity to delete the lot.
+
+### Vestigial declarations
+
+Things declared and never used, found while measuring other questions:
+
+| | state |
+|---|---|
+| `is_assigned` on the queue item | declared, never read or written -- the missing claim |
+| `dom_element_parent_id` | declared, 0% populated |
+| the 11 `*InVisit` dimensions | registered, zero references outside registration |
+| `owa_exit` / `base.exit` | registered, no write path |
+| `owa_request.os` beside `os_id`, `site` beside `site_id` | legacy duplicates of the key next to them |
+| `owa_site.id_1_3` | migration artefact |
+| `processQueuesJobSchedule` | setting read nowhere |
+| `error_log_level` | never read; debug is gated by `OWA_DEBUG` |
+
+Individually trivial. Collectively they are the reason the schema reads as more
+capable than the implementation is, which has now caused three wrong conclusions
+in this document alone.
+
+### Derived date parts
+
+Nine columns per fact row -- `year`, `month`, `day`, `dayofweek`, `dayofyear`,
+`weekofyear`, `hour`, `minute`, `second` -- all derivable from the timestamp.
+They exist because deriving in SQL prevented index use, which a single event
+table with a date-keyed partition column no longer requires. Deriving at query
+time also makes a timezone change correct history rather than leave it wrong.
+
+### Modules
+
+Seven modules, of which five are small: `Hello` (199 lines, an example),
+`FileCache` (343), `MemcachedCache` (221), `RemoteQueue` (61), `MaxmindGeoip`
+(321). The module system is a genuine extension point and should stay, but the
+caches belong behind one cache interface rather than as modules, and `Hello`
+belongs in documentation rather than in the shipped tree.
+
+### The big classes
+
+```
+Core/Db.php          3,171 lines, 118 methods
+Core/CoreAPI.php     2,257 lines
+Base/Settings.php    1,469 lines
+Core/Template.php    1,107 lines
+```
+
+`CoreAPI` in particular is a static facade over everything -- the class every
+other class reaches through, and therefore the one that makes the system hard to
+test in isolation. Breaking it up is not urgent, but v2 should avoid adding to
+it, and the storage seam work already pulls `Db` apart along a useful line.
+
 ## Pros and cons
 
 **For the single table:**
