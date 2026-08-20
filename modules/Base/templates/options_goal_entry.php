@@ -82,13 +82,7 @@
                     </p>
                 </th>
                 <td>
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="url_destination" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'url_destination'){echo 'CHECKED';}?> > URL Destination<BR>
-
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="pages_per_visit" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'pages_per_visit'){echo 'CHECKED';}?> > Pages / Visit<BR>
-
-                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="visit_duration" <?php if (isset($view->goal['goal_type']) && $view->goal['goal_type'] === 'visit_duration'){echo 'CHECKED';}?> > Visit Duration <BR>
-
-
+                    <input type="radio" name="<?php echo $view->getNs();?>goal[goal_type]" value="url_destination" <?php if ( ! isset($view->goal['goal_type']) || $view->goal['goal_type'] === 'url_destination'){echo 'CHECKED';}?> > URL Destination<BR>
                 </td>
             </tr>
 
@@ -144,18 +138,6 @@
         </table>
         <BR>
         <a name="steps-end" href="#    steps-end" id="addStep">Add New Funnel Step</a>
-    </div>
-
-    <!-- pages per visit goal type specific options -->
-    <div id="pages_per_visit_details" class="goal-detail">
-        <h3>Goal Details</h3>
-        Not implemented yet.
-    </div>
-
-    <!-- visit duration goal type specific options -->
-    <div id="visit_duration_details" class="goal-detail">
-        <h3>Goal Details</h3>
-        Not implemented yet.
     </div>
 
     <input type="hidden" name="<?php echo $view->getNs();?>goal[goal_number]" value="<?php $view->out($view->goal_number, false);?>">
