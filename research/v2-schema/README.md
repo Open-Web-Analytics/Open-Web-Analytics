@@ -1265,40 +1265,52 @@ sixteenth is a schema change, an update class and a migration.
 **The goal *number* is the identity.** Reports address `goal3Completions`, so
 repurposing goal 3 silently rewrites the meaning of its history.
 
-### What v2 should do: goals as query-time predicates
+### What v2 should do: mark at collection, on named criteria
 
-A goal is a **stored definition** evaluated against events when reporting, not a
-flag written at collection. That yields three things directly:
+A goal is a **stored definition matched as events arrive**, and the match is
+recorded on the event. Not evaluated at reporting time.
 
-- **retroactive** -- defining a goal reports on all history that matches
-- **unlimited** -- goals become rows, not columns
-- **stable identity** -- a goal is a named definition, so editing it is visible
-  rather than silently rewriting the past
+Query-time evaluation was considered and rejected. It would make goals
+retroactive, but every report would then evaluate N goal predicates over the
+events it scans, and counting conversions by goal needs a branch per goal.
+Marking once at ingestion makes the same question a single indexed predicate.
+It is also what GA4 does, from more experience than anyone: key events are
+matched as they arrive and are explicitly **not retroactive** -- mark an event
+today and the preceding months read zero, though the event was firing
+throughout. Users accept that, and it is consistent with the decisions taken for
+bots and for post-hoc enrichment: **decide at collection.**
 
-**And it is derivation, not enrichment**, so it does not conflict with the
-decisions taken for bots and referer titles. The inputs are all stored:
-`url_destination` tests a page URL on an event; `pages_per_visit` and
-`visit_duration` test values the sessions rollup already carries. Nothing is
-fetched, nothing was discarded.
+What the redesign is actually worth, then, is not retroactivity:
+
+- **unlimited goals.** Fifteen is 45 columns today; a sixteenth is a schema
+  change. Recording the matched goal's **name** on the event -- a parameter, or a
+  small side table -- removes the cap entirely.
+- **stable identity.** The goal *number* is the identity today, so repurposing
+  goal 3 silently rewrites the meaning of its history. A named definition cannot
+  do that: an edited goal is visibly a different thing.
+- **definitions become data**, editable and inspectable, rather than 45 columns
+  and a `numGoals` constant.
+
+The trade accepted with it: defining a goal does not populate history, and
+editing one leaves earlier conversions describing the previous definition. Both
+are exactly GA's behaviour, and the second is why the definition should carry a
+version the stored match refers to.
 
 ### Where the cost lands
 
-Simple goals are cheap: `url_destination` is a predicate on pageview events,
-and the two session-scoped types read rollup columns that exist anyway.
+With matching at ingestion, most goal reporting is a filtered count -- the same
+shape as any other event query.
 
 The awkward remainder is **goal rates** -- `goalConversionRateAll`,
-`goalAbandonRateAll` -- which divide conversions by sessions and so need
-per-session evaluation. That was noted in the metrics audit: it is the one
-family the rollup does not fully rescue, since the goal set is not known when
-the rollup is built. Two options, and it is worth deciding deliberately rather
-than discovering: evaluate goals against the rollup at query time, over a
-filtered subset rather than all events; or let the rollup materialise a
-conversion count per *currently defined* goal and rebuild when definitions
-change -- cheap, because the rollup is derived and rebuildable by design.
+`goalAbandonRateAll` -- which divide conversions by sessions and therefore need
+per-session aggregation. Since the match is already on the event, the sessions
+rollup can carry a conversion count per goal, computed by the same job that
+builds it. Adding a goal means later sessions carry it and earlier ones do not,
+which is the retroactivity trade restated rather than a new problem.
 
 **Funnels stay code.** `ReportGoalFunnel` computes step-to-step progression,
-which is not expressible as a predicate and should remain a widget type rather
-than distort the definition format.
+which is not a predicate and should remain a widget type rather than distort the
+definition format.
 
 ### Additive to 1.x
 
