@@ -506,15 +506,17 @@ saw it. Erasure has to scan, not look up.</p>
 </tbody></table></div>
 
 <h3 id="s110"><span class="num">1.10</span>The tables <span class="chip c-dec">Decided</span></h3>
-<p><strong>The column-admission rule:</strong> a field earns a first-class column only if it is
-(1)&nbsp;identity or the partition key, (2)&nbsp;a session-scoped sticky value — stamped on every
-event so breakdowns are plain group-bys — or (3)&nbsp;an aggregate target summed in nearly every
-report, where per-row JSON extraction would tax the hottest queries. Everything else lives in
-<code>params</code> (JSON), indexable retroactively via virtual generated columns when a path
-proves hot — an idiom that ports to columnar stores as ClickHouse materialized columns /
-JSON subcolumns and BigQuery clustered columns, provided each param key keeps one stable type
-(enforced at ingest; type wobble defeats columnar shredding). That holds <code>owa_event</code> to <strong>~30 columns</strong> against
-<code>owa_request</code>'s 58 and <code>owa_session</code>'s 121.</p>
+<p><strong>The column-admission rule (revised):</strong> a field is a <em>column</em> if its name
+is known at release time and it is scalar; <code>params</code> (JSON) is reserved for what cannot
+be a column — <strong>site-defined keys unknown at release time</strong> (unregistered custom
+variables; the alternatives are user-controlled DDL, a forbidden registration step, or a forbidden
+EAV join) and <strong>nested arrays</strong> (commerce <code>items</code>, which cost 1.x a
+separate fact table and a join). Params buys nothing else: the wide prototype measured storage as
+a wash, JSON extraction is slower than a column, and MySQL&nbsp;8 <code>INSTANT ADD COLUMN</code>
+removes the ALTER cost for release-known fields. Columnar stores agree more strongly — wide and
+sparse is their native shape, and their JSON shredding covers the dynamic keys (one param key, one
+type, enforced at ingest). <code>owa_event</code> lands at <strong>~40 columns</strong> against
+<code>owa_request</code>'s 58 + <code>owa_session</code>'s 121.</p>
 <div class="scroll"><table>
 <thead><tr><th>owa_event</th><th>Columns</th></tr></thead>
 <tbody>
@@ -523,7 +525,8 @@ JSON subcolumns and BigQuery clustered columns, provided each param key keeps on
 <tr><td>page + attribution (sticky)</td><td><code>page_uri</code> (URI not URL), <code>page_title</code>, <code>referer_url</code>, <code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td></tr>
 <tr><td>device / geo</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>country</code>, <code>city</code>, <code>host</code>, <code>ip_address</code> (anonymised by default; raw UA not stored — no retroactive reclassification means no reader)</td></tr>
 <tr><td>aggregate targets</td><td><code>engagement_msec</code> (&ldquo;engagement by URL&rdquo; must not pay JSON extraction), <code>is_key_event</code>, <code>revenue</code> (cents, negative on refund)</td></tr>
-<tr><td>everything else</td><td><code>params</code> JSON — click coords, element paths, commerce items, custom variables (unregistered, unlimited — the five-slot cv wart dies here), declared PII if sent</td></tr>
+<tr><td>event-specific scalars</td><td><code>click_x/y</code>, <code>page_width/height</code>, <code>target_url</code>, <code>element_path/tag/id</code>, <code>scroll_depth</code> — release-known, so real nullable columns</td></tr>
+<tr><td>what cannot be a column</td><td><code>params</code> JSON — site-defined custom variables and event params (unregistered, unlimited — the five-slot cv wart dies here), nested commerce <code>items</code>, declared PII if sent</td></tr>
 </tbody></table></div>
 <p>Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
 <code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
