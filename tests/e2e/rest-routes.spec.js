@@ -209,4 +209,91 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         expect(fake.status, 'an unknown route must use the same status').toBe(real.status);
         expect(fake.body, 'an unknown route must be byte-identical').toBe(real.body);
     });
+
+    /**
+     * CORS: the API answers cross-origin, and only for configured sites.
+     *
+     * These live here rather than in their own spec because provision() calls
+     * cleanup() first -- it destroys whatever fixture exists. A second spec
+     * calling the same helper invalidates this one's credential the moment it
+     * runs, which is exactly what happened: seven of the signed cases above
+     * failed because another file had re-provisioned the shared FIXTURE_TAG
+     * user out from under them. One owner per fixture.
+     *
+     * The property matters beyond CORS. addCorsHeaders() had never emitted a
+     * header -- it compared getSitesList()'s row arrays against the Origin
+     * string, so `continue` always fired -- and the unit test that replaced it
+     * exercises the matcher as a pure function without issuing a request. The
+     * overlay e2e is same-origin and does not assert its fetch. So "can a
+     * browser on the tracked site call this API and get data" had no coverage,
+     * which is also why playback and heatmaps still ride JSONP.
+     *
+     * Every expectation below was measured against a live install first.
+     */
+    test('a configured site\'s Origin is echoed back, and the request still works', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+        const res = await request.fetch(url, { method: 'GET', headers: { Origin: creds.domain } });
+
+        expect(res.headers()['access-control-allow-origin'],
+            'a configured site must be allowed cross-origin').toBe(creds.domain);
+        expect(res.headers()['access-control-allow-credentials']).toBe('true');
+
+        // Asserted as well as the headers: a change that emitted CORS correctly
+        // while breaking the response would pass a headers-only test.
+        expect(res.status(), `cross-origin request failed: ${await res.text()}`).not.toBe(401);
+    });
+
+    test('an unrelated Origin gets no Allow-Origin header', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+        const res = await request.fetch(url, {
+            method: 'GET',
+            headers: { Origin: 'https://evil.example.com' },
+        });
+
+        expect(res.headers()['access-control-allow-origin'],
+            'an origin this installation does not serve must not be allowed').toBeUndefined();
+    });
+
+    test('a suffix or subdomain of a configured host is not that host', async ({ request }) => {
+        // The classic allowlist bypass: prefix or substring matching lets
+        // evil-<host> and <host>.evil.net through.
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = routeUrl(root, 'base/v1/sites', '', creds);
+        const host = new URL(creds.domain).host;
+
+        for (const forged of [`https://evil-${host}`, `https://${host}.evil.net`, `https://sub.${host}`]) {
+            const res = await request.fetch(url, { method: 'GET', headers: { Origin: forged } });
+
+            expect(res.headers()['access-control-allow-origin'],
+                `${forged} must not be allowed`).toBeUndefined();
+        }
+    });
+
+    test('Vary: Origin is sent whether or not the Origin is allowed', async ({ request }) => {
+        // Without it a shared cache can hand one site's allowed-origin header to
+        // a request from another. Varnish sits in front of this application in
+        // production, and the refusal is origin-dependent too -- so it must be
+        // present on both responses, not just the permitted one.
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = routeUrl(root, 'base/v1/sites', '', creds);
+
+        for (const origin of [creds.domain, 'https://evil.example.com']) {
+            const res = await request.fetch(url, { method: 'GET', headers: { Origin: origin } });
+
+            expect(String(res.headers()['vary'] || ''),
+                `Vary: Origin missing for ${origin}`).toMatch(/Origin/i);
+        }
+    });
+
+    test('a request with no Origin is unaffected', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const res = await request.fetch(routeUrl(root, 'base/v1/sites', '', creds), { method: 'GET' });
+
+        expect(res.headers()['access-control-allow-origin']).toBeUndefined();
+        expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
+    });
 });
