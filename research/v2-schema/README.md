@@ -3232,7 +3232,8 @@ nullable columns; the spec below shows the final placement:
 | `page_title` | VARCHAR(512) | 2 | |
 | `referer_url` | VARCHAR(1024) | 2 | |
 | `medium`, `source`, `campaign`, `ad`, `search_terms` | VARCHAR | 2 | attribution, identified server-side at event processing, stamped on every event of the session |
-| `browser`, `browser_type`, `os` | VARCHAR | 2 | parsed at collection; the raw UA is not stored (no retroactive reclassification, so it has no reader) |
+| `browser`, `browser_type`, `os` | VARCHAR | 2 | parsed at collection |
+| `raw_ua` | VARCHAR(1024) NULL | 1 | **on `session_start` rows only** -- once per session, not per event. Debugging is a reader even though reporting is not: inspecting misparses, building bot/spam rules, evaluating parser upgrades (the `stripos` bug was found by reading raw UAs). Never in a reporting query |
 | `language`, `country`, `city`, `host` | VARCHAR | 2 | |
 | `ip_address` | VARCHAR(45) NULL | 2 | anonymised by default |
 | `engagement_msec` | INT UNSIGNED NULL | 3 | the delta, on `user_engagement` rows; "engagement by URL" is `SUM(engagement_msec) GROUP BY page_uri` and must not pay JSON extraction |
@@ -3261,6 +3262,13 @@ earlier closer-job flag remaining available as a materialization if that gets
 slow, the same standing as the session map), eight derived date-part columns, all
 dimension FKs, and bot rows entirely -- bots are refused at ingest, since
 without retroactive reclassification a stored bot row has no future reader.
+
+
+**Ingest refusals need a debug log.** With bots refused at ingest, a false
+positive -- a human refused as a bot -- leaves no row anywhere and is
+undebuggable by construction. The refusal path logs UA and verdict at debug
+level; an ingest concern rather than a schema one, recorded here so it is not
+discovered the hard way.
 
 **The midnight rule.** A partitioned InnoDB table cannot carry a unique key
 that omits the partition column, so the PK is `(id, yyyymmdd)` -- and an
