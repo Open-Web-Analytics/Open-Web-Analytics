@@ -3763,10 +3763,14 @@ comparability wobble: a threshold change alters historical bounce numbers, and
 the UI must annotate the change date rather than let the step pass silently.
 Per-site threshold, default 10 s.
 
-**Engaged is a dimension, not only a metric -- Peter's sharpening, decided
-same day.** The non-engaged segment is the actionable one: "top landing pages
-among non-engaged sessions" is the query that turns a 73.6% number into a work
-list. Requirements and measurements:
+**Engaged as a dimension: punted for v2.0 -- Peter's final call, same day.**
+The question installs will actually ask is "which URLs have the most
+engagement", and that needs no session classification at all: it is
+`SUM(msec) GROUP BY page_ref` over the `user_engagement` rows, one pass, each
+row already carrying its page context under the delivery design below. The
+punt is free to reverse -- engaged-ness is derived, never stored, so adding
+the dimension later is a query-builder feature with no schema change, at the
+measured costs below. What was established while deciding, kept for that day:
 
 - **Session-grain semantics**: an event belongs to a session that *ended*
   engaged, or did not. This is what the removed sticky flag could never have
@@ -3780,8 +3784,8 @@ list. Requirements and measurements:
 - **Sums by construction**: engaged + non-engaged = total sessions, because both
   sides come from one classification in one query. This dimension never needs
   the `(unknown)` reconciliation row.
-- The skinny escape hatch stands: a derived `(session_id, engaged)` map if an
-  install outgrows these shapes; a threshold change rebuilds it, bounded.
+- The skinny escape hatch stands: a derived `(session_id, engaged)` map if the
+  dimension is later built and an install outgrows the derived shapes.
 
 **Parity harness expectation, quantified in advance**: v2 bounce rate must come
 in *at or below* the v1 number, and the gap is exactly the single-pageview
