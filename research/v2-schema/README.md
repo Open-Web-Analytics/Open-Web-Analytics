@@ -1119,6 +1119,78 @@ Both features belong to **v2**. The parsed-output change would be additive in
 principle, but detection and exclusion are two halves of one design and are
 better shipped together.
 
+## Attribution
+
+### How it works today
+
+Attribution is decided **in the browser**. `setTrafficAttribution()` reads the
+campaign state from the `c` cookie and applies one of two models chosen by the
+`trafficAttributionMode` setting:
+
+```
+direct    last touch   (the default)
+original  first touch
+```
+
+The verdict is written to `owa_session.latest_attributions` -- a BLOB -- and
+flattened onto every fact row as `medium`, `source_id`, `campaign_id` and
+`ad_id`. The window is `campaignAttributionWindow`, nominally 60 days.
+
+### Four problems
+
+**The 60-day window does not work.** `StateManager.set()` overwrites its own
+`expiration_days` argument, so the `c` store is written as a browser-session
+cookie. First-touch attribution therefore cannot survive a browser restart, and
+the setting has no effect. The fix belongs with the tracker state work already
+described.
+
+**The model is frozen at collection.** `trafficAttributionMode` is a tracker
+setting, so changing it affects only future traffic. An installation cannot
+compare last-touch against first-touch, or correct a choice made a year ago --
+it gets whichever model was configured at the time, permanently.
+
+**`latest_attributions` is an opaque BLOB** on the session: not queryable, not
+segmentable, not usable as a dimension.
+
+**The decision is made by an untrusted client.** The browser decides which touch
+gets credit and the server records the verdict.
+
+### What v2 should do: store touches, attribute at query time
+
+The touchpoints are **already on every event** -- medium, source, campaign, ad
+are flattened onto each fact row today and would be columns on the event in v2.
+So the model does not need deciding at collection at all: store what was
+observed, and apply a model when reporting.
+
+That yields three things the current design cannot:
+
+- **changing the model re-attributes history**, because the raw touches are
+  intact -- which is how GA4 behaves and is the property users actually expect
+  from an attribution setting
+- **models can be compared** side by side rather than chosen blind
+- **the client stops deciding**, and simply reports the campaign parameters it
+  observed
+
+**This does not contradict the no-post-hoc-enrichment decision.** That decision
+was about data fetched from outside after the fact -- crawled referer titles, a
+re-run geo lookup. Attribution is *derived from events already stored*, which is
+computation rather than enrichment. Retroactivity is free here in a way it is
+not there.
+
+**Where the work lands: the sessions rollup.** Last-touch is the session's
+opening campaign, which the rollup carries anyway. First-touch across sessions is
+the visitor's earliest campaign-bearing event inside the window -- derivable,
+since `visitor_id` and the campaign columns are both on events, but a lookup
+across history rather than within one session.
+
+So the rollup stores **both attributions per session**, computed by the scheduled
+job, and a report selects which to group by. Query-time model choice then costs
+nothing, and adding a third model later means adding a column and rebuilding --
+possible precisely because the rollup is derived rather than authoritative.
+
+The tracker's job shrinks accordingly: capture and persist the campaign
+parameters it sees, and stop deciding what they mean.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
