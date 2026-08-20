@@ -1274,6 +1274,98 @@ other class reaches through, and therefore the one that makes the system hard to
 test in isolation. Breaking it up is not urgent, but v2 should avoid adding to
 it, and the storage seam work already pulls `Db` apart along a useful line.
 
+## The tracker
+
+### What is already right
+
+```
+owa.tracker.js   52.6 KB raw, 17.2 KB gzipped, no jQuery bundled
+                 (jQuery appears only in the separate heatmap and player bundles)
+```
+
+`sendBeacon` is already the primary transport with an `Image` fallback, and
+state persistence is deferred until delivery is confirmed -- so a failed beacon
+does not mint a duplicate session. The hard parts of the engagement-beacon design
+already exist.
+
+### Transport: replace the hidden-iframe POST
+
+When a request URL exceeds `getRequestCharacterLimit`, `logEvent()` falls back to
+`cdPost()`, a hidden-iframe POST which by its own comment *"gives us no delivery
+signal, so commit optimistically"*. That is the path large payloads take, and it
+is why their delivery cannot be confirmed.
+
+The cause is that `sendBeacon` is called as `sendBeacon( url )` with everything
+in the query string, so payload size is bounded by URL length. `sendBeacon` with
+a `Blob` body, or `fetch(..., { keepalive: true })`, removes the limit and
+returns a real result -- no iframe, and it still works during unload.
+
+### `Util.js` is 1,383 lines of ES5-era helpers
+
+`Util.strpos`, `Util.trim`, `unescape()`, `toGMTString()`, `new Array()` used as
+an object -- PHP string functions reimplemented in JavaScript alongside
+deprecated APIs. Most are one-liners now, and the tracker's browser baseline can
+be modern.
+
+### What the tracker should start sending
+
+- **engagement deltas and a sticky `engaged` flag**, per the session model above
+- **`seq` on recording chunks** -- a page-scoped counter giving ordering, dedup
+  and gap detection
+- **an element path** for clicks, without which heatmaps stay coordinate-based:
+  measured, `dom_element_id` holds a real value on 0.09% of clicks
+- **the URI rather than the full URL**, letting the server derive page identity
+  scoped by site, which is what collapses the seven-way homepage split
+- **custom variables by name**, as parameters rather than five fixed slots
+
+### What it should stop sending
+
+`Tracker.js` is 2,221 lines, much of it computing what the server can derive --
+date parts especially. The tracker should send only what the client alone knows:
+location, referrer, viewport, engagement, element identity.
+
+### Cookies and parameters
+
+Three stores are registered, in **two serialisation formats**:
+
+```js
+OWA.registerStateStore('v', 364, '', 'assoc');   // visitor
+OWA.registerStateStore('s', 364, '', 'assoc');   // session
+OWA.registerStateStore('c',  60, '', 'json');    // campaign attribution
+sharableStateStores = ['v', 's', 'c', 'b'];      // 'b' referenced, not registered here
+```
+
+The `assoc` format is homegrown:
+
+```js
+string += prop + '=>' + obj[prop];
+if (i < count) { string += '|||'; }
+```
+
+so every value carries `=>` and every pair after the first carries `|||`, before
+URL-encoding inflates both -- on a cookie sent with every request to the domain,
+including every image and stylesheet.
+
+**Standardise on one format.** Two encoders, two decoders, a `format` argument on
+`registerStore` and a branch at every read and write, all for flat maps.
+
+**Multiple cookies remain necessary** -- expiration is a property of the cookie,
+so state with different lifetimes cannot share one. But grouping is by
+**expiration class, not by logical store**, and OWA already has the mechanism for
+finer granularity: `s` is registered for 364 days precisely so the *last* session
+id survives for `prior_session_id`, `days_since_prior_session` and
+`num_prior_sessions`, with the 30-minute session lifetime enforced as a timestamp
+check on read rather than by cookie expiry. The same treatment gives `c` its
+60-day attribution window inside a persistent cookie -- and fixes it by
+construction, since a logical check on read cannot be silently dropped the way
+`set()` currently drops its `expiration_days` argument.
+
+**Drop the `owa_` prefix from URL parameters.** It is a byproduct of OWA once
+being embeddable inside other applications, a design since removed, so the bytes
+are paid on every tracking request for a collision that can no longer occur. The
+prefix should stay on **cookie names**, where other software on the same domain
+genuinely may collide -- the WordPress plugin install being the obvious case.
+
 ## Pros and cons
 
 **For the single table:**
