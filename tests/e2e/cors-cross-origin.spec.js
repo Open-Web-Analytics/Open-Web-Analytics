@@ -103,7 +103,9 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
         // The request itself must still work -- CORS headers are additive, and a
         // fix that emitted them while breaking the response would pass a
         // headers-only assertion.
-        expect(res.status(), `cross-origin request failed: ${await res.text()}`).not.toBe(401);
+        expect(res.status(),
+            `cross-origin request failed\n  url:  ${signedUrl()}\n  body: ${await res.text()}`
+        ).not.toBe(401);
         expect(res.status()).toBeLessThan(500);
     });
 
@@ -153,6 +155,8 @@ test.describe('the REST API answers cross-origin @selfhost-only', () => {
         const res = await request.get(signedUrl());
 
         expect(res.headers()['access-control-allow-origin']).toBeUndefined();
-        expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
+        expect(res.status(),
+            `same-origin request failed\n  url:  ${signedUrl()}\n  key:  ${creds.api_key}\n  body: ${await res.text()}`
+        ).not.toBe(401);
     });
 });
