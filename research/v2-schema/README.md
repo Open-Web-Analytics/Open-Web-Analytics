@@ -3788,6 +3788,73 @@ in *at or below* the v1 number, and the gap is exactly the single-pageview
 sessions that were engaged -- dwell past threshold or a key event. A v2 bounce
 rate *above* v1's is not an intended difference; it is a defect.
 
+### Engagement delivery: at-least-once events with derived ids, not cleared-and-prayed beacons
+
+Settled across three of Peter's questions (2026-08-20), and it revises the
+delta-piggybacking sketch earlier in this document.
+
+**When does a dedicated engagement event fire?** Only when in-page time would
+otherwise go unreported -- pageview 2+ is itself the engagement signal for the
+2+ disjunct and gets no companion event. The dedicated `user_engagement` event
+serves what a pageview cannot see: dwell on a page the visitor left without
+generating another event, which is exactly where 1.x is structurally blind
+(final-page and single-page dwell).
+
+**The attribution trap.** If page 1's unreported time piggybacks as a parameter
+on page 2's `page_view`, it arrives on an envelope whose URL is page 2 --
+session totals survive (deltas commute) but per-page dwell shifts one page
+forward. GA4 avoids this by flushing a `user_engagement` on every
+`visibilitychange` while still on the page, then clearing -- envelope
+attribution stays truthful, and a lost beacon is simply lost time. GA accepts
+loss on every page to avoid carrying state.
+
+**"We never know if there will be another page view."** Correct, and it kills
+any design that defers reporting to a hypothetical next page. Every hide must
+beacon. The improvement over GA is what happens after: do not clear.
+
+```
+on hide:  finalize (page_ref, msec, seq) as a user_engagement event
+          id = hash(session_id + page_ref + seq)
+          send via sendBeacon            -- attempt 1, the lossy moment
+          keep in cookie state
+next outgoing request from the session, if any:
+          re-send the same event, same id -- attempt 2, the reliable moment
+          drop from cookie state
+server:   duplicate insert is a no-op    -- content-derived id
+```
+
+At-least-once delivery, exactly-once storage -- the third use of the
+content-derived-id idiom (dimensions, session markers, now engagement).
+Mid-session dwell thereby survives beacon loss, which GA's design does not;
+final-page dwell remains exposed to a single lossy attempt, which is
+irreducible because nothing comes after it to carry a retry. Returning to a
+page accrues under the next `seq`, a distinct id, and sums correctly.
+
+This **replaces** the earlier "(page_ref, msec) pairs riding arbitrary events"
+sketch: engagement time lives only in `user_engagement` events, each carrying
+its own page's context, so envelope attribution is simply correct -- no special
+parameter format, no query-time dedup. The retry is a first-class event batched
+into the next request.
+
+### PII: closed -- the operator is the controller
+
+Peter's question ends the deliberation: the tool cannot police its inputs. PII
+arrives through custom variables, URLs, referrers and page titles regardless of
+what OWA does with its one *declared* field -- measured earlier at 3 real
+values in 135,798 rows. Field-level protection there is decoration, not defense.
+
+Resolution: **the site operator is the data controller; OWA is a tool they
+run**, with the same standing as their web server logs -- which also accumulate
+PII-laden URLs, and which nobody expects Apache to encrypt per subject. Dropped:
+crypto-shredding, the pseudonym-plus-mapping table. Declared user fields become
+ordinary event parameters. Kept, because they are the operator's real
+obligations made practical: anonymise-by-default, retention, and
+`forget visitor=<id>` -- which deletes events wholesale and therefore reaches
+PII through every channel, declared or stuffed, something field-level crypto
+never could. The honest residue: person X's email inside person Y's event URL
+is reachable by no visitor-keyed erasure on any analytics system; that is the
+operator's grep, as it is for their access logs.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**
