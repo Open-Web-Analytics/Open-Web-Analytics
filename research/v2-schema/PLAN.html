@@ -214,15 +214,21 @@ what they count.)</p>
 <em>delta</em> per event. Deltas commute, so out-of-order queue delivery cannot corrupt a total,
 and they compose across tabs. This gives v2 something 1.x structurally cannot measure: dwell
 time on the final page of a visit.</li>
-<li><strong>Engaged</strong> — a <em>sticky boolean</em> set client-side at the threshold and
-carried on every subsequent event. Idempotent, so tab races are harmless.</li>
+<li><strong>Engaged is derived, not stored</strong> — classification at read time:
+<code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR key event</code>. An earlier draft carried a
+sticky client-set flag; it was removed — the pageview and key-event disjuncts are already
+loss-tolerant rows, threshold-crossing single-page sessions emit delta-carrying scroll events
+anyway, and in the worst case the flag rode the same lossy terminal beacon as the delta. No
+stored classification means nothing to disagree with.</li>
 <li><strong>Bounce means &ldquo;not engaged&rdquo;</strong> <span class="chip c-dec">Decided</span> —
 the single-pageview definition is retired. Measured: on a photo/blog install it marks
 <strong>73.6%</strong> of sessions as bounces regardless of dwell, because 1.x cannot see
 final-page time — the exact thing engagement deltas measure. v1 history keeps the old definition
-in its own UI, so no trend steps in either system. The client-set flag is the <em>sole</em>
-authority (server-side derivation from deltas is rejected — two authorities for one metric); the
-threshold is per-site, default 10&nbsp;s, collection-time and forward-only. Parity expectation,
+in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and key events — the sole authority,
+with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). The
+threshold is per-site, default 10&nbsp;s, and <em>retroactively tunable</em> — events are
+immutable, only the lens changes — with a UI annotation at any change date, since historical
+bounce numbers move with it. Parity expectation,
 declared in advance: v2 bounce ≤ v1 bounce, and a v2 number <em>above</em> v1's is a defect, not
 an intended difference.</li>
 </ul>

@@ -3604,7 +3604,7 @@ property that removes session assembly:
 | metric | one-pass form | enabled by |
 |---|---|---|
 | engagement time | `SUM(delta)` by anything | deltas are additive |
-| engaged sessions | `COUNT(DISTINCT IF(engaged, session_id, NULL))` | the flag is sticky |
+| engaged sessions | two-level: sum deltas per session, test threshold | deltas are additive (flag since removed -- see bounce settlement) |
 | bounce rate | 1 - engaged/sessions | both |
 | sessions by landing page / source / campaign | plain `GROUP BY` | session-scoped values stamped on every event |
 
@@ -3732,19 +3732,36 @@ the old definition, v2 starts fresh under the new one, and no trend inside eithe
 system ever steps. The definitional change lands exactly where a definitional
 change is expected: at a major version, in a separate UI.
 
-**One authority for "engaged", stated to prevent a rebuild of the two-numbers
-problem.** The client-set sticky flag *is* the definition. The engagement deltas
-are the measurement of time, not a second route to the flag -- deriving
-engaged-ness server-side at rollup time from summed deltas is **rejected**,
-because it would create two authorities for one metric (flag says bounced,
-summed deltas say engaged, whenever a delta event is lost) and would quietly
-reintroduce retroactive semantics through threshold changes.
+**Amended same day -- Peter's follow-up removed the flag entirely.** The first
+version of this settlement made the client-set sticky flag the sole authority
+and rejected server-side derivation as a second one. The rejection was right;
+the premise was not: if the flag does not exist, derivation is the *only*
+authority, and the one-authority rule is satisfied the strongest way possible --
+there is no stored classification to disagree with.
 
-Which has one consequence to state plainly: **the threshold is a collection-time
-parameter, forward-only.** Per-site configurable, default 10 s (GA4's own
-default; GA allows 10-60 s). Changing it changes what the tracker stamps from
-that moment on and rewrites nothing -- the same no-retroactivity rule as goals,
-bots and identity.
+The flag's robustness case is thinner than first claimed. "Engaged" is
+`SUM(delta) >= 10s OR pageviews >= 2 OR key event`; the second and third
+disjuncts are already loss-tolerant rows, so derivation is fragile only for
+single-pageview sessions crossing the time threshold -- which in v2 emit scroll
+and engagement events automatically, each carrying a delta increment toward a
+10-second bar. And in the true worst case (nothing emitted until the terminal
+beacon) the flag rides the same lossy beacon as the delta, saving nothing.
+
+So: **engaged is a derived classification, never stored state.** The tracker
+still accumulates and reports deltas -- the measurement stays; the flag and its
+piggyback logic go. Measured cost of the derived two-level shape (pv>=2 proxy,
+warm, 692k events): 52 ms/month, 201 ms/year, 491 ms/3 years, and the day
+rollup precomputes engaged-session counts for trends inside its bounded window.
+
+**The threshold becomes retroactively tunable, and that is now a feature.**
+Change 10 s to 30 s and history reclassifies at the next read -- no rewrite,
+because nothing was ever written. This does not breach the no-retroactivity
+rule, which forbids rewriting data: events are immutable and only the lens
+changes. (Goals stay collection-marked because their criteria are arbitrary
+predicates; engagement is one comparison over an additive sum.) The cost is
+comparability wobble: a threshold change alters historical bounce numbers, and
+the UI must annotate the change date rather than let the step pass silently.
+Per-site threshold, default 10 s.
 
 **Parity harness expectation, quantified in advance**: v2 bounce rate must come
 in *at or below* the v1 number, and the gap is exactly the single-pageview
