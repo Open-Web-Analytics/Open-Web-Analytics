@@ -1140,36 +1140,48 @@ real value on 0.09%, because 439,839 rows say `(not set)`.
 Two changes follow. **Absent should be NULL**, not a sentinel string -- the
 distinction between "no value" and "the value is the words not set" is currently
 unavailable, and every count of populated columns is wrong by default.
-### Custom variables must stay segmentable
+### Custom variables must stay segmentable -- by name, not by slot
 
-Custom variables are user-defined **dimensions**, so they have to be filterable
-and groupable -- which rules out simply moving them into JSON and stopping
-there, since a row store cannot index an arbitrary JSON path.
+Custom variables are user-defined **dimensions**, so filtering and grouping on
+them has to work. The improvement over today is smaller and more specific than
+it first appears.
 
-The workable shape is storage plus **registration**:
+**What today does.** The registered dimensions are `customVarName1`..`5` and
+`customVarValue1`..`5`, so an analyst segments **by slot**: they must know the
+variable landed in slot 2, and nothing guarantees it lands in the same slot on
+the next event. That is very likely why the feature is unused on every
+installation measured here -- ten columns carrying `(not set)` on every row and
+zero real values anywhere.
 
-- values are stored as event parameters -- unlimited, and unused ones cost
-  nothing instead of ten placeholder columns per fact row
-- an administrator **registers** a variable to make it reportable, exactly as
-  GA4 requires custom dimensions to be registered before they appear in reports
-- registration creates a **virtual generated column and an index** on that JSON
-  path, so segmenting on it is an indexed lookup rather than a scan. Virtual
-  rather than stored means no row rewrite: the index is built once and the value
-  is never materialised
-- on a columnar backend registration is close to a no-op, since column pruning
-  already makes reading one path cheap
+**What v2 should do.** Store them as event parameters and segment **by name**:
 
-**And OWA can beat GA on this.** GA4 registration is *not* retroactive: the raw
-parameter is present in the BigQuery export, but historical events never appear
-under that dimension, so a late registration leaves a permanent hole in
-reporting history. A generated column is computed from rows that already exist,
-so registering a variable in OWA would make **all history segmentable
-immediately** -- the value was always stored, registration only makes it
-indexable.
+```sql
+WHERE site_id = ? AND yyyymmdd BETWEEN ? AND ?
+  AND params->>'$.plan' = 'premium'
+```
 
-A registration limit is still sensible, as GA's 50 event-scoped dimensions are:
-each registered variable costs an index to maintain. But the limit becomes a
-tuning decision rather than five slots baked into every fact table.
+Unlimited variables, no wasted columns, and the slot problem disappears
+entirely.
+
+**No registration step is required**, and proposing one was premature. Filtering
+on a custom variable happens inside an already-narrowed scope -- a site and a
+date range -- and month-scoped queries over 692k events measured at 18-160 ms
+here, so a JSON path filter applied to an already-pruned set is very likely
+fine. If measurement later says otherwise, a virtual generated column and index
+on that path is available as **tuning**, not as a gate a user must pass first.
+
+Worth noting the contrast, since it is the reverse of the usual direction: GA4
+*does* require registering a custom dimension before it appears in reports, and
+registration is not retroactive -- the raw parameter sits in the export while
+historical events never appear under the dimension. Storing values as parameters
+and querying them by name means OWA needs no such step, and no history is ever
+stranded.
+
+What is genuinely needed is **labelling and discovery**, which is a different
+problem: a segment picker has to know which variables exist and what to call
+them. Both are derivable -- collect the distinct keys seen, let an administrator
+optionally supply a friendlier label than the key. Nobody is blocked if they
+never do.
 
 ### Compatibility aliases
 
