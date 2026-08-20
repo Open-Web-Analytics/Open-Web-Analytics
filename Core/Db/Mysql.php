@@ -106,7 +106,25 @@ define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
  */
 class Mysql extends \OWA\Core\Db {
 
+    /**
+     * A connect attempt has already failed and must not be repeated.
+     *
+     * Releasing the dead handle on failure is what stops it being mistaken for
+     * a connection -- but it also makes `! $this->connection` true again, so
+     * without this every query would re-dial a database that is down, and every
+     * attempt raises its own warning. Cleared by close(), so an explicit
+     * reconnect is still possible.
+     *
+     * @var bool
+     */
+    protected $connect_failed = false;
+
     function connect() {
+
+        if ( $this->connect_failed ) {
+
+            return false;
+        }
 
         if ( ! $this->connection ) {
 
@@ -171,6 +189,7 @@ class Mysql extends \OWA\Core\Db {
 
                 $this->connection = null;
                 $this->connection_status = false;
+                $this->connect_failed = true;
 
                 $this->e->alert( 'Could not connect to database.' );
 
@@ -301,6 +320,10 @@ class Mysql extends \OWA\Core\Db {
 
         $this->connection        = null;
         $this->connection_status = false;
+
+        // An explicit close is a deliberate reset, so a later connect() may try
+        // again -- unlike the per-query retries connect() refuses.
+        $this->connect_failed    = false;
     }
 
     /**

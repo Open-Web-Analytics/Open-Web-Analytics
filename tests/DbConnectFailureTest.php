@@ -124,6 +124,43 @@ final class DbConnectFailureTest extends TestCase
     }
 
     /**
+     * A failure must be sticky within the connection object.
+     *
+     * Releasing the dead handle is what stops it being mistaken for a
+     * connection, but it also makes `! $this->connection` true again -- so
+     * without this, every query re-dials a database that is down and every
+     * attempt raises its own warning. CI caught exactly that: the fix as first
+     * written turned one warning per request into one per query, which
+     * failOnWarning correctly rejected.
+     *
+     * The old code got this right by accident, having kept the dead handle.
+     */
+    public function testAFailedConnectIsNotRetriedOnEveryQuery(): void
+    {
+        $src     = $this->source();
+        $connect = $this->method('connect');
+
+        $this->assertStringContainsString('protected $connect_failed', $src,
+            'a failed connect must be remembered');
+
+        $guard = strpos($connect, 'if ( $this->connect_failed )');
+        $init  = strpos($connect, 'mysqli_init()');
+
+        $this->assertNotFalse($guard, 'connect() must refuse to re-dial after a failure');
+        $this->assertNotFalse($init);
+        $this->assertLessThan($init, $guard,
+            'and refuse before opening another handle, not after');
+
+        // The refusal has to be recorded where the failure is detected.
+        $this->assertStringContainsString('$this->connect_failed = true', $connect,
+            'the failure path must set the flag');
+
+        // ...and cleared by an explicit close, so a deliberate reconnect works.
+        $this->assertStringContainsString('$this->connect_failed    = false', $this->method('close'),
+            'close() must clear it, so an explicit reconnect is still possible');
+    }
+
+    /**
      * The accessors above query() already degrade on a falsy result, which is
      * what makes returning false safe rather than merely quieter. Pinned
      * because the fix depends on it: if either started assuming a result
