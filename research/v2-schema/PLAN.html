@@ -205,8 +205,10 @@ must enforce explicitly what the schema currently enforces implicitly, or it new
 nonsense.</div>
 
 <h3 id="s13"><span class="num">1.3</span>Sessions <span class="chip c-dec">Decided</span></h3>
-<p>Sessions are not a table and not a marker event. They are an incrementally-maintained rollup
-built by a scheduler job, plus two pieces of client-carried state.</p>
+<p>Sessions are not a table, and they are never <em>counted</em> from a marker event. Session
+totals come from an incrementally-maintained rollup built by a scheduler job, plus two pieces of
+client-carried state. (Marker events still exist — see §1.4 — but for what they carry, not for
+what they count.)</p>
 <ul>
 <li><strong>Engagement time</strong> — the tracker accumulates visible time and reports a
 <em>delta</em> per event. Deltas commute, so out-of-order queue delivery cannot corrupt a total,
@@ -246,8 +248,32 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>view_search_results</td><td>1.x has the dimensions but never emits an event</td></tr>
 <tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
+<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td>carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>carries user-scoped acquisition source</td></tr>
 <tr><td class="ev">feed_request</td><td class="ev-l">base.feed_request</td><td class="dash">—</td><td>OWA-specific; kept</td></tr>
 </tbody></table></div>
+
+<div class="note"><strong>Emit the markers; never count from them.</strong> These two carry
+something no other event can: the attribution for a scope, at the one moment it is known.
+Session-scoped source belongs on <code>session_start</code>, and user-scoped acquisition on
+<code>first_visit</code>, which is also what makes them markable as key events. What they must
+<em>not</em> be is the basis of a session or user count — GA4 emits <code>session_start</code> but
+counts sessions by estimating distinct session ids, precisely because the marker is known to go
+missing (consent mode, app lifecycle). v2 counts from the rollup for the same reason. Losing a
+marker then degrades that session's attribution and erases nothing, which satisfies the rule in
+§1.3. <code>fsts</code> stays carried on every event as the redundant floor, so new-visitor
+remains derivable even when a <code>first_visit</code> is lost.</div>
+
+<div class="flag">
+  <p class="h">Measured — the cost depends on how rich the stream is</p>
+  <p>1.x averages <strong>2.10 events per session</strong> and 1.15 sessions per visitor, measured
+  across two live installs. At that density the two markers would add roughly <strong>89%</strong>
+  to event volume, which is what made a flat rejection look reasonable.</p>
+  <p>But that density is an artefact of 1.x tracking almost nothing but pageviews. With the
+  automatic events above — scroll, engagement, clicks, form interactions — a v2 session is more
+  like 6–8 events, and the same two markers cost <strong>25–30%</strong>. The marker overhead is
+  inversely proportional to stream richness, so it falls as v2 does its job.</p>
+</div>
 
 <h4>Opt-in — commerce</h4>
 <p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can
@@ -279,8 +305,6 @@ be built. The GA4 recommended set fills it in.</p>
 <div class="scroll"><table>
 <thead><tr><th>GA4 emits</th><th>v2</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td class="ev-l">session_start</td><td>No</td><td>a marker riding one packet. Sessions come from the rollup — and GA4 itself does not <em>count</em> sessions from this event, it estimates distinct session ids</td></tr>
-<tr><td class="ev-l">first_visit</td><td>No</td><td>same failure mode. Derived instead from the first-seen timestamp carried on every event</td></tr>
 <tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
 <tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
 </tbody></table></div>
