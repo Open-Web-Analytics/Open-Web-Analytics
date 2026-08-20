@@ -1415,8 +1415,12 @@ namespace OWA\Module\Base\Classes;
 
         $this->set('base', 'capabilities', $caps);
 
-        // make site access is required, if role is not 'everyone'
-        if ( ! $role === 'everyone' && $isSiteAccessRequired ) {
+        // make site access required, if role is not 'everyone'.
+        // this read `! $role === 'everyone'`, which PHP parses as
+        // `(! $role) === 'everyone'` -- a boolean compared identically against
+        // a string, so always false, so the body never ran and no caller could
+        // ever add a capability to the site-access list.
+        if ( $role !== 'everyone' && $isSiteAccessRequired ) {
             $sar = $this->get('base', 'capabilitiesThatRequireSiteAccess');
             $sar[] = $capability;
             // unique the array

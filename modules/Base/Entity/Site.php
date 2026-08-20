@@ -112,7 +112,98 @@ class Site extends \OWA\Core\Entity {
     }
 
     /**
-     * Updates the allowed Sites for the current loaded user
+     * Works out which grants a form submission actually changes.
+     *
+     * The caller passes the ids the form *rendered* alongside the ids the
+     * operator *checked*. Anything outside the rendered set is invisible to
+     * this submission and is left exactly as it was -- which is what stops an
+     * empty or truncated POST from revoking every user of a site, and what
+     * makes it safe to render the form filtered or partially.
+     *
+     * Pure set arithmetic: no database, no entity state.
+     *
+     * @param    array    $current    user ids holding a grant now
+     * @param    array    $rendered    user ids the form offered
+     * @param    array    $checked    user ids the operator ticked
+     * @return    array    [ 'grant' => int[], 'revoke' => int[] ]
+     */
+    public static function computeGrantChanges( array $current, array $rendered, array $checked ) {
+
+        $toInt = function( $ids ) {
+
+            return array_values( array_unique( array_map( 'intval', $ids ) ) );
+        };
+
+        $current  = $toInt( $current );
+        $rendered = $toInt( $rendered );
+
+        // A checked id the form never rendered did not come from this page,
+        // so it is either stale or forged. Ignore it.
+        $checked = array_intersect( $toInt( $checked ), $rendered );
+
+        return array(
+            'grant'  => array_values( array_diff( $checked, $current ) ),
+            'revoke' => array_values( array_intersect( array_diff( $rendered, $checked ), $current ) ),
+        );
+    }
+
+    /**
+     * Applies a form submission to this site's grants as a delta.
+     *
+     * Only users the form rendered can be affected, and only rows that
+     * actually change are written -- unlike updateAssignedUserIds(), which
+     * deletes every grant for the site before reinserting the survivors, so
+     * the common edit passes through a state where nobody has access at all.
+     *
+     * @param    array    $rendered    user ids the form offered
+     * @param    array    $checked    user ids the operator ticked
+     * @return    array    the changes applied
+     */
+    public function applyAssignedUserChanges( array $rendered, array $checked ) {
+
+        if ( ! $this->get('id') ) {
+
+            throw new \Exception('no site data loaded!');
+        }
+
+        $current = array();
+
+        foreach ( $this->getAssignedUsers() as $user ) {
+
+            $current[] = $user->get('id');
+        }
+
+        $changes = self::computeGrantChanges( $current, $rendered, $checked );
+
+        foreach ( $changes['grant'] as $id ) {
+
+            $relation = \OWA\Core\CoreAPI::entityFactory('base.site_user');
+            $relation->set( 'user_id', $id );
+            $relation->set( 'site_id', $this->get('id') );
+            $relation->save();
+        }
+
+        foreach ( $changes['revoke'] as $id ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->deleteFrom('owa_site_user');
+            $db->where( 'site_id', $this->get('id') );
+            $db->where( 'user_id', $id );
+            $db->executeQuery();
+        }
+
+        unset ( self::$cachedAssignedUsers[$this->get('id')] );
+
+        return $changes;
+    }
+
+    /**
+     * Replaces the whole grant set for this site.
+     *
+     * Prefer applyAssignedUserChanges(): this deletes every grant before
+     * reinserting, so a caller that computes the set wrongly -- or a form that
+     * submits nothing -- removes everyone.
+     *
      * @param array $siteIds
      */
     public function updateAssignedUserIds(array $userIds) {
