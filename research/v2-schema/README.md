@@ -1191,6 +1191,41 @@ possible precisely because the rollup is derived rather than authoritative.
 The tracker's job shrinks accordingly: capture and persist the campaign
 parameters it sees, and stop deciding what they mean.
 
+## Search engine classification
+
+Already server-side, and staying there. `TrackingEventHelpers::isSearchEngine()`
+matches the referrer host against a 46-entry list from `conf/searchengines.php`,
+and `RefererHandlers` sets `is_searchengine`. The tracker's `owa_search_terms`
+is a campaign parameter a site may set explicitly, not detection.
+
+**Classification happens at ingestion, and the result is stored on the event.**
+No lookup join at query time.
+
+That was considered and rejected. A join would make the classification
+retroactive -- add an engine, and history reclassifies -- but it reintroduces
+precisely what the single-table design removes, on a column (`medium`) that
+appears in a large share of reports. The measured gain from dropping dimension
+joins was substantial: browser breakdown went from 418.9 ms to 144.3 ms for that
+reason alone. Joins are also markedly more expensive on the columnar backends
+this design exists to keep available, and "it is only 46 rows" is how a schema
+reacquires joins one at a time.
+
+It would also be inconsistent. Retroactive **bot** reclassification was rejected
+as too expensive, and a new search engine appearing is rarer than a new bot while
+mattering less. The same trade should be taken in both places: classify once at
+collection, and accept that a list change affects future traffic only.
+
+**The one fix worth making** costs nothing at query time. The current test is
+`stripos( $host, $domain ) !== false`, so any host merely *containing* an
+engine's domain is classified as organic search -- `notgoogle.com.evil.net`
+included. An exact host-suffix match, applied where the check already happens,
+corrects it.
+
+Note this leaves the **referrer exclusion list** from the bot section untouched:
+that is `WHERE referrer_host NOT IN (...)` over a short user-managed list, or
+materialised into the sessions rollup. A predicate, not a join, and no per-row
+derivation.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
