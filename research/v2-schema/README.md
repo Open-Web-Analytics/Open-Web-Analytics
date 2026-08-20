@@ -3458,10 +3458,61 @@ The inversion, stated once more because it is now concrete: the schema no
 longer refuses nonsense, so the registry must. `bounceRate x pagePath` (any
 page, not landing page) remains non-additive semantics wearing a computable
 query, and v2's registry has to refuse it *explicitly* where v1's schema
-refused it implicitly. The valid-combination table becomes curated policy
-rather than an emergent property -- which is also what makes the API's
-discovery endpoint (`relatedDimensions`) authoritative rather than
-descriptive.
+refused it implicitly. How that curation actually works is specified below --
+it is an algebra, not a table.
+
+### Combination validity: a scope algebra, not a table
+
+Fleshing out "the registry must refuse it explicitly" (Peter's question: static
+config, or dynamic?). **Neither a config file nor a curated pair table** -- both
+are impossible anyway, because param-path dimensions are born at runtime and no
+shipped enumeration can contain their pairs. Validity is *derived*, from scope
+declarations, by one small function.
+
+Every metric and dimension declares a **scope** at registration -- event,
+session, user, item -- in code, beside the registration itself, exactly where
+1.x declares entities. 1.x's `reduceTables` was this mechanism implemented
+structurally: entity membership *was* the scope declaration and validity
+emerged from table intersection. v2 declares explicitly what the star implied
+structurally, because there is no longer a structure to imply it.
+
+A pair's verdict is computed, and there are **three verdicts, not two**:
+
+| verdict | when | example | behaviour |
+|---|---|---|---|
+| **partitioning** | dimension scope >= metric scope | `visits x source` | breakdown sums to total; the `(unknown)` reconciliation row applies |
+| **overlapping** | dimension scope below metric scope | `visits x pageUri` | valid and wanted ("sessions that included this page") -- a session touches many pages, so the sum *legitimately exceeds* the total |
+| **refused** | ratio metric x overlapping dimension | `bounceRate x pagePath` | the ratio's denominator changes meaning under overlap; since a 2+-pageview session is auto-engaged, the number degenerates to a landing-page artefact -- the classic old-GA confusion |
+
+Two consequences bind this to earlier decisions:
+
+- **The `(unknown)` row is emitted only for partitioning combinations.** For an
+  overlapping breakdown, `total - SUM(rows)` is negative and meaningless --
+  emitting it, or treating it as the never-clamp defect signal, would be wrong.
+  The response envelope carries the verdict, so the UI can label overlapping
+  widgets ("rows exceed the total, correctly") -- the same user confusion the
+  reconciliation exists to prevent, handled at its other edge.
+- **`bounceRate x landing page` is the legal spelling** of the refused pair:
+  landing page is session-scoped (sticky on every event), so the ratio stays
+  partitioning. Refusals should name the legal alternative in the error.
+
+Where things live:
+
+- **Scope declarations: code, at registration.** Not `owa-config`; sites do not
+  configure semantics.
+- **Param paths: event scope by default** (a param is a fact about its event),
+  with an optional declaration promoting a specific path to session scope when
+  the site stamps it sticky.
+- **One function serves enforcement and discovery.** `relatedDimensions` and
+  the query validator call the same verdict function, which is what makes
+  discovery *authoritative* rather than descriptive: the picker cannot drift
+  from the enforcer because they are the same code. (GA4's Data API ships this
+  shape as `checkCompatibility`.)
+- **The only curated artefact is a tiny editorial override list** for pairs the
+  algebra permits but experience shows mislead. Expected to stay near empty;
+  every entry carries a written reason.
+
+
 
 ## Pros and cons
 
@@ -3867,6 +3918,10 @@ relationship between the two instead of leaving it coincidental.
 
 Two rules keep the synthetic row honest:
 
+- **It applies only to partitioning combinations** (see the scope algebra in
+  the API-delta section): an overlapping breakdown legitimately exceeds its
+  total, so `total - SUM` is meaningless there and no synthetic row is emitted;
+  the envelope's verdict field is what distinguishes the two.
 - **It appears only when the remainder is positive**, and is labelled
   `(unknown)`, not blended into `(not set)` -- absence of a dimension value and
   unattributable remainder are different facts, and 1.x's habit of one sentinel
