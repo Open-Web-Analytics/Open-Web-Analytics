@@ -848,22 +848,41 @@ than merely modernise it:
 None of this is theoretical for the overlay: it runs on the customer's own page,
 cross-origin from the OWA install, which is exactly why JSONP was reached for.
 
-**The replacement already exists in the tree.** `Core/View/RestApi.php` sets
-`Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials`, and
-`Base/View/CorsPreflight.php` answers preflight with the allowed methods and
-headers. So the REST API does real CORS today, and only these two playback
-callers still take the older path.
+**The CORS replacement does not work, and never has.** `Core/View/RestApi.php`
+has an `addCorsHeaders()` and `Base/View/CorsPreflight.php` answers preflight, so
+the outline is present -- but the origin check cannot match:
 
-For v2 that makes it a deletion rather than a project: point `Player.js` and
-`Heatmap.js` at the CORS endpoint, drop `dataType: 'jsonp'`, and remove the
-`jsonp` format branch from `ApiRequest` along with `resultSetToJsonp()`. The
-overlay gains real status codes and error handling, the API loses a response
-format whose whole purpose was evading a security boundary, and the allowed
-origins become something an administrator configures rather than a property of
-whoever can guess a callback name.
+```php
+foreach ( CoreAPI::getSitesList() as $allowedOrigin ) {
+    if ( $allowedOrigin !== $HTTP_ORIGIN ) { continue; }
+```
 
-Worth doing in 1.x if the opportunity arises -- it is independent of everything
-else here.
+`getSitesList()` returns **row arrays** (`id`, `site_id`, `domain`, `name`,
+`settings`, ...), each compared with `!==` against the Origin **string**. An
+array is never identical to a string, so `continue` always fires and no header
+is ever sent. Verified against a live install: both the REST route and the
+api-request controller answer a request carrying a valid `Origin` with **no
+`Access-Control-*` headers at all**.
+
+A second fault sits behind the first. Even comparing the right field, `domain`
+holds `example.com` while an `Origin` header is `https://example.com` -- scheme
+included, and port when non-standard -- so correcting the array/string
+comparison alone still would not match.
+
+That reframes the JSONP dependency: it is not legacy nobody replaced, it is the
+only mechanism that works. Removing it therefore requires **building** the CORS
+path rather than switching to it:
+
+- compare against an origin, not a site row -- and decide deliberately what the
+  allowed set is, since a site's `domain` is not an origin
+- an install serving one site over both `http` and `https`, or on a non-default
+  port, needs each variant allowed or normalised
+- preflight has to be reachable and correct for the methods playback uses
+- and it wants a test: this failed silently for however long precisely because
+  nothing exercised it
+
+Independent of the rest of v2, and worth doing in 1.x -- but as real work with
+its own verification, not the deletion it first appeared to be.
 
 ### On rrweb, and why "better" is not obvious
 
