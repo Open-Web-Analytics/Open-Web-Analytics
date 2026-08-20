@@ -1588,8 +1588,8 @@ unchanged; it has been reaffirmed by the standards process.
 Two further reasons it earns its place. Duplicate-name cookies are routine
 rather than exotic: any change to `cookie_domain` -- apex to `.apex`, `www` to
 bare, adding a subdomain -- leaves the previous cookie in place and the browser
-sends both, and the WordPress-plugin installs sit on exactly the multisite and
-subdomain setups where that happens. And the fallback is arbitrary: with
+sends both, and any install that has ever moved between an apex and a `www`
+host, or between a subdomain and its parent, has produced exactly that. And the fallback is arbitrary: with
 `hashCookiesToDomain` off the code takes "the last cookie set by that name",
 which is not reliably ordered, so it picks close to at random when duplicates
 exist.
@@ -1608,7 +1608,8 @@ What should change is its encoding, not its existence:
 being embeddable inside other applications, a design since removed, so the bytes
 are paid on every tracking request for a collision that can no longer occur. The
 prefix should stay on **cookie names**, where other software on the same domain
-genuinely may collide -- the WordPress plugin install being the obvious case.
+genuinely may collide, and a short prefix costs four bytes once against a
+name collision that silently corrupts state.
 
 ## Migration: coexistence, not conversion
 
