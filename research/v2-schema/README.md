@@ -1119,6 +1119,130 @@ Both features belong to **v2**. The parsed-output change would be additive in
 principle, but detection and exclusion are two halves of one design and are
 better shipped together.
 
+## Visitor identity
+
+Identity is the one thing a single event table cannot derive. Every other
+dimension in v2 is content-derived -- the id *is* a function of the value -- but
+a visitor is an arbitrary identity with nothing to hash. It has to be assigned,
+carried, and trusted, which makes it the most fragile column in the schema and
+the one worth being explicit about.
+
+### What 1.x does
+
+The tracker assigns the id client-side and stores it in the `v` state store as
+`vid`, alongside `fsts` (first-session timestamp), `nps` (prior session count)
+and `dsfs` (days since first session). `owa_visitor` is a dimension row holding
+those same history fields plus `user_name` and `user_email`, both gated behind
+the `log_visitor_pii` setting.
+
+Two things are worth knowing before carrying any of it forward.
+
+**The id has ~30 bits of entropy, not 63.** `Util.generateRandomGuid()` returns a
+19-digit decimal string built as a 10-digit unix timestamp followed by a 6-digit
+and a 3-digit random number. It looks wide because it is a BIGINT, but within a
+given second the space is only `10^9`:
+
+| new visitors/sec | expected id collisions/year |
+|---|---|
+| 10 | 1.4 |
+| 100 | 156 |
+| 1,000 | 15,752 |
+
+A collision merges two people into one visitor -- silently, and permanently.
+Worth stating plainly, though: **GA is not meaningfully better here.** Its `_ga`
+cookie is `GA1.1.<random>.<timestamp>` with roughly 31 bits in the random field,
+the same construction with one extra bit. This is a defect to fix on the merits,
+not a competitive gap, and the fix is free -- widen the random component, since
+nothing depends on the field widths.
+
+**The site salt is silently discarded.** All four call sites pass one --
+`Util.generateRandomGuid( this.siteId )` -- and the function is declared
+`generateRandomGuid ()`, taking no parameters. The third component is even named
+`client`, which says what it was meant to be, and is a random 3-digit number
+instead. Impact today is low, because per-site cookie stores keep the collision
+domain per-site anyway, but it is a dead parameter that reads as a working one.
+
+### A single table changes where history lives, not how it is assigned
+
+`owa_visitor`'s first/last-session columns are the same problem as `owa_session`,
+and take the same answer: what only the client knows travels on the event, and
+what needs global knowledge goes in a rollup. 1.x already does the first half --
+`fsts`, `nps` and `dsfs` are carried in the cookie today -- so this is largely
+inherited rather than designed.
+
+**But `is_new_visitor` must stop being a marker.** It is currently a flag set on
+one event, which is precisely the shape the session work rejected: *never make a
+record's existence depend on a single packet*. Lose that beacon and the visitor
+is a returning visitor forever, with no way to notice.
+
+The fix falls out of what is already carried. `fsts` is on **every** event, so
+new-visitor is derivable -- the visitor is new when `fsts` falls inside the
+current session -- and the derivation survives any single event being lost. Same
+principle as the sticky `engaged` flag, applied to the other identity that 1.x
+signals with a one-shot.
+
+### Known users are resolved at collection time only
+
+`user_name` and `user_email` become event columns rather than a dimension row.
+The rule that matters is when they attach: **from the moment the site declares
+them, forward only.** Events collected before the visitor identified themselves
+stay anonymous and are never revisited.
+
+This is the same answer already given for goals and for bot reclassification, and
+it should be given for the same reason rather than a new one -- retroactive
+rewriting of history is expensive, and in a single event table it means updating
+every prior row for that visitor. GA4 behaves this way too: `user_id` applies
+going forward, and identity stitching is a reporting-time concern in BigQuery,
+not something collection does.
+
+**Cross-device follows from this and nothing else.** Two devices are the same
+person only when the site tells OWA so by supplying the same user id. v2 makes no
+attempt at probabilistic matching, fingerprinting, or IP-and-user-agent
+heuristics. That is a privacy position, but it is also a correctness one: a
+probabilistic join produces a number nobody can check, and analytics whose
+numbers cannot be checked is the thing this whole document is arguing against.
+
+### PII belongs beside the events, not on them
+
+Here the single table is genuinely worse, and it is the same shape as the
+enrichment finding measured earlier. An email address on a dimension row exists
+once; an email address on an event row exists once **per event**. Erasing it then
+means rewriting millions of rows rather than one, and the privacy section's
+"denormalisation multiplies what erasure must reach" applies with the sharpest
+possible edge, because this is the field most likely to be the subject of an
+actual erasure request.
+
+So: **the event carries a pseudonym** -- a hash of the declared user id -- and
+the mapping from pseudonym to real name and email lives in one small table beside
+the events.
+
+To be unambiguous, because this document has rejected exactly this shape
+elsewhere: **that table is never joined in a reporting query.** Aggregations
+group by the pseudonym and never need the plaintext. The mapping is consulted
+only to display one specific person, or to erase them -- single-row lookups, not
+a join in the scan path. The objection to a lookup table for search engines was
+that it put a join in the hot path of every report; this puts nothing there.
+
+The payoff is that identity erasure becomes a **one-row delete**: remove the
+mapping and every event carrying that pseudonym is anonymous, permanently,
+without touching the event table at all. Behavioural erasure by `visitor_id`
+still scans, exactly as the privacy section describes -- but the PII half, which
+is the part with a legal clock attached, stops being a scan.
+
+### Rejected
+
+- **Server-assigned visitor ids.** Better entropy and not spoofable, but it needs
+  the server to set a cookie on a response the tracker treats as fire-and-forget,
+  and it breaks the no-DB logging node. GA does not do this either. Widening the
+  client-side random component gets most of the benefit for none of the cost.
+- **Deriving the visitor id from the declared user id**, so identity is
+  content-derived like every other dimension. It would retroactively re-key
+  everything the moment someone logs in, which is the retroactive rewrite this
+  section exists to avoid, and it would leak the user id into the id space.
+- **A visitor rollup mirroring the session rollup.** Not yet -- `fsts`, `nps` and
+  `dsfs` already answer the questions 1.x asks of `owa_visitor`, and a rollup
+  should be added when a metric actually needs one rather than by symmetry.
+
 ## Attribution
 
 ### How it works today
