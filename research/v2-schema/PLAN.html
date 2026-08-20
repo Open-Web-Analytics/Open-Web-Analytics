@@ -212,8 +212,9 @@ what they count.)</p>
 <ul>
 <li><strong>Engagement time</strong> — the tracker accumulates visible time per page and
 reports it as <code>user_engagement</code> events with <em>content-derived ids</em>
-(<code>hash(session_id + page_ref + seq)</code>): beaconed on every page-hide, re-sent once on
-the session's next request, duplicates collapsing at the table. Mid-session dwell thereby
+(<code>hash(session_id + page_ref + seq)</code>): beaconed on every page-hide; any pending pair then rides the
+session's next request <em>as parameters</em> — never a separate catch-up beacon — with the
+server materializing the event, duplicates collapsing at the table. Mid-session dwell thereby
 survives beacon loss — which GA4's clear-on-flush design does not — and per-page attribution is
 correct by construction. Final-page dwell keeps the one irreducible lossy attempt, and is the
 thing 1.x structurally cannot measure at all.</li>

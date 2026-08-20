@@ -3816,12 +3816,21 @@ beacon. The improvement over GA is what happens after: do not clear.
 on hide:  finalize (page_ref, msec, seq) as a user_engagement event
           id = hash(session_id + page_ref + seq)
           send via sendBeacon            -- attempt 1, the lossy moment
-          keep in cookie state
+          keep the pair in cookie state
 next outgoing request from the session, if any:
-          re-send the same event, same id -- attempt 2, the reliable moment
+          attach the pair as PARAMETERS of that request -- no request of its own
           drop from cookie state
-server:   duplicate insert is a no-op    -- content-derived id
+server:   materializes the user_engagement event from the attached pair,
+          same derived id -- duplicate insert is a no-op
 ```
+
+**The retry is server-materialized, never a separate beacon** (Peter's
+refinement): page 2's `page_view` request carries the pending pair as
+parameters, and the server constructs the `user_engagement` row from them --
+the same move as the fan-out shim constructing v1 events from the wire. The
+client's transport on page 2 is identical whether or not pending time exists:
+one request. The only client-issued engagement beacon is the hide-time one,
+where nothing else exists to carry it.
 
 At-least-once delivery, exactly-once storage -- the third use of the
 content-derived-id idiom (dimensions, session markers, now engagement).
@@ -3833,8 +3842,8 @@ page accrues under the next `seq`, a distinct id, and sums correctly.
 This **replaces** the earlier "(page_ref, msec) pairs riding arbitrary events"
 sketch: engagement time lives only in `user_engagement` events, each carrying
 its own page's context, so envelope attribution is simply correct -- no special
-parameter format, no query-time dedup. The retry is a first-class event batched
-into the next request.
+parameter format, no query-time dedup. The retry is carried as parameters of
+the next request and materialized server-side.
 
 ### PII: closed -- the operator is the controller
 
