@@ -4123,7 +4123,11 @@ The reconciled design: `engagement_msec` rides **every outgoing event** (time
 accrued on the current page since the last report -- envelope attribution is
 automatically correct, since in-page events fire on the page where the time
 accrued), and the hide-time `user_engagement` event carries only the residue
-since the last event. Loss granularity improves accordingly: a page with five
+since the last event. **The residue fires on any hide, at any size** -- the
+10-second threshold plays no role in whether it is sent, only in the read-time
+classification. Gating the event on the threshold would bake the threshold
+into collection and silently kill its retroactive tunability, and would
+undercount `avgEngagementTime` for every short visit. Loss granularity improves accordingly: a page with five
 scrolls spreads its dwell across five reliable carriers plus one lossy tail,
 instead of betting the whole page on the beacon-and-retry pair. Engaged is
 then `SUM(engagement_msec)` across all the session's events vs the threshold;

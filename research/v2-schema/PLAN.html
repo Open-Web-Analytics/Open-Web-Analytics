@@ -216,7 +216,8 @@ what they count.)</p>
 event, GA-style: the time accrued on the current page since the last report, so envelope
 attribution is automatically correct and loss granularity is one increment, not one page. The
 hide-time <code>user_engagement</code> event carries only the <em>residue</em> since the last
-event, with a content-derived id (<code>hash(session_id + page_ref + seq)</code>): beaconed at
+event — fired on any hide at any size; the 10&nbsp;s threshold gates only the read-time
+classification, never the send, or it would bake itself into collection — with a content-derived id (<code>hash(session_id + page_ref + seq)</code>): beaconed at
 hide, then riding the session's next request <em>as parameters</em> — never a separate catch-up
 beacon — with the server materializing the row, duplicates collapsing at the table. Engaged is
 <code>SUM(engagement_msec)</code> across the session vs the threshold. Final-page dwell keeps the
