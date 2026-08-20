@@ -518,15 +518,47 @@ sparse is their native shape, and their JSON shredding covers the dynamic keys (
 type, enforced at ingest). <code>owa_event</code> lands at <strong>~40 columns</strong> against
 <code>owa_request</code>'s 58 + <code>owa_session</code>'s 121.</p>
 <div class="scroll"><table>
-<thead><tr><th>owa_event</th><th>Columns</th></tr></thead>
+<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td>identity / time</td><td><code>id</code> (content-derived for idempotent events), <code>event_type</code>, <code>site_id</code>, <code>visitor_id</code>, <code>session_id</code>, <code>user_id</code> (site-declared, the only identity field), <code>ts</code> (server-assigned), <code>yyyymmdd</code> (partition key — the only derived date part kept; 1.x stores nine)</td></tr>
-<tr><td>carried visitor state</td><td><code>visitor_fsts</code> (new-visitor derives from it), <code>prior_sessions</code></td></tr>
-<tr><td>page + attribution (sticky)</td><td><code>page_uri</code> (URI not URL), <code>page_title</code>, <code>referer_url</code>, <code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td></tr>
-<tr><td>device / geo</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>country</code>, <code>city</code>, <code>host</code>, <code>ip_address</code> (anonymised by default; raw UA not stored — no retroactive reclassification means no reader)</td></tr>
-<tr><td>aggregate targets</td><td><code>engagement_msec</code> (&ldquo;engagement by URL&rdquo; must not pay JSON extraction), <code>is_key_event</code>, <code>revenue</code> (cents, negative on refund)</td></tr>
-<tr><td>event-specific scalars</td><td><code>click_x/y</code>, <code>page_width/height</code>, <code>target_url</code>, <code>element_path/tag/id</code>, <code>scroll_depth</code> — release-known, so real nullable columns</td></tr>
-<tr><td>what cannot be a column</td><td><code>params</code> JSON — site-defined custom variables and event params (unregistered, unlimited — the five-slot cv wart dies here), nested commerce <code>items</code>, declared PII if sent</td></tr>
+<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>; content-derived for idempotent events (markers, engagement), random otherwise</td></tr>
+<tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>the taxonomy names (§1.4)</td></tr>
+<tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>leads every composite index; immutable</td></tr>
+<tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>widened-entropy guid, time prefix kept</td></tr>
+<tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds creation timestamp (midnight rule)</td></tr>
+<tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared identity, forward-only; the only identity field</td></tr>
+<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned</td></tr>
+<tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key; the only derived date part (1.x stores nine)</td></tr>
+<tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts on every event; new-visitor derives from it</td></tr>
+<tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>carried visitor history</td></tr>
+<tr><td class="n">11</td><td><code>page_uri</code></td><td>VARCHAR(1024)</td><td>URI not URL; page identity = <code>hash(site_id + uri)</code></td></tr>
+<tr><td class="n">12</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td></td></tr>
+<tr><td class="n">13</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td></td></tr>
+<tr><td class="n">14</td><td><code>medium</code></td><td>VARCHAR(64)</td><td rowspan="5">attribution: identified server-side at event processing, stamped on every event of the session (sticky)</td></tr>
+<tr><td class="n">15</td><td><code>source</code></td><td>VARCHAR(255)</td></tr>
+<tr><td class="n">16</td><td><code>campaign</code></td><td>VARCHAR(255)</td></tr>
+<tr><td class="n">17</td><td><code>ad</code></td><td>VARCHAR(255)</td></tr>
+<tr><td class="n">18</td><td><code>search_terms</code></td><td>VARCHAR(255)</td></tr>
+<tr><td class="n">19</td><td><code>browser</code></td><td>VARCHAR(128)</td><td rowspan="3">parsed at collection; raw UA not stored (no retroactive reclassification, so no reader)</td></tr>
+<tr><td class="n">20</td><td><code>browser_type</code></td><td>VARCHAR(64)</td></tr>
+<tr><td class="n">21</td><td><code>os</code></td><td>VARCHAR(64)</td></tr>
+<tr><td class="n">22</td><td><code>language</code></td><td>VARCHAR(16)</td><td></td></tr>
+<tr><td class="n">23</td><td><code>country</code></td><td>VARCHAR(64)</td><td></td></tr>
+<tr><td class="n">24</td><td><code>city</code></td><td>VARCHAR(128)</td><td></td></tr>
+<tr><td class="n">25</td><td><code>host</code></td><td>VARCHAR(255)</td><td></td></tr>
+<tr><td class="n">26</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>anonymised by default</td></tr>
+<tr><td class="n">27</td><td><code>click_x</code></td><td>INT NULL</td><td rowspan="4">click / viewport geometry; NULL when inapplicable</td></tr>
+<tr><td class="n">28</td><td><code>click_y</code></td><td>INT NULL</td></tr>
+<tr><td class="n">29</td><td><code>page_width</code></td><td>INT NULL</td></tr>
+<tr><td class="n">30</td><td><code>page_height</code></td><td>INT NULL</td></tr>
+<tr><td class="n">31</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>click / download / outbound target</td></tr>
+<tr><td class="n">32</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td rowspan="3">element capture</td></tr>
+<tr><td class="n">33</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td></tr>
+<tr><td class="n">34</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td></tr>
+<tr><td class="n">35</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percent bucket</td></tr>
+<tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the delta, on <code>user_engagement</code> rows; must not pay JSON extraction</td></tr>
+<tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT</td><td>stamped at collection; the third engaged disjunct</td></tr>
+<tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
+<tr><td class="n">39</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>
 </tbody></table></div>
 <p>Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
 <code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
