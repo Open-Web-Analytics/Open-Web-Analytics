@@ -763,15 +763,40 @@ one.
   sites it may show before rendering a site picker, and 1.x's own JS can use it
   too.
 
-### v2 path only
+### The nonce stays
 
-Replacing the nonce with `SameSite` plus an `Origin` check. The nonce works well
-for server-rendered pages embedding a fresh one per render; it is a long-lived
-client application that struggles with it. So the v1 UI keeps nonces and the v2
-UI uses origin checking, **enforced per path rather than accepting either** --
-accepting both would reduce the protection to the weaker of the two. The origin
-check is the same one the CORS repair must get right, so it is one mechanism
-serving two purposes.
+An earlier draft proposed replacing it with `SameSite` plus an `Origin` check.
+That is wrong for this product, for two reasons.
+
+**`SameSite` is site-scoped, not origin-scoped.** It compares registrable
+domains, so `evil.example.com` is same-site as `analytics.example.com` and the
+cookie is sent. OWA ships as a WordPress plugin, often onto multisite and shared
+hosting where sibling subdomains are common and not all under one party's
+control -- which is precisely the attacker `SameSite` does not stop.
+
+**`Strict` breaks ordinary navigation**, since following a link in from an email
+arrives logged out, so in practice it would be `Lax` -- which permits top-level
+GETs and is therefore only safe if no GET changes state. The REST routes are
+registered per method and the nonce check applies regardless of method, so
+removing it would rest on a property of the API that has not been established.
+
+The `Origin` check is still worth having, precisely because it *is* origin-scoped
+where `SameSite` is not. But `Origin` is sometimes absent on same-origin
+requests, so its absence has to mean something, and treating absence as
+acceptable is a hole.
+
+The real motivation for removing it was friction rather than security: a
+long-lived client application cannot embed a fresh nonce per render. That is
+solved without giving anything up -- **issue a token at application load**, in
+the same bootstrap response that describes the caller's permissions, and refresh
+it on expiry or transparently on a 403 retry.
+
+That also removes the per-path divergence the earlier draft introduced. Both
+UIs use the same enforcement, which is one fewer thing to get wrong.
+
+**So: keep the nonce, and add `SameSite=Lax` and the `Origin` check as defence
+in depth** -- three inexpensive mechanisms rather than trading a proven one for
+two conditional ones.
 
 ## Multiple backing stores is a requirement, not an option
 
