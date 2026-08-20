@@ -154,33 +154,102 @@ class RestApi extends \OWA\Core\View {
 	    return $data;
     }
     
+    /**
+     * Decides whether an Origin belongs to one of this installation's sites.
+     *
+     * Matching is on **host**, not on the stored string. Sites are commonly
+     * stored with an `http://` scheme while being served over https -- both
+     * production installs are -- so a browser sends an `https://` Origin and
+     * comparing the stored value verbatim would refuse exactly the requests
+     * this is for. Hosts are compared in full and case-insensitively; a
+     * prefix or suffix match is what lets `evil-example.com` pass as
+     * `example.com`, and a subdomain is a separate origin, not a child.
+     *
+     * Pure: no request, no database, no headers. See tests/CorsOriginMatchTest.
+     *
+     * @param    string    $origin    the request's Origin header
+     * @param    array    $sites    site rows as getSitesList() returns them
+     * @return    string|null    the Origin to echo back, or null to refuse
+     */
+    public static function matchAllowedOrigin( $origin, array $sites ) {
+
+        if ( ! is_string( $origin ) || $origin === '' ) {
+
+            return null;
+        }
+
+        $originHost = parse_url( $origin, PHP_URL_HOST );
+        $scheme     = parse_url( $origin, PHP_URL_SCHEME );
+
+        // An Origin is a scheme and a host. Anything else -- 'null', a bare
+        // path, a javascript: URL -- is refused rather than coerced.
+        if ( ! $originHost || ! $scheme || ! in_array( strtolower( $scheme ), array( 'http', 'https' ), true ) ) {
+
+            return null;
+        }
+
+        foreach ( $sites as $site ) {
+
+            $domain = is_array( $site ) ? ( $site['domain'] ?? '' ) : '';
+
+            if ( ! is_string( $domain ) || $domain === '' ) {
+
+                continue;
+            }
+
+            // A stored domain may carry a scheme or not. Without one parse_url
+            // reads the whole value as a path, so give it something to parse --
+            // and a value with no host at all ('owa-test-site' exists on a real
+            // install) still yields nothing and is skipped.
+            $candidate = strpos( $domain, '//' ) === false ? 'http://' . $domain : $domain;
+            $siteHost  = parse_url( $candidate, PHP_URL_HOST );
+
+            if ( ! $siteHost ) {
+
+                continue;
+            }
+
+            if ( strcasecmp( $siteHost, $originHost ) === 0 ) {
+
+                // Echo what the browser actually sent, never the stored form.
+                return $origin;
+            }
+        }
+
+        return null;
+    }
+
     function addCorsHeaders() {
-	    
+
 	    $s = \OWA\Core\CoreAPI::serviceSingleton();
 	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
-	    
-	    // check for ORGIN header and bail if not found.
-        if ( ! isset( $HTTP_ORIGIN ) || $HTTP_ORIGIN == '') {
-	       
+
+        // Announce that the response body and its CORS headers depend on the
+        // Origin, so a shared cache cannot serve one site's allowed-origin
+        // header to a request from another. Sent whether or not the Origin is
+        // allowed, because the refusal is origin-dependent too. Varnish sits in
+        // front of this installation, which makes it a live concern rather than
+        // a formality.
+        header( 'Vary: Origin', false );
+
+	    // no Origin means this is not a cross-origin request.
+        if ( ! $HTTP_ORIGIN ) {
+
             return;
         }
 
-        // Loop through sites list and add cors headers if the ORGIN header is present on the request
-        foreach ( \OWA\Core\CoreAPI::getSitesList() as $allowedOrigin ) {
-        	
-        	if ( $allowedOrigin !== $HTTP_ORIGIN ) {
-	        	
-            	continue;
-            }
-			
-			// send back the allowed orgin
-            header( 'Access-Control-Allow-Origin: ' . $HTTP_ORIGIN );
-            
-            // needed to allow cookie content to become available to the DOM.
-            header( "Access-Control-Allow-Credentials: true" );
-            
-            // stop the loop
-            break;
+        $allowed = self::matchAllowedOrigin( $HTTP_ORIGIN, \OWA\Core\CoreAPI::getSitesList() );
+
+        if ( ! $allowed ) {
+
+            // Send nothing. The browser refuses the response, which is the
+            // correct outcome for an origin this installation does not serve.
+            return;
         }
+
+        header( 'Access-Control-Allow-Origin: ' . $allowed );
+
+        // needed to allow cookie content to become available to the DOM.
+        header( 'Access-Control-Allow-Credentials: true' );
     }
 }
