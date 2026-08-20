@@ -2317,6 +2317,43 @@ key survivable in a URL, and a token that expires in minutes does not need it.
 This also removes the only reason the CORS response needed
 `Access-Control-Allow-Credentials`.
 
+### The overlay's API URL must come from the admin side
+
+Recorded because it is not obvious and was nearly designed away.
+
+A tempting simplification, once the overlay carries a signed token naming its
+own action and resource, is to drop the params blob entirely and let the
+fragment carry only the token -- the tracker would derive the API URL from its
+own configuration. **It must not.**
+
+On a tracked page the tracker's base URL is *where it logs*, which is not
+necessarily where reporting lives. OWA supports split deployment on purpose:
+`setEndpoint`, `setLoggerEndpoint` and `setApiEndpoint` are independently
+settable, `RemoteQueue` exists so a node can receive events somewhere other
+than the reporting install, and `OWA_USE_STATIC_CONFIG_ONLY` exists for a
+logging-only node that never touches the reporting database. The admin
+interface can legitimately live on an entirely different domain from the
+collector.
+
+So the reporting origin is the only party that knows where reporting lives, and
+it is already the party minting the overlay link. The API URL and the token are
+both facts only that origin holds, and both must travel from it. Deriving the
+API URL client-side would work on a single-box install and fail silently on
+exactly the deployments that most need it right, by fetching from a host that
+never answers.
+
+The two existing client-side fallbacks -- `getSetting('baseUrl') + 'api/'` in
+`owa.js` and `getEndpoint() + 'api.php'` in `Tracker.js` -- disagree with each
+other and have never executed, because the blob always supplies the real value.
+They are artefacts, not a foundation: a fallback that silently guesses the wrong
+host is worse than no fallback, and they should be deleted rather than relied on.
+
+What *is* worth cleaning in the fragment path is the encoding, which is
+asymmetric: one encode layer against `urldecode` -> `base64_decode` ->
+`urldecode` again -> `decodeCookieValue`, plus two `trim( ..., '\u0000' )` calls
+that in PHP single quotes trim backslashes, `u`s and zeros rather than null
+bytes, and a cookie-value decoder applied to a fragment. Tidy-up, not redesign.
+
 ### Replace JSONP with CORS for playback
 
 Both playback surfaces still fetch over JSONP:
