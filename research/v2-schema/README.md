@@ -1531,6 +1531,172 @@ scheduler jobs, and running several stops requiring a global lock. The
 scheduler that shipped in 1.11 is what makes worker jobs a configuration
 question rather than a deployment one.
 
+## Reporting freshness
+
+1.x has one freshness and never has to explain it. `owa_session` is written by an
+event handler chained off `page_request_logged` (`Module.php:2424`), in the same
+request that logged the pageview, so session metrics are as current as event
+metrics -- both are simply "now". Nothing in the product has ever had to say when
+a number was computed.
+
+v2 gives that up on one path. The session model settled in Addendum 3 derives
+sessions from an incrementally-maintained rollup built by a scheduler job, so a
+session metric is current as of the last time that job ran. Peter's constraint:
+delay in summary-derived data is acceptable **provided it is eventually
+consistent**. That is the right trade, but eventual consistency is a property
+that has to be built. Delay alone does not produce it -- a summary that is merely
+late converges on the wrong answer just as reliably as it converges on the right
+one.
+
+### Recency is cheap; breadth is not
+
+The instinct is that the rollup exists to make reports fast, so anything wanting
+speed must read it, so everything inherits the delay. That is backwards, and the
+numbers already gathered say so.
+
+`COUNT(DISTINCT session_id)` over the full corpus costs **39.2 s**; over one
+month, **106.2 ms**. The cost tracks the width of the window, not the size of the
+table -- which means a *thirty-minute* window, roughly 1/1400th of that month, is
+trivial against raw events. The rollup earns its 2.9 ms/month by answering
+questions that span a year. It buys **breadth, not recency**.
+
+So the two access patterns separate cleanly, and they separate in the direction
+that helps:
+
+| view | reads | freshness |
+|---|---|---|
+| realtime ("what is happening now") | raw events, short window | immediate |
+| historical ("last month by source") | rollup | last job run |
+
+**The freshest thing in the system is computed the most naively.** A realtime
+view does not read a summary at all, so it inherits no delay -- and "is my
+tracking working?", the question whose answer must never be stale, is exactly the
+one served without a summary. The delay lands only where a user is already
+reading history, and history does not move.
+
+This also means the realtime view is not a feature that needs building on top of
+the rollup. It is a query.
+
+### A realtime query must carry the partition key
+
+Measured on a real partitioned install (427k events, 2013-2026), the obvious way
+to write "the last thirty minutes" does not prune:
+
+| predicate | partitions | index | rows |
+|---|---|---|---|
+| `timestamp > X` | **all** | none | 405,217 |
+| `yyyymmdd >= D AND timestamp > X` | all from D | none | 351,937 |
+| `yyyymmdd IN (D-1, D) AND timestamp > X` | **1** | `yyyymmdd` | **4,080** |
+
+Partitioning is on `yyyymmdd`, so a filter on `timestamp` alone is invisible to
+the pruner -- and unselective enough that the optimiser abandons the `timestamp`
+index too and full-scans. An open-ended `>=` on the partition key prunes only the
+past. Only a **closed** range on the partition key prunes to the partition the
+data is actually in: a 99% reduction in rows examined, for a query that returns
+the same answer.
+
+The realtime view is the query most likely to be written the wrong way, because
+"last 30 minutes" is a statement about time and `yyyymmdd` looks like a reporting
+artefact. In v2 the same trap exists in the same shape. The date-bound belongs in
+the query builder, derived from the time bound, not left to whoever writes the
+report.
+
+### Eventual consistency is a rollup property, not a scheduling one
+
+The failure mode to design against is not lateness. It is a summary that never
+catches up.
+
+A rollup that advances a watermark -- "process events since the last run" --
+**cannot** be eventually consistent, because an event that arrives after the
+watermark has passed its own timestamp is never seen again. It is not late; it is
+lost, and the summary is permanently wrong by a quiet margin nobody notices.
+v2 has three sources of exactly that:
+
+- **queue backlog** -- an event's delivery is decoupled from its occurrence by
+  design, which is the entire point of the queue
+- **deferred beacons** -- `sendBeacon` and the terminal beacon may not be sent
+  until the next page load, or at all
+- **clock skew** -- the tracker reports engagement deltas against its own clock
+
+So the rule: **the rollup recomputes a trailing window, idempotently, rather than
+consuming new rows.** Each run rebuilds every period touched by events seen since
+the last run, and rebuilding a period that was already correct is a no-op that
+costs time and changes nothing. Convergence then follows from the recompute being
+total over the window, not from anything about the schedule.
+
+That is affordable because of the same measurement as above: rebuilding the
+**busiest single day** costs 377 ms. A trailing window of a few days, recomputed
+every minute, is a rounding error against the 66 ms it costs simply to boot PHP
+for the tick.
+
+**The lateness horizon is the trailing window.** Beyond it, an event still lands
+in the event table -- raw data is never rejected -- but no longer folds into a
+summary until someone rebuilds that period explicitly. That bound has to be
+stated rather than left implicit, because "eventually" without a horizon is a
+promise that cannot be tested, and this is the number a test asserts against.
+
+### The scheduler already supplies the hard parts
+
+Since 1.11 this needs no new machinery. `ScheduleRunCli` already gives per-job
+overlap locking -- so a rollup run that overruns its cadence is skipped rather
+than doubled, which for a recompute would be wasted work rather than corruption,
+but wasted work on a shared database is still the thing you were trying to avoid.
+It is level-triggered, so a rollup that misses an hour runs **once** on the next
+tick rather than backfilling hour by hour.
+
+And the convergence rule the scheduler already imposes on anything registered --
+*a job must be convergent, not incremental* -- is not a coincidence here. It is
+the same property, arrived at from the other direction: the rollup must recompute
+rather than consume in order to be eventually consistent, and it must recompute
+rather than consume in order to be safely schedulable. A watermark rollup would
+violate both at once.
+
+What remains is a registration:
+
+```php
+$this->registerJob( 'rollup-sessions', 'rollup-sessions', '* * * * *', array() );
+```
+
+At a one-minute cadence the delay is bounded by roughly one minute plus the run,
+which is below the threshold at which a human reading a report would notice --
+so "eventually consistent" costs a user-visible delay only when something is
+already broken, and `schedule-status` already reports that case.
+
+### The UI has to say which kind of number it is
+
+Two numbers with different freshness on one screen is the actual product risk. A
+session count that reads 40 now and 43 after a refresh is indistinguishable from
+a bug, and the support cost of that is real -- 1.x has never had to answer the
+question because it has never had two answers.
+
+The minimum is an as-of timestamp on anything summary-derived, and no such marker
+on event-grain numbers. That is honest and it is cheap. It also puts a useful
+constraint on the API contract: freshness is a property of a **result set**, not
+of the installation, so it belongs in the response envelope next to the row
+count, and a client that renders a mixed dashboard can then show it per widget
+rather than guessing.
+
+Worth deciding, not decided here: whether a report may mix tiers within a single
+table. A row of event-grain columns beside session-grain columns is one object
+with two as-of times, which no single marker describes honestly.
+
+### Rejected
+
+- **Reading the rollup for the realtime view**, for uniformity. It inherits a
+  delay for a query that is already fast without it, in the one place where
+  staleness is most visible and least excusable.
+- **Writing session rows synchronously as 1.x does**, keeping one freshness. That
+  is the 121-column `owa_session` write on the hot path -- the cost Addendum 3
+  removed -- and it re-imposes ordering constraints on a queue whose delivery is
+  deliberately unordered.
+- **A dual write** -- maintain the rollup incrementally on the write path *and*
+  recompute it in a job. Two writers to one summary, and the recompute exists
+  precisely because the incremental path cannot be trusted to be complete. Keep
+  one writer.
+- **Blocking a report until the rollup is current.** Converts a freshness
+  question into an availability one, and does it at exactly the moment the
+  installation is under load.
+
 ## Domstreams
 
 ### Measured
