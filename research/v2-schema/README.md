@@ -1661,6 +1661,33 @@ Concretely that means three things, in this order of importance:
 3. PDO is adopted for the SQL family as one backend among several, never as the
    abstraction itself.
 
+**The deployment contract, stated as a requirement (Peter, 2026-08-20):**
+
+- **The application tables require a SQL store.** Sites, users, configuration,
+  goals/key-event definitions, nonces, the scheduler's job state -- small,
+  transactional, read-modify-write. This store is always MySQL-class and is
+  not abstracted away; it is where OWA *runs*.
+- **The reporting tables may live in a separate store.** `owa_event`,
+  `owa_rollup_day` and the payload table default to the same MySQL connection,
+  but the installation can point them at a second connection or a different
+  engine entirely -- a dedicated MySQL, or the columnar path -- via a second
+  DSN in config, defaulting to the first.
+
+Three consequences make the split real rather than aspirational:
+
+- **No reporting query may join an application table**, ever -- the two stores
+  cannot be assumed co-located. The design already complies: `site_id` arrives
+  in queries as a literal, key events are stamped at ingest rather than joined
+  at read, and the never-join rules for lookup tables were decided for
+  independent reasons. This constraint is why those rules must not erode.
+- **Writers split cleanly**: ingest and the rollup job touch only the
+  reporting store; admin and auth touch only the application store. The one
+  operation spanning both is site deletion (admin row + that site's events),
+  which becomes two operations, not a transaction -- acceptable, because
+  orphaned events are invisible to every query and reaped by retention.
+- **Erasure and retention run against the reporting store** and must be
+  written against its connection, not "the" connection.
+
 None of the three costs anything on a single-MySQL install, and all three are
 expensive to retrofit.
 

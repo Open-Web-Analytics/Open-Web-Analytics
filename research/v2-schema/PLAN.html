@@ -583,6 +583,16 @@ measured, UI-annotated), <code>visitors</code>, <code>new_visitors</code>,
 <code>engagement_msec</code>, <code>key_events</code>, <code>revenue</code>, and
 <code>built_at</code> — the as-of value the API freshness envelope reports. Bounce rate is
 <code>1 − engaged_sessions/sessions</code> and earns no column.</p>
+<div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
+config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
+abstracted away. The reporting tables (<code>owa_event</code>, <code>owa_rollup_day</code>, the
+payload store) default to the same connection but accept a <em>separate</em> store via a second
+DSN — a dedicated MySQL or the columnar path. The rule that makes the split real: <strong>no
+reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
+literal, key events are stamped at ingest — so the two stores are never assumed co-located.
+Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
+with orphaned events invisible to queries and reaped by retention.</div>
+
 <p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
 <code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
 the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
