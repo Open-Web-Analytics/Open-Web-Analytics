@@ -170,6 +170,20 @@ class ConversionHandlers extends \OWA\Core\Observer {
         $dispatch->asyncNotify( $ce );
     }
         
+    /**
+     * The site's active goals. Extracted so the conversion logic can be
+     * exercised without a goal manager or a database behind it.
+     *
+     * @param    string    $siteId
+     * @return    array
+     */
+    protected function getActiveGoals( $siteId ) {
+
+        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
+
+        return $gm->getActiveGoals();
+    }
+
     function checkForConversion($event) {
     
         $goal_info = array('conversion' => '', 'value' => '', 'start' => '');
@@ -179,8 +193,7 @@ class ConversionHandlers extends \OWA\Core\Observer {
             $siteId = $event->get('site_id');
         }
 
-        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
-        $goals = $gm->getActiveGoals();
+        $goals = $this->getActiveGoals( $siteId );
         \OWA\Core\CoreAPI::debug('active goals: '.print_r($goals, true));
         if (empty($goals)) {
             return;
@@ -195,6 +208,14 @@ class ConversionHandlers extends \OWA\Core\Observer {
             if (!empty($goal)) {
 
                 if (array_key_exists('goal_status', $goal) && $goal['goal_status'] === 'active') {
+                    // Reset per goal. These once persisted across
+                    // iterations, so a goal carrying no value of its own
+                    // inherited the previous goal's, and a goal whose type
+                    // matched no case kept the previous goal's match.
+                    $match = '';
+                    $start = '';
+                    $goal_value = '';
+
                     switch ($goal['goal_type']) {
 
                         case 'url_destination':
@@ -202,25 +223,18 @@ class ConversionHandlers extends \OWA\Core\Observer {
                             $match = $this->checkUrlDestinationGoal($event, $goal);
                             $start = $this->checkGoalStart($event, $goal);
                             break;
-
-                        case 'pages_per_visit':
-
-                            $match = $this->checkPagesPerVisitGoal($event, $goal);
-                            break;
-
-                        case 'visit_duration':
-
-                            $match = $this->checkPagesPerVisitGoal($event, $goal);
-                            break;
-                    }
-
-                    if ($match) {
-                        $goal_info['conversion'] = $match;
                     }
 
                     if ($start) {
                         $goal_info['start'] = $start;
                     }
+
+                    if ( ! $match ) {
+
+                        continue;
+                    }
+
+                    $goal_info['conversion'] = $match;
 
                     //check for dynamic value from commerce transaction
 
@@ -233,6 +247,9 @@ class ConversionHandlers extends \OWA\Core\Observer {
                         }
                     }
 
+                    // Only the converting goal contributes a value. This was
+                    // previously assigned every iteration, so the value
+                    // reported belonged to whichever goal came last.
                     $goal_info['value'] = $goal_value;
                 } else {
                     \OWA\Core\CoreAPI::debug("Goal $num not active.");
@@ -241,62 +258,6 @@ class ConversionHandlers extends \OWA\Core\Observer {
         }
         \OWA\Core\CoreAPI::debug('conversion info: '.print_r($goal_info, true));
         return $goal_info;
-    }
-    
-    function checkPagesPerVisitGoal($event, $goal) {
-
-        $num = $event->get('npvs');
-
-        if ($num) {
-            $operator = $goal['details']['operator'];
-            $req = $goal['details']['num_pageviews'];
-
-            switch ($operator) {
-
-                case '=':
-                     if ($num === $req) {
-                         return $goal['goal_number'];
-                     }
-
-                case '<':
-                    if ($num < $req) {
-                         return $goal['goal_number'];
-                     }
-
-                case '>':
-                    if ($num > $req) {
-                         return $goal['goal_number'];
-                     }
-            }
-        }
-        return false;
-    }
-    
-    function checkVisitDurationGoal($event, $goal) {
-
-        $num = $event->get('session_duration');
-        $operator = $goal['details']['operator'];
-        $req = $goal['details']['duration'];
-
-        switch ($operator) {
-
-            case '=':
-                 if ($num === $req) {
-                     return $goal['goal_number'];
-                 }
-
-            case '<':
-                if ($num < $req) {
-                     return $goal['goal_number'];
-                 }
-
-            case '>':
-                if ($num > $req) {
-                     return $goal['goal_number'];
-                 }
-        }
-
-        return false;
     }
     
     function checkUrlDestinationGoal($event, $goal) {
