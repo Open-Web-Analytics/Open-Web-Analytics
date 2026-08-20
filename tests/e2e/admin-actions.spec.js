@@ -233,48 +233,55 @@ test.describe('admin: user CRUD + site association', () => {
         ).toContainText('admin');
 
         // --- ASSOCIATE WITH SITE ----------------------------------------------
-        // The fixture site's edit page carries the "Allowed Users" multi-select
-        // (owa_allowed_users[] of INTERNAL user ids), and base.sitesEditAllowedUsers
-        // REPLACES the site's entire grant set with exactly what's submitted
-        // (site.updateAssignedUserIds deletes all owa_site_user rows for the site
-        // then re-inserts the posted ids). So we must submit the UNION of the
-        // already-assigned users (chiefly the reporter fixture user, whose grant
-        // the reporting specs depend on -- there is no reseed between specs in a
-        // full run) PLUS our newly-created user. Submitting only the new user
-        // would silently revoke the reporter and break every downstream report.
+        // The fixture site's edit page carries an "Allowed Users" checkbox per
+        // user. The form submits a DELTA -- the ids it rendered travel with the
+        // ids that were checked -- so ticking our new user grants only that
+        // user and leaves every other grant alone.
+        //
+        // This block used to submit the UNION of all existing grants plus the
+        // new one, because base.sitesEditAllowedUsers replaced the site's whole
+        // grant set with whatever arrived, and posting just the new user would
+        // silently revoke the reporter fixture and break every downstream
+        // report. That hazard is what the delta submission removes.
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
-        const usersSelect = page.locator('select[name="owa_allowed_users[]"]');
-        await expect(usersSelect).toBeVisible();
-        // The <option> label is "<user_id> / <real_name> (<role>)" and its value
-        // is the INTERNAL user id. Resolve our new user's value + the currently
-        // selected values in the browser (selectOption's label match is exact).
-        const { newValue, currentValues } = await page.evaluate((userId) => {
-            const sel = document.querySelector('select[name="owa_allowed_users[]"]');
-            const opt = [...sel.options].find((o) => o.textContent.includes(userId));
-            return {
-                newValue: opt ? opt.value : null,
-                currentValues: [...sel.selectedOptions].map((o) => o.value),
-            };
-        }, FIXTURE.newUserId);
-        expect(newValue).not.toBeNull();
-        // Union: keep every pre-selected grant, add ours.
-        const unionValues = [...new Set([...currentValues, newValue])];
-        await usersSelect.selectOption(unionValues);
+
+        const userRow = page.locator('table.owa-allowed-users tr.owa-user-row', {
+            hasText: FIXTURE.newUserId,
+        });
+        await expect(userRow).toBeVisible();
+
+        const userCheckbox = userRow.locator('input[name="owa_allowed_users[]"]');
+        await expect(userCheckbox).toBeVisible();
+
+        // Record the other grants so we can prove the delta left them untouched.
+        const grantsBefore = await page.evaluate(() =>
+            [...document.querySelectorAll('input[name="owa_allowed_users[]"]:checked')]
+                .map((el) => el.value)
+        );
+
+        await userCheckbox.check();
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.locator('input[name="owa_submit_btn"][value="Save Users"]').click(),
         ]);
 
-        // Re-open the edit page: our user's option is now SELECTED (the grant
-        // round-tripped through base.sitesEditAllowedUsers -> site_user relation).
+        // Re-open: our user is ticked (the grant round-tripped through
+        // base.sitesEditAllowedUsers into an owa_site_user relation), and every
+        // grant that existed beforehand is still ticked.
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
-        const selectedLabels = await page.evaluate(() => {
-            const sel = document.querySelector('select[name="owa_allowed_users[]"]');
-            return sel
-                ? [...sel.selectedOptions].map((o) => o.textContent.trim())
-                : [];
-        });
-        expect(selectedLabels.some((l) => l.includes(FIXTURE.newUserId))).toBe(true);
+
+        await expect(
+            page.locator('table.owa-allowed-users tr.owa-user-row', { hasText: FIXTURE.newUserId })
+                .locator('input[name="owa_allowed_users[]"]')
+        ).toBeChecked();
+
+        const grantsAfter = await page.evaluate(() =>
+            [...document.querySelectorAll('input[name="owa_allowed_users[]"]:checked')]
+                .map((el) => el.value)
+        );
+        for (const value of grantsBefore) {
+            expect(grantsAfter).toContain(value);
+        }
 
         // --- DELETE ------------------------------------------------------------
         await gotoAction(page, 'base.users');
