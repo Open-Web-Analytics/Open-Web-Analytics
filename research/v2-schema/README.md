@@ -1232,12 +1232,14 @@ exactly as the privacy section describes -- but the PII half, which is the part
 with a legal clock attached, does not. The next subsection makes that removal
 stronger still.
 
-### Crypto-shredding: destroy the key, not the rows
+### Crypto-shredding: proposed, NOT settled
 
-A better erasure primitive than deleting the mapping row: **encrypt the PII and,
-when erasure is requested, destroy the key**. This is an established technique --
-cryptographic erasure -- and it is the right instinct. It needs one correction
-about *where* the ciphertext lives.
+**Status: recorded for evaluation, not decided.** A candidate erasure primitive --
+**encrypt the PII and, when erasure is requested, destroy the key**. It is an
+established technique (cryptographic erasure) and the instinct is sound, but
+several of its load-bearing assumptions have not been tested and at least two
+look shaky for a self-hosted install. The mechanics below are what the design
+*would* be; the open questions after them are what has to be answered first.
 
 **It cannot go on the event row, for a reason unrelated to cryptography.**
 Reporting has to group by identity, and semantically secure encryption is
@@ -1296,6 +1298,63 @@ authenticated-encryption call in each direction. `OWA_SECRET`, `OWA_AUTH_KEY` an
 `OWA_NONCE_KEY` establish the config precedent for the install-wide HMAC key; the
 per-subject keys need a table, because there is one per subject and they must be
 individually destroyable.
+
+### What has to be evaluated before committing to it
+
+**1. Whether the field is worth protecting at all -- measured, and the answer is
+unclear.** `log_visitor_pii` defaults to `true`, so PII capture is *on* out of the
+box. But across two live installs holding 135,798 visitor rows between them,
+**three values resemble an email address**. Everything else is the `(not set)`
+sentinel:
+
+| install | rows with a value | distinct values | resembling an email |
+|---|---|---|---|
+| A | 73,045 | 1 | 0 |
+| B | 62,753 | 2 | 3 |
+
+This is the same pattern found repeatedly in this codebase -- a feature present in
+the schema, enabled by default, and not actually carrying data. It does not settle
+the question, because a v2 that made identity useful might change the usage, but
+it does mean the machinery would currently be protecting an empty field, and that
+the more urgent defect is 135,795 rows of sentinel masquerading as data.
+
+**2. The backup advantage may not survive a self-hosted deployment.** The argument
+above rests on ciphertext and keys being backed up separately. A typical OWA
+install is one MySQL database captured by one `mysqldump` -- which would contain
+the ciphertext *and* the keys, making every backup fully readable and the
+advantage zero. It only materialises if the key store lives outside the primary
+database with its own regime, which is a real operational ask for a single-box
+install. **This needs answering first, because it is the argument the whole idea
+rests on.**
+
+**3. Legal standing is genuinely unsettled.** Encrypted personal data is generally
+still personal data while a key exists anywhere; whether destroying the key
+constitutes erasure or merely strong pseudonymisation is read differently by
+different authorities. Claiming GDPR erasure via crypto-shredding is a position to
+take deliberately with advice, not a technical conclusion to reach from a design
+document.
+
+**4. Key loss becomes data loss.** A corrupted or lost key store destroys PII for
+every subject at once, permanently. A plaintext mapping table has no equivalent
+failure mode, and self-hosted operators lose things.
+
+**5. The alternative nobody has costed: do not hold PII at all.** Store only an
+opaque, site-supplied user id -- never a name or an email -- as GA4 does with
+`user_id`. The site already holds the mapping and is already the data controller,
+so erasure becomes their operation on their system, and OWA has nothing to
+encrypt, no keys to manage, no key store to back up, and no legal position to
+take. Given finding 1, this may simply dominate: it is less code than
+crypto-shredding *and* less code than the plaintext mapping table, and the cost is
+a feature that measurably nobody uses.
+
+That alternative should be evaluated head-to-head against crypto-shredding before
+either is built. They are not variations on a theme -- one is "protect the PII
+well" and the other is "stop being a PII processor" -- and the second is a
+stronger privacy position for a product that markets itself on privacy.
+
+**6. Smaller, still open**: crypto agility over a decade of ciphertext; the cost
+of bulk decryption when a report lists many identified users; and whether key
+destruction should be synchronous with the erasure request or a scheduled job.
 
 ### Rejected
 
