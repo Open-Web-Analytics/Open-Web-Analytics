@@ -3175,21 +3175,44 @@ Two tables plus a payload store. The fact table starts from the GA4-parity
 prototype measured above (`run.php eventTableDDL`) with every decision since
 applied to it.
 
-### The column-admission rule
+### The column-admission rule (revised -- Peter's "why use params at all?")
 
-A field earns a first-class column only if it is at least one of:
+The first version of this rule assigned known event-specific fields (click
+coordinates, element paths) to `params` for table-width reasons the
+measurements do not support. Interrogating what params actually buys in MySQL:
 
-1. **identity or the partition key** -- what rows are keyed and pruned by
-2. **a session-scoped sticky value** -- stamped on every event so breakdowns are
-   plain `GROUP BY`s (the 215 ms vs 3.1 s measurement)
-3. **an aggregate target** -- summed or counted in nearly every report, where
-   JSON extraction per row would tax the hottest queries
+- **Not storage** -- the wide prototype with every field a real column measured
+  within +/-2%; a NULL costs one bit in InnoDB's null bitmap
+- **Not speed** -- JSON extraction is slower than a column read, which is why
+  `engagement_msec` was promoted
+- **Not schema agility for release-known fields** -- MySQL 8 `ALGORITHM=INSTANT`
+  makes `ADD COLUMN` metadata-only, partitioned tables included
 
-Everything else lives in `params` (JSON), indexable retroactively via virtual
-generated columns when a path proves hot -- zero storage, applies to existing
-rows. This is what keeps the table at ~30 columns against `owa_request`'s 58
-and `owa_session`'s 121, without losing anything: the prototype's validation
-already proved the three representations carry identical information.
+Params genuinely buys exactly two things, and both are disqualifying for
+columns rather than merely awkward:
+
+1. **Site-defined keys unknown at release time** (unregistered custom
+   variables/event params). The alternatives all fail: ALTER driven by tracker
+   input is user-controlled DDL (a typo mints a column, an attacker mints
+   hundreds, InnoDB caps at 1,017); a registration step violates the
+   requirement; an EAV table is the forbidden join.
+2. **Nested arrays** -- commerce `items` cannot be flat columns; 1.x pays a
+   separate line-item fact table and a join for exactly this.
+
+So the rule inverts: **a field is a column if its name is known at release
+time and it is scalar; `params` is reserved for what cannot be a column** --
+site-defined keys and nested structures. Columnar stores agree, more strongly:
+wide-and-sparse is their native ideal, and their JSON shredding covers the
+dynamic keys. The table lands at ~40 columns rather than ~30 -- still far from
+`owa_request`'s 58 + `owa_session`'s 121, every column faster than JSON, and
+the virtual-generated-column machinery shrinks to the custom-key case only
+(where the one-type-per-key ingest rule still applies, for columnar
+shredding). The prototype's validation already proved the representations
+carry identical information, so this is a placement change, not a capability
+one.
+
+Consequently the click/element/scroll fields move out of `params` into
+nullable columns; the spec below shows the final placement:
 
 ### `owa_event`
 
@@ -3215,7 +3238,11 @@ already proved the three representations carry identical information.
 | `engagement_msec` | INT UNSIGNED NULL | 3 | the delta, on `user_engagement` rows; "engagement by URL" is `SUM(engagement_msec) GROUP BY page_uri` and must not pay JSON extraction |
 | `is_key_event` | TINYINT | 3 | stamped at collection per the goals decision; the third engaged disjunct |
 | `revenue` | BIGINT NULL | 3 | cents; on `purchase`/`refund` rows, negative for refunds |
-| `params` | JSON | -- | everything event-specific: click coordinates and element paths, commerce items, custom event params, custom variables (unregistered, unlimited -- the five-slot cv wart dies here), declared user PII if a site sends it |
+| `click_x`, `click_y`, `page_width`, `page_height` | INT NULL | col | release-known scalars; NULL when inapplicable |
+| `target_url` | VARCHAR(1024) NULL | col | click/download/outbound target |
+| `element_path`, `element_tag`, `element_id` | VARCHAR NULL | col | element capture |
+| `scroll_depth` | TINYINT NULL | col | percent bucket |
+| `params` | JSON | -- | what cannot be a column: site-defined custom variables and event params (unregistered, unlimited -- the five-slot cv wart dies here), nested commerce `items`, declared user PII if a site sends it |
 
 ```
 PRIMARY KEY (id, yyyymmdd)
