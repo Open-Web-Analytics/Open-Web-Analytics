@@ -121,6 +121,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s17">1.7 UI layer</a>
   <a href="#s18">1.8 Privacy</a>
   <a href="#s19">1.9 Non-goals</a>
+  <a href="#s110">1.10 The tables</a>
   <a class="r-part" href="#p2">II · Additive in 1.x</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
@@ -502,6 +503,46 @@ saw it. Erasure has to scan, not look up.</p>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Joins in the reporting path</strong></td><td>The single table exists to remove them. Lookup tables that reintroduce a join into aggregate queries are refused.</td></tr>
 </tbody></table></div>
+
+<h3 id="s110"><span class="num">1.10</span>The tables <span class="chip c-dec">Decided</span></h3>
+<p><strong>The column-admission rule:</strong> a field earns a first-class column only if it is
+(1)&nbsp;identity or the partition key, (2)&nbsp;a session-scoped sticky value — stamped on every
+event so breakdowns are plain group-bys — or (3)&nbsp;an aggregate target summed in nearly every
+report, where per-row JSON extraction would tax the hottest queries. Everything else lives in
+<code>params</code> (JSON), indexable retroactively via virtual generated columns when a path
+proves hot. That holds <code>owa_event</code> to <strong>~30 columns</strong> against
+<code>owa_request</code>'s 58 and <code>owa_session</code>'s 121.</p>
+<div class="scroll"><table>
+<thead><tr><th>owa_event</th><th>Columns</th></tr></thead>
+<tbody>
+<tr><td>identity / time</td><td><code>id</code> (content-derived for idempotent events), <code>event_type</code>, <code>site_id</code>, <code>visitor_id</code>, <code>session_id</code>, <code>user_id</code> (site-declared, the only identity field), <code>ts</code> (server-assigned), <code>yyyymmdd</code> (partition key — the only derived date part kept; 1.x stores nine)</td></tr>
+<tr><td>carried visitor state</td><td><code>visitor_fsts</code> (new-visitor derives from it), <code>prior_sessions</code></td></tr>
+<tr><td>page + attribution (sticky)</td><td><code>page_uri</code> (URI not URL), <code>page_title</code>, <code>referer_url</code>, <code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td></tr>
+<tr><td>device / geo</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>country</code>, <code>city</code>, <code>host</code>, <code>ip_address</code> (anonymised by default; raw UA not stored — no retroactive reclassification means no reader)</td></tr>
+<tr><td>aggregate targets</td><td><code>engagement_msec</code> (&ldquo;engagement by URL&rdquo; must not pay JSON extraction), <code>is_key_event</code>, <code>revenue</code> (cents, negative on refund)</td></tr>
+<tr><td>everything else</td><td><code>params</code> JSON — click coords, element paths, commerce items, custom variables (unregistered, unlimited — the five-slot cv wart dies here), declared PII if sent</td></tr>
+</tbody></table></div>
+<p>Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
+<code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
+<code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
+decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
+dimension FKs — and bot rows entirely, refused at ingest.</p>
+<div class="note"><strong>The midnight rule.</strong> A partitioned table cannot have a unique key
+omitting the partition column, so a marker retried across midnight would insert twice under a
+receipt-derived date. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
+embedded in <code>session_id</code> — deterministic on every attempt. The entropy fix must keep
+the guid's leading-timestamp construction for this reason: widen the random suffix, keep the time
+prefix.</div>
+<p><strong><code>owa_rollup_day</code></strong> — grain <code>(site_id, yyyymmdd)</code> and
+nothing else: <code>events</code>, <code>pageviews</code>, <code>sessions</code> (the reconciliation
+authority), <code>engaged_sessions</code> (threshold applied at build; a change rebuilds, ~50&nbsp;s
+measured, UI-annotated), <code>visitors</code>, <code>new_visitors</code>,
+<code>engagement_msec</code>, <code>key_events</code>, <code>revenue</code>, and
+<code>built_at</code> — the as-of value the API freshness envelope reports. Bounce rate is
+<code>1 − engaged_sessions/sessions</code> and earns no column.</p>
+<p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
+<code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
+the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
 
 <!-- ============ PART II ============ -->
 <section class="part" id="p2">

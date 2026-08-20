@@ -3169,6 +3169,112 @@ The last one is deliberately a test of the *query text* rather than of elapsed
 time. A timing assertion on a small fixture would pass whether or not pruning
 happened, which is how the 405,217-row scan measured above survives review.
 
+## The tables: column specification
+
+Two tables plus a payload store. The fact table starts from the GA4-parity
+prototype measured above (`run.php eventTableDDL`) with every decision since
+applied to it.
+
+### The column-admission rule
+
+A field earns a first-class column only if it is at least one of:
+
+1. **identity or the partition key** -- what rows are keyed and pruned by
+2. **a session-scoped sticky value** -- stamped on every event so breakdowns are
+   plain `GROUP BY`s (the 215 ms vs 3.1 s measurement)
+3. **an aggregate target** -- summed or counted in nearly every report, where
+   JSON extraction per row would tax the hottest queries
+
+Everything else lives in `params` (JSON), indexable retroactively via virtual
+generated columns when a path proves hot -- zero storage, applies to existing
+rows. This is what keeps the table at ~30 columns against `owa_request`'s 58
+and `owa_session`'s 121, without losing anything: the prototype's validation
+already proved the three representations carry identical information.
+
+### `owa_event`
+
+| column | type | rule | notes |
+|---|---|---|---|
+| `id` | BIGINT UNSIGNED | 1 | content-derived for idempotent events (markers, engagement), random otherwise; PK with `yyyymmdd` |
+| `event_type` | VARCHAR(24) | 1 | the taxonomy names (`page_view`, `user_engagement`, ...) |
+| `site_id` | VARCHAR(64) | 1 | leads every composite index; immutable |
+| `visitor_id` | BIGINT UNSIGNED | 1 | widened-entropy guid |
+| `session_id` | BIGINT UNSIGNED | 1 | embeds its creation timestamp (see the midnight rule) |
+| `user_id` | VARCHAR(255) NULL | 1 | site-declared identity, forward-only; the only identity field -- PII closure made name/email ordinary params |
+| `ts` | BIGINT UNSIGNED | 1 | server-assigned, per the tracker time contract |
+| `yyyymmdd` | INT UNSIGNED | 1 | partition key; the only derived date part kept (1.x stores nine per row) |
+| `visitor_fsts` | BIGINT UNSIGNED | 2 | first-seen timestamp on every event; new-visitor is derived from it, never flagged |
+| `prior_sessions` | INT UNSIGNED | 2 | carried visitor history (`nps`) |
+| `page_uri` | VARCHAR(1024) | 2 | URI, not full URL, per the store-the-URI decision; page identity is `hash(site_id + uri)` |
+| `page_title` | VARCHAR(512) | 2 | |
+| `referer_url` | VARCHAR(1024) | 2 | |
+| `medium`, `source`, `campaign`, `ad`, `search_terms` | VARCHAR | 2 | attribution, identified server-side at event processing, stamped on every event of the session |
+| `browser`, `browser_type`, `os` | VARCHAR | 2 | parsed at collection; the raw UA is not stored (no retroactive reclassification, so it has no reader) |
+| `language`, `country`, `city`, `host` | VARCHAR | 2 | |
+| `ip_address` | VARCHAR(45) NULL | 2 | anonymised by default |
+| `engagement_msec` | INT UNSIGNED NULL | 3 | the delta, on `user_engagement` rows; "engagement by URL" is `SUM(engagement_msec) GROUP BY page_uri` and must not pay JSON extraction |
+| `is_key_event` | TINYINT | 3 | stamped at collection per the goals decision; the third engaged disjunct |
+| `revenue` | BIGINT NULL | 3 | cents; on `purchase`/`refund` rows, negative for refunds |
+| `params` | JSON | -- | everything event-specific: click coordinates and element paths, commerce items, custom event params, custom variables (unregistered, unlimited -- the five-slot cv wart dies here), declared user PII if a site sends it |
+
+```
+PRIMARY KEY (id, yyyymmdd)
+KEY site_date       (site_id, yyyymmdd)
+KEY site_type_date  (site_id, event_type, yyyymmdd)
+KEY session         (session_id)
+KEY visitor         (visitor_id)
+PARTITION BY RANGE (yyyymmdd)          -- the existing rotate-partitions job
+```
+
+Deliberately absent, each per a settled decision: any `engaged` flag (derived),
+`is_new_visitor` (derived from `visitor_fsts`), `is_entry_page`/`is_exit`
+(entry is the `session_start` marker; exit is derived at read as the session's
+last event -- the classify-then-join shape measured at 210-744 ms -- with the
+earlier closer-job flag remaining available as a materialization if that gets
+slow, the same standing as the session map), eight derived date-part columns, all
+dimension FKs, and bot rows entirely -- bots are refused at ingest, since
+without retroactive reclassification a stored bot row has no future reader.
+
+**The midnight rule.** A partitioned InnoDB table cannot carry a unique key
+that omits the partition column, so the PK is `(id, yyyymmdd)` -- and an
+idempotent event retried across midnight would insert twice under a
+receipt-derived date. Therefore: **idempotent events derive `yyyymmdd` from
+the timestamp embedded in `session_id`**, deterministic on every attempt, so
+both attempts produce the same key wherever they land. Non-idempotent events
+use server receipt time as usual. (The entropy fix must preserve the guid's
+leading-timestamp construction for this reason -- widen the random suffix,
+keep the time prefix.)
+
+### `owa_rollup_day`
+
+Grain `(site_id, yyyymmdd)` and nothing else -- day-grain with dimensions was
+measured as a false economy. One row per site per day, start-day attributed,
+rebuilt idempotently over the trailing window by the scheduler job.
+
+| column | type | notes |
+|---|---|---|
+| `site_id` | VARCHAR(64) | PK with `yyyymmdd` |
+| `yyyymmdd` | INT UNSIGNED | |
+| `events` | INT UNSIGNED | |
+| `pageviews` | INT UNSIGNED | |
+| `sessions` | INT UNSIGNED | `COUNT(DISTINCT session_id)`, the authority totals reconcile against |
+| `engaged_sessions` | INT UNSIGNED | derived at build time from deltas + pageviews + key events; a threshold change rebuilds the rollup (~50 s full, measured) with a UI annotation |
+| `visitors` | INT UNSIGNED | distinct |
+| `new_visitors` | INT UNSIGNED | `visitor_fsts` within the day |
+| `engagement_msec` | BIGINT UNSIGNED | summed |
+| `key_events` | INT UNSIGNED | |
+| `revenue` | BIGINT | |
+| `built_at` | INT UNSIGNED | when this row was last rebuilt -- the as-of value the API's freshness envelope reports |
+
+Bounce rate is `1 - engaged_sessions/sessions`; it earns no column.
+
+### `owa_event_payload`
+
+Recording chunks (domstream, heatmap samples) as attachments: `(event_id,
+yyyymmdd, payload MEDIUMBLOB)`, PK `(event_id, yyyymmdd)`, partitioned on the
+same scheme so payload retention is the same partition drop -- and payloads can
+be dropped on a shorter window than events, since nothing is derived from them.
+
 ## Pros and cons
 
 **For the single table:**
