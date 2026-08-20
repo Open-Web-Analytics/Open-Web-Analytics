@@ -2375,6 +2375,16 @@ until the administrator decides the history is no longer needed and drops it.
 Both trackers may report to the same installation during an overlap period; the
 two reporting UIs are entirely separate.
 
+**Both reporting interfaces are reachable at once**, for as long as the
+administrator wants them -- v2's is not a replacement that displaces v1's on
+upgrade, and v1's does not become read-only or hidden. Two consequences. They
+need one entry point that offers both rather than two bookmarks, since a user
+comparing them is the entire point of the overlap. And they must share the
+session: a separate login for each would make the comparison tedious enough that
+nobody does it, which is the failure mode that turns an overlap period into a
+rubber stamp. Shared auth is already the constraint the authentication section
+works under, so this costs nothing extra.
+
 This is a far better trade than in-place conversion, and today's exercise is the
 evidence: converting *one id width* on two installations took five pull
 requests, a storage upgrade and most of a day, with tracking dropped in the
@@ -2728,6 +2738,131 @@ window someone chose.
   install path deliberately does not do this, and making it do so would mean
   every historical update stays executable forever against a schema it no longer
   recognises.
+
+## Query-time sampling: no
+
+**Decided: v2 does not sample.** Every reported number is computed over every
+matching row.
+
+GA samples because it answers for millions of properties on shared capacity, so
+bounding the cost of one query protects everyone else. A self-hosted install
+inverts every term of that: the operator owns the hardware, runs one tenant, and
+chose the box. There is no one else to protect, and the person who would suffer
+the imprecision is the same person who could have provisioned for the query.
+
+Sampling is also the single thing users most distrust GA for -- a number that
+changes when you narrow a date range, with a threshold nobody can see. "Every
+number is exact" is a real competitive property for a self-hosted analytics tool,
+and it is worth more than the scale it costs.
+
+Scale is answered elsewhere and better: partition pruning bounds what a query
+touches (measured above: 4,080 rows versus 405,217 for the same answer), the
+rollup bounds what a session metric costs, and an installation that outgrows a
+row store has the columnar path the storage abstraction already anticipates.
+Those bound cost **without** trading away correctness. Sampling would be reaching
+for the one lever that does.
+
+## Packaging and distribution
+
+**Unchanged from 1.x.** The same tarball, built by the same Release Packager
+workflow, dropped into a directory and installed through the same wizard or CLI.
+No Composer requirement for end users, no build step at install time, no new
+runtime dependency.
+
+This is not inertia. The distribution model is the reason a self-hosted analytics
+tool gets installed at all, and a rewrite is exactly the moment one is tempted to
+"modernise" it into something that needs a toolchain on the target machine. The
+schema changing is not a reason for the delivery mechanism to change, and the two
+decisions have no coupling.
+
+The one packaging-adjacent thing v2 does add is a hard dependency on the
+scheduler -- the rollup means a correct installation now requires the cron entry
+that 1.x could omit. That belongs in install verification and in the
+`schedule-status` output that already exists, not in how the software is shipped.
+
+## Testing strategy
+
+### The parity harness is the primary test, and dual-write is what makes it possible
+
+For a total schema change there is no reference implementation to test against --
+except that the dual-write decision creates one. Both pipelines consume identical
+events, so v1 *is* the oracle for everything v2 is not deliberately changing.
+
+The comparison surface is already enumerated: **5,493 valid metric x dimension
+pairs** from the live registry. That is a generated test matrix, not a hand-written
+one. For each pair, query both schemas over the same window and compare; subtract
+the declared intended-difference list (bounce, visit duration, exit page, goals,
+the 11 dead `*InVisit` dimensions); anything remaining is a defect with a name.
+
+Two properties make this stronger than any unit test that could be written
+instead. It runs against **real traffic**, so it exercises the distributions and
+malformed inputs that fixtures never contain. And it is **exhaustive over the
+API surface** rather than over the cases someone thought to write down -- 5,493
+pairs is far past what anyone hand-authors, and the pairs nobody would think to
+test are precisely where a schema change breaks something quietly.
+
+This should be a command, not a script somebody keeps locally, and its output
+should be the parity report the cutover decision is made from. "We reached
+parity" then means a specific artefact showing a specific empty list.
+
+### What the existing suite is worth
+
+77 test files, 509 test methods, plus 14 Playwright specs across three configs
+and five phpstan configurations. The encouraging finding: only 8 of the 77 files
+are named for star-schema artefacts. Most of the suite tests things a schema
+change does not touch -- CLI commands, settings persistence, authentication,
+validation, the queue, the scheduler -- and ports unchanged.
+
+What genuinely dies is the part testing the star's *mechanics*: dimension FK
+derivation, id widths, session upsert semantics. That work is not wasted, but it
+should be recognised as expiring rather than migrated out of loyalty.
+
+The install-flow and self-hosted Playwright configs matter **more** in v2, not
+less. v2 creates a new schema on a fresh install, which is the path with no
+existing users to notice a break, and the self-hosted runner is what proves the
+result works somewhere other than the machine it was written on.
+
+### Two pre-existing hazards that a rewrite amplifies
+
+Both are already known here, and both make a suite look healthier than it is --
+which is the specific failure a rewrite cannot afford, because the suite is the
+only thing standing between a rewrite and a silent regression.
+
+**Order-dependent tests**, which pass only because an earlier file warmed a
+registry or autoloaded an alias. CI already runs an isolation sweep executing
+each file alone (`ci.yml:91`). That sweep is more valuable during a rewrite, not
+less, because a new schema means new shared registries and new opportunities for
+one test to leave state another depends on.
+
+**Vacuous assertions** -- double-quoted PHP needles containing `$this->`
+interpolate away and make source-scanning assertions pass unconditionally. A
+rewrite writes a great many tests quickly, which is exactly the condition that
+produced these the first time. Worth a lint rather than vigilance.
+
+To which a rewrite adds a third: **coverage that silently narrows**. A test
+deleted because it tested the star, and never replaced, leaves no trace. The
+parity harness covers the reporting surface, but not the write path, the tracker
+or the admin -- so those need an explicit accounting of what was dropped and what
+replaced it, rather than a green suite that is green because it now asks less.
+
+### Claims made in this document that are only real if tested
+
+The sections above generate their own test list. Each of these is a design claim
+that is worth nothing unstated in a test, because each is an intention that code
+can quietly stop honouring:
+
+| claim | the test |
+|---|---|
+| the rollup is eventually consistent | an event arriving after its period was rolled up folds in on the next run |
+| the lateness horizon is the trailing window | an event older than the window does *not* fold in, and lands in the event table anyway |
+| the rollup is convergent | running it twice changes nothing the second time |
+| fan-out isolation is asymmetric | a throwing v2 handler fails neither the v1 write nor the request |
+| a dropped v1 is supported | the full update sequence runs clean on an install with the v1 tables removed |
+| realtime queries prune | the generated SQL carries a closed range on the partition key, asserted on the SQL, not the timing |
+
+The last one is deliberately a test of the *query text* rather than of elapsed
+time. A timing assertion on a small fixture would pass whether or not pruning
+happened, which is how the 405,217-row scan measured above survives review.
 
 ## Pros and cons
 
