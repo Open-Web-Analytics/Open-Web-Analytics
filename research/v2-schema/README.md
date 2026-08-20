@@ -1341,7 +1341,14 @@ This is the same pattern found repeatedly in this codebase -- a feature present 
 the schema, enabled by default, and not actually carrying data. It does not settle
 the question, because a v2 that made identity useful might change the usage, but
 it does mean the machinery would currently be protecting an empty field, and that
-the more urgent defect is 135,795 rows of sentinel masquerading as data.
+what the rows hold is the sentinel doing its job.
+
+`(not set)` is not a stray value: it is the registered `default_value` for
+~16 event properties -- `user_name` and `user_email` among them, both declared
+`'required' => true` -- both are registered reporting dimensions, `Sanitize.php`
+allowlists the string explicitly, and a dozen readers across PHP and JS compare
+against it. GA4 displays the same literal. So this is a **usage** finding, not a
+defect: the feature is unused, and the column correctly says so.
 
 **2. The backup advantage may not survive a self-hosted deployment.** The argument
 above rests on ciphertext and keys being backed up separately. A typical OWA
@@ -2378,9 +2385,14 @@ placeholder stored six times over per event. The same convention explains the
 heatmap finding: `dom_element_id` is "populated" on 94% of clicks and holds a
 real value on 0.09%, because 439,839 rows say `(not set)`.
 
-Two changes follow. **Absent should be NULL**, not a sentinel string -- the
-distinction between "no value" and "the value is the words not set" is currently
-unavailable, and every count of populated columns is wrong by default.
+Two changes follow. **In v2, absent should be NULL**, not a sentinel string --
+the distinction between "no value" and "the value is the words not set" is
+currently unavailable, and every count of populated columns is wrong by default.
+To be clear about 1.x, though: the sentinel there is a deliberate convention,
+not an oversight -- it is the declared default of required properties that are
+also reporting dimensions, so NULL would produce an unlabelled GROUP BY bucket
+and change `COUNT(column)` semantics. Changing it is a v2 design decision that
+comes with a presentation-layer answer, never a 1.x cleanup.
 ### Custom variables must stay segmentable -- by name, not by slot
 
 Custom variables are user-defined **dimensions**, so filtering and grouping on
