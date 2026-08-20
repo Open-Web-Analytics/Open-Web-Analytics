@@ -3275,6 +3275,42 @@ yyyymmdd, payload MEDIUMBLOB)`, PK `(event_id, yyyymmdd)`, partitioned on the
 same scheme so payload retention is the same partition drop -- and payloads can
 be dropped on a shorter window than events, since nothing is derived from them.
 
+### How params-as-JSON holds up on columnar stores
+
+(Knowledge-based, not measured -- no columnar engine exists on this box, and
+the ClickHouse detail is version-sensitive.)
+
+The *concept* -- a sparse params map with hot paths promoted -- ports cleanly;
+it is how columnar engines want to be used. The *mechanism* (MySQL virtual
+generated column + index) is MySQL-specific, and each store substitutes its own:
+
+| store | params fate | hot-path promotion |
+|---|---|---|
+| **ClickHouse** (JSON type, 24.x+) | each path physically shredded into its own subcolumn -- the virtual-column behaviour implicitly, for every path | `ADD COLUMN ... MATERIALIZED`, retroactive via mutation; nearly one-to-one with MySQL's idiom |
+| **BigQuery** (native JSON) | internally shredded where path types are stable; lazy `JSON_VALUE` | no indexes exist -- promotion means a clustered real column or a materialized view |
+| **DuckDB / Parquet** | JSON stored as string, parsed per access -- the columnar worst case | shred to typed nested columns at export time (an export is a rewrite anyway) |
+
+Contrast worth having: GA4's own BigQuery export uses `ARRAY<STRUCT<key,value>>`
+requiring an `UNNEST` per access -- painful enough that it is part of why
+BigQuery grew a native JSON type. Params-as-JSON is more ergonomic than what
+Google ships.
+
+Three consequences for the design:
+
+1. **The abstraction seam is the registry mapping, not the SQL.** "Param path
+   -> dimension" is declared abstractly; per backend it compiles to an indexed
+   generated column, a materialized column or nothing, or a clustered load-time
+   column. The API grammar (`params.author` as a dimension) is backend-neutral;
+   only the acceleration differs.
+2. **One param key, one type, enforced at ingest.** Both BigQuery's and
+   ClickHouse's shredding degrade when a path's type wobbles between string and
+   number -- the path falls back to blob parsing. A cheap collection-time rule
+   preserves the columnar win everywhere.
+3. **The ~30-column admission rule is a MySQL constraint, not an architectural
+   one.** Wide tables are what columnar engines are for, so a columnar backend
+   may legitimately promote more paths to real columns; the rule governs the
+   row-store default, not the model.
+
 ## How the data-access API changes from v1 to v2
 
 The question underneath the metric/dimension delta is the contract a client

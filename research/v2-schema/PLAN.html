@@ -511,7 +511,9 @@ saw it. Erasure has to scan, not look up.</p>
 event so breakdowns are plain group-bys — or (3)&nbsp;an aggregate target summed in nearly every
 report, where per-row JSON extraction would tax the hottest queries. Everything else lives in
 <code>params</code> (JSON), indexable retroactively via virtual generated columns when a path
-proves hot. That holds <code>owa_event</code> to <strong>~30 columns</strong> against
+proves hot — an idiom that ports to columnar stores as ClickHouse materialized columns /
+JSON subcolumns and BigQuery clustered columns, provided each param key keeps one stable type
+(enforced at ingest; type wobble defeats columnar shredding). That holds <code>owa_event</code> to <strong>~30 columns</strong> against
 <code>owa_request</code>'s 58 and <code>owa_session</code>'s 121.</p>
 <div class="scroll"><table>
 <thead><tr><th>owa_event</th><th>Columns</th></tr></thead>
