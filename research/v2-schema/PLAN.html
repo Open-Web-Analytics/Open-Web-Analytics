@@ -274,8 +274,8 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>view_search_results</td><td>1.x has the dimensions but never emits an event</td></tr>
 <tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
-<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td>carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
-<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>carries user-scoped acquisition source</td></tr>
+<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise (fresh <code>fsts</code>, <code>prior_sessions</code>=0); carries user-scoped acquisition</td></tr>
 <tr><td class="ev">feed_request</td><td class="ev-l">base.feed_request</td><td class="dash">—</td><td>OWA-specific; kept</td></tr>
 </tbody></table></div>
 

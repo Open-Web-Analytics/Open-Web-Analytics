@@ -4140,6 +4140,25 @@ never could. The honest residue: person X's email inside person Y's event URL
 is reachable by no visitor-keyed erasure on any analytics system; that is the
 operator's grep, as it is for their access logs.
 
+
+### Markers are server-materialized from carried state
+
+Pinned explicitly (Peter's question, 2026-08-20): **the client never sends a
+marker beacon.** The tracker knows both facts at the moment they occur -- it
+minted a new session id (the same new-session state that drives 1.x's
+`first_page_request` today) and, for a new visitor, `fsts` is fresh and
+`prior_sessions` is 0 -- and that state rides the first `page_view` request
+like all other tracker state. The server materializes the `session_start` and
+`first_visit` rows from it, alongside the `page_view` insert.
+
+Consequences: the markers' 25-30% overhead is rows, never requests -- the only
+client-issued dedicated beacon in the whole design is the hide-time
+`user_engagement`. The tab-race dedup carries over unchanged: two tabs racing
+at session start both send new-session-flagged pageviews, the server
+materializes two `session_start` rows with the same content-derived id, and
+the second collapses. And session-scoped attribution lands on the marker for
+free, since the server builds it from the full request.
+
 ### Why a sticky flag survives this and a marker does not
 
 The distinction is redundancy, not reliability. A marker is carried by **one**
