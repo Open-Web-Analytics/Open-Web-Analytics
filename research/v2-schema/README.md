@@ -491,6 +491,124 @@ pattern as the domstream columns and the CORS outline.
 5. **The rendering path stops being special**: a query over click events rather
    than a JSONP endpoint feeding 614 lines of `Heatmap.js`.
 
+## The UI layer
+
+### Measured
+
+```
+controllers   149 files, 13,737 lines   (69 report, 23 admin, 23 CLI, 7 REST, 7 install)
+views          68 files,  3,038 lines
+templates      91 files,  4,438 lines
+core plumbing  Controller 901 + Template 1,107 + View 607 + ReportController 204
+web actions   150 registered
+REST routes     9 registered
+```
+
+### Reports are configuration expressed as classes
+
+Two patterns across 69 report controllers, both declarative. Either a named
+report through the API:
+
+```php
+$rs = CoreAPI::executeApiCommand([ 'do' => 'reports',
+        'report_name' => 'latest_visits', 'siteId' => ..., 'period' => ... ]);
+$this->set('latest_visits', $rs);
+$this->setSubview('base.reportVisitors');
+```
+
+or a declared specification rendered by a shared subview:
+
+```php
+$this->set('metrics',     'actions,actionsValue');
+$this->set('dimensions',  'actionLabel');
+$this->set('sort',        'actions-');
+$this->set('constraints', 'actionName==' . urlencode($actionName) . ',...');
+$this->setSubview('base.reportSimpleDimensional');
+```
+
+Neither contains logic. **69 PHP classes express what is fundamentally a config
+record** -- `{name, metrics, dimensions, constraints, sort, chart, title,
+template}`. As data rather than classes they collapse to a registry and a few
+renderers, and reports become **user-definable**: today a custom report means
+writing and deploying a PHP class.
+
+### Two parallel paths to the same data
+
+**150 web actions against 9 REST routes**, and only 7 of 69 report controllers
+go through the API at all. So the HTML path and the API path are separate
+implementations of the same questions, which is where drift lives -- and it is
+why the recordings list hand-writes SQL against `owa_domstream` while the
+resolver that would have segmented it sits unused.
+
+API-first is the non-negotiable part of this: one data path, with the UI as a
+consumer like any other client. Everything below is then a reversible choice.
+
+### Split the two UIs by their nature
+
+- **Reporting** is genuinely interactive -- periods, segments, drill-down -- and
+  should be **client-rendered against the API**.
+- **Admin** is forms and CRUD across ~23 controllers. Server-rendered is right;
+  paying SPA complexity for a user-edit form helps nobody, and self-hosted
+  administrators benefit from an admin that works without a build step.
+
+### The actual problem is not the framework
+
+The reporting UI's visual layer rests on abandoned jQuery plugins:
+
+```
+jquery.flot      0.8.3   last release 2013   <- all charting
+jquery-sparkline         last release 2013
+free-jqgrid      4.15.5  fork of a commercial product, ~2019   <- the data grid
+chosen-js                ~2018
+jquery + jquery-migrate  migrate present, so legacy patterns remain
+```
+
+Charts and the grid **are** a reporting UI, so replacing flot and jqgrid is the
+substantive decision and the framework choice follows from it.
+
+### Framework: Vue 3
+
+For reasons specific to this project rather than general merit:
+
+- **Incremental adoption is decisive.** 91 templates and 150 web actions make a
+  big-bang rewrite a multi-year risk for a small team. Vue mounts into an
+  existing server-rendered page, so report bodies can be replaced one at a time
+  behind the current PHP shell. React can do this but its ecosystem assumes it
+  owns the page.
+- **It suits PHP-first contributors**: single-file components map onto how a
+  page is already conceived, with a lower barrier than JSX plus toolchain.
+- **Less pull toward what cannot be used.** React trends toward meta-frameworks
+  and server components -- reasonable elsewhere, wrong for an app that must
+  deploy as a static build onto shared hosting.
+
+The honest argument for **React** is a larger contributor pool. It does not
+outweigh the above, since OWA's contributors are PHP developers for whom neither
+is native, and the lower barrier matters more than the larger pool.
+
+**Lit / Web Components** deserves naming as a third option: no framework
+lock-in, very small, and excellent longevity for a project that outlives
+framework cycles -- at the cost of a thinner grid and chart ecosystem and more
+manual state handling.
+
+**The framework is the least consequential decision here.** API-first and
+replacing the chart and grid layer are what matter; get those right and changing
+framework later is contained.
+
+### Retire the homegrown template engine
+
+`Core/Template.php` is 1,107 lines, and its `extract()` behaviour turns a missing
+variable into a runtime crash -- an undefined value reaching `foreach` fails on
+PHP 8.2 -- for what should be an obvious authoring mistake. Worth noting a third
+dialect already in the tree:
+
+```
+'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions'
+```
+
+a custom interpolation syntax, inside PHP, addressing a JavaScript-shaped object
+path. Evidence that the seam between server and client rendering is currently
+drawn nowhere in particular.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
