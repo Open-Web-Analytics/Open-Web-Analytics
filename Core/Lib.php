@@ -371,13 +371,29 @@ class Lib {
 		
 		// check for https
 		
+        // Only signals describing THIS hop count.
+        //
+        // HTTP_ORIGIN and HTTP_REFERER used to be accepted here, and both are
+        // set by the client: they describe where the caller came from, never
+        // how the request reached this server. Any visitor arriving from an
+        // https page, or any caller sending an Origin header, could therefore
+        // tell OWA it was serving over TLS when it was not.
+        //
+        // That is not cosmetic. get_current_url() takes its scheme from here,
+        // and Auth::isSignatureValid() recomputes an API request's signature
+        // over that URL -- so a signed cross-origin request from an https page
+        // signed http://host/... and was verified against https://host/...,
+        // which can never match. Every such request 401'd. Anything else
+        // building an absolute URL from get_current_url() was steerable the
+        // same way.
+        //
+        // The forwarding headers stay: a terminating proxy sets them, and that
+        // is how TLS actually reaches OWA in a normal deployment.
         if(
         	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
         	|| ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
-        	|| ( ( isset( $_SERVER['HTTP_ORIGIN'] ) && substr( $_SERVER['HTTP_ORIGIN'], 0, 5 ) === 'https' ) )
-			|| ( ( isset( $_SERVER['HTTP_REFERER'] ) && substr( $_SERVER['HTTP_REFERER'], 0, 5 ) === 'https' ) )
 		) {
 			return true;
 		}
