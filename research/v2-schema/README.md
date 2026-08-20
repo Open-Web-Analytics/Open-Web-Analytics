@@ -239,6 +239,90 @@ survive as an entity regardless (it is an operational record, not analytics).
 **Unaffected.** Site (admin object, stays a table), feed metrics (another
 event type), latestAttributions (already a blob; becomes params).
 
+## What it removes from the codebase
+
+Measured against the current tree, not estimated. The schema is the smaller half
+of the change: most of the machinery that exists to reconcile facts with
+dimensions across six tables has no counterpart in an event model.
+
+### The dimension-write half of ingestion
+
+Ten of the twenty-three event handlers exist solely to check-then-create a
+dimension row -- Document, UserAgent, Os, Host, Referer, SearchTerm, Ad, Source,
+Campaign, Location -- roughly **1,000 of the handler layer's 2,663 lines**, each
+performing the same `getByPk` then `create()` dance. Writing the value inline
+with the event removes the lookup, the creation, and the race.
+
+With it goes the **dimension foreign-key derivation machinery**: 15
+`alternative_key` registrations and ~31 references across `Module.php` and
+`TrackingEventHelpers`. That is where this year's most expensive defects lived
+-- the double-hashed fact-row FKs, the 32-to-63-bit id migration and its five
+follow-up fixes, the per-process derivation caches. **A foreign key cannot be
+derived wrongly when there is no foreign key.**
+
+### The reporting entity-resolution layer
+
+`ResultSetManager` is 1,951 lines, of which about **290 answer only "which fact
+table can serve this request?"** -- `chooseBaseEntity` (123), `isDimensionRelated`
+(64), `lookupDimension` (36), `getDimensionForeignKey` (30), `getMetricEntities`
+(30), `reduceTables`. One table does not pose the question.
+
+The compatibility *rules* still need enforcing -- see the additivity note above,
+which is the one thing that must move from schema-enforced to registry-enforced
+-- but as a declared table rather than a search over an entity graph with
+summary-level sorting and set intersection.
+
+### Duplicate metric implementations
+
+**48 metric classes, 2,414 lines**, including seven literal twins:
+`TransactionRevenue` and `TransactionRevenueFromSessionFact`, and the same for
+line-item quantity and revenue, tax, shipping, transactions and unique line
+items. They exist because the answer lives in two tables and which one is usable
+depends on the dimensions requested. One table, one implementation each.
+
+### Session maintenance leaves the write path
+
+`SessionHandlers` (295 lines) and `SessionCommerceSummaryHandlers` (134) keep a
+121-column row current on **every event**. A scheduler job over closed sessions
+carries the same information off the hot path, and can be rebuilt when wrong.
+`ConversionHandlers` (388 lines) evaluates goals at collection into 45 frozen
+columns; as query-time predicates those become retroactive as well as cheaper.
+
+### Schema evolution stops being schema evolution
+
+**14 Update classes (1,993 lines)** and **411 compat-alias entries**, all of which
+exist because entities are tables and tables need migrating. Adding a parameter
+to an event becomes a JSON key rather than a column, an update class, an alias
+entry and a phpstan baseline bump.
+
+### The ongoing tax, stated concretely
+
+Adding one event type today, taking commerce transactions as the example:
+
+| | |
+|---|---|
+| entity class | 158 lines |
+| ingestion handler | 184 lines |
+| session accumulator | 134 lines |
+| metric classes | 22 files |
+| registrations in `Module.php` | ~120 lines |
+
+In an event model that is a new `event_type` value plus whatever parameters it
+carries: data, not DDL.
+
+### Total, honestly
+
+Roughly **3,500-4,000 lines** across the handler, metric, entity and resolver
+layers exist *because* the star schema exists. Not all of it vanishes --
+ingestion, validation and a metric registry are still required -- but everything
+whose only job is reconciling facts with dimensions across six tables does.
+
+The pattern worth carrying into the decision: **nearly every hard bug of the
+past year lived in that machinery.** Double-hashed FKs, the id-width migration
+and its follow-ups, dimension rows that could not be derived, dangling
+references, two metric definitions disagreeing. None of those failure modes has
+anywhere to live in a single event table.
+
 ## Pros and cons
 
 **For the single table:**
