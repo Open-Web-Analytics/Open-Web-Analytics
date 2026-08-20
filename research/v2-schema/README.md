@@ -1327,6 +1327,64 @@ goals have never converted.
 The rest is not additive: goals-as-definitions requires the query-time model,
 and 1.x's 45 columns are the schema.
 
+## Multi-site
+
+### What exists, and mostly survives untouched
+
+```
+owa_site: id, site_id, domain, name, description, site_family, settings, id_1_3
+```
+
+`site_id` is the hash string pasted into tracking code; `id` is derived from it.
+Isolation is a `site_id` predicate, permissions are already per site via
+`isCapable( $capability, $siteId )`, and per-site configuration lives in the
+`settings` blob, read through `getSiteSetting()` -- `enableEcommerce` and
+similar.
+
+This is the part of the design that needs the least work, because a single event
+table handles multi-tenancy naturally: `site_id` is a column, isolation is a
+`WHERE`, and it is already the leading column of the event indexes
+(`site_date`, `site_type_date`). The star schema's multi-site model was never
+the problem.
+
+### What v2 changes
+
+**`site_id` becomes more load-bearing, and must stay immutable.** It is already
+hardcoded in every tracking snippet in the wild, so it cannot change. In v2 it
+additionally scopes page identity -- `hash( site_id + uri )` -- and leads every
+index. That is fine, but it makes the constraint absolute: an installation
+cannot rekey a site without orphaning both its data and its deployed snippets.
+
+**Per-site retention becomes a requirement**, per the privacy section. Retention
+is a site-level policy, so it belongs in the site's settings and is enforced by
+the scheduled job rather than applied globally.
+
+**Two vestigial columns go.** `site_family` is written by `createNewSite()` and
+`createDefaultSite()` and **never read anywhere** -- another entry in the
+declared-but-unused list alongside `is_assigned` and `dom_element_parent_id`.
+`id_1_3` is a migration artefact.
+
+**The site settings blob inherits the falsy-write defect.** It is the same
+mechanism as global settings, so a per-site boolean cannot be stored as `false`
+-- only as absent. Worth fixing where the storage format is being revisited
+anyway.
+
+### What is absent and might be wanted
+
+There is **no cross-site reporting**. `getSitesList()` serves the site picker,
+not aggregation, so an installation running twenty sites cannot ask a question
+spanning them.
+
+The single table makes that nearly free -- dropping the `site_id` predicate, or
+widening it to a set, is all it takes, and the index already leads with
+`site_id` so a multi-site range is a natural scan. In the star schema the same
+question is equally possible but the answer has to be assembled per site.
+
+It is not required for parity, and should be judged on whether anyone wants it
+rather than because it became cheap. The permission model already answers the
+hard part: a cross-site query is legitimate only over the sites the caller is
+capable on, which `isCapable` already knows per site.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
