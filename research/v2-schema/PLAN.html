@@ -417,8 +417,14 @@ value, but a visitor is arbitrary and must be assigned, carried and trusted.</p>
   <strong>156</strong> at 100/sec, <strong>15,752</strong> at 1,000/sec. Each one silently and
   permanently merges two people.</p>
   <p>Not a competitive gap — GA's <code>_ga</code> uses the same construction with one more bit.
-  Fix on the merits; widening the random component is free. Separately, the site salt is
-  discarded: all four call sites pass one and the function declares no parameters.</p>
+  <strong>Correction: the entropy cannot be improved.</strong> The construction uses 60.6 of the 63
+  bits a signed BIGINT allows, and re-dividing the budget is provably worthless — coarsening the
+  time bucket by <em>k</em> multiplies ids-per-bucket by <em>k</em> (pairs by <em>k²</em>), divides
+  bucket count by <em>k</em>, and grows the random space by <em>k</em>, so <em>k</em> cancels;
+  measured across second/minute/hour/day granularity the collisions per year are identical. The
+  rate depends only on the total budget and arrival rate: <strong>~0.8/year at 10 new
+  visitors/sec</strong>. An accepted, quantified limit, not an open defect. The discarded salt was
+  removed instead (PR&nbsp;#1017) — it could not be honoured for the same reason.</p>
 </div>
 <ul>
 <li><strong><code>is_new_visitor</code> stops being a marker</strong> and becomes derivable from the
