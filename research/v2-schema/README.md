@@ -1226,6 +1226,89 @@ that is `WHERE referrer_host NOT IN (...)` over a short user-managed list, or
 materialised into the sessions rollup. A predicate, not a join, and no per-row
 derivation.
 
+## Goals
+
+### How they work today
+
+Three goal types, evaluated by `ConversionHandlers` at collection:
+`url_destination`, `pages_per_visit`, `visit_duration`. A match writes into
+`owa_session`'s dedicated columns -- `goal_N`, `goal_N_start`, `goal_N_value`
+for N in 1..15, which is 45 of that table's 121 columns -- and `numGoals` is
+fixed at 15.
+
+### A live bug
+
+```php
+case 'pages_per_visit':
+    $match = $this->checkPagesPerVisitGoal( $event, $goal );   // correct
+case 'visit_duration':
+    $match = $this->checkPagesPerVisitGoal( $event, $goal );   // wrong function
+```
+
+`checkVisitDurationGoal()` exists and is **never called from anywhere**. Every
+visit-duration goal is evaluated against pages-per-visit criteria, so a goal
+configured as "stayed longer than 120 seconds" fires on "viewed more than 120
+pages" and therefore never converts. Nothing catches it because both functions
+exist and both return a boolean.
+
+### Three structural problems
+
+**Goals are frozen at collection.** The evaluation happens once, and the result
+is stored. Define a goal today and yesterday's traffic has not met it -- not
+because it did not, but because nobody asked. Changing a goal's definition
+likewise leaves history describing the old one, with no record of which
+definition a stored conversion refers to.
+
+**The cap is structural, not configurable.** Fifteen goals is 45 columns; a
+sixteenth is a schema change, an update class and a migration.
+
+**The goal *number* is the identity.** Reports address `goal3Completions`, so
+repurposing goal 3 silently rewrites the meaning of its history.
+
+### What v2 should do: goals as query-time predicates
+
+A goal is a **stored definition** evaluated against events when reporting, not a
+flag written at collection. That yields three things directly:
+
+- **retroactive** -- defining a goal reports on all history that matches
+- **unlimited** -- goals become rows, not columns
+- **stable identity** -- a goal is a named definition, so editing it is visible
+  rather than silently rewriting the past
+
+**And it is derivation, not enrichment**, so it does not conflict with the
+decisions taken for bots and referer titles. The inputs are all stored:
+`url_destination` tests a page URL on an event; `pages_per_visit` and
+`visit_duration` test values the sessions rollup already carries. Nothing is
+fetched, nothing was discarded.
+
+### Where the cost lands
+
+Simple goals are cheap: `url_destination` is a predicate on pageview events,
+and the two session-scoped types read rollup columns that exist anyway.
+
+The awkward remainder is **goal rates** -- `goalConversionRateAll`,
+`goalAbandonRateAll` -- which divide conversions by sessions and so need
+per-session evaluation. That was noted in the metrics audit: it is the one
+family the rollup does not fully rescue, since the goal set is not known when
+the rollup is built. Two options, and it is worth deciding deliberately rather
+than discovering: evaluate goals against the rollup at query time, over a
+filtered subset rather than all events; or let the rollup materialise a
+conversion count per *currently defined* goal and rebuild when definitions
+change -- cheap, because the rollup is derived and rebuildable by design.
+
+**Funnels stay code.** `ReportGoalFunnel` computes step-to-step progression,
+which is not expressible as a predicate and should remain a widget type rather
+than distort the definition format.
+
+### Additive to 1.x
+
+The `visit_duration` dispatch bug is a one-line fix and belongs in 1.x now --
+it is live on every installation with a duration goal configured, and those
+goals have never converted.
+
+The rest is not additive: goals-as-definitions requires the query-time model,
+and 1.x's 45 columns are the schema.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
