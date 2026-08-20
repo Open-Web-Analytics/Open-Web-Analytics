@@ -210,10 +210,13 @@ totals come from an incrementally-maintained rollup built by a scheduler job, pl
 client-carried state. (Marker events still exist — see §1.4 — but for what they carry, not for
 what they count.)</p>
 <ul>
-<li><strong>Engagement time</strong> — the tracker accumulates visible time and reports a
-<em>delta</em> per event. Deltas commute, so out-of-order queue delivery cannot corrupt a total,
-and they compose across tabs. This gives v2 something 1.x structurally cannot measure: dwell
-time on the final page of a visit.</li>
+<li><strong>Engagement time</strong> — the tracker accumulates visible time per page and
+reports it as <code>user_engagement</code> events with <em>content-derived ids</em>
+(<code>hash(session_id + page_ref + seq)</code>): beaconed on every page-hide, re-sent once on
+the session's next request, duplicates collapsing at the table. Mid-session dwell thereby
+survives beacon loss — which GA4's clear-on-flush design does not — and per-page attribution is
+correct by construction. Final-page dwell keeps the one irreducible lossy attempt, and is the
+thing 1.x structurally cannot measure at all.</li>
 <li><strong>Engaged is derived, not stored</strong> — classification at read time:
 <code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR key event</code>. An earlier draft carried a
 sticky client-set flag; it was removed — the pageview and key-event disjuncts are already
@@ -786,26 +789,16 @@ instant, and already implemented. The single table makes the simpler policy the 
 <div class="scroll"><table>
 <thead><tr><th>Question</th><th>State</th></tr></thead>
 <tbody>
-<tr><td><strong>How v2 handles PII</strong></td><td>Crypto-shredding — encrypt per subject, erase by destroying the key — is recorded but explicitly <em>not settled</em>. See below.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon estimated at ~+27% events; never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td></tr>
 </tbody></table></div>
-<div class="flag">
-  <p class="h">PII — evaluate before building either option</p>
-  <p><span class="chip c-meas">Measured</span> The field this would protect is effectively empty.
-  <code>log_visitor_pii</code> defaults to <em>true</em>, yet across two live installs holding
-  135,798 visitor rows, <strong>three values resemble an email address</strong>. The rest is the
-  <code>(not set)</code> sentinel.</p>
-  <p>Two assumptions look shaky. The backup argument — that destroying a key reaches dumps and
-  replicas a <code>DELETE</code> cannot — assumes ciphertext and keys are backed up separately,
-  which one <code>mysqldump</code> of a single-box install defeats entirely. And whether key
-  destruction constitutes erasure rather than strong pseudonymisation is genuinely unsettled, and
-  not a question a design document can answer.</p>
-  <p><strong>The alternative that was never costed: hold no PII at all</strong> — only an opaque
-  site-supplied user id, as GA4 does. Less code than crypto-shredding <em>and</em> less than the
-  plaintext mapping table, and it removes the legal position rather than taking one. These are not
-  variations on a theme: one is “protect the PII well”, the other is “stop being a PII processor”.</p>
-</div>
+<div class="note"><strong>PII — closed.</strong> The tool cannot police its inputs: PII arrives
+through custom variables, URLs and referrers regardless of what happens to the one <em>declared</em>
+field (measured: 3 real values in 135,798 rows). The operator is the data controller; OWA has the
+same standing as their web server logs. Crypto-shredding and the pseudonym mapping are dropped;
+declared user fields are ordinary event params. What remains are the operator's real obligations
+made practical: anonymise-by-default, retention, and <code>forget visitor=&lt;id&gt;</code> — which
+deletes events wholesale and so reaches PII through every channel, declared or stuffed.</div>
 
 <footer>
   Source: <code>research/v2-schema/README.md</code> — 35 sections, method and rejected
