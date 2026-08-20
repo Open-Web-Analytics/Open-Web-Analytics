@@ -1034,47 +1034,90 @@ The same token is caught mid-string and missed at the start -- and `curl`,
 lead a user agent, so the misses concentrate on the most unambiguously
 non-human traffic. A one-character fix (`!== false`) closes it.
 
-### The other weaknesses
+### The parser already installed does this better
 
-**Substring matching is far too blunt.** `search` matches "Researcher",
-`host` matches any UA containing the word, `java` matches anything mentioning
-Java. Each is a false positive discarding real traffic silently, because
-non-logging leaves no record.
+`Browscap` is a legacy name: the class wraps `UAParser\Parser`, and
+**`ua-parser/uap-php ^3.9` is already a declared dependency**, already parsing
+every user agent. `isRobot()` ignores the parsed result and runs the substring
+list instead.
 
-**The list is hardcoded and unmaintained.** Modern crawlers that happen to
-contain `bot` are caught by luck; those that do not are invisible. There is no
-update path short of a release.
+The parsed output is both more accurate and maintained upstream:
 
-**Detection happens once, at collection, and is final** -- and that is
-**decided**, not merely current. Retroactive reclassification is too expensive
-to be worth it: a crawler recognised later stays misclassified, in the same way
-a referer whose title is crawled later stays unenriched.
+```
+Googlebot     ->  device=Spider   ua=Googlebot
+AhrefsBot     ->  device=Spider   ua=AhrefsBot
+GPTBot        ->  device=Spider   ua=GPTBot
+Java/17.0.1   ->  device=Spider   ua=Java          <- the substring list misses this
+curl/7.68.0   ->  device=Other    ua=curl
+Wget/1.21.3   ->  device=Other    ua=Wget
+python-req.   ->  device=Other    ua=Python Requests
+```
 
-The consequence is that **collection-time accuracy is the only chance there is**,
-which raises the value of the three fixes below considerably. They are not
-tidying; they are the whole of the mechanism.
+So crawlers are `device.family === 'Spider'`, and automation tools are exact
+matches on `ua.family` -- `curl`, `Wget`, `Python Requests`, `Java`. Matching
+parsed fields rather than raw substrings removes the position-zero bug and the
+`search`-matches-"Researcher" class of false positive in one change, and moves
+crawler coverage onto a list somebody else maintains.
 
-### What v2 should do
+Two weaknesses remain regardless: the substring list is hardcoded with no update
+path, and detection at collection is final -- which is **decided**, not merely
+current. Retroactive reclassification is too expensive; a crawler recognised
+later stays misclassified.
 
-1. **Fix the position-zero bug in 1.x now.** One character, and it recovers the
-   most obvious bots on every existing installation.
-2. **Match tokens, not substrings** -- anchored or delimiter-aware -- so
-   "Researcher" stops reading as a crawler.
-3. **Make the list updatable** without a release, and shipped with a sane
-   default. This is data, not code.
-4. **Count what is filtered, without storing it.** Since bot events are
-   discarded and will not be reclassified, keeping them is not worth the volume
-   -- automated traffic can be a third or more of raw hits, so storing it to
-   never use it roughly doubles the table for nothing. But a **per-site, per-day
-   counter of filtered events, by the rule that matched**, is tiny and answers
-   the two questions that are currently unanswerable: "why did my traffic drop"
-   and "is my bot list actually working". It also gives the only feedback
-   available for tuning the list, which matters more once reclassification is
-   off the table.
+### What GA does, and where it stops
 
-Points 1 to 3 are additive to 1.x and inherited whole. Point 4 needs somewhere to
-put the counter, so it lands more naturally with the v2 schema, though a small
-table in 1.x would work equally well.
+GA4 filters against the IAB/ABC International Spiders and Bots List plus its own
+research -- **always on, no toggle, no tuning, and no report of what was
+removed**. They reached the same conclusion: preemptive filtering is not a
+contest worth exposing, so it is invisible and unconfigurable. They also do not
+solve Measurement Protocol spam, because fabricated hits posted straight to the
+endpoint carry no user agent to inspect.
+
+Separately, GA offers an **unwanted referrals list**, which does not discard
+sessions -- it reclassifies the traffic source. The property that matters is
+that it is applied **at reporting time from a list**, so changing the list
+changes all history.
+
+### Two v2 features
+
+**1. Detection from parsed output.** Replace the substring list with
+`device.family === 'Spider'` plus exact `ua.family` matches for automation
+tools. Confidently-identified traffic is still discarded at collection.
+
+**2. A reporting-time exclusion list**, covering user agent, IP, or a
+combination.
+
+The second is cheaper than it appears, because of what it actually filters.
+Traffic discarded at collection is what was identified *confidently*. Everything
+ambiguous -- a datacentre IP behind a plausible Chrome string, a headless
+browser, an unrecognised scraper -- **is already stored and already counted as
+human**. So an exclusion list costs no additional storage; it gives users a way
+to remove what they later recognise, from data being kept regardless.
+
+| tier | mechanism | storage cost | retroactive |
+|---|---|---|---|
+| confident bots | parsed output, discarded at collection | none | no |
+| everything else | exclusion list at reporting time | none extra | **yes** |
+
+Both UA and IP are on the event, so both are filterable, as are combinations --
+"this user agent from this /24". With IP anonymisation enabled, exclusion is
+limited to /24 granularity, which is close to how datacentre ranges are
+allocated in any case.
+
+**This is not the losing battle.** Chasing bots preemptively is unwinnable,
+which is why the counter idea was dropped. An exclusion list is the opposite
+posture: **reactive and user-driven**. Nobody maintains it in anticipation. A
+user sees junk in a report, excludes it, and history corrects. The list stays
+small because it only ever holds what somebody actually noticed.
+
+Implementation caveat: a `NOT IN` per query is fine for a small list and poor for
+a large one. Past a few dozen entries it wants materialising into the sessions
+rollup -- which is also the natural place to apply it, since users mean
+"exclude that visitor's sessions" rather than "exclude these individual events".
+
+Both features belong to **v2**. The parsed-output change would be additive in
+principle, but detection and exclusion are two halves of one design and are
+better shipped together.
 
 ## Multiple backing stores is a requirement, not an option
 
