@@ -629,13 +629,17 @@ case.
 the replay is against a page the visitor never saw, and the positions mean
 nothing. Nothing detects this; the replay simply misleads.
 
-**5. Two different features share one mechanism.** Aggregate use (where do
-people scroll, click, hesitate) needs **density**, not individual streams.
-Individual use (watch one visitor) needs per-session detail. Both are served
-today by retaining every raw stream, so the aggregate feature pays individual
-storage costs forever. Aggregating into a per-page grid and expiring the raw
-streams after a short window would collapse most of the 396 MB -- and this is
-probably the single largest win available, larger even than the encoding.
+**5. There is exactly one consumer, and it fetches one recording at a time.**
+Domstreams feed `Player.js` replay and nothing else. The heatmap overlay is a
+*click* visualisation drawn from `owa_click` -- `Heatmap.js` calls
+`plotClickData()` against its own API endpoint -- so the two features that look
+related in the tracker source share no data at all.
+
+That is worth stating because it constrains the design more than it first
+appears: recordings are never scanned, filtered or aggregated. They are written
+once and fetched individually by id. Which is the easiest possible access
+pattern to satisfy, and means nothing about their storage needs to support
+querying.
 
 ### On rrweb, and why "better" is not obvious
 
@@ -660,9 +664,10 @@ keeping deliberately rather than an limitation to be corrected.
 1. **Keep coordinate-only capture** as the default, and say why in the docs --
    it is a feature.
 2. **Fix the encoding**: delta tuples plus gzip, measured at ~30x.
-3. **Split aggregate from individual**: compute scroll and movement density into
-   a per-page aggregate, retain that indefinitely, expire raw streams on a short
-   window. Different data, different lifetimes.
+3. **Retain on a window.** Recordings are replay-only, with no derived
+   artefact depending on them, so the retention question is simply how long
+   replays are useful -- a scheduler job expiring them is sufficient, and
+   nothing is lost downstream when they go.
 4. **Make a recording an attachment to an event**, not a parallel fact row --
    which deletes about forty duplicated context columns.
 5. **Store the payload outside the row**, so metadata queries do not drag it.
