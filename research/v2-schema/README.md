@@ -2266,6 +2266,57 @@ redelivered chunk silently appends its samples twice.
 Which is this redesign in miniature: much of it is not new capability, but
 replacing what works **by circumstance** with what works **by construction**.
 
+### Cross-origin calls stay simple-request -- and the overlay credential changes
+
+Two findings from fixing CORS in 1.x (PR #1019), both of which set v2 policy.
+
+**Preflight is not needed, and v2 should keep it that way.** The genuinely
+cross-origin case is the heatmap overlay and domstream player: they run on the
+*tracked* site and fetch from the OWA origin. They authenticate with credentials
+in the **query string** on a plain GET, which is a CORS *simple request* -- no
+`OPTIONS`, no preflight round trip. Preflight would only be forced by a custom
+header (`X-API-Key`), a JSON content-type, or a non-GET method.
+
+So the constraint, stated rather than left to luck: **keep cross-origin API
+calls simple-request-shaped.** The v2 reporting UI is same-origin with the API
+and never triggers CORS at all; the overlay is the only cross-origin consumer
+and should stay a simple GET. This is also a latency argument -- a preflight is
+a full extra round trip before every call. Header-based auth is fine for
+same-origin callers, where none of this applies.
+
+**The overlay credential is wrong today and must not be carried into v2.**
+The current flow: OWA's admin UI links to the tracked page with
+`#owa_overlay=<base64 JSON>`; the tracker decodes it and writes it to an
+`owa_overlay` **cookie** on `document.domain` -- the tracked site's own domain,
+path `/` (`Tracker.js:362`) -- and Heatmap/Player read `api_url` back out of
+that cookie. The JSON holds a user's **`apiKey` plus its HMAC signature**.
+
+That puts a long-lived credential with a user's full privileges into a cookie
+on a domain OWA does not control:
+
+- any script on the tracked site -- an ad tag, another analytics vendor, a
+  compromised plugin -- can read it via `document.cookie`, and it cannot be
+  `HttpOnly` because the overlay's own JS must read it
+- being a cookie, it is then **sent on every subsequent request to that site**,
+  so the key lands in the tracked site's access logs, its CDN's logs and any
+  proxy between
+- it is a *user* key, not a scoped one, so a leak is an account compromise
+  rather than the loss of one page's heatmap
+
+The single mitigation is that `Util.setCookie` is called with no expiry, making
+it a session cookie that playback erases on close -- which bounds the cookie's
+life, not the key's.
+
+**v2 design**: mint a **short-lived, scoped, single-purpose token** when an
+admin opens an overlay -- bound to one site, one page URI, read-only, expiring
+in minutes. Carry it in the fragment as now (fragments never reach a server),
+but hold it **in memory** for the page's lifetime rather than in a cookie, so it
+is never transmitted and does not outlive the tab. The HMAC signature then has
+nothing to protect and goes away: request signing exists to make a long-lived
+key survivable in a URL, and a token that expires in minutes does not need it.
+This also removes the only reason the CORS response needed
+`Access-Control-Allow-Credentials`.
+
 ### Replace JSONP with CORS for playback
 
 Both playback surfaces still fetch over JSONP:
