@@ -545,11 +545,26 @@ consumer like any other client. Everything below is then a reversible choice.
 
 ### Split the two UIs by their nature
 
+**Decided**: reporting client-rendered, admin server-rendered.
+
 - **Reporting** is genuinely interactive -- periods, segments, drill-down -- and
-  should be **client-rendered against the API**.
-- **Admin** is forms and CRUD across ~23 controllers. Server-rendered is right;
-  paying SPA complexity for a user-edit form helps nobody, and self-hosted
-  administrators benefit from an admin that works without a build step.
+  is **client-rendered against the API**.
+- **Admin** is forms and CRUD across ~23 controllers and stays **server-rendered**.
+  Paying SPA complexity for a user-edit form helps nobody, and self-hosted
+  administrators benefit from an admin that keeps working without a build step.
+
+This is one application with a PHP shell, not two applications. Navigation,
+authentication, the site selector and the period picker stay server-rendered for
+both halves; reporting mounts into that shell rather than replacing it. So there
+is one session, one navigation, one place a page is assembled -- and the
+client-rendered part is a region of a page rather than a separate front end that
+has to reimplement the furniture around it.
+
+The consequence to accept deliberately: **two rendering paths coexist
+permanently**, not transitionally. Someone will eventually propose unifying them.
+The answer is that the split follows the work -- interactive analysis and CRUD
+forms are different problems -- and that unifying costs a build step on the one
+part of the system that most benefits from not having one.
 
 ### The actual problem is not the framework
 
