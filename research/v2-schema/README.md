@@ -1162,9 +1162,25 @@ given second the space is only `10^9`:
 A collision merges two people into one visitor -- silently, and permanently.
 Worth stating plainly, though: **GA is not meaningfully better here.** Its `_ga`
 cookie is `GA1.1.<random>.<timestamp>` with roughly 31 bits in the random field,
-the same construction with one extra bit. This is a defect to fix on the merits,
-not a competitive gap, and the fix is free -- widen the random component, since
-nothing depends on the field widths.
+the same construction with one extra bit.
+
+**Correction (2026-08-20, from attempting the fix): the entropy cannot be
+improved, and an earlier version of this section said it could.** The
+construction consumes **60.6 of the 63 bits** a signed BIGINT provides, so there
+is no free room -- a 1e10 multiplier would have overflowed in 1999. Nor does
+re-dividing the budget help, which is the non-obvious part: coarsening the time
+bucket by k multiplies the ids sharing a bucket by k (candidate pairs by k^2),
+divides the bucket count by k, and grows the random space by k, so **k cancels
+exactly**. Measured across second, minute, hour and day granularity, the
+expected collisions per year are identical.
+
+The rate is therefore a function of the total bit budget and the arrival rate
+alone. The 1,000/sec row above is 86 million new visitors a day and not a
+self-hosted installation; the realistic figure is the 10/sec row -- **~0.8
+collisions a year**. This is an accepted, quantified limit that v2 inherits, not
+an open defect, and the only lever would be a wider id space, which the BIGINT
+contract forbids. The salt was removed instead (PR #1017), for the same reason:
+there is nothing left to mix it into.
 
 **The site salt is silently discarded.** All four call sites pass one --
 `Util.generateRandomGuid( this.siteId )` -- and the function is declared
@@ -3335,9 +3351,9 @@ Two live cases remain, and both are exactly the content-derived-id events:
 
 Therefore: **idempotent events derive `yyyymmdd` from the timestamp embedded
 in `session_id`**, deterministic on every attempt. Non-idempotent events use
-server receipt time as usual. (The entropy fix must preserve the guid's
-leading-timestamp construction for this reason -- widen the random suffix,
-keep the time prefix.)
+server receipt time as usual. (The guid's leading-timestamp construction must
+therefore survive any future change to id generation. The entropy fix once
+proposed here proved impossible -- see the correction in the identity section.)
 
 **Pinned alongside it, because the redelivery case depends on it:** `ts` is
 assigned **once, at edge receipt, and travels with the queue item**. Queue
