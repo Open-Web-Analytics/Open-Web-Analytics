@@ -35,7 +35,7 @@
                                     [
                                         'action' => 'loadPlayer',
                                         'domstream_guid' => $ds['domstream_guid'],
-	                                    'api_url' 		=> $view->makeApiLink(
+	                                    'api_url' 		=> $view->makeOverlayApiLink(
 									                	
 										                [
 										                	'domstream_guid' => $ds['domstream_guid'],
@@ -43,8 +43,7 @@
 														    'version'		=> 'v1',
 														    'do'			=> 'domstreams'	
 									                	], 
-										                true, 
-											            true
+										                'domstream_guid'
 									                ), 
                                     ],
                                     true,

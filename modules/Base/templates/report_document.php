@@ -45,7 +45,7 @@
 							                    
 								                [
 								                    'action' 		=> 'loadHeatmap', 
-									                'api_url' 		=> $view->makeApiLink(
+									                'api_url' 		=> $view->makeOverlayApiLink(
 									                	
 										                [
 										                	'document_id' 	=> $view->document->get('id'),
@@ -54,8 +54,7 @@
 														    'do'			=> 'reports',
 														    'report_name'	=> 'clicks'    	
 									                	], 
-										                true, 
-											            true
+										                'document_id'
 									                ), 
 										            
 											        'document_id' 	=> $view->document->get('id')

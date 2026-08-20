@@ -165,6 +165,23 @@ class OWA {
         this.config['rest_api_endpoint'] = endpoint;
     }
     
+    /**
+     * The REST API endpoint.
+     *
+     * The fallback below is a trap and has never executed: on a tracked page
+     * `baseUrl` is where the tracker *logs*, which need not be where reporting
+     * lives. OWA supports split deployment on purpose -- separate logger and
+     * API endpoints, the RemoteQueue module, and OWA_USE_STATIC_CONFIG_ONLY for
+     * a logging-only node that never touches the reporting database -- so the
+     * admin interface can be on a different domain entirely.
+     *
+     * In practice startOverlaySession() always calls setApiEndpoint() with the
+     * URL the *admin interface* minted, because that origin is the only one
+     * that knows where reporting lives. Guessing here would work on a
+     * single-box install and fail silently everywhere else, by fetching from a
+     * host that never answers. Do not build on this fallback; prefer deleting
+     * it over making it clever.
+     */
     getApiEndpoint() {
 	    
         return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
