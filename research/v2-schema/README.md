@@ -426,6 +426,71 @@ by a scheduled job rather than queried at high volume -- so it sits naturally
 with the administrative store, on the same side of the boundary as the job that
 maintains it.
 
+## Heatmaps
+
+A click is simply `event_type = 'click'` in `owa_event` -- no click table, no
+heatmap table, no aggregate. Its parameters carry the coordinates, the viewport,
+and the identity of what was clicked, and the heatmap is an ordinary query:
+
+```sql
+SELECT element_path, element_text, COUNT(*) n
+FROM owa_event
+WHERE event_type = 'click' AND site_id = ? AND page_key = ?
+  AND yyyymmdd BETWEEN ? AND ?
+  AND <any dimension filter>
+GROUP BY element_path
+ORDER BY n DESC
+```
+
+The same shape as top pages, so "clicks from mobile visitors on campaign X"
+comes from the standard machinery rather than a bespoke endpoint.
+
+### What the current data can and cannot support
+
+Measured over 470,718 clicks:
+
+```
+2,297 distinct viewport widths
+dom_element_id     real value:    437  (0.09%)  -- 439,839 are "(not set)"
+dom_element_class  real value: 39,731  (8%)
+dom_element_text   real value: 266,694 (57%)    -- 266,491 clicks are on <A>
+dom_element_parent_id           0  (0%)         -- declared, never written
+page_width/height  populated on ~100%
+```
+
+**Coordinates are aggregated across 2,297 layouts.** A click at x=400 on a
+1920px viewport and one at x=400 on a 1280px viewport are different elements
+entirely, and the overlay plots them together on whatever width the analyst
+happens to be using. The more responsive the site, the less the picture means,
+and it cannot be corrected at render time because the information is already
+lost.
+
+**Element identity is mostly absent.** The columns exist -- id, class, text,
+parent -- but in practice id is a real value on 0.09% of clicks and class on 8%.
+`dom_element_text` is the exception at 57%, and since 266,491 of 470,718 clicks
+land on an `<A>`, link text is a genuinely useful identifier. There is no path or
+parent, so no stable selector can be constructed from what is stored.
+
+The schema anticipated more than the implementation delivered, which is the same
+pattern as the domstream columns and the CORS outline.
+
+### What v2 should do
+
+1. **Aggregate by element, not coordinate.** Responsive-safe, survives layout
+   changes, and makes the clicked element **a dimension like any other** -- so it
+   segments through the normal machinery instead of a special overlay path.
+2. **Which requires a tracker change**, and that is the honest cost: capture a
+   stable element path (an nth-of-type ancestor chain, or a hashed selector).
+   Element-based heatmaps are not possible from what is stored today.
+3. **If coordinates are kept, bucket by viewport** -- per breakpoint, or
+   normalised as a percentage of `page_width`. Overlaying 2,297 widths on one
+   canvas is not a rendering problem to solve later.
+4. **Keep `dom_element_text` as the label.** An aggregate keyed on a selector
+   hash needs something human-readable to display, and "Visitors Reporting" is
+   what makes the report legible.
+5. **The rendering path stops being special**: a query over click events rather
+   than a JSONP endpoint feeding 614 lines of `Heatmap.js`.
+
 ## Multiple backing stores is a requirement, not an option
 
 Everything above points the same way: v2 should assume more than one backing
