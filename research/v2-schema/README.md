@@ -426,6 +426,68 @@ by a scheduled job rather than queried at high volume -- so it sits naturally
 with the administrative store, on the same side of the boundary as the job that
 maintains it.
 
+## Multiple backing stores is a requirement, not an option
+
+Everything above points the same way: v2 should assume more than one backing
+store from the start. Not because every installation needs one -- the common
+deployment is a single self-hosted MySQL and must stay that way -- but because
+the alternative is discovering the seam is wrong after committing to it.
+
+Concretely that means three things, in this order of importance:
+
+1. The **query description**, not the SQL string, is what crosses the boundary
+   between reporting and storage.
+2. The **administrative and event stores are separate repositories in code**,
+   whether or not they point at the same connection.
+3. PDO is adopted for the SQL family as one backend among several, never as the
+   abstraction itself.
+
+None of the three costs anything on a single-MySQL install, and all three are
+expensive to retrofit.
+
+## Store the URI, not the full URL
+
+GA keeps a site's own pages as paths and treats the host as a separate concern:
+the domain is something configured once, on the property, not repeated on every
+hit. OWA should do the same, and the reason is not tidiness -- it is a live
+defect.
+
+Document ids are derived from the **full URL**, so every scheme, host and
+hostname variant mints a separate document for the same page. Measured on a real
+installation:
+
+```
+uri = /                    ->  7 document rows
+      hosts: 172.16.0.63, demo.openwebanalytics.com,
+             demo.openwebanalytics.com.  (trailing dot), localhost
+uri = /ecommerce.php       ->  3 rows
+uri = /funnel-step-1.php   ->  2 rows   (same host: scheme or trailing-slash)
+```
+
+The homepage's traffic is divided seven ways, silently, in every report that
+touches it. `makeUrlCanonical()` exists to mitigate this and evidently does not
+cover scheme, bare-IP access, or a trailing-dot FQDN.
+
+Keying a page on its URI collapses those variants by construction, and removes
+the domain from every fact row -- which on a columnar store is also the best
+possible case for compression, being one low-cardinality value repeated
+throughout.
+
+Three constraints come with it, and the first is easy to get wrong:
+
+- **The id must be scoped by site.** `hash( url )` is globally unique today only
+  because the URL contains the domain. `hash( uri )` alone would merge `/about`
+  across every site in the installation, so it must be `hash( site_id + uri )`.
+- **Referrers keep their full URLs.** They are external, the domain is not
+  yours to normalise away, and it is the most useful part of the value.
+- **Hostname stays a dimension in its own right.** A site spanning `shop.` and
+  `www.` must remain separable, which is why GA keeps Hostname distinct from
+  Page path. OWA already registers `hostName`; it simply stops being embedded in
+  the page's identity.
+
+The domain then surfaces exactly once, where it belongs: on the site record, set
+when the site is configured.
+
 ## Pros and cons
 
 **For the single table:**
