@@ -3275,6 +3275,109 @@ yyyymmdd, payload MEDIUMBLOB)`, PK `(event_id, yyyymmdd)`, partitioned on the
 same scheme so payload retention is the same partition drop -- and payloads can
 be dropped on a shorter window than events, since nothing is derived from them.
 
+## How the data-access API changes from v1 to v2
+
+The question underneath the metric/dimension delta is the contract a client
+programs against. The route mechanics were settled in "The API as the
+contract" above: `v2` registers beside `v1` (routes are keyed by version), the
+`reports` route's request shape survives unchanged -- `metrics`, `dimensions`,
+`segment`, dates, `sort`, `siteId` -- and API keys keep working. So **the
+request grammar is stable; what changes is the vocabulary and the envelope**:
+
+- **Vocabulary** -- which metric and dimension names the `v2` route accepts,
+  itemised below. This is the entire breaking surface: an integration breaks
+  only if it names something that fell out.
+- **Envelope** -- three additions, all decided elsewhere in this document:
+  a **freshness as-of** field (from `owa_rollup_day.built_at`) beside the row
+  count; the synthetic **`(unknown)` reconciliation row** where a total and a
+  breakdown meet; and **discovery as authority** -- `relatedDimensions` stops
+  describing what happens to work and starts stating what is permitted, since
+  the schema no longer enforces combination validity.
+- **Param-path dimensions** -- the one genuinely new grammar element: any
+  `params` JSON path is addressable as a dimension (`params.author`,
+  `params.plan_tier`) with no registration step, which is how unregistered
+  custom-variable segmentation reaches the API.
+
+The vocabulary delta, grounded in the live registry (78 metrics -- 32 static
+plus 45 generated as `goal{1..15}` x Completions/Starts/Value -- and ~100
+dimensions), against the column spec above:
+
+### Falls out of v2
+
+**Metrics:**
+
+| gone | count | replaced by |
+|---|---|---|
+| `goal{N}Completions` / `goal{N}Starts` / `goal{N}Value` | 45 | key-event metrics parameterised by *name*, not slot number -- unlimited, so nothing expressible is lost, but every numbered-goal metric identifier dies |
+| duplicate commerce definitions | 9 | the surviving single definition of each (consolidation, not loss) |
+
+**Dimensions:**
+
+| gone | count | why |
+|---|---|---|
+| the `*InVisit` family (`pagesViewsInVisit`, `revenueInVisit`, `transactionsInVisit`, `goalsInVisit`, `goalStartsInVisit`, `goalValueInVisit`, `itemQuantityInVisit`, `itemRevenueInVisit`, `distinctItemsInVisit`, `taxRevenueInVisit`, `shippingRevenueInVisit`) | 11 | zero references outside their own registration -- dead surface area |
+| `referralPageTitle`, `referralLinkText`, `referralWebSite`, `isSearchEngine`-as-enriched | 4 | filled by post-hoc referral crawling, the 589x enrichment class; Peter ruled out both the enrichment dependency and lookaside joins |
+| numbered-goal dimensions | -- | die with the slots |
+
+### New in v2
+
+**Metrics** (each impossible or structurally broken in 1.x):
+
+- `engagementTime` / `avgEngagementTime` -- total and per-page, **including
+  final-page dwell**, which 1.x cannot measure at any price
+- `engagementRate` / `bounceRate` (new definition) -- derived, threshold-tunable
+- `scrollDepth` reach, `fileDownloads`, `outboundClicks`, `formStarts`,
+  `formSubmits`, `siteSearches` -- from the enhanced-measurement events
+- the commerce funnel: `itemViews`, `addsToCart`, `cartViews`,
+  `checkoutsBegun`, `refunds`, and abandonment rates between stages -- 1.x has
+  only the completed transaction, so no funnel metric exists today
+- key-event metrics per *named* event, unlimited, versus 15 slots
+
+**Dimensions:**
+
+- `eventName` itself -- the taxonomy is a dimension, which is the whole GA4 trick
+- `keyEvent` (name), `userId` / known-user status
+- **any custom param, unregistered** -- the five-slot cv wart dies; every
+  `params` path is a candidate dimension, indexable retroactively via virtual
+  generated columns
+- element path / click target, scroll-depth bucket
+
+### Combinations lost
+
+- **770 of 5,493 valid v1 pairs (14%)** -- all via the 11 `*InVisit`
+  dimensions. Deliberate: the dimensions are unreferenced, so the pairs are
+  surface area, not capability.
+- The numbered-goal pairs die *as identifiers* but every one has a key-event
+  equivalent, so the capability set strictly grows.
+- The 4 referral-enrichment dimensions lose their metric pairings outright --
+  the one genuine capability loss, and it was traded away knowingly with the
+  589x enrichment property.
+- The remaining 4,443 + 280 exit-page pairs survive (exit derived at read).
+
+### Combinations gained -- and the guard they require
+
+1.x's entity boundaries made most cross-grain pairs *impossible*: the resolver
+intersects metric-component entity sets (`reduceTables`), so `bounceRate x
+pagePath` is refused today. One grain removes the wall:
+
+- **session metrics x event dimensions**: `visits x pageUri` ("sessions that
+  touched this page"), `bounceRate x landing page` -- meaningful, common in
+  GA4, structurally unaskable in 1.x
+- **engagement x anything**: by source, by campaign, by country, by custom
+  param -- a whole metric class times every dimension
+- **commerce funnel x attribution**: abandonment by source/campaign
+- **any custom param x any metric**: v1's cv dimensions were pinned to the
+  entities that carried the slots
+
+The inversion, stated once more because it is now concrete: the schema no
+longer refuses nonsense, so the registry must. `bounceRate x pagePath` (any
+page, not landing page) remains non-additive semantics wearing a computable
+query, and v2's registry has to refuse it *explicitly* where v1's schema
+refused it implicitly. The valid-combination table becomes curated policy
+rather than an emergent property -- which is also what makes the API's
+discovery endpoint (`relatedDimensions`) authoritative rather than
+descriptive.
+
 ## Pros and cons
 
 **For the single table:**

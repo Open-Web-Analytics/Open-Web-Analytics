@@ -122,6 +122,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s18">1.8 Privacy</a>
   <a href="#s19">1.9 Non-goals</a>
   <a href="#s110">1.10 The tables</a>
+  <a href="#s111">1.11 The API delta</a>
   <a class="r-part" href="#p2">II · Additive in 1.x</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
@@ -543,6 +544,24 @@ measured, UI-annotated), <code>visitors</code>, <code>new_visitors</code>,
 <p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
 <code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
 the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
+
+<h3 id="s111"><span class="num">1.11</span>The data-access API delta <span class="chip c-dec">Decided</span></h3>
+<p><strong>The request grammar is stable; the vocabulary and envelope change.</strong> The
+<code>reports</code> route keeps its shape — <code>metrics</code>, <code>dimensions</code>,
+<code>segment</code>, dates, <code>sort</code>, <code>siteId</code> — <code>v2</code> registers
+beside <code>v1</code> (routes are version-keyed today), and API keys keep working. An integration
+breaks only if it names something that fell out.</p>
+<div class="scroll"><table>
+<thead><tr><th>Change</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td><strong>Falls out — metrics</strong></td><td>the 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers (replaced by key-event metrics parameterised by <em>name</em>, unlimited); 9 duplicate commerce definitions collapse to one each</td></tr>
+<tr><td><strong>Falls out — dimensions</strong></td><td>the 11 dead <code>*InVisit</code> dimensions (770 of 5,493 valid pairs, zero references); the 4 referral-enrichment dimensions (<code>referralPageTitle</code>, <code>referralLinkText</code>, <code>referralWebSite</code>, enriched <code>isSearchEngine</code>) — the one knowing capability loss, traded with the 589× enrichment property</td></tr>
+<tr><td><strong>New — metrics</strong></td><td><code>engagementTime</code> (incl. final-page dwell, unmeasurable in 1.x), <code>engagementRate</code>/new <code>bounceRate</code>, scroll/download/outbound/form/site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates — 1.x has only the completed transaction), unlimited named key events</td></tr>
+<tr><td><strong>New — dimensions</strong></td><td><code>eventName</code> itself, <code>keyEvent</code>, <code>userId</code>, element path / click target, scroll-depth bucket — and <strong>any <code>params</code> path, unregistered</strong> (<code>params.author</code>), the API face of unlimited custom variables</td></tr>
+<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_rollup_day.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
+<tr><td><strong>Combinations gained</strong></td><td>one grain removes the entity walls: <code>visits × pageUri</code>, <code>bounceRate × landing page</code>, engagement × anything, funnel × attribution, any param × any metric — all structurally unaskable in 1.x</td></tr>
+<tr><td><strong>The guard</strong></td><td>the schema no longer refuses nonsense (<code>bounceRate × pagePath</code> is computable but non-additive), so the registry must refuse it explicitly — the valid-combination table becomes curated policy, which is exactly what makes discovery authoritative</td></tr>
+</tbody></table></div>
 
 <!-- ============ PART II ============ -->
 <section class="part" id="p2">
