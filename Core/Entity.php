@@ -236,8 +236,26 @@ class Entity {
 	            $value = $this->$method( $value );
             }
             
-            if ( $value ) {
-            
+            // A falsy value is stored when the COLUMN can legitimately hold one.
+            //
+            // This guard used to be a bare `if ( $value )`, so 0, false and ''
+            // were all discarded silently -- setting a numeric column to 0 did
+            // nothing at all, and the caller had no way to tell. That is why
+            // SessionHandlers once wrote the STRING 'false' into is_bounce: a
+            // truthy value was the only kind that survived, and MySQL coerced it
+            // to 0 on the way in.
+            //
+            // Widened by TYPE rather than removed, because the two cases are not
+            // alike. On a numeric column 0 is a value like any other. On a string
+            // column, '' is what a caller passes when it has nothing -- several
+            // handlers rely on `set('medium', $maybeEmpty)` leaving the existing
+            // value alone -- so blanket-storing empties there would start wiping
+            // data that is currently preserved.
+            //
+            // Numeric columns therefore accept 0/false; everything else keeps
+            // the old behaviour exactly.
+            if ( $value || $this->columnAcceptsFalsy( $name, $value ) ) {
+
 	            $this->properties[$name]->setValue( $value );
 	            
 	            if ( $mark_dirty && $existing_value != $value ) {
@@ -248,6 +266,45 @@ class Entity {
         }
     }
     
+    /**
+     * Whether a falsy value is a real value for this column.
+     *
+     * Reads the type the entity already declares -- DbColumn's second
+     * constructor argument, e.g. new DbColumn('priority', OWA_DTD_INT) -- so no
+     * entity needs changing to get this. Every column in the codebase already
+     * carries one.
+     *
+     * Numeric columns only. 0 and false are values there; on a VARCHAR, '' is
+     * how callers say "I have nothing", and treating that as a value would blank
+     * columns that are deliberately left alone today.
+     *
+     * @param string $name
+     * @param mixed  $value
+     * @return bool
+     */
+    protected function columnAcceptsFalsy( $name, $value ) {
+
+        if ( $value === null || $value === '' ) {
+
+            return false;
+        }
+
+        if ( ! isset( $this->properties[ $name ] ) ) {
+
+            return false;
+        }
+
+        $type = (string) $this->properties[ $name ]->get( 'data_type' );
+
+        if ( ! preg_match( '/^(BIGINT|INT|TINYINT|SMALLINT|MEDIUMINT|DECIMAL|FLOAT|DOUBLE|SERIAL)/i', $type ) ) {
+
+            return false;
+        }
+
+        return is_int( $value ) || is_float( $value ) || is_bool( $value )
+            || ( is_string( $value ) && is_numeric( $value ) );
+    }
+
     function markDirty( $name, $value ) {
 	    
 	    $this->dirty[$name] = $value;
@@ -364,7 +421,18 @@ class Entity {
         
             // drop column is it is marked as auto-increment as DB will take care of that.
             
-            if ($this->get($v, false)) {
+            // Truthy OR explicitly changed.
+            //
+            // The truthy test alone could never write a 0, which is why a
+            // legitimate falsy value could not be persisted through an entity at
+            // all. Dirty tracking already existed (markDirty, populated by set())
+            // and was simply never consulted here.
+            //
+            // ADDED to the truthy test rather than replacing it: some callers
+            // change a property without going through set(), so those values are
+            // not marked dirty, and a dirty-only update would silently stop
+            // persisting them. Every column written before is still written.
+            if ($this->get($v, false) || array_key_exists($v, $this->dirty)) {
                 $db->set($v, $this->get($v, false));
             }
         }

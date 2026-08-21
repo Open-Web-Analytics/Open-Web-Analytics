@@ -1628,15 +1628,26 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             }
                         }
                     }
-                    
-                    
-                    // query for dimensional results
+                }
+
+                // Query for the dimensional rows.
+                //
+                // OUTSIDE the orderby block, which is where these two lines used
+                // to sit -- their indentation always said they belonged here, but
+                // the brace put them inside. The effect was that a breakdown with
+                // no sort never ran its query at all: $dresults stayed undefined,
+                // generate() received nothing, and the caller got zero rows next
+                // to a perfectly correct aggregate. No error, because an
+                // unassigned variable is only a notice and nothing was watching.
+                //
+                // It survived because every one of the ~60 declarative report
+                // controllers sets a sort, so no shipped report ever took the
+                // unsorted path. Found by reporting-facets.spec.js, which asks
+                // for a breakdown without one.
                 $dresults = $this->computeDimensionalRows( $bm );
-                
+
                 // paginate the results
                 $dresults = $this->applyMetaDataToResults( $dresults );
-                    
-                }
 
                 // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [

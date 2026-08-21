@@ -176,27 +176,33 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
     });
 
     /**
-     * KNOWN DEFECT, found by this fixture: a breakdown with NO sort returns zero
-     * rows while the aggregate is still correct -- measured 0 rows unsorted
-     * versus 3 with any sort at all, on identical data.
+     * A breakdown must not depend on being sorted.
      *
-     * It has gone unnoticed because every one of the ~60 declarative report
-     * controllers sets a sort, so no shipped report exercises the unsorted path.
-     * It is silent in the same way the constraint bug was: an empty result set
-     * rather than an error.
+     * This found a real defect: computeDimensionalRows() sat INSIDE the
+     * `if (orderby)` block, so an unsorted breakdown never ran its query at all.
+     * $dresults stayed undefined, generate() got nothing, and the caller saw
+     * zero rows beside a perfectly correct aggregate -- silent, because an
+     * unassigned variable is only a notice. It survived because all ~60
+     * declarative report controllers set a sort, so no shipped report took the
+     * unsorted path.
      *
-     * Marked fixme rather than deleted so the suite carries the finding; it will
-     * start passing, and stop being skipped, when the engine is fixed.
+     * Asserted on the counts as well as the row count, so a fix that returns
+     * rows but loses their values cannot pass.
      */
-    test.fixme('a breakdown without a sort still returns its rows', async ({ request }) => {
+    test('a breakdown without a sort still returns its rows', async ({ request }) => {
         const data = await report(request, {
             owa_metrics: 'visits',
             owa_dimensions: 'source',
         });
 
-        expect(data.resultsRows.length,
-            'a breakdown with no sort returned no rows, though the aggregate was right'
-        ).toBe(Object.keys(fx.expected.by_source).length);
+        const got = {};
+        for (const row of data.resultsRows) {
+            got[dimOf(row, 'source')] = visitsOf(row);
+        }
+
+        expect(got,
+            'a breakdown with no sort returned the wrong rows, though the aggregate was right'
+        ).toEqual(fx.expected.by_source);
     });
 
     test('a dimensional breakdown gives the right count per value', async ({ request }) => {

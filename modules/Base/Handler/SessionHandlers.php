@@ -192,9 +192,15 @@ class SessionHandlers extends \OWA\Core\Observer {
                 // setValue() writes the property directly, bypassing that falsy
                 // guard. The guard itself is worth removing, but that changes
                 // every set() call in the codebase and needs its own change.
-                // Cleared directly below, after $s->update(), because it
-                // cannot be written through the entity at all -- see the note
-                // there.
+                // set bounce flag to false as there must have been 2 page views
+                //
+                // A real 0, not the string 'false' this used to assign. That
+                // string existed only because Entity::set() discarded every
+                // falsy value, so a truthy one was the only kind that survived
+                // -- and MySQL then coerced the non-numeric string to 0 on the
+                // way in. It was also TRUTHY in PHP, so reading is_bounce back
+                // reported a bounce that had not happened.
+                $s->set( 'is_bounce', 0 );
 
                 // update timestamp of latest request that triggered the session update
                 $s->set( 'last_req', $event->get( 'timestamp' ) );
@@ -258,30 +264,6 @@ class SessionHandlers extends \OWA\Core\Observer {
 
                 // Persist to database
                 $ret = $s->update();
-
-                // Clear the bounce flag with a direct UPDATE.
-                //
-                // It cannot go through the entity: Entity::set() drops falsy
-                // values ("if ( $value )") and the update builder drops them
-                // again ("if ( $this->get( $v, false ) )"), so a 0 never reaches
-                // the statement. That is why this used to assign the STRING
-                // 'false' -- truthy in PHP, so it survived both guards, and
-                // non-numeric, so MySQL coerced it to 0 in this TINYINT column.
-                //
-                // Under a strict sql_mode that coercion is an error rather than
-                // a silent fix-up, and the string is a hazard on its own: read
-                // back into PHP it is TRUTHY, so a session that did not bounce
-                // reports that it did.
-                //
-                // Relaxing the two falsy guards is the real fix and is
-                // deliberately not done here -- the second one exists to stop a
-                // partially-loaded entity blanking columns it never loaded, so
-                // changing it needs its own review.
-                $db = \OWA\Core\CoreAPI::dbSingleton();
-                $db->updateTable( 'owa_session' );
-                $db->set( 'is_bounce', 0 );
-                $db->where( 'id', $id );
-                $db->executeQuery();
             }
 
             // setup event message
