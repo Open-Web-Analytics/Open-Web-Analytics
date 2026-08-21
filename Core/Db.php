@@ -831,9 +831,37 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Escape a value for interpolation into a statement.
+     *
+     * Every driver must implement this, because escaping is a property of the
+     * connection -- it depends on the server's character set, which only the
+     * driver knows. There is no correct database-agnostic version, so the base
+     * class refuses rather than offering a plausible-looking one.
+     *
+     * It used to offer Sanitize::stripSql(), which was not escaping at all: it
+     * deleted parentheses, commas, and any word matching a list of SQL keywords
+     * from the value. That is not a defence -- values were already escaped by
+     * the real drivers -- and it silently corrupted data whenever it was
+     * reached. It ran on this installation's user agents for six months, giving
+     * every browser two identities and roughly quadrupling the cardinality of
+     * the user-agent dimension.
+     *
+     * A third-party driver at plugins/db/ that reaches this is not escaping its
+     * values, which is a defect worth hearing about immediately rather than
+     * discovering later.
+     *
+     * @param string $string
+     * @throws \RuntimeException always
+     */
     function prepare ( $string ) {
 
-        return \OWA\Module\Base\Classes\Sanitize::stripSql( $string );
+        throw new \RuntimeException( sprintf(
+            '%s does not implement prepare(). A database driver must escape values itself, '
+          . 'because escaping depends on the connection character set. Implement prepare() '
+          . 'on the driver.',
+            get_class( $this )
+        ) );
     }
 
     function _makeJoinClause() {
