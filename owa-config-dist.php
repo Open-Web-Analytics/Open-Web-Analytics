@@ -43,6 +43,39 @@ define('OWA_DB_PORT', '3306'); // port of database
 define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
 
 /**
+ * OPTIONAL DATABASE SETTINGS
+ *
+ * Both are commented out because their defaults are what an existing
+ * installation already does. Read the notes before changing either.
+ *
+ *
+ * OWA_DB_CHARACTER_ENCODING -- the encoding for the schema AND the connection.
+ *
+ * Defaults to 'utf8', which in MySQL is the three-byte encoding and cannot hold
+ * any character above U+FFFF. An emoji in a page title is unstorable, and
+ * MySQL's response is to discard the rest of the string.
+ *
+ * 'utf8mb4' holds them. SET IT BEFORE THE FIRST TABLE IS CREATED. On an
+ * existing installation it applies only to tables created afterwards, leaving a
+ * mix of encodings with nothing to reconcile them -- worse than either choice.
+ * For a NEW installation there is no such cost.
+ *
+ *      define('OWA_DB_CHARACTER_ENCODING', 'utf8mb4');
+ *
+ *
+ * OWA_DB_SQL_MODE -- the session sql_mode.
+ *
+ * Defaults to STRICT_ALL_TABLES, under which the database REFUSES a value that
+ * does not fit rather than silently trimming it. That is the safer behaviour
+ * and the reason it is the default: a silent trim is data you never learn you
+ * lost.
+ *
+ * Set it empty to restore the older permissive behaviour:
+ *
+ *      define('OWA_DB_SQL_MODE', '');
+ */
+
+/**
  * AUTHENTICATION KEYS AND SALTS
  *
  * Change these to different unique phrases.

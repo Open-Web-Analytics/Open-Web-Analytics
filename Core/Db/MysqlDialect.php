@@ -109,7 +109,29 @@ if ( ! defined( 'OWA_SQL_ROUND' ) ) { define('OWA_SQL_ROUND', 'ROUND(%s)'); }
 if ( ! defined( 'OWA_SQL_AVERAGE' ) ) { define('OWA_SQL_AVERAGE', 'AVG(%s)'); }
 if ( ! defined( 'OWA_SQL_DISTINCT' ) ) { define('OWA_SQL_DISTINCT', 'DISTINCT %s'); }
 if ( ! defined( 'OWA_SQL_DIVISION' ) ) { define('OWA_SQL_DIVISION', '(%s / %s)'); }
-if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTER_ENCODING_UTF8', 'utf8'); }
+// The character encoding for both the schema and the connection, and the one
+// place either is decided.
+//
+// 'utf8' is MySQL's three-byte encoding, which cannot hold anything above
+// U+FFFF -- an emoji in a page title is unstorable, and MySQL's response is to
+// drop the rest of the string. It stays the DEFAULT because changing it would
+// only take effect on tables created afterwards, leaving an installation with a
+// mix of encodings and no migration to reconcile them.
+//
+// A NEW installation can choose better without any migration existing:
+//
+//     define('OWA_DB_CHARACTER_ENCODING', 'utf8mb4');
+//
+// in owa-config.php before the first table is created. Set it on an existing
+// installation and new tables get the new encoding while old ones keep theirs,
+// which is worse than either -- so on an existing install, leave it alone.
+if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) {
+
+    define(
+        'OWA_DTD_CHARACTER_ENCODING_UTF8',
+        defined( 'OWA_DB_CHARACTER_ENCODING' ) ? OWA_DB_CHARACTER_ENCODING : 'utf8'
+    );
+}
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
 
 
@@ -160,6 +182,23 @@ trait MysqlDialect
      *
      * @return string|null
      */
+    /**
+     * The encoding to negotiate on the connection.
+     *
+     * Same value the schema is declared with, deliberately: the connection
+     * encoding is the binding constraint of the two, so a three-byte
+     * connection mangles a four-byte character however the column is declared.
+     * Reading both from one constant is what stops them drifting.
+     *
+     * @return string
+     */
+    protected function connectionCharacterEncoding() {
+
+        return defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' )
+            ? (string) OWA_DTD_CHARACTER_ENCODING_UTF8
+            : 'utf8';
+    }
+
     protected function sessionSqlMode() {
 
         if ( defined( 'OWA_DB_SQL_MODE' ) ) {
