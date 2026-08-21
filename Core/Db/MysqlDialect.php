@@ -93,6 +93,12 @@ if ( ! defined( 'OWA_SQL_ASCENDING' ) ) { define('OWA_SQL_ASCENDING', 'ASC'); }
 if ( ! defined( 'OWA_SQL_REGEXP' ) ) { define('OWA_SQL_REGEXP', 'REGEXP'); }
 if ( ! defined( 'OWA_SQL_NOTREGEXP' ) ) { define('OWA_SQL_NOTREGEXP', 'NOT REGEXP'); }
 if ( ! defined( 'OWA_SQL_LIKE' ) ) { define('OWA_SQL_LIKE', 'LIKE'); }
+// Substring containment. MySQL spells it LOCATE(needle, haystack); PostgreSQL
+// has POSITION(needle IN haystack) and SQL Server CHARINDEX, so the whole
+// expression is the dialect's to give -- not just the function name. The
+// argument order is part of the contract: needle first, then the column.
+if ( ! defined( 'OWA_SQL_CONTAINS' ) ) { define('OWA_SQL_CONTAINS', 'LOCATE(%s, %s) > 0'); }
+if ( ! defined( 'OWA_SQL_NOT_CONTAINS' ) ) { define('OWA_SQL_NOT_CONTAINS', 'LOCATE(%s, %s) = 0'); }
 if ( ! defined( 'OWA_SQL_ADD_INDEX' ) ) { define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s'); }
 // Named form. The unnamed one above lets MySQL pick the name, so repeating it
 // yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.

@@ -693,11 +693,13 @@ class Db extends \OWA\Core\Base {
                         break;
 
                     case '=@':
-                        $constraint .= sprintf("LOCATE(%s, %s) > 0",$this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
+                        // Dialect-owned, like =~ and !~ above: the expression
+                        // for "contains" is not the same SQL everywhere.
+                        $constraint .= sprintf( OWA_SQL_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     case '!@':
-                        $constraint .= sprintf("LOCATE(%s, %s) = 0",$this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf( OWA_SQL_NOT_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     default:
