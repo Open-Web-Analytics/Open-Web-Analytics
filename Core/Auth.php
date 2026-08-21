@@ -597,7 +597,10 @@ class Auth extends \OWA\Core\Base {
     
     function isSignatureValid( $signature, $apiKey, $requestUrl ) {
 	    
-	    $requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, 'owa_jsonpCallback' );
+		// '_' is jQuery's cache-buster, appended after the URL is signed, so it
+		// must stay excluded. owa_jsonpCallback was excluded for the same reason
+		// and is gone with JSONP -- keeping the carve-out would leave a param
+		// that could be set to anything without invalidating the signature.
 		$requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, '_' );
 		
 	    

@@ -40,22 +40,13 @@ class RestApi extends \OWA\Core\View {
 	 *
 	 */
     function pre() {
-	   
-	   // look for jsonp callback
-        $callback = $this->get('jsonpCallback');
 
-        // if not found look on the request scope.
-        if ( ! $callback ) {
-            $callback = \OWA\Core\CoreAPI::getRequestParam('jsonpCallback');
-        }
-
-        if ( $callback ) {
-            $this->body->set('callback', $callback);
-            $type = 'jsonp';
-        } else {
-            
-            $type = 'json';
-        }
+        // The response is JSON. It was optionally JSONP -- the same body wrapped
+        // in a caller-named function so it could be loaded with a <script> tag,
+        // which is a same-origin-policy bypass. The two overlays that needed it
+        // now fetch over CORS, so the wrapper only widened who could read the
+        // response.
+        $type = 'json';
 
 	   // set header if the request is from the API endpoint. Could be an internal request.
 	   

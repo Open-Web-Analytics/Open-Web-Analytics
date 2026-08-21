@@ -16,11 +16,5 @@ if ( isset( $view->response_data ) ) {
 	$_response['data'] = $view->response_data;
 }
 
-if ( isset( $view->callback ) && ! empty( $view->callback) ) {
-	
-	echo sprintf("%s(%s);", $view->callback, json_encode( $_response ) );	
-} else {
-
-	echo json_encode( $_response );
-}
+echo json_encode( $_response );
 ?>

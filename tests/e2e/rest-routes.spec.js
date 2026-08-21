@@ -304,4 +304,50 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
         });
     });
+
+    /**
+     * JSONP is gone from the server, not just from the two overlays.
+     *
+     * It was never a documented part of the API. What it did was wrap the same
+     * JSON body in a caller-named function so the response could be loaded with
+     * a <script> tag -- which made every endpoint readable by any page on the
+     * internet, with the response executing in that page's context. CORS is the
+     * mechanism that grants the same access deliberately, to named origins, and
+     * it works now.
+     *
+     * Asserted over real HTTP rather than as a unit test because a callback
+     * wrapper is a property of the response body and its Content-Type, and both
+     * are produced by the view layer that only runs on a real request.
+     *
+     * The other half of the removal -- that owa_jsonpCallback is no longer
+     * exempt from the request signature -- is covered by
+     * tests/RequestSignatureTest.php. It cannot be asserted here: an appended
+     * parameter yields 401 whether or not the exemption exists, so an e2e case
+     * for it would pass either way.
+     */
+    test.describe('JSONP is not served', () => {
+
+        test('a jsonpCallback parameter does not produce executable script', async ({ request }) => {
+            const root = installRoot(test.info().project.use.baseURL);
+
+            // Signed WITH the parameter, so this reaches the view rather than
+            // being turned away for a bad signature.
+            const url = routeUrl(root, 'base/v1/sites', 'owa_jsonpCallback=owaEvil', creds);
+
+            const res = await request.fetch(url, { method: 'GET' });
+            const body = await res.text();
+
+            expect(res.status(), `request failed: ${body}`).not.toBe(401);
+
+            // The whole risk in one assertion: the body must not be a call.
+            expect(body.trimStart().startsWith('owaEvil('),
+                `the response was wrapped in a JSONP callback: ${body.slice(0, 120)}`).toBe(false);
+            expect(body).not.toContain('owaEvil');
+
+            // and it must still be JSON, both in fact and in what it claims.
+            expect(String(res.headers()['content-type'] || '')).toContain('application/json');
+            expect(() => JSON.parse(body), 'the response did not parse as JSON').not.toThrow();
+        });
+
+    });
 });

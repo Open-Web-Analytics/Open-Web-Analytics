@@ -76,6 +76,7 @@ anchor, so the tracker's `checkForOverlaySession()` → `startOverlaySession()` 
 dynamic-import of `Heatmap.js` runs exactly as in production.
 
 This test needs **no DB seeding** — it drives the client-side render only (the
-subsequent click-data JSONP fetch is not asserted). It shares the same
+subsequent click-data fetch is asserted separately, cross-origin, by
+`overlay-cross-origin.spec.js`). It shares the same
 `OWA_E2E_BASE_URL` / public-URL target as the dashboard tests because the
 harness must be served from under that install's webroot.

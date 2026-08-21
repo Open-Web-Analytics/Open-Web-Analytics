@@ -20,9 +20,10 @@
  * WHAT IT ASSERTS (and what it deliberately does not)
  * Only the synchronous, deterministic jQuery-built DOM: the control panel, its
  * three controls, the toggled "active" class, and the canvas element. The
- * subsequent click-data fetch is an async JSONP call against live data; it is
- * not part of the "does jQuery 3.x still build the overlay" contract and is not
- * asserted (it simply never calls back in this harness).
+ * subsequent click-data fetch is an async call against live data; it is not
+ * part of the "does jQuery 3.x still build the overlay" contract and is not
+ * asserted here. It is covered on its own, cross-origin and against a real API,
+ * by overlay-cross-origin.spec.js.
  */
 
 const fs = require('fs');

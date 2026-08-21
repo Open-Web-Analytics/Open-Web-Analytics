@@ -86,16 +86,11 @@ class ApiRequest extends \OWA\Core\Controller {
         $output = \OWA\Core\CoreAPI::executeApiCommand($map);
 
         // assign to a view for output
-        if ( $format === 'json' || $format === 'jsonp') {
+        if ( $format === 'json' ) {
 
             $this->setView( 'base.json' );
             $this->set( 'json', $output );
             $this->set( 'format', $format );
-
-            if ( $format ==='jsonp' ) {
-
-                $this->set('jsonpCallback', $this->getParam('jsonpCallback') );
-            }
 
         } else {
             //@todo move this to a generic raw output view.

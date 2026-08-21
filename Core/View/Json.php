@@ -30,24 +30,11 @@ class Json extends \OWA\Core\View {
         $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
-        // look for jsonp callback
-        $callback = $this->get('jsonpCallback');
+        // JSON only. JSONP wrapped this same body in a caller-named function so
+        // it could be loaded with a <script> tag -- a same-origin-policy bypass,
+        // and unnecessary now the overlays fetch over CORS.
+        $this->body->set('json', json_encode( $this->get( 'json' ) ) );
 
-        // if not found look on the request scope.
-        if ( ! $callback ) {
-            $callback = \OWA\Core\CoreAPI::getRequestParam('jsonpCallback');
-        }
-
-        if ( $callback ) {
-            $body = sprintf("%s(%s);", $callback, json_encode( $this->get( 'json' ) ) );
-            $type = 'jsonp';
-        } else {
-            $body = json_encode( $this->get( 'json' ) );
-            $type = 'json';
-        }
-
-        $this->body->set('json', $body);
-
-        \OWA\Core\Lib::setContentTypeHeader( $type );
+        \OWA\Core\Lib::setContentTypeHeader( 'json' );
     }
 }
