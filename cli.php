@@ -29,7 +29,12 @@
  */
 
 // Ensure we are being called as a CLI process before any other processing.
-define('OWA_CLI', (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)));
+// CliInvocation has no dependencies of its own, so requiring it here does not
+// start OWA for a caller that is about to be turned away. See that class for
+// why argc alone is not enough to tell a shell invocation from a request.
+require_once(__DIR__ . '/Core/CliInvocation.php');
+
+define('OWA_CLI', \OWA\Core\CliInvocation::detect(php_sapi_name(), $_SERVER));
 
 if (!OWA_CLI)
 {
