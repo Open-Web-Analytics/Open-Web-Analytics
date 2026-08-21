@@ -136,6 +136,7 @@ class OWATracker  {
 	    this.endpoint = OWA.config.baseUrl;
 	    // Active status of tracker
 	    this.active = true;
+
 	
 	    if ( options ) {
 	
@@ -1972,6 +1973,7 @@ class OWATracker  {
 
             event.set('timestamp', this.getTimestamp() );
         }
+
 
            if (callback && ( typeof( callback ) == 'function' ) ) {
 

@@ -38,6 +38,11 @@
             if (base.charAt(base.length - 1) !== '/') {
                 base += '/';
             }
+            // Playwright drives a real browser, so navigator.webdriver is true and the
+            // tracker treats it as a crawler and refuses to load. These harnesses exist
+            // precisely to be driven, so they opt back in -- the same escape hatch a site
+            // owner uses for their own end-to-end tests or synthetic monitoring.
+            window.owa_track_automated_browsers = true;
             window.owa_baseUrl = base;
 
             window.owa_cmds = window.owa_cmds || [];

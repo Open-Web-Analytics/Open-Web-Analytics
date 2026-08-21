@@ -381,6 +381,7 @@ class Module extends \OWA\Core\Module {
                 'default_value'        => false
             ),
 
+
             'os'                => array(
                 'required'            => true,
                 'callbacks'            => array( 'owa_trackingEventHelpers::resolveOs' ),
