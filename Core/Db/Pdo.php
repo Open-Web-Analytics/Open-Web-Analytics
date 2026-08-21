@@ -222,7 +222,14 @@ abstract class Pdo extends \OWA\Core\Db
             // Not htmlspecialchars(): this goes to a log file, not to a page,
             // and escaping it only makes the message harder to read at the
             // moment someone is trying to read it.
-            $this->logQueryError( $e->getMessage(), $sql );
+            // SQLSTATE 23000 is the ANSI integrity-constraint class, so this
+            // stays right on a driver that is not MySQL. The vendor code (1062
+            // here) is not portable and is deliberately not used.
+            $this->logQueryError(
+                $e->getMessage(),
+                $sql,
+                (string) $e->getCode() === '23000'
+            );
 
             $this->new_result = false;
 

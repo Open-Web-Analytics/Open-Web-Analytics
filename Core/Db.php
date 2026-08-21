@@ -203,7 +203,7 @@ class Db extends \OWA\Core\Base {
      * @param string $sql      the statement it refused
      * @return void
      */
-    protected function logQueryError( $message, $sql ) {
+    protected function logQueryError( $message, $sql, $is_constraint_violation = false ) {
 
         // Full detail for development, unconditionally: this is the level that
         // was already being used, so nothing that worked before is lost.
@@ -217,6 +217,29 @@ class Db extends \OWA\Core\Base {
         }
 
         $truncated = strlen( $sql ) > 500 ? substr( $sql, 0, 500 ) . ' ...[truncated]' : $sql;
+
+        // A constraint violation is usually not a fault, and reporting it as
+        // one would cry wolf on every busy site.
+        //
+        // Dimension rows are written check-then-insert: load by id, and insert
+        // if it was not there. Two concurrent first-hits on the same new URL,
+        // user agent or host both miss and both insert, and one of them loses.
+        // The row exists either way, which is the whole point of the insert, so
+        // the losing request has nothing to fix.
+        //
+        // Logged rather than dropped, because a duplicate rate that climbs is
+        // worth seeing -- just not at a level that says something is broken.
+        if ( $is_constraint_violation ) {
+
+            $this->e->notice( sprintf(
+                'A constraint stopped a statement, which is expected where rows are inserted '
+              . 'concurrently. Error: %s. Query: %s',
+                $message,
+                $truncated
+            ) );
+
+            return;
+        }
 
         $this->e->err( sprintf(
             'The database refused a statement. Error: %s. Query: %s',

@@ -147,4 +147,112 @@ final class QueryErrorVisibilityTest extends TestCase {
             'stopping silently would make a capped log look like a recovered one'
         );
     }
+
+    /**
+     * A constraint violation is usually not a fault, and must not be reported
+     * as one.
+     *
+     * Dimension rows are written check-then-insert: load by id, insert if it
+     * was not there. Two concurrent first-hits on the same new URL, user agent
+     * or host both miss and both insert, and one loses. The row exists either
+     * way -- which is what the insert was for -- so the loser has nothing to
+     * fix. Reporting that at error level would cry wolf on every busy site, and
+     * a log that cries wolf gets ignored, which is how the silence this whole
+     * change is about becomes possible again by a different route.
+     *
+     * Still logged, because a duplicate rate that climbs is worth seeing.
+     */
+    public function testAConstraintViolationIsReportedButNotAsAFault(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'No database available.' );
+        }
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $spy = $this->spy();
+
+        $db->query( 'CREATE TEMPORARY TABLE owa_dupe_probe (id BIGINT PRIMARY KEY)' );
+        $db->query( 'INSERT INTO owa_dupe_probe (id) VALUES (1)' );
+
+        $original = $db->e;
+        $db->e = $spy;
+
+        try {
+            $result = $db->query( 'INSERT INTO owa_dupe_probe (id) VALUES (1)' );
+        } finally {
+            $db->e = $original;
+        }
+
+        $this->assertFalse( $result, 'a refused insert must still report failure to its caller' );
+
+        $this->assertNotContains( 'error', $spy->levels(),
+            'a concurrent-insert race is expected, and must not be logged as a fault' );
+
+        $this->assertContains( 'notice', $spy->levels(),
+            'it must still be logged -- a duplicate rate that climbs is worth seeing' );
+    }
+
+    /**
+     * The pair for the case above: a genuine fault must still be an error, or
+     * the classification would just be a way of hiding everything.
+     */
+    public function testARealFaultIsStillReportedAsOne(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'No database available.' );
+        }
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $spy = $this->spy();
+
+        $original = $db->e;
+        $db->e = $spy;
+
+        try {
+            $db->query( 'INSERT INTO owa_no_such_table_for_this_test (id) VALUES (1)' );
+        } finally {
+            $db->e = $original;
+        }
+
+        $this->assertContains( 'error', $spy->levels(),
+            'a missing table is a fault and must be reported as one' );
+    }
+
+    /**
+     * The property the whole concern rests on: one refused insert must not stop
+     * the ones after it.
+     *
+     * A tracker request writes several rows -- document, referer, user agent,
+     * host, session, request -- and a duplicate on any one of them is an
+     * ordinary outcome of the check-then-insert race. If that aborted the
+     * request, a single lost race would cost every other row as well.
+     *
+     * The PDO driver raised the stakes here: it runs with ERRMODE_EXCEPTION, so
+     * without the catch inside query() a duplicate key would have thrown
+     * straight out through the tracker.
+     */
+    public function testARefusedInsertDoesNotStopTheInsertsAfterIt(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'No database available.' );
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->query( 'CREATE TEMPORARY TABLE owa_seq_probe (id BIGINT PRIMARY KEY)' );
+
+        $first  = $db->query( 'INSERT INTO owa_seq_probe (id) VALUES (1)' );
+        $dupe   = $db->query( 'INSERT INTO owa_seq_probe (id) VALUES (1)' );
+        $after  = $db->query( 'INSERT INTO owa_seq_probe (id) VALUES (2)' );
+
+        $this->assertTrue( (bool) $first );
+        $this->assertFalse( $dupe, 'the duplicate must fail' );
+        $this->assertTrue( (bool) $after,
+            'the insert after a duplicate must still run -- a tracker request writes several rows '
+          . 'and one lost race must not cost the others' );
+
+        $row = $db->get_row( 'SELECT COUNT(*) AS n FROM owa_seq_probe' );
+
+        $this->assertSame( 2, (int) $row['n'], 'both distinct rows must be present' );
+    }
 }

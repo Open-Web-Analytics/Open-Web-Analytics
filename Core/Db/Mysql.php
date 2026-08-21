@@ -210,12 +210,15 @@ class Mysql extends \OWA\Core\Db {
     
             if ( mysqli_errno( $this->connection ) ) {
     
+                $errno = mysqli_errno( $this->connection );
+
                 $this->logQueryError(
-                    sprintf( '(%s) %s',
-                        mysqli_errno( $this->connection ),
-                        mysqli_error( $this->connection )
-                    ),
-                    $sql
+                    sprintf( '(%s) %s', $errno, mysqli_error( $this->connection ) ),
+                    $sql,
+                    // mysqli reports the vendor code only. 1062 duplicate entry,
+                    // 1452/1451 foreign key -- the same class SQLSTATE 23000
+                    // covers for the PDO driver.
+                    in_array( (int) $errno, array( 1062, 1451, 1452 ), true )
                 );
             }
     
