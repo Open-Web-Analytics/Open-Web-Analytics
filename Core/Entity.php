@@ -278,6 +278,21 @@ class Entity {
      * how callers say "I have nothing", and treating that as a value would blank
      * columns that are deliberately left alone today.
      *
+     * PORTABILITY
+     * The comparison is against the OWA_DTD_* constants, never against the SQL
+     * spellings they hold. That distinction is the point: OWA_DTD_BIGINT means
+     * "a big integer" in every dialect, while its VALUE is whatever the loaded
+     * dialect calls one -- 'BIGINT' here, something else elsewhere. The
+     * constants are OWA's portable vocabulary; the strings are MySQL's.
+     *
+     * Matching the strings instead would have re-broken this silently on the
+     * first non-MySQL driver: the type would fail to look numeric, falsy values
+     * would go back to being dropped, and nothing would report it.
+     *
+     * A dialect that introduces a numeric type of its own adds its constant to
+     * numericColumnTypes(). Anything unrecognised keeps the old conservative
+     * behaviour rather than guessing.
+     *
      * @param string $name
      * @param mixed  $value
      * @return bool
@@ -296,13 +311,49 @@ class Entity {
 
         $type = (string) $this->properties[ $name ]->get( 'data_type' );
 
-        if ( ! preg_match( '/^(BIGINT|INT|TINYINT|SMALLINT|MEDIUMINT|DECIMAL|FLOAT|DOUBLE|SERIAL)/i', $type ) ) {
+        if ( ! in_array( $type, $this->numericColumnTypes(), true ) ) {
 
             return false;
         }
 
         return is_int( $value ) || is_float( $value ) || is_bool( $value )
             || ( is_string( $value ) && is_numeric( $value ) );
+    }
+
+    /**
+     * The declared column types that hold numbers, as the loaded dialect spells
+     * them.
+     *
+     * Built from the constants rather than listing spellings, so this stays
+     * correct for any dialect: each entry is whatever that dialect defined the
+     * type as. Names a dialect does not define are skipped rather than assumed.
+     *
+     * @return array
+     */
+    protected function numericColumnTypes() {
+
+        $numeric = array();
+
+        foreach ( array(
+            'OWA_DTD_BIGINT',
+            'OWA_DTD_INT',
+            'OWA_DTD_TINYINT',
+            'OWA_DTD_TINYINT2',
+            'OWA_DTD_TINYINT4',
+            'OWA_DTD_SERIAL',
+            // Spelled TINYINT(1) in MySQL, so already covered there -- named
+            // anyway, because a dialect with a real boolean type spells it
+            // differently and 0/false must stay storable in it.
+            'OWA_DTD_BOOLEAN',
+        ) as $constant ) {
+
+            if ( defined( $constant ) ) {
+
+                $numeric[] = (string) constant( $constant );
+            }
+        }
+
+        return array_values( array_unique( $numeric ) );
     }
 
     function markDirty( $name, $value ) {

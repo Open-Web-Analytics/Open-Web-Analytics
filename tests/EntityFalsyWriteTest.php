@@ -151,4 +151,82 @@ final class EntityFalsyWriteTest extends TestCase
             $db->query("DELETE FROM owa_session WHERE id = $id");
         }
     }
+
+    /**
+     * The numeric-type check must read OWA's vocabulary, not MySQL's spelling.
+     *
+     * This started as a regex over type strings -- BIGINT|INT|TINYINT|... -- and
+     * that is a MySQL DDL grammar sitting in the entity layer. It would have
+     * gone wrong quietly on the first dialect that spells its integers
+     * differently: nothing would match, falsy values would silently go back to
+     * being discarded, and the failure would look like data that never arrived
+     * rather than a type check that stopped recognising types.
+     *
+     * The constants are the portable part. OWA_DTD_BIGINT means "a big integer"
+     * in every dialect; its VALUE is only what the loaded one calls it. So every
+     * entry in the numeric list must be the value of some declared OWA_DTD_*
+     * constant -- a literal spelling that no dialect declares fails here, which
+     * is exactly what a reintroduced regex or a hand-written list would produce.
+     */
+    public function testTheNumericTypeListIsDerivedFromDeclaredTypesNotLiterals(): void
+    {
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.click');
+
+        $method = new ReflectionMethod($entity, 'numericColumnTypes');
+        $method->setAccessible(true);
+        $types = $method->invoke($entity);
+
+        $this->assertNotEmpty($types, 'no numeric column types were resolved at all');
+
+        $declared = [];
+
+        foreach (get_defined_constants() as $name => $value) {
+
+            if (strpos($name, 'OWA_DTD_') === 0) {
+                $declared[$value] = $name;
+            }
+        }
+
+        foreach ($types as $type) {
+
+            $this->assertArrayHasKey(
+                $type,
+                $declared,
+                sprintf(
+                    '"%s" is not the value of any OWA_DTD_* constant, so it is a hard-coded SQL '
+                  . 'spelling. It will stop matching on a dialect that spells the type another '
+                  . 'way, and falsy values on those columns will be dropped silently.',
+                    $type
+                )
+            );
+        }
+    }
+
+    /**
+     * Stated through the constants rather than their values, so it keeps
+     * meaning the same thing under a dialect that spells them differently.
+     */
+    public function testDeclaredIntegerTypesAreRecognisedThroughTheirConstants(): void
+    {
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.click');
+
+        $method = new ReflectionMethod($entity, 'numericColumnTypes');
+        $method->setAccessible(true);
+        $types = $method->invoke($entity);
+
+        foreach (['OWA_DTD_BIGINT', 'OWA_DTD_INT', 'OWA_DTD_BOOLEAN'] as $constant) {
+
+            $this->assertContains(
+                (string) constant($constant),
+                $types,
+                sprintf('%s must count as a numeric column type', $constant)
+            );
+        }
+
+        $this->assertNotContains(
+            (string) OWA_DTD_VARCHAR255,
+            $types,
+            'a string column must not accept falsy writes -- an empty string means "no value"'
+        );
+    }
 }
