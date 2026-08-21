@@ -29,22 +29,6 @@ final class DbCharacterEncodingTest extends TestCase {
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    public function testTheDefaultIsUnchanged(): void {
-
-        // Existing installations must not silently start declaring something
-        // else: new tables in a new encoding alongside old tables in the old
-        // one is worse than either, and there is no migration to reconcile them.
-        if ( ! defined( 'OWA_DB_CHARACTER_ENCODING' ) ) {
-
-            $this->assertSame( 'utf8', OWA_DTD_CHARACTER_ENCODING_UTF8,
-                'the default encoding must stay utf8 for installations that set nothing' );
-        } else {
-
-            $this->assertSame( OWA_DB_CHARACTER_ENCODING, OWA_DTD_CHARACTER_ENCODING_UTF8,
-                'a configured encoding must be what the schema is declared with' );
-        }
-    }
-
     public function testTheConnectionUsesTheDeclaredEncoding(): void {
 
         $driver = \OWA\Core\CoreAPI::dbSingleton();
@@ -53,9 +37,9 @@ final class DbCharacterEncodingTest extends TestCase {
         $m->setAccessible( true );
 
         $this->assertSame(
-            (string) OWA_DTD_CHARACTER_ENCODING_UTF8,
+            (string) OWA_DTD_CONNECTION_ENCODING,
             $m->invoke( $driver ),
-            'the connection must negotiate the same encoding the schema is declared with'
+            'the connection must negotiate the widest encoding, not any one table\'s'
         );
     }
 
@@ -76,7 +60,7 @@ final class DbCharacterEncodingTest extends TestCase {
         $m->setAccessible( true );
 
         $this->assertStringContainsString(
-            'charset=' . OWA_DTD_CHARACTER_ENCODING_UTF8,
+            'charset=' . OWA_DTD_CONNECTION_ENCODING,
             $m->invoke( $driver )
         );
     }
@@ -153,5 +137,91 @@ final class DbCharacterEncodingTest extends TestCase {
                     basename( $file ) )
             );
         }
+    }
+
+    /**
+     * The connection is a CEILING, so it is the widest encoding rather than any
+     * particular table's -- and raising it must cost the older tables nothing.
+     */
+    public function testTheConnectionIsWiderThanTheDefaultTableEncoding(): void
+    {
+        $this->assertSame( 'utf8mb4', (string) OWA_DTD_CONNECTION_ENCODING,
+            'the connection should negotiate the widest encoding available' );
+
+        $this->assertSame( 'utf8', (string) OWA_DTD_CHARACTER_ENCODING_UTF8,
+            'the default for NEW tables must stay what existing tables already are' );
+    }
+
+    /**
+     * The point of the change. An entity naming its own encoding is how a v2
+     * table gets created as utf8mb4 beside v1 tables that stay utf8, in one
+     * database, with nothing converted.
+     *
+     * setCharacterEncoding() has existed all along and did nothing:
+     * getTableOptions() returned the table_type VALUE rather than the options
+     * array, so a second key could never be read.
+     */
+    public function testAnEntityCanNameItsOwnTableEncoding(): void
+    {
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.click' );
+
+        $this->assertArrayNotHasKey( 'character_encoding', $entity->getTableOptions(),
+            'absent must mean "use the installation default", not a value' );
+
+        $entity->setCharacterEncoding( 'utf8mb4' );
+
+        $options = $entity->getTableOptions();
+
+        $this->assertSame( 'utf8mb4', $options['character_encoding'] ?? null,
+            'an encoding set on the entity must reach the table options' );
+        $this->assertSame( 'disk', $options['table_type'] ?? null,
+            'the other options must survive alongside it' );
+    }
+
+    /**
+     * End to end: a table really is created in the encoding its entity named,
+     * over the shared connection, while the default stays what it was.
+     */
+    public function testATableIsCreatedInTheEncodingItsEntityNamed(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'No database available.' );
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( [ 'owa_enc_probe_default' => null, 'owa_enc_probe_mb4' => 'utf8mb4' ] as $table => $encoding ) {
+
+            $db->query( sprintf( 'DROP TABLE IF EXISTS %s', $table ) );
+
+            $charset = $encoding ?: OWA_DTD_CHARACTER_ENCODING_UTF8;
+            $db->query( sprintf(
+                'CREATE TABLE %s (id BIGINT) %s %s',
+                $table,
+                sprintf( OWA_DTD_TABLE_TYPE, OWA_DTD_TABLE_TYPE_DEFAULT ),
+                sprintf( OWA_DTD_TABLE_CHARACTER_ENCODING, $charset )
+            ) );
+        }
+
+        $row = $db->get_results(
+            'SELECT TABLE_NAME t, CCSA.CHARACTER_SET_NAME c '
+          . 'FROM information_schema.TABLES T '
+          . 'JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA '
+          . 'ON CCSA.COLLATION_NAME = T.TABLE_COLLATION '
+          . 'WHERE T.TABLE_SCHEMA = DATABASE() AND T.TABLE_NAME LIKE "owa_enc_probe%"' );
+
+        $found = [];
+        foreach ( (array) $row as $r ) { $found[ $r['t'] ] = $r['c']; }
+
+        foreach ( [ 'owa_enc_probe_default', 'owa_enc_probe_mb4' ] as $t ) {
+            $db->query( sprintf( 'DROP TABLE IF EXISTS %s', $t ) );
+        }
+
+        $this->assertSame( 'utf8mb4', $found['owa_enc_probe_mb4'] ?? null,
+            'a table naming utf8mb4 must be created as utf8mb4' );
+        $this->assertStringStartsWith( 'utf8', (string) ( $found['owa_enc_probe_default'] ?? '' ),
+            'the default table encoding must be unchanged' );
+        $this->assertNotSame( $found['owa_enc_probe_mb4'] ?? null, $found['owa_enc_probe_default'] ?? null,
+            'the two must genuinely differ -- that is the whole point' );
     }
 }

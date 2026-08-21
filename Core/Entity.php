@@ -387,16 +387,47 @@ class Entity {
         }
     }
     
+    /**
+     * The options Db::createTable() builds the table clause from.
+     *
+     * Returns the whole set, which is what the caller indexes into. It used to
+     * return the VALUE of table_type whenever one was set -- a bare string
+     * where an array was expected -- so any second option was unreachable by
+     * construction, and setCharacterEncoding() has been inert since it was
+     * written: it stores an encoding that nothing ever reads back.
+     *
+     * That matters now rather than as tidying. An entity naming its own
+     * encoding is how a v2 table can be created as utf8mb4 alongside v1 tables
+     * that stay utf8, in one database, without converting anything. The
+     * connection is already the wider encoding (see MysqlDialect), so the only
+     * thing standing in the way was this.
+     *
+     * @return array
+     */
     function getTableOptions() {
-        
-        if ($this->_tableProperties) {
-            if (array_key_exists('table_type', $this->_tableProperties)) {
-                return $this->_tableProperties['table_type'];
-            }
+
+        $options = array( 'table_type' => 'disk' );
+
+        if ( ! $this->_tableProperties ) {
+
+            return $options;
         }
-        
-        return array('table_type' => 'disk');
-    
+
+        if ( array_key_exists( 'table_type', $this->_tableProperties ) ) {
+
+            $options['table_type'] = $this->_tableProperties['table_type'];
+        }
+
+        // Absent means "whatever this installation's default is", which is not
+        // the same as a value -- Db::createTable() fills it in only when the key
+        // is missing, so it must stay missing rather than arrive as null.
+        if ( array_key_exists( 'character_encoding', $this->_tableProperties )
+            && $this->_tableProperties['character_encoding'] ) {
+
+            $options['character_encoding'] = $this->_tableProperties['character_encoding'];
+        }
+
+        return $options;
     }
     
     /**
