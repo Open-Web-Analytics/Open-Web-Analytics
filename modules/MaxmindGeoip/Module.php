@@ -73,6 +73,29 @@ class Module extends \OWA\Core\Module {
         return parent::__construct();
     }
 
+    /**
+     * Registered here rather than in Base, so the command exists only while
+     * this module is active.
+     *
+     * A module's constructor runs only for modules in the active list, so an
+     * installation not doing GeoIP lookups is never offered a command for
+     * maintaining a database it does not read -- and one that activates the
+     * module gets it with nothing further to do.
+     */
+    function registerCliCommands() {
+
+        $this->registerCliCommand( 'update-geoip-db', 'maxmind_geoip.updateGeoipDbCli' );
+    }
+
+    function registerActions() {
+
+        $this->registerAction(
+            'maxmind_geoip.updateGeoipDbCli',
+            'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli',
+            'Controller/UpdateGeoipDbCli.php'
+        );
+    }
+
     function registerFilters() {
 
         if ( \OWA\Core\CoreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
