@@ -89,7 +89,7 @@ jobs:
         run: npm test
 
   isolation:
-    name: Test isolation sweep (each file alone)
+    name: Test isolation sweep (each file alone, ${{ matrix.db_driver }})
     runs-on: ubuntu-latest
     # Observed between 1m38s and 3m23s.
     timeout-minutes: 20
@@ -99,8 +99,20 @@ jobs:
     # the whole suite in one process, so neither is visible in a normal run.
     # This job is deterministic where randomised ordering is not.
     #
+    # It is also where both database drivers are proven. PDO is the default
+    # wherever pdo_mysql is present, but mysqli remains supported until v2, and
+    # an installation without pdo_mysql falls back to it -- so a suite that only
+    # ever ran on one of them would let the other rot silently while still being
+    # what some installations use. 'mysql' selects PDO, 'mysqli' names the
+    # legacy driver explicitly; the harness writes the choice into the scratch
+    # config it generates.
+    #
     # It needs a real database: two of the registries that have caused this are
     # only read by DB-backed cases, which skip without one.
+    strategy:
+      fail-fast: false
+      matrix:
+        db_driver: ['mysql', 'mysqli']
     services:
       mysql:
         image: mysql:8.0
@@ -119,6 +131,7 @@ jobs:
       OWA_E2E_DB_USER: root
       OWA_E2E_DB_PASSWORD: ''
       OWA_E2E_DB_NAME: owa_isolation_sweep
+      OWA_E2E_DB_TYPE: ${{ matrix.db_driver }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -127,7 +140,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, intl, json, mysqli, gd
+          extensions: mbstring, intl, json, mysqli, pdo_mysql, gd
           tools: composer:v2
 
       - name: Install dependencies
