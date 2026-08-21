@@ -181,4 +181,92 @@ final class ColumnLengthHealTest extends TestCase {
         $this->assertTrue( $c->get( 'truncatable' ),
             'the default must match what the database was already doing' );
     }
+
+    /**
+     * The emoji case, which is not exotic -- emoji in page titles is ordinary.
+     *
+     * OWA declares utf8, which in MySQL holds nothing above U+FFFF. What MySQL
+     * does with an unstorable character is not drop it, it drops THE REST OF
+     * THE VALUE: a 35-character title with one emoji in the middle stores as 13
+     * characters, silently, under the permissive mode. Dropping the character
+     * costs one character instead of the remainder.
+     */
+    public function testAnUnstorableCharacterCostsOneCharacterNotTheRest(): void
+    {
+        $c = $this->column( OWA_DTD_VARCHAR255 );
+        $c->setValue( "Sales report \xF0\x9F\x93\x8A Q3 summary and notes" );
+
+        $this->assertStringContainsString( 'Q3 summary and notes', $c->getValue(),
+            'everything after the unstorable character must survive' );
+        $this->assertStringNotContainsString( "\xF0\x9F\x93\x8A", $c->getValue() );
+    }
+
+    public function testThreeByteCharactersAreNotDisturbed(): void
+    {
+        $c = $this->column( OWA_DTD_VARCHAR255 );
+        $c->setValue( '日本語のページタイトル' );
+
+        $this->assertSame( '日本語のページタイトル', $c->getValue(),
+            'characters the encoding CAN hold must be left alone' );
+    }
+
+    /**
+     * Order matters: the length is what will be stored, so it has to be
+     * measured after the unstorable characters are gone, not before.
+     */
+    public function testLengthIsMeasuredAfterUnstorableCharactersAreRemoved(): void
+    {
+        $c = $this->column( OWA_DTD_VARCHAR10 );
+        // 4 emoji then 10 ascii: 14 characters, 10 of them storable.
+        $c->setValue( str_repeat( "\xF0\x9F\x93\x8A", 4 ) . 'abcdefghij' );
+
+        $this->assertSame( 'abcdefghij', $c->getValue(),
+            'stripping first is what leaves a full ten storable characters' );
+    }
+
+    /**
+     * A dialect whose UTF-8 is not width-limited -- PostgreSQL's, for one --
+     * must keep the character. The check is on the DECLARED encoding, so this
+     * stops doing anything once the schema moves to utf8mb4.
+     */
+    public function testNothingIsStrippedWhenTheEncodingIsNotWidthLimited(): void
+    {
+        $c = new class( 'probe', OWA_DTD_VARCHAR255 ) extends \OWA\Module\Base\Classes\DbColumn {
+            protected function encodingIsWidthLimited() { return false; }
+        };
+
+        $value = "keeps \xF0\x9F\x93\x8A the emoji";
+        $c->setValue( $value );
+
+        $this->assertSame( $value, $c->getValue() );
+    }
+
+    /**
+     * End to end: the row that strict mode would refuse now lands, holding
+     * everything except the one character that could never have been stored.
+     */
+    public function testAnEmojiValueSurvivesAWriteUnderStrictMode(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'No database available.' );
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query( 'CREATE TEMPORARY TABLE mb4_heal_probe (id BIGINT, page_title VARCHAR(255))' );
+        $db->query( "SET SESSION sql_mode = 'STRICT_ALL_TABLES'" );
+
+        $c = $this->column( OWA_DTD_VARCHAR255 );
+        $c->setValue( "Sales report \xF0\x9F\x93\x8A Q3 summary and notes" );
+
+        $db->query( sprintf(
+            "INSERT INTO mb4_heal_probe (id, page_title) VALUES (1, '%s')", $c->getValue() ) );
+
+        $row = $db->get_row( 'SELECT COUNT(*) AS n, page_title AS t FROM mb4_heal_probe' );
+        $db->query( "SET SESSION sql_mode = ''" );
+
+        $this->assertSame( 1, (int) $row['n'],
+            'strict mode refused the row -- the unstorable character was not removed first' );
+        $this->assertStringContainsString( 'Q3 summary and notes', (string) $row['t'],
+            'the text after the emoji must be in the stored row' );
+    }
 }

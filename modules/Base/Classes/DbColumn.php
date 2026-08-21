@@ -141,6 +141,11 @@ class DbColumn {
             return $value;
         }
 
+        // Before the length check, not after: what gets stored is what is left
+        // once characters the encoding cannot hold are gone, so that is what
+        // the length has to be measured against.
+        $value = $this->dropUnstorableCharacters( $value );
+
         $max = $this->maxLength();
 
         if ( ! $max || mb_strlen( $value, 'UTF-8' ) <= $max ) {
@@ -149,6 +154,73 @@ class DbColumn {
         }
 
         return mb_substr( $value, 0, $max, 'UTF-8' );
+    }
+
+    /**
+     * Remove characters the declared encoding cannot store.
+     *
+     * OWA declares utf8, which in MySQL is utf8mb3 and holds no character above
+     * U+FFFF. An emoji in a page title is therefore unstorable -- and what
+     * MySQL does with it is not drop the character, it drops THE REST OF THE
+     * STRING. Measured: a 35-character title containing one emoji stores as 13
+     * characters. Everything from the emoji onward is gone, silently, under the
+     * permissive mode. Under a strict mode the whole row is refused instead.
+     *
+     * Dropping the offending character costs one character rather than the
+     * remainder, and leaves something storable either way. It is a floor, not a
+     * fix -- the fix is migrating the schema to utf8mb4, which needs the tables
+     * still on ROW_FORMAT=Compact converted first, since a varchar(255) utf8mb4
+     * index key is 1020 bytes against Compact's 767-byte limit.
+     *
+     * Conditional on the DECLARED encoding, so it stops doing anything once
+     * that migration lands, and does nothing on a dialect whose UTF-8 is not
+     * width-limited.
+     *
+     * @param string $value
+     * @return string
+     */
+    protected function dropUnstorableCharacters( $value ) {
+
+        // Every 4-byte UTF-8 sequence starts F0-F4. No such byte, nothing to
+        // do -- which is the overwhelming majority of values, so the regex
+        // below is never reached for them.
+        if ( strpbrk( $value, "\xF0\xF1\xF2\xF3\xF4" ) === false ) {
+
+            return $value;
+        }
+
+        if ( ! $this->encodingIsWidthLimited() ) {
+
+            return $value;
+        }
+
+        $stripped = preg_replace( '/[\x{10000}-\x{10FFFF}]/u', '', $value );
+
+        // preg_replace returns null on malformed UTF-8. Keeping the original is
+        // the safer of the two: it is what is stored today.
+        return $stripped === null ? $value : $stripped;
+    }
+
+    /**
+     * Whether the declared encoding tops out below U+10000.
+     *
+     * Named encodings rather than a pattern: 'utf8' and 'utf8mb3' are MySQL's
+     * three-byte encoding, while PostgreSQL's 'UTF8' is the full range and must
+     * not match. There is no way to tell those apart except by knowing them, so
+     * the list is explicit and the default is to leave values alone.
+     *
+     * @return bool
+     */
+    protected function encodingIsWidthLimited() {
+
+        if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) {
+
+            return false;
+        }
+
+        $declared = strtolower( (string) constant( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) );
+
+        return in_array( $declared, array( 'utf8', 'utf8mb3' ), true );
     }
 
     /**
