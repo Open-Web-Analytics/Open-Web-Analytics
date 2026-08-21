@@ -38,6 +38,27 @@ class DbColumn {
 
      var $data_type;
 
+     /**
+      * Whether an over-long value may be trimmed to fit this column.
+      *
+      * True by default because that is what the database was already doing.
+      * Set it false on a column whose value is IDENTITY-BEARING -- one that
+      * something derives a key from -- where a trimmed value and the full one
+      * are not the same thing. Those need a real answer (normalise before
+      * hashing, hash the full value, or widen the column), and a flag here is
+      * how they stay visible instead of being silently trimmed like the rest.
+      *
+      * Nothing sets it false yet. owa_document.url is the known candidate: the
+      * document id is derived from the event's full page_url while the column
+      * stores a trimmed copy, so ~15% of rows already hold a url that does not
+      * derive to the id naming them. That divergence predates this flag -- the
+      * database was trimming them regardless -- but it is the case the flag
+      * exists to make addressable.
+      *
+      * @var bool
+      */
+     var $truncatable = true;
+
      var $foreign_key;
 
      var $is_primary_key = false;
@@ -85,10 +106,88 @@ class DbColumn {
 
      function setValue($value) {
 
-         $this->value = $value;
+         $this->value = $this->fitToColumn( $value );
 
          return;
      }
+
+    /**
+     * Cut an over-long string down to what the column can actually hold.
+     *
+     * MySQL used to do this silently, and OWA depended on it without saying so.
+     * It is not a rare path: on a live install ~15% of document urls and ~9% of
+     * referer urls sit at exactly the column limit, which is the fingerprint of
+     * a value that arrived longer and got trimmed on the way in.
+     *
+     * Under a permissive sql_mode that trim is a warning nobody reads. Under
+     * STRICT_ALL_TABLES it is an ERROR, and the whole INSERT is refused -- so
+     * the page view is not truncated, it is LOST, and silently, because the
+     * write path does not surface the failure. Healing the value here is what
+     * makes strict mode safe to turn on: the row still lands, holding what it
+     * always held.
+     *
+     * Measured in CHARACTERS, not bytes, because the column is declared that
+     * way -- and cutting a UTF-8 sequence in half would produce a value that
+     * strict mode rejects for a different reason, turning one silent loss into
+     * another.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
+    protected function fitToColumn( $value ) {
+
+        if ( ! $this->truncatable || ! is_string( $value ) || $value === '' ) {
+
+            return $value;
+        }
+
+        $max = $this->maxLength();
+
+        if ( ! $max || mb_strlen( $value, 'UTF-8' ) <= $max ) {
+
+            return $value;
+        }
+
+        return mb_substr( $value, 0, $max, 'UTF-8' );
+    }
+
+    /**
+     * Mark whether this column's value may be trimmed to fit.
+     *
+     * @param bool $truncatable
+     * @return void
+     */
+    function setTruncatable( $truncatable ) {
+
+        $this->truncatable = (bool) $truncatable;
+    }
+
+    /**
+     * The declared length of this column, or 0 if it does not have one.
+     *
+     * Resolved through the OWA_DTD_* constants rather than by reading a number
+     * out of the type string. The constant NAMES are OWA's vocabulary and the
+     * VALUES are one dialect's spelling, so comparing against the constants
+     * keeps this working wherever a dialect spells its types differently.
+     *
+     * @return int
+     */
+    protected function maxLength() {
+
+        $lengths = array();
+
+        foreach ( array( 'OWA_DTD_VARCHAR255' => 255, 'OWA_DTD_VARCHAR10' => 10 ) as $constant => $length ) {
+
+            if ( defined( $constant ) ) {
+
+                $lengths[ (string) constant( $constant ) ] = $length;
+            }
+        }
+
+        $type = (string) $this->get( 'data_type' );
+
+        return isset( $lengths[ $type ] ) ? $lengths[ $type ] : 0;
+    }
 
      /**
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
