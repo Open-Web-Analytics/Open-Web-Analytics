@@ -102,7 +102,7 @@ class EventQueue  {
 
     function decodeMessage ( $msg ) {
 
-        $event = unserialize( $msg, array( 'allowed_classes' => self::allowedEventClasses() ) );
+        $event = self::decodeBlob( $msg );
 
         if ( ! self::isUsableEvent( $event ) ) {
 
@@ -128,6 +128,37 @@ class EventQueue  {
      *
      * Checked rather than trusted, so a bad message is one skipped item.
      */
+    /**
+     * unserialize() a queue blob without letting its diagnostics escape.
+     *
+     * A malformed blob is an expected input here, not an exceptional one: a
+     * queue file is a log that a crash can leave half-written, and a stored row
+     * may predate a class rename. unserialize() reports that with a PHP notice,
+     * which callers of a routine drain should not have to see -- the outcome
+     * they need is the return value, and isUsableEvent() gives it to them.
+     *
+     * A scoped error handler rather than '@': since PHP 8 the error-control
+     * operator does not stop a custom handler (PHPUnit's, say) from being
+     * invoked, so '@' silences the output but not the report. Installed for this
+     * one call and restored immediately, including on the throw path -- the same
+     * idiom tests/bootstrap_owa.php documents for its database probe.
+     */
+    protected static function decodeBlob( $blob ) {
+
+        set_error_handler( static function () { return true; } );
+
+        try {
+
+            return unserialize(
+                $blob, array( 'allowed_classes' => self::allowedEventClasses() )
+            );
+
+        } finally {
+
+            restore_error_handler();
+        }
+    }
+
     protected static function isUsableEvent( $event ) {
 
         return is_object( $event )
