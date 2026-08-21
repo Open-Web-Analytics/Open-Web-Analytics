@@ -396,7 +396,6 @@ class PaginatedResultSet {
 
         $formats = array('html' => 'resultSetToHtml',
                          'json'    =>    'resultSetToJson',
-                         'jsonp' => 'resultSetToJsonp',
                          'xml'    =>    'resultSetToXml',
                          'php'    =>    'resultSetToSerializedPhp',
                          'csv'    =>    'resultSetToCsv',
@@ -428,12 +427,6 @@ class PaginatedResultSet {
 
     //json formatting has been moved to owa_jsonView
     function resultSetToJson() {
-
-        return $this;
-    }
-
-    //json formatting has been moved to owa_jsonView
-    function resultSetToJsonp($callback = '') {
 
         return $this;
     }

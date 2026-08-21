@@ -14,9 +14,11 @@ use PHPUnit\Framework\TestCase;
  *
  * An array is never identical to a string, so `continue` always fired, the
  * loop always fell through, and no Access-Control-Allow-Origin was ever sent.
- * Cross-origin REST calls have therefore never worked, which is why playback
- * still depends on JSONP -- a transport that exists precisely to evade the
- * same-origin policy CORS is meant to satisfy properly.
+ * Cross-origin REST calls had therefore never worked, which is why playback
+ * depended on JSONP -- a transport that exists precisely to evade the
+ * same-origin policy CORS is meant to satisfy properly. With this fixed and
+ * covered end to end, JSONP has been removed from both the overlays and the
+ * server.
  *
  * Matching is on HOST, not on the stored string. Real installs store
  * `http://demo.openwebanalytics.com` while serving over https, so a browser
