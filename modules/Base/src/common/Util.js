@@ -1381,6 +1381,31 @@ class Util {
       return rv;
     }
     
+    /**
+     * Whether this browser should be tracked at all.
+     *
+     * Two reasons it should not, and they are the same kind of answer: the
+     * browser itself saying so. tracker-dom wraps the ENTIRE bootstrap in this,
+     * so a false here means nothing loads, nothing is sent, and no decision is
+     * left to the server.
+     *
+     * 1. Do Not Track, which is a request from the person.
+     *
+     * 2. WebDriver, which is a statement about the browser. A crawler that runs
+     *    JavaScript is the only kind a JavaScript tracker ever sees, and it
+     *    presents as ordinary Chrome -- because it IS Chrome, driven by a
+     *    script -- so nothing on the server can identify it from the user
+     *    agent. The WebDriver specification requires a conforming browser to
+     *    report navigator.webdriver as true while under automation, and that is
+     *    the only place the question can be answered. Measured on a live
+     *    installation, one such crawler made 365 requests over two days and was
+     *    counted as a person.
+     *
+     * Only the standard flag, no fingerprinting. Plugin counts and language
+     * lists are guessy, and a wrong answer here silently costs a real page
+     * view; anything deliberately hiding from the flag would defeat a
+     * fingerprint too.
+     */
     static isBrowserTrackable () {
     
         var dntProperties = ['doNotTrack', 'msDoNotTrack'];
@@ -1392,8 +1417,32 @@ class Util {
                 return false;
             }
         }
+
+        if ( navigator.webdriver === true && ! Util.automationIsAllowed() ) {
+
+            return false;
+        }
         
         return true;
+    }
+
+    /**
+     * Whether an automated browser has been explicitly opted back in.
+     *
+     * Needed because automating your own site is a legitimate thing to do --
+     * end-to-end tests, synthetic monitoring, an uptime check that should
+     * appear in reports. Without a way back in, this project's own e2e suite
+     * would record nothing, which is a fair warning about what it would do to
+     * everyone else's.
+     *
+     * Opt-in rather than opt-out: the common case is a crawler, and the site
+     * owner is the only one who can say otherwise.
+     *
+     *     window.owa_track_automated_browsers = true;
+     */
+    static automationIsAllowed () {
+
+        return typeof window !== 'undefined' && window.owa_track_automated_browsers === true;
     }
     
     static isHttps() {

@@ -381,16 +381,6 @@ class Module extends \OWA\Core\Module {
                 'default_value'        => false
             ),
 
-            // Reported by the browser, not inferred from the user agent. The
-            // only crawler a JavaScript tracker sees is one that runs
-            // JavaScript, and those present as ordinary Chrome because they
-            // ARE Chrome under automation. navigator.webdriver is the one
-            // thing that distinguishes them, and only the client can read it.
-            'is_automated'        => array(
-                'required'            => false,
-                'data_type'            => 'integer',
-                'default_value'        => 0
-            ),
 
             'os'                => array(
                 'required'            => true,

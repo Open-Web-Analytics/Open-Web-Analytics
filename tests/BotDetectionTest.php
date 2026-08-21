@@ -121,37 +121,25 @@ final class BotDetectionTest extends TestCase {
     }
 
     /**
-     * The case the whole of tier 2 exists for: a driven browser reporting a
-     * perfectly ordinary user agent. The server cannot tell from the string --
-     * asserted here, so the test fails if someone later claims it can -- and
-     * has to be told by the client.
+     * The case tier 2 exists for, and the reason it is not solved here.
+     *
+     * A driven browser reports a perfectly ordinary user agent, so nothing on
+     * the server can call it a robot -- asserted, so this fails if someone
+     * later claims a newer data file would fix it. It cannot: the string really
+     * is Chrome's.
+     *
+     * The answer is on the client, which deactivates itself when
+     * navigator.webdriver is true and sends nothing at all. See
+     * tests/js/AutomationSignal.test.js. There is deliberately no server-side
+     * counterpart: a robot is discarded here anyway, so accepting a flag would
+     * spend a request and a round trip to reach the same outcome.
      */
-    public function testADrivenBrowserIsInvisibleToTheUserAgentAndVisibleToTheClientSignal(): void {
+    public function testADrivenBrowserIsInvisibleToTheUserAgent(): void {
 
         $ua = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
         $this->assertFalse( $this->isRobot( $ua ),
-            'this is a valid Chrome string; nothing on the server can call it a robot' );
-
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-        $event->set( 'HTTP_USER_AGENT', $ua );
-        $event->set( 'is_automated', 1 );
-
-        $this->assertTrue(
-            (bool) \OWA\Module\Base\Classes\TrackingEventHelpers::isRobot( false, $event ),
-            'the browser reported it was under automation and that must be believed'
-        );
-    }
-
-    public function testAnEventWithoutTheSignalIsUnaffected(): void {
-
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-        $event->set( 'HTTP_USER_AGENT',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120' );
-
-        $this->assertFalse(
-            (bool) \OWA\Module\Base\Classes\TrackingEventHelpers::isRobot( false, $event ),
-            'an ordinary browser that sends no signal must still be a person'
-        );
+            'this is a valid Chrome string; no user-agent check can call it a robot, '
+          . 'which is why the tracker answers this question on the client instead' );
     }
 }

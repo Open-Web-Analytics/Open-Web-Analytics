@@ -1,4 +1,4 @@
-import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
+import { Util as OwaUtil } from '../../modules/Base/src/common/Util.js';
 
 /**
  * The tracker reports whether it is being driven by automation.
@@ -16,7 +16,7 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  * false positive destroys a real page view; plugin counts and language-list
  * heuristics are too guessy for a signal with that cost.
  */
-describe('automation reporting', () => {
+describe('automation is treated as untrackable', () => {
 
     const original = Object.getOwnPropertyDescriptor(navigator, 'webdriver');
 
@@ -30,61 +30,68 @@ describe('automation reporting', () => {
         } else {
             delete navigator.webdriver;
         }
+        delete window.owa_track_automated_browsers;
     });
 
-    test('reports 1 when the browser says it is being driven', () => {
+    /**
+     * The same predicate Do Not Track uses, because it is the same kind of
+     * answer -- the browser saying it should not be tracked. tracker-dom wraps
+     * the ENTIRE bootstrap in this, so nothing loads and nothing is sent: no
+     * parameter, no request, no decision left to the server.
+     */
+    test('a driven browser is not trackable', () => {
         setWebdriver(true);
-        expect(new OWATracker().isAutomatedBrowser()).toBe(1);
+        expect(OwaUtil.isBrowserTrackable()).toBe(false);
     });
 
-    test('reports 0 for an ordinary browser', () => {
+    test('an ordinary browser is trackable', () => {
         setWebdriver(false);
-        expect(new OWATracker().isAutomatedBrowser()).toBe(0);
+        expect(OwaUtil.isBrowserTrackable()).toBe(true);
     });
 
-    test('reports 0 when the flag is absent entirely', () => {
+    test('an absent flag is trackable', () => {
         delete navigator.webdriver;
-        expect(new OWATracker().isAutomatedBrowser()).toBe(0);
+        expect(OwaUtil.isBrowserTrackable()).toBe(true);
     });
 
     /**
-     * Only the standard flag. If someone adds plugin-count or language-list
-     * heuristics later, this fails -- which is the point, given a false
-     * positive silently costs a real page view.
+     * Automating your own site is legitimate -- end to end tests, synthetic
+     * monitoring, an uptime check that should show up in reports. Without a way
+     * back in, this project's own e2e suite would record nothing, which is a
+     * fair warning about what it would do to everyone else's.
      */
-    test('does not guess from anything other than the standard flag', () => {
-        setWebdriver(false);
-        Object.defineProperty(navigator, 'plugins', { value: [], configurable: true });
-        Object.defineProperty(navigator, 'languages', { value: [], configurable: true });
+    test('automation can be opted back in by the site owner', () => {
+        setWebdriver(true);
+        window.owa_track_automated_browsers = true;
 
-        expect(new OWATracker().isAutomatedBrowser()).toBe(0);
+        expect(OwaUtil.isBrowserTrackable()).toBe(true);
     });
 
     /**
-     * The parameter is absent for ordinary browsers rather than sent as zero.
-     * The server defaults it to 0, so sending it would add a parameter to every
-     * beacon to restate the default -- and the beacon contract tests assert the
-     * exact property set, which is what caught this.
+     * Opt-in, not opt-out: anything other than an explicit true is a crawler.
      */
-    test('the beacon carries no automation parameter for an ordinary browser', () => {
-        setWebdriver(false);
-
-        const tracker = new OWATracker();
-        const event = { props: {}, get(k) { return this.props[k]; }, set(k, v) { this.props[k] = v; } };
-
-        tracker.addDefaultsToEvent(event);
-
-        expect(Object.keys(event.props)).not.toContain('is_automated');
-    });
-
-    test('the beacon carries it when the browser is under automation', () => {
+    test('only an explicit true opts in', () => {
         setWebdriver(true);
 
-        const tracker = new OWATracker();
-        const event = { props: {}, get(k) { return this.props[k]; }, set(k, v) { this.props[k] = v; } };
+        for (const value of ['true', 1, {}, 'yes']) {
+            window.owa_track_automated_browsers = value;
+            expect(OwaUtil.isBrowserTrackable()).toBe(false);
+        }
+    });
 
-        tracker.addDefaultsToEvent(event);
+    /**
+     * Do Not Track must keep working, and must not be affected by the opt-in --
+     * a person asking not to be tracked outranks a site owner wanting their
+     * automation recorded.
+     */
+    test('do not track still wins, even with automation opted in', () => {
+        const dnt = Object.getOwnPropertyDescriptor(navigator, 'doNotTrack');
+        Object.defineProperty(navigator, 'doNotTrack', { value: '1', configurable: true });
+        window.owa_track_automated_browsers = true;
 
-        expect(event.props.is_automated).toBe(1);
+        expect(OwaUtil.isBrowserTrackable()).toBe(false);
+
+        if (dnt) { Object.defineProperty(navigator, 'doNotTrack', dnt); }
+        else { delete navigator.doNotTrack; }
     });
 });
