@@ -99,11 +99,24 @@ class CoreAPI {
      * @param string $type
      * @return string
      */
-    public static function resolveDbDriver($type) {
+    public static function resolveDbDriver($type, $pdo_available = null) {
+
+        // Injectable so the fallback can be tested on a machine that has
+        // pdo_mysql, which is every machine that runs the suite.
+        if ( $pdo_available === null ) {
+
+            $pdo_available = extension_loaded('pdo_mysql');
+        }
 
         if ( $type === 'mysql' ) {
 
-            return extension_loaded('pdo_mysql') ? 'pdo_mysql' : 'mysqli';
+            // Both arms must name a driver the loader can find: the caller
+            // turns this into the class owa_db_<type>. The legacy driver's own
+            // token is 'mysql' -- 'mysqli' is only an alias accepted from
+            // configuration, and naming it here produced owa_db_mysqli, which
+            // does not exist, so an installation without pdo_mysql could not
+            // load a driver at all.
+            return $pdo_available ? 'pdo_mysql' : 'mysql';
         }
 
         // 'mysqli' names the legacy driver, whose class is owa_db_mysql.
