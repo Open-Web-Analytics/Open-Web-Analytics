@@ -11,3 +11,4 @@ public/
 /.phpunit.cache/
 /test-results/
 /playwright-report/
+owa-data/e2e-selfhost-logs/
