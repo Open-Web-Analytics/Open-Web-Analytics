@@ -224,4 +224,77 @@ final class DbCharacterEncodingTest extends TestCase {
         $this->assertNotSame( $found['owa_enc_probe_mb4'] ?? null, $found['owa_enc_probe_default'] ?? null,
             'the two must genuinely differ -- that is the whole point' );
     }
+
+    /**
+     * The healing has to follow the TABLE, not the installation.
+     *
+     * Columns drop characters their encoding cannot store -- which is right for
+     * a utf8 table, where MySQL would otherwise discard the rest of the string,
+     * and wrong for a utf8mb4 one, where the character fits. Reading the
+     * installation default would strip emoji out of exactly the tables that
+     * were created to hold them.
+     *
+     * The pair is the test: if the second case passed on its own it would prove
+     * nothing, since a healing that never fired would also pass it.
+     */
+    public function testHealingFollowsTheTableEncodingNotTheInstallation(): void
+    {
+        $emoji = "report \xF0\x9F\x93\x8A ok";
+
+        $default = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $default->set( 'page_title', $emoji );
+
+        $this->assertStringNotContainsString( "\xF0\x9F\x93\x8A", (string) $default->get( 'page_title' ),
+            'a utf8 table must still have the unstorable character removed' );
+        $this->assertStringContainsString( 'ok', (string) $default->get( 'page_title' ),
+            'and must still keep everything after it' );
+
+        $wide = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $wide->setCharacterEncoding( 'utf8mb4' );
+        $wide->set( 'page_title', $emoji );
+
+        $this->assertSame( $emoji, $wide->get( 'page_title' ),
+            'a utf8mb4 table can hold the character, so nothing may be removed' );
+    }
+
+    /**
+     * An entity may name its encoding either side of defining its columns, so
+     * the hand-down cannot happen at either of those moments alone.
+     */
+    public function testTheEncodingReachesColumnsWhicheverOrderItIsSetIn(): void
+    {
+        $emoji = "a \xF0\x9F\x93\x8A b";
+
+        // Named after construction, which is when a factory-built entity
+        // already has all of its columns.
+        $late = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $late->setCharacterEncoding( 'utf8mb4' );
+        $late->set( 'page_title', $emoji );
+
+        $this->assertSame( $emoji, $late->get( 'page_title' ) );
+
+        // And a change after a value has already been set must take effect for
+        // the next one, rather than being latched on first use.
+        $changed = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $changed->set( 'page_title', 'plain' );
+        $changed->setCharacterEncoding( 'utf8mb4' );
+        $changed->set( 'page_title', $emoji );
+
+        $this->assertSame( $emoji, $changed->get( 'page_title' ),
+            'changing the encoding must re-reach the columns' );
+    }
+
+    public function testAColumnDefaultsToTheInstallationEncoding(): void
+    {
+        $c = new \OWA\Module\Base\Classes\DbColumn( 'probe', OWA_DTD_VARCHAR255 );
+
+        $this->assertNull( $c->get( 'character_encoding' ),
+            'absent means "the installation default", which is what nearly every column is' );
+
+        $c->setCharacterEncoding( 'utf8mb4' );
+        $c->setValue( "x \xF0\x9F\x93\x8A y" );
+
+        $this->assertStringContainsString( "\xF0\x9F\x93\x8A", $c->getValue(),
+            'a column told it is utf8mb4 must keep four-byte characters' );
+    }
 }

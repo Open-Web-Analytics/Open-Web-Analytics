@@ -39,6 +39,13 @@ class Entity {
     var $name;
     var $properties = array();
     var $_tableProperties = array();
+
+    /**
+     * Whether the table encoding has been handed down to the columns yet.
+     *
+     * @var bool
+     */
+    protected $_character_encoding_applied = false;
     var $wasPersisted;
     var $cache;
     var $dirty = [];
@@ -224,7 +231,14 @@ class Entity {
     }
     
     function set($name, $value, $filter = true, $mark_dirty = true ) {
-        
+
+        // Columns heal values as they arrive, and one of the things they heal
+        // depends on the table's encoding -- so they have to know it before the
+        // first value lands. Done here rather than in setCharacterEncoding()
+        // because an entity may name its encoding either side of defining its
+        // columns, and only this is guaranteed to run after both.
+        $this->applyCharacterEncodingToColumns();
+
         if ( array_key_exists( $name, $this->properties ) ) {
 	        
 	        $existing_value = $this->get( $name );
@@ -1105,8 +1119,60 @@ class Entity {
     }
     
     function setCharacterEncoding($encoding) {
-        
+
         $this->_tableProperties['character_encoding'] = $encoding;
+
+        // Any column already defined is now stale; re-run the propagation.
+        $this->_character_encoding_applied = false;
+    }
+
+    /**
+     * The encoding this entity's table is in, or null for the default.
+     *
+     * @return string|null
+     */
+    function getCharacterEncoding() {
+
+        return isset( $this->_tableProperties['character_encoding'] )
+            ? $this->_tableProperties['character_encoding']
+            : null;
+    }
+
+    /**
+     * Tell this entity's columns what encoding they are being stored in.
+     *
+     * Only matters for an entity that names one: a utf8mb4 table's columns must
+     * not have four-byte characters stripped out of them because the
+     * INSTALLATION default is still utf8. Without this the healing would read
+     * the wrong answer for exactly the tables that do not need it.
+     *
+     * Runs once per change rather than on every set().
+     *
+     * @return void
+     */
+    protected function applyCharacterEncodingToColumns() {
+
+        if ( $this->_character_encoding_applied ) {
+
+            return;
+        }
+
+        $this->_character_encoding_applied = true;
+
+        $encoding = $this->getCharacterEncoding();
+
+        if ( ! $encoding ) {
+
+            return;
+        }
+
+        foreach ( $this->properties as $column ) {
+
+            if ( is_object( $column ) && method_exists( $column, 'setCharacterEncoding' ) ) {
+
+                $column->setCharacterEncoding( $encoding );
+            }
+        }
     }
     
     function wasPersisted() {
