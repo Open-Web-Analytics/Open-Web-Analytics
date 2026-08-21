@@ -84,7 +84,7 @@ class Install extends \OWA\Core\Base{
         // test for existance of tables
         foreach ($this->tables as $table) {
             $this->e->notice('Testing for existance of table: '. $table);
-            $check = $this->db->get_results(sprintf("show tables like 'owa_%s'", $table));
+            $check = $this->db->get_results(sprintf(OWA_SQL_SHOW_TABLE, 'owa_' . $table));
             //$this->e->notice(print_r($check, true));
 
             // if a table is missing add it to this array
