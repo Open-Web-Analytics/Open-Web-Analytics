@@ -63,6 +63,12 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
         $ds->set('page_width', 1280);
         $ds->set('page_height', 3000);
         $ds->set('timestamp', time());
+        // yyyymmdd is NOT NULL and is the partition key. The real ingestion path
+        // supplies it (live domstream tables carry no zero values), so a seed
+        // that omits it is testing something the product never does -- and it
+        // only ever worked because the escaping path wrote '' and a permissive
+        // sql_mode coerced that to 0.
+        $ds->set('yyyymmdd', (int) date('Ymd'));
         $ds->create();
 
         $this->trackForCleanup('base.domstream', $guid, 'id');

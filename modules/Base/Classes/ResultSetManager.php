@@ -139,6 +139,20 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Apply a set of constraints a CALLER asked for.
+     *
+     * Unlike setConstraint(), an empty value here is an error rather than a
+     * no-op. setConstraint() drops empty values silently, which is right for the
+     * internal calls that pass an optional value -- but wrong for constraints
+     * that arrived on a request, because there "no value" means the value went
+     * missing, not that the caller wanted everything.
+     *
+     * Silently dropping them made a lost parameter indistinguishable from an
+     * unfiltered request: "source==" produced the full unfiltered total, and the
+     * Source Detail report showed the same visit count for every source with no
+     * error anywhere. Reported the same way an unknown sort column is.
+     */
     function setConstraints($array) {
 
         if (is_array($array)) {
@@ -148,6 +162,19 @@ class ResultSetManager extends \OWA\Core\Base {
             }
 
             foreach ($array as $constraint) {
+
+                if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
+
+                    $this->addError( sprintf(
+                        'The "%s" constraint was given no value. Refusing to run the '
+                        . 'query unconstrained -- a missing value is not a request for '
+                        . 'everything.',
+                        $constraint['name']
+                    ) );
+
+                    continue;
+                }
+
                 $this->setConstraint($constraint['name'], $constraint['value'], $constraint['operator']);
             }
         }
@@ -239,6 +266,32 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( ! $entity ) {
             $entity = $this->baseEntity;
+        }
+
+        // A constraint with NO VALUE is refused, not quietly ignored.
+        //
+        // Db::where() skips a constraint whose value isEmpty(), so an empty one
+        // used to mean "no filter" -- the query ran unconstrained and returned
+        // the full total with no error anywhere. That is the worst possible
+        // default for reporting: a lost parameter is indistinguishable from a
+        // request for everything.
+        //
+        // It is not hypothetical. "source==" reached this method whenever
+        // owa_source went missing from the request -- a cache layer was found
+        // stripping it -- and the Source Detail report happily showed the same
+        // unfiltered visit count for every source.
+        //
+        // Refused the same way an unknown sort column already is, so the caller
+        // sees an error instead of plausible wrong numbers.
+        if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
+
+            $this->addError( sprintf(
+                '%s constraint was given no value. Refusing to run the query '
+                . 'unconstrained -- a missing value is not a request for everything.',
+                $constraint['name']
+            ) );
+
+            return;
         }
 
         if ( $this->isDimension( $constraint['name'] ) ) {
@@ -929,6 +982,81 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       
         // set time period constraint for query
         $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
+
+        // A TIME bound also gets a closed DATE bound, derived here.
+        //
+        // The fact tables are RANGE-partitioned on yyyymmdd, so a predicate that
+        // names only `timestamp` cannot prune -- and it is unselective enough
+        // that the optimiser abandons the timestamp index too. Measured on a
+        // live table:
+        //
+        //   timestamp > X                          all partitions, no index, 405,217 rows
+        //   yyyymmdd >= D AND timestamp > X        all from D,     no index, 351,937 rows
+        //   yyyymmdd BETWEEN D-1 AND D AND ts > X  1 partition,    yyyymmdd,   4,080 rows
+        //
+        // Note the middle row: an OPEN lower bound still reads everything from D
+        // onwards. The bound has to be closed at both ends to prune to a span.
+        //
+        // Derived in the query builder rather than left to whoever writes the
+        // report, because a report author has no reason to know the physical
+        // partitioning -- and because this is the seam a non-SQL reporting
+        // backend would override with its own pruning predicate. Putting it in
+        // the reports instead would tie it to the star schema.
+        //
+        // The date is computed from the same timestamps in the same timezone the
+        // yyyymmdd column was written in, so a range spanning midnight yields
+        // two days and still prunes to those two partitions.
+        if ( $dimension_name === 'timestamp' && $start && $end ) {
+
+            $this->setConstraint(
+                'date',
+                array( 'start' => date( 'Ymd', (int) $start ), 'end' => date( 'Ymd', (int) $end ) ),
+                'BETWEEN'
+            );
+        }
+
+        // And the reverse: a period covering PART of a day needs a time bound as
+        // well, or it silently widens to the whole day.
+        //
+        // last_half_hour and last_hour are allowlisted periods that produced
+        // exactly the same constraint as `today` -- date BETWEEN D AND D, with no
+        // timestamp bound at all. The period knew it meant 22:15-22:45; the query
+        // asked for all 1,440 minutes. Wrong answers, not merely slow ones, and
+        // nothing reported it.
+        //
+        // Only for periods that do NOT sit on day boundaries. today, yesterday,
+        // this_week and the rest already align, and adding a redundant timestamp
+        // bound to them would risk excluding rows whose yyyymmdd and timestamp
+        // disagree at a timezone edge.
+        if ( $dimension_name === 'date' && $this->timePeriod ) {
+
+            $startTs = $this->timePeriod->startDate->getTimestamp();
+            $endTs   = $this->timePeriod->endDate->getTimestamp();
+
+            // Sub-day means SPAN, not clock alignment. last_seven_days runs
+            // 23:59:59 to 23:59:59, so an alignment test flags it as partial and
+            // would narrow it from seven whole days to a rolling 7x24h window --
+            // quietly changing numbers users already read. A span under a day
+            // isolates exactly the windows that need a time bound: currently
+            // last_half_hour and last_hour.
+            // Two conditions, and both are needed.
+            //
+            // Span alone is not enough: `today` runs 00:00:00 to 23:59:59, which
+            // is 86,399 seconds and slips under a day. Start-of-day alone is not
+            // enough either: `last_seven_days` starts at 23:59:59, so an
+            // alignment test alone would flag it and narrow seven whole days to a
+            // rolling 7x24h window -- quietly changing numbers users already
+            // read. Together they select exactly the partial-day windows:
+            // currently last_half_hour and last_hour.
+            if ( ( $endTs - $startTs ) < 86400 && date( 'His', $startTs ) !== '000000' ) {
+
+                $this->setConstraint(
+                    'timestamp',
+                    array( 'start' => $startTs, 'end' => $endTs ),
+                    'BETWEEN'
+                );
+            }
+        }
   		}
     }
 
@@ -1575,15 +1703,26 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             }
                         }
                     }
-                    
-                    
-                    // query for dimensional results
+                }
+
+                // Query for the dimensional rows.
+                //
+                // OUTSIDE the orderby block, which is where these two lines used
+                // to sit -- their indentation always said they belonged here, but
+                // the brace put them inside. The effect was that a breakdown with
+                // no sort never ran its query at all: $dresults stayed undefined,
+                // generate() received nothing, and the caller got zero rows next
+                // to a perfectly correct aggregate. No error, because an
+                // unassigned variable is only a notice and nothing was watching.
+                //
+                // It survived because every one of the ~60 declarative report
+                // controllers sets a sort, so no shipped report ever took the
+                // unsorted path. Found by reporting-facets.spec.js, which asks
+                // for a breakdown without one.
                 $dresults = $this->computeDimensionalRows( $bm );
-                
+
                 // paginate the results
                 $dresults = $this->applyMetaDataToResults( $dresults );
-                    
-                }
 
                 // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [

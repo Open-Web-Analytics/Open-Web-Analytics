@@ -540,7 +540,7 @@ class RederiveDimensionIdsCli extends PartitionsCli {
             return true;
         }
 
-        if ( ! $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $this->mapTable() ) ) ) {
+        if ( ! $db->get_results( sprintf( OWA_SQL_SHOW_TABLE, $this->mapTable() ) ) ) {
 
             return false;
         }
@@ -896,7 +896,7 @@ class RederiveDimensionIdsCli extends PartitionsCli {
         // query, and the difference matters: the map is dropped once a migration
         // completes, so treating its absence as an error would make every
         // subsequent run refuse on a perfectly healthy database.
-        $have_map = (bool) $db->get_results( sprintf( 'SHOW TABLES LIKE "%s"', $map ) );
+        $have_map = (bool) $db->get_results( sprintf( OWA_SQL_SHOW_TABLE, $map ) );
 
         // A dimension row only counts if its content can still produce an id.
         //

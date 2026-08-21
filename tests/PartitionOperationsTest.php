@@ -1077,7 +1077,7 @@ final class PartitionOperationsTest extends TestCase
 
             public function __construct() {}
 
-            function get_row($sql)
+            function get_row($sql, array $params = array())
             {
                 $this->sql[] = $sql;
 

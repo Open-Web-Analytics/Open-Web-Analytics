@@ -236,8 +236,26 @@ class Entity {
 	            $value = $this->$method( $value );
             }
             
-            if ( $value ) {
-            
+            // A falsy value is stored when the COLUMN can legitimately hold one.
+            //
+            // This guard used to be a bare `if ( $value )`, so 0, false and ''
+            // were all discarded silently -- setting a numeric column to 0 did
+            // nothing at all, and the caller had no way to tell. That is why
+            // SessionHandlers once wrote the STRING 'false' into is_bounce: a
+            // truthy value was the only kind that survived, and MySQL coerced it
+            // to 0 on the way in.
+            //
+            // Widened by TYPE rather than removed, because the two cases are not
+            // alike. On a numeric column 0 is a value like any other. On a string
+            // column, '' is what a caller passes when it has nothing -- several
+            // handlers rely on `set('medium', $maybeEmpty)` leaving the existing
+            // value alone -- so blanket-storing empties there would start wiping
+            // data that is currently preserved.
+            //
+            // Numeric columns therefore accept 0/false; everything else keeps
+            // the old behaviour exactly.
+            if ( $value || $this->columnAcceptsFalsy( $name, $value ) ) {
+
 	            $this->properties[$name]->setValue( $value );
 	            
 	            if ( $mark_dirty && $existing_value != $value ) {
@@ -248,6 +266,96 @@ class Entity {
         }
     }
     
+    /**
+     * Whether a falsy value is a real value for this column.
+     *
+     * Reads the type the entity already declares -- DbColumn's second
+     * constructor argument, e.g. new DbColumn('priority', OWA_DTD_INT) -- so no
+     * entity needs changing to get this. Every column in the codebase already
+     * carries one.
+     *
+     * Numeric columns only. 0 and false are values there; on a VARCHAR, '' is
+     * how callers say "I have nothing", and treating that as a value would blank
+     * columns that are deliberately left alone today.
+     *
+     * PORTABILITY
+     * The comparison is against the OWA_DTD_* constants, never against the SQL
+     * spellings they hold. That distinction is the point: OWA_DTD_BIGINT means
+     * "a big integer" in every dialect, while its VALUE is whatever the loaded
+     * dialect calls one -- 'BIGINT' here, something else elsewhere. The
+     * constants are OWA's portable vocabulary; the strings are MySQL's.
+     *
+     * Matching the strings instead would have re-broken this silently on the
+     * first non-MySQL driver: the type would fail to look numeric, falsy values
+     * would go back to being dropped, and nothing would report it.
+     *
+     * A dialect that introduces a numeric type of its own adds its constant to
+     * numericColumnTypes(). Anything unrecognised keeps the old conservative
+     * behaviour rather than guessing.
+     *
+     * @param string $name
+     * @param mixed  $value
+     * @return bool
+     */
+    protected function columnAcceptsFalsy( $name, $value ) {
+
+        if ( $value === null || $value === '' ) {
+
+            return false;
+        }
+
+        if ( ! isset( $this->properties[ $name ] ) ) {
+
+            return false;
+        }
+
+        $type = (string) $this->properties[ $name ]->get( 'data_type' );
+
+        if ( ! in_array( $type, $this->numericColumnTypes(), true ) ) {
+
+            return false;
+        }
+
+        return is_int( $value ) || is_float( $value ) || is_bool( $value )
+            || ( is_string( $value ) && is_numeric( $value ) );
+    }
+
+    /**
+     * The declared column types that hold numbers, as the loaded dialect spells
+     * them.
+     *
+     * Built from the constants rather than listing spellings, so this stays
+     * correct for any dialect: each entry is whatever that dialect defined the
+     * type as. Names a dialect does not define are skipped rather than assumed.
+     *
+     * @return array
+     */
+    protected function numericColumnTypes() {
+
+        $numeric = array();
+
+        foreach ( array(
+            'OWA_DTD_BIGINT',
+            'OWA_DTD_INT',
+            'OWA_DTD_TINYINT',
+            'OWA_DTD_TINYINT2',
+            'OWA_DTD_TINYINT4',
+            'OWA_DTD_SERIAL',
+            // Spelled TINYINT(1) in MySQL, so already covered there -- named
+            // anyway, because a dialect with a real boolean type spells it
+            // differently and 0/false must stay storable in it.
+            'OWA_DTD_BOOLEAN',
+        ) as $constant ) {
+
+            if ( defined( $constant ) ) {
+
+                $numeric[] = (string) constant( $constant );
+            }
+        }
+
+        return array_values( array_unique( $numeric ) );
+    }
+
     function markDirty( $name, $value ) {
 	    
 	    $this->dirty[$name] = $value;
@@ -364,7 +472,18 @@ class Entity {
         
             // drop column is it is marked as auto-increment as DB will take care of that.
             
-            if ($this->get($v, false)) {
+            // Truthy OR explicitly changed.
+            //
+            // The truthy test alone could never write a 0, which is why a
+            // legitimate falsy value could not be persisted through an entity at
+            // all. Dirty tracking already existed (markDirty, populated by set())
+            // and was simply never consulted here.
+            //
+            // ADDED to the truthy test rather than replacing it: some callers
+            // change a property without going through set(), so those values are
+            // not marked dirty, and a dirty-only update would silently stop
+            // persisting them. Every column written before is still written.
+            if ($this->get($v, false) || array_key_exists($v, $this->dirty)) {
                 $db->set($v, $this->get($v, false));
             }
         }

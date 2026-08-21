@@ -214,7 +214,16 @@ class DbEventQueue extends \OWA\Core\EventQueue {
         $this->db->select( '*' );
         $this->db->from( 'owa_queue_item' );
         $this->db->where( 'status', 'unhandled' );
-        $this->db->where( 'not_before_timestamp', time(), '<' );
+        // A missing not-before means "due now".
+        //
+        // sendMessage() only sets this column when there IS a back-off, so for a
+        // freshly queued event it is NULL. It used to arrive as 0, but only
+        // because the escaping path wrote '' and a permissive sql_mode coerced
+        // it -- and `NULL < <timestamp>` is NULL, never true, so with real NULLs
+        // being written no event would ever be due again. Reading it through
+        // COALESCE states the intent instead of depending on a coercion -- ANSI
+        // SQL rather than MySQL's IFNULL, and identical in meaning here.
+        $this->db->where( 'COALESCE(not_before_timestamp, 0)', time(), '<' );
         $this->db->orderBy( 'insertion_timestamp' , 'ASC' );
         $this->db->limit( $limit );
         

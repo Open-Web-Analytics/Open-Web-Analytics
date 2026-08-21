@@ -14,6 +14,64 @@ overrides, and anyone maintaining a custom theme.
 
 ---
 
+## Behaviour changes in this release
+
+These are not deprecations — they change what happens on upgrade, and each has a
+one-line way back.
+
+### Strict SQL mode is now the default
+
+OWA used to send `SET SESSION sql_mode=''` on every connection, which disables
+MySQL's strict mode. That silently converted bad writes into wrong data rather
+than errors: a value too long for its column was truncated, and a non-numeric
+value written to an integer column became `0`.
+
+That was not theoretical. Two live installs were found carrying rows whose
+`yyyymmdd` — the fact-table partition key, and the column every date-range report
+filters on — had been coerced to `0`, which made those rows invisible to
+reporting and put them in the catch-all partition.
+
+The default is now `STRICT_ALL_TABLES`. A write that would previously have been
+coerced now fails and is logged instead of storing something that looks like
+data and is not.
+
+**Everything OWA itself does was fixed before this default moved** — the full
+test suite and the end-to-end ingestion path both pass under strict, on both
+database drivers. A **third-party module** that writes through the entity layer
+may not have been. If one starts failing after upgrade, revert in
+`owa-config.php`:
+
+```php
+define( 'OWA_DB_SQL_MODE', '' );                  // the old, permissive behaviour
+define( 'OWA_DB_SQL_MODE', null );                // leave whatever the server sets
+define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' ); // the new default, stated explicitly
+```
+
+Please report it rather than leaving the override in place: a write that strict
+mode rejects was storing wrong data before, not right data.
+
+### PDO is preferred over mysqli where it is available
+
+`db_type = 'mysql'` now means "MySQL", and OWA reaches it through PDO wherever
+the `pdo_mysql` extension is present, falling back to `mysqli` where it is not.
+**No configuration change is required**, and a host that has `mysqli` but not
+`pdo_mysql` keeps working exactly as before.
+
+The reason to move is that PDO carries bound parameters, so values are no longer
+escaped into the statement text. To pin a driver explicitly:
+
+```php
+define( 'OWA_DB_TYPE', 'mysqli' );     // force the legacy driver
+define( 'OWA_DB_TYPE', 'pdo_mysql' );  // force MySQL over PDO
+```
+
+Third-party drivers dropped in at `plugins/db/owa_db_<type>.php` are unaffected
+in selection, but note that the driver interface gained an optional `$params`
+argument on `query()`, `get_results()` and `get_row()`. A driver that overrides
+those with the old signature will need it added.
+
+---
+
 ## Deprecated in 1.10.0, removed in v2.0
 
 ### 1. Bare template variables and `$this` inside templates
