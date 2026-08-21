@@ -59,6 +59,19 @@ class DbColumn {
       */
      var $truncatable = true;
 
+     /**
+      * The encoding of the TABLE this column belongs to, when it differs from
+      * the installation default.
+      *
+      * Null means "the default", which is what almost every column is. It
+      * matters once entities can name their own encoding: a utf8mb4 table's
+      * columns must NOT have four-byte characters stripped out of them just
+      * because the installation default is still utf8.
+      *
+      * @var string|null
+      */
+     var $character_encoding = null;
+
      var $foreign_key;
 
      var $is_primary_key = false;
@@ -213,14 +226,35 @@ class DbColumn {
      */
     protected function encodingIsWidthLimited() {
 
-        if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) {
+        // This column's table first, the installation default second. Once an
+        // entity can name its own encoding those two genuinely differ, and
+        // reading the default would strip four-byte characters out of a
+        // utf8mb4 table for no reason -- the exact loss this is meant to limit.
+        if ( $this->character_encoding !== null ) {
+
+            $declared = $this->character_encoding;
+
+        } elseif ( defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) {
+
+            $declared = (string) constant( 'OWA_DTD_CHARACTER_ENCODING_UTF8' );
+
+        } else {
 
             return false;
         }
 
-        $declared = strtolower( (string) constant( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) );
+        return in_array( strtolower( $declared ), array( 'utf8', 'utf8mb3' ), true );
+    }
 
-        return in_array( $declared, array( 'utf8', 'utf8mb3' ), true );
+    /**
+     * Tell this column what encoding its table is in.
+     *
+     * @param string|null $encoding
+     * @return void
+     */
+    function setCharacterEncoding( $encoding ) {
+
+        $this->character_encoding = $encoding ? (string) $encoding : null;
     }
 
     /**

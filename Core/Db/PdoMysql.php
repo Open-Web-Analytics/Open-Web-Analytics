@@ -48,11 +48,16 @@ class PdoMysql extends Pdo
         // charset in the DSN, not a later SET NAMES: PDO uses it for quote() as
         // well as for the connection, so setting it afterwards leaves escaping
         // working against the wrong charset.
+        // The CONNECTION encoding has to match the schema's, and it is the
+        // binding constraint of the two: a four-byte character is mangled in
+        // transit by a three-byte connection no matter how the column is
+        // declared. Both now come from the same constant.
         return sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
+            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
             $this->getConnectionParam('host'),
             $this->getConnectionParam('port') ?: 3306,
-            $this->getConnectionParam('name')
+            $this->getConnectionParam('name'),
+            $this->connectionCharacterEncoding()
         );
     }
 }
