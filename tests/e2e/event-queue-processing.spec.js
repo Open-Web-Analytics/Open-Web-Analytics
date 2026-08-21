@@ -88,9 +88,37 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
         helper('disable-queue');
     });
 
+    /**
+     * The queue this spec measures must be this run's own.
+     *
+     * async_log_dir is a filesystem path derived from the install directory, NOT
+     * from the database, so pointing the run at a scratch DB does not move the
+     * file queue. Sharing it with the live install means queue_depth counts files
+     * anyone else left there and the drain consumes their events.
+     *
+     * That is why this spec failed locally and passed in CI for weeks -- a fresh
+     * checkout has an empty directory -- and it masked a real queue bug the whole
+     * time. Asserting the location makes a regression say so, instead of
+     * reappearing as an unexplained local-only failure.
+     */
+    test('the queue under test is this run\'s own, not the install default', () => {
+        const state = helper('state', `site=${HARNESS_SITE_ID}`);
+
+        expect(state.queue_dir, 'the helper reported no queue directory').toBeTruthy();
+        expect(state.queue_dir, 'the e2e queue must not be the install default owa-data/logs/')
+            .not.toMatch(/owa-data\/logs\/$/);
+        expect(state.queue_dir, 'the e2e queue must be the harness scratch directory')
+            .toContain('e2e-selfhost-logs');
+    });
+
     test('a beacon queues to the file queue, stays out of the facts, then ingests on drain', async ({ page }) => {
         // --- baseline -------------------------------------------------------
         const before = helper('state', `site=${HARNESS_SITE_ID}`);
+
+        // An isolated queue starts empty. Asserted rather than merely used as a
+        // baseline: a non-zero start means something else is writing here, which
+        // is the condition this isolation exists to rule out.
+        expect(before.queue_depth, `the run's own queue should start empty (${before.queue_dir})`).toBe(0);
 
         // --- fire the real built tracker beacon -----------------------------
         const beacons = [];

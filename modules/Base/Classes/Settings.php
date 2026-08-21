@@ -1181,8 +1181,31 @@ namespace OWA\Module\Base\Classes;
         $this->set('base','log_url',$public_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
-        $this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors_'. \OWA\Core\CoreAPI::generateInstanceSpecificHash() .'.txt');
-        $this->set('base', 'async_log_dir', OWA_DATA_DIR . 'logs/');
+        // Fill these only when nothing has already named a path.
+        //
+        // Both are declared config-file-only (configFileOnlySettings), which is
+        // what a stored value from a previous server would otherwise poison --
+        // so the config file is the ONE place they may be set. loadConfigFile()
+        // runs before this method, so setting them unconditionally here silently
+        // discarded whatever the file said, and the config-file-only contract
+        // could not be honoured by the config file.
+        //
+        // Their declared default is '' (see the defaults array), so "empty means
+        // nobody set it" is exactly the existing convention, and every install
+        // that does not set them is unaffected.
+        if ( ! $this->get( 'base', 'error_log_file' ) ) {
+
+            $this->set(
+                'base',
+                'error_log_file',
+                OWA_DATA_DIR . 'logs/errors_' . \OWA\Core\CoreAPI::generateInstanceSpecificHash() . '.txt'
+            );
+        }
+
+        if ( ! $this->get( 'base', 'async_log_dir' ) ) {
+
+            $this->set( 'base', 'async_log_dir', OWA_DATA_DIR . 'logs/' );
+        }
 
         \OWA\Core\CoreAPI::debug('check for http host');
         // Set cookie domain

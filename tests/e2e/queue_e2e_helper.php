@@ -123,6 +123,11 @@ function state(string $site_id): array
 {
     return [
         'site_id'     => $site_id,
+        // Reported so a spec can assert WHICH queue it just measured. async_log_dir
+        // is a filesystem path derived from the install directory, not from the
+        // database, so a scratch DB alone does not isolate the queue -- without
+        // this the depth silently counts whatever else shares the directory.
+        'queue_dir'   => (string) owa_coreAPI::getSetting('base', 'async_log_dir'),
         'queue_depth' => fileQueueDepth(),
         'fact_rows'   => countSiteRequests($site_id),
     ];

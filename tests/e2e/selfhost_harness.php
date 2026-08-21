@@ -64,6 +64,20 @@ const DEFAULT_PORT = '8964';
 const INSTALL_ADMIN_ID = 'owa-e2e-selfhost-admin@example.test';
 const INSTALL_DOMAIN    = 'owa-e2e-selfhost.example.test';
 
+// The file queue and error log this run may write to.
+//
+// WHY THIS IS NOT owa-data/logs/: async_log_dir is a filesystem path derived
+// from the install directory, not from the database, so a scratch DB alone does
+// NOT isolate the queue. Sharing it with the live install means the queue depth
+// a spec measures counts whatever anyone else left there, and a drain the spec
+// runs consumes the live install's queued events into the scratch DB.
+//
+// That is not hypothetical: it hid a real queue bug for weeks. The queue spec
+// failed here and passed in CI -- a fresh checkout has an empty directory, this
+// box did not -- so the failure read as local mess and was repeatedly dismissed
+// as environmental.
+const SCRATCH_LOG_DIR = 'owa-data/e2e-selfhost-logs/';
+
 $repoRoot = dirname(__DIR__, 2) . '/';
 $cmd = $argv[1] ?? 'info';
 
@@ -233,6 +247,14 @@ function up(string $repoRoot): array
     $backup = $repoRoot . BACKUP_FILE;
     $db     = scratchDb();
 
+    // Made here rather than left to FileEventQueue, whose mkdir() is not
+    // recursive and would fail on the missing parent.
+    $logDir = $repoRoot . SCRATCH_LOG_DIR;
+
+    if (!is_dir($logDir) && !mkdir($logDir, 0755, true) && !is_dir($logDir)) {
+        fail('Could not create the scratch log directory: ' . $logDir);
+    }
+
     if (file_exists($backup)) {
         fail('Stale backup ' . BACKUP_FILE . ' present -- a prior run did not tear down. Run `doctor` first.');
     }
@@ -373,10 +395,72 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
         }
         $out .= $line;
     }
+    // Point the file queue and error log at this run's own directory.
+    //
+    // Set through the config file because both are config-file-only settings
+    // (Settings::configFileOnlySettings) -- a stored value is stripped on load,
+    // deliberately, so a path from a previous server cannot follow a database
+    // around. setupPaths() fills them only when unset, which is what lets this
+    // land.
+    //
+    // Spliced in BEFORE the template's closing tag, not appended: the template
+    // ends by closing PHP mode, so anything after that point is not code -- it
+    // is output, printed on every request and every CLI call, which corrupts the
+    // JSON these helpers return.
+    //
+    // (The closing tag is written only as a string literal below, never in a
+    // comment: a close-tag sequence ends PHP mode even inside a // comment, so
+    // spelling it out here would do to this file what it warns about.)
+    $override = "\n"
+        . "// Added by tests/e2e/selfhost_harness.php -- keeps this run's queue and\n"
+        . "// error log out of the live install's owa-data/logs/.\n"
+        . "\$this->set('base', 'async_log_dir', OWA_DIR . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
+        . "\$this->set('base', 'error_log_file', OWA_DIR . " . var_export(SCRATCH_LOG_DIR . 'errors.txt', true) . ");\n";
+
+    $close = strrpos($out, '?>');
+    $out = $close === false ? $out . $override : substr($out, 0, $close) . $override . substr($out, $close);
+
     if (file_put_contents($config, $out) === false) {
         fail('Failed to write ' . CONFIG_FILE);
     }
     @chmod($config, 0640);
+}
+
+/**
+ * Delete this run's log directory.
+ *
+ * Scoped to SCRATCH_LOG_DIR and refuses anything else, because a wrong path here
+ * would delete the live install's queue -- the very thing this exists to protect.
+ */
+function removeScratchLogs(string $repoRoot)
+{
+    $dir = $repoRoot . SCRATCH_LOG_DIR;
+
+    if (substr(SCRATCH_LOG_DIR, 0, 9) !== 'owa-data/' || strpos(SCRATCH_LOG_DIR, 'e2e') === false) {
+        return 'refused: SCRATCH_LOG_DIR is not a recognisable scratch path';
+    }
+
+    if (!is_dir($dir)) {
+        return 'absent';
+    }
+
+    $removed = 0;
+
+    foreach (['unprocessed/', 'archive/', ''] as $sub) {
+        foreach (glob($dir . $sub . '*') ?: [] as $f) {
+            if (is_file($f) && @unlink($f)) {
+                $removed++;
+            }
+        }
+    }
+
+    foreach (['unprocessed/', 'archive/', ''] as $sub) {
+        if (is_dir($dir . $sub)) {
+            @rmdir($dir . $sub);
+        }
+    }
+
+    return $removed . ' file(s)';
 }
 
 /** Shell out to the real CLI installer; return its combined output + exit code. */
@@ -439,6 +523,8 @@ function down(string $repoRoot): array
     } catch (\Throwable $e) {
         $done['dropped_db'] = 'skip: ' . $e->getMessage();
     }
+
+    $done['scratch_logs_removed'] = removeScratchLogs($repoRoot);
 
     if (file_exists($backup)) {
         if (file_exists($config)) { @unlink($config); }        // remove our scratch config
