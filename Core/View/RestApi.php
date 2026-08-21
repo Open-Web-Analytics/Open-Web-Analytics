@@ -42,10 +42,10 @@ class RestApi extends \OWA\Core\View {
     function pre() {
 
         // The response is JSON. It was optionally JSONP -- the same body wrapped
-        // in a caller-named function so it could be loaded as a <script> and
-        // execute on any page on the internet. The two overlays that needed it
+        // in a caller-named function so it could be loaded with a <script> tag,
+        // which is a same-origin-policy bypass. The two overlays that needed it
         // now fetch over CORS, so the wrapper only widened who could read the
-        // response, and the callback name went into the body unescaped.
+        // response.
         $type = 'json';
 
 	   // set header if the request is from the API endpoint. Could be an internal request.

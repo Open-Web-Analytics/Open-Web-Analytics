@@ -30,9 +30,9 @@ class Json extends \OWA\Core\View {
         $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
-        // JSON only. The JSONP variant interpolated a caller-supplied callback
-        // name straight into a script body -- reflected XSS on top of being a
-        // same-origin-policy bypass.
+        // JSON only. JSONP wrapped this same body in a caller-named function so
+        // it could be loaded with a <script> tag -- a same-origin-policy bypass,
+        // and unnecessary now the overlays fetch over CORS.
         $this->body->set('json', json_encode( $this->get( 'json' ) ) );
 
         \OWA\Core\Lib::setContentTypeHeader( 'json' );

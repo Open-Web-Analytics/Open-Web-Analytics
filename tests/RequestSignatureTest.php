@@ -15,11 +15,10 @@ use PHPUnit\Framework\TestCase;
  *   'owa_jsonpCallback'  REMOVED with JSONP. It existed because jQuery appended
  *                        the callback name after signing.
  *
- * That last one is why this file exists. The callback name was interpolated
- * straight into a script body, so an exempt-from-signature parameter that lands
- * unescaped in executable output is the worst combination available -- and it
- * would have outlived the feature that needed it, since nothing else referenced
- * it once the overlays moved to CORS.
+ * That last one is why this file exists. The exemption would have outlived the
+ * feature that needed it -- nothing referenced owa_jsonpCallback once the
+ * overlays moved to CORS -- leaving a parameter permanently outside the
+ * signature for no reason at all.
  *
  * This is a unit test rather than an e2e case on purpose: over HTTP an appended
  * parameter answers 401 whether or not the exemption is present (the exemption
