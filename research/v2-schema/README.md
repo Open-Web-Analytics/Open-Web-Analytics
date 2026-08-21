@@ -1922,6 +1922,50 @@ artefact. In v2 the same trap exists in the same shape. The date-bound belongs i
 the query builder, derived from the time bound, not left to whoever writes the
 report.
 
+#### Built in 1.x, 2026-08-21
+
+`ResultSetManager::setTimePeriod()` now derives the missing half in both
+directions, so v2's realtime work inherits neither trap:
+
+- a **time** bound emits a closed **date** bound (the pruning half above);
+- a **partial-day period** emits a **time** bound, which was the more urgent
+  half -- `last_half_hour` and `last_hour` produced exactly the same constraint
+  as `today`, so "last hour" returned 131 rows on a live table where the true
+  answer was 5. Not slow: wrong.
+
+The selection rule is `span < 24h AND start is not midnight`, and it needs both
+clauses. Span alone catches `today`, which runs 00:00:00 to 23:59:59 and is
+86,399 seconds. Alignment alone catches `last_seven_days`, which starts at
+23:59:59 -- and narrowing that to a rolling 7x24h window would shift numbers on
+the 21,575 requests per log sample that use it.
+
+Scope, stated plainly: neither path is in use today. Of 41,000+ logged requests,
+`last_half_hour` and `last_hour` account for **zero**, and `time_range` is
+commented out of the picker. This is preparation for the realtime view, not a
+fix anyone is currently waiting on.
+
+##### Pruning is NOT made store-specific, deliberately
+
+The derivation emits a logical constraint on the `date` **dimension** -- never
+SQL, a partition name, or an engine hint -- and a dimension's physical column is
+registry-driven (`registerDimension('date', $fact_entities, 'yyyymmdd', ...)`).
+A different backend re-registers `date` against its own column or expression and
+the same derivation keeps working unchanged.
+
+A pruning-strategy interface was considered and rejected for now: with one store
+it would be guessing at the second store's needs from the first store's shape.
+The policy itself is close to universal -- ClickHouse partition keys, Parquet
+row-group statistics and DuckDB zone maps all reward a closed range on the coarse
+ordering key; MySQL is merely the least forgiving about it. On a store that
+prunes from the timestamp alone the extra predicate is harmless.
+
+What genuinely varies by store is **granularity**, and that is one value, not an
+architecture: ours is semi-monthly partitions, so a day-granular bound resolves
+to one partition. A store partitioned by month wants a month bound. That belongs
+as a field on the reporting-data-access seam (§ the reporting store may not be
+SQL) when that seam is built -- declared by the backend alongside its pruning
+key -- rather than as an abstraction invented ahead of its second consumer.
+
 ### Eventual consistency is a rollup property, not a scheduling one
 
 The failure mode to design against is not lateness. It is a summary that never
