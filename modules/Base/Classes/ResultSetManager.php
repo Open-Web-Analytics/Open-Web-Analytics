@@ -139,6 +139,20 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Apply a set of constraints a CALLER asked for.
+     *
+     * Unlike setConstraint(), an empty value here is an error rather than a
+     * no-op. setConstraint() drops empty values silently, which is right for the
+     * internal calls that pass an optional value -- but wrong for constraints
+     * that arrived on a request, because there "no value" means the value went
+     * missing, not that the caller wanted everything.
+     *
+     * Silently dropping them made a lost parameter indistinguishable from an
+     * unfiltered request: "source==" produced the full unfiltered total, and the
+     * Source Detail report showed the same visit count for every source with no
+     * error anywhere. Reported the same way an unknown sort column is.
+     */
     function setConstraints($array) {
 
         if (is_array($array)) {
@@ -148,6 +162,19 @@ class ResultSetManager extends \OWA\Core\Base {
             }
 
             foreach ($array as $constraint) {
+
+                if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
+
+                    $this->addError( sprintf(
+                        'The "%s" constraint was given no value. Refusing to run the '
+                        . 'query unconstrained -- a missing value is not a request for '
+                        . 'everything.',
+                        $constraint['name']
+                    ) );
+
+                    continue;
+                }
+
                 $this->setConstraint($constraint['name'], $constraint['value'], $constraint['operator']);
             }
         }
@@ -239,6 +266,32 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( ! $entity ) {
             $entity = $this->baseEntity;
+        }
+
+        // A constraint with NO VALUE is refused, not quietly ignored.
+        //
+        // Db::where() skips a constraint whose value isEmpty(), so an empty one
+        // used to mean "no filter" -- the query ran unconstrained and returned
+        // the full total with no error anywhere. That is the worst possible
+        // default for reporting: a lost parameter is indistinguishable from a
+        // request for everything.
+        //
+        // It is not hypothetical. "source==" reached this method whenever
+        // owa_source went missing from the request -- a cache layer was found
+        // stripping it -- and the Source Detail report happily showed the same
+        // unfiltered visit count for every source.
+        //
+        // Refused the same way an unknown sort column already is, so the caller
+        // sees an error instead of plausible wrong numbers.
+        if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
+
+            $this->addError( sprintf(
+                '%s constraint was given no value. Refusing to run the query '
+                . 'unconstrained -- a missing value is not a request for everything.',
+                $constraint['name']
+            ) );
+
+            return;
         }
 
         if ( $this->isDimension( $constraint['name'] ) ) {
