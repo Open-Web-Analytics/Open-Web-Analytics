@@ -982,6 +982,81 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       
         // set time period constraint for query
         $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
+
+        // A TIME bound also gets a closed DATE bound, derived here.
+        //
+        // The fact tables are RANGE-partitioned on yyyymmdd, so a predicate that
+        // names only `timestamp` cannot prune -- and it is unselective enough
+        // that the optimiser abandons the timestamp index too. Measured on a
+        // live table:
+        //
+        //   timestamp > X                          all partitions, no index, 405,217 rows
+        //   yyyymmdd >= D AND timestamp > X        all from D,     no index, 351,937 rows
+        //   yyyymmdd BETWEEN D-1 AND D AND ts > X  1 partition,    yyyymmdd,   4,080 rows
+        //
+        // Note the middle row: an OPEN lower bound still reads everything from D
+        // onwards. The bound has to be closed at both ends to prune to a span.
+        //
+        // Derived in the query builder rather than left to whoever writes the
+        // report, because a report author has no reason to know the physical
+        // partitioning -- and because this is the seam a non-SQL reporting
+        // backend would override with its own pruning predicate. Putting it in
+        // the reports instead would tie it to the star schema.
+        //
+        // The date is computed from the same timestamps in the same timezone the
+        // yyyymmdd column was written in, so a range spanning midnight yields
+        // two days and still prunes to those two partitions.
+        if ( $dimension_name === 'timestamp' && $start && $end ) {
+
+            $this->setConstraint(
+                'date',
+                array( 'start' => date( 'Ymd', (int) $start ), 'end' => date( 'Ymd', (int) $end ) ),
+                'BETWEEN'
+            );
+        }
+
+        // And the reverse: a period covering PART of a day needs a time bound as
+        // well, or it silently widens to the whole day.
+        //
+        // last_half_hour and last_hour are allowlisted periods that produced
+        // exactly the same constraint as `today` -- date BETWEEN D AND D, with no
+        // timestamp bound at all. The period knew it meant 22:15-22:45; the query
+        // asked for all 1,440 minutes. Wrong answers, not merely slow ones, and
+        // nothing reported it.
+        //
+        // Only for periods that do NOT sit on day boundaries. today, yesterday,
+        // this_week and the rest already align, and adding a redundant timestamp
+        // bound to them would risk excluding rows whose yyyymmdd and timestamp
+        // disagree at a timezone edge.
+        if ( $dimension_name === 'date' && $this->timePeriod ) {
+
+            $startTs = $this->timePeriod->startDate->getTimestamp();
+            $endTs   = $this->timePeriod->endDate->getTimestamp();
+
+            // Sub-day means SPAN, not clock alignment. last_seven_days runs
+            // 23:59:59 to 23:59:59, so an alignment test flags it as partial and
+            // would narrow it from seven whole days to a rolling 7x24h window --
+            // quietly changing numbers users already read. A span under a day
+            // isolates exactly the windows that need a time bound: currently
+            // last_half_hour and last_hour.
+            // Two conditions, and both are needed.
+            //
+            // Span alone is not enough: `today` runs 00:00:00 to 23:59:59, which
+            // is 86,399 seconds and slips under a day. Start-of-day alone is not
+            // enough either: `last_seven_days` starts at 23:59:59, so an
+            // alignment test alone would flag it and narrow seven whole days to a
+            // rolling 7x24h window -- quietly changing numbers users already
+            // read. Together they select exactly the partial-day windows:
+            // currently last_half_hour and last_hour.
+            if ( ( $endTs - $startTs ) < 86400 && date( 'His', $startTs ) !== '000000' ) {
+
+                $this->setConstraint(
+                    'timestamp',
+                    array( 'start' => $startTs, 'end' => $endTs ),
+                    'BETWEEN'
+                );
+            }
+        }
   		}
     }
 
