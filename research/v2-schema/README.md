@@ -1474,6 +1474,89 @@ possible precisely because the rollup is derived rather than authoritative.
 The tracker's job shrinks accordingly: capture and persist the campaign
 parameters it sees, and stop deciding what they mean.
 
+### DECIDED 2026-08-21 — adopt GA's separation, and store evidence not answers
+
+The section above treats "attribution" as one problem. It is two, and GA keeps
+them apart:
+
+- **Source/medium/campaign are RECORDED facts, not attributed values.** A
+  session's source is simply what that session arrived with. GA scopes the same
+  dimensions three ways -- event, session, and user (first-touch acquisition) --
+  and none of them involve a model.
+- **Attribution is credit assignment for KEY EVENTS only.** The model (last
+  click, first click, linear, ...) decides which touchpoint gets credit for a
+  conversion. It applies nowhere else.
+
+That distinction removes most of the cost. Recording a session's source needs no
+history and no lookback, so there is no per-session read and no visitor-leading
+index on the hot path.
+
+**Where the touchpoint history lives: nowhere new.** Once session source is
+recorded, the fact table already *is* the touchpoint history. A path is a query
+over it -- the visitor's sessions in the window whose source is not direct,
+ordered by time, capped at `max_prior_campaigns`. `owa_c` retires and nothing
+replaces it; the cookie was only ever a client-side cache of something the server
+can now see for itself.
+
+**On a key event: store the PATH, not the verdict.**
+
+| when | what happens |
+|---|---|
+| session start | record source/medium/campaign from what was observed |
+| first ever session | stamp acquisition source on the visitor, write-once |
+| **key event fires** | read the visitor's prior session sources in the window, build the path (<= 5 touchpoints, <= 60 days), and stamp it on the event along with touchpoints-to-conversion and days-to-conversion |
+| query time | apply a model to the stored path to assign credit |
+
+This is what makes model choice survive the **no-retroactive-fact-updates** rule.
+Storing the *answer* would freeze the model at ingestion; storing the *evidence*
+lets any model be applied later, because computing credit from a stored path
+rewrites nothing. The lookback window is still fixed at ingestion -- a path
+cannot be widened after the fact -- but that is a far narrower loss than losing
+model choice as well.
+
+It also means **no sessions rollup is required for attribution**, and no session
+fact table, materialised or otherwise.
+
+**Bounds already exist.** `campaignAttributionWindow` (60 days) and
+`max_prior_campaigns` (5) are today's cookie-stack limits and carry over
+unchanged. Five touchpoints expresses every rules-based model; only data-driven
+attribution would want more, and that needs a trained model rather than a stored
+path.
+
+**Three exposures, kept separate.** A path is only a dimension by being flattened
+to a string (`Paid Search > Organic Search > Direct`), which explodes in
+cardinality and aggregates to nothing -- which is why GA confines path dimensions
+to a dedicated report. So:
+
+1. **derived scalar dimensions** -- attributed campaign under a chosen model,
+   computed from the path at query time. Normal, low-cardinality, groupable. This
+   is the one that answers OWA's questions.
+2. **path-as-string** -- a conversion-paths report only. Never a general
+   dimension.
+3. **scalar metrics off the path** -- touchpoints-to-conversion and
+   days-to-conversion. Two integers from the same read, no model, no cardinality
+   problem, and OWA has nothing like them today.
+
+**Two consequences to carry into the release notes, not discover later:**
+
+- **"Visits by campaign" changes meaning.** Under carry-forward a return visit
+  inherits the earlier campaign; under recorded source it is `direct`. Campaign
+  visit counts will DROP for existing installs. More honest, matches GA, and
+  visible -- so it is a documented change, not a silent one.
+- **The key-event lookback needs a visitor-scoped index** on the event table
+  (today's indexes are `site_date` and `site_type_date`, both site-leading). It
+  is confined to key events, which are rare, but it taxes every insert -- and
+  v2's headline is 202 events/s from a single lookup-free insert. Measure it with
+  `run.php` before committing to it rather than assuming.
+
+**`trafficAttributionMode` disappears** rather than being reimplemented
+server-side. Its two modes were never one setting's worth of choice: `direct` is
+session-scoped recorded source, and `original` is a user-scoped acquisition
+property wearing a session's clothes -- which is why it needed history, and why
+its expiry semantics came out as "first touch since the visitor last went 60 days
+without a campaign touch". Exposing both as separate dimensions answers both
+questions at once and deletes the mode switch.
+
 ## Search engine classification
 
 Already server-side, and staying there. `TrackingEventHelpers::isSearchEngine()`
