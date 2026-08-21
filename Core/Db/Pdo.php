@@ -8,7 +8,7 @@ namespace OWA\Core\Db;
 //
 
 /**
- * MySQL over PDO.
+ * PDO transport, shared by every PDO-based driver.
  *
  * Transport only. The SQL vocabulary and the schema introspection are identical
  * to the mysqli driver's and come from MysqlDialect, so this file is about how
@@ -41,9 +41,8 @@ namespace OWA\Core\Db;
  * it is the single easiest thing to get wrong here.
  */
 
-class Pdo extends \OWA\Core\Db
+abstract class Pdo extends \OWA\Core\Db
 {
-    use MysqlDialect;
 
     /**
      * A connect attempt has already failed and must not be repeated.
@@ -58,6 +57,28 @@ class Pdo extends \OWA\Core\Db
     /** The statement most recently executed, for getAffectedRows(). */
     protected $last_statement;
 
+    /**
+     * The PDO DSN for this database, e.g. "mysql:host=...;dbname=...".
+     *
+     * The one thing a PDO subclass must supply. Everything else in this class is
+     * transport and is the same whichever server is on the other end; the SQL
+     * itself comes from whichever dialect the subclass uses.
+     *
+     * @return string
+     */
+    abstract protected function dsn();
+
+    /**
+     * The session sql_mode to apply on connect, or null to leave the server's.
+     *
+     * Supplied by the dialect trait a concrete driver uses, not by the transport
+     * -- sql_mode is a MySQL concept and another database's dialect will answer
+     * this differently, or not at all.
+     *
+     * @return string|null
+     */
+    abstract protected function sessionSqlMode();
+
     function connect() {
 
         if ( $this->connect_failed ) {
@@ -67,14 +88,7 @@ class Pdo extends \OWA\Core\Db
 
         if ( ! $this->connection ) {
 
-            $port = $this->getConnectionParam('port') ?: 3306;
-
-            $dsn = sprintf(
-                'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
-                $this->getConnectionParam('host'),
-                $port,
-                $this->getConnectionParam('name')
-            );
+            $dsn = $this->dsn();
 
             $options = array(
                 // Failures surface as exceptions and are converted to the falsy
@@ -152,7 +166,7 @@ class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return \PDOStatement|false
      */
-    function query( $sql ) {
+    function query( $sql, array $params = array() ) {
 
         if ( $this->connection_status == false ) {
 
@@ -179,7 +193,29 @@ class Pdo extends \OWA\Core\Db
 
         try {
 
-            $statement = $this->connection->query( $sql );
+            if ( $params ) {
+
+                $statement = $this->connection->prepare( $sql );
+
+                foreach ( $params as $i => $value ) {
+
+                    // Typed rather than everything-as-string: binding an int as
+                    // an int is what lets strict mode reject a genuinely bad
+                    // value instead of coercing it, and PARAM_NULL keeps a null
+                    // a NULL rather than turning it into ''.
+                    $statement->bindValue(
+                        $i + 1,
+                        is_bool( $value ) ? (int) $value : $value,
+                        self::paramType( $value )
+                    );
+                }
+
+                $statement->execute();
+
+            } else {
+
+                $statement = $this->connection->query( $sql );
+            }
 
         } catch ( \Throwable $e ) {
 
@@ -199,7 +235,13 @@ class Pdo extends \OWA\Core\Db
         \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
         $this->last_statement = $statement;
-        $this->new_result     = $statement;
+
+        // A statement with NO RESULT SET reports success as `true`, which is
+        // what mysqli_query() returns and therefore what callers test for --
+        // PartitionOperationsTest asserts exactly that on an ALTER. PDO hands
+        // back a PDOStatement either way, which is truthy but is not true, so
+        // an `=== true` or assertTrue() check would fail on DDL that worked.
+        $this->new_result = $statement->columnCount() > 0 ? $statement : true;
 
         return $this->new_result;
     }
@@ -226,11 +268,11 @@ class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return array|null
      */
-    function get_results( $sql ) {
+    function get_results( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
-            $this->query( $sql );
+            $this->query( $sql, $params );
         }
 
         if ( ! $this->new_result instanceof \PDOStatement ) {
@@ -257,9 +299,9 @@ class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return array|null
      */
-    function get_row( $sql ) {
+    function get_row( $sql, array $params = array() ) {
 
-        $result = $this->query( $sql );
+        $result = $this->query( $sql, $params );
 
         if ( ! $result instanceof \PDOStatement ) {
 
@@ -309,6 +351,28 @@ class Pdo extends \OWA\Core\Db
 
         // quote() guarantees the outer pair; strip exactly one from each end.
         return substr( $quoted, 1, -1 );
+    }
+
+    /**
+     * The PDO type for a bound value.
+     *
+     * Booleans go as int, not PARAM_BOOL: OWA stores them in TINYINT(1) columns
+     * and PARAM_BOOL round-trips as '' for false on some drivers, which lands as
+     * 0 under a permissive sql_mode and fails outright under a strict one.
+     */
+    private static function paramType( $value ) {
+
+        if ( is_null( $value ) ) {
+
+            return \PDO::PARAM_NULL;
+        }
+
+        if ( is_int( $value ) || is_bool( $value ) ) {
+
+            return \PDO::PARAM_INT;
+        }
+
+        return \PDO::PARAM_STR;
     }
 
     function getAffectedRows() {

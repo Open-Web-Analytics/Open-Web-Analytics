@@ -77,6 +77,7 @@ class Mysql extends \OWA\Core\Db {
             
             $this->connection = mysqli_init();
 
+
             // A FAILED CONNECT IS NOT A CONNECTION.
             //
             // mysqli_init() always returns an object, so `$this->connection`
@@ -160,7 +161,7 @@ class Mysql extends \OWA\Core\Db {
      * @access     public
      *
      */
-    function query( $sql ) {
+    function query( $sql, array $params = array() ) {
   
           if ( $this->connection_status == false) {
 
@@ -200,7 +201,9 @@ class Mysql extends \OWA\Core\Db {
         \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
        try {
-        $result = @mysqli_query( $this->connection, $sql );
+        $result = $params
+              ? $this->executeBound( $sql, $params )
+              : @mysqli_query( $this->connection, $sql );
     
             \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
             // Log Errors
@@ -266,11 +269,11 @@ class Mysql extends \OWA\Core\Db {
      * @return     array|null
      * @access  public
      */
-    function get_results( $sql ) {
+    function get_results( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
-            $this->query($sql);
+            $this->query($sql, $params);
         }
 
         //$this->result = array();
@@ -281,7 +284,7 @@ class Mysql extends \OWA\Core\Db {
 
         while ( $row = mysqli_fetch_assoc( $this->new_result ) ) {
 
-            array_push($this->result, $row);
+            array_push( $this->result, $this->stringifyRow( $row ) );
 
         }
 
@@ -307,16 +310,54 @@ class Mysql extends \OWA\Core\Db {
      * @param string $sql
      * @return array|null
      */
-    function get_row($sql) {
+    function get_row($sql, array $params = array()) {
 
-        $result = $this->query($sql);
+        $result = $this->query($sql, $params);
 
         if ( ! $result || ! ( $this->new_result instanceof \mysqli_result ) ) {
 
             return null;
         }
 
-        return mysqli_fetch_assoc($this->new_result);
+        return $this->stringifyRow( mysqli_fetch_assoc($this->new_result) );
+    }
+
+    /**
+     * Return a fetched row with its values as strings.
+     *
+     * mysqli is inconsistent with itself: mysqli_query() yields strings, while a
+     * PREPARED statement fetched via mysqli_stmt_get_result() yields native PHP
+     * types under mysqlnd. Introducing bound parameters therefore changed the
+     * type of every value the builder returns -- '0' became 0 -- which breaks
+     * === comparisons across the codebase and would change the REST API's JSON,
+     * serialising counts as numbers instead of quoted strings.
+     *
+     * MYSQLI_OPT_INT_AND_FLOAT_NATIVE is the documented switch for this and has
+     * NO EFFECT here (mysqlnd 8.2, set before real_connect -- verified both
+     * orderings), so the coercion is explicit. PDO's ATTR_STRINGIFY_FETCHES does
+     * the same job on the other driver, and DbDriverSqlParityTest compares the
+     * two drivers' rows so they cannot drift apart again.
+     *
+     * NULL IS PRESERVED. A blanket (string) cast turns NULL into '', which is a
+     * different value -- OWA stores real NULLs and distinguishes them from empty
+     * strings.
+     */
+    protected function stringifyRow( $row ) {
+
+        if ( ! is_array( $row ) ) {
+
+            return $row;
+        }
+
+        foreach ( $row as $k => $v ) {
+
+            if ( $v !== null && ! is_string( $v ) && ! is_array( $v ) ) {
+
+                $row[ $k ] = (string) $v;
+            }
+        }
+
+        return $row;
     }
 
 
@@ -348,7 +389,98 @@ class Mysql extends \OWA\Core\Db {
 
     }
 
+    /**
+     * Run a statement with bound parameters.
+     *
+     * mysqli's binding is more awkward than PDO's: one type STRING covering all
+     * parameters, and bind_param() takes its arguments BY REFERENCE, so values
+     * must be held in a real array and spread -- passing expressions is a fatal.
+     *
+     * Returns what mysqli_query() would: a mysqli_result for a SELECT, true for
+     * a statement with no result set, false on failure. get_results() and
+     * get_row() then behave identically whether or not parameters were used.
+     *
+     * @return \mysqli_result|bool
+     */
+    protected function executeBound( $sql, array $params ) {
+
+        $statement = @mysqli_prepare( $this->connection, $sql );
+
+        if ( ! $statement ) {
+
+            return false;
+        }
+
+        $types  = '';
+        $values = array();
+
+        foreach ( $params as $value ) {
+
+            if ( is_int( $value ) || is_bool( $value ) ) {
+
+                $types .= 'i';
+                $values[] = (int) $value;
+
+            } elseif ( is_float( $value ) ) {
+
+                $types .= 'd';
+                $values[] = $value;
+
+            } else {
+
+                // Null included: mysqli sends a typed NULL for a null bound as
+                // 's', which keeps it a NULL rather than an empty string.
+                $types .= 's';
+                $values[] = $value;
+            }
+        }
+
+        // Spread from a variable: bind_param takes references.
+        if ( ! @mysqli_stmt_bind_param( $statement, $types, ...$values ) ) {
+
+            @mysqli_stmt_close( $statement );
+
+            return false;
+        }
+
+        if ( ! @mysqli_stmt_execute( $statement ) ) {
+
+            @mysqli_stmt_close( $statement );
+
+            return false;
+        }
+
+        $result = @mysqli_stmt_get_result( $statement );
+
+        if ( $result === false ) {
+
+            // No result set (INSERT/UPDATE/DELETE). Affected rows must be read
+            // BEFORE the statement is closed, or getAffectedRows() reports on a
+            // dead handle.
+            $this->rows_affected = mysqli_stmt_affected_rows( $statement );
+
+            @mysqli_stmt_close( $statement );
+
+            return true;
+        }
+
+        @mysqli_stmt_close( $statement );
+
+        return $result;
+    }
+
     function getAffectedRows() {
+
+        // A bound statement's affected-row count is captured at execute time
+        // (see executeBound) because the statement handle is closed immediately;
+        // mysqli_affected_rows() on the CONNECTION does not report it.
+        if ( $this->rows_affected !== null ) {
+
+            $affected = $this->rows_affected;
+            $this->rows_affected = null;
+
+            return $affected;
+        }
 
         // mysqli_affected_rows() has required the connection arg since PHP 8.0.
         return mysqli_affected_rows( $this->connection );

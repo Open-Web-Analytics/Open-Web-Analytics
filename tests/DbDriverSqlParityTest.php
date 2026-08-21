@@ -69,7 +69,7 @@ final class DbDriverSqlParityTest extends TestCase
     {
         return [
             'mysqli' => $this->driver(\OWA\Core\Db\Mysql::class),
-            'pdo'    => $this->driver(\OWA\Core\Db\Pdo::class),
+            'pdo'    => $this->driver(\OWA\Core\Db\PdoMysql::class),
         ];
     }
 
@@ -84,7 +84,14 @@ final class DbDriverSqlParityTest extends TestCase
 
         foreach ($this->drivers() as $name => $db) {
             $build($db);
-            $out[$name] = $db->generateSelectQuerySql();
+            // SQL *and* bindings. With placeholders the statement text alone no
+            // longer carries the values, so comparing only the text would pass
+            // while the drivers bound different things -- the check would have
+            // quietly stopped testing anything the moment binding landed.
+            $out[$name] = [
+                'sql'      => $db->generateSelectQuerySql(),
+                'bindings' => $db->getBindings(),
+            ];
             $db->close();
         }
 
@@ -95,7 +102,7 @@ final class DbDriverSqlParityTest extends TestCase
     {
         $sql = $this->bothSql($build);
 
-        $this->assertNotSame('', trim($sql['mysqli']), 'the builder produced no SQL');
+        $this->assertNotSame('', trim($sql['mysqli']['sql']), 'the builder produced no SQL');
         $this->assertSame($sql['mysqli'], $sql['pdo'], $because);
     }
 
@@ -110,6 +117,48 @@ final class DbDriverSqlParityTest extends TestCase
             $this->assertStringEndsNotWith("'", $escaped, "$name: prepare() added a trailing quote");
 
             $db->close();
+        }
+    }
+
+    /**
+     * Values must reach the statement as BINDINGS, not as text in it. If a value
+     * appears in the SQL, something is interpolating again.
+     */
+    public function testValuesAreBoundRatherThanInterpolated(): void
+    {
+        $sql = $this->bothSql(function ($db) {
+            $db->selectFrom('owa_request', 'r');
+            $db->selectColumn('id');
+            $db->where('page_url', 'https://example.com/secret');
+        });
+
+        foreach ($sql as $driver => $out) {
+            $this->assertStringNotContainsString('example.com/secret', $out['sql'],
+                "$driver: the value was interpolated into the SQL instead of bound");
+            $this->assertContains('https://example.com/secret', $out['bindings'],
+                "$driver: the value never reached the bindings");
+        }
+    }
+
+    /**
+     * Placeholders are positional, so binding order must match the order the
+     * clauses appear in. Transposed bindings would compare the right values
+     * against the wrong columns and still return rows.
+     */
+    public function testBindingsAreInPlaceholderOrder(): void
+    {
+        $sql = $this->bothSql(function ($db) {
+            $db->selectFrom('owa_request', 'r');
+            $db->selectColumn('id');
+            $db->where('site_id', 'FIRST');
+            $db->where('yyyymmdd', ['start' => 'SECOND', 'end' => 'THIRD'], 'BETWEEN');
+            $db->groupBy('r.id');
+            $db->having('id', 'FOURTH', '>');
+        });
+
+        foreach ($sql as $driver => $out) {
+            $this->assertSame(['FIRST', 'SECOND', 'THIRD', 'FOURTH'], $out['bindings'],
+                "$driver: bindings are not in placeholder order");
         }
     }
 
@@ -226,20 +275,40 @@ final class DbDriverSqlParityTest extends TestCase
             . 'so this test was proving nothing');
     }
 
-    /** Insert, update and delete build their values through prepare() too. */
-    public function testWriteStatementsAreIdentical(): void
+    /**
+     * Writes bind their values too.
+     *
+     * Asserted on the generated statement and on a real round trip rather than
+     * on getBindings() after the fact: _insertQuery() executes, and execution
+     * clears the bindings, so reading them afterwards compares two empty arrays
+     * and proves nothing. The first draft of this test did exactly that.
+     */
+    public function testWriteStatementsBindTheirValues(): void
     {
-        $sql = [];
-
         foreach ($this->drivers() as $name => $db) {
-            $db->insertInto('owa_request');
+
+            $db->query('CREATE TEMPORARY TABLE t_parity (id BIGINT, page_url VARCHAR(255))');
+
+            $db->insertInto('t_parity');
             $db->set('id', 12345);
             $db->set('page_url', "O'Brien's page");
-            $sql[$name] = $db->_insertQuery();
+            $db->_insertQuery();
+
+            $this->assertStringContainsString('?', $db->_last_sql_statement,
+                "$name: the INSERT interpolated its values instead of binding them");
+            $this->assertStringNotContainsString("O'Brien", $db->_last_sql_statement,
+                "$name: the value appears in the INSERT text");
+
+            $db->selectFrom('t_parity');
+            $db->select('*');
+            $db->where('id', 12345);
+            $rows = $db->getAllRows();
+
+            $this->assertSame([['id' => '12345', 'page_url' => "O'Brien's page"]], $rows,
+                "$name: the bound write did not round-trip");
+
             $db->close();
         }
-
-        $this->assertSame($sql['mysqli'], $sql['pdo'], 'INSERT differs between drivers');
     }
 
     /** The results themselves must match, not merely the statements. */

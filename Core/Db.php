@@ -152,6 +152,22 @@ class Db extends \OWA\Core\Base {
      */
     var $_last_sql_statement;
 
+    /**
+     * Values bound to the statement being built, in placeholder order.
+     *
+     * ORDER IS THE WHOLE CONTRACT. Placeholders are positional, so binding N
+     * must be the Nth `?` in the finished SQL. That holds because the clause
+     * makers are evaluated as sprintf() ARGUMENTS in generateSelectQuerySql(),
+     * and PHP evaluates arguments left to right in the order the format string
+     * lays them out -- so the order they append in is the order they appear in.
+     * A future rearrangement that builds clauses into variables first, then
+     * assembles them in a different order, would silently transpose values
+     * between columns. DbBindingTest pins the order for exactly this reason.
+     *
+     * @var array
+     */
+    var $_bindings = array();
+
     function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
 
         $this->connectionParams = array('host' => $db_host,
@@ -207,6 +223,60 @@ class Db extends \OWA\Core\Base {
      * @param string $string
      * @return string
      */
+    /**
+     * Record a value for binding and return the placeholder that stands for it.
+     *
+     * Replaces interpolating an escaped value into the SQL text. The value never
+     * becomes part of the statement, so it cannot change its structure -- which
+     * is the difference between being safe by construction and being safe
+     * because every caller remembered to call prepare().
+     *
+     * @param mixed $value
+     * @return string
+     */
+    function bindValue( $value ) {
+
+        // NULL IS WRITTEN AS AN EMPTY STRING, because that is what the escaping
+        // path did and a transport change must not alter stored data.
+        //
+        // The old route was prepare( null ) -- which returned null -- inlined by
+        // sprintf( "'%s'", null ), i.e. ''. So OWA has NEVER written a real SQL
+        // NULL through the builder: every unset value landed as '', and a
+        // permissive sql_mode then coerced that to 0 in an integer column.
+        //
+        // Binding a real NULL is more truthful and it silently broke things:
+        // owa_queue_item.not_before_timestamp became NULL instead of 0, and
+        // `not_before_timestamp < ?` is never true for NULL, so every queued
+        // event stopped being due. That is a data-semantics change wearing the
+        // clothes of a driver upgrade.
+        //
+        // Writing genuine NULLs is worth doing -- it needs a column-by-column
+        // review of which are nullable and which callers test for 0 versus '' --
+        // and it belongs with the strict-sql_mode work, not here.
+        $this->_bindings[] = $value === null ? '' : $value;
+
+        return '?';
+    }
+
+    /**
+     * Discard bindings from any previous statement.
+     *
+     * Called at the START of each generation entry point rather than only after
+     * execution, because SQL can be generated WITHOUT being run --
+     * generateSelectQuerySql() is public and the parity tests use it that way.
+     * Without this, bindings from a discarded statement would prepend
+     * themselves to the next one.
+     */
+    function resetBindings() {
+
+        $this->_bindings = array();
+    }
+
+    function getBindings() {
+
+        return $this->_bindings;
+    }
+
     function prepare_string($string) {
 
         $chars = array("\t", "\n");
@@ -410,6 +480,8 @@ class Db extends \OWA\Core\Base {
     }
 
     function _insertQuery() {
+
+        $this->resetBindings();
         \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $params = $this->_fetchSqlParams('set_values');
 
@@ -423,7 +495,7 @@ class Db extends \OWA\Core\Base {
         foreach ($params as $k => $v) {
 
             $sql_cols .= $v['name'];
-            $sql_values .= "'".$this->prepare($v['value'])."'";
+            $sql_values .= $this->bindValue( $v['value'] );
 
             $i++;
 
@@ -445,6 +517,8 @@ class Db extends \OWA\Core\Base {
     }
 
     function generateSelectQuerySql() {
+
+        $this->resetBindings();
 
         $cols = '';
         $i = 0;
@@ -496,6 +570,8 @@ class Db extends \OWA\Core\Base {
 
     function _updateQuery() {
 
+        $this->resetBindings();
+
         $params = $this->_fetchSqlParams('set_values');
 
         $count = count($params);
@@ -518,7 +594,7 @@ class Db extends \OWA\Core\Base {
 
             endif;
 
-            $set .= $this->prepare( $v['name'] ) .' = \'' . $this->prepare($v['value']) . '\'';
+            $set .= $this->prepare( $v['name'] ) . ' = ' . $this->bindValue( $v['value'] );
 
             $i++;
         }
@@ -529,6 +605,8 @@ class Db extends \OWA\Core\Base {
     }
 
     function _deleteQuery() {
+
+        $this->resetBindings();
 
         $this->_setSql(sprintf(OWA_SQL_DELETE_ROW, $this->_sqlParams['table'], $this->_makeWhereClause()));
 
@@ -603,33 +681,33 @@ class Db extends \OWA\Core\Base {
                 switch ( $op ) {
 
                     case '==':
-                        $constraint .= sprintf("%s = '%s'", $this->prepare( $v['name'] ), $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s = %s", $this->prepare( $v['name'] ), $this->bindValue( $v['value'] ) );
                         break;
 
                     case 'between':
-                        $constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $this->prepare( $v['name'] ), $this->prepare( $v['value']['start'] ), $this->prepare( $v['value']['end'] ) );
+                        $constraint .= sprintf("%s BETWEEN %s AND %s", $this->prepare( $v['name'] ), $this->bindValue( $v['value']['start'] ), $this->bindValue( $v['value']['end'] ) );
                         break;
 
                     case '=~':
-                        $constraint .= sprintf("%s %s '%s'", $this->prepare( $v['name'] ), OWA_SQL_REGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s %s", $this->prepare( $v['name'] ), OWA_SQL_REGEXP, $this->bindValue( $v['value'] ) );
                         break;
 
                     case '!~':
-                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s %s",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->bindValue( $v['value'] ) );
                         break;
 
                     case '=@':
-                        $constraint .= sprintf("LOCATE('%s', %s) > 0",$this->prepare( $v['value'] ), $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf("LOCATE(%s, %s) > 0",$this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     case '!@':
-                        $constraint .= sprintf("LOCATE('%s', %s) = 0",$this->prepare( $v['value'] ), $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf("LOCATE(%s, %s) = 0",$this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     default:
                         // $op has already been validated against ALLOWED_OPERATORS,
                         // so this covers '=', '!=', '>', '>=', '<', '<='.
-                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), $op, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s %s",$this->prepare( $v['name'] ), $op, $this->bindValue( $v['value'] ) );
                         break;
                 }
 
@@ -902,11 +980,11 @@ class Db extends \OWA\Core\Base {
 
             case 'insert':
 
-                $ret = $this->query($this->_sql_statement);
+                $ret = $this->query($this->_sql_statement, $this->_bindings);
                 break;
             case 'select':
 
-                $ret = $this->get_results($this->_sql_statement);
+                $ret = $this->get_results($this->_sql_statement, $this->_bindings);
 
                 if (array_key_exists('result_format', $this->_sqlParams)):
                     $ret = $this->_formatResults($ret);
@@ -916,17 +994,18 @@ class Db extends \OWA\Core\Base {
 
             case 'update':
 
-                $ret = $this->query($this->_sql_statement);
+                $ret = $this->query($this->_sql_statement, $this->_bindings);
                 break;
             case 'delete':
 
-                $ret = $this->query($this->_sql_statement);
+                $ret = $this->query($this->_sql_statement, $this->_bindings);
                 break;
         }
 
         $this->_last_sql_statement = $this->_sql_statement;
         $this->_sql_statement = '';
         $this->_sqlParams = array();
+        $this->resetBindings();
         return $ret;
 
     }

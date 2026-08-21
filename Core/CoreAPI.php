@@ -73,7 +73,52 @@ class CoreAPI {
      * does NOT need to be Composer-classmap-discoverable to load; and because
      * the file is untracked by OWA's git, a `git pull` upgrade never removes it.
      */
+    /**
+     * The driver name to actually load for a configured db_type.
+     *
+     * Every existing install has db_type = 'mysql', which historically meant the
+     * mysqli driver. It now means "MySQL", and PDO is used to reach it wherever
+     * pdo_mysql is available -- so installs get bound parameters without editing
+     * owa-config.php, and a host that has mysqli but NOT pdo_mysql keeps working
+     * instead of being left broken by an upgrade. That combination is unusual on
+     * distro-packaged PHP, where one package ships both, but it is entirely
+     * possible in containers and hand-built PHP, where extensions are enabled
+     * one at a time.
+     *
+     * Anything explicit is honoured as written:
+     *
+     *   'mysql'      MySQL, preferring PDO, falling back to mysqli   (default)
+     *   'mysqli'     force the mysqli driver
+     *   'pdo_mysql'  force MySQL over PDO
+     *   'pdo'        friendly alias for pdo_mysql
+     *   'pdo_pgsql'  Postgres over PDO, once a PgsqlDialect exists
+     *
+     * A third-party owa_db_<type> from the plugins/ seam is passed through
+     * untouched.
+     *
+     * @param string $type
+     * @return string
+     */
+    public static function resolveDbDriver($type) {
+
+        if ( $type === 'mysql' ) {
+
+            return extension_loaded('pdo_mysql') ? 'pdo_mysql' : 'mysqli';
+        }
+
+        // 'mysqli' names the legacy driver, whose class is owa_db_mysql.
+        if ( $type === 'mysqli' ) {
+
+            return 'mysql';
+        }
+
+        return $type;
+    }
+
     public static function setupStorageEngine($type) {
+
+        $type = self::resolveDbDriver($type);
+
 
 
 		if ( $type ) {
@@ -145,7 +190,7 @@ class CoreAPI {
             // OWA\Core\Db\Mysql) via the migration map so OWA runs bridge-free;
             // a third-party owa_db_<type> from the plugins/ seam keeps its
             // legacy name (setupStorageEngine required it in).
-            $connection_class = 'owa_db_'.$db_type;
+            $connection_class = 'owa_db_'.self::resolveDbDriver($db_type);
             $connection_class = \OWA\Core\Lib::resolveNamespacedClass($connection_class) ?? $connection_class;
             $db = new $connection_class(
                 \OWA\Core\CoreAPI::getSetting('base','db_host'),
