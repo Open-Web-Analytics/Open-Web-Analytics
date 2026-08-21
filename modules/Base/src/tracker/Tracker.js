@@ -1973,11 +1973,60 @@ class OWATracker  {
             event.set('timestamp', this.getTimestamp() );
         }
 
+        // Only when it has something to say. The server defaults this to 0, so
+        // sending is_automated=0 on every beacon would add a parameter to every
+        // request in order to repeat the default -- and the overwhelming
+        // majority of requests are ordinary browsers.
+        if ( ! event.get( 'is_automated') && this.isAutomatedBrowser() ) {
+
+            event.set('is_automated', 1 );
+        }
+
            if (callback && ( typeof( callback ) == 'function' ) ) {
 
                callback( event );
            }
 
+    }
+
+    /**
+     * Whether this browser is being driven by automation.
+     *
+     * The only crawler a JavaScript tracker ever sees is one that runs
+     * JavaScript, and those are the ones that look exactly like Chrome --
+     * because they ARE Chrome, driven by a script. No amount of user-agent
+     * parsing on the server can tell them apart. The browser can, and this is
+     * the one thing it is willing to say.
+     *
+     * navigator.webdriver is standardised: the WebDriver specification requires
+     * a conforming browser to report true while under automation. Selenium,
+     * Puppeteer and Playwright all set it unless deliberately patched out.
+     *
+     * ONLY that flag, no heuristics. Plugin counts, language lists and missing
+     * window.chrome are all guessy, and a robot on this server is DISCARDED
+     * rather than recorded -- so a false positive silently costs a real page
+     * view. A signal that is occasionally wrong is worse than one that is
+     * narrow, and something deliberately hiding from this would defeat a
+     * fingerprint too.
+     *
+     * @return {number} 1 when driven by automation, 0 otherwise
+     */
+    isAutomatedBrowser() {
+
+        try {
+
+            if ( typeof navigator !== 'undefined' && navigator.webdriver === true ) {
+
+                return 1;
+            }
+
+        } catch ( e ) {
+
+            // Some environments throw on navigator access. Not knowing is the
+            // same answer as no.
+        }
+
+        return 0;
     }
 
     /**

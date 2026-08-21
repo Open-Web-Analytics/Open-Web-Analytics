@@ -959,6 +959,17 @@ class TrackingEventHelpers {
 
     static function isRobot ( $is_robot, $event ) {
 
+        // The browser's own answer first. A headless Chrome reports a Chrome
+        // user agent, so nothing the server can read from the string will
+        // identify it -- but the WebDriver specification requires the browser
+        // to admit it is being driven, and the tracker forwards that.
+        if ( $event && $event->get( 'is_automated' ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Robot detected: the browser reports it is under automation' );
+
+            return true;
+        }
+
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
         $bcap = $service->getBrowscap();

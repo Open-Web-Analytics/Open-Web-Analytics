@@ -1257,7 +1257,11 @@ class CoreAPI {
        
         if ( ! \OWA\Core\CoreAPI::getSetting('base', 'log_robots') ) {
 
-            if ( $bcap->robotCheck() ) {
+            // The browser's own report counts as a robot signal here too. This
+            // check runs BEFORE the is_robot property callback, so consulting
+            // only the user agent would let an automated browser through the
+            // one gate that actually drops the event.
+            if ( $event->get( 'is_automated' ) || $bcap->robotCheck() ) {
 	            
                 \OWA\Core\CoreAPI::debug("ABORTING: request appears to be from a robot");
                 \OWA\Core\CoreAPI::setRequestParam('is_robot', true);
