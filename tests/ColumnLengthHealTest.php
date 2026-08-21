@@ -125,6 +125,11 @@ final class ColumnLengthHealTest extends TestCase {
      */
     public function testAnOverLongValueSurvivesAWriteUnderStrictMode(): void {
 
+        if ( ! owa_test_db_available() ) {
+
+            $this->markTestSkipped( 'No database available.' );
+        }
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query( 'CREATE TEMPORARY TABLE heal_probe (id BIGINT, page_title VARCHAR(255))' );
