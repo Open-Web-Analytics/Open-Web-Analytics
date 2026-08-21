@@ -24,6 +24,8 @@
     
     "require": {
         "php": ">=8.2",
+        "symfony/filesystem": "^7.4",
+        "symfony/yaml": "^7.4",
         "wikimedia/composer-merge-plugin": "^2.0"
     },
 
