@@ -210,13 +210,12 @@ class Mysql extends \OWA\Core\Db {
     
             if ( mysqli_errno( $this->connection ) ) {
     
-                $this->e->debug(
-                    sprintf(
-                        'A MySQL error ocured. Error: (%s) %s. Query: %s',
+                $this->logQueryError(
+                    sprintf( '(%s) %s',
                         mysqli_errno( $this->connection ),
-                        htmlspecialchars( mysqli_error( $this->connection ) ),
-                        $sql
-                    )
+                        mysqli_error( $this->connection )
+                    ),
+                    $sql
                 );
             }
     

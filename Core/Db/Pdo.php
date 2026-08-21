@@ -219,13 +219,10 @@ abstract class Pdo extends \OWA\Core\Db
 
         } catch ( \Throwable $e ) {
 
-            $this->e->debug(
-                sprintf(
-                    'A database error occurred. Error: %s. Query: %s',
-                    htmlspecialchars( $e->getMessage() ),
-                    $sql
-                )
-            );
+            // Not htmlspecialchars(): this goes to a log file, not to a page,
+            // and escaping it only makes the message harder to read at the
+            // moment someone is trying to read it.
+            $this->logQueryError( $e->getMessage(), $sql );
 
             $this->new_result = false;
 
