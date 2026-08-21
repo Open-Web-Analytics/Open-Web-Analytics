@@ -118,14 +118,20 @@ class Mysql extends \OWA\Core\Db {
                 return false;
             }
 
-            // explicitly set the character set as UTF-8
+            // Explicitly set the character set, from the same constant the
+            // schema is built with. The connection encoding is the binding
+            // constraint of the two -- a four-byte character is mangled in
+            // transit by a three-byte connection however the column is
+            // declared -- so these must not be allowed to drift apart.
+            $encoding = $this->connectionCharacterEncoding();
+
             if (function_exists('mysqli_set_charset')) {
 
-                mysqli_set_charset($this->connection, 'utf8' );
+                mysqli_set_charset($this->connection, $encoding );
 
             } else {
 
-                $this->query("SET NAMES 'utf8'");
+                $this->query( sprintf( "SET NAMES '%s'", $encoding ) );
             }
 
             // Session sql_mode. Historically a hardcoded "" here, which disables

@@ -109,7 +109,33 @@ if ( ! defined( 'OWA_SQL_ROUND' ) ) { define('OWA_SQL_ROUND', 'ROUND(%s)'); }
 if ( ! defined( 'OWA_SQL_AVERAGE' ) ) { define('OWA_SQL_AVERAGE', 'AVG(%s)'); }
 if ( ! defined( 'OWA_SQL_DISTINCT' ) ) { define('OWA_SQL_DISTINCT', 'DISTINCT %s'); }
 if ( ! defined( 'OWA_SQL_DIVISION' ) ) { define('OWA_SQL_DIVISION', '(%s / %s)'); }
+// The encoding NEW tables are declared with when the entity does not name one.
+//
+// 'utf8' is MySQL's three-byte encoding and cannot hold anything above U+FFFF.
+// It stays the default because it is what every existing table already is, and
+// changing it here would only affect tables created afterwards -- leaving one
+// installation holding a mix with nothing to reconcile them.
+//
+// A table that wants better says so per-entity rather than per-installation.
+// See Entity::getTableCharacterEncoding(): that is how v2 tables can be created
+// as utf8mb4 alongside v1 tables that stay as they are, in the same database.
 if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTER_ENCODING_UTF8', 'utf8'); }
+
+// The encoding the CONNECTION negotiates, which is a different question and has
+// a different answer.
+//
+// It is not "whatever the tables are" -- tables may legitimately differ from
+// each other. It is the widest thing the server understands, because the
+// connection encoding is a CEILING on both directions: a four-byte character is
+// mangled in transit by a three-byte connection however the destination column
+// is declared.
+//
+// Raising it costs the older tables nothing. Verified against both: over a
+// utf8mb4 connection a utf8 table still refuses a four-byte character exactly
+// as it did before, three-byte text is unaffected, and a utf8mb4 table stores
+// the character. So the ceiling can be raised once, for everyone, and each
+// table keeps deciding for itself.
+if ( ! defined( 'OWA_DTD_CONNECTION_ENCODING' ) ) { define('OWA_DTD_CONNECTION_ENCODING', 'utf8mb4'); }
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
 
 
@@ -160,6 +186,23 @@ trait MysqlDialect
      *
      * @return string|null
      */
+    /**
+     * The encoding to negotiate on the connection.
+     *
+     * Deliberately NOT "whatever the tables are declared with" -- tables may
+     * differ from one another, and the connection has to serve all of them.
+     * It is a ceiling in both directions, so it is set to the widest encoding
+     * and each table decides for itself underneath it.
+     *
+     * @return string
+     */
+    protected function connectionCharacterEncoding() {
+
+        return defined( 'OWA_DTD_CONNECTION_ENCODING' )
+            ? (string) OWA_DTD_CONNECTION_ENCODING
+            : 'utf8mb4';
+    }
+
     protected function sessionSqlMode() {
 
         if ( defined( 'OWA_DB_SQL_MODE' ) ) {
