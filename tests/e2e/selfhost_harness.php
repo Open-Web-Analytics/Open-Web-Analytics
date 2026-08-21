@@ -164,7 +164,16 @@ function dbCreds(string $repoRoot, bool $backupOnly = false): array
         'port'      => $c['OWA_DB_PORT'] ?? '3306',
         'user'      => $c['OWA_DB_USER'],
         'password'  => $c['OWA_DB_PASSWORD'] ?? '',
-        'type'      => $c['OWA_DB_TYPE'] ?? 'mysql',
+        // OWA_E2E_DB_TYPE wins over the live install's driver, so the whole
+        // suite can be run against a different one:
+        //
+        //   OWA_E2E_DB_TYPE=pdo npm run test:e2e:selfhost
+        //
+        // Without this the local path always inherited the live config's type
+        // and there was no way to exercise a second driver end to end -- which
+        // is the only check that covers reporting's dynamically-built SQL, since
+        // those statements do not exist until they run.
+        'type'      => getenv('OWA_E2E_DB_TYPE') ?: ($c['OWA_DB_TYPE'] ?? 'mysql'),
         'live_name' => $liveName,
     ];
 }

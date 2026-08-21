@@ -127,6 +127,7 @@ function owa_compat_class_map(): array
 
         // db driver plugin -> OWA\Core\Db\ (Phase 6 stage 3)
         'owa_db_mysql' => 'OWA\\Core\\Db\\Mysql',
+        'owa_db_pdo' => 'OWA\\Core\\Db\\Pdo',
 
         // module.php registry classes -> OWA\Module\<Mod>\Module (Phase 6 stage 3)
         'owa_baseModule' => 'OWA\\Module\\Base\\Module',
