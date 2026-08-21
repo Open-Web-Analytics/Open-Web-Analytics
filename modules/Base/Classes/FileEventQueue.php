@@ -44,6 +44,7 @@ class FileEventQueue extends \OWA\Core\EventQueue {
     var $unprocessed_path;
     var $archive_path;
     var $rotation_size;
+    var $lock_file;
     var $rotation_interval = 3600;
     var $currentProcessingFileHandle;
 
@@ -91,7 +92,7 @@ class FileEventQueue extends \OWA\Core\EventQueue {
             $this->date_format = "Y-m-d-H-is";
         }
 
-        if ( ! isset( $map['rotation_interval'] ) ) {
+        if ( isset( $map['rotation_interval'] ) ) {
             $this->rotation_interval = $map['rotation_interval'];
         }
 
@@ -236,6 +237,15 @@ class FileEventQueue extends \OWA\Core\EventQueue {
                
                 $event = $this->parse_log_row( $buffer );
                 //owa_coreAPI::debug('returning event: '. print_r( $event, true));
+
+                if ( ! $event ) {
+
+                    // One unreadable row must not strand the rest of the file,
+                    // nor the files queued after it. The handle has already moved
+                    // past this row, so this advances rather than repeating.
+                    return $this->receiveMessage();
+                }
+
                 $event->wasReceived();
                 return $event;
 
@@ -356,10 +366,22 @@ class FileEventQueue extends \OWA\Core\EventQueue {
             $row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]);
             // Same allowlist as the db queue -- a log file anyone can append to
             // must not be able to name the class that gets instantiated here.
-            $event = unserialize(
-                urldecode($row_array['event_obj']),
-                array( 'allowed_classes' => self::allowedEventClasses() )
-            );
+            // A queue file is a log anyone with write access can append to, and
+            // a half-written row survives a crash, so a malformed blob is an
+            // expected input rather than an exceptional one. decodeBlob() keeps
+            // unserialize()'s diagnostics from escaping a routine drain; the
+            // failure is handled right below.
+            $event = self::decodeBlob( urldecode( $row_array['event_obj'] ) );
+
+            if ( ! self::isUsableEvent( $event ) ) {
+
+                \OWA\Core\CoreAPI::notice(
+                    'Skipping a queue file row that did not decode to a usable event.'
+                );
+
+                return false;
+            }
+
             return $event;
         }
     }

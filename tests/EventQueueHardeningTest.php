@@ -205,9 +205,71 @@ final class EventQueueHardeningTest extends TestCase
 
         $decoded = $q->decodeMessage('O:8:"stdClass":1:{s:1:"x";s:3:"pwn";}');
 
-        $this->assertInstanceOf(__PHP_Incomplete_Class::class, $decoded,
+        $this->assertNotInstanceOf(\stdClass::class, $decoded,
             'a tampered queue row must not instantiate an arbitrary class');
-        $this->assertNotInstanceOf(\stdClass::class, $decoded);
+
+        // Refused outright rather than handed back as __PHP_Incomplete_Class,
+        // which is what unserialize() returns for a name outside the allowlist.
+        // That object throws on the first method call, and every caller called
+        // one immediately -- so a single tampered or unreadable row aborted the
+        // whole drain. On the db queue the row was never removed either, so it
+        // threw again on every later run and the queue stopped for good.
+        $this->assertFalse($decoded,
+            'an undecodable blob must be refused, not returned as an incomplete object');
+    }
+
+    /**
+     * Messages queued BEFORE the PSR-4 relocation name the pre-namespace class.
+     *
+     * allowed_classes matches the name as written in the blob, not what that
+     * name resolves to -- so although class_alias() makes 'owa_event' the very
+     * same class as Base\Classes\Event, an allowlist naming only the new
+     * spelling rejects the old one. Every event queued before the upgrade then
+     * became permanently undecodable, and (see above) took the drain down with
+     * it. Found by e2e: the file queue stopped draining and grew by one file per
+     * run.
+     */
+    public function testAnEventQueuedUnderTheLegacyClassNameStillDecodes(): void
+    {
+        $q = $this->queue();
+        $e = $this->event();
+        $e->setEventType('base.page_request');
+        $e->set('page_url', 'https://example.com/legacy');
+
+        // The same bytes an install running the old code would have written.
+        $legacy = preg_replace(
+            '/^O:\d+:"[^"]+"/',
+            'O:9:"owa_event"',
+            $q->prepareMessage($e),
+            1
+        );
+        $this->assertStringStartsWith('O:9:"owa_event"', $legacy);
+
+        $back = $q->decodeMessage($legacy);
+
+        $this->assertNotFalse($back, 'a pre-upgrade queued event no longer decodes');
+        $this->assertNotInstanceOf(__PHP_Incomplete_Class::class, $back);
+        $this->assertInstanceOf(\OWA\Module\Base\Classes\Event::class, $back);
+        $this->assertSame('base.page_request', $back->getEventType());
+        $this->assertSame('https://example.com/legacy', $back->get('page_url'));
+    }
+
+    /**
+     * Admitting the legacy spelling must not admit anything else: the aliases
+     * added are only other names for classes already on the list.
+     */
+    public function testTheLegacyAliasDoesNotWidenTheAllowlist(): void
+    {
+        $q = $this->queue();
+
+        foreach ([
+            'O:8:"stdClass":0:{}',
+            'O:10:"owa_lookup":0:{}',
+            'O:16:"owa_dbEventQueue":0:{}',
+        ] as $blob) {
+            $this->assertFalse($q->decodeMessage($blob),
+                "an unrelated class must stay refused: $blob");
+        }
     }
 
     /**

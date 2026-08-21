@@ -89,6 +89,19 @@ class DbEventQueue extends \OWA\Core\EventQueue {
         
         if ( $msg ) {
             $event = $this->decodeMessage( $msg->get('event') );
+
+            if ( ! $event ) {
+
+                // Take it out of the working set and move on. Leaving it
+                // 'unhandled' would hand back the same undecodable row forever;
+                // 'broken' keeps it for inspection and getNextItems() skips it.
+                $this->markAsBroken(
+                    $msg->get('id'), 'Message did not decode to a usable event.'
+                );
+
+                return $this->receiveMessage();
+            }
+
             // backwards compat. remove soon.
             $event->setOldQueueId( $msg->get('id') );
             // increment the count of times the event has been received from the
