@@ -236,6 +236,15 @@ class FileEventQueue extends \OWA\Core\EventQueue {
                
                 $event = $this->parse_log_row( $buffer );
                 //owa_coreAPI::debug('returning event: '. print_r( $event, true));
+
+                if ( ! $event ) {
+
+                    // One unreadable row must not strand the rest of the file,
+                    // nor the files queued after it. The handle has already moved
+                    // past this row, so this advances rather than repeating.
+                    return $this->receiveMessage();
+                }
+
                 $event->wasReceived();
                 return $event;
 
@@ -360,6 +369,16 @@ class FileEventQueue extends \OWA\Core\EventQueue {
                 urldecode($row_array['event_obj']),
                 array( 'allowed_classes' => self::allowedEventClasses() )
             );
+
+            if ( ! self::isUsableEvent( $event ) ) {
+
+                \OWA\Core\CoreAPI::notice(
+                    'Skipping a queue file row that did not decode to a usable event.'
+                );
+
+                return false;
+            }
+
             return $event;
         }
     }

@@ -102,7 +102,37 @@ class EventQueue  {
 
     function decodeMessage ( $msg ) {
 
-        return unserialize( $msg, array( 'allowed_classes' => self::allowedEventClasses() ) );
+        $event = unserialize( $msg, array( 'allowed_classes' => self::allowedEventClasses() ) );
+
+        if ( ! self::isUsableEvent( $event ) ) {
+
+            \OWA\Core\CoreAPI::notice(
+                'Queue message did not decode to a usable event and will be skipped.'
+            );
+
+            return false;
+        }
+
+        return $event;
+    }
+
+    /**
+     * Whether a decoded blob is something the queue can actually drive.
+     *
+     * unserialize() with an allowed_classes list does not fail on a name outside
+     * the list -- it hands back __PHP_Incomplete_Class, which throws on the first
+     * method call. Callers used to invoke a method straight away, so one
+     * undecodable message aborted the whole drain, and on the db queue the item
+     * was never removed, so it threw again on every subsequent run: the queue
+     * stopped permanently and grew from then on.
+     *
+     * Checked rather than trusted, so a bad message is one skipped item.
+     */
+    protected static function isUsableEvent( $event ) {
+
+        return is_object( $event )
+            && ! ( $event instanceof \__PHP_Incomplete_Class )
+            && method_exists( $event, 'wasReceived' );
     }
 
     /**
@@ -145,6 +175,30 @@ class EventQueue  {
                 // Fall back to the base class. A decode that then fails is
                 // visible as an unprocessable queue item, not a silent
                 // widening of what may be instantiated.
+            }
+
+            // Payloads queued BEFORE the PSR-4 relocation name the pre-namespace
+            // class ('owa_event'). allowed_classes matches the name as written in
+            // the blob, not what that name resolves to, so without the legacy
+            // aliases such a message decodes to __PHP_Incomplete_Class -- and the
+            // first method call on it throws, aborting the entire drain.
+            //
+            // Taken from the compat map rather than written out here, so a class
+            // that gains an alias later needs no edit in this file. The aliases
+            // are the same names class_alias() already resolves to the classes
+            // above, so this widens nothing: it admits the old spelling of a
+            // class that was admissible anyway.
+            if ( function_exists( 'owa_compat_class_map' ) ) {
+
+                $allowed = array_flip( $classes );
+
+                foreach ( owa_compat_class_map() as $legacy => $fqcn ) {
+
+                    if ( isset( $allowed[ $fqcn ] ) ) {
+
+                        $classes[] = $legacy;
+                    }
+                }
             }
 
             $classes = array_values( array_unique( $classes ) );
