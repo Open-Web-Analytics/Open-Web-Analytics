@@ -236,24 +236,20 @@ class Db extends \OWA\Core\Base {
      */
     function bindValue( $value ) {
 
-        // NULL IS WRITTEN AS AN EMPTY STRING, because that is what the escaping
-        // path did and a transport change must not alter stored data.
+        // NULL is bound as a real SQL NULL.
         //
-        // The old route was prepare( null ) -- which returned null -- inlined by
-        // sprintf( "'%s'", null ), i.e. ''. So OWA has NEVER written a real SQL
-        // NULL through the builder: every unset value landed as '', and a
-        // permissive sql_mode then coerced that to 0 in an integer column.
+        // The escaping path could not do this: prepare( null ) returned null and
+        // sprintf( "'%s'", null ) produced '', so every unset value was written
+        // as an empty string and a permissive sql_mode coerced that to 0 in a
+        // numeric column. That is the coercion the strict-mode work exists to
+        // remove -- under STRICT_ALL_TABLES the same write is rejected outright
+        // with "Incorrect integer value: '' for column ...".
         //
-        // Binding a real NULL is more truthful and it silently broke things:
-        // owa_queue_item.not_before_timestamp became NULL instead of 0, and
-        // `not_before_timestamp < ?` is never true for NULL, so every queued
-        // event stopped being due. That is a data-semantics change wearing the
-        // clothes of a driver upgrade.
-        //
-        // Writing genuine NULLs is worth doing -- it needs a column-by-column
-        // review of which are nullable and which callers test for 0 versus '' --
-        // and it belongs with the strict-sql_mode work, not here.
-        $this->_bindings[] = $value === null ? '' : $value;
+        // Writing NULL means callers must stop relying on the coercion. The one
+        // that did is owa_queue_item.not_before_timestamp, whose due check now
+        // reads a missing value as "due now" rather than depending on '' having
+        // silently become 0. See DbEventQueue::getNextItems().
+        $this->_bindings[] = $value;
 
         return '?';
     }

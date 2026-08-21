@@ -124,35 +124,55 @@ trait MysqlDialect
     /**
      * The session sql_mode to apply on connect, or null to leave the server's.
      *
-     * OWA has always sent `SET SESSION sql_mode=''` on every connection, which
-     * disables strict mode. That is not free: without it MySQL coerces rather
-     * than refuses, so a value too long for its column is truncated and a
-     * non-numeric value written to an integer column silently becomes 0 -- the
-     * failure mode behind the VARCHAR->BIGINT migrations, where bad data
-     * converts to zeros with no error anywhere.
+     * OWA sent `SET SESSION sql_mode=''` on every connection for years, which
+     * disables strict mode. That is not free: without it MySQL coerces instead
+     * of refusing, so a value too long for its column is truncated and a
+     * non-numeric value written to an integer column silently becomes 0. Two
+     * live installs were measured carrying rows whose yyyymmdd -- the partition
+     * key, and the column every date-range report filters on -- had been
+     * coerced to 0 that way, making those rows invisible to reporting.
      *
-     * Making it configurable rather than simply flipping it: strict mode turns
-     * today's silent coercions into hard write failures, and on a tracking
-     * endpoint a hard failure means lost data. So the default stays exactly what
-     * every existing install already runs, and OWA_DB_SQL_MODE opts a given
-     * install (or a test run) into something stricter, which is what makes it
-     * possible to ENUMERATE the violations before deciding to change anyone's
-     * default.
+     * The default is now STRICT_ALL_TABLES: a bad write fails loudly instead of
+     * storing something that looks like data and is not.
      *
-     *   define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' );   // find violations
-     *   define( 'OWA_DB_SQL_MODE', null );                  // server's own mode
+     * WHAT CHANGES FOR AN INSTALL
+     * A write that previously succeeded by being coerced now fails. Everything
+     * OWA itself does was fixed before this default moved -- the whole suite
+     * passes under strict, and so does the end-to-end ingestion path on both
+     * drivers -- but a third-party module writing through the entity layer may
+     * not have been. OWA_DB_SQL_MODE is the escape hatch, and reverting is one
+     * line in owa-config.php:
+     *
+     *   define( 'OWA_DB_SQL_MODE', '' );                    // the old behaviour
+     *   define( 'OWA_DB_SQL_MODE', null );                  // whatever the server sets
+     *   define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' );   // the new default
+     *
+     * Chosen over null (leave the server alone) because OWA ships to hosts whose
+     * configuration it does not control: an explicit mode means every install
+     * behaves the way the test suite is verified to behave, rather than
+     * inheriting whatever the host decided.
      *
      * @return string|null
      */
     protected function sessionSqlMode() {
 
-        if ( ! defined( 'OWA_DB_SQL_MODE' ) ) {
+        if ( defined( 'OWA_DB_SQL_MODE' ) ) {
 
-            // The historical default. Empty string means "no modes set".
-            return '';
+            return OWA_DB_SQL_MODE;
         }
 
-        return OWA_DB_SQL_MODE;
+        // Env override, so a test run or a one-off CLI check can raise the mode
+        // without editing a config file. Deliberately NOT a general config
+        // channel -- an install sets the constant.
+        $env = getenv( 'OWA_DB_SQL_MODE' );
+
+        if ( $env !== false ) {
+
+            return $env;
+        }
+
+        // Strict by default. See the note above; OWA_DB_SQL_MODE reverts it.
+        return 'STRICT_ALL_TABLES';
     }
 
     /**

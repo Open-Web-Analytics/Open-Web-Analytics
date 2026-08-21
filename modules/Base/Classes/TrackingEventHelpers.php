@@ -407,7 +407,25 @@ class TrackingEventHelpers {
 
     static function deriveYyyymmdd( $yyyymmdd, $event ) {
 
-        return date("Ymd", $event->get('timestamp') );
+        // Never return an empty yyyymmdd.
+        //
+        // This column is NOT NULL, it is the partition key, and every date-range
+        // report filters on it -- so a row written without one is invisible to
+        // reporting and lands in the catch-all partition. A permissive sql_mode
+        // hid that by turning the empty write into 0; measured on two live
+        // installs, a handful of rows per million had ended up that way.
+        //
+        // date() with a null timestamp yields 1970, which is worse than useless
+        // because it looks like real data. Falling back to now is honest: the
+        // server assigns event time anyway when the client does not supply one.
+        $timestamp = $event->get('timestamp');
+
+        if ( ! $timestamp ) {
+
+            $timestamp = time();
+        }
+
+        return date("Ymd", $timestamp );
 
     }
 

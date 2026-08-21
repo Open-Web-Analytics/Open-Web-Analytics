@@ -179,7 +179,22 @@ class SessionHandlers extends \OWA\Core\Observer {
                 $s->set( 'num_pageviews', $this->summarizePageviews( $id, $s->get( 'yyyymmdd' ) ) );
 
                 // set bounce flag to false as there must have been 2 page views
-                $s->set( 'is_bounce', 'false' );
+                // 0, not the string 'false'.
+                //
+                // 'false' was a workaround for Entity::set() dropping falsy
+                // values ("if ( $value )"), so a plain 0 here is silently
+                // ignored. It only ever worked because MySQL coerced the
+                // non-numeric string to 0 in this TINYINT column; strict mode
+                // rejects it outright, and the string is TRUTHY in PHP, so any
+                // code reading is_bounce back would see a bounce where there is
+                // none.
+                //
+                // setValue() writes the property directly, bypassing that falsy
+                // guard. The guard itself is worth removing, but that changes
+                // every set() call in the codebase and needs its own change.
+                // Cleared directly below, after $s->update(), because it
+                // cannot be written through the entity at all -- see the note
+                // there.
 
                 // update timestamp of latest request that triggered the session update
                 $s->set( 'last_req', $event->get( 'timestamp' ) );
@@ -243,6 +258,30 @@ class SessionHandlers extends \OWA\Core\Observer {
 
                 // Persist to database
                 $ret = $s->update();
+
+                // Clear the bounce flag with a direct UPDATE.
+                //
+                // It cannot go through the entity: Entity::set() drops falsy
+                // values ("if ( $value )") and the update builder drops them
+                // again ("if ( $this->get( $v, false ) )"), so a 0 never reaches
+                // the statement. That is why this used to assign the STRING
+                // 'false' -- truthy in PHP, so it survived both guards, and
+                // non-numeric, so MySQL coerced it to 0 in this TINYINT column.
+                //
+                // Under a strict sql_mode that coercion is an error rather than
+                // a silent fix-up, and the string is a hazard on its own: read
+                // back into PHP it is TRUTHY, so a session that did not bounce
+                // reports that it did.
+                //
+                // Relaxing the two falsy guards is the real fix and is
+                // deliberately not done here -- the second one exists to stop a
+                // partially-loaded entity blanking columns it never loaded, so
+                // changing it needs its own review.
+                $db = \OWA\Core\CoreAPI::dbSingleton();
+                $db->updateTable( 'owa_session' );
+                $db->set( 'is_bounce', 0 );
+                $db->where( 'id', $id );
+                $db->executeQuery();
             }
 
             // setup event message
