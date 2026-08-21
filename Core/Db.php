@@ -168,6 +168,95 @@ class Db extends \OWA\Core\Base {
      */
     var $_bindings = array();
 
+    /**
+     * How many query errors one process will spell out before going quiet.
+     *
+     * A broken database fails every statement, and this log is on disk on the
+     * same box. The cap bounds a bad minute to a readable handful of lines
+     * instead of one per query, and says so when it stops rather than just
+     * stopping.
+     */
+    const QUERY_ERROR_LOG_LIMIT = 25;
+
+    /** @var int */
+    protected static $query_error_count = 0;
+
+    /**
+     * Report a statement the database refused.
+     *
+     * This used to be $this->e->debug(), which under the production error
+     * handler is not written anywhere -- so a refused write produced NOTHING.
+     * That is how a strict sql_mode silently dropped page views on a live
+     * installation: the INSERT failed, the failure propagated as a false return
+     * that the tracking path does not inspect, and no log line existed to
+     * contradict the impression that everything was fine.
+     *
+     * Verified against the production handler: notice, warning and error are
+     * written; debug is not.
+     *
+     * The query is truncated because some of them are enormous, and the error
+     * message is what identifies the problem -- the SQL is context. The full
+     * statement is still emitted at debug for anyone running the development
+     * handler.
+     *
+     * @param string $message  what the database said
+     * @param string $sql      the statement it refused
+     * @return void
+     */
+    protected function logQueryError( $message, $sql, $is_constraint_violation = false ) {
+
+        // Full detail for development, unconditionally: this is the level that
+        // was already being used, so nothing that worked before is lost.
+        $this->e->debug( sprintf( 'A database error occurred. Error: %s. Query: %s', $message, $sql ) );
+
+        self::$query_error_count++;
+
+        if ( self::$query_error_count > self::QUERY_ERROR_LOG_LIMIT ) {
+
+            return;
+        }
+
+        $truncated = strlen( $sql ) > 500 ? substr( $sql, 0, 500 ) . ' ...[truncated]' : $sql;
+
+        // A constraint violation is usually not a fault, and reporting it as
+        // one would cry wolf on every busy site.
+        //
+        // Dimension rows are written check-then-insert: load by id, and insert
+        // if it was not there. Two concurrent first-hits on the same new URL,
+        // user agent or host both miss and both insert, and one of them loses.
+        // The row exists either way, which is the whole point of the insert, so
+        // the losing request has nothing to fix.
+        //
+        // Logged rather than dropped, because a duplicate rate that climbs is
+        // worth seeing -- just not at a level that says something is broken.
+        if ( $is_constraint_violation ) {
+
+            $this->e->notice( sprintf(
+                'A constraint stopped a statement, which is expected where rows are inserted '
+              . 'concurrently. Error: %s. Query: %s',
+                $message,
+                $truncated
+            ) );
+
+            return;
+        }
+
+        $this->e->err( sprintf(
+            'The database refused a statement. Error: %s. Query: %s',
+            $message,
+            $truncated
+        ) );
+
+        if ( self::$query_error_count === self::QUERY_ERROR_LOG_LIMIT ) {
+
+            $this->e->err( sprintf(
+                'Further query errors in this process will not be logged (%d already reported). '
+              . 'This is a cap on log volume, not a sign that the errors stopped.',
+                self::QUERY_ERROR_LOG_LIMIT
+            ) );
+        }
+    }
+
     function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
 
         $this->connectionParams = array('host' => $db_host,
