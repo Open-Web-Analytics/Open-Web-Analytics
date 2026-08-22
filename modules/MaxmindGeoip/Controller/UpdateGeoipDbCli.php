@@ -119,20 +119,44 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         //
         // --force skips the check, for the case where the local file is
         // suspect rather than merely old.
-        if ( ! $this->getParam( 'force' ) && file_exists( $destination ) ) {
+        $local = file_exists( $destination ) ? (int) filemtime( $destination ) : 0;
 
-            $remote = $this->lastModified( $url );
+        // Asked for whenever the answer could change what happens next: when
+        // there is a local copy to compare against, and on a dry run, which
+        // exists to report rather than to act.
+        $remote = ( $local && ! $this->getParam( 'force' ) ) || $dry_run
+            ? $this->lastModified( $url )
+            : 0;
 
-            if ( $remote && $remote <= (int) filemtime( $destination ) ) {
+        if ( $local && $remote && $remote <= $local && ! $this->getParam( 'force' ) ) {
 
-                return $this->refuse( sprintf(
-                    'Already current: MaxMind last changed %s on %s, and the local copy is from %s. '
-                  . 'Nothing downloaded. Use --force to fetch it anyway.',
-                    $edition,
-                    gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC',
-                    gmdate( 'Y-m-d H:i:s', (int) filemtime( $destination ) ) . ' UTC'
-                ) );
-            }
+            return $this->refuse( sprintf(
+                'Already current: MaxMind last changed %s on %s, and the local copy is from %s. '
+              . 'Nothing downloaded. Use --force to fetch it anyway.',
+                $edition,
+                gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC',
+                gmdate( 'Y-m-d H:i:s', $local ) . ' UTC'
+            ) );
+        }
+
+        // A dry run stops HERE, before the transfer. It used to report after
+        // downloading, which meant asking what would happen cost the same tens
+        // of megabytes against the account's download limit as doing it --
+        // the opposite of what a dry run is for. The HEAD above costs nothing.
+        if ( $dry_run ) {
+
+            return $this->refuse( sprintf(
+                'Dry run: would download %s and write %s. %s Nothing was downloaded or changed.',
+                $edition,
+                $destination,
+                $local
+                    ? sprintf( 'The local copy is from %s and MaxMind %s.',
+                        gmdate( 'Y-m-d H:i:s', $local ) . ' UTC',
+                        $remote
+                            ? 'last changed theirs on ' . gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC'
+                            : 'did not say when theirs changed' )
+                    : 'No database is installed yet.'
+            ) );
         }
 
         $this->write( sprintf( 'Downloading %s from MaxMind into %s', $edition, $dir ) );
@@ -140,7 +164,22 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         // To a temporary file, not to the destination: the archive is tens of
         // megabytes and the live database must stay readable and intact for
         // every request happening while this runs.
+        // The name has to end in .tar.gz. PharData refuses to open a file whose
+        // extension it does not recognise -- "file extension (or combination)
+        // not recognised" -- and tempnam() produces a name with no extension at
+        // all. Created through tempnam first so the file is still made
+        // exclusively, then renamed rather than guessed at.
         $archive = tempnam( sys_get_temp_dir(), 'owa-geoip-' );
+
+        if ( $archive ) {
+
+            $named = $archive . '.tar.gz';
+
+            if ( @rename( $archive, $named ) ) {
+
+                $archive = $named;
+            }
+        }
 
         $bytes = $this->download( $url, $archive );
 
@@ -152,14 +191,6 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         }
 
         $this->write( sprintf( 'Downloaded %s.', $this->readableSize( $bytes ) ) );
-
-        if ( $dry_run ) {
-
-            @unlink( $archive );
-
-            return $this->refuse( sprintf(
-                'Dry run: %s%s.mmdb would be replaced. Nothing was changed.', $dir, $edition ) );
-        }
 
         $extracted = $this->extractDatabase( $archive, $dir, $edition );
 
