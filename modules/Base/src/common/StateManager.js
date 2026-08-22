@@ -12,24 +12,6 @@ class StateManager {
 		this.storeMeta = {};
 
 		/*
-		 * Session identity is written to memory immediately (so every event on
-		 * this page reads the same values) but withheld from the COOKIE until a
-		 * request carrying it has actually been accepted for delivery.
-		 *
-		 * Persisting these before delivery is what strands a session: the cookie
-		 * asserts session X, the server was never told about X, and every later
-		 * page takes sessionHandlers::logSessionUpdate() -- which correctly
-		 * aborts, because on a multi-server setup an update can legitimately
-		 * arrive before its create. Nothing then reconciles it.
-		 *
-		 * Only these two keys wait. Everything else -- referer, campaign keys,
-		 * custom vars -- persists immediately, because they are facts observable
-		 * ONLY on the landing hit and are unrecoverable if dropped.
-		 */
-		this.deferPersistence = false;
-		this.deferredKeys = { 's': [ 'sid', 'last_req' ] };
-
-		/*
 		 * Managing state, persisting it, and loading what was persisted are
 		 * three different jobs. They used to be one: set() and get() both
 		 * called load() on first touch, so putting a value into a store was
@@ -60,9 +42,28 @@ class StateManager {
 		/*
 		 * Stores whose cookie is written only once something has declared the
 		 * session worth persisting -- see enableSessionPersistence(), wired to
-		 * the 'persistSession' action. Until then writes land in memory only.
-		 * Keyed to an event rather than a call site so that WHEN a session
-		 * becomes persistable can change without touching this class.
+		 * the 'persistSession' action. Until then writes land in memory only,
+		 * so every event on the page reads the same session while none of it
+		 * reaches disk.
+		 *
+		 * Two things depend on this, and they are worth keeping distinct.
+		 *
+		 * Persisting session identity BEFORE delivery is what strands a
+		 * session: the cookie asserts session X, the server was never told
+		 * about X, and every later page takes
+		 * sessionHandlers::logSessionUpdate() -- which correctly aborts,
+		 * because on a multi-server setup an update can legitimately arrive
+		 * before its create. Nothing then reconciles it. This began as a filter
+		 * over two KEYS (sid, last_req) while the rest of the store persisted
+		 * immediately; holding the store whole subsumes it, and also stops a
+		 * half-session reaching disk -- a referer or custom var recorded
+		 * against a session whose identity was not.
+		 *
+		 * And holding a value back is what makes it distinguishable. A value in
+		 * memory was set by THIS page load; one in the cookie was left by a
+		 * previous one. Writing through immediately destroys that distinction,
+		 * and a new session can then neither keep the new values nor discard
+		 * the old ones. See hydrate() and discardPersisted().
 		 */
 		this.sessionBoundStores = { 's': true };
 		this.sessionPersistenceReady = false;
@@ -99,44 +100,6 @@ class StateManager {
 		this.registerMigration( 'collapse-legacy-stores', function ( state ) {
 			state.collapseLegacyStores();
 		} );
-	}
-
-	/**
-	 * Withhold the deferred keys from the cookie until a send is accepted.
-	 * Memory is unaffected -- this only filters what gets serialized.
-	 */
-	beginDeferredPersistence() {
-
-		this.deferPersistence = true;
-	}
-
-	/**
-	 * A request carrying the session identity was accepted for delivery, so the
-	 * cookie may now assert it. Re-persists the affected stores.
-	 */
-	commitDeferredPersistence() {
-
-		if ( ! this.deferPersistence ) {
-			return;
-		}
-
-		this.deferPersistence = false;
-
-		for ( var store_name in this.deferredKeys ) {
-			if ( this.isPresent( store_name ) ) {
-				this.persist( store_name );
-			}
-		}
-	}
-
-	/**
-	 * The send was refused or never completed. Leave the cookie as it was: the
-	 * next page then finds no sid/last_req, treats the request as a new session,
-	 * and the server creates it properly.
-	 */
-	abandonDeferredPersistence() {
-
-		this.deferPersistence = false;
 	}
 
 	/**
@@ -489,11 +452,9 @@ class StateManager {
     /**
      * Serialize a store to its cookie.
      *
-     * While deferPersistence is on, the store's deferred keys are filtered OUT
-     * of the serialized snapshot. The filter lives here rather than in set() so
-     * that a write to any OTHER key in the same store (referer, campaign, dsps)
-     * cannot smuggle an undelivered sid into the cookie as a side effect -- the
-     * cookie is per-store, not per-key.
+     * Both gates below are per-STORE, which is the granularity that matters:
+     * the cookie is written whole, so a write to any one key re-serializes
+     * every other key beside it.
      */
     persist( store_name, is_perminant ) {
 
@@ -516,23 +477,6 @@ class StateManager {
         }
 
         var snapshot = this.stores[store_name];
-
-        if ( this.deferPersistence
-             && this.deferredKeys.hasOwnProperty( store_name )
-             && snapshot
-             && typeof snapshot === 'object' )
-        {
-            var withheld = this.deferredKeys[ store_name ];
-            var filtered = {};
-
-            for ( var k in snapshot ) {
-                if ( snapshot.hasOwnProperty( k ) && withheld.indexOf( k ) === -1 ) {
-                    filtered[k] = snapshot[k];
-                }
-            }
-
-            snapshot = filtered;
-        }
 
         this.writePersistedStore( store_name, snapshot, is_perminant );
     }

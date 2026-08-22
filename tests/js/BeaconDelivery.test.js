@@ -138,20 +138,20 @@ describe('transport selection', () => {
 
 describe('the delivery signal drives session persistence', () => {
 
-    test('a queued beacon commits deferred state immediately', () => {
+    test('a queued beacon accepts the send immediately', () => {
         const beacon = installBeacon(() => true);
-        const commit = jest.spyOn(OWA, 'commitDeferredStatePersistence');
+        const t = newTracker();
+        const accepted = jest.spyOn(t, 'sendAccepted');
 
-        newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
 
-        expect(commit).toHaveBeenCalled();
+        expect(accepted).toHaveBeenCalled();
 
         beacon.restore();
     });
 
-    test('the pixel path commits only once the image loads', () => {
+    test('the pixel path accepts only once the image loads', () => {
         const gone = removeBeacon();
-        const commit = jest.spyOn(OWA, 'commitDeferredStatePersistence');
 
         // Capture the element so its handlers can be fired deliberately.
         const created = [];
@@ -162,21 +162,22 @@ describe('the delivery signal drives session persistence', () => {
             get src() { return this._src; }
         };
 
-        newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const t = newTracker();
+        const accepted = jest.spyOn(t, 'sendAccepted');
+        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
 
-        // Nothing committed yet: assignment only *initiates* the request.
-        expect(commit).not.toHaveBeenCalled();
+        // Nothing accepted yet: assignment only *initiates* the request.
+        expect(accepted).not.toHaveBeenCalled();
 
         created[0].onload();
-        expect(commit).toHaveBeenCalled();
+        expect(accepted).toHaveBeenCalled();
 
         global.Image = Orig;
         gone.restore();
     });
 
-    test('the pixel path abandons deferred state on error', () => {
+    test('the pixel path does not accept the send on error', () => {
         const gone = removeBeacon();
-        const abandon = jest.spyOn(OWA, 'abandonDeferredStatePersistence');
 
         const created = [];
         const Orig = global.Image;
@@ -186,28 +187,32 @@ describe('the delivery signal drives session persistence', () => {
             get src() { return this._src; }
         };
 
-        newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const t = newTracker();
+        const accepted = jest.spyOn(t, 'sendAccepted');
+        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
         created[0].onerror();
 
-        expect(abandon).toHaveBeenCalled();
+        // Failure is the ABSENCE of acceptance rather than an event of its own:
+        // the session store is withheld by default, so a send that is not
+        // accepted simply never releases it.
+        expect(accepted).not.toHaveBeenCalled();
 
         global.Image = Orig;
         gone.restore();
     });
 
-    test('a torn-down page commits nothing (neither handler fires)', () => {
+    test('a torn-down page accepts nothing (neither handler fires)', () => {
         const gone = removeBeacon();
-        const commit = jest.spyOn(OWA, 'commitDeferredStatePersistence');
-        const abandon = jest.spyOn(OWA, 'abandonDeferredStatePersistence');
 
         const pixel = installImageSpy();
-        newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const t = newTracker();
+        const accepted = jest.spyOn(t, 'sendAccepted');
+        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
 
         // The request left, but nothing acknowledged it. Session identity stays
         // out of the cookie, so the next page starts a session the server will
         // actually create -- one lost pageview instead of a stranded session.
-        expect(commit).not.toHaveBeenCalled();
-        expect(abandon).not.toHaveBeenCalled();
+        expect(accepted).not.toHaveBeenCalled();
 
         pixel.restore();
         gone.restore();

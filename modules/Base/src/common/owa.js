@@ -129,24 +129,6 @@ class OWA {
         return this.state.setStoreFormat(store_name, format);
     }
 
-    beginDeferredStatePersistence() {
-
-        this.initializeStateManager();
-        return this.state.beginDeferredPersistence();
-    }
-
-    commitDeferredStatePersistence() {
-
-        this.initializeStateManager();
-        return this.state.commitDeferredPersistence();
-    }
-
-    abandonDeferredStatePersistence() {
-
-        this.initializeStateManager();
-        return this.state.abandonDeferredPersistence();
-    }
-
     /**
      * Declare a storage migration, to run once the cookie domain is known and
      * before anything downstream reads state.

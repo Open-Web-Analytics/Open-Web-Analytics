@@ -669,23 +669,15 @@ class OWATracker  {
      */
     /**
      * A request carrying this page's session identity was accepted for
-     * delivery.
+     * delivery, so the session is worth writing down.
      *
-     * Two things follow, on different axes, which is why both happen here and
-     * neither is folded into the other:
-     *
-     *   commitDeferredStatePersistence()  releases the withheld KEYS (sid,
-     *                                     last_req) for writing
-     *   persistSession                    tells the state manager the session
-     *                                     STORE is worth writing at all, and to
-     *                                     keep writing it as values are set
-     *
-     * The action is fired rather than called so that what counts as acceptance
-     * can move without the state manager knowing about it.
+     * Announced rather than called so that what counts as acceptance can move
+     * without the state manager knowing about it. Until this fires nothing in
+     * the session store reaches the cookie, which is what keeps an undelivered
+     * session from being asserted on disk.
      */
     sendAccepted() {
 
-        OWA.commitDeferredStatePersistence();
         OWA.doAction( 'persistSession' );
     }
 
@@ -718,7 +710,12 @@ class OWATracker  {
         // never fires -- it sat here unnoticed for years because nothing hung
         // off the success path until now.
         image.onload  = function () { that.sendAccepted(); };
-        image.onerror = function () { OWA.abandonDeferredStatePersistence(); };
+        // No counterpart to onload: acceptance is what triggers persistence, so
+        // a failure simply never triggers it. The session stays out of the
+        // cookie, the next page finds no sid, treats itself as a new session,
+        // and the server creates it properly -- one lost hit rather than a
+        // stranded session.
+        image.onerror = function () { OWA.debug( 'Web bug failed for %s', event_type ); };
         image.src = url;
 
         OWA.debug('Inserted web bug for %s', event_type);
@@ -2207,18 +2204,15 @@ class OWATracker  {
         if ( ! this.stateInit ) {
 
             /*
-             * Withhold session identity (s.sid / s.last_req) from the cookie
-             * until this event is accepted for delivery. Memory still receives
-             * the values immediately, so every event on this page reads the same
-             * session. See StateManager.beginDeferredPersistence().
+             * Session identity is derived here and lands in MEMORY only. It
+             * reaches the cookie when a request carrying it is accepted -- see
+             * sendAccepted() -- so every event on this page reads the same
+             * session while none of it is asserted on disk undelivered.
              *
-             * This runs only on the FIRST tracked event of a page, which makes
-             * the deferral one-shot: if that event's send fails, a later event
-             * on the same page finds the flag already cleared and so cannot
-             * commit a session the server was never told about.
+             * Nothing needs arming for that: the session store is withheld by
+             * default and released by the acceptance, rather than a flag being
+             * raised here and lowered again later.
              */
-            OWA.beginDeferredStatePersistence();
-
             this.setVisitorId( event, function(event) {
 
                 that.setFirstSessionTimestamp( event, function( event ) {

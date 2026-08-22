@@ -64,7 +64,6 @@ function coldPage() {
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
     OWA.state.sessionPersistenceReady = false;
-    OWA.abandonDeferredStatePersistence();
 }
 
 beforeEach(() => {
@@ -181,14 +180,17 @@ describe('persistSession flushes the store and keeps it writing', () => {
 describe('a send that is never accepted leaves the cookie alone', () => {
 
     test('nothing is written when persistSession never fires', () => {
-        // The image.onerror path: the beacon failed, so the session was never
-        // announced to the server and must not be asserted by the cookie. The
-        // next page finds no sid, treats itself as a new session, and the server
-        // creates it properly.
+        // The image.onerror path, and the torn-down-page path: the beacon
+        // failed or was never acknowledged, so the session was not announced to
+        // the server and must not be asserted by the cookie. The next page finds
+        // no sid, treats itself as a new session, and the server creates it
+        // properly -- one lost hit rather than a stranded session.
+        //
+        // Note there is nothing to call here. Failure is the absence of the
+        // acceptance, not an event of its own, which is why the withheld-by-
+        // default arrangement replaced the raise-a-flag-then-lower-it one.
         OWA.setState('s', 'sid', 'session-abc', true);
         OWA.setState('s', 'last_req', NOW, true);
-
-        OWA.abandonDeferredStatePersistence();
 
         expect(lastWrite('s')).toBeNull();
     });
