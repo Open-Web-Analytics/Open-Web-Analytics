@@ -204,4 +204,30 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_SCHEDULER_ENABLED', false);
 
+
+/**
+ * MAXMIND GEOIP LICENCE KEY
+ *
+ * Only relevant if the Maxmind GeoIP module is activated.
+ *
+ * The GeoLite2 City database OWA looks IP addresses up in is free, but MaxMind
+ * closed anonymous downloads at the end of 2019, so fetching it is
+ * authenticated. Create a key at maxmind.com -- the account and the key cost
+ * nothing -- and set it here:
+ *
+ *      $this->set('maxmind_geoip', 'db_license_key', 'your-key-here');
+ *
+ * That works because this file is included from inside a settings object, so
+ * $this is that object. It is not a define() like the settings above.
+ *
+ * Then refresh the database with:
+ *
+ *      php cli.php cmd=update-geoip-db
+ *
+ * The database is worth refreshing periodically. IP ranges move between
+ * countries and cities continuously, and a stale file does not fail -- it
+ * answers, wrongly, and the reports look normal. MaxMind publish updates twice
+ * a week.
+ */
+
 ?>
