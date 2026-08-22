@@ -29,10 +29,13 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  */
 
 /**
- * The registry is DECLARED ON THE TRACKER, not restated here. It records two
- * axes: `scope` (how long a value is valid) and `permanence` (how long it
- * survives). The store answers only the second -- last_req is page-scoped and
- * kept in the session cookie -- so scope has to be its own contract.
+ * The registry is DECLARED ON THE TRACKER, not restated here. It records
+ * `scope` (how long a value is valid) and `persisted` (whether it is written
+ * down at all). How LONG a stored value lasts is the store's business, not the
+ * property's -- registerStateStore() already says it.
+ *
+ * The store cannot tell you scope: last_req is page-scoped and lives in the
+ * session cookie, so it outlives its own validity.
  */
 const REGISTRY = new OWATracker({ cookie_domain_set: true }).trackingProperties;
 
@@ -44,8 +47,8 @@ const SESSION_SCOPED = withScope('session').concat(withScope('visitor'));
 /** Legitimately varies within a session, each for its own reason. */
 const PAGE_SCOPED = withScope('page').concat(withScope('request'));
 
-/** How long each lasts, least to most. Used for the permanence rule. */
-const RANK = { none: 0, request: 0, page: 1, session: 2, campaign: 3, visitor: 4 };
+/** Scopes that outlast a page load, and therefore require persistence. */
+const OUTLASTS_THE_PAGE = ['session', 'visitor'];
 
 /**
  * Needs setup these scenarios do not do, so the vacuity guard cannot reach it.
@@ -239,22 +242,22 @@ describe('session-scoped properties do not vary within a session', () => {
             .forEach((prop) => expect(withScope('visitor')).toContain(prop));
     });
 
-    test('permanence is at least scope for every property', () => {
-        // A value stored for less time than it is valid vanishes mid-scope: a
-        // session-scoped property kept only for the page would disappear on the
-        // session's second page. The reverse is allowed -- last_req is
-        // page-scoped and kept for the session -- but is worth knowing about,
-        // because a value outliving its scope can be read stale.
-        Object.entries(REGISTRY).forEach(([prop, decl]) => {
-            expect({ prop, ok: RANK[decl.permanence] >= RANK[decl.scope] })
-                .toEqual({ prop, ok: true });
-        });
+    test('anything valid beyond the page is persisted', () => {
+        // Surviving a page load takes a cookie. A session-scoped property held
+        // only in memory would vanish on the session's second page.
+        Object.entries(REGISTRY)
+            .filter(([, decl]) => OUTLASTS_THE_PAGE.includes(decl.scope))
+            .forEach(([prop, decl]) => {
+                expect({ prop, persisted: decl.persisted }).toEqual({ prop, persisted: true });
+            });
     });
 
     test('every property declares both axes, with known values', () => {
+        const SCOPES = ['request', 'page', 'session', 'visitor'];
+
         Object.entries(REGISTRY).forEach(([prop, decl]) => {
-            expect({ prop, scope: RANK[decl.scope] !== undefined }).toEqual({ prop, scope: true });
-            expect({ prop, perm: RANK[decl.permanence] !== undefined }).toEqual({ prop, perm: true });
+            expect({ prop, scope: SCOPES.includes(decl.scope) }).toEqual({ prop, scope: true });
+            expect({ prop, persisted: typeof decl.persisted }).toEqual({ prop, persisted: 'boolean' });
         });
     });
 

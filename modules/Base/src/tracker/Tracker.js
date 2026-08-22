@@ -28,23 +28,28 @@ class OWATracker  {
 	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
 
 	    /*
-	     * Every property the tracker derives from state, on TWO axes.
+	     * Every property the tracker derives from state, on two axes.
 	     *
-	     *   scope       how long the value is VALID -- the set of events it
-	     *               must be identical across.
-	     *   permanence  how long it SURVIVES -- where it is kept.
+	     *   scope      how long the value is VALID -- the set of events it must
+	     *              be identical across. request / page / session / visitor.
+	     *   persisted  whether it is written down at all.
 	     *
-	     * They are not the same question, and the store answers only the
-	     * second. last_req is the proof: page scope, because it means "the
-	     * request before THIS page load", but kept in the session cookie, so it
-	     * OUTLIVES its own validity. Reading scope off the store gets it wrong,
-	     * which is why scope is declared here.
+	     * Persisted is a boolean, not a duration: HOW LONG a stored value lasts
+	     * belongs to the store, which already declares it -- see
+	     * registerStateStore(), where 'v' is 364 days and 'c' is 60. Repeating
+	     * it per property would be two places to change and one to forget.
 	     *
-	     * The rule between them: permanence must be at least scope. A value
-	     * stored for less time than it is valid vanishes mid-scope -- a
-	     * session-scoped property kept only for the page would disappear on the
-	     * session's second page. The reverse is allowed but is worth knowing
-	     * about, because a value outliving its scope can be read stale.
+	     * The rule between the axes: anything valid beyond the PAGE must be
+	     * persisted, because surviving a page load takes a cookie. A
+	     * session-scoped property held only in memory would vanish on the
+	     * session's second page.
+	     *
+	     * The reverse is allowed and last_req is the case: page scope, because
+	     * it means "the request before THIS page load", but persisted, so it
+	     * outlives its own validity. That is why scope cannot be read off the
+	     * store, and why it is declared here. Such a value can be read stale --
+	     * last_req is safe because it is re-captured each page load rather than
+	     * read back.
 	     *
 	     * 'session' scope carries the contract that matters most: identical on
 	     * every event sharing a session_id, a divergence being a regression.
@@ -56,35 +61,32 @@ class OWATracker  {
 	     */
 	    this.trackingProperties = {
 
-		    visitor_id:              { scope: 'visitor', permanence: 'visitor' },
-		    fsts:                    { scope: 'visitor', permanence: 'visitor' },
-		    dsfs:                    { scope: 'visitor', permanence: 'visitor' },
-		    nps:                     { scope: 'visitor', permanence: 'visitor' },
+		    visitor_id:              { scope: 'visitor', persisted: true },
+		    fsts:                    { scope: 'visitor', persisted: true },
+		    dsfs:                    { scope: 'visitor', persisted: true },
+		    nps:                     { scope: 'visitor', persisted: true },
+		    user_name:               { scope: 'visitor', persisted: true },
 
-		    session_id:              { scope: 'session', permanence: 'session' },
-		    prior_session_id:        { scope: 'session', permanence: 'session' },
-		    is_new_visitor:          { scope: 'session', permanence: 'session' },
-		    time_since_last_session: { scope: 'session', permanence: 'session' },
-		    session_referer:         { scope: 'session', permanence: 'session' },
+		    session_id:              { scope: 'session', persisted: true },
+		    prior_session_id:        { scope: 'session', persisted: true },
+		    is_new_visitor:          { scope: 'session', persisted: true },
+		    time_since_last_session: { scope: 'session', persisted: true },
+		    session_referer:         { scope: 'session', persisted: true },
+		    attribs:                 { scope: 'session', persisted: true },
 
-		    // Page scope, session permanence: it outlives its validity, and is
-		    // re-captured on each page load rather than being read back.
-		    last_req:                { scope: 'page',    permanence: 'session' },
+		    // Page scope but persisted: outlives its validity, and is
+		    // re-captured each page load rather than read back.
+		    last_req:                { scope: 'page',    persisted: true },
 
-		    is_new_session:          { scope: 'page',    permanence: 'page' },
-		    page_url:                { scope: 'page',    permanence: 'page' },
-		    page_title:              { scope: 'page',    permanence: 'page' },
-		    page_type:               { scope: 'page',    permanence: 'page' },
+		    is_new_session:          { scope: 'page',    persisted: false },
+		    page_url:                { scope: 'page',    persisted: false },
+		    page_title:              { scope: 'page',    persisted: false },
+		    page_type:               { scope: 'page',    persisted: false },
+		    HTTP_REFERER:            { scope: 'page',    persisted: false },
 
 		    // Consumed as applied, never stored.
-		    is_new_session_start:    { scope: 'request', permanence: 'none' },
-		    is_new_visitor_created:  { scope: 'request', permanence: 'none' },
-
-		    // Supplied by the site or read off the DOM, not derived from the
-		    // session or visitor lifecycle.
-		    user_name:               { scope: 'visitor', permanence: 'visitor' },
-		    HTTP_REFERER:            { scope: 'page',    permanence: 'page' },
-		    attribs:                 { scope: 'session', permanence: 'campaign' }
+		    is_new_session_start:    { scope: 'request', persisted: false },
+		    is_new_visitor_created:  { scope: 'request', persisted: false }
 	    },
 	    // Time When tracker is loaded
 	    this.startTime =  null;
