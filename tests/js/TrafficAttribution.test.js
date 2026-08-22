@@ -197,9 +197,11 @@ describe('setTrafficAttribution: end to end', () => {
 
         t.setTrafficAttribution(null, null);
 
-        expect(t.getGlobalEventProperty('source')).toBe('news');
-        expect(t.getGlobalEventProperty('medium')).toBe('email');
-        expect(t.getGlobalEventProperty('campaign')).toBe('summer');
+        // Resolved into the SESSION store, which is where the attribution
+        // model writes them and where every event now reads them from.
+        expect(OWA.getState('s', 'source')).toBe('news');
+        expect(OWA.getState('s', 'medium')).toBe('email');
+        expect(OWA.getState('s', 'campaign')).toBe('summer');
         // The serialized touch list rides along as `attribs`.
         expect(t.getGlobalEventProperty('attribs')).toContain('news');
     });
@@ -217,7 +219,7 @@ describe('setTrafficAttribution: end to end', () => {
 
         // No campaign -> not attributed -> referrer inference sets session_referer.
         expect(t.isTrafficAttributed).toBe(false);
-        expect(t.getGlobalEventProperty('session_referer')).toBe('https://ref.example/landing');
+        expect(OWA.getState('s', 'referer')).toBe('https://ref.example/landing');
     });
 
     test('runs the callback with the event when provided', () => {

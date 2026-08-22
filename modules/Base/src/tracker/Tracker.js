@@ -1645,22 +1645,12 @@ class OWATracker  {
 
         // apply traffic attribution realted properties to events
         // all properties should be set in the state store by this point.
-        var campaignKeys = this.getOption('campaignKeys');
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-            var value = OWA.getState( 's', campaignKeys[i].full );
+        // The campaign keys and the session referer are no longer copied onto
+        // globals here. They were already being READ out of 's' at this point --
+        // the loop that stood here did nothing but move them into a
+        // tracker-private cache -- so collectStateProperties() reads the same
+        // values from the same place, for every event and every tracker.
 
-            if ( value ) {
-                this.setGlobalEventProperty( campaignKeys[i].full, value );
-            }
-        }
-
-        // set sesion referer
-        // @todo move this logic to service side. not really needed in tracker as we already send HTTTP_REFERER
-        var session_referer = OWA.getState('s', 'referer');
-        if ( session_referer ) {
-
-            this.setGlobalEventProperty( 'session_referer', session_referer );
-        }
 
         // add the attribs to event properties
         // set campaign touches
@@ -1931,7 +1921,6 @@ class OWATracker  {
 
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
-               this.globalEventProperties.session_id = session_id;
                //mark new session flag on current request
             this.globalEventProperties.is_new_session = true;
             this.isNewSessionFlag = true;
@@ -1947,14 +1936,13 @@ class OWATracker  {
                 session_id = OWA.getState(state_store_name, 's');
                 OWA.setState( 's', 'sid', session_id, true );
             }
-
-            this.globalEventProperties.session_id = session_id;
         }
 
-        // fail-safe just in case there is no session_id
-        if ( ! this.getGlobalEventProperty( 'session_id' ) ) {
+        // Fail-safe just in case there is no session_id. Checks the local
+        // rather than a global event property: the id is state, and the two
+        // branches above are what decide whether there is one.
+        if ( ! session_id ) {
             session_id = Util.generateRandomGuid();
-            this.globalEventProperties.session_id = session_id;
             //mark new session flag on current request
             this.globalEventProperties.is_new_session = true;
             this.isNewSessionFlag = true;
@@ -2133,7 +2121,9 @@ class OWATracker  {
             { store: 'v', key: 'vid',  name: 'visitor_id' },
             { store: 'v', key: 'fsts', name: 'fsts' },
             { store: 'v', key: 'dsfs', name: 'dsfs' },
-            { store: 'v', key: 'nps',  name: 'nps' }
+            { store: 'v', key: 'nps',  name: 'nps' },
+            { store: 's', key: 'sid',     name: 'session_id' },
+            { store: 's', key: 'referer', name: 'session_referer' }
         ];
 
         for ( var i = 0; i < map.length; i++ ) {
@@ -2149,6 +2139,20 @@ class OWATracker  {
 
         var dsps = OWA.getState( 's', 'dsps' );
         collected.dsps = ( dsps !== undefined && dsps !== '' ) ? dsps : 0;
+
+        // Campaign keys are session state too, written into 's' by the
+        // attribution model. Their names are configured rather than fixed, so
+        // they cannot go in the map above.
+        var campaignKeys = this.getOption('campaignKeys') || [];
+
+        for ( var k = 0; k < campaignKeys.length; k++ ) {
+
+            var campaign_value = OWA.getState( 's', campaignKeys[k].full );
+
+            if ( campaign_value ) {
+                collected[ campaignKeys[k].full ] = campaign_value;
+            }
+        }
 
         return collected;
     }

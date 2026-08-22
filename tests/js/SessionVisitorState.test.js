@@ -201,11 +201,17 @@ describe('setSessionId', () => {
         // No last_req global -> isNewSession is true.
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('session_id')).toBeTruthy();
+        expect(OWA.getState('s', 'sid')).toBeTruthy();
         expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
         expect(t.isNewSessionFlag).toBe(true);
-        // Persisted for the rest of the session.
-        expect(OWA.getState('s', 'sid')).toBe(t.getGlobalEventProperty('session_id'));
+
+        // The id lives in the store and is what rides events. It used to be
+        // cached on the tracker as well, and this assertion used to compare the
+        // two copies; with one copy left, comparing it to the event is what
+        // still says something.
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+        expect(event.get('session_id')).toBe(OWA.getState('s', 'sid'));
     });
 
     test('records the prior session id when a new session succeeds an old one', () => {
@@ -220,7 +226,7 @@ describe('setSessionId', () => {
 
         expect(t.getGlobalEventProperty('prior_session_id')).toBe('old-session-id');
         // A brand new session id replaced the old one.
-        expect(t.getGlobalEventProperty('session_id')).not.toBe('old-session-id');
+        expect(OWA.getState('s', 'sid')).not.toBe('old-session-id');
         expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
     });
 
@@ -232,7 +238,7 @@ describe('setSessionId', () => {
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('session_id')).toBe('active-session-1');
+        expect(OWA.getState('s', 'sid')).toBe('active-session-1');
         expect(t.getGlobalEventProperty('is_new_session')).toBeUndefined();
     });
 });
