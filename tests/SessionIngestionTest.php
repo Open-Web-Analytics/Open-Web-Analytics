@@ -138,6 +138,69 @@ final class SessionIngestionTest extends IngestionTestCase
      * `attribs` touch-history JSON into the latest_attributions column. This
      * proves the session row is attributed to the campaign that opened it.
      */
+    /**
+     * A second pageview in the SAME page load was silently dropped.
+     *
+     * is_new_session is PAGE scoped: every event from the page the session
+     * started on carries it, including a second trackPageView() in one page
+     * load, which is ordinary for a single-page app. That routed the hit to
+     * logSession(), which found the row already there, logged 'Not persisting
+     * new session' and returned HANDLED -- so num_pageviews never counted it
+     * and the session never stopped being a bounce.
+     *
+     * An existing session means this request did not create it, whatever the
+     * flag says, so it is an ordinary hit and must be counted.
+     */
+    public function testSecondPageviewCarryingTheNewSessionFlagIsStillCounted(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+        ]);
+
+        $opened = $this->assertRowPersisted('base.session', $session_id, 'id');
+        $this->assertEquals(1, $opened->get('num_pageviews'));
+
+        // Second pageview, same page load: still page-scoped is_new_session,
+        // but NOT is_new_session_start -- that one belongs to the request that
+        // created the session and rides a single beacon.
+        $this->setServerTime(1700000060);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+        ]);
+
+        $updated = owa_coreAPI::entityFactory('base.session');
+        $updated->load($session_id, 'id');
+        $this->assertTrue($updated->wasPersisted());
+        $this->assertEquals(2, $updated->get('num_pageviews'));
+        $this->assertEquals(0, $updated->get('is_bounce'));
+        $this->assertEquals(1700000060, $updated->get('last_req'));
+    }
+
+    /**
+     * A tracker cached from before the flags were split sends only the
+     * page-scoped one. It must still be able to open a session.
+     */
+    public function testOlderTrackerWithoutTheStartFlagStillOpensASession(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+        ]);
+
+        $s = $this->assertRowPersisted('base.session', $session_id, 'id');
+        $this->assertEquals(1, $s->get('num_pageviews'));
+    }
+
     public function testNewSessionRecordsCampaignAttribution(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [

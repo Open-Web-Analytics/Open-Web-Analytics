@@ -50,11 +50,29 @@ class SessionHandlers extends \OWA\Core\Observer {
         // dispatch new event based on properties of entity
 
 
-        if ($event->get('is_new_session')) {
-            return $this->logSession($event);
-        } else {
-            return $this->logSessionUpdate($event);
+        /*
+         * 'is_new_session_start' marks the one REQUEST that created the
+         * session. 'is_new_session' is PAGE scoped -- every event from the page
+         * the session started on carries it -- so it answers a different
+         * question and cannot decide create-vs-update on its own.
+         *
+         * The fallback is for trackers cached from before the two were split,
+         * which send only the page-scoped flag. It is safe to be imprecise
+         * here: logSession() now falls through to logSessionUpdate() when the
+         * session already exists, so a wrong 'yes' costs a lookup rather than a
+         * dropped hit.
+         */
+        $starts_session = $event->get('is_new_session_start');
+
+        if ( ! $starts_session ) {
+            $starts_session = $event->get('is_new_session');
         }
+
+        if ( $starts_session ) {
+            return $this->logSession($event);
+        }
+
+        return $this->logSessionUpdate($event);
     }
     
     function logSession($event) {
@@ -137,8 +155,19 @@ class SessionHandlers extends \OWA\Core\Observer {
                     return OWA_EHS_EVENT_FAILED;
                 }
             } else {
-                \OWA\Core\CoreAPI::debug('Not persisting new session. Session already exists.');
-                return OWA_EHS_EVENT_HANDLED;
+
+                /*
+                 * The session already exists, so this request did not create it
+                 * -- whatever its flag said. Returning HANDLED here DROPPED the
+                 * hit: a second trackPageView() in the same page load still
+                 * carries the page-scoped is_new_session, arrived here, found
+                 * the row, and was silently discarded, so num_pageviews never
+                 * counted it and the session never stopped being a bounce.
+                 *
+                 * It is an ordinary hit in an existing session. Count it.
+                 */
+                \OWA\Core\CoreAPI::debug('Session already exists; handling as an update.');
+                return $this->logSessionUpdate($event);
             }
         } else {
 
