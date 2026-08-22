@@ -1,0 +1,8 @@
+{
+    "name": "open-web-analytics/maxmind-geoip-module",
+    "description": "GeoIP lookups for Open Web Analytics, using MaxMind's GeoLite2 databases.",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "maxmind-db/reader": "^1.11"
+    }
+}
