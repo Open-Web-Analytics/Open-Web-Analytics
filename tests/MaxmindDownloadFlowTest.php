@@ -314,4 +314,101 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $this->assertSame( 0, $c->downloads );
         $this->assertTrue( $c->said( 'not an edition' ) );
     }
+
+    private function installDatabase( $found, $destination ) {
+
+        $m = new ReflectionMethod(
+            \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class, 'installDatabase' );
+        $m->setAccessible( true );
+
+        return $m->invoke( $this->controller(), $found, $destination );
+    }
+
+    /**
+     * The database being replaced is kept.
+     *
+     * This is not hypothetical: a run of this command on a live installation
+     * replaced a database that had been in place since 2024, and nothing could
+     * have brought it back. A download that succeeds but produces a bad file,
+     * or an upstream release with a regression in it, would have left no way
+     * back either.
+     */
+    public function testTheReplacedDatabaseIsKept(): void {
+
+        file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'THE-OLD-DATABASE' );
+
+        $c = $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) );
+        $c->action();
+
+        $this->assertSame( 'FIXTURE-DATABASE-CONTENTS',
+            file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ),
+            'the new database must be installed' );
+
+        $this->assertSame( 'THE-OLD-DATABASE',
+            file_get_contents( $this->dir . 'GeoLite2-City.mmdb.previous' ),
+            'and the one it replaced must still exist' );
+
+        $this->assertTrue( $c->said( '.previous' ),
+            'the command must say where the replaced copy went, or nobody will know to delete it' );
+    }
+
+    /**
+     * Exactly one. The database is replaced twice a week and is 60MB; keeping
+     * every previous copy would fill a disk quietly.
+     */
+    public function testOnlyOnePreviousCopyIsKept(): void {
+
+        file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'GENERATION-1' );
+
+        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
+        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
+        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
+
+        $copies = glob( $this->dir . '*.previous*' ) ?: array();
+
+        $this->assertCount( 1, $copies,
+            'three runs must leave one previous copy, not three' );
+    }
+
+    public function testAFirstInstallLeavesNoPreviousCopy(): void {
+
+        $this->controller( array( 'params' => $this->withKey() ) )->action();
+
+        $this->assertFileDoesNotExist( $this->dir . 'GeoLite2-City.mmdb.previous',
+            'there was nothing to keep, so nothing should be kept' );
+    }
+
+    /**
+     * The important half: if putting the new file in place fails after the old
+     * one has been moved aside, the old one goes back. An installation must not
+     * be left with NO database, which is strictly worse than the stale one it
+     * started with.
+     */
+    public function testAFailedInstallPutsTheOriginalBack(): void {
+
+        $destination = $this->dir . 'GeoLite2-City.mmdb';
+        file_put_contents( $destination, 'THE-ONLY-DATABASE' );
+
+        // A source that does not exist, so the second rename cannot succeed.
+        $result = $this->installDatabase( $this->dir . 'no-such-file.mmdb', $destination );
+
+        $this->assertIsString( $result, 'the failure must be reported' );
+        $this->assertStringContainsString( 'still in place', $result );
+
+        $this->assertFileExists( $destination,
+            'a failed update must never leave an installation with no database' );
+        $this->assertSame( 'THE-ONLY-DATABASE', file_get_contents( $destination ) );
+    }
+
+    public function testAFailedFirstInstallReportsWithoutClaimingARestore(): void {
+
+        $destination = $this->dir . 'GeoLite2-City.mmdb';
+
+        $result = $this->installDatabase( $this->dir . 'no-such-file.mmdb', $destination );
+
+        $this->assertIsString( $result );
+        $this->assertStringNotContainsString( 'still in place', $result,
+            'there was no database to keep, so the message must not say one survived' );
+        $this->assertFileDoesNotExist( $destination );
+    }
 }
