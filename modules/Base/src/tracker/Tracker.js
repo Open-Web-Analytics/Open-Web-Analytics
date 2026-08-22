@@ -53,6 +53,20 @@ class OWATracker  {
 	     * page re-entered logSession() for a session that already existed.
 	     */
 	    this.pendingSessionStart = false;
+	    /*
+	     * The visitor half of the same pair, and the same distinction:
+	     *
+	     *   is_new_visitor_created  this REQUEST minted the visitor. One event.
+	     *   is_new_visitor          this SESSION was the visitor's first. Every
+	     *                           event of it.
+	     *
+	     * Nothing consumes the first one yet. It exists so v2 can raise a
+	     * first_visit event from the request that actually created the visitor,
+	     * which is what GA does with its _fv flag -- the session column and the
+	     * is_repeat_visitor dimension both want the session-scoped one, so
+	     * neither can answer "was this the moment". Do not remove it as unused.
+	     */
+	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
 	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
@@ -1823,6 +1837,7 @@ class OWATracker  {
              * session while the session row still said is_new_visitor.
              */
             OWA.setState( 's', 'is_new_visitor', true );
+            this.pendingVisitorCreated = true;
             OWA.debug('Creating new visitor id');
         }
         // set property on event object
@@ -2248,6 +2263,26 @@ class OWATracker  {
         return collected;
     }
 
+    /**
+     * Put a one-event flag on this event and clear it, so no later event
+     * repeats it.
+     *
+     * The counterpart to collectPageProperties() / collectStateProperties():
+     * those read state that persists, this spends something that does not.
+     */
+    consumePendingFlag( event, name, property ) {
+
+        if ( ! this[ property ] ) {
+            return;
+        }
+
+        this[ property ] = false;
+
+        if ( ! event.isSet( name ) ) {
+            event.set( name, true );
+        }
+    }
+
     collectPageProperties() {
 
         /*
@@ -2473,17 +2508,11 @@ class OWATracker  {
          * of keys are disjoint by construction.
          */
         /*
-         * Consumed here rather than collected: it belongs to one event, and
-         * taking it off the tracker as it is applied is what makes that true.
+         * Consumed rather than collected: these belong to ONE event, and taking
+         * them off the tracker as they are applied is what makes that true.
          */
-        if ( this.pendingSessionStart ) {
-
-            this.pendingSessionStart = false;
-
-            if ( ! event.isSet( 'is_new_session_start' ) ) {
-                event.set( 'is_new_session_start', true );
-            }
-        }
+        this.consumePendingFlag( event, 'is_new_session_start', 'pendingSessionStart' );
+        this.consumePendingFlag( event, 'is_new_visitor_created', 'pendingVisitorCreated' );
 
         var collected = this.collectPageProperties();
         var state_properties = this.collectStateProperties();

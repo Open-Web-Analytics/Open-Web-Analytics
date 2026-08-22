@@ -409,6 +409,59 @@ describe('the two session-start flags have different lifetimes', () => {
     });
 });
 
+describe('the visitor-created flag belongs to one event', () => {
+
+    /*
+     * is_new_visitor_created  this REQUEST minted the visitor. One beacon.
+     * is_new_visitor          this SESSION was the visitor's first. Every
+     *                         beacon of it.
+     *
+     * The same split as the session pair, for the same reason: the session
+     * column and the is_repeat_visitor dimension both want the session-scoped
+     * one, so neither can answer "was this the moment". Nothing consumes the
+     * created flag yet -- it is here so v2 can raise first_visit from the
+     * request that actually created the visitor.
+     */
+
+    test('only the first event carries it', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_visitor_created).toBe(true);
+        expect(beacons[1].is_new_visitor_created).toBeFalsy();
+        // ...while the session-scoped one rides both.
+        expect(beacons[0].is_new_visitor).toBe(true);
+        expect(beacons[1].is_new_visitor).toBe(true);
+    });
+
+    test('a known visitor starting a new session does not get it', () => {
+        // The case that separates the two flags from the session pair: a new
+        // session is starting, so is_new_session_start is right, but the
+        // visitor already existed.
+        // seedPersistedSession() wipes memory, so the known visitor has to be
+        // established after it, not before.
+        seedPersistedSession({ sid: 'old', last_req: NOW - 5000 });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session_start')).toBe(true);
+        expect(event.get('is_new_visitor_created')).toBeFalsy();
+        expect(event.get('is_new_visitor')).toBeFalsy();
+    });
+});
+
 describe('last_req tracks activity, not page starts', () => {
 
     /*
