@@ -155,11 +155,17 @@ describe('custom variable storage', () => {
      * The compatibility case: a visitor who was mid-session when this shipped
      * still has values in the old store, and must keep seeing them.
      */
-    test('a value left in the old store is still readable', () => {
+    test('a value left in the old store is not read directly -- it is migrated', () => {
+        // The compatibility is a MIGRATION, not a fallback. Nothing reads 'b';
+        // the collapse moves it into 's' before anything can. A read-side
+        // fallback would be dead after that and wrong before it, because 'b' is
+        // a persisted cookie and reading one hands back a previous session's
+        // value unsettled. See the collapse describe below for the value
+        // actually surviving.
         OWA.setState('b', 'cv4', 'legacy=value');
         tracker.deleteGlobalEventProperty('cv4');
 
-        expect(tracker.getCustomVar(4)).toBe('legacy=value');
+        expect(tracker.getCustomVar(4)).toBeFalsy();
     });
 
     test('a new write wins over a value left in the old store', () => {
@@ -365,8 +371,12 @@ describe('custom variable storage', () => {
 
             expect(beacons[0].is_new_session).toBeFalsy();
             expect(beacons[0].cv1).toBe('plan=pro');
-            // it lives in the session store now...
+            // it lives in the session store now, and reads back through the
+            // ordinary getters -- which is what makes the migration, rather
+            // than a fallback read, the thing that preserves it
             expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
+            expect(t.getCustomVar(1)).toBe('plan=pro');
+            expect(t.getCustomSessionVar(1)).toBe('plan=pro');
             // ...and the cookie it came from is gone, so it stops being sent
             expect(Util.readCookie('owa_b')).toBeFalsy();
         });

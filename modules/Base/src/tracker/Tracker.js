@@ -2066,13 +2066,12 @@ class OWATracker  {
         if ( ! cv ) {
             cv = OWA.getState( 's', cv_param_name );
         }
-        // then the store session-scoped variables used to live in, so a visitor
-        // who was mid-session when this shipped keeps what they had. Nothing
-        // writes here any more and it is a browser-session cookie, so this read
-        // stops finding anything on its own.
-        if ( ! cv ) {
-            cv = OWA.getState( 'b', cv_param_name );
-        }
+        // NOTE: no read of the legacy 'b' store. The collapse migration moves
+        // its values into 's' before anything reads, so a fallback here would
+        // be dead after the migration and WRONG before it -- 'b' is a persisted
+        // cookie, so reading it returns a previous session's value without any
+        // of the settling that decides whether that value still applies. See
+        // getCustomSessionVar().
         // check visitor store
         if ( ! cv ) {
             cv = OWA.getState( 'v', cv_param_name );
@@ -2112,18 +2111,19 @@ class OWATracker  {
      * Serving the persisted value early would mean answering with a variable
      * belonging to a session that may already have ended, and the caller would
      * have no way to tell.
+     *
+     * This is also why there is no fallback read of the legacy 'b' store. It
+     * would be dead weight after the collapse migration has run -- 'b' is empty
+     * by then -- and before it, it would do exactly what the paragraph above
+     * rules out: 'b' is a persisted cookie, so reading it hands back a previous
+     * session's value with none of the settling that decides whether it still
+     * applies. On a real page the migration runs on the first tracked event
+     * (the cookie domain is not known before then), so that window is real, not
+     * theoretical.
      */
     getCustomSessionVar( slot ) {
 
-        var cv_param_name = 'cv' + slot;
-        var cv = OWA.getState( 's', cv_param_name );
-
-        // the store session-scoped variables used to live in; see getCustomVar()
-        if ( ! cv ) {
-            cv = OWA.getState( 'b', cv_param_name );
-        }
-
-        return cv;
+        return OWA.getState( 's', 'cv' + slot );
     }
 
     /**

@@ -166,9 +166,9 @@ describe('getCustomVar lookup order (page -> session -> visitor)', () => {
     test('a session value shadows a visitor value for the same slot', () => {
         const t = newTracker();
         OWA.setState('v', 'cv4', 'Tier=FromVisitor');
-        OWA.setState('b', 'cv4', 'Tier=FromSession');
+        OWA.setState('s', 'cv4', 'Tier=FromSession');
 
-        // 'b' is checked before 'v'.
+        // 's' is checked before 'v'.
         expect(t.getCustomVar(4)).toBe('Tier=FromSession');
     });
 
@@ -239,13 +239,26 @@ describe('the scoped getters read one scope each', () => {
         expect(t.getCustomSessionVar(2)).toBe('Plan=Session');
     });
 
-    test('getCustomSessionVar still finds a value left in the legacy store', () => {
-        // Until the collapse migration has run for this visitor, a session
-        // variable may still be sitting in 'b'.
+    test('getCustomSessionVar does not read the legacy store', () => {
+        // There is no fallback to 'b', on purpose. The collapse migration moves
+        // its values into 's' before anything reads, so a fallback would be
+        // dead weight afterwards -- and before it, it would hand back a
+        // previous session's value with none of the settling that decides
+        // whether that value still applies, which is exactly what this method's
+        // contract rules out.
+        //
+        // The window is real rather than theoretical: on a real page the
+        // migration runs on the FIRST TRACKED EVENT, because the cookie domain
+        // is not known before then. CommandQueue constructs the tracker without
+        // cookie_domain_set, so nothing settles the domain until trackEvent().
+        // A site calling this before trackPageView() would otherwise be told
+        // about a variable from a session that had already ended.
+        //
+        // The migration itself is covered in CustomVarStorage.test.js.
         const t = newTracker();
         OWA.setState('b', 'cv3', 'legacy=value');
 
-        expect(t.getCustomSessionVar(3)).toBe('legacy=value');
+        expect(t.getCustomSessionVar(3)).toBeFalsy();
     });
 
     test('every getter returns falsy for a slot that was never set', () => {
