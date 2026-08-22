@@ -26,6 +26,11 @@ class OWATracker  {
 	    this.globalEventProperties =  {};
 	    // state sores that can be shared across sites
 	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
+	    // Session-store values set during THIS page load. Written to the store
+	    // immediately AND kept here, so that if the pageview turns out to start
+	    // a new session, resetSessionState() can put them back after clearing
+	    // what the previous session left. See resetSessionState().
+	    this.sessionStateSetThisPageLoad = {},
 	    // Time When tracker is loaded
 	    this.startTime =  null;
 	    // time when tracker is unloaded
@@ -89,9 +94,27 @@ class OWATracker  {
 	    this.startTime = this.getTimestamp();
 	
 	    // register cookies
-	    OWA.registerStateStore('v', 364, '', 'assoc');
-	    OWA.registerStateStore('s', 364, '', 'assoc');
+	    //
+	    // All JSON. Two of these used to be 'assoc', a bespoke
+	    // key=>value|||key=>value string with no escaping of either separator --
+	    // so a value containing '=>' or '|||' corrupted the whole store, and
+	    // nothing detected it. JSON has one encoder, one decoder, and escapes.
+	    //
+	    // Safe to change under an existing installation because the loader
+	    // SNIFFS the format of what it reads (Util.getCookieValueFormat: a
+	    // leading '{' means JSON, anything else means assoc). A visitor holding
+	    // an old assoc cookie has it parsed as assoc and rewritten as JSON on
+	    // the next write. No migration, no flag day.
+	    OWA.registerStateStore('v', 364, '', 'json');
+	    OWA.registerStateStore('s', 364, '', 'json');
 	    OWA.registerStateStore('c', 60, '', 'json');
+
+	    // 'b' held session-scoped custom variables, alongside 's' which is the
+	    // session store -- two cookies for one concept. Session-scoped custom
+	    // variables now live in 's'; see setCustomVar(). Still REGISTERED, and
+	    // still read, so a visitor mid-session keeps the variables they already
+	    // have. Nothing is written to it any more, and it is a browser-session
+	    // cookie, so it empties itself without a migration.
 	    OWA.registerStateStore('b', '', '', 'json');
 	
 	    // Configuration options
@@ -1822,11 +1845,36 @@ class OWATracker  {
 
     }
 
+    /**
+     * Start a new session in the session store.
+     *
+     * Clears it, then puts back anything set during THIS page load.
+     *
+     * Both halves are needed, and neither works alone. Clearing alone destroys
+     * a value the caller set moments earlier for the session that is starting:
+     * the usual order is setCustomVar() then trackPageView(), so at the moment
+     * of the reset a variable for the NEW session and one left over from the
+     * OLD session are indistinguishable -- they are both just keys. Re-applying
+     * alone would leave the previous session's values in place.
+     *
+     * Taken together the store cannot leak across a session boundary, and a
+     * value set on this page cannot be lost by the boundary it was set for.
+     *
+     * `last_req` survives because the boundary is computed from it.
+     */
     resetSessionState() {
 
         var last_req = OWA.getState( 's', 'last_req');
         OWA.clearState('s');
         OWA.setState('s', 'last_req', last_req);
+
+        for ( var name in this.sessionStateSetThisPageLoad ) {
+
+            if ( this.sessionStateSetThisPageLoad.hasOwnProperty( name ) ) {
+
+                OWA.setState( 's', name, this.sessionStateSetThisPageLoad[ name ] );
+            }
+        }
     }
 
     isNewSession( timestamp, last_req ) {
@@ -1898,8 +1946,16 @@ class OWATracker  {
 
             case 'session':
 
-                // store in session cookie
-                OWA.setState('b', cv_param_name, cv_param_value);
+                // The session store, not a second cookie beside it. 'b' existed
+                // only to hold these, which is why a variable scoped to the
+                // session did not share that session's lifetime.
+                // Written now, so a browser closed before any pageview does not
+                // lose it, and remembered so a new session does not either.
+                OWA.setState('s', cv_param_name, cv_param_value);
+                this.sessionStateSetThisPageLoad[cv_param_name] = cv_param_value;
+                // and drop any copy left in the old store, so the legacy read
+                // in getCustomVar() cannot serve a stale value back.
+                OWA.clearState('b', cv_param_name);
                 OWA.debug('just set custom var on session.');
                 break;
 
@@ -1907,7 +1963,9 @@ class OWATracker  {
 
                 // store in visitor cookie
                 OWA.setState('v', cv_param_name, cv_param_value);
-                // remove slot from session level cookie
+                // remove slot from the session-level stores
+                delete this.sessionStateSetThisPageLoad[cv_param_name];
+                OWA.clearState('s', cv_param_name);
                 OWA.clearState('b', cv_param_name);
                 break;
         }
@@ -1923,6 +1981,13 @@ class OWATracker  {
         cv = this.getGlobalEventProperty( cv_param_name );
         //check session store
         if ( ! cv ) {
+            cv = OWA.getState( 's', cv_param_name );
+        }
+        // then the store session-scoped variables used to live in, so a visitor
+        // who was mid-session when this shipped keeps what they had. Nothing
+        // writes here any more and it is a browser-session cookie, so this read
+        // stops finding anything on its own.
+        if ( ! cv ) {
             cv = OWA.getState( 'b', cv_param_name );
         }
         // check visitor store
@@ -1937,7 +2002,9 @@ class OWATracker  {
     deleteCustomVar(slot) {
 
         var cv_param_name = 'cv' + slot;
-        //clear session level
+        delete this.sessionStateSetThisPageLoad[cv_param_name];
+        //clear session level, current and legacy
+        Util.clearState( 's', cv_param_name );
         Util.clearState( 'b', cv_param_name );
         //clear visitor level
         Util.clearState( 'v', cv_param_name );

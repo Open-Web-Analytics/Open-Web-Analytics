@@ -67,7 +67,7 @@ describe('setCustomVar scope: page', () => {
         expect(t.getCustomVar(1)).toBe('Plan=Free');
         expect(t.getGlobalEventProperty('cv1')).toBe('Plan=Free');
         // ...but never persisted to the session or visitor stores.
-        expect(OWA.getState('b', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s', 'cv1')).toBeFalsy();
         expect(OWA.getState('v', 'cv1')).toBeFalsy();
     });
 
@@ -78,18 +78,18 @@ describe('setCustomVar scope: page', () => {
         t.setCustomVar(1, 'Plan', 'Free');
 
         expect(t.getGlobalEventProperty('cv1')).toBe('Plan=Free');
-        expect(OWA.getState('b', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s', 'cv1')).toBeFalsy();
         expect(OWA.getState('v', 'cv1')).toBeFalsy();
     });
 });
 
 describe('setCustomVar scope: session', () => {
 
-    test('persists the slot in the session (b) store', () => {
+    test('persists the slot in the session (s) store', () => {
         const t = newTracker();
         t.setCustomVar(2, 'Tier', 'Silver', 'session');
 
-        expect(OWA.getState('b', 'cv2')).toBe('Tier=Silver');
+        expect(OWA.getState('s', 'cv2')).toBe('Tier=Silver');
         // Session scope does not touch the visitor store.
         expect(OWA.getState('v', 'cv2')).toBeFalsy();
         expect(t.getCustomVar(2)).toBe('Tier=Silver');
@@ -112,13 +112,13 @@ describe('setCustomVar scope: visitor', () => {
         // 'b' BEFORE 'v' -- would keep returning the stale session value forever.
         const t = newTracker();
         t.setCustomVar(3, 'Tier', 'Gold', 'session');
-        expect(OWA.getState('b', 'cv3')).toBe('Tier=Gold');
+        expect(OWA.getState('s', 'cv3')).toBe('Tier=Gold');
 
         t.setCustomVar(3, 'Tier', 'Platinum', 'visitor');
 
         expect(OWA.getState('v', 'cv3')).toBe('Tier=Platinum');
         // The session copy is gone, so the visitor value is what surfaces.
-        expect(OWA.getState('b', 'cv3')).toBeFalsy();
+        expect(OWA.getState('s', 'cv3')).toBeFalsy();
     });
 });
 
@@ -160,7 +160,7 @@ describe('deleteCustomVar', () => {
         t.deleteCustomVar(2);
 
         expect(t.getGlobalEventProperty('cv2')).toBeFalsy();
-        expect(OWA.getState('b', 'cv2')).toBeFalsy();
+        expect(OWA.getState('s', 'cv2')).toBeFalsy();
         expect(OWA.getState('v', 'cv2')).toBeFalsy();
         expect(t.getCustomVar(2)).toBeFalsy();
     });
@@ -179,7 +179,7 @@ describe('setCustomVar length guard', () => {
 
         // Nothing was stored anywhere -- the method returned before the switch.
         expect(t.getGlobalEventProperty('cv1')).toBeFalsy();
-        expect(OWA.getState('b', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s', 'cv1')).toBeFalsy();
     });
 
     test('keeps a name=value pair at the boundary length', () => {
@@ -190,7 +190,7 @@ describe('setCustomVar length guard', () => {
         expect(pair.length).toBe(65);
 
         t.setCustomVar(1, 'Ok', value, 'session');
-        expect(OWA.getState('b', 'cv1')).toBe(pair);
+        expect(OWA.getState('s', 'cv1')).toBe(pair);
     });
 });
 
