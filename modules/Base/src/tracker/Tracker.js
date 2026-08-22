@@ -32,24 +32,29 @@ class OWATracker  {
 	     *
 	     *   scope      how long the value is VALID -- the set of events it must
 	     *              be identical across. request / page / session / visitor.
-	     *   persisted  whether it is written down at all.
+	     *   permanent  whether the stored value ever CHANGES once written.
 	     *
-	     * Persisted is a boolean, not a duration: HOW LONG a stored value lasts
-	     * belongs to the store, which already declares it -- see
-	     * registerStateStore(), where 'v' is 364 days and 'c' is 60. Repeating
-	     * it per property would be two places to change and one to forget.
+	     * Neither is "is it persisted". That is the store's business and
+	     * registerStateStore() already answers it; declaring it here too would
+	     * be two places to change and one to forget.
 	     *
-	     * The rule between the axes: anything valid beyond the PAGE must be
-	     * persisted, because surviving a page load takes a cookie. A
-	     * session-scoped property held only in memory would vanish on the
-	     * session's second page.
+	     * The two axes constrain each other, and that is what makes them worth
+	     * declaring: a value REWRITTEN more often than its scope cannot hold
+	     * that scope. Visitor scope therefore requires permanence -- a value
+	     * that has to be identical for the visitor's whole life cannot be
+	     * rewritten with a different one. Only visitor_id and fsts qualify:
+	     * everything else in the visitor store is recomputed.
 	     *
-	     * The reverse is allowed and last_req is the case: page scope, because
-	     * it means "the request before THIS page load", but persisted, so it
-	     * outlives its own validity. That is why scope cannot be read off the
-	     * store, and why it is declared here. Such a value can be read stale --
-	     * last_req is safe because it is re-captured each page load rather than
-	     * read back.
+	     * That constraint found two errors in the first version of this
+	     * registry. dsfs was declared visitor-scoped but is rewritten on EVERY
+	     * page load, so two page loads either side of a midnight disagree; it
+	     * is page scope. nps was declared visitor-scoped but is rewritten at
+	     * each session boundary; it is session scope. Both passed the invariant
+	     * suite, because no scenario there spans a day or a session boundary.
+	     *
+	     * Scope cannot be read off the store either. last_req is page scope and
+	     * lives in the session store, so it outlives its own validity -- safe
+	     * only because it is re-captured each page load rather than read back.
 	     *
 	     * 'session' scope carries the contract that matters most: identical on
 	     * every event sharing a session_id, a divergence being a regression.
@@ -61,32 +66,33 @@ class OWATracker  {
 	     */
 	    this.trackingProperties = {
 
-		    visitor_id:              { scope: 'visitor', persisted: true },
-		    fsts:                    { scope: 'visitor', persisted: true },
-		    dsfs:                    { scope: 'visitor', persisted: true },
-		    nps:                     { scope: 'visitor', persisted: true },
-		    user_name:               { scope: 'visitor', persisted: true },
+		    // Written once and never rewritten. The only two that are.
+		    visitor_id:              { scope: 'visitor', permanent: true },
+		    fsts:                    { scope: 'visitor', permanent: true },
 
-		    session_id:              { scope: 'session', persisted: true },
-		    prior_session_id:        { scope: 'session', persisted: true },
-		    is_new_visitor:          { scope: 'session', persisted: true },
-		    time_since_last_session: { scope: 'session', persisted: true },
-		    session_referer:         { scope: 'session', persisted: true },
-		    attribs:                 { scope: 'session', persisted: true },
+		    // Rewritten at each session boundary.
+		    session_id:              { scope: 'session', permanent: false },
+		    prior_session_id:        { scope: 'session', permanent: false },
+		    is_new_visitor:          { scope: 'session', permanent: false },
+		    time_since_last_session: { scope: 'session', permanent: false },
+		    session_referer:         { scope: 'session', permanent: false },
+		    nps:                     { scope: 'session', permanent: false },
+		    attribs:                 { scope: 'session', permanent: false },
+		    // The site may set a different one, so it is not permanent.
+		    user_name:               { scope: 'session', permanent: false },
 
-		    // Page scope but persisted: outlives its validity, and is
-		    // re-captured each page load rather than read back.
-		    last_req:                { scope: 'page',    persisted: true },
-
-		    is_new_session:          { scope: 'page',    persisted: false },
-		    page_url:                { scope: 'page',    persisted: false },
-		    page_title:              { scope: 'page',    persisted: false },
-		    page_type:               { scope: 'page',    persisted: false },
-		    HTTP_REFERER:            { scope: 'page',    persisted: false },
+		    // Rewritten every page load.
+		    dsfs:                    { scope: 'page',    permanent: false },
+		    last_req:                { scope: 'page',    permanent: false },
+		    is_new_session:          { scope: 'page',    permanent: false },
+		    page_url:                { scope: 'page',    permanent: false },
+		    page_title:              { scope: 'page',    permanent: false },
+		    page_type:               { scope: 'page',    permanent: false },
+		    HTTP_REFERER:            { scope: 'page',    permanent: false },
 
 		    // Consumed as applied, never stored.
-		    is_new_session_start:    { scope: 'request', persisted: false },
-		    is_new_visitor_created:  { scope: 'request', persisted: false }
+		    is_new_session_start:    { scope: 'request', permanent: false },
+		    is_new_visitor_created:  { scope: 'request', permanent: false }
 	    },
 	    // Time When tracker is loaded
 	    this.startTime =  null;

@@ -30,12 +30,12 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 
 /**
  * The registry is DECLARED ON THE TRACKER, not restated here. It records
- * `scope` (how long a value is valid) and `persisted` (whether it is written
- * down at all). How LONG a stored value lasts is the store's business, not the
- * property's -- registerStateStore() already says it.
+ * `scope` (how long a value is valid) and `permanent` (whether the stored value
+ * ever changes once written). Neither is "is it persisted" -- that belongs to
+ * the store, and registerStateStore() already says it.
  *
- * The store cannot tell you scope: last_req is page-scoped and lives in the
- * session cookie, so it outlives its own validity.
+ * The store cannot tell you scope either: last_req is page-scoped and lives in
+ * the session cookie, so it outlives its own validity.
  */
 const REGISTRY = new OWATracker({ cookie_domain_set: true }).trackingProperties;
 
@@ -47,7 +47,7 @@ const SESSION_SCOPED = withScope('session').concat(withScope('visitor'));
 /** Legitimately varies within a session, each for its own reason. */
 const PAGE_SCOPED = withScope('page').concat(withScope('request'));
 
-/** Scopes that outlast a page load, and therefore require persistence. */
+/** Scopes that outlast a page load. */
 const OUTLASTS_THE_PAGE = ['session', 'visitor'];
 
 /**
@@ -238,17 +238,28 @@ describe('session-scoped properties do not vary within a session', () => {
             'session_referer',
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
-        ['visitor_id', 'fsts', 'dsfs', 'nps']
+        // Only these two are written once and never rewritten.
+        ['visitor_id', 'fsts']
             .forEach((prop) => expect(withScope('visitor')).toContain(prop));
+        ['nps'].forEach((prop) => expect(withScope('session')).toContain(prop));
     });
 
-    test('anything valid beyond the page is persisted', () => {
-        // Surviving a page load takes a cookie. A session-scoped property held
-        // only in memory would vanish on the session's second page.
+    test('visitor scope requires permanence', () => {
+        /*
+         * A value rewritten more often than its scope cannot hold that scope. A
+         * visitor-scoped property has to be identical for the visitor's whole
+         * life, so it can never be rewritten with a different value.
+         *
+         * This constraint found two errors: dsfs was declared visitor-scoped
+         * but is rewritten on EVERY page load, and nps was declared
+         * visitor-scoped but is rewritten at each session boundary. Both passed
+         * the constancy assertions above, because no scenario here spans a day
+         * or a session boundary.
+         */
         Object.entries(REGISTRY)
-            .filter(([, decl]) => OUTLASTS_THE_PAGE.includes(decl.scope))
+            .filter(([, decl]) => decl.scope === 'visitor')
             .forEach(([prop, decl]) => {
-                expect({ prop, persisted: decl.persisted }).toEqual({ prop, persisted: true });
+                expect({ prop, permanent: decl.permanent }).toEqual({ prop, permanent: true });
             });
     });
 
@@ -257,7 +268,7 @@ describe('session-scoped properties do not vary within a session', () => {
 
         Object.entries(REGISTRY).forEach(([prop, decl]) => {
             expect({ prop, scope: SCOPES.includes(decl.scope) }).toEqual({ prop, scope: true });
-            expect({ prop, persisted: typeof decl.persisted }).toEqual({ prop, persisted: 'boolean' });
+            expect({ prop, permanent: typeof decl.permanent }).toEqual({ prop, permanent: 'boolean' });
         });
     });
 
