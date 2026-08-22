@@ -41,8 +41,6 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  */
 class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
-    const EDITION = 'GeoLite2-City';
-
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
@@ -53,6 +51,23 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
     function action() {
 
         $dry_run = (bool) $this->getParam( 'dry-run' );
+
+        // The same answer the reader uses, so what is downloaded is what gets
+        // read. edition= overrides for a one-off, but only to something the
+        // module can actually read -- an unrecognised edition would download
+        // happily and resolve nothing.
+        $edition = (string) $this->getParam( 'edition' );
+
+        if ( $edition && ! in_array( $edition, \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS, true ) ) {
+
+            return $this->refuse( sprintf(
+                '"%s" is not an edition this module reads. Choose one of: %s.',
+                $edition,
+                implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
+            ) );
+        }
+
+        $edition = $edition ?: \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
 
         $key = trim( (string) (
             $this->getParam( 'license-key' )
@@ -81,7 +96,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         // Before the download, and separately per failure: they need different
         // fixes, and one "permission denied" points at the wrong one.
-        $problem = $this->whyNotWritable( $dir );
+        $problem = $this->whyNotWritable( $dir, $edition );
 
         if ( $problem ) {
 
@@ -90,11 +105,11 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         $url = sprintf(
             'https://download.maxmind.com/app/geoip_download?edition_id=%s&license_key=%s&suffix=tar.gz',
-            self::EDITION,
+            $edition,
             rawurlencode( $key )
         );
 
-        $this->write( sprintf( 'Downloading %s from MaxMind into %s', self::EDITION, $dir ) );
+        $this->write( sprintf( 'Downloading %s from MaxMind into %s', $edition, $dir ) );
 
         // To a temporary file, not to the destination: the archive is tens of
         // megabytes and the live database must stay readable and intact for
@@ -117,10 +132,10 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             @unlink( $archive );
 
             return $this->refuse( sprintf(
-                'Dry run: %s%s.mmdb would be replaced. Nothing was changed.', $dir, self::EDITION ) );
+                'Dry run: %s%s.mmdb would be replaced. Nothing was changed.', $dir, $edition ) );
         }
 
-        $extracted = $this->extractDatabase( $archive, $dir );
+        $extracted = $this->extractDatabase( $archive, $dir, $edition );
 
         @unlink( $archive );
 
@@ -223,7 +238,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      *
      * @return string|null the path written, or the reason it failed
      */
-    protected function extractDatabase( $archive, $dir ) {
+    protected function extractDatabase( $archive, $dir, $edition ) {
 
         $work = $dir . '.update-' . getmypid() . '/';
 
@@ -268,7 +283,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return null;
         }
 
-        $destination = $dir . self::EDITION . '.mmdb';
+        $destination = $dir . $edition . '.mmdb';
 
         // Rename, not copy: on the same filesystem it is atomic, so no request
         // ever reads a partially written database.
@@ -312,7 +327,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      *
      * @return string|null
      */
-    protected function whyNotWritable( $dir ) {
+    protected function whyNotWritable( $dir, $edition = 'GeoLite2-City' ) {
 
         $whoami = function_exists( 'posix_geteuid' ) && function_exists( 'posix_getpwuid' )
             ? ( posix_getpwuid( posix_geteuid() )['name'] ?? 'unknown' )
@@ -341,7 +356,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return sprintf( '%s is not writable by %s.', $dir, $whoami );
         }
 
-        $file = $dir . self::EDITION . '.mmdb';
+        $file = $dir . $edition . '.mmdb';
 
         if ( file_exists( $file ) && ! is_writable( $file ) ) {
 

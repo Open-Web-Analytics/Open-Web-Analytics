@@ -158,4 +158,91 @@ final class MaxmindUpdateCliTest extends TestCase {
             'with the module inactive the command must resolve to nothing, so the scheduler '
           . 'skips it with a notice rather than listing a job that cannot run' );
     }
+
+    /**
+     * The downloader and the reader must resolve the same edition.
+     *
+     * They are separate pieces of code reading one setting, and the failure if
+     * they disagree is quiet: Country gets downloaded, the reader goes looking
+     * for City, and lookups fail against a database sitting right there in the
+     * directory.
+     */
+    public function testTheReaderAndTheDownloaderAgreeOnTheEdition(): void {
+
+        $this->assertSame(
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            'both consult Maxmind::edition(), so there is one answer by construction'
+        );
+
+        $this->assertContains(
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
+            'the resolved edition must be one the module can read'
+        );
+    }
+
+    public function testCityIsTheDefaultWhenNothingIsConfigured(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', '' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-City', $resolved,
+            'an installation that configures nothing keeps the behaviour it had' );
+    }
+
+    /**
+     * Country is the reason this is configurable: a fraction of the size, for
+     * an installation whose reports never go below country level. It works
+     * because getLocation() reads the finer fields behind isset() guards.
+     */
+    public function testCountryIsAcceptedAsAnEdition(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', 'GeoLite2-Country' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-Country', $resolved );
+    }
+
+    /**
+     * ASN is free too, and deliberately not offered: it carries network data
+     * and no location fields, so an installation pointed at it would look
+     * healthy and silently resolve nothing.
+     */
+    public function testAnEditionWithNoLocationDataIsNotOffered(): void {
+
+        $this->assertNotContains( 'GeoLite2-ASN',
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
+            'ASN has no location fields; accepting it would resolve nothing, quietly' );
+    }
+
+    /**
+     * An unrecognised value falls back rather than being trusted, so a typo in
+     * config cannot send the downloader after an edition nothing reads.
+     */
+    public function testAnUnknownEditionFallsBackToTheDefault(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', 'GeoLite2-Kitchen-Sink' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-City', $resolved );
+    }
 }
