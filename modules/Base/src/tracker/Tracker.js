@@ -1652,13 +1652,10 @@ class OWATracker  {
         // values from the same place, for every event and every tracker.
 
 
-        // add the attribs to event properties
-        // set campaign touches
-        if ( this.campaignState.length > 0 ) {
-            this.setGlobalEventProperty( 'attribs', JSON.stringify( this.campaignState ) );
-            //event.set( 'campaign_timestamp', campaign_params.ts );
-
-        }
+        // attribs is not copied onto a global here any more. campaignState is
+        // loaded from 'c' at the top of this method and written back by
+        // setCampaignCookie() immediately after every mutation, so the store
+        // holds the same value -- collectStateProperties() reads it from there.
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2139,6 +2136,15 @@ class OWATracker  {
 
         var dsps = OWA.getState( 's', 'dsps' );
         collected.dsps = ( dsps !== undefined && dsps !== '' ) ? dsps : 0;
+
+        // The accumulated attribution history. Stored as an array; the wire
+        // format is JSON, and it is omitted entirely when empty rather than
+        // being sent as "[]".
+        var campaign_state = OWA.getState( 'c', 'attribs' );
+
+        if ( campaign_state && campaign_state.length > 0 ) {
+            collected.attribs = JSON.stringify( campaign_state );
+        }
 
         // Campaign keys are session state too, written into 's' by the
         // attribution model. Their names are configured rather than fixed, so

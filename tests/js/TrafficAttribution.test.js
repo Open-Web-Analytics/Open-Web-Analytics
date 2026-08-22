@@ -203,7 +203,7 @@ describe('setTrafficAttribution: end to end', () => {
         expect(OWA.getState('s', 'medium')).toBe('email');
         expect(OWA.getState('s', 'campaign')).toBe('summer');
         // The serialized touch list rides along as `attribs`.
-        expect(t.getGlobalEventProperty('attribs')).toContain('news');
+        expect(JSON.stringify(OWA.getState('c', 'attribs'))).toContain('news');
     });
 
     test('infers attribution from the referrer when no campaign params and a new session', () => {
