@@ -92,7 +92,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $dir = defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/';
+        $dir = $this->dataDir();
 
         // Before the download, and separately per failure: they need different
         // fixes, and one "permission denied" points at the wrong one.
@@ -210,6 +210,23 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         ) );
 
         return;
+    }
+
+    /**
+     * Where the database lives.
+     *
+     * A method rather than an expression so a test can point it somewhere
+     * disposable. The three things worth testing here -- unpacking a nested
+     * archive, replacing the live file atomically, and cleaning up afterwards
+     * -- all write to this directory, and a test that writes to the real one
+     * would either destroy a working installation's database or need a
+     * 60 MB fixture to put back.
+     *
+     * @return string
+     */
+    protected function dataDir() {
+
+        return defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/';
     }
 
     /**
