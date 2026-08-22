@@ -10,19 +10,23 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  * sends. The interesting part is its SCOPE, which decides how long the value
  * sticks to the visitor:
  *
- *   - page    -- lives only as a global event property on this tracker; it is
- *                not written to any persistent state store, so it vanishes when
- *                the page unloads.
- *   - session -- persisted in the session-scoped 'b' store, so it rides along on
- *                every event for the rest of the visit.
- *   - visitor -- persisted in the visitor-scoped 'v' store (long-lived), AND the
- *                session ('b') copy of that slot is cleared, so promoting a slot
- *                from session to visitor doesn't leave a stale session value
- *                that would shadow the visitor one on getCustomVar's lookup path.
+ *   - page    -- the 'd' store, which is memory only for the life of the page,
+ *                plus a global event property on this tracker. It is never
+ *                written to a cookie, so it vanishes when the page unloads.
+ *   - session -- the session store 's', so it rides along on every event for the
+ *                rest of the visit. Held in memory until the session is settled
+ *                and accepted; see CustomVarStorage.test.js.
+ *   - visitor -- the visitor store 'v' (long-lived), AND the narrower copies of
+ *                that slot are cleared, so promoting a slot from session to
+ *                visitor doesn't leave a stale value that would shadow the
+ *                visitor one on getCustomVar's lookup path.
  *
- * getCustomVar reads back in that shadowing order: page global -> session 'b'
- * -> visitor 'v' (first hit wins). deleteCustomVar clears the slot from all
- * three. addGlobalPropertiesToEvent pulls every set slot onto an outgoing event.
+ * getCustomVar reads back in shadowing order: page global -> 'd' -> 's' -> 'b'
+ * (legacy) -> 'v', first hit wins. The scoped getters -- getCustomPageVar,
+ * getCustomSessionVar, getCustomVisitorVar -- read one scope each and do not
+ * shadow, which is the point of having them. deleteCustomVar clears the slot
+ * from every scope. addGlobalPropertiesToEvent pulls every set slot onto an
+ * outgoing event.
  *
  * The visitor-promotion clear exercises StateManager.clear(store, key), which
  * had a real bug -- `delete state['key']` deleted a literal "key" property
@@ -50,11 +54,11 @@ beforeEach(() => {
     OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
-    ['v', 's', 'c', 'b'].forEach(store => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach(store => OWA.clearState(store));
 });
 
 afterEach(() => {
-    ['v', 's', 'c', 'b'].forEach(store => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach(store => OWA.clearState(store));
 });
 
 describe('setCustomVar scope: page', () => {
@@ -69,6 +73,31 @@ describe('setCustomVar scope: page', () => {
         // ...but never persisted to the session or visitor stores.
         expect(OWA.getState('s', 'cv1')).toBeFalsy();
         expect(OWA.getState('v', 'cv1')).toBeFalsy();
+    });
+
+    test('writes the slot to the page store', () => {
+        // Page scope used to be the ABSENCE of a case in setCustomVar(): the
+        // value fell through to the global event property below the switch and
+        // happened to work. It has a store of its own now, and without this
+        // assertion the whole branch can be deleted with every test still
+        // passing -- the global property alone would carry it.
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'Free', 'page');
+
+        expect(OWA.getState('d', 'cv1')).toBe('Plan=Free');
+    });
+
+    test('the page store outlives the tracker that set it, but not the page', () => {
+        // 'd' is per-page, not per-tracker: a second tracker on the same page
+        // sees it, which a global event property on the first tracker would not
+        // give you. Nothing persists it, so the next page load starts empty.
+        const first = newTracker();
+        first.setCustomVar(1, 'Plan', 'Free', 'page');
+
+        const second = newTracker();
+
+        expect(second.getCustomPageVar(1)).toBe('Plan=Free');
+        expect(OWA.state.behaviourOf('d').persist).toBe('never');
     });
 
     test('an unknown scope behaves like page (global property only, no store)', () => {
@@ -154,15 +183,77 @@ describe('deleteCustomVar', () => {
     test('clears the slot from page, session, and visitor scopes', () => {
         const t = newTracker();
         t.setGlobalEventProperty('cv2', 'Plan=Page');
-        OWA.setState('b', 'cv2', 'Plan=Session');
+        OWA.setState('d', 'cv2', 'Plan=Page');
+        OWA.setState('s', 'cv2', 'Plan=Session');
+        OWA.setState('b', 'cv2', 'Plan=Legacy');
         OWA.setState('v', 'cv2', 'Plan=Visitor');
 
         t.deleteCustomVar(2);
 
         expect(t.getGlobalEventProperty('cv2')).toBeFalsy();
+        expect(OWA.getState('d', 'cv2')).toBeFalsy();
         expect(OWA.getState('s', 'cv2')).toBeFalsy();
+        expect(OWA.getState('b', 'cv2')).toBeFalsy();
         expect(OWA.getState('v', 'cv2')).toBeFalsy();
         expect(t.getCustomVar(2)).toBeFalsy();
+    });
+});
+
+describe('the scoped getters read one scope each', () => {
+
+    /*
+     * getCustomVar answers "what is this slot's effective value", collapsing the
+     * scopes in shadowing order. That is the right answer to a question the
+     * caller often is not asking: a site that set a visitor-scoped variable and
+     * wants to know whether it is still there gets told about a page-scoped one
+     * instead, with no way to tell the difference.
+     */
+
+    function setAllThree(t) {
+        t.setCustomVar(1, 'Plan', 'Page', 'page');
+        OWA.setState('s', 'cv1', 'Plan=Session');
+        OWA.setState('v', 'cv1', 'Plan=Visitor');
+        return t;
+    }
+
+    test('each getter answers for its own scope on the same slot', () => {
+        const t = setAllThree(newTracker());
+
+        expect(t.getCustomPageVar(1)).toBe('Plan=Page');
+        expect(t.getCustomSessionVar(1)).toBe('Plan=Session');
+        expect(t.getCustomVisitorVar(1)).toBe('Plan=Visitor');
+    });
+
+    test('while getCustomVar still collapses them to the narrowest', () => {
+        const t = setAllThree(newTracker());
+
+        expect(t.getCustomVar(1)).toBe('Plan=Page');
+    });
+
+    test('a getter does not see a value set in another scope', () => {
+        const t = newTracker();
+        OWA.setState('s', 'cv2', 'Plan=Session');
+
+        expect(t.getCustomPageVar(2)).toBeFalsy();
+        expect(t.getCustomVisitorVar(2)).toBeFalsy();
+        expect(t.getCustomSessionVar(2)).toBe('Plan=Session');
+    });
+
+    test('getCustomSessionVar still finds a value left in the legacy store', () => {
+        // Until the collapse migration has run for this visitor, a session
+        // variable may still be sitting in 'b'.
+        const t = newTracker();
+        OWA.setState('b', 'cv3', 'legacy=value');
+
+        expect(t.getCustomSessionVar(3)).toBe('legacy=value');
+    });
+
+    test('every getter returns falsy for a slot that was never set', () => {
+        const t = newTracker();
+
+        expect(t.getCustomPageVar(5)).toBeFalsy();
+        expect(t.getCustomSessionVar(5)).toBeFalsy();
+        expect(t.getCustomVisitorVar(5)).toBeFalsy();
     });
 });
 
