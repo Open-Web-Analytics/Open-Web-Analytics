@@ -157,11 +157,27 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
         ).toBe(before.fact_rows);
 
         // --- drain: the real CLI processor ----------------------------------
+        // Close the page FIRST. The tracker is still live on it and can send
+        // another beacon at any moment; one landing after the drain recreates
+        // events.txt, and queue depth counts that file by existence rather than
+        // by content -- so an empty one still reads as depth 1. That is a race
+        // against the test, not a queue that failed to drain, and it is what
+        // made this assertion flake.
+        await page.close();
+
         drainQueue();
 
         // --- drained + ingested ---------------------------------------------
+        // Polled rather than read once: the drain is a separate process, and
+        // the queue is a directory, so "empty" becomes observable a moment
+        // after the CLI returns. This does not weaken the assertion -- the
+        // depth must still reach 0, and a queue that genuinely did not drain
+        // times out and fails.
+        await expect
+            .poll(() => helper('state', `site=${HARNESS_SITE_ID}`).queue_depth, { timeout: 20_000 })
+            .toBe(0);
+
         const after = helper('state', `site=${HARNESS_SITE_ID}`);
-        expect(after.queue_depth, 'the file queue should be empty after the drain').toBe(0);
         expect(after.fact_rows,
             'the drained beacon should now be persisted as a request fact'
         ).toBeGreaterThan(before.fact_rows);
