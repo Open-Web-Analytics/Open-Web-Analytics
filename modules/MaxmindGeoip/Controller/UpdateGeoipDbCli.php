@@ -109,6 +109,32 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             rawurlencode( $key )
         );
 
+        $destination = $dir . $edition . '.mmdb';
+
+        // MaxMind ask for this, and it is in their interest and ours: a HEAD
+        // request reads Last-Modified WITHOUT consuming a download from the
+        // account's limit. They rate-limit downloads and say so, so a command
+        // that can be scheduled must not fetch tens of megabytes to discover it
+        // already has them.
+        //
+        // --force skips the check, for the case where the local file is
+        // suspect rather than merely old.
+        if ( ! $this->getParam( 'force' ) && file_exists( $destination ) ) {
+
+            $remote = $this->lastModified( $url );
+
+            if ( $remote && $remote <= (int) filemtime( $destination ) ) {
+
+                return $this->refuse( sprintf(
+                    'Already current: MaxMind last changed %s on %s, and the local copy is from %s. '
+                  . 'Nothing downloaded. Use --force to fetch it anyway.',
+                    $edition,
+                    gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC',
+                    gmdate( 'Y-m-d H:i:s', (int) filemtime( $destination ) ) . ' UTC'
+                ) );
+            }
+        }
+
         $this->write( sprintf( 'Downloading %s from MaxMind into %s', $edition, $dir ) );
 
         // To a temporary file, not to the destination: the archive is tens of
@@ -160,8 +186,12 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      */
     protected function download( $url, $destination ) {
 
+        // follow_location explicitly: MaxMind redirect the download to object
+        // storage, and a client that does not follow ends up saving a redirect
+        // page and naming it a database.
         $context = stream_context_create( [
             'http' => [ 'timeout' => 120, 'ignore_errors' => true,
+                        'follow_location' => 1, 'max_redirects' => 5,
                         'user_agent' => 'Open Web Analytics' ],
         ] );
 
@@ -213,6 +243,57 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         }
 
         return (int) $bytes;
+    }
+
+    /**
+     * When MaxMind last changed this edition, or 0 if they will not say.
+     *
+     * A HEAD request, which MaxMind document as the way to check for updates
+     * without spending a download from the account's limit. Returning 0 on any
+     * doubt means the caller downloads -- being wrong in the direction of doing
+     * the work is much better than skipping an update that was available.
+     *
+     * @param string $url
+     * @return int unix timestamp, or 0
+     */
+    protected function lastModified( $url ) {
+
+        $context = stream_context_create( [
+            'http' => [ 'method' => 'HEAD', 'timeout' => 30, 'ignore_errors' => true,
+                        'follow_location' => 1, 'max_redirects' => 5,
+                        'user_agent' => 'Open Web Analytics' ],
+        ] );
+
+        $handle = @fopen( $url, 'rb', false, $context );
+
+        if ( ! $handle ) {
+
+            return 0;
+        }
+
+        $headers = $http_response_header ?? [];
+
+        fclose( $handle );
+
+        if ( $this->statusFrom( $headers ) >= 400 ) {
+
+            // A rejected key answers here too. Say nothing and let the download
+            // report it properly, rather than reporting "already current" for
+            // a credential problem.
+            return 0;
+        }
+
+        foreach ( $headers as $header ) {
+
+            if ( stripos( $header, 'Last-Modified:' ) === 0 ) {
+
+                $stamp = strtotime( trim( substr( $header, 14 ) ) );
+
+                return $stamp ?: 0;
+            }
+        }
+
+        return 0;
     }
 
     protected function statusFrom( array $headers ) {
