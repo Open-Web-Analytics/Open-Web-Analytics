@@ -151,7 +151,7 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        const vid = t.getGlobalEventProperty('visitor_id');
+        const vid = OWA.getState('v', 'vid');
         expect(vid).toBeTruthy();
         expect(t.getGlobalEventProperty('is_new_visitor')).toBe(true);
         // The freshly minted id is persisted for the next visit.
@@ -164,7 +164,7 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('existing-vid-123');
+        expect(OWA.getState('v', 'vid')).toBe('existing-vid-123');
         expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
     });
 
@@ -176,7 +176,7 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('legacy-bare-guid');
+        expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
         // A migrated id is a returning visitor, not a new one.
         expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
         // ...and it is rehomed under the modern v.vid key.
@@ -246,7 +246,7 @@ describe('setNumberPriorSessions', () => {
 
         t.setNumberPriorSessions(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('nps')).toBe(3);
+        expect(OWA.getState('v', 'nps')).toBe(3);
         expect(OWA.getState('v', 'nps')).toBe(3);
     });
 
@@ -258,7 +258,7 @@ describe('setNumberPriorSessions', () => {
         t.setNumberPriorSessions(eventAt(NOW), null);
 
         // Not a new session: the stored value rides along unchanged.
-        expect(t.getGlobalEventProperty('nps')).toBe('4');
+        expect(OWA.getState('v', 'nps')).toBe('4');
         expect(OWA.getState('v', 'nps')).toBe('4');
     });
 });
@@ -270,8 +270,8 @@ describe('setFirstSessionTimestamp', () => {
 
         t.setFirstSessionTimestamp(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('fsts')).toBe(NOW);
-        expect(t.getGlobalEventProperty('dsfs')).toBe(0);
+        expect(OWA.getState('v', 'fsts')).toBe(NOW);
+        expect(OWA.getState('v', 'dsfs')).toBe(0);
         expect(OWA.getState('v', 'fsts')).toBe(NOW);
     });
 
@@ -282,8 +282,8 @@ describe('setFirstSessionTimestamp', () => {
         t.setFirstSessionTimestamp(eventAt(NOW), null);
 
         // fsts is sticky; only dsfs advances.
-        expect(t.getGlobalEventProperty('fsts')).toBe(NOW - 3 * DAY);
-        expect(t.getGlobalEventProperty('dsfs')).toBe(3);
+        expect(OWA.getState('v', 'fsts')).toBe(NOW - 3 * DAY);
+        expect(OWA.getState('v', 'dsfs')).toBe(3);
     });
 });
 
@@ -296,7 +296,7 @@ describe('setDaysSinceLastSession', () => {
 
         t.setDaysSinceLastSession(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('dsps')).toBe(5);
+        expect(OWA.getState('s', 'dsps')).toBe(5);
     });
 
     test('carries the stored dsps forward during an active session', () => {
@@ -305,7 +305,7 @@ describe('setDaysSinceLastSession', () => {
         // is_new_session not set -> falls back to the stored value.
         t.setDaysSinceLastSession(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('dsps')).toBe(7);
+        expect(OWA.getState('s', 'dsps')).toBe(7);
     });
 });
 

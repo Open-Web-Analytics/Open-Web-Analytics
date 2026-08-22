@@ -1759,7 +1759,6 @@ class OWATracker  {
             OWA.setState( 'v', 'nps', nps, true );
         }
 
-        this.setGlobalEventProperty( 'nps',  nps );
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -1778,11 +1777,7 @@ class OWATracker  {
             OWA.setState( 's', 'dsps', dsps);
         }
 
-        if ( ! dsps ) {
-            dsps = OWA.getState( 's', 'dsps' ) || 0;
-        }
 
-        this.setGlobalEventProperty( 'dsps', dsps );
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -1813,7 +1808,6 @@ class OWATracker  {
         }
         // set property on event object
         OWA.setState( 'v', 'vid', visitor_id, true );
-        this.setGlobalEventProperty( 'visitor_id', visitor_id );
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -1829,12 +1823,11 @@ class OWATracker  {
             OWA.debug('setting fsts value: %s', fsts);
             OWA.setState('v', 'fsts', fsts , true);
         }
-        this.setGlobalEventProperty( 'fsts', fsts );
+
 
         // calc days since first session
         var dsfs = Math.round( ( event.get( 'timestamp' ) - fsts ) / ( 3600 * 24 ) ) ;
         OWA.setState( 'v', 'dsfs', dsfs );
-        this.setGlobalEventProperty( 'dsfs', dsfs );
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2120,6 +2113,46 @@ class OWATracker  {
      * domain hash -- bookkeeping the state manager puts on every store, not a
      * tracking property.
      */
+    /**
+     * Properties that are COPIES of state, read from the stores for this event.
+     *
+     * Each of these was derived once during manageState() and then cached as a
+     * global event property on the tracker. The cache was never wrong -- every
+     * branch that set it also wrote the same value to the store -- but it was a
+     * second copy, private to one tracker, of something the stores already hold
+     * and every tracker on the page shares. Reading it here is the same value
+     * from the one place that owns it.
+     *
+     * Names differ from store keys for three of them, which is why this is a
+     * map rather than a loop over key names.
+     */
+    collectStateProperties() {
+
+        var collected = {};
+        var map = [
+            { store: 'v', key: 'vid',  name: 'visitor_id' },
+            { store: 'v', key: 'fsts', name: 'fsts' },
+            { store: 'v', key: 'dsfs', name: 'dsfs' },
+            { store: 'v', key: 'nps',  name: 'nps' }
+        ];
+
+        for ( var i = 0; i < map.length; i++ ) {
+
+            var value = OWA.getState( map[i].store, map[i].key );
+
+            // Defined rather than truthy: dsps is legitimately 0, and nps is
+            // legitimately the string "0" on a visitor's first session.
+            if ( value !== undefined && value !== '' ) {
+                collected[ map[i].name ] = value;
+            }
+        }
+
+        var dsps = OWA.getState( 's', 'dsps' );
+        collected.dsps = ( dsps !== undefined && dsps !== '' ) ? dsps : 0;
+
+        return collected;
+    }
+
     collectPageProperties() {
 
         /*
@@ -2345,7 +2378,14 @@ class OWATracker  {
          * of keys are disjoint by construction.
          */
         var collected = this.collectPageProperties();
+        var state_properties = this.collectStateProperties();
         var custom_vars = this.collectCustomVars();
+
+        for ( var sp_name in state_properties ) {
+            if ( state_properties.hasOwnProperty( sp_name ) ) {
+                collected[ sp_name ] = state_properties[ sp_name ];
+            }
+        }
 
         for ( var cv_name in custom_vars ) {
             if ( custom_vars.hasOwnProperty( cv_name ) ) {

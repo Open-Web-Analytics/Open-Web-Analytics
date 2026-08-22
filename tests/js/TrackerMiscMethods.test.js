@@ -216,6 +216,72 @@ describe('setCampaignRelatedProperties (thirdParty promotion)', () => {
     });
 });
 
+describe('state-derived properties are collected onto each event', () => {
+
+    /*
+     * These were derived once in manageState() and cached as global event
+     * properties on the tracker. The cache was never wrong -- every branch that
+     * set it wrote the same value to the store -- but it was a private second
+     * copy of something the stores already own and every tracker on the page
+     * shares.
+     */
+
+    test('visitor identity and counters come off the stores', () => {
+        const t = newTracker();
+        OWA.setState('v', 'vid', 'vid-123');
+        OWA.setState('v', 'fsts', 1600000000);
+        OWA.setState('v', 'dsfs', 12);
+        OWA.setState('v', 'nps', '4');
+        OWA.setState('s', 'dsps', 3);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('visitor_id')).toBe('vid-123');
+        expect(event.get('fsts')).toBe(1600000000);
+        expect(event.get('dsfs')).toBe(12);
+        expect(event.get('nps')).toBe('4');
+        expect(event.get('dsps')).toBe(3);
+    });
+
+    test('dsps defaults to 0 rather than being dropped', () => {
+        // 0 is a legitimate value and a falsy one, so a truthiness guard would
+        // silently drop it; and the property is in the beacon contract, so it
+        // has to be present either way.
+        const t = newTracker();
+        OWA.setState('v', 'dsfs', 0);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('dsps')).toBe(0);
+        // dsfs is 0 on a visitor's first day and is dropped by a truthiness
+        // guard, which is why the collection tests for defined instead.
+        expect(event.get('dsfs')).toBe(0);
+    });
+
+    test('nps of "0" survives, being a first session rather than an absent one', () => {
+        const t = newTracker();
+        OWA.setState('v', 'nps', '0');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('nps')).toBe('0');
+    });
+
+    test('a second tracker reports the same identity as the first', () => {
+        const first = newTracker();
+        OWA.setState('v', 'vid', 'shared-vid');
+
+        const second = newTracker();
+        const event = new OwaEvent();
+        second.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('visitor_id')).toBe('shared-vid');
+    });
+});
+
 describe('manageState one-shot guard', () => {
 
     test('runs the identity pipeline once and sets stateInit', () => {
@@ -226,7 +292,7 @@ describe('manageState one-shot guard', () => {
         t.manageState(event, null);
 
         expect(t.stateInit).toBe(true);
-        expect(t.getGlobalEventProperty('visitor_id')).toBeTruthy();
+        expect(OWA.getState('v', 'vid')).toBeTruthy();
     });
 
     test('does not re-run once stateInit is true', () => {
@@ -236,11 +302,11 @@ describe('manageState one-shot guard', () => {
 
         // Simulate a prior run and plant a sentinel the pipeline would overwrite.
         t.stateInit = true;
-        t.globalEventProperties.visitor_id = 'SENTINEL';
+        OWA.setState('v', 'vid', 'SENTINEL');
 
         t.manageState(event, null);
 
         // Guard held: the pipeline was skipped, sentinel untouched.
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('SENTINEL');
+        expect(OWA.getState('v', 'vid')).toBe('SENTINEL');
     });
 });
