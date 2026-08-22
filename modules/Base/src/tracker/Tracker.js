@@ -2033,8 +2033,18 @@ class OWATracker  {
                 // cookie, which is the whole reason a new session can discard
                 // one and keep the other.
                 OWA.setState('s', cv_param_name, cv_param_value);
-                // and drop any copy left in the old store, so the legacy read
-                // in getCustomVar() cannot serve a stale value back.
+                // Drop the NARROWER copies of this slot. Re-scoping upwards is
+                // a promotion, so the old copy is stale, and leaving it behind
+                // lets it shadow the new value: getCustomVar() checks 'd'
+                // before 's', and only the tracker that made the call has the
+                // global event property that would otherwise mask the
+                // difference. A second tracker on the same page would read the
+                // superseded page value while this one read the session value.
+                //
+                // Setting page scope over a session value does NOT do the
+                // reverse, and should not: that direction is a deliberate
+                // per-page override of a longer-lived value, not a promotion.
+                OWA.clearState('d', cv_param_name);
                 OWA.clearState('b', cv_param_name);
                 OWA.debug('just set custom var on session.');
                 break;

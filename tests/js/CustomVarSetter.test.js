@@ -87,6 +87,21 @@ describe('setCustomVar scope: page', () => {
         expect(OWA.getState('d', 'cv1')).toBe('Plan=Free');
     });
 
+    test('a page-scoped value reaches an event without the setter tracker present', () => {
+        // The 'd' store only does work when the global event property is
+        // absent, because setCustomVar() sets both. A second tracker on the
+        // page is that case -- and it is the case that proves the store is
+        // carrying the value rather than the global property.
+        const first = newTracker();
+        first.setCustomVar(1, 'Plan', 'Free', 'page');
+
+        const second = newTracker();
+        const event = new OwaEvent();
+        second.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('cv1')).toBe('Plan=Free');
+    });
+
     test('the page store outlives the tracker that set it, but not the page', () => {
         // 'd' is per-page, not per-tracker: a second tracker on the same page
         // sees it, which a global event property on the first tracker would not
@@ -122,6 +137,63 @@ describe('setCustomVar scope: session', () => {
         // Session scope does not touch the visitor store.
         expect(OWA.getState('v', 'cv2')).toBeFalsy();
         expect(t.getCustomVar(2)).toBe('Tier=Silver');
+    });
+});
+
+describe('re-scoping a slot', () => {
+
+    /*
+     * A slot lives in exactly one scope's store. Promoting it upwards clears
+     * the narrower copy; overriding it downwards does not, because a
+     * page-scoped value set over a session one is a deliberate per-page
+     * override of something longer-lived, not a promotion.
+     *
+     * Without the clear, the superseded copy SHADOWS the new value for any
+     * reader that does not have the setting tracker's global event property --
+     * getCustomVar() checks 'd' before 's'. Two trackers on one page then
+     * disagree about the same slot.
+     */
+
+    test('page -> session clears the page copy', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'PageValue', 'page');
+        t.setCustomVar(1, 'Plan', 'SessionValue', 'session');
+
+        expect(OWA.getState('d', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s', 'cv1')).toBe('Plan=SessionValue');
+    });
+
+    test('...so a second tracker on the page agrees with the first', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'PageValue', 'page');
+        t.setCustomVar(1, 'Plan', 'SessionValue', 'session');
+
+        const other = newTracker();
+
+        expect(other.getCustomVar(1)).toBe('Plan=SessionValue');
+        expect(t.getCustomVar(1)).toBe('Plan=SessionValue');
+    });
+
+    test('page -> visitor clears both narrower copies', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'PageValue', 'page');
+        t.setCustomVar(1, 'Plan', 'SessionValue', 'session');
+        t.setCustomVar(1, 'Plan', 'VisitorValue', 'visitor');
+
+        expect(OWA.getState('d', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s', 'cv1')).toBeFalsy();
+        expect(OWA.getState('v', 'cv1')).toBe('Plan=VisitorValue');
+    });
+
+    test('session -> page does NOT clear the session copy: it is an override', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'SessionValue', 'session');
+        t.setCustomVar(1, 'Plan', 'PageValue', 'page');
+
+        // the page value wins for this page...
+        expect(t.getCustomVar(1)).toBe('Plan=PageValue');
+        // ...and the session value is still there for the next one
+        expect(OWA.getState('s', 'cv1')).toBe('Plan=SessionValue');
     });
 });
 
