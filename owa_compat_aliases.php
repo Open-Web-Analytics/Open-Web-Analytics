@@ -353,6 +353,7 @@ function owa_compat_class_map(): array
         'owa_entityInstallController' => 'OWA\\Module\\Base\\Controller\\EntityInstall',
         'owa_errorView' => 'OWA\\Module\\Base\\View\\Error',
         'owa_flushCacheCliController' => 'OWA\\Module\\Base\\Controller\\FlushCacheCli',
+        'owa_updateUaRegexesCliController' => 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',
         'owa_updateGeoipDbCliController' => 'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli',
         'owa_flushProcessedEventsCliController' => 'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',
         'owa_genericCliView' => 'OWA\\Module\\Base\\View\\GenericCli',
