@@ -82,7 +82,7 @@ function coldPage() {
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
-    OWA.state.sessionPersistenceReady = false;
+    OWA.state.persistenceReleased = {};
 }
 
 /**

@@ -118,8 +118,10 @@ class OWATracker  {
 	    // about a session whose identity was never recorded, and whatever reads
 	    // it next attaches those values to a different session.
 	    OWA.registerStateStore('s', 364, '', 'json', {
-		    hydrate: 'deferred',
-		    persist: 'session'
+		    hydrate:   'deferred',
+		    hydrateOn: 'isSessionizationDone',
+		    persist:   'deferred',
+		    persistOn: 'persistSession'
 	    });
 
 	    // 'b' held session-scoped custom variables, alongside 's' which is the
@@ -1892,7 +1894,18 @@ class OWATracker  {
          * sessionization -- today it happens only because trackPageView() ran
          * -- does not mean rewriting the state manager.
          */
-        OWA.doAction( 'isSessionizationDone', { 'is_new_session': is_new_session } );
+        OWA.doAction( 'isSessionizationDone', {
+            'is_new_session': is_new_session,
+            /*
+             * The storage instruction, and deliberately not the same field.
+             * A store waiting on this action needs to be told whether its
+             * persisted values still apply; it does not need to know they are
+             * sessions. Keeping the two apart is what lets another store hook
+             * its hydration to some entirely different decision and be settled
+             * by the same machinery.
+             */
+            'discard': is_new_session
+        } );
 
         if ( is_new_session ) {
 

@@ -156,13 +156,9 @@ class OWA {
     /**
      * Register the state manager's own listeners.
      *
-     * The state manager reacts to two announcements rather than being driven
-     * from a call site, so that WHEN sessionization happens and WHEN a session
-     * becomes persistable can both be moved without touching it:
-     *
-     *   cookieDomainEstablished                  run cookie-to-cookie migrations
-     *   isSessionizationDone { is_new_session }  settle the deferred stores
-     *   persistSession                           flush, and persist from here on
+     * Only one is fixed. The rest are subscribed on demand, because which
+     * action a store waits on is declared by the store -- see
+     * ensureStateActionSubscription().
      */
     registerStateActions() {
 
@@ -183,23 +179,50 @@ class OWA {
             that.state.runMigrations();
 
         }, 10 );
+    }
 
-        this.addAction( 'isSessionizationDone', function( options ) {
+    /**
+     * Ensure something is listening for an action a state store waits on.
+     *
+     * Called from registerStore(), so the set of actions is whatever the
+     * registered stores between them asked for. Two stores naming the same
+     * action share one listener; two stores naming different actions are
+     * settled independently.
+     *
+     * The listener lives here rather than on the state manager for two reasons.
+     * Stores are re-registered every time a tracker is constructed, so it must
+     * be idempotent -- hence the de-duplication by name. And replacing
+     * OWA.state with a fresh manager must not leave a listener bound to the old
+     * one, so the manager is resolved when the action FIRES, not when the
+     * listener is added.
+     */
+    ensureStateActionSubscription( kind, action ) {
+
+        this.subscribedStateActions = this.subscribedStateActions || {};
+
+        var key = kind + ':' + action;
+
+        if ( this.subscribedStateActions.hasOwnProperty( key ) ) {
+            return;
+        }
+
+        this.subscribedStateActions[ key ] = true;
+
+        var that = this;
+
+        this.addAction( action, function( options ) {
 
             that.initializeStateManager();
-            var is_new_session = !! ( options && options.is_new_session );
-            that.state.resolveDeferredHydration( is_new_session );
 
-        }, 10 );
-
-        this.addAction( 'persistSession', function() {
-
-            that.initializeStateManager();
-            that.state.enableSessionPersistence();
+            if ( kind === 'hydrate' ) {
+                that.state.resolveDeferredHydration( action, options );
+            } else {
+                that.state.releaseDeferredPersistence( action );
+            }
 
         }, 10 );
     }
-    
+
     debug() {
         
         var debugging = this.getSetting('debug') || false; // or true

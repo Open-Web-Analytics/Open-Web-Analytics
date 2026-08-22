@@ -67,6 +67,10 @@ const NOW = 1700000000;
 /** Put the state manager back to the state a fresh page load starts in. */
 function coldPage() {
     OWA.initializeStateManager();
+    // Drop anything a test registered, cookie included, so a store invented by
+    // one test cannot be left behind for the next.
+    Object.keys(OWA.state.storeMeta || {}).forEach((store) => OWA.clearState(store));
+    OWA.state.storeMeta = {};
     // A store's hydration and persistence behaviour comes from its
     // REGISTRATION, so these tests have to register before they mean anything.
     // Constructing a tracker is how that happens in production; restating the
@@ -75,7 +79,7 @@ function coldPage() {
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
-    OWA.state.sessionPersistenceReady = false;
+    OWA.state.persistenceReleased = {};
 }
 
 beforeEach(() => {
@@ -106,7 +110,7 @@ describe('store behaviour is declared at registration', () => {
     test('the session store defers hydration and waits for the session to persist', () => {
         expect(OWA.state.behaviourOf('s')).toMatchObject({
             hydrate: 'deferred',
-            persist: 'session',
+            persist: 'deferred',
         });
     });
 
@@ -135,6 +139,85 @@ describe('store behaviour is declared at registration', () => {
             hydrate: 'eager',
             persist: 'immediate',
         });
+    });
+});
+
+describe('stores wait on the action they named, not on a shared one', () => {
+
+    /*
+     * Deferral is per-store, and so is the trigger. The alternative -- one hook
+     * that settles everything deferred -- would mean any store wanting to wait
+     * for something had to wait for the SESSION, which is a dependency most of
+     * them would not have.
+     *
+     * 'q' below stands in for such a store: deferred like 's', but hooked to a
+     * decision that has nothing to do with sessions.
+     */
+
+    function registerIndependentStore() {
+        OWA.registerStateStore('q', 364, '', 'json', {
+            hydrate:   'deferred',
+            hydrateOn: 'somethingElseDecided',
+            persist:   'deferred',
+            persistOn: 'releaseQ',
+        });
+    }
+
+    test('releasing one store for persistence does not release the other', () => {
+        registerIndependentStore();
+
+        OWA.setState('s', 'sid', 'session-abc', true);
+        OWA.setState('q', 'k', 'independent');
+        expect(lastWrite('s')).toBeNull();
+        expect(lastWrite('q')).toBeNull();
+
+        OWA.doAction('persistSession');
+
+        expect(lastWrite('s')).toContain('session-abc');
+        expect(lastWrite('q')).toBeNull();
+
+        OWA.doAction('releaseQ');
+
+        expect(lastWrite('q')).toContain('independent');
+    });
+
+    test('a hydration action settles only the stores that named it', () => {
+        registerIndependentStore();
+
+        // Both have a persisted value and a value set on this page load.
+        OWA.state.cookies['owa_s'] = [ JSON.stringify({ old: 'session' }) ];
+        OWA.state.cookies['owa_q'] = [ JSON.stringify({ old: 'independent' }) ];
+        OWA.setState('s', 'fresh', 'yes');
+        OWA.setState('q', 'fresh', 'yes');
+
+        // The session decision. Only 's' named it.
+        OWA.doAction('isSessionizationDone', { is_new_session: false, discard: false });
+
+        expect(OWA.getState('s', 'old')).toBe('session');   // settled
+        expect(OWA.state.hydrated.hasOwnProperty('s')).toBe(true);
+        // 'q' is untouched by it -- still waiting on its own decision, and so
+        // still holding only what this page load set.
+        expect(OWA.state.hydrated.hasOwnProperty('q')).toBe(false);
+        expect(OWA.getState('q', 'old')).toBeFalsy();
+
+        // ...and now the one 'q' named.
+        OWA.doAction('somethingElseDecided', { discard: false });
+
+        expect(OWA.state.hydrated.hasOwnProperty('q')).toBe(true);
+        expect(OWA.getState('q', 'old')).toBe('independent');
+        expect(OWA.getState('q', 'fresh')).toBe('yes');
+    });
+
+    test('the discard flag, not the session, is what the store layer reads', () => {
+        // Same action, opposite instruction: the persisted values still apply,
+        // so they are merged in behind what this page load set.
+        OWA.state.cookies['owa_s'] = [ JSON.stringify({ sid: 'still-running', old: 'kept' }) ];
+        OWA.setState('s', 'fresh', 'yes');
+
+        OWA.doAction('isSessionizationDone', { is_new_session: false, discard: false });
+
+        expect(OWA.getState('s', 'old')).toBe('kept');
+        expect(OWA.getState('s', 'fresh')).toBe('yes');
     });
 });
 

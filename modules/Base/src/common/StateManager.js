@@ -28,7 +28,7 @@ class StateManager {
 		 * it should behave.
 		 */
 		this.hydrated = {};
-		this.sessionPersistenceReady = false;
+		this.persistenceReleased = {};
 
 		/*
 		 * Storage migrations, run once the cookie domain is known.
@@ -169,15 +169,16 @@ class StateManager {
 	 * set. Either way memory ends up holding exactly the values that belong to
 	 * the session now in progress.
 	 */
-	resolveDeferredHydration( is_new_session ) {
+	resolveDeferredHydration( action, options ) {
 
-		var deferred = this.storesWhere( 'hydrate', 'deferred' );
+		var discard = !! ( options && options.discard );
+		var deferred = this.storesWhere( 'hydrateOn', action );
 
 		for ( var i = 0; i < deferred.length; i++ ) {
 
 			var store_name = deferred[ i ];
 
-			if ( is_new_session ) {
+			if ( discard ) {
 				this.discardPersisted( store_name );
 			} else {
 				this.hydrate( store_name );
@@ -343,16 +344,16 @@ class StateManager {
 	 * writes go to the cookie as they are made. Wired to the 'persistSession'
 	 * action.
 	 */
-	enableSessionPersistence() {
+	releaseDeferredPersistence( action ) {
 
-		this.sessionPersistenceReady = true;
+		var released = this.storesWhere( 'persistOn', action );
 
-		var bound = this.storesWhere( 'persist', 'session' );
+		for ( var i = 0; i < released.length; i++ ) {
 
-		for ( var i = 0; i < bound.length; i++ ) {
+			this.persistenceReleased[ released[ i ] ] = true;
 
-			if ( this.isPresent( bound[ i ] ) ) {
-				this.persist( bound[ i ] );
+			if ( this.isPresent( released[ i ] ) ) {
+				this.persist( released[ i ] );
 			}
 		}
 	}
@@ -371,26 +372,67 @@ class StateManager {
      *                         makes new values distinguishable from old ones.
      *
      *   persist: 'immediate'  write the cookie on every set (default)
-     *            'session'    hold in memory until 'persistSession' says the
-     *                         session is worth writing down, then write on
-     *                         every set from there on
-     *            'never'      memory only, for the life of the page
+     *            'deferred'    hold in memory until persistOn fires, then write
+     *                          on every set from there on
+     *            'never'       memory only, for the life of the page
      *
      *   collapseInto: '<store>'  legacy store, folded into <store> and erased
      *                            by the collapse-legacy-stores migration
+     *
+     * A deferred store also names the ACTION it waits for, so stores are not
+     * obliged to wait for the same thing:
+     *
+     *   hydrateOn: '<action>'  default 'isSessionizationDone'
+     *   persistOn: '<action>'  default 'persistSession'
+     *
+     * The hydration action's payload carries `discard` -- true when the
+     * persisted values describe something that has ended and do not carry over,
+     * false when they still apply and should be merged in behind memory. That
+     * is the whole contract, so a store can wait on a decision that has nothing
+     * to do with sessions and still be settled correctly.
      */
     registerStore( name, expiration, length, format, behaviour ) {
 	    
         behaviour = behaviour || {};
 
+        var hydrate = behaviour.hydrate || 'eager';
+        var persist = behaviour.persist || 'immediate';
+
         this.storeMeta[name] = {
             'expiration'   : expiration,
             'length'       : length,
             'format'       : format,
-            'hydrate'      : behaviour.hydrate || 'eager',
-            'persist'      : behaviour.persist || 'immediate',
-            'collapseInto' : behaviour.collapseInto || ''
+            'hydrate'      : hydrate,
+            'persist'      : persist,
+            'collapseInto' : behaviour.collapseInto || '',
+            'hydrateOn'    : hydrate === 'deferred'
+                             ? ( behaviour.hydrateOn || 'isSessionizationDone' ) : '',
+            'persistOn'    : persist === 'deferred'
+                             ? ( behaviour.persistOn || 'persistSession' ) : ''
         };
+
+        this.subscribeStoreActions( name );
+    }
+
+    /**
+     * Make sure something is listening for the actions this store waits on.
+     *
+     * The listener is owned by OWA rather than by this object: replacing
+     * OWA.state with a fresh manager must not leave a listener bound to the old
+     * one, and must not add a second listener either. OWA de-duplicates by
+     * action name and resolves the CURRENT manager when the action fires.
+     */
+    subscribeStoreActions( store_name ) {
+
+        var behaviour = this.behaviourOf( store_name );
+
+        if ( behaviour.hydrateOn ) {
+            OWA.ensureStateActionSubscription( 'hydrate', behaviour.hydrateOn );
+        }
+
+        if ( behaviour.persistOn ) {
+            OWA.ensureStateActionSubscription( 'persist', behaviour.persistOn );
+        }
     }
 
     /**
@@ -405,7 +447,9 @@ class StateManager {
         return {
             'hydrate'      : ( meta && meta.hydrate ) || 'eager',
             'persist'      : ( meta && meta.persist ) || 'immediate',
-            'collapseInto' : ( meta && meta.collapseInto ) || ''
+            'collapseInto' : ( meta && meta.collapseInto ) || '',
+            'hydrateOn'    : ( meta && meta.hydrateOn ) || '',
+            'persistOn'    : ( meta && meta.persistOn ) || ''
         };
     }
 
@@ -495,9 +539,10 @@ class StateManager {
 
         // Session-bound store, and nothing has declared the session persistable
         // yet. Memory already has the value; the cookie waits.
-        if ( behaviour.persist === 'session' && ! this.sessionPersistenceReady ) {
+        if ( behaviour.persist === 'deferred'
+             && ! this.persistenceReleased.hasOwnProperty( store_name ) ) {
 
-            OWA.debug( 'Holding store (%s) in memory; session not persistable yet', store_name );
+            OWA.debug( 'Holding store (%s) in memory; not released for persistence yet', store_name );
             return;
         }
 

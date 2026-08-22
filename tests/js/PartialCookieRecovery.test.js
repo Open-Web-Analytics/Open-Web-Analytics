@@ -50,7 +50,7 @@ function eraseEverything() {
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
-    OWA.state.sessionPersistenceReady = false;
+    OWA.state.persistenceReleased = {};
     OWA.state.cookies = Util.readAllCookies();
 }
 

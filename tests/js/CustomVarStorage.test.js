@@ -64,7 +64,7 @@ describe('custom variable storage', () => {
         // cookie_domain_set, as the other tracker suites do: without it
         // trackPageView() tries to derive a cookie domain and jsdom has none.
         OWA.state.hydrated = {};
-        OWA.state.sessionPersistenceReady = false;
+        OWA.state.persistenceReleased = {};
         tracker = new OWATracker({ cookie_domain_set: true });
         tracker.setSiteId('cv-storage-test');
     });
@@ -74,7 +74,7 @@ describe('custom variable storage', () => {
         OWA.state.stores = {};
         OWA.state.storeFormats = {};
         OWA.state.hydrated = {};
-        OWA.state.sessionPersistenceReady = false;
+        OWA.state.persistenceReleased = {};
         // The state manager reads through a cookie CACHE. Clearing the jar
         // above without refreshing it leaves the previous test's session
         // readable, which now matters: the cookie is where a PREVIOUS session
@@ -560,7 +560,7 @@ describe('custom variable storage', () => {
          * page that never tracks a pageview must still survive to the next one.
          */
         test('a visitor-scoped variable persists immediately, with no session settled', () => {
-            expect(OWA.state.sessionPersistenceReady).toBe(false);
+            expect(OWA.state.persistenceReleased).toEqual({});
 
             tracker.setCustomVar(6, 'tier', 'gold', 'visitor');
 

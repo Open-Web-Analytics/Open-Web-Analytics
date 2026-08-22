@@ -45,7 +45,7 @@ function coldPage() {
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
-    OWA.state.sessionPersistenceReady = false;
+    OWA.state.persistenceReleased = {};
     ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
     OWA.state.cookies = Util.readAllCookies();
 }
@@ -67,7 +67,7 @@ function seedEstablishedSession() {
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
-    OWA.state.sessionPersistenceReady = false;
+    OWA.state.persistenceReleased = {};
 
     const now = Util.getCurrentUnixTimestamp();
     const cdh = OWA.getSetting('hashCookiesToDomain')
