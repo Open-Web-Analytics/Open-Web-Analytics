@@ -598,9 +598,10 @@ describe('days since the prior session is no longer computed here', () => {
         expect(beacons[0]).not.toHaveProperty('days_since_prior_session');
     });
 
-    test('but it does send the dates the server derives them from', () => {
-        // Two dates in the visitor's own calendar: when the previous session
-        // began, and when this one did. The server subtracts them.
+    test('but it does send the anchors the server derives them from', () => {
+        // The RAW timestamps, exactly as the tracker stores them. Sending a
+        // derived date instead would throw away granularity the tracker already
+        // has, and put a transform between the state and the wire.
         const priorStart = NOW - (3 * 86400);
         seedPersistedSession({ sid: 'old', last_req: NOW - (3 * 86400), sts: priorStart });
         const t = newTracker();
@@ -609,15 +610,11 @@ describe('days since the prior session is no longer computed here', () => {
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        const asDate = (ts) => {
-            const d = new Date(ts * 1000);
-            return '' + d.getFullYear()
-                + ('0' + (d.getMonth() + 1)).slice(-2)
-                + ('0' + d.getDate()).slice(-2);
-        };
-
-        expect(event.get('prior_session_date')).toBe(asDate(priorStart));
-        expect(event.get('session_date')).toBe(asDate(NOW));
+        expect(event.get('psts')).toBe(priorStart);
+        expect(event.get('sts')).toBe(NOW);
+        // what is stored is what is sent
+        expect(event.get('psts')).toBe(OWA.getState('s', 'psts'));
+        expect(event.get('sts')).toBe(OWA.getState('s', 'sts'));
     });
 });
 

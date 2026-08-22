@@ -240,28 +240,19 @@ describe('state-derived properties are collected onto each event', () => {
         expect(event.get('nps')).toBe('4');
     });
 
-    test('the first-visit DATE is derived from the anchor, not sent as elapsed time', () => {
-        // A date, coarse on purpose: the anchor is the visitor's clock, so a
-        // clock wrong by hours still yields the right day. And it is a pure
-        // function of a value that never changes, so it is identical on every
-        // event this visitor ever sends -- unlike the elapsed count it replaced,
-        // which was recomputed every page load.
+    test('the first-visit ANCHOR is sent as stored, not as a derivative', () => {
+        // What the tracker stores is what it sends. The server converts to a
+        // date and does the day arithmetic there, so no granularity is lost on
+        // the way and the day boundaries are the server's -- the same ones every
+        // other date part on the row uses.
         const t = newTracker();
         OWA.setState('v', 'fsts', 1600000000);
 
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        const expected = (() => {
-            const d = new Date(1600000000 * 1000);
-            const m = ('0' + (d.getMonth() + 1)).slice(-2);
-            const day = ('0' + d.getDate()).slice(-2);
-            return '' + d.getFullYear() + m + day;
-        })();
-
-        expect(event.get('first_session_date')).toBe(expected);
-        // the raw anchor no longer rides the wire
-        expect(event.isSet('fsts')).toBeFalsy();
+        expect(event.get('fsts')).toBe(1600000000);
+        // and no client-computed offset rides along with it
         expect(event.isSet('dsfs')).toBeFalsy();
     });
 

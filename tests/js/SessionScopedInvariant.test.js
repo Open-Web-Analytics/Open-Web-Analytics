@@ -234,14 +234,14 @@ describe('session-scoped properties do not vary within a session', () => {
             'session_id',
             'prior_session_id',
             'is_new_visitor',
-            'prior_session_date',
-            'session_date',
+            'psts',
+            'sts',
             'session_referer',
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
         // Written once and never rewritten. first_session_date is derived from
         // an anchor that never changes, so it qualifies too.
-        ['visitor_id', 'first_session_date']
+        ['visitor_id', 'fsts']
             .forEach((prop) => expect(withScope('visitor')).toContain(prop));
         ['nps'].forEach((prop) => expect(withScope('session')).toContain(prop));
     });

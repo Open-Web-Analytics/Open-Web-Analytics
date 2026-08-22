@@ -215,15 +215,17 @@ final class SessionIngestionTest extends IngestionTestCase
      * Measuring to the SESSION's date, not the event's, is what keeps the value
      * identical on every event sharing a session_id -- see the test below.
      */
-    private function fireWithDates(string $session_id, int $at, ?string $prior, ?string $session, array $extra = []): string
+    private function fireWithAnchors(string $session_id, int $at, ?int $prior, ?int $session, array $extra = []): string
     {
         $props = array_merge([
             'is_new_session'       => true,
             'is_new_session_start' => true,
         ], $extra);
 
-        if ($prior !== null)   { $props['prior_session_date'] = $prior; }
-        if ($session !== null) { $props['session_date']       = $session; }
+        // The RAW anchors, as the tracker stores them. The server converts each
+        // to YYYYMMDD and does the arithmetic at day level.
+        if ($prior !== null)   { $props['psts'] = $prior; }
+        if ($session !== null) { $props['sts']  = $session; }
 
         $this->trackForCleanup('base.session', $session_id, 'id');
         $this->setServerTime($at);
@@ -235,11 +237,11 @@ final class SessionIngestionTest extends IngestionTestCase
     {
         $now = 1700000000;
 
-        $guid = $this->fireWithDates(
+        $guid = $this->fireWithAnchors(
             $this->uniqueSessionId(),
             $now,
-            date('Ymd', $now - (5 * 86400)),
-            date('Ymd', $now)
+            $now - (5 * 86400),
+            $now
         );
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
@@ -252,9 +254,42 @@ final class SessionIngestionTest extends IngestionTestCase
         // days would also give 0 here, but a visit at 23:00 returning at 01:00
         // is 1 -- boundaries, not duration.
         $now = 1700000000;
-        $today = date('Ymd', $now);
 
-        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, $today, $today);
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, $now - 7200, $now);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_prior_session'));
+    }
+
+    public function testTwoHoursSpanningMidnightIsOneDay(): void
+    {
+        // The case the whole day-level conversion exists for, and the only one
+        // here that tells calendar days from elapsed days: an elapsed
+        // calculation returns round(7200/86400) = 0.
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithAnchors(
+            $this->uniqueSessionId(),
+            $midnight + 3600,
+            $midnight - 3600,      // 23:00 the day before
+            $midnight + 3600       // 01:00 today
+        );
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(1, $r->get('days_since_prior_session'));
+    }
+
+    public function testTwentyTwoHoursInsideOneDayIsNoDays(): void
+    {
+        // The converse, where an elapsed calculation returns 1.
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithAnchors(
+            $this->uniqueSessionId(),
+            $midnight + (23 * 3600),
+            $midnight + 3600,          // 01:00
+            $midnight + (23 * 3600)    // 23:00 the same day
+        );
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(0, $r->get('days_since_prior_session'));
@@ -270,22 +305,22 @@ final class SessionIngestionTest extends IngestionTestCase
         $session_id = $this->uniqueSessionId();
         $this->trackForCleanup('base.session', $session_id, 'id');
 
-        $midnight    = strtotime(date('Y-m-d', 1700000000));
-        $sessionDate = date('Ymd', $midnight - 3600);          // session began at 23:00
-        $priorDate   = date('Ymd', $midnight - (3 * 86400));
+        $midnight     = strtotime(date('Y-m-d', 1700000000));
+        $sessionStart = $midnight - 3600;                      // session began at 23:00
+        $priorStart   = $midnight - (3 * 86400);
 
-        $this->setServerTime($midnight - 3600);
+        $this->setServerTime($sessionStart);
         $first = $this->firePageRequest($site_id, $session_id, [
             'is_new_session'       => true,
             'is_new_session_start' => true,
-            'prior_session_date'   => $priorDate,
-            'session_date'         => $sessionDate,
+            'psts'                 => $priorStart,
+            'sts'                  => $sessionStart,
         ]);
 
         $this->setServerTime($midnight + 3600);                // 01:00, past midnight
         $second = $this->firePageRequest($site_id, $session_id, [
-            'prior_session_date' => $priorDate,
-            'session_date'       => $sessionDate,
+            'psts' => $priorStart,
+            'sts'  => $sessionStart,
         ]);
 
         $a = $this->assertRowPersisted('base.request', $first, 'id');
@@ -308,8 +343,8 @@ final class SessionIngestionTest extends IngestionTestCase
     {
         $now = 1700000000;
 
-        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, null, date('Ymd', $now), [
-            'first_session_date' => date('Ymd', $now - (10 * 86400)),
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, null, $now, [
+            'fsts' => $now - (10 * 86400),
         ]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
@@ -320,8 +355,8 @@ final class SessionIngestionTest extends IngestionTestCase
     {
         $now = 1700000000;
 
-        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, null, date('Ymd', $now), [
-            'first_session_date' => date('Ymd', $now),
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, null, $now, [
+            'fsts' => $now,
         ]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
@@ -331,7 +366,7 @@ final class SessionIngestionTest extends IngestionTestCase
     public function testAnOlderTrackerSendingDsfsStillHasItHonoured(): void
     {
         // No date, so the value it sent as 'dsfs' stands.
-        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, ['dsfs' => 7]);
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, ['dsfs' => 7]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(7, $r->get('days_since_first_session'));
@@ -341,9 +376,9 @@ final class SessionIngestionTest extends IngestionTestCase
     {
         // Also the regression test for setDataType()'s integer branch, which
         // threw a TypeError on non-numeric input from an unauthenticated beacon.
-        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, [
-            'first_session_date' => 'not-a-date',
-            'dsfs'               => 3,
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, [
+            'fsts' => 'not-a-timestamp',
+            'dsfs' => 3,
         ]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
@@ -353,7 +388,7 @@ final class SessionIngestionTest extends IngestionTestCase
     public function testAnOlderTrackerSendingDspsStillHasItHonoured(): void
     {
         // No interval, so the value it sent as 'dsps' stands.
-        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, ['dsps' => 4]);
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, ['dsps' => 4]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(4, $r->get('days_since_prior_session'));

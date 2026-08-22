@@ -437,11 +437,32 @@ class TrackingEventHelpers {
      * cached from before the date existed.
      */
     /**
+     * A unix timestamp as YYYYMMDD, or null if it is not usable.
+     *
+     * The tracker sends the raw anchors -- fsts, psts, sts -- rather than dates,
+     * so no granularity is lost on the way and anything else that wants the
+     * precise instant still has it. Everything downstream of here works at DAY
+     * level, which is what limits the damage: these anchors are stamped by the
+     * VISITOR's clock, and a date absorbs anything short of an error that
+     * crosses midnight.
+     *
+     * Converted with the SERVER's timezone, so these day boundaries are the
+     * same ones every other date part on the row uses.
+     */
+    static function dateFromTimestamp( $timestamp ) {
+
+        $timestamp = (int) $timestamp;
+
+        return $timestamp > 0 ? date( 'Ymd', $timestamp ) : null;
+    }
+
+    /**
      * Whole days between two YYYYMMDD dates, or null if either is unusable.
      *
-     * Both come from the tracker, in the VISITOR's calendar, so the subtraction
-     * stays inside one calendar. Measuring from a visitor-stamped date to the
-     * server's own can be a day out at the edges.
+     * Day-level arithmetic on purpose: converting first and subtracting days is
+     * what makes midnight a non-event, where subtracting the timestamps and
+     * dividing would make a two-hour gap spanning midnight look like no days at
+     * all.
      */
     static function daysBetweenDates( $from, $to ) {
 
@@ -468,15 +489,15 @@ class TrackingEventHelpers {
      */
     static function sessionDateOf( $event ) {
 
-        $sent = (string) $event->get( 'session_date' );
+        $sent = self::dateFromTimestamp( $event->get( 'sts' ) );
 
-        return preg_match( '/^\d{8}$/', $sent ) ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
+        return $sent !== null ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
     }
 
     static function deriveDaysSinceFirstSession( $days, $event ) {
 
         $count = self::daysBetweenDates(
-            $event->get( 'first_session_date' ),
+            self::dateFromTimestamp( $event->get( 'fsts' ) ),
             self::sessionDateOf( $event )
         );
 
@@ -486,7 +507,7 @@ class TrackingEventHelpers {
     static function deriveDaysSincePriorSession( $days, $event ) {
 
         $count = self::daysBetweenDates(
-            $event->get( 'prior_session_date' ),
+            self::dateFromTimestamp( $event->get( 'psts' ) ),
             self::sessionDateOf( $event )
         );
 

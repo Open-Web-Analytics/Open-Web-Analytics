@@ -172,21 +172,21 @@ class Module extends \OWA\Core\Module {
                 'default_value'                    => '(not set)'
             ),
 
-            'prior_session_date'            => array(
+            'fsts'                            => array(
                 'required'                        => false,
                 'callbacks'                        => array( ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false
             ),
 
-            'session_date'                    => array(
+            'psts'                            => array(
                 'required'                        => false,
                 'callbacks'                        => array( ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false
             ),
 
-            'first_session_date'            => array(
+            'sts'                            => array(
                 'required'                        => false,
                 'callbacks'                        => array( ),
                 'data_type'                        => 'integer',
