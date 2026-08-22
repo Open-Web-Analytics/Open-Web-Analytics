@@ -104,10 +104,14 @@ describe('custom variable storage', () => {
      * The bug that made this design necessary, pinned so it cannot come back.
      *
      * The usual call order is setCustomVar() then trackPageView(). If that
-     * pageview starts a NEW session, resetSessionState() clears the session
-     * store -- so a value written at setCustomVar() time is wiped by the very
-     * session it was set for, and every later pageview in that session loses
-     * it. Writing after the session is resolved is what fixes it.
+     * pageview starts a NEW session, the session store has to be cleared of the
+     * previous session's values -- and a value written at setCustomVar() time
+     * was indistinguishable from those, so it was wiped by the very session it
+     * was set for, and every later pageview in that session lost it.
+     *
+     * Keeping it in MEMORY until the session is settled is what fixes it: the
+     * cookie holds what a previous session left, memory holds what this page
+     * load set, and a new session discards the one and keeps the other.
      */
     test('a variable set before the first pageview survives into that session', () => {
         // Slot within maxCustomVars (5): only those slots are rehydrated onto a

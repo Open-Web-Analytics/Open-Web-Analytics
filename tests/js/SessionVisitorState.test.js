@@ -21,9 +21,10 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     is_new_visitor. The resolved id is persisted and promoted to visitor_id.
  *
  *   - setSessionId(): on a new session it records prior_session_id (from the old
- *     s.sid), resets the session store, mints a new session guid, and raises
- *     is_new_session + isNewSessionFlag. On an active session it just reuses the
- *     stored s.sid. A fail-safe mints one if somehow still empty.
+ *     PERSISTED s.sid), announces the decision as 'isSessionizationDone', mints
+ *     a new session guid and raises is_new_session + isNewSessionFlag. On an
+ *     active session it reuses the stored s.sid, which the announcement has by
+ *     then hydrated into memory. A fail-safe mints one if somehow still empty.
  *
  *   - setNumberPriorSessions(): only touches nps on a new session. Existing nps
  *     is incremented and persisted; a first-ever session leaves nps unset in the
@@ -39,8 +40,12 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     (so downstream new-session math sees the old value) and then stores the
  *     current event timestamp as the new last_req.
  *
- *   - resetSessionState(): clears the whole 's' store but deliberately preserves
- *     last_req so session-expiry math still works right after a reset.
+ *   - the 'isSessionizationDone' announcement, which settles the session store:
+ *     a new session discards the PERSISTED store and keeps memory (holding only
+ *     what this page load set); a continuing one merges the persisted values in
+ *     behind memory, filling gaps only. This replaced resetSessionState(), which
+ *     cleared the store and then put back what the page load had set, because by
+ *     then the two were mixed and nothing distinguished them.
  *
  * jsdom's cookie jar backs the state stores here, so these assert real
  * round-trips through OWA.getState/setState, not mocks.
