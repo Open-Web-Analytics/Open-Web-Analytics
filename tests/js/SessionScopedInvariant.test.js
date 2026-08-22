@@ -238,8 +238,9 @@ describe('session-scoped properties do not vary within a session', () => {
             'session_referer',
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
-        // Only these two are written once and never rewritten.
-        ['visitor_id', 'fsts']
+        // Written once and never rewritten. first_session_date is derived from
+        // an anchor that never changes, so it qualifies too.
+        ['visitor_id', 'first_session_date']
             .forEach((prop) => expect(withScope('visitor')).toContain(prop));
         ['nps'].forEach((prop) => expect(withScope('session')).toContain(prop));
     });

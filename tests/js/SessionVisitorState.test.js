@@ -557,17 +557,16 @@ describe('setNumberPriorSessions', () => {
 
 describe('setFirstSessionTimestamp', () => {
 
-    test('stamps fsts on the first visit and reports zero days since', () => {
+    test('stamps fsts on the first visit', () => {
         const t = newTracker();
 
         t.setFirstSessionTimestamp(eventAt(NOW), null);
 
         expect(OWA.getState('v', 'fsts')).toBe(NOW);
-        expect(OWA.getState('v', 'dsfs')).toBe(0);
         expect(OWA.getState('v', 'fsts')).toBe(NOW);
     });
 
-    test('preserves an existing fsts and computes days since first session', () => {
+    test('preserves an existing fsts', () => {
         const t = newTracker();
         OWA.setState('v', 'fsts', NOW - 3 * DAY, true);
 
@@ -575,7 +574,6 @@ describe('setFirstSessionTimestamp', () => {
 
         // fsts is sticky; only dsfs advances.
         expect(OWA.getState('v', 'fsts')).toBe(NOW - 3 * DAY);
-        expect(OWA.getState('v', 'dsfs')).toBe(3);
     });
 });
 

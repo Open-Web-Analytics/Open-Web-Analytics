@@ -178,7 +178,19 @@ class TrackingEventHelpers {
 
             case "integer":
 
-                $var = $var + 0;
+                /*
+                 * Guarded, because this is reached from an unauthenticated
+                 * tracking beacon. PHP 8 raises
+                 * "TypeError: Unsupported operand types: string + int" for a
+                 * non-numeric string, so a beacon carrying ?owa_dsps=abc -- or
+                 * any garbage in any integer-typed property -- fataled event
+                 * processing. During a queue drain that is a poison pill.
+                 *
+                 * is_numeric() rather than a cast, so valid input keeps exactly
+                 * the value it had before: (int) would truncate "1.9" to 1,
+                 * where + 0 yields 1.9.
+                 */
+                $var = is_numeric( $var ) ? $var + 0 : 0;
                 break;
             case "string":
 
@@ -402,6 +414,49 @@ class TrackingEventHelpers {
      * alternative_key on this property -- so returning it unchanged is the
      * fallback for trackers cached from before the interval existed.
      */
+    /**
+     * Days since the visitor's first session, from the date they sent.
+     *
+     * The tracker sends first_session_date as YYYYMMDD, not a timestamp and not
+     * an elapsed count. The anchor is stamped by the VISITOR's clock, and
+     * coarsening to a day is what limits the damage: a clock wrong by minutes or
+     * hours yields the same date, so only an error crossing midnight costs
+     * anything, and only ever one day, once. GA exposes firstSessionDate the
+     * same way and for the same reason.
+     *
+     * Counted against the SERVER's calendar, the one every other date part on
+     * the row uses. The two calendars can differ by a day at the edges; that is
+     * the bounded cost of the anchor being the visitor's.
+     *
+     * This value is per-EVENT, not per-session: it is "days since first visit as
+     * of this event", so it legitimately ticks over at midnight during a long
+     * session. That is why the registry declares it page-scoped.
+     *
+     * $days already holds whatever an older tracker sent as 'dsfs' -- see the
+     * alternative_key -- so returning it unchanged is the fallback for trackers
+     * cached from before the date existed.
+     */
+    static function deriveDaysSinceFirstSession( $days, $event ) {
+
+        $first = (string) $event->get( 'first_session_date' );
+
+        if ( ! preg_match( '/^\d{8}$/', $first ) ) {
+
+            return $days;
+        }
+
+        $then = strtotime( substr( $first, 0, 4 ) . '-' . substr( $first, 4, 2 ) . '-' . substr( $first, 6, 2 ) );
+        $now  = strtotime( date( 'Y-m-d', (int) $event->get( 'timestamp' ) ) );
+
+        if ( $then === false || $now === false ) {
+
+            return $days;
+        }
+
+        // round, not floor: a day is 23 or 25 hours across a DST boundary.
+        return (int) round( ( $now - $then ) / 86400 );
+    }
+
     static function deriveDaysSincePriorSession( $days, $event ) {
 
         $elapsed = (int) $event->get( 'time_since_last_session' );

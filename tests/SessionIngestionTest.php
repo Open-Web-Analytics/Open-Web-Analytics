@@ -290,6 +290,74 @@ final class SessionIngestionTest extends IngestionTestCase
         );
     }
 
+    /**
+     * days_since_first_session is derived on the server from the DATE the
+     * tracker sends.
+     *
+     * The tracker sends first_session_date as YYYYMMDD -- coarse on purpose,
+     * because the anchor is stamped by the visitor's clock and a date absorbs
+     * anything short of a midnight-crossing error. It no longer sends fsts or a
+     * computed dsfs at all.
+     */
+    public function testDaysSinceFirstSessionIsCountedFromTheDateSent(): void
+    {
+        $now = 1700000000;
+        $this->setServerTime($now);
+
+        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
+            'is_new_session'     => true,
+            'first_session_date' => date('Ymd', $now - (10 * 86400)),
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(10, $r->get('days_since_first_session'));
+    }
+
+    public function testAFirstVisitTodayIsZeroDays(): void
+    {
+        $now = 1700000000;
+        $this->setServerTime($now);
+
+        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
+            'is_new_session'     => true,
+            'first_session_date' => date('Ymd', $now),
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_first_session'));
+    }
+
+    public function testAnOlderTrackerSendingDsfsStillHasItHonoured(): void
+    {
+        // No date, so the value it sent as 'dsfs' stands -- carried by the
+        // alternative_key, with the derivation returning what it was given.
+        $now = 1700000000;
+        $this->setServerTime($now);
+
+        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
+            'is_new_session' => true,
+            'dsfs'           => 7,
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(7, $r->get('days_since_first_session'));
+    }
+
+    public function testAMalformedDateFallsBackRatherThanGuessing(): void
+    {
+        $now = 1700000000;
+        $this->setServerTime($now);
+
+        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
+            'is_new_session'     => true,
+            'first_session_date' => 'not-a-date',
+            'dsfs'               => 3,
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(3, $r->get('days_since_first_session'));
+    }
+
     public function testAnOlderTrackerSendingDspsStillHasItHonoured(): void
     {
         // No interval, so the value it sent as 'dsps' stands.

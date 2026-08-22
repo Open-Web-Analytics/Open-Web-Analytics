@@ -172,9 +172,16 @@ class Module extends \OWA\Core\Module {
                 'default_value'                    => '(not set)'
             ),
 
+            'first_session_date'            => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
             'days_since_first_session'         => array(
                 'required'                        => true,
-                'callbacks'                        => array( ),
+                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSinceFirstSession' ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false,
                 'alternative_key'                => 'dsfs'

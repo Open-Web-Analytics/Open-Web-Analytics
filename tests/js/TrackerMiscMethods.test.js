@@ -229,17 +229,40 @@ describe('state-derived properties are collected onto each event', () => {
     test('visitor identity and counters come off the stores', () => {
         const t = newTracker();
         OWA.setState('v', 'vid', 'vid-123');
-        OWA.setState('v', 'fsts', 1600000000);
-        OWA.setState('v', 'dsfs', 12);
+
         OWA.setState('v', 'nps', '4');
 
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
         expect(event.get('visitor_id')).toBe('vid-123');
-        expect(event.get('fsts')).toBe(1600000000);
-        expect(event.get('dsfs')).toBe(12);
+
         expect(event.get('nps')).toBe('4');
+    });
+
+    test('the first-visit DATE is derived from the anchor, not sent as elapsed time', () => {
+        // A date, coarse on purpose: the anchor is the visitor's clock, so a
+        // clock wrong by hours still yields the right day. And it is a pure
+        // function of a value that never changes, so it is identical on every
+        // event this visitor ever sends -- unlike the elapsed count it replaced,
+        // which was recomputed every page load.
+        const t = newTracker();
+        OWA.setState('v', 'fsts', 1600000000);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        const expected = (() => {
+            const d = new Date(1600000000 * 1000);
+            const m = ('0' + (d.getMonth() + 1)).slice(-2);
+            const day = ('0' + d.getDate()).slice(-2);
+            return '' + d.getFullYear() + m + day;
+        })();
+
+        expect(event.get('first_session_date')).toBe(expected);
+        // the raw anchor no longer rides the wire
+        expect(event.isSet('fsts')).toBeFalsy();
+        expect(event.isSet('dsfs')).toBeFalsy();
     });
 
     test('a zero value is collected rather than dropped', () => {
@@ -247,12 +270,10 @@ describe('state-derived properties are collected onto each event', () => {
         // it -- dsfs is 0 on a visitor's first day -- and these are in the
         // beacon contract, so absence is not an option.
         const t = newTracker();
-        OWA.setState('v', 'dsfs', 0);
 
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        expect(event.get('dsfs')).toBe(0);
     });
 
     test('nps of "0" survives, being a first session rather than an absent one', () => {

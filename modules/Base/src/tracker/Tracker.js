@@ -68,7 +68,10 @@ class OWATracker  {
 
 		    // Written once and never rewritten. The only two that are.
 		    visitor_id:              { scope: 'visitor', permanent: true },
-		    fsts:                    { scope: 'visitor', permanent: true },
+		    // Derived from the first-visit anchor, which never changes, so it
+		    // is permanent too -- and coarse, which is what bounds the damage
+		    // the visitor's clock can do to it.
+		    first_session_date:      { scope: 'visitor', permanent: true },
 
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
@@ -82,7 +85,6 @@ class OWATracker  {
 		    user_name:               { scope: 'session', permanent: false },
 
 		    // Rewritten every page load.
-		    dsfs:                    { scope: 'page',    permanent: false },
 		    last_req:                { scope: 'page',    permanent: false },
 		    is_new_session:          { scope: 'page',    permanent: false },
 		    page_url:                { scope: 'page',    permanent: false },
@@ -1909,8 +1911,12 @@ class OWATracker  {
 
 
         // calc days since first session
-        var dsfs = Math.round( ( event.get( 'timestamp' ) - fsts ) / ( 3600 * 24 ) ) ;
-        OWA.setState( 'v', 'dsfs', dsfs );
+        /*
+         * The DELTA is not computed here. This runs on every page load, so
+         * computing it here re-exposed the visitor's clock every page and made
+         * the value change mid-session. It is computed once per session, at the
+         * boundary, alongside the other one -- see setSessionId().
+         */
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2014,11 +2020,13 @@ class OWATracker  {
              * Session state: how long this session waited for its predecessor
              * stays true for as long as it lasts.
              */
+            var now = event.get( 'timestamp' ) || this.getTimestamp();
+
             if ( previous_request ) {
 
-                var now = event.get( 'timestamp' ) || this.getTimestamp();
                 OWA.setState( 's', 'time_since_last_session', now - previous_request );
             }
+
 
             // Persisted read, for the same reason as last_req above: the id of
             // the session that just ended was written by a previous page load,
@@ -2283,8 +2291,6 @@ class OWATracker  {
         var collected = {};
         var map = [
             { store: 'v', key: 'vid',  name: 'visitor_id' },
-            { store: 'v', key: 'fsts', name: 'fsts' },
-            { store: 'v', key: 'dsfs', name: 'dsfs' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
             { store: 's', key: 'referer', name: 'session_referer' },
@@ -2320,6 +2326,36 @@ class OWATracker  {
 
         if ( campaign_state && campaign_state.length > 0 ) {
             collected.attribs = JSON.stringify( campaign_state );
+        }
+
+        /*
+         * The visitor's first-visit DATE, derived from the stored anchor rather
+         * than stored beside it, so the two cannot drift apart.
+         *
+         * A date, not a timestamp and not an elapsed count. Coarsening is the
+         * whole point: the anchor is stamped by the visitor's clock, and a clock
+         * wrong by minutes or hours yields the same date -- only an error
+         * crossing midnight costs anything, and only ever one day, once. This is
+         * what GA exposes as firstSessionDate, for the same reason.
+         *
+         * It is also a pure function of a value that never changes, so it is
+         * permanent and visitor-scoped: identical on every event this visitor
+         * ever sends. The elapsed version it replaces was recomputed on every
+         * page load, so the clock was consulted afresh each page and the value
+         * could change part way through a session.
+         *
+         * The server does the day arithmetic against its own calendar -- see
+         * TrackingEventHelpers::deriveDaysSinceFirstSession().
+         */
+        var first_seen = OWA.getState( 'v', 'fsts' );
+
+        if ( first_seen ) {
+
+            var d = new Date( first_seen * 1000 );
+            var month = ( '0' + ( d.getMonth() + 1 ) ).slice( -2 );
+            var day   = ( '0' + d.getDate() ).slice( -2 );
+
+            collected.first_session_date = '' + d.getFullYear() + month + day;
         }
 
         // Campaign keys are session state too, written into 's' by the
