@@ -180,6 +180,13 @@ class Module extends \OWA\Core\Module {
                 'alternative_key'                => 'dsfs'
             ),
 
+            'time_since_last_session'        => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
             'days_since_prior_session'         => array(
                 'required'                        => true,
                 'callbacks'                        => array( ),

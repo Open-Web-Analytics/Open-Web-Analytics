@@ -1936,12 +1936,41 @@ class OWATracker  {
 	    
         var session_id = '';
         var state_store_name = '';
-        var is_new_session = this.isNewSession(
-            event.get( 'timestamp' ),
-            OWA.getState( 's', 'last_req' ) || OWA.getPersistedState( 's', 'last_req' )
-        );
+        var previous_request = OWA.getState( 's', 'last_req' )
+            || OWA.getPersistedState( 's', 'last_req' );
+
+        var is_new_session = this.isNewSession( event.get( 'timestamp' ), previous_request );
 
         if ( is_new_session ) {
+
+            /*
+             * How long since the previous session, measured HERE and sent as a
+             * duration.
+             *
+             * Both stamps come from this browser's clock, moments or days apart
+             * but from one clock, so any skew cancels and what is sent is a
+             * real elapsed time. The server used to compute this itself as
+             * `session.timestamp - event.last_req` -- its own clock minus the
+             * browser's -- which is wrong by the visitor's skew and can come out
+             * NEGATIVE. It feeds the 'Time Since Last Visit' dimension
+             * (timeSinceLastVisit / time_sinse_priorsession), so that was the
+             * one prior-session value anybody reports on.
+             *
+             * A duration rather than a timestamp on purpose. It makes no claim
+             * about whose clock it is, so nothing downstream has to know; and
+             * it is computed once here and carried, so a queued event replayed
+             * later reuses the same value instead of recomputing against a
+             * different "now".
+             *
+             * Session state: how long this session waited for its predecessor
+             * stays true for as long as it lasts.
+             */
+            if ( previous_request ) {
+
+                var now = event.get( 'timestamp' ) || this.getTimestamp();
+                OWA.setState( 's', 'time_since_last_session', now - previous_request );
+            }
+
             // Persisted read, for the same reason as last_req above: the id of
             // the session that just ended was written by a previous page load,
             // so it is in the cookie and not in memory.
@@ -2211,7 +2240,8 @@ class OWATracker  {
             { store: 's', key: 'sid',     name: 'session_id' },
             { store: 's', key: 'referer', name: 'session_referer' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
-            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' }
+            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
+            { store: 's', key: 'time_since_last_session', name: 'time_since_last_session' }
         ];
 
         for ( var i = 0; i < map.length; i++ ) {

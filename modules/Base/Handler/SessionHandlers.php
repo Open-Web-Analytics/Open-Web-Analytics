@@ -99,8 +99,41 @@ class SessionHandlers extends \OWA\Core\Observer {
 
                 $s->set('prior_session_id', $event->get('prior_session_id'));
 
+                /*
+                 * The gap to the previous session, as MEASURED BY THE TRACKER
+                 * and sent as a duration.
+                 *
+                 * This used to be computed here as
+                 * `$s->get('timestamp') - $event->get('last_req')` -- the
+                 * server's clock minus the browser's. last_req is the one
+                 * client-clock value that reaches the schema, so that
+                 * subtraction was wrong by the visitor's skew and could come out
+                 * NEGATIVE. It feeds the timeSinceLastVisit dimension ("Time
+                 * Since Last Visit"), so it was the one prior-session value
+                 * anybody reports on.
+                 *
+                 * The tracker measures both ends with one clock, so skew
+                 * cancels; and a duration makes no claim about whose clock it
+                 * is, so nothing downstream has to know. It is computed once at
+                 * send time and carried, so a queued event replayed later
+                 * reuses it rather than recomputing against a different "now".
+                 *
+                 * The old computation stays as the fallback for trackers cached
+                 * from before the field existed -- no worse than what they got
+                 * before.
+                 */
+                $elapsed = (int) $event->get('time_since_last_session');
+
+                if ($elapsed > 0) {
+
+                    $s->set('time_sinse_priorsession', $elapsed);
+                }
+
                 if ($s->get('prior_session_lastreq') > 0) {
-                    $s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
+
+                    if ($elapsed <= 0) {
+                        $s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
+                    }
                     $s->set('prior_session_year', date("Y", $event->get('last_req')));
                     $s->set('prior_session_month', date("M", $event->get('last_req')));
                     $s->set('prior_session_day', date("d", $event->get('last_req')));
