@@ -1891,8 +1891,9 @@ class OWATracker  {
             OWA.setState( 's', 'prior_last_req', last_req );
         }
 
-        // store new state value
-        OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
+        // The advance itself is NOT here: it happens for every event, in
+        // manageState(). This runs only on the first event of a page load, and
+        // its job is to capture the prior value before anything moves.
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2540,9 +2541,48 @@ class OWATracker  {
             });
         }
 
+        /*
+         * Advance the session's last-request time for EVERY event, not just the
+         * first of the page.
+         *
+         * It used to sit inside the block above, which runs once per tracker
+         * under the stateInit guard -- so last_req was the timestamp of the
+         * page's FIRST tracked event and never moved after that. The timeout
+         * was therefore measured from when the previous page started rather
+         * than from the last thing the visitor did: someone active for 25
+         * minutes on one page who navigated 10 minutes later got a new session
+         * at 35 minutes from page start, despite having been active 10 minutes
+         * ago.
+         *
+         * isNewSession() already reads as though this were the case -- its
+         * variable is time_since_lastreq and its own comment says "prev session
+         * expired, because no requests since some time" -- and sessionLength
+         * means an inactivity window. This makes the value match the name. It
+         * is also how GA behaves: its session cookie carries a most-recent-hit
+         * timestamp updated per event, alongside the session start.
+         *
+         * Placed after the identity block so the first event of a page still
+         * decides sessionization against the PREVIOUS request before this one
+         * overwrites it.
+         */
+        this.advanceLastRequestTime( event );
+
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
         }
+    }
+
+    /**
+     * Move the session's last-request time up to this event.
+     *
+     * Falls back to the tracker's clock because addDefaultsToEvent(), which
+     * stamps a missing timestamp, runs after manageState() -- an event that
+     * arrived without one would otherwise write undefined into the store and
+     * break the next page's session decision.
+     */
+    advanceLastRequestTime( event ) {
+
+        OWA.setState( 's', 'last_req', event.get( 'timestamp' ) || this.getTimestamp(), true );
     }
 
     /**

@@ -334,6 +334,70 @@ describe('is_new_visitor has session lifetime', () => {
     });
 });
 
+describe('last_req tracks activity, not page starts', () => {
+
+    /*
+     * The advance runs for every event rather than once per page load. It used
+     * to sit inside the stateInit-guarded pipeline, so last_req was the
+     * timestamp of the page's FIRST tracked event and never moved -- and the
+     * timeout was therefore measured from when the previous page started, not
+     * from the last thing the visitor did. isNewSession() already reads as
+     * though this were the case: its variable is time_since_lastreq and its
+     * comment says "no requests since some time".
+     */
+
+    test('a later event on the same page moves it', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const afterPageview = OWA.getState('s', 'last_req');
+
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        later.set('timestamp', afterPageview + 600);
+        t.trackEvent(later);
+
+        expect(OWA.getState('s', 'last_req')).toBe(afterPageview + 600);
+    });
+
+    test('so a visitor active on one page does not time out from its start', () => {
+        // 25 minutes of activity on a page, then a navigation 10 minutes later.
+        // Measured from page start that is 35 minutes and a new session;
+        // measured from last activity it is 10 and the session continues.
+        const t = newTracker();
+        t.logEvent = () => {};
+        seedPersistedSession({ sid: 'live', last_req: NOW - (35 * 60) });
+
+        const active = t.makeEvent();
+        active.setEventType('track.action');
+        active.set('timestamp', NOW - (10 * 60));
+        t.trackEvent(active);
+
+        expect(OWA.getState('s', 'last_req')).toBe(NOW - (10 * 60));
+    });
+
+    test('the reported prior value is not moved by later events', () => {
+        // What events REPORT stays the request before this page load; only the
+        // store's own last_req tracks activity.
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+        seedPersistedSession({ sid: 'live', last_req: NOW - 60 });
+
+        t.trackPageView(location.href);
+        const reported = beacons[0].last_req;
+
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        later.set('timestamp', NOW + 600);
+        t.trackEvent(later);
+
+        expect(beacons[1].last_req).toBe(reported);
+    });
+});
+
 describe('setNumberPriorSessions', () => {
 
     test('increments and persists nps on a new session', () => {
@@ -411,17 +475,16 @@ describe('setDaysSinceLastSession', () => {
 
 describe('setLastRequestTime', () => {
 
-    test('captures the prior last_req then advances the store to now', () => {
+    test('captures the prior last_req under its own key', () => {
         const t = newTracker();
         seedPersistedSession({ last_req: NOW - 1000 });
 
         t.setLastRequestTime(eventAt(NOW), null);
 
-        // The OLD value is kept under its own key, because it is what events
-        // report and s.last_req is about to stop holding it...
+        // Kept separately because it is what events report, while s.last_req
+        // moves on. The advance is not this method's job any more -- it happens
+        // for every event, in manageState().
         expect(OWA.getState('s', 'prior_last_req')).toBe(NOW - 1000);
-        // ...and the store advances to now for the next request.
-        expect(OWA.getState('s', 'last_req')).toBe(NOW);
     });
 
     test('a second tracker on the page does not overwrite the captured value', () => {
@@ -497,15 +560,15 @@ describe('settling the session store on the sessionization decision', () => {
         expect(OWA.getState('s', 'cv2')).toBe('tier=old');   // gap filled
     });
 
-    test('the new last_req set this page load is not overwritten by the old one', () => {
-        // last_req is written to memory before the decision and must survive it
-        // in both directions -- isNewSession has already been computed off the
-        // persisted value by then, and the store must carry the new one forward.
+    test('the advance survives the settle', () => {
+        // The advance happens after the decision and must not be undone by it:
+        // a continuing session merges the persisted store in behind memory, and
+        // the old last_req in that cookie must not win.
         seedPersistedSession({ sid: 'active-1', last_req: NOW - 100 });
         const t = newTracker();
 
-        t.setLastRequestTime(eventAt(NOW), null);
         t.setSessionId(eventAt(NOW), null);
+        t.advanceLastRequestTime(eventAt(NOW));
 
         expect(OWA.getState('s', 'last_req')).toBe(NOW);
     });
