@@ -209,6 +209,16 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             $this->readableSize( (int) filesize( $extracted ) )
         ) );
 
+        if ( file_exists( $extracted . '.previous' ) ) {
+
+            $this->write( sprintf(
+                'The database this replaced is kept at %s.previous (%s). Delete it once you are '
+              . 'satisfied with the new one.',
+                $extracted,
+                $this->readableSize( (int) filesize( $extracted . '.previous' ) )
+            ) );
+        }
+
         return;
     }
 
@@ -414,18 +424,69 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         $destination = $dir . $edition . '.mmdb';
 
-        // Rename, not copy: on the same filesystem it is atomic, so no request
-        // ever reads a partially written database.
+        $installed = $this->installDatabase( $found, $destination );
+
+        $this->removeTree( $work );
+
+        return $installed;
+    }
+
+    /**
+     * Put the new database in place, keeping the one it replaces.
+     *
+     * The replacement is a rename, which on one filesystem is atomic, so no
+     * request ever reads a half-written database. That was already true. What
+     * was missing is that the file being replaced was simply gone -- 60MB
+     * overwritten with no way back, on a file an installation may have been
+     * relying on for years.
+     *
+     * That is not hypothetical: a run of this command on a live installation
+     * replaced a database that had been in place since 2024, and nothing could
+     * have restored it. A download that succeeds but produces a bad file, or a
+     * MaxMind release with a regression in it, would have left no way back
+     * either.
+     *
+     * So the existing file is moved aside first, and only then is the new one
+     * moved in. If that second move fails, the original goes back -- a failed
+     * update must not be able to leave an installation with no database at all,
+     * which would be strictly worse than the stale one it started with.
+     *
+     * Exactly one previous copy is kept. Keeping more would accumulate 60MB at
+     * a time for a file that is replaced twice a week.
+     *
+     * @return string|null the installed path, or the reason it failed
+     */
+    protected function installDatabase( $found, $destination ) {
+
+        $previous   = $destination . '.previous';
+        $had_existing = file_exists( $destination );
+
+        if ( $had_existing ) {
+
+            @unlink( $previous );
+
+            if ( ! @rename( $destination, $previous ) ) {
+
+                return sprintf(
+                    'Could not set the existing database aside at %s, so it has been left alone '
+                  . 'and nothing was replaced.', $previous );
+            }
+        }
+
         if ( ! @rename( $found, $destination ) ) {
 
-            $this->removeTree( $work );
+            if ( $had_existing ) {
 
-            return sprintf( 'Could not move the database into %s.', $dir );
+                // Back where it was. Better a stale database than none.
+                @rename( $previous, $destination );
+            }
+
+            return sprintf( 'Could not move the new database into %s.%s',
+                dirname( $destination ),
+                $had_existing ? ' The database you had is still in place.' : '' );
         }
 
         @chmod( $destination, 0644 );
-
-        $this->removeTree( $work );
 
         return $destination;
     }
