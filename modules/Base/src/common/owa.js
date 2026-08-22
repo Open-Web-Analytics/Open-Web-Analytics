@@ -30,6 +30,12 @@ class OWA {
 	    this.state = {};
 	    this.overlayActive = false;
 	    this.overlayParams = null;
+
+	    // Registered here, not when the state manager is built: anything that
+	    // replaces this.state directly would otherwise leave the listeners
+	    // unregistered, and the session store would then never be settled --
+	    // silently, since a store that is never hydrated just reads empty.
+	    this.registerStateActions();
     }
     
     // depricated
@@ -139,6 +145,77 @@ class OWA {
 
         this.initializeStateManager();
         return this.state.abandonDeferredPersistence();
+    }
+
+    /**
+     * Declare a storage migration, to run once the cookie domain is known and
+     * before anything downstream reads state.
+     *
+     * Register from a module rather than adding a fallback to a read path: a
+     * fallback is a branch that never gets removed, because nobody can show the
+     * last visitor holding the old shape has gone. A migration finishes.
+     */
+    registerStateMigration( name, callback ) {
+
+        this.initializeStateManager();
+        return this.state.registerMigration( name, callback );
+    }
+
+    /**
+     * Read a value out of a store's cookie without merging anything into
+     * memory. For the values the session decision itself depends on.
+     */
+    getPersistedState( store_name, key ) {
+
+        this.initializeStateManager();
+        return this.state.getPersisted( store_name, key );
+    }
+
+    /**
+     * Register the state manager's own listeners.
+     *
+     * The state manager reacts to two announcements rather than being driven
+     * from a call site, so that WHEN sessionization happens and WHEN a session
+     * becomes persistable can both be moved without touching it:
+     *
+     *   cookieDomainEstablished                  run cookie-to-cookie migrations
+     *   isSessionizationDone { is_new_session }  settle the deferred stores
+     *   persistSession                           flush, and persist from here on
+     */
+    registerStateActions() {
+
+        var that = this;
+
+        /*
+         * Migrations that move values between cookies need the cookie domain,
+         * because the domain hash is part of what makes a cookie readable. The
+         * domain is not known when the tracker is constructed -- it may be
+         * derived from the document, or declared by the caller -- so the
+         * migration waits to be told rather than guessing, and a hash computed
+         * against the wrong domain would make the migrated value unreadable
+         * while the store it came from had already been erased.
+         */
+        this.addAction( 'cookieDomainEstablished', function() {
+
+            that.initializeStateManager();
+            that.state.runMigrations();
+
+        }, 10 );
+
+        this.addAction( 'isSessionizationDone', function( options ) {
+
+            that.initializeStateManager();
+            var is_new_session = !! ( options && options.is_new_session );
+            that.state.resolveDeferredHydration( is_new_session );
+
+        }, 10 );
+
+        this.addAction( 'persistSession', function() {
+
+            that.initializeStateManager();
+            that.state.enableSessionPersistence();
+
+        }, 10 );
     }
     
     debug() {
@@ -339,15 +416,21 @@ class OWA {
 	            filters[ hook.priority ].push( hook.callback );
 	        } );
 	
-	        filters.forEach( function( hooks ) {
-	
-	            hooks.forEach( function( callback ) {
+	        // Arrow functions: these callbacks reference `this` to debug, and a
+	        // plain function passed to forEach is called with `this` undefined
+	        // under the strict mode an ES module always runs in. Registering a
+	        // single filter therefore threw a TypeError before this ran. It went
+	        // unnoticed because nothing in the tree calls addFilter -- applyFilters
+	        // is only ever reached with an empty list, which skips this block.
+	        filters.forEach( ( hooks ) => {
+
+	            hooks.forEach( ( callback ) => {
 	                value = callback( value, options );
-	                
+
 	                this.debug('Filter returned value: ');
 	                this.debug(value);
 	            } );
-	
+
 	        } );
 	    }
 	
@@ -375,12 +458,13 @@ class OWA {
 	
 	        } );
 	
-	        actions.forEach( function( hooks ) {
-				this.debug('Executing Action callabck for: ' + tag);
-	            hooks.forEach( function( callback ) {
+	        // See applyFilters() for why these must be arrow functions.
+	        actions.forEach( ( hooks ) => {
+				this.debug('Executing Action callback for: ' + tag);
+	            hooks.forEach( ( callback ) => {
 	                callback( options );
 	            } );
-	
+
 	        } );
 	    }
 	}

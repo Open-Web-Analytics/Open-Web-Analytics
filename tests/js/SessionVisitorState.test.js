@@ -71,17 +71,49 @@ function eventAt(timestamp) {
 const NOW = 1700000000;
 const DAY = 3600 * 24;
 
+/** The state a fresh page load starts in: nothing in memory, nothing settled. */
+function coldPage() {
+    OWA.initializeStateManager();
+    OWA.state.stores = {};
+    OWA.state.storeFormats = {};
+    OWA.state.hydrated = {};
+    OWA.state.sessionPersistenceReady = false;
+}
+
+/**
+ * Write session values to the COOKIE the way a previous page load would have,
+ * then wipe memory.
+ *
+ * Tests that need a PREVIOUS session's values must persist them rather than
+ * set them: the session store is no longer hydrated on first touch, so a plain
+ * setState() puts a value in memory, where it reads as something THIS page load
+ * set. That distinction is the whole point of the design, and a test that seeds
+ * with setState() is testing the wrong side of it.
+ */
+function seedPersistedSession(values) {
+    coldPage();
+    // Written into the cookie CACHE the state manager reads through, not
+    // through document.cookie: jsdom refuses cookies whose domain does not
+    // match the test document URL, and this suite runs on '.cv.example'. A
+    // real round-trip would seed nothing and every assertion below would pass
+    // or fail for the wrong reason.
+    OWA.state.cookies = OWA.state.cookies || {};
+    OWA.state.cookies['owa_s'] = [ JSON.stringify(values) ];
+}
+
 beforeEach(() => {
     setDocumentDomain('cv.example');
     OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
     OWA.setSetting('loggerPause', false);
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
+    coldPage();
 });
 
 afterEach(() => {
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    coldPage();
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
 });
 
 describe('isNewSession (sessionLength expiry boundary)', () => {
@@ -173,7 +205,9 @@ describe('setSessionId', () => {
 
     test('records the prior session id when a new session succeeds an old one', () => {
         const t = newTracker();
-        OWA.setState('s', 'sid', 'old-session-id', true);
+        // Persisted, not set: the id of the session that just ended was written
+        // by a previous page load.
+        seedPersistedSession({ sid: 'old-session-id' });
         // last_req far in the past -> new session.
         t.setGlobalEventProperty('last_req', NOW - 5000);
 
@@ -187,7 +221,7 @@ describe('setSessionId', () => {
 
     test('reuses the stored session id (no new-session flag) during an active session', () => {
         const t = newTracker();
-        OWA.setState('s', 'sid', 'active-session-1', true);
+        seedPersistedSession({ sid: 'active-session-1' });
         // last_req is "now" -> gap 0 -> active session.
         t.setGlobalEventProperty('last_req', NOW);
 
@@ -274,7 +308,7 @@ describe('setLastRequestTime', () => {
 
     test('promotes the prior last_req then stores the current timestamp', () => {
         const t = newTracker();
-        OWA.setState('s', 'last_req', NOW - 1000, true);
+        seedPersistedSession({ last_req: NOW - 1000 });
 
         t.setLastRequestTime(eventAt(NOW), null);
 
@@ -285,20 +319,59 @@ describe('setLastRequestTime', () => {
     });
 });
 
-describe('resetSessionState', () => {
+describe('settling the session store on the sessionization decision', () => {
 
-    test('clears the session store but preserves last_req', () => {
+    /*
+     * This replaced resetSessionState(). That method cleared the store and then
+     * put back the values set during the page load, because by the time it ran
+     * both were already mixed in one store with nothing to tell them apart.
+     * Keeping them apart until the decision removes the problem instead of
+     * compensating for it -- old values are in the cookie, new ones in memory.
+     */
+
+    test('a new session discards the persisted store and keeps this page load', () => {
+        seedPersistedSession({ sid: 'old-sid', source: 'news', cv1: 'plan=free' });
         const t = newTracker();
-        OWA.setState('s', 'last_req', NOW - 1, true);
-        OWA.setState('s', 'sid', 'old-sid', true);
-        OWA.setState('s', 'source', 'news', true);
+        // Set during THIS page load, before the pageview that ends the old one.
+        OWA.setState('s', 'cv1', 'plan=pro');
+        t.setGlobalEventProperty('last_req', NOW - 5000);
 
-        t.resetSessionState();
+        t.setSessionId(eventAt(NOW), null);
 
-        // last_req survives so isNewSession still has a reference point...
-        expect(OWA.getState('s', 'last_req')).toBe(NOW - 1);
-        // ...everything else in the session store is wiped.
-        expect(OWA.getState('s', 'sid')).toBeFalsy();
+        // The previous session's values are gone...
         expect(OWA.getState('s', 'source')).toBeFalsy();
+        expect(t.getGlobalEventProperty('prior_session_id')).toBe('old-sid');
+        // ...and this page load's survived the boundary it was set for.
+        expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
+    });
+
+    test('a continuing session merges the persisted store in BEHIND this page load', () => {
+        // Merge precedence. Filling gaps is right; overwriting is not, because
+        // a value set on this page is newer than one a previous page persisted.
+        // Object.assign(memory, cookie) gets this backwards and silently
+        // discards the caller's write.
+        seedPersistedSession({ sid: 'active-1', cv1: 'plan=free', cv2: 'tier=old' });
+        const t = newTracker();
+        OWA.setState('s', 'cv1', 'plan=pro');
+        t.setGlobalEventProperty('last_req', NOW);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        expect(OWA.getState('s', 'sid')).toBe('active-1');
+        expect(OWA.getState('s', 'cv1')).toBe('plan=pro');   // memory won
+        expect(OWA.getState('s', 'cv2')).toBe('tier=old');   // gap filled
+    });
+
+    test('the new last_req set this page load is not overwritten by the old one', () => {
+        // last_req is written to memory before the decision and must survive it
+        // in both directions -- isNewSession has already been computed off the
+        // persisted value by then, and the store must carry the new one forward.
+        seedPersistedSession({ sid: 'active-1', last_req: NOW - 100 });
+        const t = newTracker();
+
+        t.setLastRequestTime(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        expect(OWA.getState('s', 'last_req')).toBe(NOW);
     });
 });

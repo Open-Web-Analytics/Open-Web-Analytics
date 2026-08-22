@@ -26,11 +26,6 @@ class OWATracker  {
 	    this.globalEventProperties =  {};
 	    // state sores that can be shared across sites
 	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
-	    // Session-store values set during THIS page load. Written to the store
-	    // immediately AND kept here, so that if the pageview turns out to start
-	    // a new session, resetSessionState() can put them back after clearing
-	    // what the previous session left. See resetSessionState().
-	    this.sessionStateSetThisPageLoad = {},
 	    // Time When tracker is loaded
 	    this.startTime =  null;
 	    // time when tracker is unloaded
@@ -111,11 +106,24 @@ class OWATracker  {
 
 	    // 'b' held session-scoped custom variables, alongside 's' which is the
 	    // session store -- two cookies for one concept. Session-scoped custom
-	    // variables now live in 's'; see setCustomVar(). Still REGISTERED, and
+	    // variables now live in 's'; see setCustomVar(). Still REGISTERED and
 	    // still read, so a visitor mid-session keeps the variables they already
-	    // have. Nothing is written to it any more, and it is a browser-session
-	    // cookie, so it empties itself without a migration.
+	    // have, but nothing is written to it any more and it is actively
+	    // collapsed into 's' as soon as the cookie domain is known -- see
+	    // StateManager.collapseLegacyStores().
+	    //
+	    // Reading it as a fallback was not enough on its own: because nothing
+	    // cleared it at a session boundary, a variable left there by a session
+	    // that had ended was still found by that read and put back on the wire.
 	    OWA.registerStateStore('b', '', '', 'json');
+
+	    // 'd' holds page-scoped custom variables. Memory only, for the life of
+	    // the page -- the state manager never writes it to a cookie. Page scope
+	    // used to be the ABSENCE of a case in setCustomVar(): the value fell
+	    // through to a global event property and happened to work. Declaring it
+	    // makes the three scopes symmetrical and gives getCustomPageVar()
+	    // somewhere to read from.
+	    OWA.registerStateStore('d', '', '', 'json');
 	
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {
@@ -176,7 +184,15 @@ class OWATracker  {
 	
 	    // check to se if an overlay session is active
 	    this.checkForOverlaySession();
-		
+
+	    // A caller that declared the cookie domain up front has established it
+	    // just as surely as setCookieDomain() does, and anything waiting on it
+	    // must hear about it either way. Without this the announcement would
+	    // only ever come from the lazy path in trackEvent().
+	    if ( this.getOption('cookie_domain_set') === true ) {
+		    OWA.doAction('cookieDomainEstablished');
+	    }
+
 		OWA.doAction('tracker.init');
 	}
 
@@ -357,6 +373,8 @@ class OWATracker  {
         this.setOption('cookie_domain_set', true);
         OWA.setSetting('cookie_domain', domain);
         OWA.debug('Cookie domain is: %s', domain);
+
+        OWA.doAction('cookieDomainEstablished');
     }
 
     getCookieDomainHash(domain) {
@@ -618,7 +636,7 @@ class OWATracker  {
                  * at all, minting a new one on every page view. That is a worse
                  * failure than the one this deferral exists to prevent.
                  */
-                OWA.commitDeferredStatePersistence();
+                this.sendAccepted();
             } else {
 
                 OWA.debug('url : %s', url);
@@ -649,6 +667,28 @@ class OWATracker  {
      * down mid-flight) -> nothing is committed, and the next page correctly
      * starts a new session.
      */
+    /**
+     * A request carrying this page's session identity was accepted for
+     * delivery.
+     *
+     * Two things follow, on different axes, which is why both happen here and
+     * neither is folded into the other:
+     *
+     *   commitDeferredStatePersistence()  releases the withheld KEYS (sid,
+     *                                     last_req) for writing
+     *   persistSession                    tells the state manager the session
+     *                                     STORE is worth writing at all, and to
+     *                                     keep writing it as values are set
+     *
+     * The action is fired rather than called so that what counts as acceptance
+     * can move without the state manager knowing about it.
+     */
+    sendAccepted() {
+
+        OWA.commitDeferredStatePersistence();
+        OWA.doAction( 'persistSession' );
+    }
+
     sendRequest( url, event_type ) {
 
         var that = this;
@@ -668,7 +708,7 @@ class OWATracker  {
         if ( queued ) {
 
             OWA.debug( 'Beacon queued for %s', event_type );
-            OWA.commitDeferredStatePersistence();
+            that.sendAccepted();
             return true;
         }
 
@@ -677,7 +717,7 @@ class OWATracker  {
         // NOTE: 'onload', not 'onLoad'. The latter is not a DOM property and
         // never fires -- it sat here unnoticed for years because nothing hung
         // off the success path until now.
-        image.onload  = function () { OWA.commitDeferredStatePersistence(); };
+        image.onload  = function () { that.sendAccepted(); };
         image.onerror = function () { OWA.abandonDeferredStatePersistence(); };
         image.src = url;
 
@@ -1769,7 +1809,17 @@ class OWATracker  {
 
     setLastRequestTime( event, callback ) {
 
-        var last_req = OWA.getState('s', 'last_req');
+        /*
+         * Read straight from the cookie, not from memory.
+         *
+         * This runs BEFORE the session decision, and the session store is not
+         * hydrated until that decision is made -- so getState() here would
+         * return only what this page load has set, which never includes a
+         * previous page's last_req. Reading the persisted value directly is
+         * safe because a read merges nothing: the invariant is that nothing
+         * merges into memory before the decision, not that nothing reads.
+         */
+        var last_req = OWA.getPersistedState('s', 'last_req');
         OWA.debug('last_req from cookie: %s', last_req);
         // suppport for old style cookie
         if ( ! last_req ) {
@@ -1794,9 +1844,12 @@ class OWATracker  {
         var session_id = '';
         var state_store_name = '';
         var is_new_session = this.isNewSession( event.get( 'timestamp' ),  this.getGlobalEventProperty( 'last_req' ) );
+
         if ( is_new_session ) {
-            //set prior_session_id
-            var prior_session_id = OWA.getState('s', 'sid');
+            // Persisted read, for the same reason as last_req above: the id of
+            // the session that just ended was written by a previous page load,
+            // so it is in the cookie and not in memory.
+            var prior_session_id = OWA.getPersistedState('s', 'sid');
             if ( ! prior_session_id ) {
                 state_store_name = Util.sprintf('%s_%s', 'ss', this.getSiteId() );
                 prior_session_id = OWA.getState(state_store_name, 's');
@@ -1804,8 +1857,29 @@ class OWATracker  {
             if ( prior_session_id ) {
                 this.globalEventProperties.prior_session_id = prior_session_id;
             }
+        }
 
-            this.resetSessionState();
+        /*
+         * Announce the decision. The state manager listens and settles the
+         * session store on the strength of it: a new session means the
+         * persisted values described a session that has ended, so they are
+         * discarded and memory -- holding only what THIS page load set -- is
+         * kept; a continuing session means they are still current, so they are
+         * merged in behind what this page load set.
+         *
+         * This is what replaced resetSessionState(). That method had to clear
+         * the store and then put back the values set during this page load,
+         * because by the time it ran both were already mixed together in one
+         * store and nothing distinguished them. Keeping them apart until here
+         * removes the problem rather than compensating for it.
+         *
+         * Fired rather than called directly so that moving the moment of
+         * sessionization -- today it happens only because trackPageView() ran
+         * -- does not mean rewriting the state manager.
+         */
+        OWA.doAction( 'isSessionizationDone', { 'is_new_session': is_new_session } );
+
+        if ( is_new_session ) {
 
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
@@ -1843,38 +1917,6 @@ class OWATracker  {
             callback(event);
         }
 
-    }
-
-    /**
-     * Start a new session in the session store.
-     *
-     * Clears it, then puts back anything set during THIS page load.
-     *
-     * Both halves are needed, and neither works alone. Clearing alone destroys
-     * a value the caller set moments earlier for the session that is starting:
-     * the usual order is setCustomVar() then trackPageView(), so at the moment
-     * of the reset a variable for the NEW session and one left over from the
-     * OLD session are indistinguishable -- they are both just keys. Re-applying
-     * alone would leave the previous session's values in place.
-     *
-     * Taken together the store cannot leak across a session boundary, and a
-     * value set on this page cannot be lost by the boundary it was set for.
-     *
-     * `last_req` survives because the boundary is computed from it.
-     */
-    resetSessionState() {
-
-        var last_req = OWA.getState( 's', 'last_req');
-        OWA.clearState('s');
-        OWA.setState('s', 'last_req', last_req);
-
-        for ( var name in this.sessionStateSetThisPageLoad ) {
-
-            if ( this.sessionStateSetThisPageLoad.hasOwnProperty( name ) ) {
-
-                OWA.setState( 's', name, this.sessionStateSetThisPageLoad[ name ] );
-            }
-        }
     }
 
     isNewSession( timestamp, last_req ) {
@@ -1944,15 +1986,25 @@ class OWATracker  {
 
         switch (scope) {
 
+            case 'page':
+
+                // Memory only, discarded with the page.
+                OWA.setState('d', cv_param_name, cv_param_value);
+                break;
+
             case 'session':
 
                 // The session store, not a second cookie beside it. 'b' existed
                 // only to hold these, which is why a variable scoped to the
                 // session did not share that session's lifetime.
-                // Written now, so a browser closed before any pageview does not
-                // lose it, and remembered so a new session does not either.
+                //
+                // This lands in MEMORY. It reaches the cookie when the session
+                // is settled and a request carrying it has been accepted -- see
+                // the 'persistSession' action. Holding it back is what makes it
+                // distinguishable from a value the previous session left in the
+                // cookie, which is the whole reason a new session can discard
+                // one and keep the other.
                 OWA.setState('s', cv_param_name, cv_param_value);
-                this.sessionStateSetThisPageLoad[cv_param_name] = cv_param_value;
                 // and drop any copy left in the old store, so the legacy read
                 // in getCustomVar() cannot serve a stale value back.
                 OWA.clearState('b', cv_param_name);
@@ -1963,8 +2015,8 @@ class OWATracker  {
 
                 // store in visitor cookie
                 OWA.setState('v', cv_param_name, cv_param_value);
-                // remove slot from the session-level stores
-                delete this.sessionStateSetThisPageLoad[cv_param_name];
+                // remove slot from the narrower stores
+                OWA.clearState('d', cv_param_name);
                 OWA.clearState('s', cv_param_name);
                 OWA.clearState('b', cv_param_name);
                 break;
@@ -1979,6 +2031,9 @@ class OWATracker  {
         var cv = '';
         // check request/page level
         cv = this.getGlobalEventProperty( cv_param_name );
+        if ( ! cv ) {
+            cv = OWA.getState( 'd', cv_param_name );
+        }
         //check session store
         if ( ! cv ) {
             cv = OWA.getState( 's', cv_param_name );
@@ -1999,10 +2054,66 @@ class OWATracker  {
 
     }
 
+    /**
+     * Read a page-scoped custom variable.
+     *
+     * Always available: page scope is memory only and never waits on anything.
+     */
+    getCustomPageVar( slot ) {
+
+        var cv_param_name = 'cv' + slot;
+        var cv = this.getGlobalEventProperty( cv_param_name );
+
+        if ( ! cv ) {
+            cv = OWA.getState( 'd', cv_param_name );
+        }
+
+        return cv;
+    }
+
+    /**
+     * Read a session-scoped custom variable.
+     *
+     * CALL THIS AFTER trackPageView(). Before it, the session store holds only
+     * what this page load has set: whether the values a previous page persisted
+     * still apply depends on whether that session is still running, and nothing
+     * knows that until sessionization has run. A read beforehand therefore
+     * returns what you set on this page and nothing else.
+     *
+     * That is a deliberate restriction rather than a limitation to work around.
+     * Serving the persisted value early would mean answering with a variable
+     * belonging to a session that may already have ended, and the caller would
+     * have no way to tell.
+     */
+    getCustomSessionVar( slot ) {
+
+        var cv_param_name = 'cv' + slot;
+        var cv = OWA.getState( 's', cv_param_name );
+
+        // the store session-scoped variables used to live in; see getCustomVar()
+        if ( ! cv ) {
+            cv = OWA.getState( 'b', cv_param_name );
+        }
+
+        return cv;
+    }
+
+    /**
+     * Read a visitor-scoped custom variable.
+     *
+     * Always available: the visitor store does not wait on the session
+     * decision, because a visitor outlives their sessions.
+     */
+    getCustomVisitorVar( slot ) {
+
+        return OWA.getState( 'v', 'cv' + slot );
+    }
+
     deleteCustomVar(slot) {
 
         var cv_param_name = 'cv' + slot;
-        delete this.sessionStateSetThisPageLoad[cv_param_name];
+        // clear page level store
+        Util.clearState( 'd', cv_param_name );
         //clear session level, current and legacy
         Util.clearState( 's', cv_param_name );
         Util.clearState( 'b', cv_param_name );
