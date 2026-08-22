@@ -28,38 +28,63 @@ class OWATracker  {
 	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
 
 	    /*
-	     * The SCOPE of each property the tracker derives from state -- how long
-	     * its value is valid, which is NOT the same question as which store it
-	     * happens to live in.
+	     * Every property the tracker derives from state, on TWO axes.
 	     *
-	     * prior_last_req is the proof: it lives in the session store but has
-	     * page lifetime, because it means "the request before THIS page load".
-	     * Reading scope off the store would get it wrong.
+	     *   scope       how long the value is VALID -- the set of events it
+	     *               must be identical across.
+	     *   permanence  how long it SURVIVES -- where it is kept.
 	     *
-	     * Scope is a contract, and the one that matters most is 'session': a
-	     * session-scoped property MUST be identical on every event sharing a
-	     * session_id, and a divergence is a regression whatever caused it. That
-	     * rule is what rules out deriving days_since_prior_session as calendar
+	     * They are not the same question, and the store answers only the
+	     * second. last_req is the proof: page scope, because it means "the
+	     * request before THIS page load", but kept in the session cookie, so it
+	     * OUTLIVES its own validity. Reading scope off the store gets it wrong,
+	     * which is why scope is declared here.
+	     *
+	     * The rule between them: permanence must be at least scope. A value
+	     * stored for less time than it is valid vanishes mid-scope -- a
+	     * session-scoped property kept only for the page would disappear on the
+	     * session's second page. The reverse is allowed but is worth knowing
+	     * about, because a value outliving its scope can be read stale.
+	     *
+	     * 'session' scope carries the contract that matters most: identical on
+	     * every event sharing a session_id, a divergence being a regression.
+	     * That is what rules out deriving days_since_prior_session as calendar
 	     * days -- see TrackingEventHelpers::deriveDaysSincePriorSession().
 	     *
 	     * Enforced by tests/js/SessionScopedInvariant.test.js, which reads this
-	     * map rather than restating it, and fails if a collector emits a
-	     * property that is not declared here.
+	     * rather than restating it.
 	     */
-	    this.trackingPropertyScopes = {
-		    // constant for the life of the visitor, so also across a session
-		    visitor: [ 'visitor_id', 'fsts', 'dsfs', 'nps' ],
-		    // constant for the life of the session
-		    session: [
-			    'session_id', 'prior_session_id', 'is_new_visitor',
-			    'time_since_last_session', 'session_referer'
-		    ],
-		    // constant for this page load only
-		    page: [ 'last_req', 'is_new_session', 'page_url', 'page_title', 'page_type' ],
-		    // one event, consumed as applied
-		    request: [ 'is_new_session_start', 'is_new_visitor_created' ],
-		    // not state-scoped: identity the site supplies or the DOM reports
-		    unscoped: [ 'user_name', 'HTTP_REFERER', 'attribs' ]
+	    this.trackingProperties = {
+
+		    visitor_id:              { scope: 'visitor', permanence: 'visitor' },
+		    fsts:                    { scope: 'visitor', permanence: 'visitor' },
+		    dsfs:                    { scope: 'visitor', permanence: 'visitor' },
+		    nps:                     { scope: 'visitor', permanence: 'visitor' },
+
+		    session_id:              { scope: 'session', permanence: 'session' },
+		    prior_session_id:        { scope: 'session', permanence: 'session' },
+		    is_new_visitor:          { scope: 'session', permanence: 'session' },
+		    time_since_last_session: { scope: 'session', permanence: 'session' },
+		    session_referer:         { scope: 'session', permanence: 'session' },
+
+		    // Page scope, session permanence: it outlives its validity, and is
+		    // re-captured on each page load rather than being read back.
+		    last_req:                { scope: 'page',    permanence: 'session' },
+
+		    is_new_session:          { scope: 'page',    permanence: 'page' },
+		    page_url:                { scope: 'page',    permanence: 'page' },
+		    page_title:              { scope: 'page',    permanence: 'page' },
+		    page_type:               { scope: 'page',    permanence: 'page' },
+
+		    // Consumed as applied, never stored.
+		    is_new_session_start:    { scope: 'request', permanence: 'none' },
+		    is_new_visitor_created:  { scope: 'request', permanence: 'none' },
+
+		    // Supplied by the site or read off the DOM, not derived from the
+		    // session or visitor lifecycle.
+		    user_name:               { scope: 'visitor', permanence: 'visitor' },
+		    HTTP_REFERER:            { scope: 'page',    permanence: 'page' },
+		    attribs:                 { scope: 'session', permanence: 'campaign' }
 	    },
 	    // Time When tracker is loaded
 	    this.startTime =  null;
