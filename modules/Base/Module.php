@@ -552,6 +552,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
+        $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
         $this->registerAction( 'base.installBase',                   'OWA\\Module\\Base\\Controller\\InstallBase',                  'Controller/InstallBase.php' );
         $this->registerAction( 'base.installCheckEnv',               'OWA\\Module\\Base\\Controller\\InstallCheckEnv',              'Controller/InstallCheckEnv.php' );
@@ -700,6 +701,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
+        $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
         $this->registerCliCommand('activate', 'base.moduleActivateCli');
@@ -753,6 +755,18 @@ class Module extends \OWA\Core\Module {
         // Retention must never arrive as a side effect of turning the scheduler
         // on. ScheduleCliTest pins the empty array for exactly that reason.
         $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
+
+        // NOT registering update-ua-regexes here, deliberately.
+        //
+        // It would fit -- the patterns go stale on their own and monthly is
+        // roughly how often uap-core changes -- but it makes an outbound HTTP
+        // request to a third party, unattended, on a schedule. For self-hosted
+        // analytics that is a decision the administrator makes, not one that
+        // arrives with an upgrade. Same reasoning as the empty params above:
+        // turning the scheduler on must not turn anything else on.
+        //
+        // An installation that wants it adds it to OWA_SCHEDULED_JOBS, or runs
+        // cli.php cmd=update-ua-regexes from its own cron.
     }
 
     /**
