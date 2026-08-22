@@ -130,12 +130,33 @@ class StateManager {
 	 */
 	discardPersisted( store_name ) {
 
+		/*
+		 * Marking it settled is the whole job: hydrate() will not merge the
+		 * ended session's values into memory, which is what keeps one session
+		 * from bleeding into the next.
+		 *
+		 * The cookie is deliberately NOT erased here. It is erased by being
+		 * overwritten, when the new session persists -- writePersistedStore()
+		 * replaces the cookie wholesale rather than merging -- so an eager
+		 * erase is redundant in the normal path and destructive in the one
+		 * where the write never comes: a page whose beacon is never accepted
+		 * would leave the visitor with no session cookie at all, having had one
+		 * a moment earlier.
+		 *
+		 * It also has to stay readable until this page load is done with it.
+		 * setLastRequestTime() runs AFTER the session decision and reads the
+		 * persisted last_req to report as the prior request; erasing here made
+		 * that read find nothing, so every new session reported an empty
+		 * last_req and the server computed no prior_session_lastreq and none of
+		 * the prior_session_* date parts derived from it.
+		 *
+		 * This is what GA does -- measured: a tag that loads and sends nothing
+		 * writes no cookies at all, so it never destroys what was already
+		 * there.
+		 */
 		this.hydrated[ store_name ] = true;
 
-		Util.eraseCookie( OWA.getSetting('ns') + store_name );
-		this.cookies = Util.readAllCookies();
-
-		OWA.debug( 'Discarded persisted store (%s); memory kept', store_name );
+		OWA.debug( 'Discarded persisted store (%s); memory kept, cookie left to be overwritten', store_name );
 	}
 
 	/**
