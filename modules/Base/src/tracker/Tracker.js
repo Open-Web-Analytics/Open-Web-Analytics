@@ -1827,16 +1827,26 @@ class OWATracker  {
     setLastRequestTime( event, callback ) {
 
         /*
-         * Read straight from the cookie, not from memory.
+         * Memory first, then the cookie.
          *
-         * This runs BEFORE the session decision, and the session store is not
-         * hydrated until that decision is made -- so getState() here would
-         * return only what this page load has set, which never includes a
-         * previous page's last_req. Reading the persisted value directly is
-         * safe because a read merges nothing: the invariant is that nothing
-         * merges into memory before the decision, not that nothing reads.
+         * The cookie is the usual source: this runs BEFORE the session
+         * decision, and the session store is not hydrated until that decision
+         * is made, so a previous page's last_req is only in the cookie. Reading
+         * it directly is safe because a read merges nothing -- the invariant is
+         * that nothing MERGES into memory before the decision, not that nothing
+         * reads.
+         *
+         * But memory takes precedence when it has one, and that is not a
+         * fallback ordering, it is the point: memory holds what THIS page load
+         * set. A second tracker on the same page (two site ids, sharing the
+         * state stores) finds the first tracker's last_req there and correctly
+         * continues its session. Reading only the cookie made it miss -- the
+         * first tracker's value has not been persisted yet, since that waits on
+         * a beacon being accepted -- so it declared a NEW session, minted a
+         * second sid for one page view, and overwrote the first tracker's sid
+         * in the shared store.
          */
-        var last_req = OWA.getPersistedState('s', 'last_req');
+        var last_req = OWA.getState('s', 'last_req') || OWA.getPersistedState('s', 'last_req');
         OWA.debug('last_req from cookie: %s', last_req);
         // suppport for old style cookie
         if ( ! last_req ) {
