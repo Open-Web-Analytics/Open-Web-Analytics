@@ -90,6 +90,8 @@
 
     <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsUpdate">Update Options</BUTTON>
     <input type="hidden" name="<?php echo $view->getNs();?>module" value="maxmind_geoip">
+    <?php // Come back here after saving, rather than to the general settings page. ?>
+    <input type="hidden" name="<?php echo $view->getNs();?>return_action" value="maxmind_geoip.optionsGeoip">
 
 </form>
 </div>

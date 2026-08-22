@@ -70,7 +70,50 @@ class OptionsUpdate extends \OWA\Core\AdminController {
             $this->setStatusCode(2500);
         }
 
-        $this->setRedirectAction('base.optionsGeneral');
+        $this->setRedirectAction( $this->returnAction() );
+    }
+
+    /**
+     * The settings page to go back to after saving.
+     *
+     * This used to be base.optionsGeneral unconditionally, which is right for
+     * the page that form came from and wrong for every other one: saving the
+     * GeoIP settings landed the administrator on the general settings page,
+     * with the success message attached to a page they had not been editing.
+     * It reads as though the save went somewhere unexpected.
+     *
+     * The submitting page names itself in a hidden field. A page that does not
+     * -- every existing form -- gets the old destination, so nothing changes
+     * for them.
+     *
+     * VALIDATED, because this is a form value and it becomes the next action
+     * dispatched. Only a REGISTERED action is accepted, so the field cannot be
+     * used to bounce an administrator into some unrelated part of OWA, and a
+     * page that is renamed or removed falls back rather than 404ing after a
+     * save that actually succeeded.
+     *
+     * @return string
+     */
+    protected function returnAction() {
+
+        $requested = trim( (string) $this->getParam( 'return_action' ) );
+
+        if ( $requested === '' ) {
+
+            return 'base.optionsGeneral';
+        }
+
+        $registered = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', $requested );
+
+        if ( ! $registered ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Ignoring an unrecognised return_action "%s" after saving settings.', $requested ) );
+
+            return 'base.optionsGeneral';
+        }
+
+        return $requested;
     }
 
     /**
