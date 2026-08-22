@@ -1756,7 +1756,7 @@ class OWATracker  {
 
         OWA.debug('setting days since last session.');
         var dsps = '';
-        if ( this.getGlobalEventProperty( 'is_new_session' ) ) {
+        if ( OWA.getState( 'd', 'is_new_session' ) ) {
             OWA.debug( 'timestamp: %s', event.get( 'timestamp' ) );
             var last_req = this.getGlobalEventProperty( 'last_req' ) || event.get( 'timestamp' );
             OWA.debug( 'last_req: %s', last_req );
@@ -1949,7 +1949,7 @@ class OWATracker  {
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
                //mark new session flag on current request
-            this.globalEventProperties.is_new_session = true;
+            OWA.setState( 'd', 'is_new_session', true );
             this.isNewSessionFlag = true;
             OWA.setState( 's', 'sid', session_id, true );
             
@@ -1971,7 +1971,7 @@ class OWATracker  {
         if ( ! session_id ) {
             session_id = Util.generateRandomGuid();
             //mark new session flag on current request
-            this.globalEventProperties.is_new_session = true;
+            OWA.setState( 'd', 'is_new_session', true );
             this.isNewSessionFlag = true;
             OWA.setState( 's', 'sid', session_id, true );
         }

@@ -67,13 +67,41 @@ describe('two trackers sharing the state stores', () => {
         expect(beacons.b[0].session_id).toBe(beacons.a[0].session_id);
     });
 
-    test('only the first of them starts that session', () => {
+    test('both report the session as starting here, because it did', () => {
         const { beacons } = trackBoth();
 
+        // is_new_session marks THIS EVENT as occurring at the start of a new
+        // session -- which is what resolveEntryPage() reads it as server-side.
+        // It is a fact about the page load, not about which tracker happened to
+        // derive it first, so it lives in the page store and both trackers see
+        // it.
+        //
+        // This test previously asserted the opposite -- that only the first
+        // tracker reports it -- on the reasoning that two new-session flags
+        // would have the server create the session twice. It does not: the
+        // second logSession() finds the row already persisted and skips. What
+        // actually happens is that the second site gets no session row of its
+        // own, which is the per-site limitation below, not something this flag
+        // causes.
         expect(beacons.a[0].is_new_session).toBe(true);
-        // The second continues it. Two new-session flags for one page view would
-        // have the server create the session twice.
-        expect(beacons.b[0].is_new_session).toBeFalsy();
+        expect(beacons.b[0].is_new_session).toBe(true);
+    });
+
+    test('KNOWN LIMITATION: the two sites cannot both own the session', () => {
+        // A session row is keyed by session_id alone -- SessionHandlers::
+        // logSession() does load($event->get('session_id'), 'id') with no
+        // site_id -- so one shared session id cannot represent two sites. GA
+        // splits here: _ga holds the client id and is shared across properties,
+        // while _ga_<container-id> holds session state per property. OWA itself
+        // used to, too: the legacy compat reads still look for ss_<siteId>.
+        //
+        // Pinned as a limitation rather than asserted as correct behaviour,
+        // because neither available behaviour is right and the fix is a per-site
+        // session store.
+        const { beacons } = trackBoth();
+
+        expect(beacons.b[0].session_id).toBe(beacons.a[0].session_id);
+        expect(beacons.a[0].site_id).not.toBe(beacons.b[0].site_id);
     });
 
     test('they report one visitor', () => {

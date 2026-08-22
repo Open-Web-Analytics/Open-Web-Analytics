@@ -202,7 +202,7 @@ describe('setSessionId', () => {
         t.setSessionId(eventAt(NOW), null);
 
         expect(OWA.getState('s', 'sid')).toBeTruthy();
-        expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
+        expect(OWA.getState('d', 'is_new_session')).toBe(true);
         expect(t.isNewSessionFlag).toBe(true);
 
         // The id lives in the store and is what rides events. It used to be
@@ -227,7 +227,7 @@ describe('setSessionId', () => {
         expect(OWA.getState('s', 'prior_session_id')).toBe('old-session-id');
         // A brand new session id replaced the old one.
         expect(OWA.getState('s', 'sid')).not.toBe('old-session-id');
-        expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
+        expect(OWA.getState('d', 'is_new_session')).toBe(true);
     });
 
     test('the prior session id rides the event that started the new session', () => {
@@ -277,7 +277,7 @@ describe('setSessionId', () => {
         t.setSessionId(eventAt(NOW), null);
 
         expect(OWA.getState('s', 'sid')).toBe('active-session-1');
-        expect(t.getGlobalEventProperty('is_new_session')).toBeUndefined();
+        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
     });
 });
 
@@ -388,7 +388,10 @@ describe('setDaysSinceLastSession', () => {
 
     test('computes dsps in whole days from last_req on a new session', () => {
         const t = newTracker();
-        t.setGlobalEventProperty('is_new_session', true);
+        // The new-session marker is page state now, not a tracker-private
+        // property; last_req is still the one per-request fact left on the
+        // tracker.
+        OWA.setState('d', 'is_new_session', true);
         t.setGlobalEventProperty('last_req', NOW - 5 * DAY);
 
         t.setDaysSinceLastSession(eventAt(NOW), null);
