@@ -1790,7 +1790,22 @@ class OWATracker  {
         if ( ! visitor_id ) {
             visitor_id = Util.generateRandomGuid();
 
-            this.globalEventProperties.is_new_visitor = true;
+            /*
+             * Session state: it says this session was the visitor's FIRST, not
+             * that this request minted them, and the store's lifetime is what
+             * makes that true.
+             *
+             * On a new session the persisted copy is discarded and memory kept,
+             * so a returning visitor's stale flag goes and a genuinely new
+             * one's survives. Written here, ahead of that discard, because
+             * setVisitorId runs before setSessionId in the chain.
+             *
+             * On a later page of the SAME session it hydrates back, which is
+             * the fix: as a per-page global it vanished, so the server derived
+             * is_repeat_visitor = true on page two of a visitor's very first
+             * session while the session row still said is_new_visitor.
+             */
+            OWA.setState( 's', 'is_new_visitor', true );
             OWA.debug('Creating new visitor id');
         }
         // set property on event object
@@ -2136,7 +2151,8 @@ class OWATracker  {
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
             { store: 's', key: 'referer', name: 'session_referer' },
-            { store: 's', key: 'prior_session_id', name: 'prior_session_id' }
+            { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
+            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' }
         ];
 
         for ( var i = 0; i < map.length; i++ ) {

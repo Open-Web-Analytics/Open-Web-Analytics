@@ -153,7 +153,7 @@ describe('setVisitorId', () => {
 
         const vid = OWA.getState('v', 'vid');
         expect(vid).toBeTruthy();
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBe(true);
+        expect(OWA.getState('s', 'is_new_visitor')).toBe(true);
         // The freshly minted id is persisted for the next visit.
         expect(OWA.getState('v', 'vid')).toBe(vid);
     });
@@ -165,7 +165,7 @@ describe('setVisitorId', () => {
         t.setVisitorId(eventAt(NOW), null);
 
         expect(OWA.getState('v', 'vid')).toBe('existing-vid-123');
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
+        expect(OWA.getState('s', 'is_new_visitor')).toBeFalsy();
     });
 
     test('migrates a legacy bare-string v store into v.vid without counting a new visitor', () => {
@@ -178,7 +178,7 @@ describe('setVisitorId', () => {
 
         expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
         // A migrated id is a returning visitor, not a new one.
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
+        expect(OWA.getState('s', 'is_new_visitor')).toBeFalsy();
         // ...and it is rehomed under the modern v.vid key.
         expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
     });
@@ -278,6 +278,59 @@ describe('setSessionId', () => {
 
         expect(OWA.getState('s', 'sid')).toBe('active-session-1');
         expect(t.getGlobalEventProperty('is_new_session')).toBeUndefined();
+    });
+});
+
+describe('is_new_visitor has session lifetime', () => {
+
+    /*
+     * It says this session was the visitor's FIRST, not that this request
+     * minted them. As a per-page global it vanished on the next page, so the
+     * server derived is_repeat_visitor = true on page two of a visitor's very
+     * first session -- while the session row it had just written still said
+     * is_new_visitor. The store's lifetime is what makes the two agree.
+     */
+
+    test('it survives into a later page of the same session', () => {
+        seedPersistedSession({
+            sid: 'first-session',
+            last_req: NOW,
+            is_new_visitor: true,
+        });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+        t.setGlobalEventProperty('last_req', NOW);
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session')).toBeFalsy();
+        expect(event.get('is_new_visitor')).toBe(true);
+    });
+
+    test('but not into the visitor\'s NEXT session', () => {
+        // The boundary discards the persisted store, so a known visitor
+        // starting a second session is not flagged as new.
+        seedPersistedSession({
+            sid: 'old-session',
+            last_req: NOW - 5000,
+            is_new_visitor: true,
+        });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+        t.setGlobalEventProperty('last_req', NOW - 5000);
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session')).toBe(true);
+        expect(event.get('is_new_visitor')).toBeFalsy();
     });
 });
 
