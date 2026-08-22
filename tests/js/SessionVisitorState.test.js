@@ -224,10 +224,48 @@ describe('setSessionId', () => {
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('prior_session_id')).toBe('old-session-id');
+        expect(OWA.getState('s', 'prior_session_id')).toBe('old-session-id');
         // A brand new session id replaced the old one.
         expect(OWA.getState('s', 'sid')).not.toBe('old-session-id');
         expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
+    });
+
+    test('the prior session id rides the event that started the new session', () => {
+        // It is read out of the cookie moments before the boundary throws that
+        // cookie away, so nothing can recover it afterwards -- which is why it
+        // could not simply be collected from the persisted store like the rest.
+        const t = newTracker();
+        seedPersistedSession({ sid: 'old-sid', last_req: NOW - 5000 });
+        t.setGlobalEventProperty('last_req', NOW - 5000);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('prior_session_id')).toBe('old-sid');
+    });
+
+    test('and keeps being reported for the rest of that session', () => {
+        // The behaviour change from moving it into 's': it used to exist only
+        // on the page load that crossed the boundary, because a global event
+        // property dies with the page. A session's predecessor is a fact about
+        // the session, so it now survives into the session's later pages.
+        const t = newTracker();
+        seedPersistedSession({
+            sid: 'current-session',
+            last_req: NOW,
+            prior_session_id: 'the-one-before',
+        });
+        t.setGlobalEventProperty('last_req', NOW);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('session_id')).toBe('current-session');
+        expect(event.get('prior_session_id')).toBe('the-one-before');
     });
 
     test('reuses the stored session id (no new-session flag) during an active session', () => {
@@ -351,7 +389,7 @@ describe('settling the session store on the sessionization decision', () => {
 
         // The previous session's values are gone...
         expect(OWA.getState('s', 'source')).toBeFalsy();
-        expect(t.getGlobalEventProperty('prior_session_id')).toBe('old-sid');
+        expect(OWA.getState('s', 'prior_session_id')).toBe('old-sid');
         // ...and this page load's survived the boundary it was set for.
         expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
     });

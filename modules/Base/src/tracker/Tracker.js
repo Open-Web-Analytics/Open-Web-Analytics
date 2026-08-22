@@ -1879,7 +1879,22 @@ class OWATracker  {
                 prior_session_id = OWA.getState(state_store_name, 's');
             }
             if ( prior_session_id ) {
-                this.globalEventProperties.prior_session_id = prior_session_id;
+
+                /*
+                 * Session state, not a fact about this request: it names the
+                 * session THIS one succeeded, which stays true for as long as
+                 * this session lasts. So it is also still reported on later
+                 * pages of the session, hydrated back out of the cookie --
+                 * where it was only ever on the page load that crossed the
+                 * boundary before.
+                 *
+                 * What matters for ordering is the READ above, not this write:
+                 * the value comes out of a cookie that the announcement below
+                 * is about to erase. The write can go either side, because
+                 * discardPersisted() only erases the cookie and never touches
+                 * memory.
+                 */
+                OWA.setState( 's', 'prior_session_id', prior_session_id );
             }
         }
 
@@ -2120,7 +2135,8 @@ class OWATracker  {
             { store: 'v', key: 'dsfs', name: 'dsfs' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'referer', name: 'session_referer' }
+            { store: 's', key: 'referer', name: 'session_referer' },
+            { store: 's', key: 'prior_session_id', name: 'prior_session_id' }
         ];
 
         for ( var i = 0; i < map.length; i++ ) {
