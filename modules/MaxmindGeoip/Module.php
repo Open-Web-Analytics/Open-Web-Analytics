@@ -100,6 +100,12 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoip',
             'Controller/OptionsGeoip.php'
         );
+
+        $this->registerAction(
+            'maxmind_geoip.optionsGeoipUpdate',
+            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoipUpdate',
+            'Controller/OptionsGeoipUpdate.php'
+        );
     }
 
     /**

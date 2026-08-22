@@ -355,6 +355,7 @@ function owa_compat_class_map(): array
         'owa_flushCacheCliController' => 'OWA\\Module\\Base\\Controller\\FlushCacheCli',
         'owa_updateGeoipDbCliController' => 'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli',
         'owa_optionsGeoipController' => 'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoip',
+        'owa_optionsGeoipUpdateController' => 'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoipUpdate',
         'owa_optionsGeoipView' => 'OWA\\Module\\MaxmindGeoip\\View\\OptionsGeoip',
         'owa_flushProcessedEventsCliController' => 'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',
         'owa_genericCliView' => 'OWA\\Module\\Base\\View\\GenericCli',
