@@ -379,32 +379,28 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Calendar days since the prior session.
+     * Days since the prior session, derived from the interval the tracker
+     * measured.
      *
-     * DATE BOUNDARIES CROSSED, not elapsed time rounded to 24h multiples: two
-     * hours spanning midnight is 1, twenty-two hours inside one day is 0. This
-     * changes what the daysSinceLastVisit dimension MEANS -- rows written
-     * before it are elapsed-based and there is no way to tell them apart or to
-     * backfill. Accepted deliberately; the new meaning is the one the dimension
-     * was always asked for.
+     * STRAIGHT 24-HOUR PERIODS, not calendar days, and that is forced rather
+     * than chosen: this value must be IDENTICAL on every event sharing a
+     * session_id. Calendar days cannot be, because counting date boundaries
+     * needs two absolute times and the events carry only one -- their own
+     * timestamp -- plus a session-scoped interval. Anchoring
+     * `then = timestamp - elapsed` is exact on the event that OPENED the
+     * session but lands later for every event after it, so two hits either side
+     * of a midnight would disagree about the same session. Depending only on
+     * the interval, which is the same on all of them, is what makes the value
+     * stable.
      *
-     * Derived here rather than sent by the tracker, so the boundaries are the
-     * SERVER's calendar -- the one every other date part on the row uses. The
-     * browser knows both absolute times but only its own timezone.
-     *
-     * In PHP rather than SQL on purpose: doing it in the query would need
-     * FROM_UNIXTIME/DATE_FORMAT, which SqlPortabilityLintTest forbids by name.
-     *
-     * KNOWN VARIANCE. time_since_last_session is session-scoped, so it rides
-     * every event of the session, while the anchor below is the event's own
-     * timestamp. That is exact on the event that OPENED the session; a later
-     * event derives a point later by however long the visitor has been in the
-     * session, so events either side of a midnight can differ by one. Fixing it
-     * would need a second duration (session age) to anchor back to the start.
+     * Identical arithmetic to what the tracker used to do, so nothing about the
+     * daysSinceLastVisit dimension changes meaning -- only where it is computed.
+     * One value on the wire now feeds both this and timeSinceLastVisit, instead
+     * of the same interval being measured twice on the client.
      *
      * $days already holds whatever an older tracker sent as 'dsps' -- see the
      * alternative_key on this property -- so returning it unchanged is the
-     * fallback for trackers cached from before the field existed.
+     * fallback for trackers cached from before the interval existed.
      */
     static function deriveDaysSincePriorSession( $days, $event ) {
 
@@ -415,13 +411,7 @@ class TrackingEventHelpers {
             return $days;
         }
 
-        $now  = (int) $event->get( 'timestamp' );
-        $then = $now - $elapsed;
-
-        // round, not floor: a day is 23 or 25 hours across a DST boundary.
-        return (int) round(
-            ( strtotime( date( 'Y-m-d', $now ) ) - strtotime( date( 'Y-m-d', $then ) ) ) / 86400
-        );
+        return (int) round( $elapsed / 86400 );
     }
 
     static function setRepeatVisitorFlag( $flag, $event ) {

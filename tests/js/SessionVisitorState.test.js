@@ -35,7 +35,9 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *
  *   - days since the prior session is NOT computed here any more. The tracker
  *     sends time_since_last_session and the server derives
- *     days_since_prior_session from it, counting CALENDAR days.
+ *     days_since_prior_session from it, in straight 24-hour periods -- it must
+ *     be identical on every event sharing a session_id, which calendar days
+ *     cannot be. See tests/js/SessionScopedInvariant.test.js.
  *
  *   - setLastRequestTime(): promotes the PRIOR last_req to a global property
  *     (so downstream new-session math sees the old value) and then stores the
@@ -582,9 +584,9 @@ describe('days since the prior session is no longer computed here', () => {
     /*
      * setDaysSinceLastSession() is gone. dsps is not sent at all: the server
      * derives days_since_prior_session from time_since_last_session, counting
-     * CALENDAR days rather than 24h multiples -- which the browser cannot do,
-     * because it only knows its own timezone and the boundaries have to be the
-     * server's, the same ones every other date part on the row uses.
+     * straight 24-hour periods. One interval on the wire now feeds both
+     * daysSinceLastVisit and timeSinceLastVisit, instead of the same interval
+     * being measured twice on the client.
      */
 
     test('the tracker no longer sends dsps', () => {

@@ -26,6 +26,41 @@ class OWATracker  {
 	    this.globalEventProperties =  {};
 	    // state sores that can be shared across sites
 	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
+
+	    /*
+	     * The SCOPE of each property the tracker derives from state -- how long
+	     * its value is valid, which is NOT the same question as which store it
+	     * happens to live in.
+	     *
+	     * prior_last_req is the proof: it lives in the session store but has
+	     * page lifetime, because it means "the request before THIS page load".
+	     * Reading scope off the store would get it wrong.
+	     *
+	     * Scope is a contract, and the one that matters most is 'session': a
+	     * session-scoped property MUST be identical on every event sharing a
+	     * session_id, and a divergence is a regression whatever caused it. That
+	     * rule is what rules out deriving days_since_prior_session as calendar
+	     * days -- see TrackingEventHelpers::deriveDaysSincePriorSession().
+	     *
+	     * Enforced by tests/js/SessionScopedInvariant.test.js, which reads this
+	     * map rather than restating it, and fails if a collector emits a
+	     * property that is not declared here.
+	     */
+	    this.trackingPropertyScopes = {
+		    // constant for the life of the visitor, so also across a session
+		    visitor: [ 'visitor_id', 'fsts', 'dsfs', 'nps' ],
+		    // constant for the life of the session
+		    session: [
+			    'session_id', 'prior_session_id', 'is_new_visitor',
+			    'time_since_last_session', 'session_referer'
+		    ],
+		    // constant for this page load only
+		    page: [ 'last_req', 'is_new_session', 'page_url', 'page_title', 'page_type' ],
+		    // one event, consumed as applied
+		    request: [ 'is_new_session_start', 'is_new_visitor_created' ],
+		    // not state-scoped: identity the site supplies or the DOM reports
+		    unscoped: [ 'user_name', 'HTTP_REFERER', 'attribs' ]
+	    },
 	    // Time When tracker is loaded
 	    this.startTime =  null;
 	    // time when tracker is unloaded
