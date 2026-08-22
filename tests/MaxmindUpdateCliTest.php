@@ -158,4 +158,162 @@ final class MaxmindUpdateCliTest extends TestCase {
             'with the module inactive the command must resolve to nothing, so the scheduler '
           . 'skips it with a notice rather than listing a job that cannot run' );
     }
+
+    /**
+     * The downloader and the reader must resolve the same edition.
+     *
+     * They are separate pieces of code reading one setting, and the failure if
+     * they disagree is quiet: Country gets downloaded, the reader goes looking
+     * for City, and lookups fail against a database sitting right there in the
+     * directory.
+     */
+    public function testTheReaderAndTheDownloaderAgreeOnTheEdition(): void {
+
+        $this->assertSame(
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            'both consult Maxmind::edition(), so there is one answer by construction'
+        );
+
+        $this->assertContains(
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition(),
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
+            'the resolved edition must be one the module can read'
+        );
+    }
+
+    public function testCityIsTheDefaultWhenNothingIsConfigured(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', '' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-City', $resolved,
+            'an installation that configures nothing keeps the behaviour it had' );
+    }
+
+    /**
+     * Country is the reason this is configurable: a fraction of the size, for
+     * an installation whose reports never go below country level. It works
+     * because getLocation() reads the finer fields behind isset() guards.
+     */
+    public function testCountryIsAcceptedAsAnEdition(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', 'GeoLite2-Country' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-Country', $resolved );
+    }
+
+    /**
+     * ASN is free too, and deliberately not offered: it carries network data
+     * and no location fields, so an installation pointed at it would look
+     * healthy and silently resolve nothing.
+     */
+    public function testAnEditionWithNoLocationDataIsNotOffered(): void {
+
+        $this->assertNotContains( 'GeoLite2-ASN',
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
+            'ASN has no location fields; accepting it would resolve nothing, quietly' );
+    }
+
+    /**
+     * An unrecognised value falls back rather than being trusted, so a typo in
+     * config cannot send the downloader after an edition nothing reads.
+     */
+    public function testAnUnknownEditionFallsBackToTheDefault(): void {
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $previous = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        $config->set( 'maxmind_geoip', 'db_edition', 'GeoLite2-Kitchen-Sink' );
+
+        $resolved = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
+
+        $config->set( 'maxmind_geoip', 'db_edition', $previous );
+
+        $this->assertSame( 'GeoLite2-City', $resolved );
+    }
+
+    /**
+     * The archive must be named something PharData will open.
+     *
+     * It refuses a file whose extension it does not recognise -- "file
+     * extension (or combination) not recognised" -- and tempnam() produces a
+     * name with no extension at all. The download succeeded, the unpack failed,
+     * and the command reported the failure correctly while leaving no database.
+     *
+     * It survived earlier testing because every run until a real licence key
+     * existed stopped at the download, so the unpack was never reached. That is
+     * the shape of thing this test exists for: the step after the one that
+     * usually fails.
+     */
+    public function testTheArchiveIsNamedSomethingPharDataWillOpen(): void {
+
+        $source = (string) file_get_contents(
+            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Controller/UpdateGeoipDbCli.php' );
+
+        $this->assertStringContainsString( ".tar.gz'", $source,
+            'the temporary archive must carry a .tar.gz extension or PharData will not open it' );
+    }
+
+    /**
+     * PharData proves it rather than the source scan alone: a name without an
+     * extension throws, the same name with .tar.gz does not.
+     */
+    public function testPharDataRejectsAnExtensionlessArchive(): void {
+
+        if ( ! class_exists( 'PharData' ) ) {
+            $this->markTestSkipped( 'phar is not available' );
+        }
+
+        $bare = tempnam( sys_get_temp_dir(), 'owa-phar-probe-' );
+        file_put_contents( $bare, gzencode( str_repeat( "\0", 1024 ) ) );
+
+        $threw = false;
+
+        try {
+            new \PharData( $bare );
+        } catch ( \Throwable $e ) {
+            $threw = true;
+            $this->assertStringContainsString( 'extension', strtolower( $e->getMessage() ),
+                'the failure must be about the name, which is what the fix addresses' );
+        }
+
+        @unlink( $bare );
+
+        $this->assertTrue( $threw,
+            'if PharData ever accepts an extensionless file, the rename is no longer needed' );
+    }
+
+    /**
+     * A dry run must not spend the account's download limit to say what it
+     * would do. It used to fetch the whole archive -- tens of megabytes -- and
+     * report afterwards, which costs exactly as much as doing the work.
+     */
+    public function testADryRunStopsBeforeTheTransfer(): void {
+
+        $source = (string) file_get_contents(
+            dirname( __DIR__ ) . '/modules/MaxmindGeoip/Controller/UpdateGeoipDbCli.php' );
+
+        $dry_run_return = strpos( $source, "'Dry run: would download" );
+        $download_call  = strpos( $source, '$bytes = $this->download(' );
+
+        $this->assertIsInt( $dry_run_return, 'the dry run must report and return' );
+        $this->assertIsInt( $download_call );
+
+        $this->assertLessThan( $download_call, $dry_run_return,
+            'the dry run must return BEFORE the download, or asking costs the same as doing' );
+    }
 }

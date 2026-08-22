@@ -62,10 +62,16 @@ jobs:
     # Generate a release tarball excluding files that are not needed in a distro.
     #
     # NOTE: these are exact paths, not globs, on purpose. tar's --exclude wildcards
-    # match slashes, so a tidier './modules/*/src' would also exclude
-    # modules/MaxmindGeoip/includes/MaxMind-DB-Reader-php-1.0.3/src -- a bundled
-    # library that MUST ship (composer.json classmaps modules/MaxmindGeoip/includes/).
-    # Only modules/Base/src is unbuilt source; webpack compiles it into public/base/dist.
+    # match slashes, so a tidier './modules/*/src' would exclude more than it
+    # looks like -- any module's src, not just the one meant. Only
+    # modules/Base/src is unbuilt source; webpack compiles it into
+    # public/base/dist.
+    #
+    # This previously also had to protect a MaxMind reader bundled under
+    # modules/MaxmindGeoip/includes/, which composer classmapped and which
+    # therefore had to ship. That library is a composer dependency now, so it
+    # arrives in vendor/ like everything else and no longer constrains this
+    # list.
     - name: Generate Release Tarball
       run: |
         tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/Base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./phpstan-baseline.neon' --exclude='./phpstan-migration.neon' --exclude='./phpstan-migration-baseline.neon' --exclude='./phpstan-templates.neon' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright.config.js' --exclude='./playwright.install.config.js' --exclude='./playwright.selfhost.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./

@@ -32,10 +32,7 @@
         "psr-4": {
             "OWA\\Core\\": "Core/",
             "OWA\\Module\\": "modules/"
-        },
-        "classmap": [
-            "modules/MaxmindGeoip/includes/"
-        ]
+        }
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",

@@ -62,7 +62,44 @@ class Maxmind extends \OWA\Core\Location {
         return parent::__construct();
     }
 
+    /**
+     * The GeoLite2 editions this module can read, and what each costs.
+     *
+     * City is the default and answers city, subdivision and country. Country
+     * answers only country, and is a fraction of the size -- a worthwhile trade
+     * for an installation whose reports never go below country level.
+     *
+     * Both are free and both need a licence key to download.
+     *
+     * ASN is deliberately absent even though it is also free: it carries
+     * network data and no location fields at all, so an installation pointed at
+     * it would look healthy and silently resolve nothing.
+     */
+    const EDITIONS = array( 'GeoLite2-City', 'GeoLite2-Country' );
+
+    /**
+     * Which edition this installation reads.
+     *
+     * The download command consults the same setting, so the file that gets
+     * fetched is the file that gets read. They must not be able to disagree:
+     * downloading Country while the reader looks for City leaves lookups
+     * failing against a database that is sitting right there.
+     *
+     * @return string
+     */
+    public static function edition() {
+
+        $configured = (string) \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_edition' );
+
+        return in_array( $configured, self::EDITIONS, true ) ? $configured : 'GeoLite2-City';
+    }
+
     function isDbReady() {
+
+        // getLocation() reads city, subdivision and country behind isset()
+        // guards, so a Country database simply leaves the finer fields unset
+        // rather than failing.
+        $this->db_file_name = self::edition() . '.mmdb';
 
         $this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;
 

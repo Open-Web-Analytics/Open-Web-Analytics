@@ -55,6 +55,14 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
                 if ( $module && $name ) {
 
+                    if ( ! $this->mayWriteModule( $module ) ) {
+
+                        \OWA\Core\CoreAPI::notice( sprintf(
+                            'Refusing to persist %s.%s: this form may only write %s settings.',
+                            $module, $name, $this->allowedModule() ) );
+                        continue;
+                    }
+
                     if ( self::isSensitiveSettingKey( $module, $name ) ) {
 
                         \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
@@ -70,7 +78,67 @@ class OptionsUpdate extends \OWA\Core\AdminController {
             $this->setStatusCode(2500);
         }
 
-        $this->setRedirectAction('base.optionsGeneral');
+        $this->setRedirectAction( $this->returnAction() );
+    }
+
+    /**
+     * The module whose settings this form is allowed to write, or null for any.
+     *
+     * The module name comes from the FIELD NAME -- config[module.setting] --
+     * which means it is chosen by the browser, exactly like the redirect
+     * destination was. A settings page that knows which module it edits can say
+     * so, and then a posted field naming some other module is refused instead of
+     * saved.
+     *
+     * Null by default, which is the behaviour every existing form has: the
+     * shared controller cannot know what a third-party module's settings page
+     * intends to write, and silently dropping those writes on upgrade would be
+     * worse than the looseness. A page that subclasses this opts in by naming
+     * its module.
+     *
+     * This is a narrowing, not the protection itself -- isSensitiveSettingKey()
+     * still guards the settings that must never be written from a form at all,
+     * whichever page is asking.
+     *
+     * @return string|null
+     */
+    protected function allowedModule() {
+
+        return null;
+    }
+
+    /**
+     * @param string $module
+     * @return bool
+     */
+    protected function mayWriteModule( $module ) {
+
+        $allowed = $this->allowedModule();
+
+        return $allowed === null || $allowed === $module;
+    }
+
+    /**
+     * The settings page to go back to after saving.
+     *
+     * This controller is the action every settings form in OWA posts to, so on
+     * its own it can only send everyone to the same place -- which is right for
+     * the general settings page the form came from, and wrong for every other
+     * one. Saving the GeoIP settings used to land the administrator on the
+     * general settings page, with "Options Saved." attached to a page they had
+     * not been editing.
+     *
+     * A page that wants to be returned to subclasses this and says so. That
+     * keeps the destination a fact about the code rather than a value posted by
+     * the browser: nothing to validate, nothing to tamper with, and the same
+     * shape as every other controller, which passes a literal to
+     * setRedirectAction().
+     *
+     * @return string
+     */
+    protected function returnAction() {
+
+        return 'base.optionsGeneral';
     }
 
     /**

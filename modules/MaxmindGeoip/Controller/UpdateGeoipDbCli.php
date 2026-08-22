@@ -41,8 +41,6 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  */
 class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
-    const EDITION = 'GeoLite2-City';
-
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
@@ -53,6 +51,23 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
     function action() {
 
         $dry_run = (bool) $this->getParam( 'dry-run' );
+
+        // The same answer the reader uses, so what is downloaded is what gets
+        // read. edition= overrides for a one-off, but only to something the
+        // module can actually read -- an unrecognised edition would download
+        // happily and resolve nothing.
+        $edition = (string) $this->getParam( 'edition' );
+
+        if ( $edition && ! in_array( $edition, \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS, true ) ) {
+
+            return $this->refuse( sprintf(
+                '"%s" is not an edition this module reads. Choose one of: %s.',
+                $edition,
+                implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
+            ) );
+        }
+
+        $edition = $edition ?: \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
 
         $key = trim( (string) (
             $this->getParam( 'license-key' )
@@ -77,11 +92,11 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $dir = defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/';
+        $dir = $this->dataDir();
 
         // Before the download, and separately per failure: they need different
         // fixes, and one "permission denied" points at the wrong one.
-        $problem = $this->whyNotWritable( $dir );
+        $problem = $this->whyNotWritable( $dir, $edition );
 
         if ( $problem ) {
 
@@ -90,16 +105,81 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         $url = sprintf(
             'https://download.maxmind.com/app/geoip_download?edition_id=%s&license_key=%s&suffix=tar.gz',
-            self::EDITION,
+            $edition,
             rawurlencode( $key )
         );
 
-        $this->write( sprintf( 'Downloading %s from MaxMind into %s', self::EDITION, $dir ) );
+        $destination = $dir . $edition . '.mmdb';
+
+        // MaxMind ask for this, and it is in their interest and ours: a HEAD
+        // request reads Last-Modified WITHOUT consuming a download from the
+        // account's limit. They rate-limit downloads and say so, so a command
+        // that can be scheduled must not fetch tens of megabytes to discover it
+        // already has them.
+        //
+        // --force skips the check, for the case where the local file is
+        // suspect rather than merely old.
+        $local = file_exists( $destination ) ? (int) filemtime( $destination ) : 0;
+
+        // Asked for whenever the answer could change what happens next: when
+        // there is a local copy to compare against, and on a dry run, which
+        // exists to report rather than to act.
+        $remote = ( $local && ! $this->getParam( 'force' ) ) || $dry_run
+            ? $this->lastModified( $url )
+            : 0;
+
+        if ( $local && $remote && $remote <= $local && ! $this->getParam( 'force' ) ) {
+
+            return $this->refuse( sprintf(
+                'Already current: MaxMind last changed %s on %s, and the local copy is from %s. '
+              . 'Nothing downloaded. Use --force to fetch it anyway.',
+                $edition,
+                gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC',
+                gmdate( 'Y-m-d H:i:s', $local ) . ' UTC'
+            ) );
+        }
+
+        // A dry run stops HERE, before the transfer. It used to report after
+        // downloading, which meant asking what would happen cost the same tens
+        // of megabytes against the account's download limit as doing it --
+        // the opposite of what a dry run is for. The HEAD above costs nothing.
+        if ( $dry_run ) {
+
+            return $this->refuse( sprintf(
+                'Dry run: would download %s and write %s. %s Nothing was downloaded or changed.',
+                $edition,
+                $destination,
+                $local
+                    ? sprintf( 'The local copy is from %s and MaxMind %s.',
+                        gmdate( 'Y-m-d H:i:s', $local ) . ' UTC',
+                        $remote
+                            ? 'last changed theirs on ' . gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC'
+                            : 'did not say when theirs changed' )
+                    : 'No database is installed yet.'
+            ) );
+        }
+
+        $this->write( sprintf( 'Downloading %s from MaxMind into %s', $edition, $dir ) );
 
         // To a temporary file, not to the destination: the archive is tens of
         // megabytes and the live database must stay readable and intact for
         // every request happening while this runs.
+        // The name has to end in .tar.gz. PharData refuses to open a file whose
+        // extension it does not recognise -- "file extension (or combination)
+        // not recognised" -- and tempnam() produces a name with no extension at
+        // all. Created through tempnam first so the file is still made
+        // exclusively, then renamed rather than guessed at.
         $archive = tempnam( sys_get_temp_dir(), 'owa-geoip-' );
+
+        if ( $archive ) {
+
+            $named = $archive . '.tar.gz';
+
+            if ( @rename( $archive, $named ) ) {
+
+                $archive = $named;
+            }
+        }
 
         $bytes = $this->download( $url, $archive );
 
@@ -112,15 +192,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         $this->write( sprintf( 'Downloaded %s.', $this->readableSize( $bytes ) ) );
 
-        if ( $dry_run ) {
-
-            @unlink( $archive );
-
-            return $this->refuse( sprintf(
-                'Dry run: %s%s.mmdb would be replaced. Nothing was changed.', $dir, self::EDITION ) );
-        }
-
-        $extracted = $this->extractDatabase( $archive, $dir );
+        $extracted = $this->extractDatabase( $archive, $dir, $edition );
 
         @unlink( $archive );
 
@@ -141,12 +213,33 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * Where the database lives.
+     *
+     * A method rather than an expression so a test can point it somewhere
+     * disposable. The three things worth testing here -- unpacking a nested
+     * archive, replacing the live file atomically, and cleaning up afterwards
+     * -- all write to this directory, and a test that writes to the real one
+     * would either destroy a working installation's database or need a
+     * 60 MB fixture to put back.
+     *
+     * @return string
+     */
+    protected function dataDir() {
+
+        return defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/';
+    }
+
+    /**
      * @return int|string bytes written, or the reason it failed
      */
     protected function download( $url, $destination ) {
 
+        // follow_location explicitly: MaxMind redirect the download to object
+        // storage, and a client that does not follow ends up saving a redirect
+        // page and naming it a database.
         $context = stream_context_create( [
             'http' => [ 'timeout' => 120, 'ignore_errors' => true,
+                        'follow_location' => 1, 'max_redirects' => 5,
                         'user_agent' => 'Open Web Analytics' ],
         ] );
 
@@ -200,6 +293,57 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         return (int) $bytes;
     }
 
+    /**
+     * When MaxMind last changed this edition, or 0 if they will not say.
+     *
+     * A HEAD request, which MaxMind document as the way to check for updates
+     * without spending a download from the account's limit. Returning 0 on any
+     * doubt means the caller downloads -- being wrong in the direction of doing
+     * the work is much better than skipping an update that was available.
+     *
+     * @param string $url
+     * @return int unix timestamp, or 0
+     */
+    protected function lastModified( $url ) {
+
+        $context = stream_context_create( [
+            'http' => [ 'method' => 'HEAD', 'timeout' => 30, 'ignore_errors' => true,
+                        'follow_location' => 1, 'max_redirects' => 5,
+                        'user_agent' => 'Open Web Analytics' ],
+        ] );
+
+        $handle = @fopen( $url, 'rb', false, $context );
+
+        if ( ! $handle ) {
+
+            return 0;
+        }
+
+        $headers = $http_response_header ?? [];
+
+        fclose( $handle );
+
+        if ( $this->statusFrom( $headers ) >= 400 ) {
+
+            // A rejected key answers here too. Say nothing and let the download
+            // report it properly, rather than reporting "already current" for
+            // a credential problem.
+            return 0;
+        }
+
+        foreach ( $headers as $header ) {
+
+            if ( stripos( $header, 'Last-Modified:' ) === 0 ) {
+
+                $stamp = strtotime( trim( substr( $header, 14 ) ) );
+
+                return $stamp ?: 0;
+            }
+        }
+
+        return 0;
+    }
+
     protected function statusFrom( array $headers ) {
 
         foreach ( $headers as $header ) {
@@ -223,7 +367,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      *
      * @return string|null the path written, or the reason it failed
      */
-    protected function extractDatabase( $archive, $dir ) {
+    protected function extractDatabase( $archive, $dir, $edition ) {
 
         $work = $dir . '.update-' . getmypid() . '/';
 
@@ -268,7 +412,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return null;
         }
 
-        $destination = $dir . self::EDITION . '.mmdb';
+        $destination = $dir . $edition . '.mmdb';
 
         // Rename, not copy: on the same filesystem it is atomic, so no request
         // ever reads a partially written database.
@@ -312,7 +456,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      *
      * @return string|null
      */
-    protected function whyNotWritable( $dir ) {
+    protected function whyNotWritable( $dir, $edition = 'GeoLite2-City' ) {
 
         $whoami = function_exists( 'posix_geteuid' ) && function_exists( 'posix_getpwuid' )
             ? ( posix_getpwuid( posix_geteuid() )['name'] ?? 'unknown' )
@@ -341,7 +485,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return sprintf( '%s is not writable by %s.', $dir, $whoami );
         }
 
-        $file = $dir . self::EDITION . '.mmdb';
+        $file = $dir . $edition . '.mmdb';
 
         if ( file_exists( $file ) && ! is_writable( $file ) ) {
 

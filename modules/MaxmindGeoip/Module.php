@@ -94,6 +94,35 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli',
             'Controller/UpdateGeoipDbCli.php'
         );
+
+        $this->registerAction(
+            'maxmind_geoip.optionsGeoip',
+            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoip',
+            'Controller/OptionsGeoip.php'
+        );
+
+        $this->registerAction(
+            'maxmind_geoip.optionsGeoipUpdate',
+            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoipUpdate',
+            'Controller/OptionsGeoipUpdate.php'
+        );
+    }
+
+    /**
+     * Puts the settings page in the options navigation, but only while this
+     * module is active -- the same gating the CLI command gets, and for the
+     * same reason: an installation not doing GeoIP lookups should not be shown
+     * settings for it.
+     */
+    function registerAdminPanels() {
+
+        $this->addAdminPanel( array(
+            'do'          => 'maxmind_geoip.optionsGeoip',
+            'priviledge'  => 'admin',
+            'anchortext'  => 'GeoIP',
+            'group'       => 'Modules',
+            'order'       => 10,
+        ) );
     }
 
     function registerFilters() {
