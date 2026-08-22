@@ -2015,8 +2015,14 @@ class OWATracker  {
         switch (scope) {
 
             case 'page':
+            default:
 
                 // Memory only, discarded with the page.
+                //
+                // Also the default: an absent or unrecognised scope is treated
+                // as page rather than dropped. That is what the old fallthrough
+                // did, when there was no 'page' case at all and the value
+                // simply landed on the global event property below the switch.
                 OWA.setState('d', cv_param_name, cv_param_value);
                 break;
 
@@ -2059,8 +2065,44 @@ class OWATracker  {
                 OWA.clearState('b', cv_param_name);
                 break;
         }
+    }
 
-        this.setGlobalEventProperty(cv_param_name, cv_param_value);
+    /**
+     * The custom variables that apply to an event, read from the state stores.
+     *
+     * Applied WIDEST SCOPE FIRST -- visitor, then session, then page -- so a
+     * narrower scope overwrites a wider one and page scope always wins. That
+     * ordering IS the scope precedence; nothing else enforces it.
+     *
+     * Collected fresh for every event rather than cached as a global event
+     * property, which is what setCustomVar() used to do. A cached copy is a
+     * second source of truth and behaves like one: it goes stale when a slot is
+     * re-scoped, and it hides the stores from any reader that is not the
+     * tracker that made the call -- so a second tracker on the same page saw
+     * different values, and the page store's contribution was unobservable.
+     *
+     * Bounded by maxCustomVars, matching the rehydration loop this replaced.
+     */
+    collectCustomVars() {
+
+        var collected = {};
+        var stores = [ 'v', 's', 'd' ];
+        var max = this.getOption('maxCustomVars');
+
+        for ( var i = 0; i < stores.length; i++ ) {
+
+            for ( var slot = 1; slot <= max; slot++ ) {
+
+                var cv_param_name = 'cv' + slot;
+                var value = OWA.getState( stores[ i ], cv_param_name );
+
+                if ( value ) {
+                    collected[ cv_param_name ] = value;
+                }
+            }
+        }
+
+        return collected;
     }
 
     getCustomVar(slot) {
@@ -2206,22 +2248,6 @@ class OWATracker  {
      */
     addGlobalPropertiesToEvent( event, callback ) {
 
-        // add custom variables to global properties if not there already
-        for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
-            var cv_param_name = 'cv' + i;
-            var cv_value = '';
-
-            // if the custom var is not already a global property
-            if ( ! this.globalEventProperties.hasOwnProperty( cv_param_name ) ) {
-                // check to see if it exists
-                cv_value = this.getCustomVar(i);
-                // if so add it
-                if ( cv_value ) {
-                    this.setGlobalEventProperty( cv_param_name, cv_value );
-                }
-            }
-        }
-
         OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );
         for ( var prop in this.globalEventProperties ) {
 
@@ -2230,6 +2256,21 @@ class OWATracker  {
                  && ! event.isSet( prop ) )
             {
                 event.set( prop, this.globalEventProperties[prop] );
+            }
+        }
+
+        /*
+         * Custom variables, read from the stores for this event. After the
+         * globals loop so that a slot set directly with setGlobalEventProperty()
+         * keeps the precedence it had, and guarded the same way so a value
+         * already on the event still wins over both.
+         */
+        var custom_vars = this.collectCustomVars();
+
+        for ( var cv_name in custom_vars ) {
+
+            if ( custom_vars.hasOwnProperty( cv_name ) && ! event.isSet( cv_name ) ) {
+                event.set( cv_name, custom_vars[ cv_name ] );
             }
         }
 

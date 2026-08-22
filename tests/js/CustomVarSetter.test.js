@@ -63,14 +63,17 @@ afterEach(() => {
 
 describe('setCustomVar scope: page', () => {
 
-    test('sets a global event property but writes no persistent state store', () => {
+    test('writes no global event property -- the store is the only copy', () => {
         const t = newTracker();
         t.setCustomVar(1, 'Plan', 'Free', 'page');
 
-        // Readable via getCustomVar (page global is the first lookup)...
         expect(t.getCustomVar(1)).toBe('Plan=Free');
-        expect(t.getGlobalEventProperty('cv1')).toBe('Plan=Free');
-        // ...but never persisted to the session or visitor stores.
+        // setCustomVar used to cache the value here as well. A cached copy is a
+        // second source of truth: it went stale when the slot was re-scoped,
+        // and it hid the store from any reader that was not the tracker that
+        // made the call.
+        expect(t.getGlobalEventProperty('cv1')).toBeFalsy();
+        // ...and it is never persisted to the session or visitor stores.
         expect(OWA.getState('s', 'cv1')).toBeFalsy();
         expect(OWA.getState('v', 'cv1')).toBeFalsy();
     });
@@ -115,13 +118,18 @@ describe('setCustomVar scope: page', () => {
         expect(OWA.state.behaviourOf('d').persist).toBe('never');
     });
 
-    test('an unknown scope behaves like page (global property only, no store)', () => {
-        // The switch has no default, so anything that isn't session/visitor falls
-        // through to just the setGlobalEventProperty at the tail.
+    test('an absent or unrecognised scope behaves like page', () => {
+        // Page is the switch's default. It used to be its FALLTHROUGH -- there
+        // was no 'page' case, so anything unrecognised landed on the global
+        // event property at the tail and nowhere else. With that tail gone the
+        // default has to be explicit, or an unscoped call would silently do
+        // nothing at all.
         const t = newTracker();
         t.setCustomVar(1, 'Plan', 'Free');
+        t.setCustomVar(2, 'Tier', 'Gold', 'nonsense');
 
-        expect(t.getGlobalEventProperty('cv1')).toBe('Plan=Free');
+        expect(OWA.getState('d', 'cv1')).toBe('Plan=Free');
+        expect(OWA.getState('d', 'cv2')).toBe('Tier=Gold');
         expect(OWA.getState('s', 'cv1')).toBeFalsy();
         expect(OWA.getState('v', 'cv1')).toBeFalsy();
     });
@@ -137,6 +145,78 @@ describe('setCustomVar scope: session', () => {
         // Session scope does not touch the visitor store.
         expect(OWA.getState('v', 'cv2')).toBeFalsy();
         expect(t.getCustomVar(2)).toBe('Tier=Silver');
+    });
+});
+
+describe('custom vars are collected from the stores for each event', () => {
+
+    test('applied widest scope first, so page wins the slot', () => {
+        const t = newTracker();
+        OWA.setState('v', 'cv1', 'From=Visitor');
+        OWA.setState('s', 'cv1', 'From=Session');
+        OWA.setState('d', 'cv1', 'From=Page');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('cv1')).toBe('From=Page');
+    });
+
+    test('session beats visitor when there is no page value', () => {
+        const t = newTracker();
+        OWA.setState('v', 'cv1', 'From=Visitor');
+        OWA.setState('s', 'cv1', 'From=Session');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('cv1')).toBe('From=Session');
+    });
+
+    test('slots from different scopes all ride the same event', () => {
+        const t = newTracker();
+        OWA.setState('v', 'cv1', 'Cohort=Beta');
+        OWA.setState('s', 'cv2', 'Tier=Gold');
+        OWA.setState('d', 'cv3', 'Plan=Free');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('cv1')).toBe('Cohort=Beta');
+        expect(event.get('cv2')).toBe('Tier=Gold');
+        expect(event.get('cv3')).toBe('Plan=Free');
+    });
+
+    /**
+     * The drift the old cache caused, pinned. setCustomVar wrote the value to a
+     * global event property, and the rehydration loop skipped any slot that
+     * already had one -- so a slot re-scoped mid-page kept sending whatever the
+     * first call had cached.
+     */
+    test('a slot re-scoped mid-page takes effect on the next event', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'Free', 'page');
+
+        const first = new OwaEvent();
+        t.addGlobalPropertiesToEvent(first);
+        expect(first.get('cv1')).toBe('Plan=Free');
+
+        t.setCustomVar(1, 'Plan', 'Pro', 'visitor');
+
+        const second = new OwaEvent();
+        t.addGlobalPropertiesToEvent(second);
+        expect(second.get('cv1')).toBe('Plan=Pro');
+    });
+
+    test('a deleted slot stops riding events', () => {
+        const t = newTracker();
+        t.setCustomVar(1, 'Plan', 'Free', 'session');
+        t.deleteCustomVar(1);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.isSet('cv1')).toBeFalsy();
     });
 });
 
