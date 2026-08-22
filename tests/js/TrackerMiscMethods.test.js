@@ -51,11 +51,11 @@ beforeEach(() => {
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
     OWA.setSetting('loggerPause', false);
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
 });
 
 afterEach(() => {
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
     setUrl('/');
 });
 
@@ -115,22 +115,67 @@ describe('getUrlAnchorValue / getAnchorParam', () => {
 
 describe('page-property convenience setters', () => {
 
-    test('setPageTitle trims and stores the page_title global', () => {
+    /*
+     * These used to write a global event property, private to the tracker that
+     * was called. A page title is a fact about the PAGE and an identified user
+     * is a fact about the VISITOR -- neither is a fact about one tracker -- so a
+     * site that called the setter once had only one of the trackers on the page
+     * reporting it.
+     */
+
+    test('setPageTitle trims and stores it page-scoped', () => {
         const t = newTracker();
         t.setPageTitle('  Home  ');
-        expect(t.getGlobalEventProperty('page_title')).toBe('Home');
+
+        expect(OWA.getState('d', 'page_title')).toBe('Home');
+        expect(t.getGlobalEventProperty('page_title')).toBeFalsy();
     });
 
-    test('setPageType trims and stores the page_type global', () => {
+    test('setPageType trims and stores it page-scoped', () => {
         const t = newTracker();
         t.setPageType('  article ');
-        expect(t.getGlobalEventProperty('page_type')).toBe('article');
+
+        expect(OWA.getState('d', 'page_type')).toBe('article');
     });
 
-    test('setUserName trims and stores the user_name global', () => {
+    test('setUserName trims and stores it visitor-scoped', () => {
+        // An identified user outlives the page and the session. Note this now
+        // reaches the visitor COOKIE, which a global event property never did.
         const t = newTracker();
         t.setUserName(' bob ');
-        expect(t.getGlobalEventProperty('user_name')).toBe('bob');
+
+        expect(OWA.getState('v', 'user_name')).toBe('bob');
+    });
+
+    test('a second tracker on the page reports what the first one was told', () => {
+        // The reason for the move, stated as a test.
+        const first = newTracker();
+        first.setPageTitle('Pricing');
+        first.setPageType('landing');
+        first.setUserName('bob');
+
+        const second = newTracker();
+        const event = new OwaEvent();
+        second.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('page_title')).toBe('Pricing');
+        expect(event.get('page_type')).toBe('landing');
+        expect(event.get('user_name')).toBe('bob');
+    });
+
+    test('the page store overrides the DOM, which is the base layer', () => {
+        document.title = 'From The DOM';
+        const t = newTracker();
+
+        const before = new OwaEvent();
+        t.addGlobalPropertiesToEvent(before);
+        expect(before.get('page_title')).toBe('From The DOM');
+
+        t.setPageTitle('From The Site');
+
+        const after = new OwaEvent();
+        t.addGlobalPropertiesToEvent(after);
+        expect(after.get('page_title')).toBe('From The Site');
     });
 });
 

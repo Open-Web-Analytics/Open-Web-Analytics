@@ -494,26 +494,43 @@ class OWATracker  {
 
     /**
      * Convienence method for setting page title
+     *
+     * Stored page-scoped rather than as a global event property on this
+     * tracker. A page title is a fact about the PAGE, so a site that calls this
+     * once should have every tracker on the page report it -- a private copy on
+     * one tracker cannot do that. Measured before this moved: two trackers on
+     * one page, one reporting the title the site set and the other reporting
+     * nothing at all.
      */
     setPageTitle(title) {
 
-        this.setGlobalEventProperty("page_title", Util.trim( title ) );
+        OWA.setState( 'd', 'page_title', Util.trim( title ) );
     }
 
     /**
      * Convienence method for setting page type
+     *
+     * Page-scoped, as setPageTitle(). Note there is no DOM fallback for this
+     * one -- unlike page_title, nothing derives a page type -- so the setter is
+     * the only source and losing it to a tracker-private copy loses it
+     * entirely.
      */
     setPageType(type) {
 
-        this.setGlobalEventProperty("page_type", Util.trim( type ) );
+        OWA.setState( 'd', 'page_type', Util.trim( type ) );
     }
 
     /**
      * Convienence method for setting user name
+     *
+     * Visitor-scoped: an identified user outlives the page and the session, so
+     * 'v' is where they belong. This DOES mean the value is now written to the
+     * visitor cookie, which a global event property never was -- it is
+     * long-lived state on the visitor's machine rather than a per-page label.
      */
     setUserName( value ) {
 
-        this.setGlobalEventProperty( 'user_name', Util.trim( value ) );
+        OWA.setState( 'v', 'user_name', Util.trim( value ) );
     }
 
     /**
@@ -2093,6 +2110,55 @@ class OWATracker  {
      *
      * Bounded by maxCustomVars, matching the rehydration loop this replaced.
      */
+    /**
+     * Page-scoped properties for this event, read from the 'd' store.
+     *
+     * Anything put in 'd' rides the page's events, so a page-scoped property
+     * added later needs no plumbing here. Two keys are excluded: custom
+     * variables, which span three stores and are collected with their own
+     * precedence (see collectCustomVars()), and 'cdh', which is the cookie
+     * domain hash -- bookkeeping the state manager puts on every store, not a
+     * tracking property.
+     */
+    collectPageProperties() {
+
+        /*
+         * The DOM is the base layer -- what the page actually IS -- and the
+         * page store is laid over it, because a site that called setPageTitle()
+         * meant it. Stating it in that order puts the precedence in one place.
+         * It used to be inverted and split: the override was applied here and
+         * the DOM value backfilled afterwards by addDefaultsToEvent(), guarded
+         * so it would not overwrite. Same result, read backwards.
+         *
+         * addDefaultsToEvent() still backfills these. In the normal chain it
+         * runs after this and finds them already set, so it is a no-op; it
+         * stays because it is also reachable on its own.
+         */
+        var collected = {
+            'page_url':     this.getCurrentUrl(),
+            'page_title':   Util.trim( document.title ),
+            'HTTP_REFERER': document.referrer
+        };
+
+        var store = OWA.getState( 'd' );
+
+        if ( ! store || typeof store !== 'object' ) {
+            return collected;
+        }
+
+        for ( var key in store ) {
+
+            if ( store.hasOwnProperty( key )
+                 && key !== 'cdh'
+                 && ! /^cv[0-9]+$/.test( key ) ) {
+
+                collected[ key ] = store[ key ];
+            }
+        }
+
+        return collected;
+    }
+
     collectCustomVars() {
 
         var collected = {};
@@ -2270,17 +2336,33 @@ class OWATracker  {
         }
 
         /*
-         * Custom variables, read from the stores for this event. After the
-         * globals loop so that a slot set directly with setGlobalEventProperty()
-         * keeps the precedence it had, and guarded the same way so a value
-         * already on the event still wins over both.
+         * Properties read from the state stores for this event. After the
+         * globals loop so that anything set directly with
+         * setGlobalEventProperty() keeps the precedence it had, and guarded the
+         * same way so a value already on the event still wins over both.
+         *
+         * Page properties before custom vars only for readability; the two sets
+         * of keys are disjoint by construction.
          */
+        var collected = this.collectPageProperties();
         var custom_vars = this.collectCustomVars();
 
         for ( var cv_name in custom_vars ) {
+            if ( custom_vars.hasOwnProperty( cv_name ) ) {
+                collected[ cv_name ] = custom_vars[ cv_name ];
+            }
+        }
 
-            if ( custom_vars.hasOwnProperty( cv_name ) && ! event.isSet( cv_name ) ) {
-                event.set( cv_name, custom_vars[ cv_name ] );
+        // user_name lives on the visitor, not the page.
+        var user_name = OWA.getState( 'v', 'user_name' );
+        if ( user_name ) {
+            collected.user_name = user_name;
+        }
+
+        for ( var name in collected ) {
+
+            if ( collected.hasOwnProperty( name ) && ! event.isSet( name ) ) {
+                event.set( name, collected[ name ] );
             }
         }
 
