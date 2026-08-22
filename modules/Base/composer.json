@@ -1,10 +1,10 @@
 {
-    
     "require": {
         "guzzlehttp/guzzle": "^7.5",
         "monolog/monolog": "^2.8",
         "phpmailer/phpmailer": "^6.7",
+        "symfony/filesystem": "^7.4",
+        "symfony/yaml": "^7.4",
         "ua-parser/uap-php": "^3.9"
     }
-    
 }

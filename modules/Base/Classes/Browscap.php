@@ -101,7 +101,7 @@ class Browscap extends \OWA\Core\Base {
         } else {
 	        
         	// load parser
-            $custom_db = \OWA\Core\CoreAPI::getSetting('base','ua-regexes');
+            $custom_db = self::regexesFile();
 
             if ( $custom_db ) {
 
@@ -131,6 +131,48 @@ class Browscap extends \OWA\Core\Base {
 	        }
 	
 	    }
+    }
+
+    /**
+     * The user-agent patterns file to parse with, or null for the bundled one.
+     *
+     * In order:
+     *
+     *   1. the `ua-regexes` setting, for an installation that keeps the file
+     *      somewhere of its own choosing
+     *   2. owa-data/ua-parser/regexes.php, where cmd=update-ua-regexes puts it
+     *   3. nothing, meaning the copy bundled with the library
+     *
+     * The second is the point. The bundled copy is only as new as the PHP
+     * library's last release, while the patterns themselves come from uap-core
+     * and are updated far more often -- so an installation that refreshes them
+     * should get the benefit without also having to configure a path. Same
+     * arrangement the Maxmind module uses for its database: a known directory
+     * under owa-data, read if it is there.
+     *
+     * @return string|null
+     */
+    public static function regexesFile() {
+
+        $configured = \OWA\Core\CoreAPI::getSetting( 'base', 'ua-regexes' );
+
+        if ( $configured ) {
+
+            return $configured;
+        }
+
+        $dir = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: OWA_DATA_DIR . 'ua-parser/';
+
+        $maintained = $dir . 'regexes.php';
+
+        // Readable, not merely present: an unreadable file here would otherwise
+        // take precedence over a bundled copy that works.
+        if ( is_readable( $maintained ) ) {
+
+            return $maintained;
+        }
+
+        return null;
     }
 
     function robotRegexCheck() {
