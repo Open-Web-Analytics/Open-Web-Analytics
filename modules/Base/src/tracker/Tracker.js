@@ -1758,7 +1758,7 @@ class OWATracker  {
         var dsps = '';
         if ( OWA.getState( 'd', 'is_new_session' ) ) {
             OWA.debug( 'timestamp: %s', event.get( 'timestamp' ) );
-            var last_req = this.getGlobalEventProperty( 'last_req' ) || event.get( 'timestamp' );
+            var last_req = OWA.getState( 's', 'prior_last_req' ) || event.get( 'timestamp' );
             OWA.debug( 'last_req: %s', last_req );
             dsps = Math.round( ( event.get( 'timestamp' ) - last_req ) / ( 3600*24 ) );
             OWA.setState( 's', 'dsps', dsps);
@@ -1867,8 +1867,29 @@ class OWATracker  {
         }
 
         // set property on for all events
-        OWA.debug('setting last_req global property of %s', last_req);
-        this.setGlobalEventProperty( 'last_req', last_req );
+        OWA.debug('setting prior last_req of %s', last_req);
+
+        /*
+         * Stored under its OWN key. 's.last_req' is about to be advanced to
+         * this event's timestamp, so the prior value needs somewhere else to
+         * live -- the session row keeps the same pair apart the same way, as
+         * last_req and prior_session_lastreq.
+         *
+         * Written only if this page load has not established it already. The
+         * session store is not hydrated at this point, so a value in memory
+         * here can only have been put there by ANOTHER TRACKER on this page,
+         * which has already advanced s.last_req to now -- without the guard the
+         * second tracker would overwrite the true prior with now, and the first
+         * tracker's later events would then report that.
+         */
+        var session_store = OWA.getState( 's' );
+        var already_established = session_store
+            && typeof session_store === 'object'
+            && session_store.hasOwnProperty( 'prior_last_req' );
+
+        if ( ! already_established ) {
+            OWA.setState( 's', 'prior_last_req', last_req );
+        }
 
         // store new state value
         OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
@@ -1882,7 +1903,10 @@ class OWATracker  {
 	    
         var session_id = '';
         var state_store_name = '';
-        var is_new_session = this.isNewSession( event.get( 'timestamp' ),  this.getGlobalEventProperty( 'last_req' ) );
+        var is_new_session = this.isNewSession(
+            event.get( 'timestamp' ),
+            OWA.getState( 's', 'last_req' ) || OWA.getPersistedState( 's', 'last_req' )
+        );
 
         if ( is_new_session ) {
             // Persisted read, for the same reason as last_req above: the id of
@@ -2168,6 +2192,15 @@ class OWATracker  {
 
         var dsps = OWA.getState( 's', 'dsps' );
         collected.dsps = ( dsps !== undefined && dsps !== '' ) ? dsps : 0;
+
+        // Defined-only, not non-empty: '' is the honest answer on a visitor's
+        // first ever request, and the property is in the beacon contract, so it
+        // has to be present as '' rather than missing.
+        var prior_last_req = OWA.getState( 's', 'prior_last_req' );
+
+        if ( prior_last_req !== undefined ) {
+            collected.last_req = prior_last_req;
+        }
 
         // The accumulated attribution history. Stored as an array; the wire
         // format is JSON, and it is omitted entirely when empty rather than
@@ -2473,9 +2506,22 @@ class OWATracker  {
 
                 that.setFirstSessionTimestamp( event, function( event ) {
 
-                    that.setLastRequestTime( event, function( event ) {
+                    /*
+                     * Sessionization BEFORE the last-request advance. The
+                     * decision is made against s.last_req, which still holds
+                     * the previous request at this point; setLastRequestTime()
+                     * then captures that value for the wire and advances the
+                     * store to now.
+                     *
+                     * The other order needed the prior value promoted onto the
+                     * tracker so the decision could still see it after the
+                     * store had been overwritten -- which is what a global
+                     * event property was doing here, and why the second tracker
+                     * on a page saw a different one.
+                     */
+                    that.setSessionId( event, function( event ) {
 
-                        that.setSessionId( event, function( event ) {
+                        that.setLastRequestTime( event, function( event ) {
 
                             that.setNumberPriorSessions( event, function( event ) {
 

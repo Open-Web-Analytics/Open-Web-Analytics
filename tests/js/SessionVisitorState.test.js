@@ -220,7 +220,7 @@ describe('setSessionId', () => {
         // by a previous page load.
         seedPersistedSession({ sid: 'old-session-id' });
         // last_req far in the past -> new session.
-        t.setGlobalEventProperty('last_req', NOW - 5000);
+        OWA.setState('s', 'last_req', NOW - 5000);
 
         t.setSessionId(eventAt(NOW), null);
 
@@ -236,7 +236,7 @@ describe('setSessionId', () => {
         // could not simply be collected from the persisted store like the rest.
         const t = newTracker();
         seedPersistedSession({ sid: 'old-sid', last_req: NOW - 5000 });
-        t.setGlobalEventProperty('last_req', NOW - 5000);
+        OWA.setState('s', 'last_req', NOW - 5000);
 
         t.setSessionId(eventAt(NOW), null);
 
@@ -257,7 +257,7 @@ describe('setSessionId', () => {
             last_req: NOW,
             prior_session_id: 'the-one-before',
         });
-        t.setGlobalEventProperty('last_req', NOW);
+        OWA.setState('s', 'last_req', NOW);
 
         t.setSessionId(eventAt(NOW), null);
 
@@ -272,7 +272,7 @@ describe('setSessionId', () => {
         const t = newTracker();
         seedPersistedSession({ sid: 'active-session-1' });
         // last_req is "now" -> gap 0 -> active session.
-        t.setGlobalEventProperty('last_req', NOW);
+        OWA.setState('s', 'last_req', NOW);
 
         t.setSessionId(eventAt(NOW), null);
 
@@ -299,7 +299,7 @@ describe('is_new_visitor has session lifetime', () => {
         });
         OWA.setState('v', 'vid', 'known-visitor');
         const t = newTracker();
-        t.setGlobalEventProperty('last_req', NOW);
+        OWA.setState('s', 'last_req', NOW);
 
         t.setVisitorId(eventAt(NOW), null);
         t.setSessionId(eventAt(NOW), null);
@@ -321,7 +321,7 @@ describe('is_new_visitor has session lifetime', () => {
         });
         OWA.setState('v', 'vid', 'known-visitor');
         const t = newTracker();
-        t.setGlobalEventProperty('last_req', NOW - 5000);
+        OWA.setState('s', 'last_req', NOW - 5000);
 
         t.setVisitorId(eventAt(NOW), null);
         t.setSessionId(eventAt(NOW), null);
@@ -392,7 +392,7 @@ describe('setDaysSinceLastSession', () => {
         // property; last_req is still the one per-request fact left on the
         // tracker.
         OWA.setState('d', 'is_new_session', true);
-        t.setGlobalEventProperty('last_req', NOW - 5 * DAY);
+        OWA.setState('s', 'prior_last_req', NOW - 5 * DAY);
 
         t.setDaysSinceLastSession(eventAt(NOW), null);
 
@@ -411,16 +411,46 @@ describe('setDaysSinceLastSession', () => {
 
 describe('setLastRequestTime', () => {
 
-    test('promotes the prior last_req then stores the current timestamp', () => {
+    test('captures the prior last_req then advances the store to now', () => {
         const t = newTracker();
         seedPersistedSession({ last_req: NOW - 1000 });
 
         t.setLastRequestTime(eventAt(NOW), null);
 
-        // The OLD value rides this event (so new-session math sees the gap)...
-        expect(t.getGlobalEventProperty('last_req')).toBe(NOW - 1000);
-        // ...while the store is advanced to now for the next request.
+        // The OLD value is kept under its own key, because it is what events
+        // report and s.last_req is about to stop holding it...
+        expect(OWA.getState('s', 'prior_last_req')).toBe(NOW - 1000);
+        // ...and the store advances to now for the next request.
         expect(OWA.getState('s', 'last_req')).toBe(NOW);
+    });
+
+    test('a second tracker on the page does not overwrite the captured value', () => {
+        // By the time a second tracker runs, the first has advanced s.last_req
+        // to now. Without the guard it would capture THAT as the prior request,
+        // and the first tracker's later events would then report it.
+        const first = newTracker();
+        seedPersistedSession({ last_req: NOW - 1000 });
+
+        first.setLastRequestTime(eventAt(NOW), null);
+        const second = newTracker();
+        second.setLastRequestTime(eventAt(NOW), null);
+
+        expect(OWA.getState('s', 'prior_last_req')).toBe(NOW - 1000);
+    });
+
+    test('sessionization is decided before the advance, so it sees the prior value', () => {
+        // The reason the two steps are in this order. Reversed, the store says
+        // "now" by the time the decision is made, and the prior value has to be
+        // stashed on the tracker for the decision to still see it -- which is
+        // what a global event property was doing, and why a second tracker on
+        // the page saw a different one.
+        const t = newTracker();
+        seedPersistedSession({ sid: 'live-session', last_req: NOW - 60 });
+
+        t.setSessionId(eventAt(NOW), null);
+
+        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
+        expect(OWA.getState('s', 'sid')).toBe('live-session');
     });
 });
 
@@ -439,7 +469,7 @@ describe('settling the session store on the sessionization decision', () => {
         const t = newTracker();
         // Set during THIS page load, before the pageview that ends the old one.
         OWA.setState('s', 'cv1', 'plan=pro');
-        t.setGlobalEventProperty('last_req', NOW - 5000);
+        OWA.setState('s', 'last_req', NOW - 5000);
 
         t.setSessionId(eventAt(NOW), null);
 
@@ -458,7 +488,7 @@ describe('settling the session store on the sessionization decision', () => {
         seedPersistedSession({ sid: 'active-1', cv1: 'plan=free', cv2: 'tier=old' });
         const t = newTracker();
         OWA.setState('s', 'cv1', 'plan=pro');
-        t.setGlobalEventProperty('last_req', NOW);
+        OWA.setState('s', 'last_req', NOW);
 
         t.setSessionId(eventAt(NOW), null);
 
