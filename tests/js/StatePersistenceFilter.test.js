@@ -1,4 +1,11 @@
+jest.mock('jquery', () => {
+    const jq = jest.requireActual('jquery');
+    jq.__esModule = true;
+    return jq;
+});
+
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { Util } from '../../modules/Base/src/common/Util.js';
 
 /**
@@ -60,6 +67,11 @@ const NOW = 1700000000;
 /** Put the state manager back to the state a fresh page load starts in. */
 function coldPage() {
     OWA.initializeStateManager();
+    // A store's hydration and persistence behaviour comes from its
+    // REGISTRATION, so these tests have to register before they mean anything.
+    // Constructing a tracker is how that happens in production; restating the
+    // store table here instead would just let it drift out of step.
+    new OWATracker({ cookie_domain_set: true });
     OWA.state.stores = {};
     OWA.state.storeFormats = {};
     OWA.state.hydrated = {};
@@ -80,6 +92,50 @@ afterEach(() => {
     writes.mockRestore();
     coldPage();
     ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
+});
+
+describe('store behaviour is declared at registration', () => {
+
+    /*
+     * It used to be hardcoded in StateManager's constructor as maps keyed by
+     * one-letter store name -- so a store's identity was declared in the
+     * tracker while its behaviour lived in another file, and registering a new
+     * store gave you no way to say how it should behave.
+     */
+
+    test('the session store defers hydration and waits for the session to persist', () => {
+        expect(OWA.state.behaviourOf('s')).toMatchObject({
+            hydrate: 'deferred',
+            persist: 'session',
+        });
+    });
+
+    test('the page store is memory only', () => {
+        expect(OWA.state.behaviourOf('d').persist).toBe('never');
+    });
+
+    test('the legacy custom variable store declares what it collapses into', () => {
+        expect(OWA.state.behaviourOf('b').collapseInto).toBe('s');
+    });
+
+    test('the visitor and campaign stores take the defaults', () => {
+        ['v', 'c'].forEach((store) => {
+            expect(OWA.state.behaviourOf(store)).toMatchObject({
+                hydrate: 'eager',
+                persist: 'immediate',
+                collapseInto: '',
+            });
+        });
+    });
+
+    test('an unregistered store takes the defaults rather than throwing', () => {
+        // Something written to before the tracker registered it behaves the way
+        // every store did before any of this existed.
+        expect(OWA.state.behaviourOf('zz')).toMatchObject({
+            hydrate: 'eager',
+            persist: 'immediate',
+        });
+    });
 });
 
 describe('the session store is withheld until the session is persistable', () => {

@@ -20,61 +20,15 @@ class StateManager {
 		 * whether that previous session was still alive -- and once merged,
 		 * nothing could tell them apart.
 		 *
-		 * The three below keep the jobs separate.
+		 * Which of those jobs a given store takes part in, and when, is
+		 * DECLARED AT REGISTRATION -- see registerStore(). It used to be
+		 * hardcoded here as a set of maps keyed by one-letter store name, which
+		 * meant a store's identity was declared in the tracker and its behaviour
+		 * in this file, and registering a new store gave you no way to say how
+		 * it should behave.
 		 */
-
-		/*
-		 * Stores that must NOT auto-load. Their memory store exists from the
-		 * first write; the persisted copy is merged in later, by hydrate(), or
-		 * thrown away by discardPersisted() -- whichever the session decision
-		 * calls for. Memory therefore holds exactly what THIS page load set,
-		 * which is what makes new values distinguishable from old ones.
-		 */
-		this.deferredHydrationStores = { 's': true };
 		this.hydrated = {};
-
-		/*
-		 * Stores that live only in memory, for the life of the page. Page-scoped
-		 * custom variables are the case: 'd'.
-		 */
-		this.nonPersistentStores = { 'd': true };
-
-		/*
-		 * Stores whose cookie is written only once something has declared the
-		 * session worth persisting -- see enableSessionPersistence(), wired to
-		 * the 'persistSession' action. Until then writes land in memory only,
-		 * so every event on the page reads the same session while none of it
-		 * reaches disk.
-		 *
-		 * Two things depend on this, and they are worth keeping distinct.
-		 *
-		 * Persisting session identity BEFORE delivery is what strands a
-		 * session: the cookie asserts session X, the server was never told
-		 * about X, and every later page takes
-		 * sessionHandlers::logSessionUpdate() -- which correctly aborts,
-		 * because on a multi-server setup an update can legitimately arrive
-		 * before its create. Nothing then reconciles it. This began as a filter
-		 * over two KEYS (sid, last_req) while the rest of the store persisted
-		 * immediately; holding the store whole subsumes it, and also stops a
-		 * half-session reaching disk -- a referer or custom var recorded
-		 * against a session whose identity was not.
-		 *
-		 * And holding a value back is what makes it distinguishable. A value in
-		 * memory was set by THIS page load; one in the cookie was left by a
-		 * previous one. Writing through immediately destroys that distinction,
-		 * and a new session can then neither keep the new values nor discard
-		 * the old ones. See hydrate() and discardPersisted().
-		 */
-		this.sessionBoundStores = { 's': true };
 		this.sessionPersistenceReady = false;
-
-		/*
-		 * Stores kept only for compatibility, whose contents belong to another
-		 * store. 'b' held session-scoped custom variables beside 's', which IS
-		 * the session store. They are folded into their target when the session
-		 * is settled -- see collapseLegacyStores().
-		 */
-		this.legacyStoreMergeTargets = { 'b': 's' };
 
 		/*
 		 * Storage migrations, run once the cookie domain is known.
@@ -110,11 +64,13 @@ class StateManager {
 	 */
 	shouldAutoLoad( store_name ) {
 
-		if ( this.nonPersistentStores.hasOwnProperty( store_name ) ) {
+		var behaviour = this.behaviourOf( store_name );
+
+		if ( behaviour.persist === 'never' ) {
 			return false;
 		}
 
-		if ( this.deferredHydrationStores.hasOwnProperty( store_name )
+		if ( behaviour.hydrate === 'deferred'
 			 && ! this.hydrated.hasOwnProperty( store_name ) ) {
 			return false;
 		}
@@ -215,11 +171,11 @@ class StateManager {
 	 */
 	resolveDeferredHydration( is_new_session ) {
 
-		for ( var store_name in this.deferredHydrationStores ) {
+		var deferred = this.storesWhere( 'hydrate', 'deferred' );
 
-			if ( ! this.deferredHydrationStores.hasOwnProperty( store_name ) ) {
-				continue;
-			}
+		for ( var i = 0; i < deferred.length; i++ ) {
+
+			var store_name = deferred[ i ];
 
 			if ( is_new_session ) {
 				this.discardPersisted( store_name );
@@ -318,13 +274,19 @@ class StateManager {
 
 	collapseLegacyStores() {
 
-		for ( var legacy in this.legacyStoreMergeTargets ) {
+		for ( var name in this.storeMeta ) {
 
-			if ( ! this.legacyStoreMergeTargets.hasOwnProperty( legacy ) ) {
+			if ( ! this.storeMeta.hasOwnProperty( name ) ) {
 				continue;
 			}
 
-			var target = this.legacyStoreMergeTargets[ legacy ];
+			var legacy = name;
+			var target = this.behaviourOf( legacy ).collapseInto;
+
+			if ( ! target ) {
+				continue;
+			}
+
 			var from = this.readPersistedStore( legacy );
 
 			if ( ! from.state ) {
@@ -385,19 +347,81 @@ class StateManager {
 
 		this.sessionPersistenceReady = true;
 
-		for ( var store_name in this.sessionBoundStores ) {
+		var bound = this.storesWhere( 'persist', 'session' );
 
-			if ( this.sessionBoundStores.hasOwnProperty( store_name )
-				 && this.isPresent( store_name ) ) {
+		for ( var i = 0; i < bound.length; i++ ) {
 
-				this.persist( store_name );
+			if ( this.isPresent( bound[ i ] ) ) {
+				this.persist( bound[ i ] );
 			}
 		}
 	}
         
-    registerStore( name, expiration, length, format ) {
+    /**
+     * Declare a state store.
+     *
+     * `behaviour` is optional and says how the store takes part in hydration
+     * and persistence. Defaults match what every store did before any of this
+     * existed, so an existing four-argument call keeps its meaning:
+     *
+     *   hydrate: 'eager'      load the cookie on first touch (default)
+     *            'deferred'   do not load until the session decision settles
+     *                         it -- see resolveDeferredHydration(). Memory then
+     *                         holds only what THIS page load set, which is what
+     *                         makes new values distinguishable from old ones.
+     *
+     *   persist: 'immediate'  write the cookie on every set (default)
+     *            'session'    hold in memory until 'persistSession' says the
+     *                         session is worth writing down, then write on
+     *                         every set from there on
+     *            'never'      memory only, for the life of the page
+     *
+     *   collapseInto: '<store>'  legacy store, folded into <store> and erased
+     *                            by the collapse-legacy-stores migration
+     */
+    registerStore( name, expiration, length, format, behaviour ) {
 	    
-        this.storeMeta[name] = {'expiration' : expiration, 'length': length, 'format' : format};
+        behaviour = behaviour || {};
+
+        this.storeMeta[name] = {
+            'expiration'   : expiration,
+            'length'       : length,
+            'format'       : format,
+            'hydrate'      : behaviour.hydrate || 'eager',
+            'persist'      : behaviour.persist || 'immediate',
+            'collapseInto' : behaviour.collapseInto || ''
+        };
+    }
+
+    /**
+     * How a store behaves. Defaulted, so an unregistered store -- one written
+     * to before the tracker registered it -- behaves the way every store did
+     * before any of this existed rather than throwing.
+     */
+    behaviourOf( store_name ) {
+
+        var meta = this.storeMeta[ store_name ];
+
+        return {
+            'hydrate'      : ( meta && meta.hydrate ) || 'eager',
+            'persist'      : ( meta && meta.persist ) || 'immediate',
+            'collapseInto' : ( meta && meta.collapseInto ) || ''
+        };
+    }
+
+    /** Registered store names whose behaviour matches, e.g. ('persist','session'). */
+    storesWhere( setting, value ) {
+
+        var names = [];
+
+        for ( var name in this.storeMeta ) {
+            if ( this.storeMeta.hasOwnProperty( name )
+                 && this.behaviourOf( name )[ setting ] === value ) {
+                names.push( name );
+            }
+        }
+
+        return names;
     }
     
     getExpirationDays( store_name ) {
@@ -462,15 +486,16 @@ class StateManager {
             return;
         }
 
+        var behaviour = this.behaviourOf( store_name );
+
         // Memory-only store: there is no cookie to write.
-        if ( this.nonPersistentStores.hasOwnProperty( store_name ) ) {
+        if ( behaviour.persist === 'never' ) {
             return;
         }
 
         // Session-bound store, and nothing has declared the session persistable
         // yet. Memory already has the value; the cookie waits.
-        if ( ! this.sessionPersistenceReady
-             && this.sessionBoundStores.hasOwnProperty( store_name ) ) {
+        if ( behaviour.persist === 'session' && ! this.sessionPersistenceReady ) {
 
             OWA.debug( 'Holding store (%s) in memory; session not persistable yet', store_name );
             return;
@@ -637,7 +662,7 @@ class StateManager {
      *
      * Note the asymmetry with hydrate(): load() overwrites, so it is only safe
      * where memory holds nothing worth keeping. Stores listed in
-     * deferredHydrationStores do not come through here at all.
+     * a store registered with hydrate:'deferred' does not come through here.
      */
     load(store_name) {
 

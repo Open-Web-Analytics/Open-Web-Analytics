@@ -101,8 +101,26 @@ class OWATracker  {
 	    // an old assoc cookie has it parsed as assoc and rewritten as JSON on
 	    // the next write. No migration, no flag day.
 	    OWA.registerStateStore('v', 364, '', 'json');
-	    OWA.registerStateStore('s', 364, '', 'json');
 	    OWA.registerStateStore('c', 60, '', 'json');
+
+	    // The session store does not load its cookie on first touch, and does
+	    // not write one until the session has been accepted for delivery.
+	    //
+	    // Both follow from one thing: holding a value back is what makes it
+	    // distinguishable. A value in memory was set by THIS page load; one in
+	    // the cookie was left by a previous session. Merge them on first touch
+	    // -- which is what an eager load does -- and a new session can then
+	    // neither keep the new values nor discard the old ones, because nothing
+	    // tells them apart.
+	    //
+	    // persist:'session' also stops a half-session reaching disk. Writing a
+	    // referer or a custom var while the sid is still withheld records state
+	    // about a session whose identity was never recorded, and whatever reads
+	    // it next attaches those values to a different session.
+	    OWA.registerStateStore('s', 364, '', 'json', {
+		    hydrate: 'deferred',
+		    persist: 'session'
+	    });
 
 	    // 'b' held session-scoped custom variables, alongside 's' which is the
 	    // session store -- two cookies for one concept. Session-scoped custom
@@ -115,7 +133,7 @@ class OWATracker  {
 	    // Reading it as a fallback was not enough on its own: because nothing
 	    // cleared it at a session boundary, a variable left there by a session
 	    // that had ended was still found by that read and put back on the wire.
-	    OWA.registerStateStore('b', '', '', 'json');
+	    OWA.registerStateStore('b', '', '', 'json', { collapseInto: 's' });
 
 	    // 'd' holds page-scoped custom variables. Memory only, for the life of
 	    // the page -- the state manager never writes it to a cookie. Page scope
@@ -123,7 +141,7 @@ class OWATracker  {
 	    // through to a global event property and happened to work. Declaring it
 	    // makes the three scopes symmetrical and gives getCustomPageVar()
 	    // somewhere to read from.
-	    OWA.registerStateStore('d', '', '', 'json');
+	    OWA.registerStateStore('d', '', '', 'json', { persist: 'never' });
 	
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {

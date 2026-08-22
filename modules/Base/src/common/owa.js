@@ -75,10 +75,10 @@ class OWA {
         }
     }
     
-    registerStateStore( name, expiration, length, format ) {
+    registerStateStore( name, expiration, length, format, behaviour ) {
 	    
         this.initializeStateManager();
-        return this.state.registerStore(name, expiration, length, format);
+        return this.state.registerStore(name, expiration, length, format, behaviour);
     }
     
     checkForState( store_name ) {
