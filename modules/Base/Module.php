@@ -172,6 +172,20 @@ class Module extends \OWA\Core\Module {
                 'default_value'                    => '(not set)'
             ),
 
+            'prior_session_date'            => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
+            'session_date'                    => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
             'first_session_date'            => array(
                 'required'                        => false,
                 'callbacks'                        => array( ),
@@ -1626,17 +1640,6 @@ class Module extends \OWA\Core\Module {
             'visit',
             'The page type of the exit page.',
             'last_page_id'
-        );
-
-        $this->registerDimension(
-            'timeSinceLastVisit',
-            'base.session',
-            'time_sinse_priorsession',
-            'Time Since Last Visit',
-            'visit-special',
-            'The time since the last visit.',
-            '',
-            true
         );
 
         $this->registerDimension(

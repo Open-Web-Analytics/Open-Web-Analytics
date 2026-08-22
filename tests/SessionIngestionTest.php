@@ -202,25 +202,28 @@ final class SessionIngestionTest extends IngestionTestCase
     }
 
     /**
-     * days_since_prior_session is derived on the server from the interval the
-     * tracker measured, in straight 24-hour periods.
+     * days_since_prior_session is derived on the server by subtracting two
+     * DATES the tracker sends: when the previous session began, and when this
+     * one did.
      *
-     * NOT calendar days, and the test below for consistency across a session is
-     * why. The value must be identical on every event sharing a session_id;
-     * counting date boundaries needs two absolute times, and an event carries
-     * only its own timestamp plus a session-scoped interval, so anchoring to it
-     * drifts for every event after the one that opened the session.
+     * Both are YYYYMMDD in the visitor's own calendar, so the subtraction stays
+     * inside one calendar -- measuring to the server's date instead mixes two
+     * and can be a day out at the edges. Coarsening is what limits the damage
+     * an uncontrolled clock can do: only an error crossing midnight costs
+     * anything, and only ever a day.
+     *
+     * Measuring to the SESSION's date, not the event's, is what keeps the value
+     * identical on every event sharing a session_id -- see the test below.
      */
-    private function fireWithInterval(string $session_id, int $at, ?int $interval, array $extra = []): string
+    private function fireWithDates(string $session_id, int $at, ?string $prior, ?string $session, array $extra = []): string
     {
         $props = array_merge([
             'is_new_session'       => true,
             'is_new_session_start' => true,
         ], $extra);
 
-        if ($interval !== null) {
-            $props['time_since_last_session'] = $interval;
-        }
+        if ($prior !== null)   { $props['prior_session_date'] = $prior; }
+        if ($session !== null) { $props['session_date']       = $session; }
 
         $this->trackForCleanup('base.session', $session_id, 'id');
         $this->setServerTime($at);
@@ -228,61 +231,66 @@ final class SessionIngestionTest extends IngestionTestCase
         return $this->firePageRequest(md5('owa-test-site'), $session_id, $props);
     }
 
-    public function testDaysAreDerivedFromTheInterval(): void
+    public function testDaysSincePriorSessionIsTheDifferenceOfTheTwoDates(): void
     {
-        $guid = $this->fireWithInterval($this->uniqueSessionId(), 1700000000, 5 * 86400);
+        $now = 1700000000;
+
+        $guid = $this->fireWithDates(
+            $this->uniqueSessionId(),
+            $now,
+            date('Ymd', $now - (5 * 86400)),
+            date('Ymd', $now)
+        );
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(5, $r->get('days_since_prior_session'));
     }
 
-    public function testThePartialDayRoundsAsItAlwaysDid(): void
+    public function testAReturnVisitTheSameDayIsZeroDays(): void
     {
-        // Identical arithmetic to the tracker's old Math.round, so the
-        // dimension does not change meaning -- only where it is computed.
-        $guid = $this->fireWithInterval($this->uniqueSessionId(), 1700000000, (int) (2.6 * 86400));
+        // Two hours apart inside one day. An elapsed calculation rounding to
+        // days would also give 0 here, but a visit at 23:00 returning at 01:00
+        // is 1 -- boundaries, not duration.
+        $now = 1700000000;
+        $today = date('Ymd', $now);
+
+        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, $today, $today);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
-        $this->assertEquals(3, $r->get('days_since_prior_session'));
+        $this->assertEquals(0, $r->get('days_since_prior_session'));
     }
 
     public function testEveryEventSharingASessionAgrees(): void
     {
-        // The invariant that rules calendar days out. The tracker sends the same
-        // session-scoped interval on every event, and the derivation depends on
-        // nothing else -- so two hits hours apart, either side of a midnight,
-        // still report the same number.
+        // The invariant. The day count is measured to the SESSION's date, which
+        // every event of the session carries, so two hits either side of a
+        // midnight still report the same number. Measuring to each event's own
+        // date would not.
         $site_id    = md5('owa-test-site');
         $session_id = $this->uniqueSessionId();
         $this->trackForCleanup('base.session', $session_id, 'id');
 
-        $midnight = strtotime(date('Y-m-d', 1700000000));
+        $midnight    = strtotime(date('Y-m-d', 1700000000));
+        $sessionDate = date('Ymd', $midnight - 3600);          // session began at 23:00
+        $priorDate   = date('Ymd', $midnight - (3 * 86400));
 
-        // 60 hours: deliberately NOT a whole number of days. With a whole-day
-        // interval both endpoints shift together and a calendar calculation
-        // gives the same answer either side of midnight -- the test would pass
-        // against the very design it exists to rule out. At 60 hours the later
-        // event's own timestamp crosses midnight while its derived anchor does
-        // not, so a calendar calculation returns 2 and 3 for the two events.
-        $interval = 60 * 3600;
-
-        $this->setServerTime($midnight - 3600);          // 23:00 the day before
+        $this->setServerTime($midnight - 3600);
         $first = $this->firePageRequest($site_id, $session_id, [
-            'is_new_session'          => true,
-            'is_new_session_start'    => true,
-            'time_since_last_session' => $interval,
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+            'prior_session_date'   => $priorDate,
+            'session_date'         => $sessionDate,
         ]);
 
-        $this->setServerTime($midnight + 3600);          // 01:00, past midnight
+        $this->setServerTime($midnight + 3600);                // 01:00, past midnight
         $second = $this->firePageRequest($site_id, $session_id, [
-            'time_since_last_session' => $interval,
+            'prior_session_date' => $priorDate,
+            'session_date'       => $sessionDate,
         ]);
 
         $a = $this->assertRowPersisted('base.request', $first, 'id');
         $b = $this->assertRowPersisted('base.request', $second, 'id');
 
-        // round(60/24) = round(2.5) = 3, the same arithmetic the tracker used.
-        $this->assertEquals(3, $a->get('days_since_prior_session'));
         $this->assertEquals(
             $a->get('days_since_prior_session'),
             $b->get('days_since_prior_session'),
@@ -291,21 +299,16 @@ final class SessionIngestionTest extends IngestionTestCase
     }
 
     /**
-     * days_since_first_session is derived on the server from the DATE the
-     * tracker sends.
-     *
-     * The tracker sends first_session_date as YYYYMMDD -- coarse on purpose,
-     * because the anchor is stamped by the visitor's clock and a date absorbs
-     * anything short of a midnight-crossing error. It no longer sends fsts or a
-     * computed dsfs at all.
+     * days_since_first_session works the same way: two dates, subtracted at day
+     * level. The anchor is the visitor's first-visit date, coarse because it is
+     * stamped by their clock; the other end is this session's date, so the value
+     * is fixed for the visit rather than ticking over at midnight.
      */
     public function testDaysSinceFirstSessionIsCountedFromTheDateSent(): void
     {
         $now = 1700000000;
-        $this->setServerTime($now);
 
-        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
-            'is_new_session'     => true,
+        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, null, date('Ymd', $now), [
             'first_session_date' => date('Ymd', $now - (10 * 86400)),
         ]);
 
@@ -316,10 +319,8 @@ final class SessionIngestionTest extends IngestionTestCase
     public function testAFirstVisitTodayIsZeroDays(): void
     {
         $now = 1700000000;
-        $this->setServerTime($now);
 
-        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
-            'is_new_session'     => true,
+        $guid = $this->fireWithDates($this->uniqueSessionId(), $now, null, date('Ymd', $now), [
             'first_session_date' => date('Ymd', $now),
         ]);
 
@@ -329,15 +330,8 @@ final class SessionIngestionTest extends IngestionTestCase
 
     public function testAnOlderTrackerSendingDsfsStillHasItHonoured(): void
     {
-        // No date, so the value it sent as 'dsfs' stands -- carried by the
-        // alternative_key, with the derivation returning what it was given.
-        $now = 1700000000;
-        $this->setServerTime($now);
-
-        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
-            'is_new_session' => true,
-            'dsfs'           => 7,
-        ]);
+        // No date, so the value it sent as 'dsfs' stands.
+        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, ['dsfs' => 7]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(7, $r->get('days_since_first_session'));
@@ -345,11 +339,9 @@ final class SessionIngestionTest extends IngestionTestCase
 
     public function testAMalformedDateFallsBackRatherThanGuessing(): void
     {
-        $now = 1700000000;
-        $this->setServerTime($now);
-
-        $guid = $this->firePageRequest(md5('owa-test-site'), $this->uniqueSessionId(), [
-            'is_new_session'     => true,
+        // Also the regression test for setDataType()'s integer branch, which
+        // threw a TypeError on non-numeric input from an unauthenticated beacon.
+        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, [
             'first_session_date' => 'not-a-date',
             'dsfs'               => 3,
         ]);
@@ -361,7 +353,7 @@ final class SessionIngestionTest extends IngestionTestCase
     public function testAnOlderTrackerSendingDspsStillHasItHonoured(): void
     {
         // No interval, so the value it sent as 'dsps' stands.
-        $guid = $this->fireWithInterval($this->uniqueSessionId(), 1700000000, null, ['dsps' => 4]);
+        $guid = $this->fireWithDates($this->uniqueSessionId(), 1700000000, null, null, ['dsps' => 4]);
 
         $r = $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertEquals(4, $r->get('days_since_prior_session'));

@@ -598,17 +598,26 @@ describe('days since the prior session is no longer computed here', () => {
         expect(beacons[0]).not.toHaveProperty('days_since_prior_session');
     });
 
-    test('but it does send the interval the server derives them from', () => {
-        seedPersistedSession({ sid: 'old', last_req: NOW - (3 * 86400) });
+    test('but it does send the dates the server derives them from', () => {
+        // Two dates in the visitor's own calendar: when the previous session
+        // began, and when this one did. The server subtracts them.
+        const priorStart = NOW - (3 * 86400);
+        seedPersistedSession({ sid: 'old', last_req: NOW - (3 * 86400), sts: priorStart });
         const t = newTracker();
-        const beacons = [];
-        t.logEvent = (p) => beacons.push({ ...p });
 
         t.setSessionId(eventAt(NOW), null);
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        expect(event.get('time_since_last_session')).toBe(3 * 86400);
+        const asDate = (ts) => {
+            const d = new Date(ts * 1000);
+            return '' + d.getFullYear()
+                + ('0' + (d.getMonth() + 1)).slice(-2)
+                + ('0' + d.getDate()).slice(-2);
+        };
+
+        expect(event.get('prior_session_date')).toBe(asDate(priorStart));
+        expect(event.get('session_date')).toBe(asDate(NOW));
     });
 });
 

@@ -77,7 +77,8 @@ class OWATracker  {
 		    session_id:              { scope: 'session', permanent: false },
 		    prior_session_id:        { scope: 'session', permanent: false },
 		    is_new_visitor:          { scope: 'session', permanent: false },
-		    time_since_last_session: { scope: 'session', permanent: false },
+		    prior_session_date:      { scope: 'session', permanent: false },
+		    session_date:            { scope: 'session', permanent: false },
 		    session_referer:         { scope: 'session', permanent: false },
 		    nps:                     { scope: 'session', permanent: false },
 		    attribs:                 { scope: 'session', permanent: false },
@@ -2022,10 +2023,45 @@ class OWATracker  {
              */
             var now = event.get( 'timestamp' ) || this.getTimestamp();
 
-            if ( previous_request ) {
+            /*
+             * The DATE of the session that just ended, taken from its stored
+             * start time before the boundary discards it -- the same move as
+             * prior_session_id just below, and read for the same reason.
+             *
+             * A date, like first_session_date, and coarse for the same reason:
+             * the anchor is stamped by the visitor's clock, so a date absorbs
+             * anything short of a midnight-crossing error. The server counts
+             * days from it.
+             *
+             * This replaces sending an interval in seconds. That interval fed
+             * timeSinceLastVisit, which was never really a dimension -- a
+             * continuous seconds value gives one bucket per distinct second, so
+             * it was a metric wearing a dimension's clothes. Days bucket;
+             * seconds do not.
+             */
+            var prior_session_start = OWA.getPersistedState( 's', 'sts' );
 
-                OWA.setState( 's', 'time_since_last_session', now - previous_request );
+            if ( prior_session_start ) {
+
+                OWA.setState( 's', 'prior_session_date', this.asYyyymmdd( prior_session_start ) );
             }
+
+            // ...and this session's own start, for the NEXT boundary to read.
+            OWA.setState( 's', 'sts', now );
+
+            /*
+             * This session's date, which is what the day counts are measured
+             * TO. Fixed for the session, so days_since_first_session and
+             * days_since_prior_session are identical on every event sharing this
+             * session_id -- measuring to the EVENT's date instead would tick
+             * them over at midnight part way through a visit, and both
+             * dimensions are family 'visit'.
+             *
+             * It also keeps both subtractions inside ONE calendar. Counting from
+             * a visitor-stamped date to the server's date mixes two, and can be
+             * a day out at the edges; visitor-to-visitor is exact.
+             */
+            OWA.setState( 's', 'session_date', this.asYyyymmdd( now ) );
 
 
             // Persisted read, for the same reason as last_req above: the id of
@@ -2296,7 +2332,8 @@ class OWATracker  {
             { store: 's', key: 'referer', name: 'session_referer' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
             { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
-            { store: 's', key: 'time_since_last_session', name: 'time_since_last_session' }
+            { store: 's', key: 'prior_session_date', name: 'prior_session_date' },
+            { store: 's', key: 'session_date',       name: 'session_date' }
         ];
 
         for ( var i = 0; i < map.length; i++ ) {
@@ -2351,11 +2388,7 @@ class OWATracker  {
 
         if ( first_seen ) {
 
-            var d = new Date( first_seen * 1000 );
-            var month = ( '0' + ( d.getMonth() + 1 ) ).slice( -2 );
-            var day   = ( '0' + d.getDate() ).slice( -2 );
-
-            collected.first_session_date = '' + d.getFullYear() + month + day;
+            collected.first_session_date = this.asYyyymmdd( first_seen );
         }
 
         // Campaign keys are session state too, written into 's' by the
@@ -2393,6 +2426,22 @@ class OWATracker  {
         if ( ! event.isSet( name ) ) {
             event.set( name, true );
         }
+    }
+
+    /**
+     * A unix timestamp as YYYYMMDD in the visitor's own calendar.
+     *
+     * Coarsening is deliberate: these anchors are stamped by the visitor's
+     * clock, and a date absorbs anything short of an error that crosses
+     * midnight -- bounding what a wrong clock can cost to one day.
+     */
+    asYyyymmdd( timestamp ) {
+
+        var d = new Date( timestamp * 1000 );
+        var month = ( '0' + ( d.getMonth() + 1 ) ).slice( -2 );
+        var day   = ( '0' + d.getDate() ).slice( -2 );
+
+        return '' + d.getFullYear() + month + day;
     }
 
     collectPageProperties() {

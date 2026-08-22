@@ -436,37 +436,61 @@ class TrackingEventHelpers {
      * alternative_key -- so returning it unchanged is the fallback for trackers
      * cached from before the date existed.
      */
-    static function deriveDaysSinceFirstSession( $days, $event ) {
+    /**
+     * Whole days between two YYYYMMDD dates, or null if either is unusable.
+     *
+     * Both come from the tracker, in the VISITOR's calendar, so the subtraction
+     * stays inside one calendar. Measuring from a visitor-stamped date to the
+     * server's own can be a day out at the edges.
+     */
+    static function daysBetweenDates( $from, $to ) {
 
-        $first = (string) $event->get( 'first_session_date' );
+        if ( ! preg_match( '/^\d{8}$/', (string) $from ) || ! preg_match( '/^\d{8}$/', (string) $to ) ) {
 
-        if ( ! preg_match( '/^\d{8}$/', $first ) ) {
-
-            return $days;
+            return null;
         }
 
-        $then = strtotime( substr( $first, 0, 4 ) . '-' . substr( $first, 4, 2 ) . '-' . substr( $first, 6, 2 ) );
-        $now  = strtotime( date( 'Y-m-d', (int) $event->get( 'timestamp' ) ) );
+        $a = strtotime( substr( $from, 0, 4 ) . '-' . substr( $from, 4, 2 ) . '-' . substr( $from, 6, 2 ) );
+        $b = strtotime( substr( $to, 0, 4 ) . '-' . substr( $to, 4, 2 ) . '-' . substr( $to, 6, 2 ) );
 
-        if ( $then === false || $now === false ) {
+        if ( $a === false || $b === false ) {
 
-            return $days;
+            return null;
         }
 
         // round, not floor: a day is 23 or 25 hours across a DST boundary.
-        return (int) round( ( $now - $then ) / 86400 );
+        return (int) round( ( $b - $a ) / 86400 );
+    }
+
+    /**
+     * The date the current session began, as the tracker reported it, falling
+     * back to the server's date for trackers that predate the field.
+     */
+    static function sessionDateOf( $event ) {
+
+        $sent = (string) $event->get( 'session_date' );
+
+        return preg_match( '/^\d{8}$/', $sent ) ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
+    }
+
+    static function deriveDaysSinceFirstSession( $days, $event ) {
+
+        $count = self::daysBetweenDates(
+            $event->get( 'first_session_date' ),
+            self::sessionDateOf( $event )
+        );
+
+        return $count === null ? $days : $count;
     }
 
     static function deriveDaysSincePriorSession( $days, $event ) {
 
-        $elapsed = (int) $event->get( 'time_since_last_session' );
+        $count = self::daysBetweenDates(
+            $event->get( 'prior_session_date' ),
+            self::sessionDateOf( $event )
+        );
 
-        if ( $elapsed <= 0 ) {
-
-            return $days;
-        }
-
-        return (int) round( $elapsed / 86400 );
+        return $count === null ? $days : $count;
     }
 
     static function setRepeatVisitorFlag( $flag, $event ) {

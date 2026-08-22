@@ -100,47 +100,22 @@ class SessionHandlers extends \OWA\Core\Observer {
                 $s->set('prior_session_id', $event->get('prior_session_id'));
 
                 /*
-                 * The gap to the previous session, as MEASURED BY THE TRACKER
-                 * and sent as a duration.
+                 * time_sinse_priorsession is no longer computed. It fed the
+                 * timeSinceLastVisit dimension, which has been retired: a
+                 * continuous seconds value gives one bucket per distinct
+                 * second, so it was a metric wearing a dimension's clothes.
+                 * Days bucket; seconds do not.
                  *
-                 * This used to be computed here as
-                 * `$s->get('timestamp') - $event->get('last_req')` -- the
-                 * server's clock minus the browser's. last_req is the one
-                 * client-clock value that reaches the schema, so that
-                 * subtraction was wrong by the visitor's skew and could come out
-                 * NEGATIVE. It feeds the timeSinceLastVisit dimension ("Time
-                 * Since Last Visit"), so it was the one prior-session value
-                 * anybody reports on.
+                 * "How long since the last visit" is now answered in days, by
+                 * days_since_prior_session, derived from the two dates the
+                 * tracker sends -- see
+                 * TrackingEventHelpers::deriveDaysSincePriorSession().
                  *
-                 * The tracker measures both ends with one clock, so skew
-                 * cancels; and a duration makes no claim about whose clock it
-                 * is, so nothing downstream has to know. It is computed once at
-                 * send time and carried, so a queued event replayed later
-                 * reuses it rather than recomputing against a different "now".
-                 *
-                 * The old computation stays as the fallback for trackers cached
-                 * from before the field existed -- no worse than what they got
-                 * before.
+                 * The prior_session_* date parts went with it. They were
+                 * formatted from last_req, the one CLIENT-clock value reaching
+                 * the schema, and nothing read them.
                  */
-                $elapsed = (int) $event->get('time_since_last_session');
-
-                if ($elapsed > 0) {
-
-                    $s->set('time_sinse_priorsession', $elapsed);
-                }
-
-                if ($s->get('prior_session_lastreq') > 0) {
-
-                    if ($elapsed <= 0) {
-                        $s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
-                    }
-                    $s->set('prior_session_year', date("Y", $event->get('last_req')));
-                    $s->set('prior_session_month', date("M", $event->get('last_req')));
-                    $s->set('prior_session_day', date("d", $event->get('last_req')));
-                    $s->set('prior_session_hour', date("G", $event->get('last_req')));
-                    $s->set('prior_session_minute', date("i", $event->get('last_req')));
-                    $s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
-                }
+                $s->set('prior_session_lastreq', $event->get('last_req'));
 
                 // set last_req to be the timestamp of the event that triggered this session.
                 $s->set('last_req', $event->get('timestamp'));

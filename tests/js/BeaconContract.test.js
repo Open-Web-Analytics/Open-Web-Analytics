@@ -74,7 +74,17 @@ function seedEstablishedSession() {
         ? Util.getCookieDomainHash(OWA.getSetting('cookie_domain'))
         : undefined;
 
-    const session = { sid: 'established-session', last_req: now };
+    const session = {
+        sid: 'established-session',
+        last_req: now,
+        // A session created by the current tracker carries its own start and
+        // date; sessionization does not re-run for a continuing session, so
+        // these arrive by hydration rather than being derived.
+        sts: now,
+        session_date: new Date(now * 1000).getFullYear()
+            + ('0' + (new Date(now * 1000).getMonth() + 1)).slice(-2)
+            + ('0' + new Date(now * 1000).getDate()).slice(-2),
+    };
     // A returning visitor, not just a running session. These contracts omit
     // is_new_visitor as well as is_new_session, and a visitor who has never
     // been seen before cannot be in the middle of a session.

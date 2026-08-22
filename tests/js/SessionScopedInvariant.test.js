@@ -234,7 +234,8 @@ describe('session-scoped properties do not vary within a session', () => {
             'session_id',
             'prior_session_id',
             'is_new_visitor',
-            'time_since_last_session',
+            'prior_session_date',
+            'session_date',
             'session_referer',
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
 
