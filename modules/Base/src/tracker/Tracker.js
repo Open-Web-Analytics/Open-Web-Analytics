@@ -36,6 +36,23 @@ class OWATracker  {
 	    this.isNewCampaign =  false;
 	    // flag for new session status
 	    this.isNewSessionFlag =  false;
+	    /*
+	     * Whether the event that CREATED this session is still waiting to be
+	     * sent. Distinct from is_new_session, which is page-scoped and rides
+	     * every event from the session's first page:
+	     *
+	     *   is_new_session_start  this REQUEST created the session. True for
+	     *                         exactly one event, which is what a server
+	     *                         deciding create-vs-update needs.
+	     *   is_new_session        this event happened on the page where the
+	     *                         session started. True for all of them, which
+	     *                         is what a per-event dimension needs.
+	     *
+	     * One flag cannot answer both, and it was answering the second while
+	     * being read as the first -- so a second trackPageView() on the same
+	     * page re-entered logSession() for a session that already existed.
+	     */
+	    this.pendingSessionStart = false;
 	    // flag for whether or not traffic has been attributed
 	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
@@ -1975,6 +1992,7 @@ class OWATracker  {
             // it's a new session. generate new session ID
                //mark new session flag on current request
             OWA.setState( 'd', 'is_new_session', true );
+            this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( 's', 'sid', session_id, true );
             
@@ -1997,6 +2015,7 @@ class OWATracker  {
             session_id = Util.generateRandomGuid();
             //mark new session flag on current request
             OWA.setState( 'd', 'is_new_session', true );
+            this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( 's', 'sid', session_id, true );
         }
@@ -2453,6 +2472,19 @@ class OWATracker  {
          * Page properties before custom vars only for readability; the two sets
          * of keys are disjoint by construction.
          */
+        /*
+         * Consumed here rather than collected: it belongs to one event, and
+         * taking it off the tracker as it is applied is what makes that true.
+         */
+        if ( this.pendingSessionStart ) {
+
+            this.pendingSessionStart = false;
+
+            if ( ! event.isSet( 'is_new_session_start' ) ) {
+                event.set( 'is_new_session_start', true );
+            }
+        }
+
         var collected = this.collectPageProperties();
         var state_properties = this.collectStateProperties();
         var custom_vars = this.collectCustomVars();

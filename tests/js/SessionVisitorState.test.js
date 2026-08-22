@@ -334,6 +334,81 @@ describe('is_new_visitor has session lifetime', () => {
     });
 });
 
+describe('the two session-start flags have different lifetimes', () => {
+
+    /*
+     * is_new_session_start  this REQUEST created the session. Exactly one
+     *                       beacon carries it -- what a server deciding
+     *                       create-vs-update needs.
+     * is_new_session        this event happened on the page the session started
+     *                       on. Every beacon from that page carries it -- what
+     *                       the is_entry_page dimension needs.
+     *
+     * One flag was doing both jobs while being read as the first, which is why a
+     * second trackPageView() on the same page re-entered logSession() for a
+     * session that already existed.
+     */
+
+    test('only the first event carries is_new_session_start', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_session_start).toBe(true);
+        expect(beacons[1].is_new_session_start).toBeFalsy();
+    });
+
+    test('...while every event from that page carries is_new_session', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_session).toBe(true);
+        expect(beacons[1].is_new_session).toBe(true);
+    });
+
+    test('a second pageview on the same page does not re-declare the start', () => {
+        // The SPA case, and the reason the two are separate. Both pageviews are
+        // on the page the session started on, so both are entry-page events --
+        // but only the first created the session.
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView('https://example.com/one');
+        t.trackPageView('https://example.com/two');
+
+        expect(beacons[0].is_new_session_start).toBe(true);
+        expect(beacons[1].is_new_session_start).toBeFalsy();
+    });
+
+    test('an active session declares neither', () => {
+        // Driven through setSessionId rather than trackPageView: the full
+        // pipeline runs setVisitorId, whose clearState('v') refreshes the cookie
+        // cache and discards a cache-level seed. See seedPersistedSession().
+        const t = newTracker();
+        seedPersistedSession({ sid: 'live', last_req: NOW - 60 });
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session_start')).toBeFalsy();
+        expect(event.get('is_new_session')).toBeFalsy();
+    });
+});
+
 describe('last_req tracks activity, not page starts', () => {
 
     /*
