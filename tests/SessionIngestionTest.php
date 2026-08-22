@@ -201,6 +201,79 @@ final class SessionIngestionTest extends IngestionTestCase
         $this->assertEquals(1, $s->get('num_pageviews'));
     }
 
+    /**
+     * days_since_prior_session counts CALENDAR days, derived on the server.
+     *
+     * The tracker no longer sends dsps. It sends time_since_last_session -- the
+     * interval, measured with one clock so skew cancels -- and the server counts
+     * date boundaries in ITS timezone, the same one every other date part on the
+     * row uses.
+     *
+     * These cases are chosen so an elapsed-based calculation gives a DIFFERENT
+     * answer: rounding 2h to days gives 0, and 22h gives 1.
+     */
+    private function fireWithInterval(string $session_id, int $at, ?int $interval, array $extra = []): string
+    {
+        $props = array_merge([
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+        ], $extra);
+
+        if ($interval !== null) {
+            $props['time_since_last_session'] = $interval;
+        }
+
+        $this->trackForCleanup('base.session', $session_id, 'id');
+        $this->setServerTime($at);
+
+        return $this->firePageRequest(md5('owa-test-site'), $session_id, $props);
+    }
+
+    public function testTwoHoursSpanningMidnightIsOneCalendarDay(): void
+    {
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        // 23:00 the day before -> 01:00. Two hours, one date boundary.
+        $guid = $this->fireWithInterval($this->uniqueSessionId(), $midnight + 3600, 7200);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(1, $r->get('days_since_prior_session'));
+    }
+
+    public function testTwentyTwoHoursInsideOneDayIsNoCalendarDays(): void
+    {
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        // 01:00 -> 23:00 the same day. Twenty-two hours, no boundary.
+        $guid = $this->fireWithInterval($this->uniqueSessionId(), $midnight + (23 * 3600), 22 * 3600);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_prior_session'));
+    }
+
+    public function testWholeDaysAreCountedAsBefore(): void
+    {
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithInterval($this->uniqueSessionId(), $midnight + 3600, 5 * 86400);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(5, $r->get('days_since_prior_session'));
+    }
+
+    public function testAnOlderTrackerSendingDspsStillHasItHonoured(): void
+    {
+        // No time_since_last_session, so the value it sent as 'dsps' stands --
+        // the alternative_key on the property carries it, and the derivation
+        // returns what it was given.
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithInterval($this->uniqueSessionId(), $midnight + 3600, null, ['dsps' => 4]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(4, $r->get('days_since_prior_session'));
+    }
+
     public function testNewSessionRecordsCampaignAttribution(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [

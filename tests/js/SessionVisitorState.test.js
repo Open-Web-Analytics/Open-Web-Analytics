@@ -33,8 +33,9 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *   - setFirstSessionTimestamp(): stamps v.fsts once (first visit) and always
  *     recomputes dsfs (days since first session) against the event timestamp.
  *
- *   - setDaysSinceLastSession(): on a new session computes dsps in whole days
- *     from last_req; otherwise carries the stored s.dsps forward.
+ *   - days since the prior session is NOT computed here any more. The tracker
+ *     sends time_since_last_session and the server derives
+ *     days_since_prior_session from it, counting CALENDAR days.
  *
  *   - setLastRequestTime(): promotes the PRIOR last_req to a global property
  *     (so downstream new-session math sees the old value) and then stores the
@@ -576,28 +577,38 @@ describe('setFirstSessionTimestamp', () => {
     });
 });
 
-describe('setDaysSinceLastSession', () => {
+describe('days since the prior session is no longer computed here', () => {
 
-    test('computes dsps in whole days from last_req on a new session', () => {
+    /*
+     * setDaysSinceLastSession() is gone. dsps is not sent at all: the server
+     * derives days_since_prior_session from time_since_last_session, counting
+     * CALENDAR days rather than 24h multiples -- which the browser cannot do,
+     * because it only knows its own timezone and the boundaries have to be the
+     * server's, the same ones every other date part on the row uses.
+     */
+
+    test('the tracker no longer sends dsps', () => {
         const t = newTracker();
-        // The new-session marker is page state now, not a tracker-private
-        // property; last_req is still the one per-request fact left on the
-        // tracker.
-        OWA.setState('d', 'is_new_session', true);
-        OWA.setState('s', 'prior_last_req', NOW - 5 * DAY);
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
 
-        t.setDaysSinceLastSession(eventAt(NOW), null);
+        t.trackPageView(location.href);
 
-        expect(OWA.getState('s', 'dsps')).toBe(5);
+        expect(beacons[0]).not.toHaveProperty('dsps');
+        expect(beacons[0]).not.toHaveProperty('days_since_prior_session');
     });
 
-    test('carries the stored dsps forward during an active session', () => {
+    test('but it does send the interval the server derives them from', () => {
+        seedPersistedSession({ sid: 'old', last_req: NOW - (3 * 86400) });
         const t = newTracker();
-        OWA.setState('s', 'dsps', 7);
-        // is_new_session not set -> falls back to the stored value.
-        t.setDaysSinceLastSession(eventAt(NOW), null);
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
 
-        expect(OWA.getState('s', 'dsps')).toBe(7);
+        t.setSessionId(eventAt(NOW), null);
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('time_since_last_session')).toBe(3 * 86400);
     });
 });
 

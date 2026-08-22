@@ -378,6 +378,52 @@ class TrackingEventHelpers {
 
     }
 
+    /**
+     * Calendar days since the prior session.
+     *
+     * DATE BOUNDARIES CROSSED, not elapsed time rounded to 24h multiples: two
+     * hours spanning midnight is 1, twenty-two hours inside one day is 0. This
+     * changes what the daysSinceLastVisit dimension MEANS -- rows written
+     * before it are elapsed-based and there is no way to tell them apart or to
+     * backfill. Accepted deliberately; the new meaning is the one the dimension
+     * was always asked for.
+     *
+     * Derived here rather than sent by the tracker, so the boundaries are the
+     * SERVER's calendar -- the one every other date part on the row uses. The
+     * browser knows both absolute times but only its own timezone.
+     *
+     * In PHP rather than SQL on purpose: doing it in the query would need
+     * FROM_UNIXTIME/DATE_FORMAT, which SqlPortabilityLintTest forbids by name.
+     *
+     * KNOWN VARIANCE. time_since_last_session is session-scoped, so it rides
+     * every event of the session, while the anchor below is the event's own
+     * timestamp. That is exact on the event that OPENED the session; a later
+     * event derives a point later by however long the visitor has been in the
+     * session, so events either side of a midnight can differ by one. Fixing it
+     * would need a second duration (session age) to anchor back to the start.
+     *
+     * $days already holds whatever an older tracker sent as 'dsps' -- see the
+     * alternative_key on this property -- so returning it unchanged is the
+     * fallback for trackers cached from before the field existed.
+     */
+    static function deriveDaysSincePriorSession( $days, $event ) {
+
+        $elapsed = (int) $event->get( 'time_since_last_session' );
+
+        if ( $elapsed <= 0 ) {
+
+            return $days;
+        }
+
+        $now  = (int) $event->get( 'timestamp' );
+        $then = $now - $elapsed;
+
+        // round, not floor: a day is 23 or 25 hours across a DST boundary.
+        return (int) round(
+            ( strtotime( date( 'Y-m-d', $now ) ) - strtotime( date( 'Y-m-d', $then ) ) ) / 86400
+        );
+    }
+
     static function setRepeatVisitorFlag( $flag, $event ) {
 
         // set repeat visitor type flag visitor is not new.

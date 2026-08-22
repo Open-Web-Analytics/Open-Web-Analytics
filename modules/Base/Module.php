@@ -189,7 +189,7 @@ class Module extends \OWA\Core\Module {
 
             'days_since_prior_session'         => array(
                 'required'                        => true,
-                'callbacks'                        => array( ),
+                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSincePriorSession' ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false,
                 'alternative_key'                => 'dsps'

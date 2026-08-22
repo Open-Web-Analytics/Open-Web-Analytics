@@ -232,7 +232,6 @@ describe('state-derived properties are collected onto each event', () => {
         OWA.setState('v', 'fsts', 1600000000);
         OWA.setState('v', 'dsfs', 12);
         OWA.setState('v', 'nps', '4');
-        OWA.setState('s', 'dsps', 3);
 
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
@@ -241,22 +240,18 @@ describe('state-derived properties are collected onto each event', () => {
         expect(event.get('fsts')).toBe(1600000000);
         expect(event.get('dsfs')).toBe(12);
         expect(event.get('nps')).toBe('4');
-        expect(event.get('dsps')).toBe(3);
     });
 
-    test('dsps defaults to 0 rather than being dropped', () => {
-        // 0 is a legitimate value and a falsy one, so a truthiness guard would
-        // silently drop it; and the property is in the beacon contract, so it
-        // has to be present either way.
+    test('a zero value is collected rather than dropped', () => {
+        // 0 is legitimate and falsy, so a truthiness guard would silently drop
+        // it -- dsfs is 0 on a visitor's first day -- and these are in the
+        // beacon contract, so absence is not an option.
         const t = newTracker();
         OWA.setState('v', 'dsfs', 0);
 
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        expect(event.get('dsps')).toBe(0);
-        // dsfs is 0 on a visitor's first day and is dropped by a truthiness
-        // guard, which is why the collection tests for defined instead.
         expect(event.get('dsfs')).toBe(0);
     });
 

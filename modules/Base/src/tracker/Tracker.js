@@ -1783,25 +1783,6 @@ class OWATracker  {
         }
     }
 
-    setDaysSinceLastSession( event, callback ) {
-
-        OWA.debug('setting days since last session.');
-        var dsps = '';
-        if ( OWA.getState( 'd', 'is_new_session' ) ) {
-            OWA.debug( 'timestamp: %s', event.get( 'timestamp' ) );
-            var last_req = OWA.getState( 's', 'prior_last_req' ) || event.get( 'timestamp' );
-            OWA.debug( 'last_req: %s', last_req );
-            dsps = Math.round( ( event.get( 'timestamp' ) - last_req ) / ( 3600*24 ) );
-            OWA.setState( 's', 'dsps', dsps);
-        }
-
-
-
-        if (callback && (typeof(callback) === "function")) {
-            callback(event);
-        }
-    }
-
     setVisitorId( event, callback ) {
 
         var visitor_id =  OWA.getState( 'v', 'vid' );
@@ -2248,15 +2229,12 @@ class OWATracker  {
 
             var value = OWA.getState( map[i].store, map[i].key );
 
-            // Defined rather than truthy: dsps is legitimately 0, and nps is
-            // legitimately the string "0" on a visitor's first session.
+            // Defined rather than truthy: nps is legitimately the string "0"
+            // on a visitor's first session, and dsfs is 0 on their first day.
             if ( value !== undefined && value !== '' ) {
                 collected[ map[i].name ] = value;
             }
         }
-
-        var dsps = OWA.getState( 's', 'dsps' );
-        collected.dsps = ( dsps !== undefined && dsps !== '' ) ? dsps : 0;
 
         // Defined-only, not non-empty: '' is the honest answer on a visitor's
         // first ever request, and the property is in the beacon contract, so it
@@ -2617,13 +2595,10 @@ class OWATracker  {
 
                             that.setNumberPriorSessions( event, function( event ) {
 
-                                that.setDaysSinceLastSession( event, function( event ) {
+                                that.setTrafficAttribution( event, function( event ) {
 
-                                    that.setTrafficAttribution( event, function( event ) {
+                                    that.stateInit = true;
 
-                                        that.stateInit = true;
-
-                                    });
                                 });
                             });
                         });
