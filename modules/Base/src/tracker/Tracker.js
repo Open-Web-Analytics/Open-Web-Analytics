@@ -296,7 +296,6 @@ class OWATracker  {
 	        campaignAttributionWindow: 60,
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
-	        thirdParty: false,
 	        cookie_domain: false,
 	        campaignKeys: [
 	                { public: 'owa_medium', private: 'md', full: 'medium' },
@@ -408,12 +407,9 @@ class OWATracker  {
                 OWA.debug('Shared OWA state detected...');
 
                 ls = Util.base64_decode(Util.urldecode(ls));
-                //ls = Util.trim(ls, '\u0000');
-                //ls = Util.trim(ls, '\u0000');
                 OWA.debug('linked state: %s', ls);
 
                 var state = ls.split('.');
-                //var state = Util.explode('.', ls);
                 OWA.debug('linked state: %s', JSON.stringify(state));
                 if ( state ) {
 
@@ -504,7 +500,7 @@ class OWATracker  {
             value = Util.encodeJsonForCookie(value, OWA.getStateStoreFormat(physical));
 
             if (value) {
-                state += Util.sprintf( '%s=%s', this.sharableStateStores[i], Util.urlEncode(value) );
+                state += this.sharableStateStores[i] + '=' + Util.urlEncode(value);
                 if ( this.sharableStateStores.length != ( i + 1) ) {
                     state += '.';
                 }
@@ -605,7 +601,6 @@ class OWATracker  {
 
         if ( a ) {
             a = Util.base64_decode(Util.urldecode(a));
-            //a = Util.trim(a, '\u0000');
             a = Util.urldecode( a );
             OWA.debug('overlay anchor value: ' + a);
             //var domain = this.getCookieDomain();
@@ -694,7 +689,7 @@ class OWATracker  {
      */
     setPageTitle(title) {
 
-        OWA.setState( 'd', 'page_title', Util.trim( title ) );
+        OWA.setState( 'd', 'page_title', String( title ).trim() );
     }
 
     /**
@@ -707,7 +702,7 @@ class OWATracker  {
      */
     setPageType(type) {
 
-        OWA.setState( 'd', 'page_type', Util.trim( type ) );
+        OWA.setState( 'd', 'page_type', String( type ).trim() );
     }
 
     /**
@@ -720,7 +715,7 @@ class OWATracker  {
      */
     setUserName( value ) {
 
-        OWA.setState( 'v', 'user_name', Util.trim( value ) );
+        OWA.setState( 'v', 'user_name', String( value ).trim() );
     }
 
     /**
@@ -991,19 +986,10 @@ class OWATracker  {
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
             	
-                //this.cdPost( this.prepareRequestData( properties ) );
                 var data = this.prepareRequestData( properties );
-                this.cdPost( data );
 
-                /*
-                 * The hidden-iframe POST gives us no delivery signal, so commit
-                 * optimistically -- exactly the behaviour this path has always
-                 * had. Withholding here would mean a site whose payloads always
-                 * exceed getRequestCharacterLimit could never persist a session
-                 * at all, minting a new one on every page view. That is a worse
-                 * failure than the one this deferral exists to prevent.
-                 */
-                this.sendAccepted();
+                this.sendLargeRequest( data, properties['event_type'] );
+
             } else {
 
                 OWA.debug('url : %s', url);
@@ -1046,6 +1032,71 @@ class OWATracker  {
     sendAccepted() {
 
         OWA.doAction( 'persistSession' );
+    }
+
+    /**
+     * Delivers a payload too large for the query string.
+     *
+     * This path used to be the odd one out. A URL over
+     * getRequestCharacterLimit fell back to a hidden-iframe POST, which yields
+     * NO delivery signal, so it had to commit the session optimistically -- the
+     * one transport that asserted a session on disk without knowing whether
+     * anything arrived. Withholding was not an option either: a site whose
+     * payloads always exceed the limit would then never persist a session at
+     * all, minting a new one on every page view.
+     *
+     * sendBeacon with a body removes the dilemma rather than choosing a side of
+     * it. It returns whether the browser queued the payload, which is the same
+     * acceptance signal the query-string path already uses, so a large event now
+     * persists a session on exactly the same terms as a small one.
+     *
+     * The body is form-urlencoded deliberately, on two counts: PHP populates
+     * $_POST from it with no server change (RequestContainer already merges
+     * $_GET and $_POST), and it is a CORS-safelisted content type, so a
+     * cross-origin beacon does not trigger a preflight the browser would not
+     * wait around to complete on unload.
+     *
+     * cdPost remains the fallback for browsers without sendBeacon, or when it
+     * refuses the payload -- and keeps its optimistic commit, because the
+     * reasoning above still applies to it.
+     */
+    sendLargeRequest( data, event_type ) {
+
+        var that = this;
+        var queued = false;
+        var body = Util.buildPostBody( data );
+
+        if ( typeof navigator !== 'undefined'
+             && typeof navigator.sendBeacon === 'function'
+             && typeof Blob === 'function' ) {
+
+            try {
+                queued = navigator.sendBeacon(
+                    this.getLoggerEndpoint(),
+                    new Blob( [ body ], { type: 'application/x-www-form-urlencoded' } )
+                );
+            } catch ( e ) {
+                // Some browsers throw on an oversized payload rather than
+                // returning false.
+                queued = false;
+            }
+        }
+
+        if ( queued ) {
+
+            OWA.debug( 'Large beacon queued for %s', event_type );
+            that.sendAccepted();
+            return true;
+        }
+
+        OWA.debug( 'sendBeacon unavailable or refused; falling back to iframe POST for %s', event_type );
+        this.cdPost( data );
+
+        // No delivery signal from the iframe, so commit optimistically -- the
+        // historical behaviour of this path, kept only for the fallback.
+        this.sendAccepted();
+
+        return false;
     }
 
     sendRequest( url, event_type ) {
@@ -1134,7 +1185,14 @@ class OWATracker  {
 
             if ( properties.hasOwnProperty( param ) ) {
 
-                  if ( Util.is_array( properties[param] ) ) {
+                  /*
+                   * Built by concatenation rather than a format string. These
+                   * three used to run the namespace through sprintf as PART of
+                   * the format -- Util.sprintf( ns + '%s[%s]', ... ) -- so a '%'
+                   * anywhere in the configured namespace would have been read as
+                   * a specifier and eaten the argument after it.
+                   */
+                  if ( Array.isArray( properties[param] ) ) {
 
                     var n = properties[param].length;
                     for ( var i = 0; i < n; i++ ) {
@@ -1142,16 +1200,16 @@ class OWATracker  {
                         if ( Util.is_object( properties[param][i] ) ) {
                             for ( var o_param in properties[param][i] ) {
 
-                                data[ Util.sprintf( ns + '%s[%s][%s]', param, i, o_param ) ] =  properties[ param ][ i ][ o_param ];
+                                data[ ns + param + '[' + i + '][' + o_param + ']' ] = properties[ param ][ i ][ o_param ];
                             }
                         } else {
                             // what the heck is it then. assume string
-                            data[ Util.sprintf(ns + '%s[%s]', param, i) ] = properties[ param ][ i ];
+                            data[ ns + param + '[' + i + ']' ] = properties[ param ][ i ];
                         }
                     }
                 // assume it's a string
                 } else {
-                    data[ Util.sprintf(ns + '%s', param) ] = properties[ param ];
+                    data[ ns + param ] = properties[ param ];
                 }
             }
         }
@@ -1181,7 +1239,7 @@ class OWATracker  {
                 // contract. The KEY stays raw on purpose: the owa_* names are a fixed
                 // vocabulary and the flattened array keys (owa_foo[0][bar]) rely on
                 // PHP's $_GET bracket parsing, which encoded brackets would defeat.
-                kvp = Util.sprintf('%s=%s&', param, encodeURIComponent( properties[ param ] ) );
+                kvp = param + '=' + encodeURIComponent( properties[ param ] ) + '&';
                 get += kvp;
             }
         }
@@ -1227,15 +1285,11 @@ class OWATracker  {
 
         var iframe_name = 'owa-tracker-post-iframe';
 
-        if ( Util.isIE() && Util.getInternetExplorerVersion() < 9.0 ) {
-            var iframe = document.createElement('<iframe name="' + iframe_name + '" scr="about:blank" width="1" height="1"></iframe>');
-        } else {
-            var iframe = document.createElement("iframe");
-            iframe.setAttribute('name', iframe_name);
-            iframe.setAttribute('src', 'about:blank');
-            iframe.setAttribute('width', 1);
-            iframe.setAttribute('height', 1);
-        }
+        var iframe = document.createElement("iframe");
+        iframe.setAttribute('name', iframe_name);
+        iframe.setAttribute('src', 'about:blank');
+        iframe.setAttribute('width', 1);
+        iframe.setAttribute('height', 1);
 
         iframe.setAttribute('class', iframe_name);
         iframe.setAttribute('style', 'border: none; overflow: hidden; ');
@@ -1287,14 +1341,8 @@ class OWATracker  {
         //var frm = this.createPostForm();
         var form_name = 'post_form' + Math.random();
 
-        // cannot set the name of an element using setAttribute
-        if ( Util.isIE()  && Util.getInternetExplorerVersion() < 9.0 ) {
-            var frm = doc.createElement('<form name="' + form_name + '"></form>');
-        } else {
-            var frm = doc.createElement('form');
-            frm.setAttribute( 'name', form_name );
-        }
-
+        var frm = doc.createElement('form');
+        frm.setAttribute( 'name', form_name );
         frm.setAttribute( 'id', form_name );
         frm.setAttribute("action", post_url);
         frm.setAttribute("method", "POST");
@@ -1304,17 +1352,16 @@ class OWATracker  {
 
             if (data.hasOwnProperty(param)) {
 
-                // cannot set the name of an element using setAttribute
-                if ( Util.isIE() && Util.getInternetExplorerVersion() < 9.0 ) {
-                    var input = doc.createElement( "<input type='hidden' name='" + param + "' />" );
-
-                } else {
-                    var input = document.createElement( "input" );
-                    input.setAttribute( "name",param );
-                    input.setAttribute( "type","hidden");
-
-                }
-
+                // Created from the IFRAME's document, like the form it joins.
+                // The old code created the form with doc.createElement and the
+                // inputs with document.createElement, an asymmetry left behind
+                // when the IE branch was written. Consistency only, not a fix:
+                // appendChild adopts a node from another document, and adoption
+                // leaves nothing behind to distinguish the two afterwards --
+                // which is also why no test can tell them apart.
+                var input = doc.createElement( "input" );
+                input.setAttribute( "name", param );
+                input.setAttribute( "type", "hidden" );
                 input.setAttribute( "value", data[param] );
 
                 frm.appendChild( input );
@@ -1330,27 +1377,6 @@ class OWATracker  {
 
          // remove the form from iframe to clean things up
           doc.body.removeChild( frm );
-    }
-
-    //depricated
-    createPostForm() {
-
-        var post_url = this.getLoggerEndpoint();
-        var form_name = 'post_form' + Math.random();
-
-        // cannot set the name of an element using setAttribute
-        if ( Util.isIE()  && Util.getInternetExplorerVersion() < 9.0 ) {
-            var frm = doc.createElement('<form name="' + form_name + '"></form>');
-        } else {
-            var frm = doc.createElement('form');
-            frm.setAttribute( 'name', form_name );
-        }
-
-        frm.setAttribute( 'id', form_name );
-         frm.setAttribute("action", post_url);
-         frm.setAttribute("method", "POST");
-
-         return frm;
     }
 
     getIframeDocument( iframe ) {
@@ -1480,7 +1506,7 @@ class OWATracker  {
         var properties = new Object();
         // Set properties of the owa_click object. Lower-case the tag so dom_element_tag
         // is stored consistently regardless of how the browser reports tagName.
-        properties.dom_element_tag = Util.strtolower(targ.tagName);
+        properties.dom_element_tag = String( targ.tagName ).toLowerCase();
 
         if (targ.tagName == "A") {
 
@@ -1702,7 +1728,7 @@ class OWATracker  {
         event.set("dom_element_name", targ.name);
         event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
-        event.set("dom_element_tag", Util.strtolower(targ.tagName));
+        event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
         //console.log("Keypress: %s %d", key_value, key_code);
         this.addToEventQueue(event);
 
@@ -1834,22 +1860,6 @@ class OWATracker  {
             if ( properties.hasOwnProperty(campaignKeys[i].private) ) {
 
                 OWA.setState( this.storeName('s'), campaignKeys[i].full, properties[campaignKeys[i].private]);
-            }
-        }
-    }
-
-    // used when in third party cookie mode to send raw campaign related
-    // properties as part of the event. upstream handler needs these to
-    // do traffic attribution.
-    setCampaignRelatedProperties( event ) {
-	    
-        var properties = this.getCampaignProperties();
-        OWA.debug('campaign properties: %s', JSON.stringify(properties));
-
-        var campaignKeys = this.getOption('campaignKeys');
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-            if ( properties.hasOwnProperty(campaignKeys[i].private) ) {
-                this.setGlobalEventProperty(campaignKeys[i].full, properties[campaignKeys[i].private]);
             }
         }
     }
@@ -2191,7 +2201,7 @@ class OWATracker  {
         OWA.debug('last_req from cookie: %s', last_req);
         // suppport for old style cookie
         if ( ! last_req ) {
-            var state_store_name = Util.sprintf( '%s_%s', 'ss', this.siteId );
+            var state_store_name = 'ss_' + this.siteId;
             last_req = OWA.getState( state_store_name, 'last_req' );
         }
 
@@ -2304,7 +2314,7 @@ class OWATracker  {
             // so it is in the cookie and not in memory.
             var prior_session_id = OWA.getPersistedState( this.storeName('s'), 'sid');
             if ( ! prior_session_id ) {
-                state_store_name = Util.sprintf('%s_%s', 'ss', this.getSiteId() );
+                state_store_name = 'ss_' + this.getSiteId();
                 prior_session_id = OWA.getState(state_store_name, 's');
             }
             if ( prior_session_id ) {
@@ -2374,7 +2384,7 @@ class OWATracker  {
             session_id = OWA.getState( this.storeName('s'), 'sid');
             // support for old style cookie
             if ( ! session_id ) {
-                state_store_name = Util.sprintf( '%s_%s', 'ss', this.getSiteId() );
+                state_store_name = 'ss_' + this.getSiteId();
                 session_id = OWA.getState(state_store_name, 's');
                 OWA.setState( this.storeName('s'), 'sid', session_id, true );
             }
@@ -2540,9 +2550,11 @@ class OWATracker  {
      * Anything put in 'd' rides the page's events, so a page-scoped property
      * added later needs no plumbing here. Two keys are excluded: custom
      * variables, which span three stores and are collected with their own
-     * precedence (see collectCustomVars()), and 'cdh', which is the cookie
-     * domain hash -- bookkeeping the state manager puts on every store, not a
-     * tracking property.
+     * precedence (see collectCustomVars()), and the state manager's own
+     * bookkeeping -- 'cdh', the cookie domain hash, and 'sv', the format
+     * version (StateManager.VERSION_KEY). Both describe the STORE; neither is
+     * a tracking property, and sending either would put a private
+     * implementation detail in the fact table under its own dimension name.
      */
     /**
      * Properties that are COPIES of state, read from the stores for this event.
@@ -2681,7 +2693,7 @@ class OWATracker  {
          */
         var collected = {
             'page_url':     this.getCurrentUrl(),
-            'page_title':   Util.trim( document.title ),
+            'page_title':   String( document.title ).trim(),
             'HTTP_REFERER': document.referrer
         };
 
@@ -2695,6 +2707,7 @@ class OWATracker  {
 
             if ( store.hasOwnProperty( key )
                  && key !== 'cdh'
+                 && key !== 'sv'
                  && ! /^cv[0-9]+$/.test( key ) ) {
 
                 collected[ key ] = store[ key ];
@@ -2845,7 +2858,7 @@ class OWATracker  {
 
         if ( ! event.get( 'page_title') && ! this.getGlobalEventProperty('page_title') ) {
 
-            event.set('page_title', Util.trim( document.title ) );
+            event.set('page_title', String( document.title ).trim() );
         }
 
         if ( ! event.get( 'timestamp') ) {
@@ -3068,24 +3081,21 @@ class OWATracker  {
                 block_flag = true;
             }
 
-            // check for third party mode.
-            if ( this.getOption( 'thirdParty' ) ) {
-                // tell upstream client to manage state
-                this.globalEventProperties.thirdParty = true;
-                // add in campaign related properties for upstream evaluation
-                this.setCampaignRelatedProperties(event);
-            } else {
-                // else we are in first party mode, so manage state on the client.
-                //this.manageState(event);
-                var that = this;
-                this.manageState( event, function(event) {
-                    that.addGlobalPropertiesToEvent( event, function(event) {
-                        that.addDefaultsToEvent( event, function(event) {
-                            return that.logEvent( event.getProperties(), block_flag );
-                        });
+            /*
+             * State is managed on the client. There used to be a 'thirdParty'
+             * branch here that instead stamped a flag and handed campaign
+             * params upstream for someone else to evaluate -- and never called
+             * logEvent(), so turning it on made the tracker silently stop
+             * sending. Long dead, and removed rather than repaired.
+             */
+            var that = this;
+            this.manageState( event, function(event) {
+                that.addGlobalPropertiesToEvent( event, function(event) {
+                    that.addDefaultsToEvent( event, function(event) {
+                        return that.logEvent( event.getProperties(), block_flag );
                     });
                 });
-            }
+            });
         }
     }
     

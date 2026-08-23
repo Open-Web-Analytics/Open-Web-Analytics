@@ -241,6 +241,35 @@ class Util {
         return new_obj;
     }
     
+    /**
+     * Serialises a prepared param bag as an application/x-www-form-urlencoded
+     * body, on exactly the same terms as the query-string path.
+     *
+     * KEY RAW, VALUE ENCODED -- the same asymmetry Tracker.prepareRequestDataForGet()
+     * uses and for the same reason: values must be encoded or a '#', '&' or '='
+     * inside one truncates or corrupts the payload, while the flattened array
+     * keys (ct_line_items[0][li_sku]) rely on PHP's bracket parsing, which the
+     * GET path documents as being defeated by encoded brackets.
+     *
+     * Matching that exactly matters because both bodies land in the same place:
+     * RequestContainer merges $_GET and $_POST, and decodeRequestParams() then
+     * decodes once more regardless of which one carried the event. A POST body
+     * encoded differently from the query string would decode differently too.
+     */
+    static buildPostBody ( data ) {
+
+        var pairs = [];
+
+        for ( var param in data ) {
+
+            if ( data.hasOwnProperty( param ) ) {
+                pairs.push( param + '=' + encodeURIComponent( data[ param ] ) );
+            }
+        }
+
+        return pairs.join( '&' );
+    }
+
     static urlEncode ( str ) {
         // URL-encodes string  
         // 

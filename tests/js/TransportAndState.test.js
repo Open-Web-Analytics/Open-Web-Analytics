@@ -37,8 +37,6 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *
  *   - trackEvent(): the orchestrator. In first-party mode it runs
  *     manageState -> addGlobalPropertiesToEvent -> addDefaultsToEvent -> logEvent
- *     so a single beacon carries identity + defaults. In thirdParty mode it
- *     skips client state management and just flags the event for upstream.
  *
  * Image is stubbed to capture beacon URLs without hitting the network. jsdom
  * backs the state stores, so trackEvent() exercises the real identity pipeline.
@@ -236,15 +234,4 @@ describe('trackEvent: end-to-end orchestration', () => {
         expect(url).toMatch(/event_type=base\.page_request/);
     });
 
-    test('thirdParty mode flags the event for upstream and skips client state management', () => {
-        const t = newTracker({ thirdParty: true });
-        const event = new OwaEvent();
-        event.setEventType('base.page_request');
-
-        t.trackEvent(event);
-
-        // Upstream is told to manage state; the client never ran manageState.
-        expect(t.globalEventProperties.thirdParty).toBe(true);
-        expect(t.stateInit).toBeFalsy();
-    });
 });

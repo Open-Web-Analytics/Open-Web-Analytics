@@ -4,7 +4,7 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Assorted tracker helpers: URL/anchor param readers, page-property
- * convenience setters, lifecycle (pause/restart), the thirdParty campaign
+ * convenience setters, lifecycle (pause/restart), the campaign
  * promotion, and the manageState one-shot guard.
  *
  * The headline case here is getUrlParam(), which had a real shipping bug: the
@@ -20,9 +20,6 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *
  * setPageTitle / setPageType / setUserName just trim and stash a global event
  * property. pause/restart flip `active`; isPausedBySibling reflects the shared
- * loggerPause setting. setCampaignRelatedProperties (thirdParty mode) promotes
- * campaign params from the URL to their full-name globals for upstream.
- * manageState runs the identity pipeline exactly once (stateInit guard).
  */
 
 function setDocumentDomain(domain) {
@@ -198,21 +195,6 @@ describe('lifecycle: pause / restart / isPausedBySibling', () => {
 
         OWA.setSetting('loggerPause', true);
         expect(t.isPausedBySibling()).toBe(true);
-    });
-});
-
-describe('setCampaignRelatedProperties (thirdParty promotion)', () => {
-
-    test('promotes campaign params from the URL to their full-name globals', () => {
-        setUrl('/p?owa_source=news&owa_medium=email');
-        const t = newTracker();
-
-        t.setCampaignRelatedProperties(new OwaEvent());
-
-        // Upstream reads the full-name globals; the private-key map resolves
-        // owa_source -> source, owa_medium -> medium.
-        expect(t.getGlobalEventProperty('source')).toBe('news');
-        expect(t.getGlobalEventProperty('medium')).toBe('email');
     });
 });
 
