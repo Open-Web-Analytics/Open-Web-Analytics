@@ -300,7 +300,28 @@ final class InstallTimezoneTest extends TestCase
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $this->assertSame('OWA_DB_NAME', $c->configFileConstantFor('base', 'db_name'));
+        /*
+         * Driven by whatever this environment actually defines rather than by a
+         * named constant. An earlier version asserted OWA_DB_NAME, which every
+         * install on the author's box defines and CI does not -- so the test
+         * encoded a fact about one machine.
+         */
+        $ledger = $c->config_file_constants['base'] ?? array();
+
+        if ( ! $ledger ) {
+            $this->markTestSkipped( 'this environment defines no config constants' );
+        }
+
+        foreach ( $ledger as $key => $constant ) {
+
+            $this->assertSame( $constant, $c->configFileConstantFor( 'base', $key ),
+                "the lookup must return the NAME recorded for $key" );
+
+            $this->assertTrue( defined( $constant ),
+                "$constant is recorded as supplying $key but is not defined" );
+        }
+
+        // The negative case is environment-independent.
         $this->assertSame('', $c->configFileConstantFor('base', 'no_such_setting'));
     }
 
@@ -320,8 +341,20 @@ final class InstallTimezoneTest extends TestCase
             $c->config_file_constants,
             'applyConfigConstants() records nothing, so no constant can ever win'
         );
-        $this->assertArrayHasKey('db_name', $c->config_file_constants['base'],
-            'OWA_DB_NAME is defined by this install, so db_name must be recorded');
+
+        /*
+         * Which constants exist is a property of the environment, not of the
+         * code, so assert the SHAPE of the ledger rather than a particular key.
+         * Every install that boots has defined at least the database ones.
+         */
+        $this->assertArrayHasKey( 'base', $c->config_file_constants );
+        $this->assertNotEmpty( $c->config_file_constants['base'] );
+
+        foreach ( $c->config_file_constants['base'] as $key => $constant ) {
+            $this->assertIsString( $key );
+            $this->assertNotSame( '', $constant,
+                "$key is recorded with no constant name, which makes the ledger useless" );
+        }
     }
 
     /**
