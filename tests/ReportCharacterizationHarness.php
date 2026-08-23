@@ -41,6 +41,13 @@ final class ReportCharacterizationHarness
          * what a source-level heuristic sees.
          */
         'ReportVisitorsRoster',
+
+        /*
+         * Also found by running it rather than reading it: it fetches a
+         * transaction through the REST endpoint, so without a database it reads
+         * a property on null. Invisible on a machine that has one.
+         */
+        'ReportTransactionDetail',
     );
 
     /** Not a report: the REST data-endpoint controller. */
@@ -97,8 +104,34 @@ final class ReportCharacterizationHarness
             OWA_DIR . 'modules/Base/Controller/' . $name . '.php' );
 
         preg_match_all( "/getParam\(\s*'([a-zA-Z_]+)'\s*\)/", $src, $m );
+        $params = $m[1];
 
-        $params = array_values( array_unique( $m[1] ) );
+        /*
+         * Three controllers name the parameter through a variable --
+         *
+         *     $dim_name  = 'productSku';
+         *     $dim_value = $this->getParam( $dim_name );
+         *
+         * -- which a literal-string match cannot see. Missing one is not
+         * harmless: the controller then reads a parameter that was never
+         * supplied and urlencode(null) deprecates, silently on a machine where
+         * deprecations are not fatal. Resolved by looking up the variable's
+         * literal assignment; anything more dynamic than that is caught by the
+         * diagnostics guard in snapshot() instead.
+         */
+        // Single-quoted on purpose. In a double-quoted PHP string \$ collapses to
+        // a bare $, which the regex engine then reads as end-of-subject -- so the
+        // pattern silently matches nothing and the parameter goes on being missed.
+        preg_match_all( '/getParam\(\s*\$([a-zA-Z_]+)\s*\)/', $src, $vars );
+
+        foreach ( array_unique( $vars[1] ) as $var ) {
+
+            if ( preg_match( '/\$' . $var . '\s*=\s*\'([a-zA-Z_]+)\'\s*;/', $src, $lit ) ) {
+                $params[] = $lit[1];
+            }
+        }
+
+        $params = array_values( array_unique( $params ) );
         sort( $params );
 
         return $params;
@@ -118,7 +151,44 @@ final class ReportCharacterizationHarness
         $params = self::paramsFor( $name );
 
         $controller = new $class( array_fill_keys( $params, self::SENTINEL ) );
-        $controller->action();
+
+        return array( 'params' => $params ) + self::observe( $controller );
+    }
+
+    /**
+     * Run a controller's action() and record both what it declared and anything
+     * it complained about.
+     *
+     * Split out from snapshot() so a test can hand it a deliberately noisy
+     * object and prove the recording works. Without that, "no report raises a
+     * diagnostic" is only as true as this method is honest -- and a guard that
+     * cannot be shown to fire is a claim, not a guard.
+     *
+     * @return array{diagnostics: array<int,string>, config: array}
+     */
+    public static function observe( object $controller ): array
+    {
+        /*
+         * Diagnostics are part of the snapshot, not noise to be swallowed.
+         *
+         * These controllers had never been executed by a test before this
+         * harness, and the first CI run surfaced three deprecations and a
+         * warning that had been there all along. Recording them means a report
+         * cannot start warning -- or keep warning -- without the fixture
+         * saying so.
+         */
+        $diagnostics = array();
+
+        set_error_handler( static function ( $no, $msg, $file, $line ) use ( &$diagnostics ) {
+            $diagnostics[] = basename( (string) $file ) . ':' . $line . ' ' . $msg;
+            return true;
+        } );
+
+        try {
+            $controller->action();
+        } finally {
+            restore_error_handler();
+        }
 
         $data = array();
 
@@ -129,8 +199,8 @@ final class ReportCharacterizationHarness
         ksort( $data );
 
         return array(
-            'params' => $params,
-            'config' => $data,
+            'diagnostics' => $diagnostics,
+            'config'      => $data,
         );
     }
 

@@ -4,6 +4,7 @@
             "actionGroup",
             "actionName"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
             "dimensions": "actionLabel",
@@ -22,6 +23,7 @@
         "params": [
             "actionGroup"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "actionGroup==characterization_sentinel",
             "dimensionLink": {
@@ -51,6 +53,7 @@
     },
     "ReportActionGroups": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "actionGroup",
@@ -74,6 +77,7 @@
     },
     "ReportActionTracking": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "pageTitle",
@@ -98,6 +102,7 @@
         "params": [
             "ad"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "ad==characterization_sentinel",
             "metrics": "visits,pageViews,bounces",
@@ -115,6 +120,7 @@
         "params": [
             "adType"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "adType==characterization_sentinel",
             "metrics": "visits,pageViews,bounces",
@@ -130,6 +136,7 @@
     },
     "ReportAdTypes": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "adType",
@@ -154,6 +161,7 @@
     },
     "ReportAds": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "constraints": "ad!=null",
             "dimensionLink": {
@@ -179,6 +187,7 @@
     },
     "ReportAnchortext": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "constraints": "medium==referral",
             "dimensionLink": {
@@ -204,6 +213,7 @@
     },
     "ReportAvgOrderValue": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "date",
             "metrics": "revenuePerTransaction",
@@ -221,6 +231,7 @@
         "params": [
             "browserType"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "browserType==characterization_sentinel",
             "dimension_properties": {
@@ -240,6 +251,7 @@
     },
     "ReportBrowsers": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "browserType",
@@ -265,6 +277,7 @@
         "params": [
             "campaign"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "campaign==characterization_sentinel",
             "metrics": "visits,pageViews,bounces",
@@ -280,6 +293,7 @@
     },
     "ReportCommerce": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "subview": "base.reportCommerce",
             "title": "Ecommerce Overview",
@@ -289,6 +303,7 @@
     },
     "ReportContent": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "subview": "base.reportContent",
             "title": "Content Overview",
@@ -300,6 +315,7 @@
         "params": [
             "country"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "country==characterization_sentinel",
             "dimensionLink": {
@@ -327,6 +343,7 @@
     },
     "ReportCreativePerformance": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "ad",
@@ -349,6 +366,7 @@
     },
     "ReportDaysToPurchase": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "daysToTransaction",
             "metrics": "transactions",
@@ -364,6 +382,7 @@
     },
     "ReportEcommerce": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
             "resultsPerPage": 30,
@@ -378,6 +397,7 @@
     },
     "ReportEcommerceConversionRate": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "date",
             "metrics": "visits,ecommerceConversionRate",
@@ -393,6 +413,7 @@
     },
     "ReportEntryPages": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "entryPagePath",
@@ -417,6 +438,7 @@
     },
     "ReportExitPages": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "exitPagePath",
@@ -442,6 +464,7 @@
     },
     "ReportFeeds": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "feedType",
             "metrics": "feedReaders,feedRequests,feedSubscriptions",
@@ -458,6 +481,7 @@
     },
     "ReportGeolocation": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "country",
@@ -482,6 +506,7 @@
         "params": [
             "hostName"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "hostName==characterization_sentinel",
             "dimension": "hostName",
@@ -496,6 +521,7 @@
     },
     "ReportHosts": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "hostName",
@@ -522,6 +548,7 @@
         "params": [
             "referralSearchTerms"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "referralSearchTerms==characterization_sentinel",
             "dimension": "referralSearchTerms",
@@ -536,6 +563,7 @@
     },
     "ReportKeywords": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search",
             "dimensionLink": {
@@ -560,6 +588,7 @@
     },
     "ReportOs": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "osType",
@@ -586,6 +615,7 @@
         "params": [
             "osType"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "osType==characterization_sentinel",
             "metrics": "visits,pageViews",
@@ -602,6 +632,7 @@
         "params": [
             "pageType"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "pageType==characterization_sentinel",
             "gridTitle": "Top Page Types",
@@ -617,6 +648,7 @@
     },
     "ReportPageTypes": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "pageType",
@@ -641,6 +673,7 @@
     },
     "ReportPages": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "pagePath",
@@ -666,6 +699,7 @@
     },
     "ReportProductCategories": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "productCategory",
@@ -688,42 +722,51 @@
         }
     },
     "ReportProductCategoryDetail": {
-        "params": [],
+        "params": [
+            "productCategory"
+        ],
+        "diagnostics": [],
         "config": {
-            "constraints": "productCategory==",
+            "constraints": "productCategory==characterization_sentinel",
             "dimension": "productCategory",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportSimpleDimensional",
             "title": "Product Category: ",
-            "titleSuffix": null,
+            "titleSuffix": "characterization_sentinel",
             "trendChartMetric": "lineItemQuantity",
             "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
             "view_method": "delegate"
         }
     },
     "ReportProductDetail": {
-        "params": [],
+        "params": [
+            "productName"
+        ],
+        "diagnostics": [],
         "config": {
-            "constraints": "productName==",
+            "constraints": "productName==characterization_sentinel",
             "dimension": "productName",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportSimpleDimensional",
             "title": "Product Detail: ",
-            "titleSuffix": null,
+            "titleSuffix": "characterization_sentinel",
             "trendChartMetric": "lineItemQuantity",
             "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
             "view_method": "delegate"
         }
     },
     "ReportProductSkuDetail": {
-        "params": [],
+        "params": [
+            "productSku"
+        ],
+        "diagnostics": [],
         "config": {
-            "constraints": "productSku==",
+            "constraints": "productSku==characterization_sentinel",
             "dimension": "productSku",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportSimpleDimensional",
             "title": "Product SKU: ",
-            "titleSuffix": null,
+            "titleSuffix": "characterization_sentinel",
             "trendChartMetric": "lineItemQuantity",
             "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
             "view_method": "delegate"
@@ -731,6 +774,7 @@
     },
     "ReportProductSkus": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "productSku",
@@ -754,6 +798,7 @@
     },
     "ReportProducts": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "productName",
@@ -779,6 +824,7 @@
         "params": [
             "referralLinkText"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "referralLinkText==characterization_sentinel",
             "dimensions": "referralLinkText",
@@ -796,6 +842,7 @@
     },
     "ReportReferringSites": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "constraints": "medium==referral",
             "dimensionLink": {
@@ -822,6 +869,7 @@
     },
     "ReportRevenue": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "date",
             "metrics": "transactionRevenue",
@@ -839,6 +887,7 @@
         "params": [
             "referralWebSite"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search,referralWebSite==characterization_sentinel",
             "dimensions": "referralWebSite",
@@ -855,6 +904,7 @@
     },
     "ReportSearchEngines": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search",
             "dimensionLink": {
@@ -882,6 +932,7 @@
         "params": [
             "source"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "source==characterization_sentinel",
             "dimension": "source",
@@ -895,6 +946,7 @@
     },
     "ReportSources": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensionLink": {
                 "linkColumn": "source",
@@ -920,6 +972,7 @@
             "country",
             "stateRegion"
         ],
+        "diagnostics": [],
         "config": {
             "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
             "dimensions": "city,stateRegion",
@@ -935,6 +988,7 @@
     },
     "ReportTraffic": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "subview": "base.reportTraffic",
             "title": "Traffic Sources",
@@ -943,20 +997,9 @@
             "view_method": "delegate"
         }
     },
-    "ReportTransactionDetail": {
-        "params": [
-            "transactionId"
-        ],
-        "config": {
-            "subview": "base.reportTransactionDetail",
-            "title": "Transaction Detail for: ",
-            "titleSuffix": "characterization_sentinel",
-            "trans_detail": [],
-            "view_method": "delegate"
-        }
-    },
     "ReportTransactions": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "subview": "base.reportTransactions",
             "title": "Transactions Overview",
@@ -966,6 +1009,7 @@
     },
     "ReportVisitorsAge": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "daysSinceFirstVisit",
             "metrics": "visits",
@@ -981,6 +1025,7 @@
     },
     "ReportVisitorsLoyalty": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "priorVisitCount",
             "metrics": "visits",
@@ -996,6 +1041,7 @@
     },
     "ReportVisitorsRecency": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "daysSinceLastVisit",
             "metrics": "visits",
@@ -1011,6 +1057,7 @@
     },
     "ReportVisitsToPurchase": {
         "params": [],
+        "diagnostics": [],
         "config": {
             "dimensions": "visitsToTransaction",
             "metrics": "transactions",

@@ -129,6 +129,64 @@ final class ReportCharacterizationTest extends TestCase
     }
 
     /**
+     * No in-scope report may raise a diagnostic.
+     *
+     * These controllers had never been executed by a test until this harness,
+     * and the first CI run turned up three deprecations and a warning that had
+     * been there the whole time -- invisible locally, because deprecations are
+     * not fatal here and CI makes them so.
+     *
+     * The specific cause is worth pinning rather than just fixing: three
+     * controllers name their request parameter through a variable, so a
+     * literal-string scan does not see it, the parameter is never supplied, and
+     * urlencode(null) deprecates. Detection now resolves that form -- and this
+     * assertion is what catches the next shape it takes.
+     */
+    public function testNoReportRaisesADiagnostic(): void
+    {
+        foreach ( Harness::reportNames() as $name ) {
+
+            $snap = Harness::snapshot( $name );
+
+            $this->assertSame( array(), $snap['diagnostics'],
+                "$name raised diagnostics while declaring itself: "
+                . implode( ' | ', $snap['diagnostics'] ) );
+        }
+    }
+
+    /**
+     * Positive control for the diagnostics guard.
+     *
+     * "No report raises a diagnostic" is only as strong as the recording behind
+     * it. If observe() ever stopped capturing -- or returned an empty list --
+     * every report would look clean forever and the guard would be a claim
+     * rather than a guard. So prove it fires.
+     */
+    public function testTheDiagnosticsGuardActuallyCatchesSomething(): void
+    {
+        $noisy = new class {
+            public $data = array( 'subview' => 'test.noisy' );
+
+            public function action(): void
+            {
+                // Exactly the shape the real reports produced: a parameter that
+                // was never supplied, handed to a string function.
+                $this->data['constraints'] = 'x==' . urlencode( null );
+            }
+        };
+
+        $observed = Harness::observe( $noisy );
+
+        $this->assertNotEmpty( $observed['diagnostics'],
+            'observe() must record diagnostics, or the no-diagnostics guard proves nothing' );
+
+        $this->assertStringContainsString( 'urlencode', $observed['diagnostics'][0] );
+
+        // ...and it still captures the configuration alongside them.
+        $this->assertSame( 'test.noisy', $observed['config']['subview'] );
+    }
+
+    /**
      * Vacuity guards.
      *
      * Every assertion above passes trivially against an empty fixture or an
