@@ -474,6 +474,34 @@ final class InstallTimezoneTest extends TestCase
             'the guard has to come before the write, not after it' );
     }
 
+    /**
+     * A first render has no defaults at all.
+     *
+     * InstallBase sets 'defaults' only in errorAction() -- the re-render after a
+     * validation failure -- so every genuine first visit to this step reads keys
+     * that are not there. Unguarded, that is a PHP warning per field on every
+     * install; CI turns warnings into failures, which is how it surfaced.
+     */
+    public function testAFirstRenderWithNoDefaultsRaisesNoWarnings(): void
+    {
+        $seen = array();
+
+        set_error_handler( static function ( $no, $msg ) use ( &$seen ) {
+            $seen[] = $msg;
+            return true;
+        } );
+
+        try {
+            $html = $this->renderWizard( '' );
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame( array(), $seen,
+            'the wizard must render cleanly before anything has been submitted' );
+        $this->assertGreaterThan( 200, substr_count( $html, '<option' ) );
+    }
+
     public function testUtcIsOfferedByThePicker(): void
     {
         /*

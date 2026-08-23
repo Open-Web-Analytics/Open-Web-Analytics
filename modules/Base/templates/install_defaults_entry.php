@@ -10,7 +10,16 @@
                     <option value="http://">http://</option>
                     <option value="https://">https://</option>
                 </select>
-                <input type="text"size="30" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->defaults['domain'] );?>">
+                <?php
+                /*
+                 * ?? '' on every defaults read, because on the FIRST render
+                 * there are none. InstallBase sets 'defaults' only in
+                 * errorAction(), the re-render after a validation failure, so an
+                 * unguarded read warns on every real install -- the timezone
+                 * line below already had the guard and the rest did not.
+                 */
+                ?>
+                <input type="text"size="30" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
             <span class="form-instructions">This is the domain of the site to track.</span>
         </p>
@@ -113,7 +122,7 @@
         <p class="form-row">
             <span class="form-label">Your Admin Name</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] );?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
             <span class="form-instructions">This is name of the admin user.</span>
         </p>
@@ -121,7 +130,7 @@
         <p class="form-row">
             <span class="form-label">Your E-mail Address</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->defaults['email_address'] );?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
             <span class="form-instructions">This is the e-mail address of the admin user.</span>
         </p>
