@@ -665,9 +665,31 @@ namespace stripping and cookie consolidation both moved into this column.</p>
 <tr><td><strong>Report config as JSON</strong></td><td>retrofits the v2 widget format into v1 (§1.7)</td></tr>
 </tbody></table></div>
 
-<h3 id="s23"><span class="num">2.3</span>Tracker-additive — client work inherited, server plumbing discarded</h3>
+<h3 id="s23"><span class="num">2.3</span>Tracker-additive — mostly NOT 1.x work after all</h3>
 <p>Worth doing anyway: the tracker half is the hard and novel part, and shipping it first proves
-it against real traffic. But the benefit <em>within</em> 1.x is smaller than it looks.</p>
+it against real traffic. But the benefit <em>within</em> 1.x is smaller than it looks — and on
+review, smaller than this section originally claimed.</p>
+<div class="flag">
+  <p class="h">Revised — a feature that needs v2 storage is v2 work</p>
+  <p><strong>No half-features.</strong> The &ldquo;discarded with v1&rdquo; column below was read
+  as licence to ship the client half now and the storage later. That is building half a feature
+  and calling it shipped, and it is refused: if a feature cannot be <em>finished</em> in 1.x, it
+  belongs in a later phase.</p>
+  <p>The test is what the discarded part actually <em>is</em>. For <code>sendBeacon</code> it is
+  &ldquo;a v1-shaped body-parsing path&rdquo; — an implementation detail of v1 compatibility, with
+  the feature complete and running in 1.x without it. For the other three the discarded part is
+  <em>the storage the feature needs to mean anything</em>. Those are not additive; they are v2
+  work whose client half happens to be writable early.</p>
+  <p><strong>So engagement deltas, element path capture and chunk <code>seq</code> moved to
+  Phase&nbsp;5</strong>, where <code>owa_event</code> exists to receive them. Only
+  <code>sendBeacon</code> stayed, and it has shipped.</p>
+  <p>Two supporting points. A 1.x engagement column would carry a number with <em>nothing to
+  check it against</em> — v1 is the oracle only for what v2 is not deliberately changing (§3.3),
+  and 1.x structurally cannot measure final-page dwell. And a <code>seq</code> column on
+  <code>owa_domstream</code> is the option §3.2 already refuses by name: domstreams take the
+  early-cutover path precisely so v1 storage is never renovated to carry a format it will never
+  report on.</p>
+</div>
 <div class="scroll"><table>
 <thead><tr><th>Work</th><th>Inherited by v2</th><th>Discarded with v1</th></tr></thead>
 <tbody>
@@ -743,10 +765,11 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     <code>owa_</code> namespace <span class="chip c-done">Shipped</span>; add a format
     version marker <span class="chip c-open">Open</span> — now <em>more</em> important, since
     one tracker means one store whose format changes underneath existing visitors</li>
-    <li>Engagement deltas and the sticky engaged flag</li>
-    <li>Element path capture; chunk <code>seq</code></li>
     <li><code>preconnect</code> and snippet placement guidance</li>
   </ul>
+  <p class="phase-why" style="margin:12px 0 0"><strong>Moved out:</strong> engagement deltas,
+  element path capture and chunk <code>seq</code> — each needs v2 storage to be a finished
+  feature, so they are Phase&nbsp;5. See §2.3.</p>
 </div>
 
 <div class="phase">
@@ -770,6 +793,17 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     <li>Rollup job registered against the existing scheduler</li>
     <li>Fan-out dispatcher, defaulting to v1-only until switched on</li>
     <li>Parity harness as a command (§3.3)</li>
+    <li><strong>Engagement deltas</strong> — accumulation, piggybacking and the terminal
+    beacon. The client work is the hard half, but it is only a finished feature once
+    <code>owa_event</code> carries <code>engagement_msec</code>; a 1.x column would also have
+    nothing to validate it against, since v1 cannot measure final-page dwell and so offers no
+    oracle (§3.3)</li>
+    <li><strong>Element path capture</strong> — the value here <em>is</em> the stored selector,
+    so it lands directly in <code>owa_event.element_path</code> rather than paying for a
+    throwaway column on a 53-partition <code>owa_click</code></li>
+    <li><strong>Chunk <code>seq</code></strong> — ships with domstream early cutover (§3.2),
+    never as an <code>owa_domstream</code> column; it also feeds the content-derived engagement
+    id, <code>hash(session_id + page_ref + seq)</code></li>
   </ul>
 </div>
 
