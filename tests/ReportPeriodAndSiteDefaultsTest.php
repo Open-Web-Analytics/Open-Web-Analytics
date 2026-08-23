@@ -378,4 +378,80 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $this->assertSame( 'abc', $camel->getParam( 'siteId' ) );
         $this->assertSame( 'abc', $snake->getParam( 'siteId' ) );
     }
+
+    /**
+     * The web refuses an unusable range instead of rendering an inverted one.
+     *
+     * Same stance as an invalid period: the picker cannot produce these, so
+     * arriving with one means the URL was edited, and substituting something
+     * plausible hides that.
+     *
+     * @dataProvider unusableWebRangeProvider
+     */
+    public function testTheWebRefusesAnUnusableDateRange( array $params, string $because ): void
+    {
+        // Rendering a report runs pre(), which loads the site list.
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+
+        $this->assertSame( 'base.error', $data['view'] ?? null,
+            'an unusable range was accepted: ' . json_encode( $params ) );
+
+        $this->assertArrayNotHasKey( 'subview', $data,
+            'it still rendered a report' );
+
+        $this->assertStringContainsString( $because, (string) ( $data['error_msg'] ?? '' ),
+            'the message must say what is actually wrong with the range' );
+    }
+
+    public static function unusableWebRangeProvider(): array
+    {
+        return array(
+            'end date alone'      => array( array( 'endDate' => '20260810' ), 'needs a start date' ),
+            'start date alone'    => array( array( 'startDate' => '20260801' ), 'needs an end date' ),
+            'range with no dates' => array( array( 'period' => 'date_range' ), 'needs a start date and an end date' ),
+            'inverted range'      => array( array( 'startDate' => '20260810', 'endDate' => '20260801' ), 'is after the end date' ),
+            'malformed bound'     => array( array( 'startDate' => 'yesterday', 'endDate' => '20260810' ), 'is not a date' ),
+        );
+    }
+
+    /**
+     * And the shapes that are legitimate still render -- including a single
+     * day, whose bounds are equal.
+     *
+     * @dataProvider usableWebRangeProvider
+     */
+    public function testTheWebStillRendersAUsableDateRange( array $params ): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+
+        $this->assertNotSame( 'base.error', $data['view'] ?? null,
+            'a legitimate range was refused: ' . json_encode( $params ) );
+    }
+
+    public static function usableWebRangeProvider(): array
+    {
+        return array(
+            'ordered range'      => array( array( 'startDate' => '20260801', 'endDate' => '20260810' ) ),
+            'named date_range'   => array( array( 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260810' ) ),
+            'single day'         => array( array( 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260801' ) ),
+            'a relative period'  => array( array( 'period' => 'today' ) ),
+            'nothing at all'     => array( array() ),
+        );
+    }
 }

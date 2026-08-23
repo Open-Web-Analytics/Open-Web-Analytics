@@ -258,4 +258,102 @@ final class TimePeriodTest extends TestCase
 
         $this->assertSame( [], $seen );
     }
+
+    /*
+     * ---------------------------------------------------------------------
+     * Date ranges have to be complete and ordered.
+     *
+     * A range is both bounds or neither. One bound alone was not refused: the
+     * missing one resolved to today, so ?endDate=20260810 asked for "up to the
+     * 10th" and got a window running from today BACKWARDS to the 10th. The
+     * report then rendered that inverted window without complaint.
+     *
+     * getRangeError() is static and touches no settings, so it holds without a
+     * database -- which is what lets both the web and REST paths ask before
+     * building anything.
+     * ---------------------------------------------------------------------
+     */
+
+    public static function unusableRangeProvider(): array
+    {
+        return [
+            // The case this exists for.
+            'end alone'              => [ [ 'endDate' => '20260810' ], 'needs a start date' ],
+            'end alone, named'       => [ [ 'period' => 'date_range', 'endDate' => '20260810' ], 'needs a start date' ],
+
+            // Its mirror: one bound is not a range in either direction.
+            'start alone'            => [ [ 'startDate' => '20260801' ], 'needs an end date' ],
+            'start alone, named'     => [ [ 'period' => 'date_range', 'startDate' => '20260801' ], 'needs an end date' ],
+
+            'no bounds at all'       => [ [ 'period' => 'date_range' ], 'needs a start date and an end date' ],
+
+            'start after end'        => [ [ 'startDate' => '20260810', 'endDate' => '20260801' ], 'is after the end date' ],
+            'start after end, named' => [ [ 'period' => 'date_range', 'startDate' => '20261231', 'endDate' => '20260101' ], 'is after the end date' ],
+
+            // Ordering compares yyyymmdd as strings, which only agrees with
+            // chronological order for eight digits -- so anything else has to
+            // be refused before the comparison, not by it.
+            'start not a date'       => [ [ 'startDate' => 'aug1', 'endDate' => '20260810' ], 'is not a date' ],
+            'end not a date'         => [ [ 'startDate' => '20260801', 'endDate' => '2026-08-10' ], 'is not a date' ],
+            'short date'             => [ [ 'startDate' => '202608', 'endDate' => '20260810' ], 'is not a date' ],
+        ];
+    }
+
+    /** @dataProvider unusableRangeProvider */
+    public function testAnUnusableRangeIsRefused( array $map, string $because )
+    {
+        $error = \OWA\Module\Base\Classes\TimePeriod::getRangeError( $map );
+
+        $this->assertNotSame( '', $error, 'this map should not have been accepted' );
+        $this->assertStringContainsString( $because, $error,
+            'the reason given must be the actual defect, since it is shown to the user' );
+    }
+
+    public static function usableRangeProvider(): array
+    {
+        return [
+            'ordered range'          => [ [ 'startDate' => '20260801', 'endDate' => '20260810' ] ],
+            'ordered range, named'   => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260810' ] ],
+
+            // Equal bounds are a single day, which is how ReportVisitorsRoster
+            // asks for one. The rule is start <= end, not start < end.
+            'single day'             => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260801' ] ],
+            'single day, no period'  => [ [ 'startDate' => '20260801', 'endDate' => '20260801' ] ],
+
+            'a named period'         => [ [ 'period' => 'today' ] ],
+            'nothing at all'         => [ [] ],
+
+            // A named relative period wins over any dates sent with it, so a
+            // partial range alongside one is ignored rather than refused --
+            // refusing would reject a parameter that has no effect.
+            'named period + partial' => [ [ 'period' => 'today', 'startDate' => '20260801' ] ],
+            'named period + strays'  => [ [ 'period' => 'last_week', 'endDate' => '20260810' ] ],
+        ];
+    }
+
+    /** @dataProvider usableRangeProvider */
+    public function testAUsableRangeIsAccepted( array $map )
+    {
+        $this->assertSame( '', \OWA\Module\Base\Classes\TimePeriod::getRangeError( $map ),
+            'this map describes a usable request and must not be refused' );
+    }
+
+    /**
+     * The defect stated directly: an end date alone produced a window whose
+     * start was AFTER its end, and nothing objected.
+     */
+    public function testTheOldEndOnlyBehaviourWasAnInvertedWindow()
+    {
+        $p = $this->period( 'date_range', [ 'endDate' => '20260810' ] );
+
+        $this->assertGreaterThan(
+            (int) $p->getEndDate()->get( 'yyyymmdd' ),
+            (int) $p->getStartDate()->get( 'yyyymmdd' ),
+            'if this is no longer inverted the model changed, and the guard above '
+            . 'is now the only thing describing the rule' );
+
+        $this->assertNotSame( '',
+            \OWA\Module\Base\Classes\TimePeriod::getRangeError( [ 'period' => 'date_range', 'endDate' => '20260810' ] ),
+            'and that is exactly the shape the rule has to catch' );
+    }
 }

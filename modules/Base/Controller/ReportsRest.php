@@ -30,6 +30,25 @@ class ReportsRest extends \OWA\Core\ReportController {
 	
 	function validate() {
 		
+		/*
+		 * The same range rule the web path enforces, from the same place, so the
+		 * two cannot drift on what a date range is -- as they had drifted on
+		 * what a period is until both were pointed at getValidPeriods().
+		 *
+		 * Applied to every report this controller serves, not just the generic
+		 * resultset branch: the named reports below take the same startDate and
+		 * endDate parameters and had the same inverted-window behaviour.
+		 */
+		$range = new \OWA\Core\Validation\DateRange();
+
+		$range->setValues( array(
+			'period'    => $this->getParam('period'),
+			'startDate' => $this->getParam('startDate'),
+			'endDate'   => $this->getParam('endDate'),
+		) );
+
+		$this->setValidation( 'dateRange', $range );
+
 		// if no report name is specified do these validations necesary for generic resultSet.
 		if ( ! $this->get('report_name') ) {
 			

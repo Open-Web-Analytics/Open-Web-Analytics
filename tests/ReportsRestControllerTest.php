@@ -74,6 +74,54 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'An unknown period should fail inArray validation with 422.');
     }
 
+    /**
+     * REST refuses an unusable range for the same reasons the web does, using
+     * the same rule -- the two had already drifted once on what a period is.
+     *
+     * @dataProvider unusableRestRangeProvider
+     */
+    public function testUnusableDateRangeIsRejected( array $params ): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            array_merge( ['metrics' => 'pageViews'], $params )
+        );
+
+        $this->assertSame(422, $resp['status'],
+            'an unusable range should fail validation: ' . json_encode( $params ) );
+    }
+
+    public static function unusableRestRangeProvider(): array
+    {
+        return [
+            'end date alone'   => [ ['endDate' => '20260810'] ],
+            'start date alone' => [ ['startDate' => '20260801'] ],
+            'inverted range'   => [ ['startDate' => '20260810', 'endDate' => '20260801'] ],
+            'no bounds'        => [ ['period' => 'date_range'] ],
+        ];
+    }
+
+    /**
+     * A well-formed range is still served, so the guard above has not simply
+     * closed the endpoint to date ranges.
+     */
+    public function testAnOrderedDateRangeIsStillServed(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'startDate' => '20260801', 'endDate' => '20260810']
+        );
+
+        $this->assertNotSame(422, $resp['status'],
+            'an ordered range must still be accepted' );
+    }
+
     public function testReportNameBranchRequiresSessionId(): void
     {
         $this->authenticateAs('admin');

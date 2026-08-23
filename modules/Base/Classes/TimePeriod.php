@@ -67,7 +67,7 @@ class TimePeriod {
      * An absent date reads as '' rather than false so it stays a string all the
      * way to sscanf(). Both are empty(), so the branching below is unchanged.
      */
-    private function normalizeMap( $map ) {
+    private static function normalizeMap( $map ) {
 
         $keys = array(
             'period'    => '',
@@ -83,9 +83,81 @@ class TimePeriod {
         return array_merge( $keys, array_intersect_key( (array) $map, $keys ) );
     }
 
+    /**
+     * Why a request map does not describe a usable date range, or '' if it does.
+     *
+     * A range is both bounds or neither. One bound alone is not a range: an end
+     * date on its own resolved its missing start to today, so asking for
+     * "up to the 10th" produced a window running from today BACKWARDS to the
+     * 10th -- inverted, and silently so.
+     *
+     * Only asked when a range is what the request is actually for: an explicit
+     * period=date_range, or dates with no period at all. A named relative
+     * period wins over any dates sent with it, so partial dates alongside
+     * 'today' are ignored rather than refused.
+     *
+     * Equal bounds are legal and deliberate -- a single day is a range whose
+     * ends are equal, which is how ReportVisitorsRoster asks for one.
+     *
+     * Static and free of settings so both the web and REST paths can ask
+     * before building anything, and so it holds without a database.
+     *
+     * @param array $map request parameters
+     * @return string a user-facing reason, or '' when the map is usable
+     */
+    public static function getRangeError( $map ) {
+
+        $map    = self::normalizeMap( $map );
+        $period = trim( (string) $map['period'] );
+        $start  = trim( (string) $map['startDate'] );
+        $end    = trim( (string) $map['endDate'] );
+
+        $asksForRange = ( $period === 'date_range' )
+                     || ( $period === '' && ( $start !== '' || $end !== '' ) );
+
+        if ( ! $asksForRange ) {
+
+            return '';
+        }
+
+        if ( $start === '' && $end === '' ) {
+
+            return 'A date range needs a start date and an end date.';
+        }
+
+        if ( $start === '' ) {
+
+            return 'A date range needs a start date. An end date on its own does not describe a range.';
+        }
+
+        if ( $end === '' ) {
+
+            return 'A date range needs an end date. A start date on its own does not describe a range.';
+        }
+
+        // Both bounds are compared as yyyymmdd, where string order and
+        // chronological order agree -- but only for eight digits. Anything else
+        // would make the comparison below meaningless rather than false.
+        foreach ( array( 'start date' => $start, 'end date' => $end ) as $label => $value ) {
+
+            if ( ! preg_match( '/^\d{8}$/', $value ) ) {
+
+                return sprintf( 'The %s "%s" is not a date. Dates are yyyymmdd.',
+                    $label, htmlspecialchars( $value, ENT_QUOTES ) );
+            }
+        }
+
+        if ( $start > $end ) {
+
+            return sprintf( 'The start date (%s) is after the end date (%s).', $start, $end );
+        }
+
+        return '';
+    }
+
     function setFromMap( $map ) {
 
-        $map = $this->normalizeMap( $map );
+        $map = self::normalizeMap( $map );
 
 
         // set default period if necessary
@@ -223,7 +295,7 @@ class TimePeriod {
     function _setDates($map = array()) {
 
         // set() reaches here without going through setFromMap, so normalize again.
-        $map = $this->normalizeMap( $map );
+        $map = self::normalizeMap( $map );
 
         $time_now = \OWA\Core\Lib::time_now();
         $nowDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
