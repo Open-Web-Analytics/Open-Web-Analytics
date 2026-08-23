@@ -11,15 +11,15 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *   - getLoggerEndpoint(): resolves the log.php URL, preferring an explicit
  *     logger_endpoint option, then the tracker baseUrl.
  *
- *   - prepareRequestData(): turns an event's flat property bag into the owa_*
- *     namespaced request params. Arrays flatten to owa_key[i] and arrays of
- *     objects to owa_key[i][subkey] -- the shape PHP's $_GET bracket parser
+ *   - prepareRequestData(): turns an event's flat property bag into request
+ *     params. Arrays flatten to key[i] and arrays of
+ *     objects to key[i][subkey] -- the shape PHP's $_GET bracket parser
  *     reassembles server-side.
  *
  *   - prepareRequestDataForGet(): serializes those params to a query string,
  *     url-encoding the VALUE only (encodeURIComponent) and leaving the KEY raw.
  *     Encoding the value is the symmetric half of the server's decode; leaving
- *     the key raw preserves the owa_foo[0][bar] brackets $_GET relies on. (This
+ *     the key raw preserves the foo[0][bar] brackets $_GET relies on. (This
  *     is the fix guarded by the block comment in the source -- a '#'/'&'/'='
  *     in a value would otherwise truncate or corrupt the beacon.)
  *
@@ -37,8 +37,6 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *
  *   - trackEvent(): the orchestrator. In first-party mode it runs
  *     manageState -> addGlobalPropertiesToEvent -> addDefaultsToEvent -> logEvent
- *     so a single beacon carries identity + defaults. In thirdParty mode it
- *     skips client state management and just flags the event for upstream.
  *
  * Image is stubbed to capture beacon URLs without hitting the network. jsdom
  * backs the state stores, so trackEvent() exercises the real identity pipeline.
@@ -95,22 +93,26 @@ describe('getLoggerEndpoint', () => {
     });
 });
 
-describe('prepareRequestData: owa_* namespacing and array flattening', () => {
+describe('prepareRequestData: param naming and array flattening', () => {
 
-    test('namespaces every param key with the owa_ prefix', () => {
+    // The beacon's query string is written by the tracker and read by log.php,
+    // so there is nothing to collide with and nothing to prefix. The names OWA
+    // puts in a TRACKED PAGE's namespace -- cookies, owa_state, owa_overlay,
+    // the campaignKeys -- still carry the wire prefix.
+    test('emits every param key un-namespaced', () => {
         const t = newTracker();
         const data = t.prepareRequestData({ event_type: 'base.page_request', foo: 'bar' });
-        expect(Object.keys(data)).toEqual(['owa_event_type', 'owa_foo']);
+        expect(Object.keys(data)).toEqual(['event_type', 'foo']);
     });
 
-    test('flattens arrays to owa_key[i] and arrays of objects to owa_key[i][subkey]', () => {
+    test('flattens arrays to key[i] and arrays of objects to key[i][subkey]', () => {
         const t = newTracker();
         const data = t.prepareRequestData({ arr: ['x', 'y'], objarr: [{ a: 1, b: 2 }] });
         expect(data).toEqual({
-            'owa_arr[0]': 'x',
-            'owa_arr[1]': 'y',
-            'owa_objarr[0][a]': 1,
-            'owa_objarr[0][b]': 2,
+            'arr[0]': 'x',
+            'arr[1]': 'y',
+            'objarr[0][a]': 1,
+            'objarr[0][b]': 2,
         });
     });
 });
@@ -121,8 +123,8 @@ describe('prepareRequestDataForGet: value-only url-encoding', () => {
         const t = newTracker();
         const get = t.prepareRequestDataForGet({ url: 'http://x/?a=1&b=2#frag' });
         // The whole URL value is percent-encoded into a single param; the raw
-        // owa_url key is preserved.
-        expect(get).toBe('owa_url=http%3A%2F%2Fx%2F%3Fa%3D1%26b%3D2%23frag&');
+        // url key is preserved.
+        expect(get).toBe('url=http%3A%2F%2Fx%2F%3Fa%3D1%26b%3D2%23frag&');
         // The structural characters must NOT appear un-encoded in the value.
         expect(get.indexOf('#frag')).toBe(-1);
     });
@@ -136,7 +138,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
 
         expect(beacons.length).toBe(1);
         expect(beacons[0]).toContain('https://track.example/owa/log.php?');
-        expect(beacons[0]).toContain('owa_event_type=base.page_request');
+        expect(beacons[0]).toMatch(/[?&]event_type=base\.page_request/);
     });
 
     test('falls back to a cross-domain POST when the url exceeds the character limit', () => {
@@ -150,7 +152,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
         // No pixel; the data went out via POST instead.
         expect(beacons.length).toBe(0);
         expect(posted).toBeTruthy();
-        expect(posted['owa_event_type']).toBe('base.page_request');
+        expect(posted['event_type']).toBe('base.page_request');
     });
 
     test('sends nothing while the tracker is inactive', () => {
@@ -226,21 +228,10 @@ describe('trackEvent: end-to-end orchestration', () => {
         expect(beacons.length).toBe(1);
         const url = beacons[0];
         // manageState minted identity; addDefaults stamped site_id; all rode out.
-        expect(url).toMatch(/owa_site_id=/);
-        expect(url).toMatch(/owa_visitor_id=/);
-        expect(url).toMatch(/owa_session_id=/);
-        expect(url).toMatch(/owa_event_type=base\.page_request/);
+        expect(url).toMatch(/site_id=/);
+        expect(url).toMatch(/visitor_id=/);
+        expect(url).toMatch(/session_id=/);
+        expect(url).toMatch(/event_type=base\.page_request/);
     });
 
-    test('thirdParty mode flags the event for upstream and skips client state management', () => {
-        const t = newTracker({ thirdParty: true });
-        const event = new OwaEvent();
-        event.setEventType('base.page_request');
-
-        t.trackEvent(event);
-
-        // Upstream is told to manage state; the client never ran manageState.
-        expect(t.globalEventProperties.thirdParty).toBe(true);
-        expect(t.stateInit).toBeFalsy();
-    });
 });

@@ -26,7 +26,7 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
         if ( typeof owa_cmds === 'undefined' ) {
             var q = new OwaCommandQueue();
         } else {
-            if ( OwaUtil.is_array(owa_cmds) ) {
+            if ( Array.isArray(owa_cmds) ) {
                 var q = new OwaCommandQueue();
                 q.loadCmds( owa_cmds );
             }

@@ -24,22 +24,7 @@ class Util {
 	}
 	
 	// this uses a config global
-    static ns( string ) {
     
-        return OWA.config.ns + string;
-    
-    }
-    
-    static createCookie( name, value, days, domain ) {
-	    
-        if (days) {
-            var date = new Date();
-            date.setTime(date.getTime()+(days*24*60*60*1000));
-            var expires = "; expires="+date.toGMTString();
-        }
-        else var expires = "";
-        document.cookie = name+"="+value+expires+"; path=/";
-    }
 
     static setCookie( name, value, days, path, domain, secure ) {
         
@@ -69,10 +54,19 @@ class Util {
             Util.debug(document.cookie);
             for( var i=0;i < ca.length;i++ ) {
                 
-                var cat = Util.trim(ca[i]);
-                var pos = Util.strpos(cat, '=');
-                var key = cat.substring(0,pos);
-                var value = cat.substring(pos+1, cat.length);
+                var cat = String( ca[i] ).trim();
+                var pos = cat.indexOf( '=' );
+
+                // A fragment with no '=' is not a cookie. The PHP strpos port
+                // returned false here, and substring(0, false) is substring(0,
+                // 0) -- so this used to produce an empty key holding the
+                // fragment with its first character eaten.
+                if ( pos < 1 ) {
+                    continue;
+                }
+
+                var key = cat.substring( 0, pos );
+                var value = cat.substring( pos + 1 );
                 //Util.debug('key %s, value %s', key, value);
                 // create cookie jar array for that key
                 // this is needed because you can have multiple cookies with the same name
@@ -140,41 +134,7 @@ class Util {
         
     }
     
-    static eraseMultipleCookies( names, domain ) {
-        
-        for (var i=0; i < names.length; i++) {
-            this.eraseCookie(names[i], domain);
-        }
-    }
     
-    static loadScript( url, callback ){
-
-       var script = document.createElement("script");
-	   script.type = "text/javascript";
-	
-	    if (script.readyState) {  //IE
-		    
-	        script.onreadystatechange = function(){
-		        
-	            if (script.readyState == "loaded" || script.readyState == "complete") {
-		            
-	                script.onreadystatechange = null;
-	                callback();
-	            }
-	        };
-	        
-	    } else {  //Others
-	        
-	        script.onload = function() {
-	            
-	            callback();
-	        };
-	    }
-	    
-	    script.src = url;
-		document.getElementsByTagName("head")[0].appendChild(script);
-    
-    }
 
     static loadCss( url, callback ){
 
@@ -194,53 +154,38 @@ class Util {
 
     }
     
-    static parseCookieString( v ) {
-	    
-        var queryAsAssoc = new Array();
-        var queryString = unescape(v);
-        var keyValues = queryString.split("|||");
-        //alert(keyValues);
-        for (var i in keyValues) {
-            if (keyValues.hasOwnProperty(i)) {
-                var key = keyValues[i].split("=>");
-                queryAsAssoc[key[0]] = key[1];
-            }
-            //alert(key[0] +"="+ key[1]);
-        }
-        
-        return queryAsAssoc;
-    }
     
-    static parseCookieStringToJson( v ) {
-	    
-        var queryAsObj = new Object;
-        var queryString = unescape(v);
-        var keyValues = queryString.split("|||");
-        //alert(keyValues);
-        for (var i in keyValues) {
-            if (keyValues.hasOwnProperty(i)) {
-                var key = keyValues[i].split("=>");
-                queryAsObj[key[0]] = key[1];
-                //alert(key[0] +"="+ key[1]);
+    
+    
+    /**
+     * Serialises a prepared param bag as an application/x-www-form-urlencoded
+     * body, on exactly the same terms as the query-string path.
+     *
+     * KEY RAW, VALUE ENCODED -- the same asymmetry Tracker.prepareRequestDataForGet()
+     * uses and for the same reason: values must be encoded or a '#', '&' or '='
+     * inside one truncates or corrupts the payload, while the flattened array
+     * keys (ct_line_items[0][li_sku]) rely on PHP's bracket parsing, which the
+     * GET path documents as being defeated by encoded brackets.
+     *
+     * Matching that exactly matters because both bodies land in the same place:
+     * RequestContainer merges $_GET and $_POST, and decodeRequestParams() then
+     * decodes once more regardless of which one carried the event. A POST body
+     * encoded differently from the query string would decode differently too.
+     */
+    static buildPostBody ( data ) {
+
+        var pairs = [];
+
+        for ( var param in data ) {
+
+            if ( data.hasOwnProperty( param ) ) {
+                pairs.push( param + '=' + encodeURIComponent( data[ param ] ) );
             }
         }
-        //alert (queryAsObj.period);
-        return queryAsObj;
+
+        return pairs.join( '&' );
     }
-    
-    static nsParams( obj ) {
-	    
-        var new_obj = new Object;
-        
-        for(param in obj) {
-            if (obj.hasOwnProperty(param)) {
-                new_obj[OWA.getSetting('ns') + param] = obj[param];
-            }
-        }
-        
-        return new_obj;
-    }
-    
+
     static urlEncode ( str ) {
         // URL-encodes string  
         // 
@@ -323,87 +268,13 @@ class Util {
         return _GET;
     }
     
-    static strpos ( haystack, needle, offset ) {
-	    
-        // Finds position of first occurrence of a string within another  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/strpos
-        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Onno Marsman    
-        // +   bugfixed by: Daniel Esteban
-        // +   improved by: Brett Zamir (http://brett-zamir.me)
-        // *     example 1: strpos('Kevin van Zonneveld', 'e', 5);
-        // *     returns 1: 14
-        var i = (haystack+'').indexOf(needle, (offset || 0));
-        return i === -1 ? false : i;
-    }
     
-    static strCountOccurances ( haystack, needle ) {
-	    
-        return haystack.split(needle).length - 1;
-    }
     
-    static implode ( glue, pieces ) {
-	    
-        // Joins array elements placing glue string between items and return one string  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/implode
-        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Waldo Malqui Silva
-        // +   improved by: Itsacon (http://www.itsacon.net/)
-        // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
-        // *     example 1: implode(' ', ['Kevin', 'van', 'Zonneveld']);
-        // *     returns 1: 'Kevin van Zonneveld'
-        // *     example 2: implode(' ', {first:'Kevin', last: 'van Zonneveld'});
-        // *     returns 2: 'Kevin van Zonneveld'
-        var i = '', retVal='', tGlue='';
-        if (arguments.length === 1) {
-            pieces = glue;
-            glue = '';
-        }
-        if (typeof(pieces) === 'object') {
-            if (pieces instanceof Array) {
-                return pieces.join(glue);
-            }
-            else {
-                for (i in pieces) {
-                    retVal += tGlue + pieces[i];
-                    tGlue = glue;
-                }
-                return retVal;
-            }
-        }
-        else {
-            return pieces;
-        }
-    }
     
-    static checkForState(  store_name ) {
     
-        return OWA.checkForState( store_name );
-    }
     
-    static setState ( store_name, key, value, is_perminant,format, expiration_days ) {
-        
-        return OWA.setState(store_name, key, value, is_perminant,format, expiration_days);
-    }
     
-    static replaceState ( store_name, value, is_perminant, format, expiration_days ) {
-
-        return OWA.replaceState(store_name, value, is_perminant, format, expiration_days);
-    }
     
-    static getRawState ( store_name ) {
-        
-        return OWA.getStateFromCookie(store_name);
-    }
-    
-    static getState ( store_name, key ) {
-        
-        return OWA.getState(store_name, key);
-    }
     
     static clearState ( store_name, key ) {
         
@@ -455,19 +326,7 @@ class Util {
         return Util.dechex(Util.crc32(domain));
     }
     
-    static loadStateJson ( store_name ) {
-        var store = unescape(Util.readCookie( OWA.getSetting('ns') + store_name ) );
-        if (store) {
-            state = JSON.parse(store);
-        }
-        OWA.state[store_name] = state;
-        Util.debug('state store %s: %s', store_name, JSON.stringify(state));
-    }
 
-    static is_array ( input ) {
-	    
-        return typeof(input)=='object'&&(input instanceof Array);    
-    }
       
     // Returns input string padded on the left or right to specified length with pad_string  
     // 
@@ -481,47 +340,18 @@ class Util {
     // *     returns 1: '-=-=-=-=-=-Kevin van Zonneveld'
     // *     example 2: str_pad('Kevin van Zonneveld', 30, '-', 'STR_PAD_BOTH');
     // *     returns 2: '------Kevin van Zonneveld-----'
-    static str_pad ( input, pad_length, pad_string, pad_type ) {
-
-        var half = '',
-            pad_to_go;
-     
-        var str_pad_repeater = function (s, len) {
-            var collect = '',
-                i;
-     
-            while (collect.length < len) {
-                collect += s;
-            }
-            collect = collect.substr(0, len);
-     
-            return collect;
-        };
-     
-        input += '';
-        pad_string = pad_string !== undefined ? pad_string : ' ';
-     
-        if (pad_type != 'STR_PAD_LEFT' && pad_type != 'STR_PAD_RIGHT' && pad_type != 'STR_PAD_BOTH') {
-            pad_type = 'STR_PAD_RIGHT';
-        }
-        if ((pad_to_go = pad_length - input.length) > 0) {
-            if (pad_type == 'STR_PAD_LEFT') {
-                input = str_pad_repeater(pad_string, pad_to_go) + input;
-            } else if (pad_type == 'STR_PAD_RIGHT') {
-                input = input + str_pad_repeater(pad_string, pad_to_go);
-            } else if (pad_type == 'STR_PAD_BOTH') {
-                half = str_pad_repeater(pad_string, Math.ceil(pad_to_go / 2));
-                input = half + input + half;
-                input = input.substr(0, pad_length);
-            }
-        }
-     
-        return input;
-    }
     
+    /**
+     * Left-pad a number with zeros to a fixed width.
+     *
+     * Was a wrapper over a 38-line str_pad() port of PHP's, called with
+     * STR_PAD_LEFT and '0' and nothing else -- the port's other three pad
+     * types, its custom pad strings and its multi-character padding were all
+     * unreachable. padStart is the same operation, and it is in the language.
+     */
     static zeroFill ( number, length ) {
-        
-        return Util.str_pad( number, length, '0', 'STR_PAD_LEFT');
+
+        return String( number ).padStart( length, '0' );
     }
       
     // Returns true if variable is an object  
@@ -546,14 +376,6 @@ class Util {
         }
     }
       
-    static countObjectProperties ( obj ) {
-          
-        var size = 0, key;
-        for (key in obj) {
-            if (obj.hasOwnProperty(key)) size++;
-        }
-        return size;
-    }
     
     static jsonFromAssocString ( str, inner, outer ) {
         
@@ -562,7 +384,10 @@ class Util {
         
         if (str){
         
-            if (!this.strpos(str, inner)) {
+            // includes(), not the old strpos() port: that returned an index,
+            // and index 0 is falsy, so a string STARTING with the inner
+            // separator was reported as containing no separator at all.
+            if ( ! String( str ).includes( inner ) ) {
     
                 return str;
                 
@@ -588,7 +413,7 @@ class Util {
         
         var string = '';
         var i = 0;
-        var count = Util.countObjectProperties(obj);
+        var count = Object.keys( obj ).length;
         
         for (var prop in obj) {
             i++;
@@ -603,19 +428,6 @@ class Util {
     
     }
     
-    static getDomainFromUrl ( url, strip_www ) {
-        
-        var domain = url.split(/\/+/g)[1];
-        
-        if (strip_www === true) {
-            
-            return Util.stripWwwFromDomain( domain );
-            
-        } else {
-        
-            return domain;
-        }
-    }
     
     // strips www. from begining of domain if present
     // otherwise returns the domain as is.
@@ -635,10 +447,6 @@ class Util {
         return Math.round(new Date().getTime() / 1000);
     }
     
-    static generateHash ( value ) {
-    
-        return this.crc32(value);
-    }
     
     /**
      * A numeric id: 10 digits of unix seconds followed by 9 random digits.
@@ -669,106 +477,61 @@ class Util {
         return time + random + client;
     }
     
-    static sha256 ( ascii ) {
-	    
-	    var sha256 = {};
-	    
-		function rightRotate(value, amount) {
-			return (value>>>amount) | (value<<(32 - amount));
-		};
-		
-		var mathPow = Math.pow;
-		var maxWord = mathPow(2, 32);
-		var lengthProperty = 'length'
-		var i, j; // Used as a counter across the whole file
-		var result = ''
-	
-		var words = [];
-		var asciiBitLength = ascii[lengthProperty]*8;
-		
-		//* caching results is optional - remove/add slash from front of this line to toggle
-		// Initial hash value: first 32 bits of the fractional parts of the square roots of the first 8 primes
-		// (we actually calculate the first 64, but extra values are just ignored)
-		var hash = sha256.h = sha256.h || [];
-		// Round constants: first 32 bits of the fractional parts of the cube roots of the first 64 primes
-		var k = sha256.k = sha256.k || [];
-		var primeCounter = k[lengthProperty];
-		/*/
-		var hash = [], k = [];
-		var primeCounter = 0;
-		//*/
-	
-		var isComposite = {};
-		for (var candidate = 2; primeCounter < 64; candidate++) {
-			if (!isComposite[candidate]) {
-				for (i = 0; i < 313; i += candidate) {
-					isComposite[i] = candidate;
-				}
-				hash[primeCounter] = (mathPow(candidate, .5)*maxWord)|0;
-				k[primeCounter++] = (mathPow(candidate, 1/3)*maxWord)|0;
-			}
-		}
-		
-		ascii += '\x80' // Append Ƈ' bit (plus zero padding)
-		while (ascii[lengthProperty]%64 - 56) ascii += '\x00' // More zero padding
-		for (i = 0; i < ascii[lengthProperty]; i++) {
-			j = ascii.charCodeAt(i);
-			if (j>>8) return; // ASCII check: only accept characters in range 0-255
-			words[i>>2] |= j << ((3 - i)%4)*8;
-		}
-		words[words[lengthProperty]] = ((asciiBitLength/maxWord)|0);
-		words[words[lengthProperty]] = (asciiBitLength)
-		
-		// process each chunk
-		for (j = 0; j < words[lengthProperty];) {
-			var w = words.slice(j, j += 16); // The message is expanded into 64 words as part of the iteration
-			var oldHash = hash;
-			// This is now the undefinedworking hash", often labelled as variables a...g
-			// (we have to truncate as well, otherwise extra entries at the end accumulate
-			hash = hash.slice(0, 8);
-			
-			for (i = 0; i < 64; i++) {
-				var i2 = i + j;
-				// Expand the message into 64 words
-				// Used below if 
-				var w15 = w[i - 15], w2 = w[i - 2];
-	
-				// Iterate
-				var a = hash[0], e = hash[4];
-				var temp1 = hash[7]
-					+ (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) // S1
-					+ ((e&hash[5])^((~e)&hash[6])) // ch
-					+ k[i]
-					// Expand the message schedule if needed
-					+ (w[i] = (i < 16) ? w[i] : (
-							w[i - 16]
-							+ (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15>>>3)) // s0
-							+ w[i - 7]
-							+ (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2>>>10)) // s1
-						)|0
-					);
-				// This is only used once, so *could* be moved below, but it only saves 4 bytes and makes things unreadble
-				var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) // S0
-					+ ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2])); // maj
-				
-				hash = [(temp1 + temp2)|0].concat(hash); // We don't bother trimming off the extra ones, they're harmless as long as we're truncating when we do the slice()
-				hash[4] = (hash[4] + temp1)|0;
-			}
-			
-			for (i = 0; i < 8; i++) {
-				hash[i] = (hash[i] + oldHash[i])|0;
-			}
-		}
-		
-		for (i = 0; i < 8; i++) {
-			for (j = 3; j + 1; j--) {
-				var b = (hash[i]>>(j*8))&255;
-				result += ((b < 16) ? 0 : '') + b.toString(16);
-			}
-		}
-		return result;
-	}
     
+    /**
+     * Base64, via the browser's own implementation.
+     *
+     * Replaces a 118-line phpjs port whose UTF-8 pre-pass encoded each half of a
+     * surrogate pair separately -- CESU-8, not UTF-8. Every astral-plane
+     * character goes through a surrogate pair, and every emoji is astral, so a
+     * custom variable or page title containing one was carried across a domain
+     * in an encoding no other tool decodes. The port round-tripped its own
+     * output, which is why it never looked broken from inside OWA.
+     *
+     * btoa handles bytes, not characters, so the string is widened to UTF-8
+     * bytes first. That step is what the port was for; the difference is that
+     * encodeURIComponent gets surrogate pairs right.
+     *
+     * utf8_encode() stays, because crc32() still calls it: the cookie domain
+     * hash it produces is stamped into every cookie already written, and
+     * "correct" is not worth invalidating those over a domain name, which is
+     * ASCII or punycode in every case that reaches it.
+     */
+    static base64_encode( data ) {
+
+        if ( ! data ) {
+            return data;
+        }
+
+        return btoa( unescape( encodeURIComponent( String( data ) ) ) );
+    }
+
+    static base64_decode( data ) {
+
+        if ( ! data ) {
+            return data;
+        }
+
+        var raw = atob( String( data ) );
+
+        try {
+            return decodeURIComponent( escape( raw ) );
+        } catch ( e ) {
+            /*
+             * A token written by a tracker older than this one. Its CESU-8
+             * output is not valid UTF-8, so the widening above throws rather
+             * than returning something wrong -- and the bytes it choked on are
+             * what that tracker meant by them.
+             *
+             * Returning them raw is what the old decoder did. This branch is
+             * for tokens in flight during a deploy: they live for one
+             * cross-domain click, so it stops mattering within minutes, but
+             * throwing would break the link rather than degrade it.
+             */
+            return raw;
+        }
+    }
+
     static crc32 ( str ) {
         // Calculate the crc32 polynomial of a string  
         // 
@@ -846,95 +609,7 @@ class Util {
         return utftext;
     }
     
-    static utf8_decode ( str_data ) {
-        // Converts a UTF-8 encoded string to ISO-8859-1  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/utf8_decode
-        // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
-        // +      input by: Aman Gupta
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Norman "zEh" Fuchs
-        // +   bugfixed by: hitwork
-        // +   bugfixed by: Onno Marsman
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // *     example 1: utf8_decode('Kevin van Zonneveld');
-        // *     returns 1: 'Kevin van Zonneveld'
-        var tmp_arr = [], i = 0, ac = 0, c1 = 0, c2 = 0, c3 = 0;
-        
-        str_data += '';
-        
-        while ( i < str_data.length ) {
-            c1 = str_data.charCodeAt(i);
-            if (c1 < 128) {
-                tmp_arr[ac++] = String.fromCharCode(c1);
-                i++;
-            } else if ((c1 > 191) && (c1 < 224)) {
-                c2 = str_data.charCodeAt(i+1);
-                tmp_arr[ac++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
-                i += 2;
-            } else {
-                c2 = str_data.charCodeAt(i+1);
-                c3 = str_data.charCodeAt(i+2);
-                tmp_arr[ac++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                i += 3;
-            }
-        }
-     
-        return tmp_arr.join('');
-    }
     
-    static trim ( str, charlist ) {
-        // Strips whitespace from the beginning and end of a string  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/trim
-        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: mdsjack (http://www.mdsjack.bo.it)
-        // +   improved by: Alexander Ermolaev (http://snippets.dzone.com/user/AlexanderErmolaev)
-        // +      input by: Erkekjetter
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: DxGx
-        // +   improved by: Steven Levithan (http://blog.stevenlevithan.com)
-        // +    tweaked by: Jack
-        // +   bugfixed by: Onno Marsman
-        // *     example 1: trim('    Kevin van Zonneveld    ');
-        // *     returns 1: 'Kevin van Zonneveld'
-        // *     example 2: trim('Hello World', 'Hdle');
-        // *     returns 2: 'o Wor'
-        // *     example 3: trim(16, 1);
-        // *     returns 3: 6
-        var whitespace, l = 0, i = 0;
-        str += '';
-        
-        if (!charlist) {
-            // default list
-            whitespace = " \n\r\t\f\x0b\xa0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u2028\u2029\u3000";
-        } else {
-            // preg_quote custom list
-            charlist += '';
-            whitespace = charlist.replace(/([\[\]\(\)\.\?\/\*\{\}\+\$\^\:])/g, '$1');
-        }
-        
-        l = str.length;
-        for (i = 0; i < l; i++) {
-            if (whitespace.indexOf(str.charAt(i)) === -1) {
-                str = str.substring(i);
-                break;
-            }
-        }
-        
-        l = str.length;
-        for (i = l - 1; i >= 0; i--) {
-            if (whitespace.indexOf(str.charAt(i)) === -1) {
-                str = str.substring(0, i + 1);
-                break;
-            }
-        }
-        
-        return whitespace.indexOf(str.charAt(0)) === -1 ? str : '';
-    }
     
     static rand ( min, max ) {
         // Returns a random number  
@@ -956,274 +631,8 @@ class Util {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
     
-    static base64_encode( data ) {
-        // Encodes string using MIME base64 algorithm  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/base64_encode
-        // +   original by: Tyler Akins (http://rumkin.com)
-        // +   improved by: Bayron Guevara
-        // +   improved by: Thunder.m
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   bugfixed by: Pellentesque Malesuada
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // -    depends on: utf8_encode
-        // *     example 1: base64_encode('Kevin van Zonneveld');
-        // *     returns 1: 'S2V2aW4gdmFuIFpvbm5ldmVsZA=='
-        // mozilla has this native
-        // - but breaks in 2.0.0.12!
-        //if (typeof this.window['atob'] == 'function') {
-        //    return atob(data);
-        //}
-            
-        var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-        var o1, o2, o3, h1, h2, h3, h4, bits, i = 0, ac = 0, enc="", tmp_arr = [];
-     
-        if (!data) {
-            return data;
-        }
-     
-        data = this.utf8_encode(data+'');
-        
-        do { // pack three octets into four hexets
-            o1 = data.charCodeAt(i++);
-            o2 = data.charCodeAt(i++);
-            o3 = data.charCodeAt(i++);
-     
-            bits = o1<<16 | o2<<8 | o3;
-     
-            h1 = bits>>18 & 0x3f;
-            h2 = bits>>12 & 0x3f;
-            h3 = bits>>6 & 0x3f;
-            h4 = bits & 0x3f;
-     
-            // use hexets to index into b64, and append result to encoded string
-            tmp_arr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
-        } while (i < data.length);
-        
-        enc = tmp_arr.join('');
-        
-        switch (data.length % 3) {
-            case 1:
-                enc = enc.slice(0, -2) + '==';
-            break;
-            case 2:
-                enc = enc.slice(0, -1) + '=';
-            break;
-        }
-     
-        return enc;
-    }
     
-    static base64_decode( data ) {
-        // Decodes string using MIME base64 algorithm  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/base64_decode
-        // +   original by: Tyler Akins (http://rumkin.com)
-        // +   improved by: Thunder.m
-        // +      input by: Aman Gupta
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   bugfixed by: Onno Marsman
-        // +   bugfixed by: Pellentesque Malesuada
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // -    depends on: utf8_decode
-        // *     example 1: base64_decode('S2V2aW4gdmFuIFpvbm5ldmVsZA==');
-        // *     returns 1: 'Kevin van Zonneveld'
-        // mozilla has this native
-        // - but breaks in 2.0.0.12!
-        //if (typeof this.window['btoa'] == 'function') {
-        //    return btoa(data);
-        //}
-     
-        var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-        var o1, o2, o3, h1, h2, h3, h4, bits, i = 0, ac = 0, dec = "", tmp_arr = [];
-     
-        if (!data) {
-            return data;
-        }
-     
-        data += '';
-     
-        do {  // unpack four hexets into three octets using index points in b64
-            h1 = b64.indexOf(data.charAt(i++));
-            h2 = b64.indexOf(data.charAt(i++));
-            h3 = b64.indexOf(data.charAt(i++));
-            h4 = b64.indexOf(data.charAt(i++));
-     
-            bits = h1<<18 | h2<<12 | h3<<6 | h4;
-     
-            o1 = bits>>16 & 0xff;
-            o2 = bits>>8 & 0xff;
-            o3 = bits & 0xff;
-     
-            if (h3 == 64) {
-                tmp_arr[ac++] = String.fromCharCode(o1);
-            } else if (h4 == 64) {
-                tmp_arr[ac++] = String.fromCharCode(o1, o2);
-            } else {
-                tmp_arr[ac++] = String.fromCharCode(o1, o2, o3);
-            }
-        } while (i < data.length);
-     
-        dec = tmp_arr.join('');
-        dec = this.utf8_decode(dec);
-     
-        return dec;
-    }
     
-    static sprintf() {
-        // Return a formatted string  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/sprintf
-        // +   original by: Ash Searle (http://hexmen.com/blog/)
-        // + namespaced by: Michael White (http://getsprink.com)
-        // +    tweaked by: Jack
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: Paulo Freitas
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // *     example 1: sprintf("%01.2f", 123.1);
-        // *     returns 1: 123.10
-        // *     example 2: sprintf("[%10s]", 'monkey');
-        // *     returns 2: '[    monkey]'
-        // *     example 3: sprintf("[%'#10s]", 'monkey');
-        // *     returns 3: '[####monkey]'
-        var regex = /%%|%(\d+\$)?([-+\'#0 ]*)(\*\d+\$|\*|\d+)?(\.(\*\d+\$|\*|\d+))?([scboxXuidfegEG])/g;
-        var a = arguments, i = 0, format = a[i++];
-     
-        // pad()
-        var pad = function (str, len, chr, leftJustify) {
-            if (!chr) {chr = ' ';}
-            var padding = (str.length >= len) ? '' : Array(1 + len - str.length >>> 0).join(chr);
-            return leftJustify ? str + padding : padding + str;
-        };
-     
-        // justify()
-        var justify = function (value, prefix, leftJustify, minWidth, zeroPad, customPadChar) {
-            var diff = minWidth - value.length;
-            if (diff > 0) {
-                if (leftJustify || !zeroPad) {
-                    value = pad(value, minWidth, customPadChar, leftJustify);
-                } else {
-                    value = value.slice(0, prefix.length) + pad('', diff, '0', true) + value.slice(prefix.length);
-                }
-            }
-            return value;
-        };
-     
-        // formatBaseX()
-        var formatBaseX = function (value, base, prefix, leftJustify, minWidth, precision, zeroPad) {
-            // Note: casts negative numbers to positive ones
-            var number = value >>> 0;
-            prefix = prefix && number && {'2': '0b', '8': '0', '16': '0x'}[base] || '';
-            value = prefix + pad(number.toString(base), precision || 0, '0', false);
-            return justify(value, prefix, leftJustify, minWidth, zeroPad);
-        };
-     
-        // formatString()
-        var formatString = function (value, leftJustify, minWidth, precision, zeroPad, customPadChar) {
-            if (precision != null) {
-                value = value.slice(0, precision);
-            }
-            return justify(value, '', leftJustify, minWidth, zeroPad, customPadChar);
-        };
-     
-        // doFormat()
-        var doFormat = function (substring, valueIndex, flags, minWidth, _, precision, type) {
-            var number;
-            var prefix;
-            var method;
-            var textTransform;
-            var value;
-     
-            if (substring == '%%') {return '%';}
-     
-            // parse flags
-            var leftJustify = false, positivePrefix = '', zeroPad = false, prefixBaseX = false, customPadChar = ' ';
-            var flagsl = flags.length;
-            for (var j = 0; flags && j < flagsl; j++) {
-                switch (flags.charAt(j)) {
-                    case ' ': positivePrefix = ' '; break;
-                    case '+': positivePrefix = '+'; break;
-                    case '-': leftJustify = true; break;
-                    case "'": customPadChar = flags.charAt(j+1); break;
-                    case '0': zeroPad = true; break;
-                    case '#': prefixBaseX = true; break;
-                }
-            }
-     
-            // parameters may be null, undefined, empty-string or real valued
-            // we want to ignore null, undefined and empty-string values
-            if (!minWidth) {
-                minWidth = 0;
-            } else if (minWidth == '*') {
-                minWidth = +a[i++];
-            } else if (minWidth.charAt(0) == '*') {
-                minWidth = +a[minWidth.slice(1, -1)];
-            } else {
-                minWidth = +minWidth;
-            }
-     
-            // Note: undocumented perl feature:
-            if (minWidth < 0) {
-                minWidth = -minWidth;
-                leftJustify = true;
-            }
-     
-            if (!isFinite(minWidth)) {
-                throw new Error('sprintf: (minimum-)width must be finite');
-            }
-     
-            if (!precision) {
-                precision = 'fFeE'.indexOf(type) > -1 ? 6 : (type == 'd') ? 0 : undefined;
-            } else if (precision == '*') {
-                precision = +a[i++];
-            } else if (precision.charAt(0) == '*') {
-                precision = +a[precision.slice(1, -1)];
-            } else {
-                precision = +precision;
-            }
-     
-            // grab value using valueIndex if required?
-            value = valueIndex ? a[valueIndex.slice(0, -1)] : a[i++];
-     
-            switch (type) {
-                case 's': return formatString(String(value), leftJustify, minWidth, precision, zeroPad, customPadChar);
-                case 'c': return formatString(String.fromCharCode(+value), leftJustify, minWidth, precision, zeroPad);
-                case 'b': return formatBaseX(value, 2, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
-                case 'o': return formatBaseX(value, 8, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
-                case 'x': return formatBaseX(value, 16, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
-                case 'X': return formatBaseX(value, 16, prefixBaseX, leftJustify, minWidth, precision, zeroPad).toUpperCase();
-                case 'u': return formatBaseX(value, 10, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
-                case 'i':
-                case 'd':
-                    number = parseInt(+value, 10);
-                    prefix = number < 0 ? '-' : positivePrefix;
-                    value = prefix + pad(String(Math.abs(number)), precision, '0', false);
-                    return justify(value, prefix, leftJustify, minWidth, zeroPad);
-                case 'e':
-                case 'E':
-                case 'f':
-                case 'F':
-                case 'g':
-                case 'G':
-                    number = +value;
-                    prefix = number < 0 ? '-' : positivePrefix;
-                    method = ['toExponential', 'toFixed', 'toPrecision']['efg'.indexOf(type.toLowerCase())];
-                    textTransform = ['toString', 'toUpperCase']['eEfFgG'.indexOf(type) % 2];
-                    value = prefix + Math.abs(number)[method](precision);
-                    return justify(value, prefix, leftJustify, minWidth, zeroPad)[textTransform]();
-                default: return substring;
-            }
-        };
-     
-        return format.replace(regex, doFormat);
-    }
     
     static clone ( mixed ) {
         
@@ -1238,49 +647,7 @@ class Util {
         return newObj;
     }
     
-    static strtolower ( str ) {
-        
-        return (str+'').toLowerCase();
-    }
     
-    static in_array ( needle, haystack, argStrict ) {
-	    
-        // Checks if the given value exists in the array  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/in_array
-        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: vlado houba
-        // +   input by: Billy
-        // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
-        // *     example 1: in_array('van', ['Kevin', 'van', 'Zonneveld']);
-        // *     returns 1: true
-        // *     example 2: in_array('vlado', {0: 'Kevin', vlado: 'van', 1: 'Zonneveld'});
-        // *     returns 2: false
-        // *     example 3: in_array(1, ['1', '2', '3']);
-        // *     returns 3: true
-        // *     example 3: in_array(1, ['1', '2', '3'], false);
-        // *     returns 3: true
-        // *     example 4: in_array(1, ['1', '2', '3'], true);
-        // *     returns 4: false
-        var key = '', strict = !!argStrict;
-     
-        if (strict) {
-            for (key in haystack) {
-                if (haystack[key] === needle) {
-                    return true;
-                }
-            }
-        } else {
-            for (key in haystack) {
-                if (haystack[key] == needle) {
-                    return true;
-                }
-            }
-        }
-     
-        return false;
-    }
     
     static dechex( number ) {
 	    
@@ -1304,82 +671,6 @@ class Util {
         return parseInt(number, 10).toString(16);
     }
     
-    static explode( delimiter, string, limit ) {
-        // Splits a string on string separator and return array of components. 
-        // If limit is positive only limit number of components is returned. 
-        // If limit is negative all components except the last abs(limit) are returned.  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/explode
-        // +     original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +     improved by: kenneth
-        // +     improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +     improved by: d3x
-        // +     bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // *     example 1: explode(' ', 'Kevin van Zonneveld');
-        // *     returns 1: {0: 'Kevin', 1: 'van', 2: 'Zonneveld'}
-        // *     example 2: explode('=', 'a=bc=d', 2);
-        // *     returns 2: ['a', 'bc=d']
-     
-        var emptyArray = { 0: '' };
-        
-        // third argument is not required
-        if ( arguments.length < 2 ||
-            typeof arguments[0] == 'undefined' ||
-            typeof arguments[1] == 'undefined' ) {
-            return null;
-        }
-     
-        if ( delimiter === '' ||
-            delimiter === false ||
-            delimiter === null ) {
-            return false;
-        }
-     
-        if ( typeof delimiter == 'function' ||
-            typeof delimiter == 'object' ||
-            typeof string == 'function' ||
-            typeof string == 'object' ) {
-            return emptyArray;
-        }
-     
-        if ( delimiter === true ) {
-            delimiter = '1';
-        }
-        
-        if (!limit) {
-            return string.toString().split(delimiter.toString());
-        } else {
-            // support for limit argument
-            var splitted = string.toString().split(delimiter.toString());
-            var partA = splitted.splice(0, limit - 1);
-            var partB = splitted.join(delimiter.toString());
-            partA.push(partB);
-            return partA;
-        }
-    }
-    
-    static isIE () {
-        
-        if (/MSIE (\d+\.\d+);/.test(navigator.userAgent)) {
-            return true;
-        }
-    }
-    
-    static getInternetExplorerVersion () {
-    // Returns the version of Internet Explorer or a -1
-    // (indicating the use of another browser).
-    
-      var rv = -1; // Return value assumes failure.
-      if (navigator.appName == 'Microsoft Internet Explorer')
-      {
-        var ua = navigator.userAgent;
-        var re  = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
-        if (re.exec(ua) != null)
-          rv = parseFloat( RegExp.$1 );
-      }
-      return rv;
-    }
     
     /**
      * Whether this browser should be tracked at all.

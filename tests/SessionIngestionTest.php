@@ -138,6 +138,262 @@ final class SessionIngestionTest extends IngestionTestCase
      * `attribs` touch-history JSON into the latest_attributions column. This
      * proves the session row is attributed to the campaign that opened it.
      */
+    /**
+     * A second pageview in the SAME page load was silently dropped.
+     *
+     * is_new_session is PAGE scoped: every event from the page the session
+     * started on carries it, including a second trackPageView() in one page
+     * load, which is ordinary for a single-page app. That routed the hit to
+     * logSession(), which found the row already there, logged 'Not persisting
+     * new session' and returned HANDLED -- so num_pageviews never counted it
+     * and the session never stopped being a bounce.
+     *
+     * An existing session means this request did not create it, whatever the
+     * flag says, so it is an ordinary hit and must be counted.
+     */
+    public function testSecondPageviewCarryingTheNewSessionFlagIsStillCounted(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+        ]);
+
+        $opened = $this->assertRowPersisted('base.session', $session_id, 'id');
+        $this->assertEquals(1, $opened->get('num_pageviews'));
+
+        // Second pageview, same page load: still page-scoped is_new_session,
+        // but NOT is_new_session_start -- that one belongs to the request that
+        // created the session and rides a single beacon.
+        $this->setServerTime(1700000060);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+        ]);
+
+        $updated = owa_coreAPI::entityFactory('base.session');
+        $updated->load($session_id, 'id');
+        $this->assertTrue($updated->wasPersisted());
+        $this->assertEquals(2, $updated->get('num_pageviews'));
+        $this->assertEquals(0, $updated->get('is_bounce'));
+        $this->assertEquals(1700000060, $updated->get('last_req'));
+    }
+
+    /**
+     * A tracker cached from before the flags were split sends only the
+     * page-scoped one. It must still be able to open a session.
+     */
+    public function testOlderTrackerWithoutTheStartFlagStillOpensASession(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+        ]);
+
+        $s = $this->assertRowPersisted('base.session', $session_id, 'id');
+        $this->assertEquals(1, $s->get('num_pageviews'));
+    }
+
+    /**
+     * days_since_prior_session is derived on the server by subtracting two
+     * DATES the tracker sends: when the previous session began, and when this
+     * one did.
+     *
+     * Both are YYYYMMDD in the visitor's own calendar, so the subtraction stays
+     * inside one calendar -- measuring to the server's date instead mixes two
+     * and can be a day out at the edges. Coarsening is what limits the damage
+     * an uncontrolled clock can do: only an error crossing midnight costs
+     * anything, and only ever a day.
+     *
+     * Measuring to the SESSION's date, not the event's, is what keeps the value
+     * identical on every event sharing a session_id -- see the test below.
+     */
+    private function fireWithAnchors(string $session_id, int $at, ?int $prior, ?int $session, array $extra = []): string
+    {
+        $props = array_merge([
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+        ], $extra);
+
+        // The RAW anchors, as the tracker stores them. The server converts each
+        // to YYYYMMDD and does the arithmetic at day level.
+        if ($prior !== null)   { $props['psts'] = $prior; }
+        if ($session !== null) { $props['sts']  = $session; }
+
+        $this->trackForCleanup('base.session', $session_id, 'id');
+        $this->setServerTime($at);
+
+        return $this->firePageRequest(md5('owa-test-site'), $session_id, $props);
+    }
+
+    public function testDaysSincePriorSessionIsTheDifferenceOfTheTwoDates(): void
+    {
+        $now = 1700000000;
+
+        $guid = $this->fireWithAnchors(
+            $this->uniqueSessionId(),
+            $now,
+            $now - (5 * 86400),
+            $now
+        );
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(5, $r->get('days_since_prior_session'));
+    }
+
+    public function testAReturnVisitTheSameDayIsZeroDays(): void
+    {
+        // Two hours apart inside one day. An elapsed calculation rounding to
+        // days would also give 0 here, but a visit at 23:00 returning at 01:00
+        // is 1 -- boundaries, not duration.
+        $now = 1700000000;
+
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, $now - 7200, $now);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_prior_session'));
+    }
+
+    public function testTwoHoursSpanningMidnightIsOneDay(): void
+    {
+        // The case the whole day-level conversion exists for, and the only one
+        // here that tells calendar days from elapsed days: an elapsed
+        // calculation returns round(7200/86400) = 0.
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithAnchors(
+            $this->uniqueSessionId(),
+            $midnight + 3600,
+            $midnight - 3600,      // 23:00 the day before
+            $midnight + 3600       // 01:00 today
+        );
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(1, $r->get('days_since_prior_session'));
+    }
+
+    public function testTwentyTwoHoursInsideOneDayIsNoDays(): void
+    {
+        // The converse, where an elapsed calculation returns 1.
+        $midnight = strtotime(date('Y-m-d', 1700000000));
+
+        $guid = $this->fireWithAnchors(
+            $this->uniqueSessionId(),
+            $midnight + (23 * 3600),
+            $midnight + 3600,          // 01:00
+            $midnight + (23 * 3600)    // 23:00 the same day
+        );
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_prior_session'));
+    }
+
+    public function testEveryEventSharingASessionAgrees(): void
+    {
+        // The invariant. The day count is measured to the SESSION's date, which
+        // every event of the session carries, so two hits either side of a
+        // midnight still report the same number. Measuring to each event's own
+        // date would not.
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $midnight     = strtotime(date('Y-m-d', 1700000000));
+        $sessionStart = $midnight - 3600;                      // session began at 23:00
+        $priorStart   = $midnight - (3 * 86400);
+
+        $this->setServerTime($sessionStart);
+        $first = $this->firePageRequest($site_id, $session_id, [
+            'is_new_session'       => true,
+            'is_new_session_start' => true,
+            'psts'                 => $priorStart,
+            'sts'                  => $sessionStart,
+        ]);
+
+        $this->setServerTime($midnight + 3600);                // 01:00, past midnight
+        $second = $this->firePageRequest($site_id, $session_id, [
+            'psts' => $priorStart,
+            'sts'  => $sessionStart,
+        ]);
+
+        $a = $this->assertRowPersisted('base.request', $first, 'id');
+        $b = $this->assertRowPersisted('base.request', $second, 'id');
+
+        $this->assertEquals(
+            $a->get('days_since_prior_session'),
+            $b->get('days_since_prior_session'),
+            'every event sharing a session_id must report the same value'
+        );
+    }
+
+    /**
+     * days_since_first_session works the same way: two dates, subtracted at day
+     * level. The anchor is the visitor's first-visit date, coarse because it is
+     * stamped by their clock; the other end is this session's date, so the value
+     * is fixed for the visit rather than ticking over at midnight.
+     */
+    public function testDaysSinceFirstSessionIsCountedFromTheDateSent(): void
+    {
+        $now = 1700000000;
+
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, null, $now, [
+            'fsts' => $now - (10 * 86400),
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(10, $r->get('days_since_first_session'));
+    }
+
+    public function testAFirstVisitTodayIsZeroDays(): void
+    {
+        $now = 1700000000;
+
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), $now, null, $now, [
+            'fsts' => $now,
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(0, $r->get('days_since_first_session'));
+    }
+
+    public function testAnOlderTrackerSendingDsfsStillHasItHonoured(): void
+    {
+        // No date, so the value it sent as 'dsfs' stands.
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, ['dsfs' => 7]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(7, $r->get('days_since_first_session'));
+    }
+
+    public function testAMalformedDateFallsBackRatherThanGuessing(): void
+    {
+        // Also the regression test for setDataType()'s integer branch, which
+        // threw a TypeError on non-numeric input from an unauthenticated beacon.
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, [
+            'fsts' => 'not-a-timestamp',
+            'dsfs' => 3,
+        ]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(3, $r->get('days_since_first_session'));
+    }
+
+    public function testAnOlderTrackerSendingDspsStillHasItHonoured(): void
+    {
+        // No interval, so the value it sent as 'dsps' stands.
+        $guid = $this->fireWithAnchors($this->uniqueSessionId(), 1700000000, null, null, ['dsps' => 4]);
+
+        $r = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertEquals(4, $r->get('days_since_prior_session'));
+    }
+
     public function testNewSessionRecordsCampaignAttribution(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [

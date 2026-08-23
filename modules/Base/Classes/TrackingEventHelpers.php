@@ -178,7 +178,19 @@ class TrackingEventHelpers {
 
             case "integer":
 
-                $var = $var + 0;
+                /*
+                 * Guarded, because this is reached from an unauthenticated
+                 * tracking beacon. PHP 8 raises
+                 * "TypeError: Unsupported operand types: string + int" for a
+                 * non-numeric string, so a beacon carrying ?owa_dsps=abc -- or
+                 * any garbage in any integer-typed property -- fataled event
+                 * processing. During a queue drain that is a poison pill.
+                 *
+                 * is_numeric() rather than a cast, so valid input keeps exactly
+                 * the value it had before: (int) would truncate "1.9" to 1,
+                 * where + 0 yields 1.9.
+                 */
+                $var = is_numeric( $var ) ? $var + 0 : 0;
                 break;
             case "string":
 
@@ -376,6 +388,130 @@ class TrackingEventHelpers {
             return \OWA\Core\Lib::setStringGuid( $property_value );
         }
 
+    }
+
+    /**
+     * Days since the prior session, derived from the interval the tracker
+     * measured.
+     *
+     * STRAIGHT 24-HOUR PERIODS, not calendar days, and that is forced rather
+     * than chosen: this value must be IDENTICAL on every event sharing a
+     * session_id. Calendar days cannot be, because counting date boundaries
+     * needs two absolute times and the events carry only one -- their own
+     * timestamp -- plus a session-scoped interval. Anchoring
+     * `then = timestamp - elapsed` is exact on the event that OPENED the
+     * session but lands later for every event after it, so two hits either side
+     * of a midnight would disagree about the same session. Depending only on
+     * the interval, which is the same on all of them, is what makes the value
+     * stable.
+     *
+     * Identical arithmetic to what the tracker used to do, so nothing about the
+     * daysSinceLastVisit dimension changes meaning -- only where it is computed.
+     * One value on the wire now feeds both this and timeSinceLastVisit, instead
+     * of the same interval being measured twice on the client.
+     *
+     * $days already holds whatever an older tracker sent as 'dsps' -- see the
+     * alternative_key on this property -- so returning it unchanged is the
+     * fallback for trackers cached from before the interval existed.
+     */
+    /**
+     * Days since the visitor's first session, from the date they sent.
+     *
+     * The tracker sends first_session_date as YYYYMMDD, not a timestamp and not
+     * an elapsed count. The anchor is stamped by the VISITOR's clock, and
+     * coarsening to a day is what limits the damage: a clock wrong by minutes or
+     * hours yields the same date, so only an error crossing midnight costs
+     * anything, and only ever one day, once. GA exposes firstSessionDate the
+     * same way and for the same reason.
+     *
+     * Counted against the SERVER's calendar, the one every other date part on
+     * the row uses. The two calendars can differ by a day at the edges; that is
+     * the bounded cost of the anchor being the visitor's.
+     *
+     * This value is per-EVENT, not per-session: it is "days since first visit as
+     * of this event", so it legitimately ticks over at midnight during a long
+     * session. That is why the registry declares it page-scoped.
+     *
+     * $days already holds whatever an older tracker sent as 'dsfs' -- see the
+     * alternative_key -- so returning it unchanged is the fallback for trackers
+     * cached from before the date existed.
+     */
+    /**
+     * A unix timestamp as YYYYMMDD, or null if it is not usable.
+     *
+     * The tracker sends the raw anchors -- fsts, psts, sts -- rather than dates,
+     * so no granularity is lost on the way and anything else that wants the
+     * precise instant still has it. Everything downstream of here works at DAY
+     * level, which is what limits the damage: these anchors are stamped by the
+     * VISITOR's clock, and a date absorbs anything short of an error that
+     * crosses midnight.
+     *
+     * Converted with the SERVER's timezone, so these day boundaries are the
+     * same ones every other date part on the row uses.
+     */
+    static function dateFromTimestamp( $timestamp ) {
+
+        $timestamp = (int) $timestamp;
+
+        return $timestamp > 0 ? date( 'Ymd', $timestamp ) : null;
+    }
+
+    /**
+     * Whole days between two YYYYMMDD dates, or null if either is unusable.
+     *
+     * Day-level arithmetic on purpose: converting first and subtracting days is
+     * what makes midnight a non-event, where subtracting the timestamps and
+     * dividing would make a two-hour gap spanning midnight look like no days at
+     * all.
+     */
+    static function daysBetweenDates( $from, $to ) {
+
+        if ( ! preg_match( '/^\d{8}$/', (string) $from ) || ! preg_match( '/^\d{8}$/', (string) $to ) ) {
+
+            return null;
+        }
+
+        $a = strtotime( substr( $from, 0, 4 ) . '-' . substr( $from, 4, 2 ) . '-' . substr( $from, 6, 2 ) );
+        $b = strtotime( substr( $to, 0, 4 ) . '-' . substr( $to, 4, 2 ) . '-' . substr( $to, 6, 2 ) );
+
+        if ( $a === false || $b === false ) {
+
+            return null;
+        }
+
+        // round, not floor: a day is 23 or 25 hours across a DST boundary.
+        return (int) round( ( $b - $a ) / 86400 );
+    }
+
+    /**
+     * The date the current session began, as the tracker reported it, falling
+     * back to the server's date for trackers that predate the field.
+     */
+    static function sessionDateOf( $event ) {
+
+        $sent = self::dateFromTimestamp( $event->get( 'sts' ) );
+
+        return $sent !== null ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
+    }
+
+    static function deriveDaysSinceFirstSession( $days, $event ) {
+
+        $count = self::daysBetweenDates(
+            self::dateFromTimestamp( $event->get( 'fsts' ) ),
+            self::sessionDateOf( $event )
+        );
+
+        return $count === null ? $days : $count;
+    }
+
+    static function deriveDaysSincePriorSession( $days, $event ) {
+
+        $count = self::daysBetweenDates(
+            self::dateFromTimestamp( $event->get( 'psts' ) ),
+            self::sessionDateOf( $event )
+        );
+
+        return $count === null ? $days : $count;
     }
 
     static function setRepeatVisitorFlag( $flag, $event ) {

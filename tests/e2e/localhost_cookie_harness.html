@@ -50,11 +50,13 @@
             window.owa_cmds.push(['trackPageView']);
 
             var _owa = document.createElement('script');
-            _owa.type = 'text/javascript';
             _owa.async = true;
             _owa.src = window.owa_baseUrl + 'public/base/dist/owa.tracker.js';
-            var _owa_s = document.getElementsByTagName('script')[0];
-            _owa_s.parentNode.insertBefore(_owa, _owa_s);
+            // Mirrors js_log_tag.php. A harness that loads the tracker
+            // differently from the shipped snippet is testing a loader no
+            // visitor ever runs.
+            var _owa_p = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+            _owa_p.appendChild(_owa);
         }());
     </script>
 </body>

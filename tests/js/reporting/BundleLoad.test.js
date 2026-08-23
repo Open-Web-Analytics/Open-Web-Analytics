@@ -22,7 +22,11 @@ const path = require('path');
 describe('reporting bundle loads under jsdom', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
-    const bundlePath = path.join(repoRoot, 'modules/Base/dist/owa.reporting-combined-min.js');
+    // public/base/dist, not modules/Base/dist: that is where the manifest's
+    // outputDir puts it (BundleIntegrity asserts the same path). Pointing at
+    // a directory that has never existed made every test below take the
+    // 'bundle not built' early return and pass without loading anything.
+    const bundlePath = path.join(repoRoot, 'public/base/dist/owa.reporting-combined-min.js');
 
     let OWA;      // the OWA namespace as built by the bundle
     let jq;       // jQuery instance the bundle initialized

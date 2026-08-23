@@ -127,19 +127,44 @@
 
         <div class="setting" id="timezone">
             <div class="title">Reporting Timezone</div>
-            <div class="description">This is the timezone that should be used to generate statistics for a specific time period.</div>
+            <div class="description">This is the timezone that should be used to generate statistics for a specific time period.
+            <br><br>
+            <strong>Changing this is not retroactive.</strong> Each request is filed under a
+            calendar day when it is recorded, using the timezone set at that moment. Data already
+            collected keeps the day boundaries it was recorded with, so a change applies only to
+            traffic from this point on &mdash; and reports spanning the change will mix the two.
+            Depending on how far the zones are apart, a day boundary can move by up to 21 hours.</div>
             <div class="field">
 
 
-                <select id="TIMEZONE" name="<?php echo $view->getNs();?>config[base.timezone]">
+                <?php
+                /*
+                 * A setting supplied by a config-file constant is NOT editable
+                 * here: the constant beats the stored value on every boot, so an
+                 * editable field would accept a change that never takes effect.
+                 * Rendered disabled, showing the value in force, and naming the
+                 * constant so the operator knows where to change it. A disabled
+                 * field is not submitted by the browser, and OptionsUpdate
+                 * refuses the key regardless -- disabling is the courtesy, the
+                 * server-side refusal is the guarantee.
+                 */
+                $tz_constant = $view->configFileConstantFor( 'base', 'timezone' );
+                ?>
+                <select id="TIMEZONE" name="<?php echo $view->getNs();?>config[base.timezone]"<?php
+                    echo $tz_constant ? ' disabled="disabled"' : ''; ?>>
                 <?php
                 // These two conf files exist only to declare their arrays, so the
                 // variables below come from the require, not from a view var.
                 // PHPStan cannot follow a require path built from a constant.
                 /** @var array<string, array<string>> $timezones */
                 /** @var array<string, string> $countryCode2Name */
-                require_once(OWA_DIR.'conf/country2Timezones.php');
-                require_once(OWA_DIR.'conf/countryCodes2Names.php');
+                // require, NOT require_once: these files exist only to assign
+                // $timezones and $countryCode2Name into this scope, so a second
+                // render in the same process would find both undefined and the
+                // page would come out with an empty picker. Re-assigning two
+                // arrays is cheap; silently losing 285 options is not.
+                require(OWA_DIR.'conf/country2Timezones.php');
+                require(OWA_DIR.'conf/countryCodes2Names.php');
                 $selected_already = false;
                 $selected = '';
                 ksort($timezones);
@@ -170,6 +195,13 @@
                 ?>
                     </optgroup>
                 </select>
+                <?php if ( $tz_constant ) { ?>
+                    <div class="description" style="opacity:.75">
+                        Set by <code><?php $view->out( $tz_constant ); ?></code> in
+                        <code>owa-config.php</code>, which overrides any value stored here.
+                        Change it there, or remove the constant to edit it from this page.
+                    </div>
+                <?php } ?>
             </div>
         </div>
 

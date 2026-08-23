@@ -571,9 +571,14 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // resultSetExplorer.enableAutoRefresh -> setInterval(getNewResultSet)), which
         // re-queries the REST reports API on a timer; flipping it Off must clear the
         // timers so polling stops. We shorten the per-explorer interval, then COUNT
-        // real network hits to the reports API (owa_do=reports json) in each state:
+        // real network hits to the reports API (do=reports json) in each state:
         //   Off (baseline) -> no polling; On -> repeated polls; Off again -> stops.
-        const isPoll = (u) => u.includes('/api/index.php') && /owa_do=reports/.test(u);
+        //
+        // Both spellings are matched. The reporting bundle builds this URL from
+        // the app namespace, which is empty, so it reads 'do=reports' -- but an
+        // older cached bundle still sends 'owa_do='. Matching only the prefixed
+        // form made this count ZERO polls and read as 'Live View is broken'.
+        const isPoll = (u) => u.includes('/api/index.php') && /[?&](owa_)?do=reports/.test(u);
         const polls = [];
         page.on('request', (r) => { if (isPoll(r.url())) polls.push(r.url()); });
 

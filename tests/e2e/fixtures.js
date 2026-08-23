@@ -43,14 +43,39 @@ const FIXTURE = {
 /**
  * Log in through the real OWA login form as the given user and land
  * authenticated. Leaves the page on the post-login redirect (base.sites).
+ *
+ * FIELD NAMES ARE UN-NAMESPACED. Admin form fields are emitted through
+ * Template::getNs(), which returns the 'app_ns' setting -- empty since the
+ * namespace split, because OWA owns its own admin query string and has nothing
+ * to collide with. The wire namespace ('ns', still 'owa_') did not move: it
+ * names cookies and tracker params. If app_ns is ever given a value again,
+ * every selector in this suite goes stale at once, so the field is checked
+ * before it is filled and says so rather than timing out forty times.
+ *
+ * The ENTRY URL below deliberately keeps the legacy '?owa_do=' spelling. The
+ * server accepts both, and this is the one place the suite proves that old
+ * bookmarks and saved links still resolve -- every navigation after it follows
+ * a link OWA rendered, which is un-namespaced.
  */
 async function loginAs(page, userId, password) {
     await page.goto('?owa_do=base.loginForm', { waitUntil: 'networkidle' });
-    await page.fill('input[name="owa_user_id"]', userId);
-    await page.fill('input[name="owa_password"]', password);
+
+    if (await page.locator('input[name="user_id"]').count() === 0) {
+        const names = await page.evaluate(() =>
+            [...document.querySelectorAll('form input[name]')].map((i) => i.name)
+        );
+        throw new Error(
+            'The login form has no un-namespaced user_id field. The admin form '
+            + 'namespace (base.app_ns) has probably moved; every selector in this '
+            + 'suite assumes it is empty. Fields present: ' + JSON.stringify(names)
+        );
+    }
+
+    await page.fill('input[name="user_id"]', userId);
+    await page.fill('input[name="password"]', password);
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
-        page.click('input[name="owa_submit_btn"]'),
+        page.click('input[name="submit_btn"]'),
     ]);
 }
 
@@ -74,7 +99,7 @@ async function logout(page) {
 
 /**
  * Follow a nonce-guarded admin action link (Delete / Activate / Deactivate).
- * These are rendered by makeLink(..., true) with the &owa_nonce=... already
+ * These are rendered by makeLink(..., true) with the &nonce=... already
  * baked into the href, so the test just has to click the right anchor -- the
  * server verifies the nonce that the page itself minted. `page` must already be
  * on the list page that renders the link. Returns after the redirect settles.

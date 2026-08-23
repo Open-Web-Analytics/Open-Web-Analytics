@@ -145,7 +145,7 @@ describe('tracker-dom.js — the DNT bootstrap gate', () => {
             // queued site id, proving the commands ran end-to-end.
             expect(spy.sent).toHaveLength(1);
             expect(spy.sent[0]).toContain(BASE_URL + 'log.php?');
-            expect(spy.sent[0]).toContain('owa_site_id=dnt-off-site');
+            expect(spy.sent[0]).toMatch(/[?&]site_id=dnt-off-site/);
         } finally {
             spy.restore();
         }

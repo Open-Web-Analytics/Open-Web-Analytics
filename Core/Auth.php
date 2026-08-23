@@ -604,10 +604,15 @@ class Auth extends \OWA\Core\Base {
 		$requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, '_' );
 		
 	    
-	    if ( strpos( $requestUrl, 'owa_signature' ) ) {
-		    
-		    $requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, 'owa_signature' );
-	    }
+		// The signature cannot cover itself, so it comes off before hashing.
+		// Both spellings are removed: OWA still signs with the namespaced name,
+		// but un-namespaced params are readable now, so a caller that sends
+		// 'signature=' would otherwise be read as authenticating and then fail
+		// the comparison for a reason nothing in the log would explain.
+		foreach ( array( 'owa_signature', 'signature' ) as $sig_param ) {
+
+			$requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, $sig_param );
+		}
 	    
 	    
 	    //owa_coreAPI::debug('url w/ no sig: ' . $requestUrl );

@@ -34,7 +34,7 @@ const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 
 // The site id the tracker harness beacons under (tracker_harness.html). The
-// beacon's owa_site_id is stored verbatim on the request fact, so we count facts
+// beacon's site_id is stored verbatim on the request fact, so we count facts
 // for exactly this id.
 const HARNESS_SITE_ID = 'e2e-tracker-harness';
 
@@ -141,7 +141,7 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
         // The pixel GET is fire-and-forget; wait until the page_request beacon is on
         // the wire so log.php has been hit before we inspect the queue.
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
-        const pageview = beacons.find((u) => u.includes('owa_event_type=base.page_request'));
+        const pageview = beacons.find((u) => /[?&]event_type=base\.page_request/.test(u));
         expect(pageview, 'no base.page_request beacon was sent').toBeTruthy();
 
         // --- queued, NOT yet ingested ---------------------------------------

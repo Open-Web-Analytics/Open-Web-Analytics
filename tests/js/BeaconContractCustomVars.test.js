@@ -13,10 +13,15 @@
  * three scopes differ only in WHERE the value is persisted client-side between
  * pageviews:
  *
- *  - page:    no cookie persistence, lives only as a global event property for
- *             this pageview (there is no `case` for it — it is the default).
- *  - session: stored in the session cookie ('b' state store).
- *  - visitor: stored in the visitor cookie ('v' state store), cleared from 'b'.
+ *  - page:    no cookie persistence. Lives in the 'd' state store, which is
+ *             memory only for the life of the page, and as a global event
+ *             property.
+ *  - session: the session store 's'. Held in memory until the session is
+ *             settled and a request carrying it is accepted, then written to
+ *             the session cookie and to it directly from then on.
+ *  - visitor: the visitor cookie ('v' state store), written immediately --
+ *             a visitor outlives their sessions, so nothing about the session
+ *             decision governs it.
  *
  * This locks the wire shape (cv1/cv2/cv3 present, each = "name=value") into
  * tests/fixtures/beacon_contracts.json (base.page_request.customvars) so the
@@ -46,6 +51,18 @@ function resetOwaState() {
             document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
         }
     });
+    OWA.state = new StateManager();
+}
+
+/**
+ * The page went away and another one loaded. Cookies survive; memory does not.
+ *
+ * A fresh state manager over the SAME cookie jar is exactly that, and it is
+ * what a second-pageview test has to do now: sharing memory between the two
+ * trackers would let the first one's session store answer the second one's
+ * reads, and the test would pass whether or not anything was ever persisted.
+ */
+function nextPageLoad() {
     OWA.state = new StateManager();
 }
 
@@ -116,10 +133,15 @@ describe('tracker custom variable beacon contract', () => {
         t.setCustomVar(1, 'color', 'blue', 'page');
         t.setCustomVar(2, 'plan', 'pro', 'session');
         t.trackPageView(location.href);
+        // logEvent is stubbed, so the acceptance the transport would have
+        // signalled has to come from here. Without it the session is never
+        // persisted -- correctly, since nothing was ever delivered.
+        t.sendAccepted();
 
         // A fresh tracker on the same "browser" (cookies persist) — mirrors a
         // second pageview in the same session. Page scope is gone; session
         // scope is rehydrated from the session cookie.
+        nextPageLoad();
         const t2 = new OWATracker({ cookie_domain_set: true });
         t2.setSiteId('contract-site');
         t2.logEvent = (properties) => { beacons.push({ ...properties }); };

@@ -50,11 +50,29 @@ class SessionHandlers extends \OWA\Core\Observer {
         // dispatch new event based on properties of entity
 
 
-        if ($event->get('is_new_session')) {
-            return $this->logSession($event);
-        } else {
-            return $this->logSessionUpdate($event);
+        /*
+         * 'is_new_session_start' marks the one REQUEST that created the
+         * session. 'is_new_session' is PAGE scoped -- every event from the page
+         * the session started on carries it -- so it answers a different
+         * question and cannot decide create-vs-update on its own.
+         *
+         * The fallback is for trackers cached from before the two were split,
+         * which send only the page-scoped flag. It is safe to be imprecise
+         * here: logSession() now falls through to logSessionUpdate() when the
+         * session already exists, so a wrong 'yes' costs a lookup rather than a
+         * dropped hit.
+         */
+        $starts_session = $event->get('is_new_session_start');
+
+        if ( ! $starts_session ) {
+            $starts_session = $event->get('is_new_session');
         }
+
+        if ( $starts_session ) {
+            return $this->logSession($event);
+        }
+
+        return $this->logSessionUpdate($event);
     }
     
     function logSession($event) {
@@ -81,15 +99,23 @@ class SessionHandlers extends \OWA\Core\Observer {
 
                 $s->set('prior_session_id', $event->get('prior_session_id'));
 
-                if ($s->get('prior_session_lastreq') > 0) {
-                    $s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
-                    $s->set('prior_session_year', date("Y", $event->get('last_req')));
-                    $s->set('prior_session_month', date("M", $event->get('last_req')));
-                    $s->set('prior_session_day', date("d", $event->get('last_req')));
-                    $s->set('prior_session_hour', date("G", $event->get('last_req')));
-                    $s->set('prior_session_minute', date("i", $event->get('last_req')));
-                    $s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
-                }
+                /*
+                 * time_sinse_priorsession is no longer computed. It fed the
+                 * timeSinceLastVisit dimension, which has been retired: a
+                 * continuous seconds value gives one bucket per distinct
+                 * second, so it was a metric wearing a dimension's clothes.
+                 * Days bucket; seconds do not.
+                 *
+                 * "How long since the last visit" is now answered in days, by
+                 * days_since_prior_session, derived from the two dates the
+                 * tracker sends -- see
+                 * TrackingEventHelpers::deriveDaysSincePriorSession().
+                 *
+                 * The prior_session_* date parts went with it. They were
+                 * formatted from last_req, the one CLIENT-clock value reaching
+                 * the schema, and nothing read them.
+                 */
+                $s->set('prior_session_lastreq', $event->get('last_req'));
 
                 // set last_req to be the timestamp of the event that triggered this session.
                 $s->set('last_req', $event->get('timestamp'));
@@ -137,8 +163,19 @@ class SessionHandlers extends \OWA\Core\Observer {
                     return OWA_EHS_EVENT_FAILED;
                 }
             } else {
-                \OWA\Core\CoreAPI::debug('Not persisting new session. Session already exists.');
-                return OWA_EHS_EVENT_HANDLED;
+
+                /*
+                 * The session already exists, so this request did not create it
+                 * -- whatever its flag said. Returning HANDLED here DROPPED the
+                 * hit: a second trackPageView() in the same page load still
+                 * carries the page-scoped is_new_session, arrived here, found
+                 * the row, and was silently discarded, so num_pageviews never
+                 * counted it and the session never stopped being a bounce.
+                 *
+                 * It is an ordinary hit in an existing session. Count it.
+                 */
+                \OWA\Core\CoreAPI::debug('Session already exists; handling as an update.');
+                return $this->logSessionUpdate($event);
             }
         } else {
 

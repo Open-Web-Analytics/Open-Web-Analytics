@@ -18,7 +18,7 @@
 const { test, expect } = require('@playwright/test');
 const { adminLogin } = require('./fixtures');
 
-const onLoginForm = (page) => page.locator('input[name="owa_password"]').count();
+const onLoginForm = (page) => page.locator('input[name="password"]').count();
 
 /** Load a real admin form, invalidate its nonce, and submit it. */
 async function submitWithStaleNonce(page) {
@@ -27,7 +27,7 @@ async function submitWithStaleNonce(page) {
 
     // createNonceFormField() emits <input type="hidden" name="<ns>nonce">, and
     // ns defaults to 'owa_'.
-    const nonce = page.locator('input[name="owa_nonce"]');
+    const nonce = page.locator('input[name="nonce"]');
     await expect(nonce, 'the options form should carry a nonce').toHaveCount(1);
 
     // Exactly what an expired or wrong-user nonce looks like to the server.
@@ -37,7 +37,7 @@ async function submitWithStaleNonce(page) {
     // the nonce is a separate hidden field, which is what was just invalidated.
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
-        page.locator('button[name="owa_action"][value="base.optionsUpdate"]').click(),
+        page.locator('button[name="action"][value="base.optionsUpdate"]').click(),
     ]);
 }
 
@@ -85,7 +85,7 @@ test.describe('a stale nonce on an authenticated session', () => {
         ]);
 
         // Back on a working form, with a nonce minted for this session.
-        await expect(page.locator('input[name="owa_nonce"]')).toHaveCount(1);
+        await expect(page.locator('input[name="nonce"]')).toHaveCount(1);
         expect(await onLoginForm(page), 'and still signed in').toBe(0);
     });
 

@@ -1,6 +1,20 @@
 <?php
 $timezones = array(
 
+    /*
+     * UTC is not a country, so it has no place in a country-keyed list -- and
+     * consequently was not offered at all, in either the install wizard or the
+     * settings page. For a self-hosted server product that is the omission most
+     * likely to matter: an operator running servers in several regions wants the
+     * one zone that does not move.
+     *
+     * Given its own group so it stays a deliberate choice rather than hiding
+     * under whichever country happens to sort first. Only the two timezone
+     * pickers read this file, so a non-country key affects nothing else.
+     */
+    "UTC"   => array(
+        0       => "UTC"),
+
     "US"    => array(
         "AL"    => "America/Chicago",
         "AK"    => "America/Anchorage",

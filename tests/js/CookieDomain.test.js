@@ -1,5 +1,7 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { Util } from '../../modules/Base/src/common/Util.js';
+import { StateManager } from '../../modules/Base/src/common/StateManager.js';
 
 /**
  * Cookie-domain resolution (setCookieDomain / getCookieDomain).
@@ -75,12 +77,39 @@ describe('setCookieDomain: automatic (no argument) resolution from document.doma
         expect(t.getOption('cookie_domain')).toBe('.example.com');
     });
 
-    test('marks cookie_domain_set so the automatic path will not run again', () => {
+    test('the CONSTRUCTOR resolves it, so nothing is written against an unknown domain', () => {
+        // This used to assert the opposite -- that cookie_domain_set was still
+        // false after construction, because resolution waited for the first
+        // tracked event. That wait was a bug: every store stamps a hash of the
+        // cookie domain when it is WRITTEN, and readPersistedStore() refuses a
+        // store whose hash does not match, so a custom var set before the first
+        // event (the documented order) was stamped against the wrong domain and
+        // silently lost on the next page load.
         setDocumentDomain('example.com');
         const t = newTracker();
-        expect(t.getOption('cookie_domain_set')).not.toBe(true);
-        t.setCookieDomain();
+
         expect(t.getOption('cookie_domain_set')).toBe(true);
+        expect(t.getOption('cookie_domain')).toBe('.example.com');
+    });
+
+    test('an explicit domain still overrides the resolved one', () => {
+        setDocumentDomain('shop.example.com');
+        const t = newTracker();
+        expect(t.getOption('cookie_domain')).toBe('.shop.example.com');
+
+        t.setCookieDomain('example.com');
+        expect(t.getOption('cookie_domain')).toBe('.example.com');
+        expect(t.getOption('cookie_domain_set')).toBe(true);
+    });
+
+    test('a tracker with no document.domain leaves it unresolved rather than throwing', () => {
+        // jsdom, workers, and any non-DOM context. The automatic path runs at
+        // construction now, so it is reached far more often than it was.
+        setDocumentDomain('');
+        expect(() => newTracker()).not.toThrow();
+
+        const t = newTracker();
+        expect(t.getOption('cookie_domain_set')).not.toBe(true);
     });
 });
 
@@ -130,24 +159,38 @@ describe('getCookieDomain resolution order', () => {
         expect(t.getCookieDomain()).toBe('.example.com');
     });
 
-    test('falls back to document.domain when nothing has been pinned', () => {
+    test('falls back to document.domain only when nothing could be resolved', () => {
+        // The raw document.domain read is a last resort, and it is now genuinely
+        // last: the constructor resolves and normalizes the domain, so a tracker
+        // that HAS one returns that. Reaching the raw fallback means resolution
+        // did not happen -- no document.domain at construction.
+        OWA.setSetting('cookie_domain', false);
+        setDocumentDomain('');
+        const t = newTracker();
+
+        setDocumentDomain('fallback.example');
+        expect(t.getCookieDomain()).toBe('fallback.example');
+    });
+
+    test('a resolved domain is returned normalized, not raw', () => {
         OWA.setSetting('cookie_domain', false);
         setDocumentDomain('fallback.example');
         const t = newTracker();
-        // No option, no global setting -> the raw document.domain (unnormalized;
-        // this is the pre-first-event read used only as a last resort).
-        expect(t.getCookieDomain()).toBe('fallback.example');
+
+        expect(t.getCookieDomain()).toBe('.fallback.example');
     });
 });
 
-describe('automatic resolution fires on the first tracked event', () => {
+describe('automatic resolution has already happened by the first tracked event', () => {
 
-    test('trackEvent triggers setCookieDomain when cookie_domain_set is not true', () => {
+    test('trackEvent finds the domain already resolved, and leaves it alone', () => {
         setDocumentDomain('www.auto.example');
         const t = newTracker();
         t.setSiteId('cd-auto-site');
-        // Guard: the automatic path has not run yet.
-        expect(t.getOption('cookie_domain_set')).not.toBe(true);
+        // The constructor already resolved it -- trackEvent's call is a safety
+        // net for a tracker built without a resolvable domain, not the path.
+        expect(t.getOption('cookie_domain_set')).toBe(true);
+        expect(t.getOption('cookie_domain')).toBe('.auto.example');
 
         // Fire an event through the tracker (Image stubbed so no network). The
         // first event's trackEvent() should auto-resolve the cookie domain.
@@ -162,5 +205,54 @@ describe('automatic resolution fires on the first tracked event', () => {
         expect(t.getOption('cookie_domain_set')).toBe(true);
         // www. stripped by the automatic resolution.
         expect(t.getOption('cookie_domain')).toBe('.auto.example');
+    });
+});
+
+/**
+ * THE DEFECT the timing change exists to fix, tested through its consequence
+ * rather than through when a flag gets set.
+ *
+ * Stores stamp a hash of the cookie domain (cdh) into their value at WRITE
+ * time, and readPersistedStore() refuses a store whose hash does not match the
+ * current domain. While the domain was resolved lazily -- on the first tracked
+ * event -- anything written before that was stamped against a domain that was
+ * not yet the real one. The next page load then rejected it.
+ *
+ * The order this breaks is the documented one: set your custom variables, then
+ * track. So a visitor-scoped variable, which is supposed to last a year,
+ * survived exactly until the page unloaded.
+ */
+describe('state written before the first event survives the next page load', () => {
+
+    beforeEach(() => {
+        OWA.setSetting('cookie_domain', false);
+        Object.defineProperty(document, 'domain', {
+            configurable: true,
+            get() { return 'localhost'; },
+        });
+        OWA.initializeStateManager();
+        OWA.state.stores = {};
+        OWA.state.cookies = Util.readAllCookies();
+    });
+
+    test('a visitor custom var set BEFORE any tracking is readable on the next page', () => {
+        const first = new OWATracker({ site_id: 'domain-persist-site' });
+        first.setCustomVar(1, 'Plan', 'Pro', 'visitor');
+
+        // The page went away; cookies survive, memory does not.
+        OWA.state = new StateManager();
+        OWA.state.cookies = Util.readAllCookies();
+
+        expect(OWA.getPersistedState('v', 'cv1')).toBe('Plan=Pro');
+    });
+
+    test('the value it was stamped with is the domain it is later read against', () => {
+        const t = new OWATracker({ site_id: 'domain-persist-site' });
+        t.setCustomVar(2, 'Tier', 'Gold', 'visitor');
+
+        const stamped = OWA.getState('v', 'cdh');
+
+        expect(stamped).toBe(Util.getCookieDomainHash(OWA.getSetting('cookie_domain')));
+        expect(stamped).not.toBe(Util.getCookieDomainHash(undefined));
     });
 });

@@ -422,9 +422,28 @@ class Template extends TemplateEngine {
      *
      * @return string
      */
+    /**
+     * The config-file constant governing a setting, or '' if none is.
+     *
+     * A settings field whose value comes from owa-config.php must render
+     * read-only and say which constant is responsible -- a constant beats the
+     * stored value (see Settings::stripSettingsSuppliedByConstants), so an
+     * editable field would accept a change that never takes effect. Naming the
+     * constant is what makes that actionable: "set in owa-config.php" leaves the
+     * operator hunting.
+     *
+     * @param string $module
+     * @param string $key
+     * @return string
+     */
+    function configFileConstantFor( $module, $key ) {
+
+        return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( $module, $key );
+    }
+
     function getNs() {
 
-        return $this->config['ns'];
+        return \OWA\Core\CoreAPI::appNs();
     }
 
     function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
@@ -450,7 +469,7 @@ class Template extends TemplateEngine {
 
                 foreach ($all_params as $n => $v) {
 
-                    $get .= \OWA\Core\CoreAPI::getSetting('base','ns').$n.'='.$v;
+                    $get .= $this->getNs().$n.'='.$v;
 
                     $i++;
 
@@ -564,7 +583,7 @@ class Template extends TemplateEngine {
 
             foreach ($all_params as $n => $v) {
 
-                $get .= $this->config['ns'].\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
+                $get .= $this->getNs().\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
 
                 $i++;
 
@@ -1076,7 +1095,7 @@ class Template extends TemplateEngine {
 
         return sprintf(
                 '<input type="hidden" name="%snonce" value="%s">',
-                \OWA\Core\CoreAPI::getSetting('base', 'ns'),
+                $this->getNs(),
                 \OWA\Core\CoreAPI::createNonce($action));
     }
 

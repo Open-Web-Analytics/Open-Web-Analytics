@@ -172,17 +172,45 @@ class Module extends \OWA\Core\Module {
                 'default_value'                    => '(not set)'
             ),
 
+            'fsts'                            => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
+            'psts'                            => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
+            'sts'                            => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
             'days_since_first_session'         => array(
                 'required'                        => true,
-                'callbacks'                        => array( ),
+                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSinceFirstSession' ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false,
                 'alternative_key'                => 'dsfs'
             ),
 
+            'time_since_last_session'        => array(
+                'required'                        => false,
+                'callbacks'                        => array( ),
+                'data_type'                        => 'integer',
+                'default_value'                    => false
+            ),
+
             'days_since_prior_session'         => array(
                 'required'                        => true,
-                'callbacks'                        => array( ),
+                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSincePriorSession' ),
                 'data_type'                        => 'integer',
                 'default_value'                    => false,
                 'alternative_key'                => 'dsps'
@@ -1612,17 +1640,6 @@ class Module extends \OWA\Core\Module {
             'visit',
             'The page type of the exit page.',
             'last_page_id'
-        );
-
-        $this->registerDimension(
-            'timeSinceLastVisit',
-            'base.session',
-            'time_sinse_priorsession',
-            'Time Since Last Visit',
-            'visit-special',
-            'The time since the last visit.',
-            '',
-            true
         );
 
         $this->registerDimension(

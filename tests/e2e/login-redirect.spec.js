@@ -23,15 +23,15 @@ const { FIXTURE, logout } = require('./fixtures');
 
 /** Submit the login form that is currently on screen. */
 async function submitLoginForm(page) {
-    await page.fill('input[name="owa_user_id"]', FIXTURE.adminUserId);
-    await page.fill('input[name="owa_password"]', FIXTURE.adminPassword);
+    await page.fill('input[name="user_id"]', FIXTURE.adminUserId);
+    await page.fill('input[name="password"]', FIXTURE.adminPassword);
     await Promise.all([
         page.waitForLoadState('networkidle'),
-        page.click('input[name="owa_submit_btn"]'),
+        page.click('input[name="submit_btn"]'),
     ]);
 }
 
-const onLoginForm = (page) => page.locator('input[name="owa_password"]').count();
+const onLoginForm = (page) => page.locator('input[name="password"]').count();
 
 test.describe('post-login redirect destination', () => {
 

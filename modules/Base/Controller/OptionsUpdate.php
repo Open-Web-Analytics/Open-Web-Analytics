@@ -63,6 +63,33 @@ class OptionsUpdate extends \OWA\Core\AdminController {
                         continue;
                     }
 
+                    /*
+                     * A setting supplied by a config-file constant is not
+                     * editable here, so it is REFUSED rather than stored.
+                     *
+                     * The constant beats the stored value on every boot, so
+                     * persisting this would succeed and then be ignored -- a
+                     * settings page that silently does nothing, which is worse
+                     * than a config file that silently does nothing, because more
+                     * people use the settings page. The form renders such fields
+                     * disabled, so a browser will not submit them; this is the
+                     * guarantee behind that courtesy, for a crafted POST or a
+                     * stale page.
+                     *
+                     * Named in the notice, because "set in owa-config.php" leaves
+                     * the operator hunting for which line.
+                     */
+                    $governing_constant = $c->configFileConstantFor( $module, $name );
+
+                    if ( $governing_constant ) {
+
+                        \OWA\Core\CoreAPI::notice( sprintf(
+                            'Refusing to change %s.%s: it is set by %s in owa-config.php. '
+                            . 'Change it there, or remove the constant to edit it from this page.',
+                            $module, $name, $governing_constant ) );
+                        continue;
+                    }
+
                     if ( self::isSensitiveSettingKey( $module, $name ) ) {
 
                         \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );

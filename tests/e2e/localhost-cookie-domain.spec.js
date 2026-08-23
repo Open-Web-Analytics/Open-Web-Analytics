@@ -80,18 +80,29 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         // The real browser cookie jar must hold the namespaced state cookies. If a
         // browser ever rejected the `.localhost` Domain cookie (the old theory),
         // they'd be absent and this would time out.
+        //
+        // Note the two names. The VISITOR store is global -- one per browser,
+        // shared by every tracker on the page -- while the SESSION store is
+        // scoped to a site and carries its id: 'owa_s_<siteId>'. That is GA's
+        // split (_ga vs _ga_<property>), and it is what lets two trackers on one
+        // page hold two sessions. The harness queues site 'e2e-localhost-harness'.
+        const SESSION_COOKIE = 'owa_s_e2e-localhost-harness';
+
         await expect.poll(async () => {
             const cookies = await context.cookies(LOCALHOST_ORIGIN);
             return cookies.map((c) => c.name);
         }, { timeout: 10_000 }).toEqual(
-            expect.arrayContaining(['owa_v', 'owa_s'])
+            expect.arrayContaining(['owa_v', SESSION_COOKIE])
         );
 
         const cookies = await context.cookies(LOCALHOST_ORIGIN);
         const visitor = cookies.find((c) => c.name === 'owa_v');
-        const session = cookies.find((c) => c.name === 'owa_s');
+        const session = cookies.find((c) => c.name === SESSION_COOKIE);
         expect(visitor, 'visitor cookie owa_v was not persisted on localhost').toBeTruthy();
-        expect(session, 'session cookie owa_s was not persisted on localhost').toBeTruthy();
+        expect(session, `session cookie ${SESSION_COOKIE} was not persisted on localhost`).toBeTruthy();
+
+        // and the pre-split shared name is genuinely gone, not merely unasserted
+        expect(cookies.find((c) => c.name === 'owa_s')).toBeUndefined();
     });
 
     test('the visitor id is stable across page loads on localhost', async ({ context, page }) => {
@@ -111,7 +122,7 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         }
 
         const vids = beacons
-            .map((u) => (u.match(/owa_visitor_id=(\d+)/) || [])[1])
+            .map((u) => (u.match(/[?&]visitor_id=(\d+)/) || [])[1])
             .filter(Boolean);
         // Two beacons, both carrying the SAME visitor id -> the cookie written on
         // load 1 was read back on load 2. A returning visitor is recognized, not

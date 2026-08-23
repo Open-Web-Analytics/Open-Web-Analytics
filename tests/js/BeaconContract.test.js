@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
+import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { Util } from '../../modules/Base/src/common/Util.js';
 
 /**
  * Beacon contract test — the anti-drift anchor for the whole tracker test
@@ -37,46 +39,139 @@ function newTracker() {
     return t;
 }
 
+/** The state a fresh page load starts in. */
+function coldPage() {
+    OWA.initializeStateManager();
+    OWA.state.stores = {};
+    OWA.state.storeFormats = {};
+    OWA.state.hydrated = {};
+    OWA.state.persistenceReleased = {};
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
+    OWA.state.cookies = Util.readAllCookies();
+}
+
+/**
+ * A session already in progress, as a previous page load would have left it.
+ *
+ * Written to the REAL cookie jar, not to the state manager's cookie cache.
+ * setVisitorId() calls clearState('v'), which refreshes that cache from the jar
+ * -- so a cache-level seed is silently discarded partway through the very
+ * event-processing chain these tests drive, and every contract then describes a
+ * new session regardless of what was seeded.
+ *
+ * Called AFTER the tracker is constructed: the domain hash has to be computed
+ * against the cookie domain the tracker settled on, and a hash for any other
+ * domain is one readPersistedStore correctly refuses to load.
+ */
+function seedEstablishedSession() {
+    OWA.state.stores = {};
+    OWA.state.storeFormats = {};
+    OWA.state.hydrated = {};
+    OWA.state.persistenceReleased = {};
+
+    const now = Util.getCurrentUnixTimestamp();
+    const cdh = OWA.getSetting('hashCookiesToDomain')
+        ? Util.getCookieDomainHash(OWA.getSetting('cookie_domain'))
+        : undefined;
+
+    const session = {
+        sid: 'established-session',
+        last_req: now,
+        // A session created by the current tracker carries its own start and
+        // date; sessionization does not re-run for a continuing session, so
+        // these arrive by hydration rather than being derived.
+        sts: now,
+        session_date: new Date(now * 1000).getFullYear()
+            + ('0' + (new Date(now * 1000).getMonth() + 1)).slice(-2)
+            + ('0' + new Date(now * 1000).getDate()).slice(-2),
+    };
+    // A returning visitor, not just a running session. These contracts omit
+    // is_new_visitor as well as is_new_session, and a visitor who has never
+    // been seen before cannot be in the middle of a session.
+    const visitor = { vid: 'established-visitor', fsts: now - (3600 * 24 * 7), nps: 2 };
+
+    if (cdh) {
+        session.cdh = cdh;
+        visitor.cdh = cdh;
+    }
+
+    const ns = OWA.getSetting('ns');
+    const domain = OWA.getSetting('cookie_domain');
+    Util.setCookie(ns + 's_contract-site', JSON.stringify(session), 1, '/', domain);
+    Util.setCookie(ns + 'v', JSON.stringify(visitor), 364, '/', domain);
+    OWA.state.cookies = Util.readAllCookies();
+}
+
 /**
  * Run `fire` (which calls a track* method) and return the sorted list of
  * property names the tracker actually put on the wire.
  */
-function emittedKeys(fire) {
+function emittedKeys(spec) {
+    coldPage();
     const t = newTracker();
+    if (spec.session === 'established') {
+        seedEstablishedSession();
+    }
     let beacon = null;
     t.logEvent = (properties) => { beacon = properties; };
-    fire(t);
+    spec.fire(t);
     if (!beacon) {
         throw new Error('tracker did not emit a beacon');
     }
     return Object.keys(beacon).sort();
 }
 
+/**
+ * Each contract, and the session it describes.
+ *
+ *   'new'          nothing persisted; this event starts the session, so the
+ *                  payload carries is_new_session
+ *   'established'  a session already in the cookie, left by a previous page
+ *
+ * The scenario used to be implicit, and unstated scenarios are not scenarios:
+ * every emitter ran against whatever the previous test had left in the shared
+ * in-memory state store, so the three non-pageview contracts omitted
+ * is_new_session only because base.page_request happened to run first in file
+ * order. Run alone, each of them failed -- before any of this work. Naming the
+ * scenario is what makes the contract mean something.
+ */
 const EMITTERS = {
-    'base.page_request': (t) => t.trackPageView('https://example.com/p'),
-    'track.action': (t) => t.trackAction('g', 'n', 'l', 5),
-    'dom.click': (t) => {
-        t.setOption('logClicksAsTheyHappen', true);
-        const a = document.createElement('a');
-        a.id = 'x';
-        a.textContent = 'y';
-        document.body.appendChild(a);
-        t.clickEventHandler({ target: a, pageX: 1, pageY: 2 });
-        document.body.removeChild(a);
+    'base.page_request': {
+        session: 'new',
+        fire: (t) => t.trackPageView('https://example.com/p'),
     },
-    'ecommerce.transaction': (t) => {
-        t.addTransaction('o1', 'web', 1, 0, 0, 'gw');
-        t.addTransactionLineItem('o1', 'sku', 'nm', 'cat', 1, 1);
-        t.trackTransaction();
+    'track.action': {
+        session: 'established',
+        fire: (t) => t.trackAction('g', 'n', 'l', 5),
+    },
+    'dom.click': {
+        session: 'established',
+        fire: (t) => {
+            t.setOption('logClicksAsTheyHappen', true);
+            const a = document.createElement('a');
+            a.id = 'x';
+            a.textContent = 'y';
+            document.body.appendChild(a);
+            t.clickEventHandler({ target: a, pageX: 1, pageY: 2 });
+            document.body.removeChild(a);
+        },
+    },
+    'ecommerce.transaction': {
+        session: 'established',
+        fire: (t) => {
+            t.addTransaction('o1', 'web', 1, 0, 0, 'gw');
+            t.addTransactionLineItem('o1', 'sku', 'nm', 'cat', 1, 1);
+            t.trackTransaction();
+        },
     },
 };
 
 describe('tracker beacon contract', () => {
-    for (const [eventType, fire] of Object.entries(EMITTERS)) {
+    for (const [eventType, spec] of Object.entries(EMITTERS)) {
         test(`${eventType} emits exactly its contracted property set`, () => {
             const expected = CONTRACTS[eventType];
             expect(expected).toBeDefined();
-            const actual = emittedKeys(fire);
+            const actual = emittedKeys(spec);
             // Deep-equal on the sorted key arrays: catches added, dropped or
             // renamed beacon fields. If this fails, the tracker changed what it
             // sends — sync tests/fixtures/beacon_contracts.json and the handler.

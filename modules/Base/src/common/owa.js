@@ -21,7 +21,18 @@ class OWA {
 	    
 	    this.overlay = '';
 	    this.config = {
+	        // The WIRE namespace: cookie names, the owa_state cross-domain
+	        // handoff and the owa_overlay anchor -- everything OWA writes into a
+	        // TRACKED PAGE's URL or cookie jar, where the names belong to the
+	        // site owner and a collision is theirs to suffer.
 	        ns: 'owa_',
+	        // The namespace for OWA's OWN channels, which is empty. The beacon's
+	        // query string is one: it is written by the tracker and read by
+	        // log.php, and nothing else contributes a param to it, so there is
+	        // nothing to collide with and the prefix was ~4 bytes per property
+	        // on every hit. The server accepts both spellings, so trackers
+	        // cached on customer sites keep working while they age out.
+	        app_ns: '',
 	        baseUrl: '',
 	        hashCookiesToDomain: true,
 	        debug: false
@@ -30,6 +41,12 @@ class OWA {
 	    this.state = {};
 	    this.overlayActive = false;
 	    this.overlayParams = null;
+
+	    // Registered here, not when the state manager is built: anything that
+	    // replaces this.state directly would otherwise leave the listeners
+	    // unregistered, and the session store would then never be settled --
+	    // silently, since a store that is never hydrated just reads empty.
+	    this.registerStateActions();
     }
     
     // depricated
@@ -69,10 +86,10 @@ class OWA {
         }
     }
     
-    registerStateStore( name, expiration, length, format ) {
+    registerStateStore( name, expiration, length, format, behaviour ) {
 	    
         this.initializeStateManager();
-        return this.state.registerStore(name, expiration, length, format);
+        return this.state.registerStore(name, expiration, length, format, behaviour);
     }
     
     checkForState( store_name ) {
@@ -123,24 +140,100 @@ class OWA {
         return this.state.setStoreFormat(store_name, format);
     }
 
-    beginDeferredStatePersistence() {
+    /**
+     * Declare a storage migration, to run once the cookie domain is known and
+     * before anything downstream reads state.
+     *
+     * Register from a module rather than adding a fallback to a read path: a
+     * fallback is a branch that never gets removed, because nobody can show the
+     * last visitor holding the old shape has gone. A migration finishes.
+     */
+    registerStateMigration( name, callback ) {
 
         this.initializeStateManager();
-        return this.state.beginDeferredPersistence();
+        return this.state.registerMigration( name, callback );
     }
 
-    commitDeferredStatePersistence() {
+    /**
+     * Read a value out of a store's cookie without merging anything into
+     * memory. For the values the session decision itself depends on.
+     */
+    getPersistedState( store_name, key ) {
 
         this.initializeStateManager();
-        return this.state.commitDeferredPersistence();
+        return this.state.getPersisted( store_name, key );
     }
 
-    abandonDeferredStatePersistence() {
+    /**
+     * Register the state manager's own listeners.
+     *
+     * Only one is fixed. The rest are subscribed on demand, because which
+     * action a store waits on is declared by the store -- see
+     * ensureStateActionSubscription().
+     */
+    registerStateActions() {
 
-        this.initializeStateManager();
-        return this.state.abandonDeferredPersistence();
+        var that = this;
+
+        /*
+         * Migrations that move values between cookies need the cookie domain,
+         * because the domain hash is part of what makes a cookie readable. The
+         * domain is not known when the tracker is constructed -- it may be
+         * derived from the document, or declared by the caller -- so the
+         * migration waits to be told rather than guessing, and a hash computed
+         * against the wrong domain would make the migrated value unreadable
+         * while the store it came from had already been erased.
+         */
+        this.addAction( 'cookieDomainEstablished', function() {
+
+            that.initializeStateManager();
+            that.state.runMigrations();
+
+        }, 10 );
     }
-    
+
+    /**
+     * Ensure something is listening for an action a state store waits on.
+     *
+     * Called from registerStore(), so the set of actions is whatever the
+     * registered stores between them asked for. Two stores naming the same
+     * action share one listener; two stores naming different actions are
+     * settled independently.
+     *
+     * The listener lives here rather than on the state manager for two reasons.
+     * Stores are re-registered every time a tracker is constructed, so it must
+     * be idempotent -- hence the de-duplication by name. And replacing
+     * OWA.state with a fresh manager must not leave a listener bound to the old
+     * one, so the manager is resolved when the action FIRES, not when the
+     * listener is added.
+     */
+    ensureStateActionSubscription( kind, action ) {
+
+        this.subscribedStateActions = this.subscribedStateActions || {};
+
+        var key = kind + ':' + action;
+
+        if ( this.subscribedStateActions.hasOwnProperty( key ) ) {
+            return;
+        }
+
+        this.subscribedStateActions[ key ] = true;
+
+        var that = this;
+
+        this.addAction( action, function( options ) {
+
+            that.initializeStateManager();
+
+            if ( kind === 'hydrate' ) {
+                that.state.resolveDeferredHydration( action, options );
+            } else {
+                that.state.releaseDeferredPersistence( action );
+            }
+
+        }, 10 );
+    }
+
     debug() {
         
         var debugging = this.getSetting('debug') || false; // or true
@@ -339,15 +432,21 @@ class OWA {
 	            filters[ hook.priority ].push( hook.callback );
 	        } );
 	
-	        filters.forEach( function( hooks ) {
-	
-	            hooks.forEach( function( callback ) {
+	        // Arrow functions: these callbacks reference `this` to debug, and a
+	        // plain function passed to forEach is called with `this` undefined
+	        // under the strict mode an ES module always runs in. Registering a
+	        // single filter therefore threw a TypeError before this ran. It went
+	        // unnoticed because nothing in the tree calls addFilter -- applyFilters
+	        // is only ever reached with an empty list, which skips this block.
+	        filters.forEach( ( hooks ) => {
+
+	            hooks.forEach( ( callback ) => {
 	                value = callback( value, options );
-	                
+
 	                this.debug('Filter returned value: ');
 	                this.debug(value);
 	            } );
-	
+
 	        } );
 	    }
 	
@@ -375,12 +474,13 @@ class OWA {
 	
 	        } );
 	
-	        actions.forEach( function( hooks ) {
-				this.debug('Executing Action callabck for: ' + tag);
-	            hooks.forEach( function( callback ) {
+	        // See applyFilters() for why these must be arrow functions.
+	        actions.forEach( ( hooks ) => {
+				this.debug('Executing Action callback for: ' + tag);
+	            hooks.forEach( ( callback ) => {
 	                callback( options );
 	            } );
-	
+
 	        } );
 	    }
 	}

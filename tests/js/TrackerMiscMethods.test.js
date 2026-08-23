@@ -4,7 +4,7 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
 
 /**
  * Assorted tracker helpers: URL/anchor param readers, page-property
- * convenience setters, lifecycle (pause/restart), the thirdParty campaign
+ * convenience setters, lifecycle (pause/restart), the campaign
  * promotion, and the manageState one-shot guard.
  *
  * The headline case here is getUrlParam(), which had a real shipping bug: the
@@ -20,9 +20,6 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *
  * setPageTitle / setPageType / setUserName just trim and stash a global event
  * property. pause/restart flip `active`; isPausedBySibling reflects the shared
- * loggerPause setting. setCampaignRelatedProperties (thirdParty mode) promotes
- * campaign params from the URL to their full-name globals for upstream.
- * manageState runs the identity pipeline exactly once (stateInit guard).
  */
 
 function setDocumentDomain(domain) {
@@ -51,11 +48,11 @@ beforeEach(() => {
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
     OWA.setSetting('loggerPause', false);
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
 });
 
 afterEach(() => {
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
     setUrl('/');
 });
 
@@ -115,22 +112,67 @@ describe('getUrlAnchorValue / getAnchorParam', () => {
 
 describe('page-property convenience setters', () => {
 
-    test('setPageTitle trims and stores the page_title global', () => {
+    /*
+     * These used to write a global event property, private to the tracker that
+     * was called. A page title is a fact about the PAGE and an identified user
+     * is a fact about the VISITOR -- neither is a fact about one tracker -- so a
+     * site that called the setter once had only one of the trackers on the page
+     * reporting it.
+     */
+
+    test('setPageTitle trims and stores it page-scoped', () => {
         const t = newTracker();
         t.setPageTitle('  Home  ');
-        expect(t.getGlobalEventProperty('page_title')).toBe('Home');
+
+        expect(OWA.getState('d', 'page_title')).toBe('Home');
+        expect(t.getGlobalEventProperty('page_title')).toBeFalsy();
     });
 
-    test('setPageType trims and stores the page_type global', () => {
+    test('setPageType trims and stores it page-scoped', () => {
         const t = newTracker();
         t.setPageType('  article ');
-        expect(t.getGlobalEventProperty('page_type')).toBe('article');
+
+        expect(OWA.getState('d', 'page_type')).toBe('article');
     });
 
-    test('setUserName trims and stores the user_name global', () => {
+    test('setUserName trims and stores it visitor-scoped', () => {
+        // An identified user outlives the page and the session. Note this now
+        // reaches the visitor COOKIE, which a global event property never did.
         const t = newTracker();
         t.setUserName(' bob ');
-        expect(t.getGlobalEventProperty('user_name')).toBe('bob');
+
+        expect(OWA.getState('v', 'user_name')).toBe('bob');
+    });
+
+    test('a second tracker on the page reports what the first one was told', () => {
+        // The reason for the move, stated as a test.
+        const first = newTracker();
+        first.setPageTitle('Pricing');
+        first.setPageType('landing');
+        first.setUserName('bob');
+
+        const second = newTracker();
+        const event = new OwaEvent();
+        second.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('page_title')).toBe('Pricing');
+        expect(event.get('page_type')).toBe('landing');
+        expect(event.get('user_name')).toBe('bob');
+    });
+
+    test('the page store overrides the DOM, which is the base layer', () => {
+        document.title = 'From The DOM';
+        const t = newTracker();
+
+        const before = new OwaEvent();
+        t.addGlobalPropertiesToEvent(before);
+        expect(before.get('page_title')).toBe('From The DOM');
+
+        t.setPageTitle('From The Site');
+
+        const after = new OwaEvent();
+        t.addGlobalPropertiesToEvent(after);
+        expect(after.get('page_title')).toBe('From The Site');
     });
 });
 
@@ -156,18 +198,76 @@ describe('lifecycle: pause / restart / isPausedBySibling', () => {
     });
 });
 
-describe('setCampaignRelatedProperties (thirdParty promotion)', () => {
+describe('state-derived properties are collected onto each event', () => {
 
-    test('promotes campaign params from the URL to their full-name globals', () => {
-        setUrl('/p?owa_source=news&owa_medium=email');
+    /*
+     * These were derived once in manageState() and cached as global event
+     * properties on the tracker. The cache was never wrong -- every branch that
+     * set it wrote the same value to the store -- but it was a private second
+     * copy of something the stores already own and every tracker on the page
+     * shares.
+     */
+
+    test('visitor identity and counters come off the stores', () => {
+        const t = newTracker();
+        OWA.setState('v', 'vid', 'vid-123');
+
+        OWA.setState('v', 'nps', '4');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('visitor_id')).toBe('vid-123');
+
+        expect(event.get('nps')).toBe('4');
+    });
+
+    test('the first-visit ANCHOR is sent as stored, not as a derivative', () => {
+        // What the tracker stores is what it sends. The server converts to a
+        // date and does the day arithmetic there, so no granularity is lost on
+        // the way and the day boundaries are the server's -- the same ones every
+        // other date part on the row uses.
+        const t = newTracker();
+        OWA.setState('v', 'fsts', 1600000000);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('fsts')).toBe(1600000000);
+        // and no client-computed offset rides along with it
+        expect(event.isSet('dsfs')).toBeFalsy();
+    });
+
+    test('a zero value is collected rather than dropped', () => {
+        // 0 is legitimate and falsy, so a truthiness guard would silently drop
+        // it -- dsfs is 0 on a visitor's first day -- and these are in the
+        // beacon contract, so absence is not an option.
         const t = newTracker();
 
-        t.setCampaignRelatedProperties(new OwaEvent());
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
 
-        // Upstream reads the full-name globals; the private-key map resolves
-        // owa_source -> source, owa_medium -> medium.
-        expect(t.getGlobalEventProperty('source')).toBe('news');
-        expect(t.getGlobalEventProperty('medium')).toBe('email');
+    });
+
+    test('nps of "0" survives, being a first session rather than an absent one', () => {
+        const t = newTracker();
+        OWA.setState('v', 'nps', '0');
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('nps')).toBe('0');
+    });
+
+    test('a second tracker reports the same identity as the first', () => {
+        const first = newTracker();
+        OWA.setState('v', 'vid', 'shared-vid');
+
+        const second = newTracker();
+        const event = new OwaEvent();
+        second.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('visitor_id')).toBe('shared-vid');
     });
 });
 
@@ -181,7 +281,7 @@ describe('manageState one-shot guard', () => {
         t.manageState(event, null);
 
         expect(t.stateInit).toBe(true);
-        expect(t.getGlobalEventProperty('visitor_id')).toBeTruthy();
+        expect(OWA.getState('v', 'vid')).toBeTruthy();
     });
 
     test('does not re-run once stateInit is true', () => {
@@ -191,11 +291,11 @@ describe('manageState one-shot guard', () => {
 
         // Simulate a prior run and plant a sentinel the pipeline would overwrite.
         t.stateInit = true;
-        t.globalEventProperties.visitor_id = 'SENTINEL';
+        OWA.setState('v', 'vid', 'SENTINEL');
 
         t.manageState(event, null);
 
         // Guard held: the pipeline was skipped, sentinel untouched.
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('SENTINEL');
+        expect(OWA.getState('v', 'vid')).toBe('SENTINEL');
     });
 });

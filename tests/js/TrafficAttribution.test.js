@@ -130,8 +130,8 @@ describe('directAttributionModel (last-touch)', () => {
         expect(t.campaignState.length).toBe(1);
         expect(t.isTrafficAttributed).toBe(true);
         // Session store carries the resolved values under their FULL names.
-        expect(OWA.getState('s', 'source')).toBe('news');
-        expect(OWA.getState('s', 'medium')).toBe('email');
+        expect(OWA.getState('s_attribution-site', 'source')).toBe('news');
+        expect(OWA.getState('s_attribution-site', 'medium')).toBe('email');
         // The campaign cookie ('c') holds the touch list.
         expect(OWA.getState('c', 'attribs')).toBeTruthy();
     });
@@ -197,11 +197,13 @@ describe('setTrafficAttribution: end to end', () => {
 
         t.setTrafficAttribution(null, null);
 
-        expect(t.getGlobalEventProperty('source')).toBe('news');
-        expect(t.getGlobalEventProperty('medium')).toBe('email');
-        expect(t.getGlobalEventProperty('campaign')).toBe('summer');
+        // Resolved into the SESSION store, which is where the attribution
+        // model writes them and where every event now reads them from.
+        expect(OWA.getState('s_attribution-site', 'source')).toBe('news');
+        expect(OWA.getState('s_attribution-site', 'medium')).toBe('email');
+        expect(OWA.getState('s_attribution-site', 'campaign')).toBe('summer');
         // The serialized touch list rides along as `attribs`.
-        expect(t.getGlobalEventProperty('attribs')).toContain('news');
+        expect(JSON.stringify(OWA.getState('c', 'attribs'))).toContain('news');
     });
 
     test('infers attribution from the referrer when no campaign params and a new session', () => {
@@ -217,7 +219,7 @@ describe('setTrafficAttribution: end to end', () => {
 
         // No campaign -> not attributed -> referrer inference sets session_referer.
         expect(t.isTrafficAttributed).toBe(false);
-        expect(t.getGlobalEventProperty('session_referer')).toBe('https://ref.example/landing');
+        expect(OWA.getState('s_attribution-site', 'referer')).toBe('https://ref.example/landing');
     });
 
     test('runs the callback with the event when provided', () => {

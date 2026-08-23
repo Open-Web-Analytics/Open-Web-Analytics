@@ -21,9 +21,10 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     is_new_visitor. The resolved id is persisted and promoted to visitor_id.
  *
  *   - setSessionId(): on a new session it records prior_session_id (from the old
- *     s.sid), resets the session store, mints a new session guid, and raises
- *     is_new_session + isNewSessionFlag. On an active session it just reuses the
- *     stored s.sid. A fail-safe mints one if somehow still empty.
+ *     PERSISTED s.sid), announces the decision as 'isSessionizationDone', mints
+ *     a new session guid and raises is_new_session + isNewSessionFlag. On an
+ *     active session it reuses the stored s.sid, which the announcement has by
+ *     then hydrated into memory. A fail-safe mints one if somehow still empty.
  *
  *   - setNumberPriorSessions(): only touches nps on a new session. Existing nps
  *     is incremented and persisted; a first-ever session leaves nps unset in the
@@ -32,15 +33,22 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *   - setFirstSessionTimestamp(): stamps v.fsts once (first visit) and always
  *     recomputes dsfs (days since first session) against the event timestamp.
  *
- *   - setDaysSinceLastSession(): on a new session computes dsps in whole days
- *     from last_req; otherwise carries the stored s.dsps forward.
+ *   - days since the prior session is NOT computed here any more. The tracker
+ *     sends time_since_last_session and the server derives
+ *     days_since_prior_session from it, in straight 24-hour periods -- it must
+ *     be identical on every event sharing a session_id, which calendar days
+ *     cannot be. See tests/js/SessionScopedInvariant.test.js.
  *
  *   - setLastRequestTime(): promotes the PRIOR last_req to a global property
  *     (so downstream new-session math sees the old value) and then stores the
  *     current event timestamp as the new last_req.
  *
- *   - resetSessionState(): clears the whole 's' store but deliberately preserves
- *     last_req so session-expiry math still works right after a reset.
+ *   - the 'isSessionizationDone' announcement, which settles the session store:
+ *     a new session discards the PERSISTED store and keeps memory (holding only
+ *     what this page load set); a continuing one merges the persisted values in
+ *     behind memory, filling gaps only. This replaced resetSessionState(), which
+ *     cleared the store and then put back what the page load had set, because by
+ *     then the two were mixed and nothing distinguished them.
  *
  * jsdom's cookie jar backs the state stores here, so these assert real
  * round-trips through OWA.getState/setState, not mocks.
@@ -71,17 +79,49 @@ function eventAt(timestamp) {
 const NOW = 1700000000;
 const DAY = 3600 * 24;
 
+/** The state a fresh page load starts in: nothing in memory, nothing settled. */
+function coldPage() {
+    OWA.initializeStateManager();
+    OWA.state.stores = {};
+    OWA.state.storeFormats = {};
+    OWA.state.hydrated = {};
+    OWA.state.persistenceReleased = {};
+}
+
+/**
+ * Write session values to the COOKIE the way a previous page load would have,
+ * then wipe memory.
+ *
+ * Tests that need a PREVIOUS session's values must persist them rather than
+ * set them: the session store is no longer hydrated on first touch, so a plain
+ * setState() puts a value in memory, where it reads as something THIS page load
+ * set. That distinction is the whole point of the design, and a test that seeds
+ * with setState() is testing the wrong side of it.
+ */
+function seedPersistedSession(values) {
+    coldPage();
+    // Written into the cookie CACHE the state manager reads through, not
+    // through document.cookie: jsdom refuses cookies whose domain does not
+    // match the test document URL, and this suite runs on '.cv.example'. A
+    // real round-trip would seed nothing and every assertion below would pass
+    // or fail for the wrong reason.
+    OWA.state.cookies = OWA.state.cookies || {};
+    OWA.state.cookies['owa_s_session-site'] = [ JSON.stringify(values) ];
+}
+
 beforeEach(() => {
     setDocumentDomain('cv.example');
     OWA.setSetting('ns', 'owa_');
     OWA.setSetting('cookie_domain', '.cv.example');
     OWA.setSetting('hashCookiesToDomain', false);
     OWA.setSetting('loggerPause', false);
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
+    coldPage();
 });
 
 afterEach(() => {
-    ['v', 's', 'c', 'b'].forEach((store) => OWA.clearState(store));
+    coldPage();
+    ['v', 's', 'c', 'b', 'd'].forEach((store) => OWA.clearState(store));
 });
 
 describe('isNewSession (sessionLength expiry boundary)', () => {
@@ -114,9 +154,9 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        const vid = t.getGlobalEventProperty('visitor_id');
+        const vid = OWA.getState('v', 'vid');
         expect(vid).toBeTruthy();
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBe(true);
+        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBe(true);
         // The freshly minted id is persisted for the next visit.
         expect(OWA.getState('v', 'vid')).toBe(vid);
     });
@@ -127,8 +167,8 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('existing-vid-123');
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
+        expect(OWA.getState('v', 'vid')).toBe('existing-vid-123');
+        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBeFalsy();
     });
 
     test('migrates a legacy bare-string v store into v.vid without counting a new visitor', () => {
@@ -139,9 +179,9 @@ describe('setVisitorId', () => {
 
         t.setVisitorId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('visitor_id')).toBe('legacy-bare-guid');
+        expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
         // A migrated id is a returning visitor, not a new one.
-        expect(t.getGlobalEventProperty('is_new_visitor')).toBeUndefined();
+        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBeFalsy();
         // ...and it is rehomed under the modern v.vid key.
         expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
     });
@@ -164,37 +204,328 @@ describe('setSessionId', () => {
         // No last_req global -> isNewSession is true.
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('session_id')).toBeTruthy();
-        expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
+        expect(OWA.getState('s_session-site', 'sid')).toBeTruthy();
+        expect(OWA.getState('d', 'is_new_session')).toBe(true);
         expect(t.isNewSessionFlag).toBe(true);
-        // Persisted for the rest of the session.
-        expect(OWA.getState('s', 'sid')).toBe(t.getGlobalEventProperty('session_id'));
+
+        // The id lives in the store and is what rides events. It used to be
+        // cached on the tracker as well, and this assertion used to compare the
+        // two copies; with one copy left, comparing it to the event is what
+        // still says something.
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+        expect(event.get('session_id')).toBe(OWA.getState('s_session-site', 'sid'));
     });
 
     test('records the prior session id when a new session succeeds an old one', () => {
         const t = newTracker();
-        OWA.setState('s', 'sid', 'old-session-id', true);
+        // Persisted, not set: the id of the session that just ended was written
+        // by a previous page load.
+        seedPersistedSession({ sid: 'old-session-id' });
         // last_req far in the past -> new session.
-        t.setGlobalEventProperty('last_req', NOW - 5000);
+        OWA.setState('s_session-site', 'last_req', NOW - 5000);
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('prior_session_id')).toBe('old-session-id');
+        expect(OWA.getState('s_session-site', 'prior_session_id')).toBe('old-session-id');
         // A brand new session id replaced the old one.
-        expect(t.getGlobalEventProperty('session_id')).not.toBe('old-session-id');
-        expect(t.getGlobalEventProperty('is_new_session')).toBe(true);
+        expect(OWA.getState('s_session-site', 'sid')).not.toBe('old-session-id');
+        expect(OWA.getState('d', 'is_new_session')).toBe(true);
+    });
+
+    test('the prior session id rides the event that started the new session', () => {
+        // It is read out of the cookie moments before the boundary throws that
+        // cookie away, so nothing can recover it afterwards -- which is why it
+        // could not simply be collected from the persisted store like the rest.
+        const t = newTracker();
+        seedPersistedSession({ sid: 'old-sid', last_req: NOW - 5000 });
+        OWA.setState('s_session-site', 'last_req', NOW - 5000);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('prior_session_id')).toBe('old-sid');
+    });
+
+    test('and keeps being reported for the rest of that session', () => {
+        // The behaviour change from moving it into 's': it used to exist only
+        // on the page load that crossed the boundary, because a global event
+        // property dies with the page. A session's predecessor is a fact about
+        // the session, so it now survives into the session's later pages.
+        const t = newTracker();
+        seedPersistedSession({
+            sid: 'current-session',
+            last_req: NOW,
+            prior_session_id: 'the-one-before',
+        });
+        OWA.setState('s_session-site', 'last_req', NOW);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('session_id')).toBe('current-session');
+        expect(event.get('prior_session_id')).toBe('the-one-before');
     });
 
     test('reuses the stored session id (no new-session flag) during an active session', () => {
         const t = newTracker();
-        OWA.setState('s', 'sid', 'active-session-1', true);
+        seedPersistedSession({ sid: 'active-session-1' });
         // last_req is "now" -> gap 0 -> active session.
-        t.setGlobalEventProperty('last_req', NOW);
+        OWA.setState('s_session-site', 'last_req', NOW);
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('session_id')).toBe('active-session-1');
-        expect(t.getGlobalEventProperty('is_new_session')).toBeUndefined();
+        expect(OWA.getState('s_session-site', 'sid')).toBe('active-session-1');
+        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
+    });
+});
+
+describe('is_new_visitor has session lifetime', () => {
+
+    /*
+     * It says this session was the visitor's FIRST, not that this request
+     * minted them. As a per-page global it vanished on the next page, so the
+     * server derived is_repeat_visitor = true on page two of a visitor's very
+     * first session -- while the session row it had just written still said
+     * is_new_visitor. The store's lifetime is what makes the two agree.
+     */
+
+    test('it survives into a later page of the same session', () => {
+        seedPersistedSession({
+            sid: 'first-session',
+            last_req: NOW,
+            is_new_visitor: true,
+        });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+        OWA.setState('s_session-site', 'last_req', NOW);
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session')).toBeFalsy();
+        expect(event.get('is_new_visitor')).toBe(true);
+    });
+
+    test('but not into the visitor\'s NEXT session', () => {
+        // The boundary discards the persisted store, so a known visitor
+        // starting a second session is not flagged as new.
+        seedPersistedSession({
+            sid: 'old-session',
+            last_req: NOW - 5000,
+            is_new_visitor: true,
+        });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+        OWA.setState('s_session-site', 'last_req', NOW - 5000);
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session')).toBe(true);
+        expect(event.get('is_new_visitor')).toBeFalsy();
+    });
+});
+
+describe('the two session-start flags have different lifetimes', () => {
+
+    /*
+     * is_new_session_start  this REQUEST created the session. Exactly one
+     *                       beacon carries it -- what a server deciding
+     *                       create-vs-update needs.
+     * is_new_session        this event happened on the page the session started
+     *                       on. Every beacon from that page carries it -- what
+     *                       the is_entry_page dimension needs.
+     *
+     * One flag was doing both jobs while being read as the first, which is why a
+     * second trackPageView() on the same page re-entered logSession() for a
+     * session that already existed.
+     */
+
+    test('only the first event carries is_new_session_start', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_session_start).toBe(true);
+        expect(beacons[1].is_new_session_start).toBeFalsy();
+    });
+
+    test('...while every event from that page carries is_new_session', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_session).toBe(true);
+        expect(beacons[1].is_new_session).toBe(true);
+    });
+
+    test('a second pageview on the same page does not re-declare the start', () => {
+        // The SPA case, and the reason the two are separate. Both pageviews are
+        // on the page the session started on, so both are entry-page events --
+        // but only the first created the session.
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView('https://example.com/one');
+        t.trackPageView('https://example.com/two');
+
+        expect(beacons[0].is_new_session_start).toBe(true);
+        expect(beacons[1].is_new_session_start).toBeFalsy();
+    });
+
+    test('an active session declares neither', () => {
+        // Driven through setSessionId rather than trackPageView: the full
+        // pipeline runs setVisitorId, whose clearState('v') refreshes the cookie
+        // cache and discards a cache-level seed. See seedPersistedSession().
+        const t = newTracker();
+        seedPersistedSession({ sid: 'live', last_req: NOW - 60 });
+
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session_start')).toBeFalsy();
+        expect(event.get('is_new_session')).toBeFalsy();
+    });
+});
+
+describe('the visitor-created flag belongs to one event', () => {
+
+    /*
+     * is_new_visitor_created  this REQUEST minted the visitor. One beacon.
+     * is_new_visitor          this SESSION was the visitor's first. Every
+     *                         beacon of it.
+     *
+     * The same split as the session pair, for the same reason: the session
+     * column and the is_repeat_visitor dimension both want the session-scoped
+     * one, so neither can answer "was this the moment". Nothing consumes the
+     * created flag yet -- it is here so v2 can raise first_visit from the
+     * request that actually created the visitor.
+     */
+
+    test('only the first event carries it', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        t.trackEvent(later);
+
+        expect(beacons[0].is_new_visitor_created).toBe(true);
+        expect(beacons[1].is_new_visitor_created).toBeFalsy();
+        // ...while the session-scoped one rides both.
+        expect(beacons[0].is_new_visitor).toBe(true);
+        expect(beacons[1].is_new_visitor).toBe(true);
+    });
+
+    test('a known visitor starting a new session does not get it', () => {
+        // The case that separates the two flags from the session pair: a new
+        // session is starting, so is_new_session_start is right, but the
+        // visitor already existed.
+        // seedPersistedSession() wipes memory, so the known visitor has to be
+        // established after it, not before.
+        seedPersistedSession({ sid: 'old', last_req: NOW - 5000 });
+        OWA.setState('v', 'vid', 'known-visitor');
+        const t = newTracker();
+
+        t.setVisitorId(eventAt(NOW), null);
+        t.setSessionId(eventAt(NOW), null);
+
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('is_new_session_start')).toBe(true);
+        expect(event.get('is_new_visitor_created')).toBeFalsy();
+        expect(event.get('is_new_visitor')).toBeFalsy();
+    });
+});
+
+describe('last_req tracks activity, not page starts', () => {
+
+    /*
+     * The advance runs for every event rather than once per page load. It used
+     * to sit inside the stateInit-guarded pipeline, so last_req was the
+     * timestamp of the page's FIRST tracked event and never moved -- and the
+     * timeout was therefore measured from when the previous page started, not
+     * from the last thing the visitor did. isNewSession() already reads as
+     * though this were the case: its variable is time_since_lastreq and its
+     * comment says "no requests since some time".
+     */
+
+    test('a later event on the same page moves it', () => {
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+
+        t.trackPageView(location.href);
+        const afterPageview = OWA.getState('s_session-site', 'last_req');
+
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        later.set('timestamp', afterPageview + 600);
+        t.trackEvent(later);
+
+        expect(OWA.getState('s_session-site', 'last_req')).toBe(afterPageview + 600);
+    });
+
+    test('so a visitor active on one page does not time out from its start', () => {
+        // 25 minutes of activity on a page, then a navigation 10 minutes later.
+        // Measured from page start that is 35 minutes and a new session;
+        // measured from last activity it is 10 and the session continues.
+        const t = newTracker();
+        t.logEvent = () => {};
+        seedPersistedSession({ sid: 'live', last_req: NOW - (35 * 60) });
+
+        const active = t.makeEvent();
+        active.setEventType('track.action');
+        active.set('timestamp', NOW - (10 * 60));
+        t.trackEvent(active);
+
+        expect(OWA.getState('s_session-site', 'last_req')).toBe(NOW - (10 * 60));
+    });
+
+    test('the reported prior value is not moved by later events', () => {
+        // What events REPORT stays the request before this page load; only the
+        // store's own last_req tracks activity.
+        const t = newTracker();
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
+        seedPersistedSession({ sid: 'live', last_req: NOW - 60 });
+
+        t.trackPageView(location.href);
+        const reported = beacons[0].last_req;
+
+        const later = t.makeEvent();
+        later.setEventType('track.action');
+        later.set('timestamp', NOW + 600);
+        t.trackEvent(later);
+
+        expect(beacons[1].last_req).toBe(reported);
     });
 });
 
@@ -207,7 +538,7 @@ describe('setNumberPriorSessions', () => {
 
         t.setNumberPriorSessions(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('nps')).toBe(3);
+        expect(OWA.getState('v', 'nps')).toBe(3);
         expect(OWA.getState('v', 'nps')).toBe(3);
     });
 
@@ -219,86 +550,171 @@ describe('setNumberPriorSessions', () => {
         t.setNumberPriorSessions(eventAt(NOW), null);
 
         // Not a new session: the stored value rides along unchanged.
-        expect(t.getGlobalEventProperty('nps')).toBe('4');
+        expect(OWA.getState('v', 'nps')).toBe('4');
         expect(OWA.getState('v', 'nps')).toBe('4');
     });
 });
 
 describe('setFirstSessionTimestamp', () => {
 
-    test('stamps fsts on the first visit and reports zero days since', () => {
+    test('stamps fsts on the first visit', () => {
         const t = newTracker();
 
         t.setFirstSessionTimestamp(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('fsts')).toBe(NOW);
-        expect(t.getGlobalEventProperty('dsfs')).toBe(0);
+        expect(OWA.getState('v', 'fsts')).toBe(NOW);
         expect(OWA.getState('v', 'fsts')).toBe(NOW);
     });
 
-    test('preserves an existing fsts and computes days since first session', () => {
+    test('preserves an existing fsts', () => {
         const t = newTracker();
         OWA.setState('v', 'fsts', NOW - 3 * DAY, true);
 
         t.setFirstSessionTimestamp(eventAt(NOW), null);
 
         // fsts is sticky; only dsfs advances.
-        expect(t.getGlobalEventProperty('fsts')).toBe(NOW - 3 * DAY);
-        expect(t.getGlobalEventProperty('dsfs')).toBe(3);
+        expect(OWA.getState('v', 'fsts')).toBe(NOW - 3 * DAY);
     });
 });
 
-describe('setDaysSinceLastSession', () => {
+describe('days since the prior session is no longer computed here', () => {
 
-    test('computes dsps in whole days from last_req on a new session', () => {
+    /*
+     * setDaysSinceLastSession() is gone. dsps is not sent at all: the server
+     * derives days_since_prior_session from time_since_last_session, counting
+     * straight 24-hour periods. One interval on the wire now feeds both
+     * daysSinceLastVisit and timeSinceLastVisit, instead of the same interval
+     * being measured twice on the client.
+     */
+
+    test('the tracker no longer sends dsps', () => {
         const t = newTracker();
-        t.setGlobalEventProperty('is_new_session', true);
-        t.setGlobalEventProperty('last_req', NOW - 5 * DAY);
+        const beacons = [];
+        t.logEvent = (p) => beacons.push({ ...p });
 
-        t.setDaysSinceLastSession(eventAt(NOW), null);
+        t.trackPageView(location.href);
 
-        expect(t.getGlobalEventProperty('dsps')).toBe(5);
+        expect(beacons[0]).not.toHaveProperty('dsps');
+        expect(beacons[0]).not.toHaveProperty('days_since_prior_session');
     });
 
-    test('carries the stored dsps forward during an active session', () => {
+    test('but it does send the anchors the server derives them from', () => {
+        // The RAW timestamps, exactly as the tracker stores them. Sending a
+        // derived date instead would throw away granularity the tracker already
+        // has, and put a transform between the state and the wire.
+        const priorStart = NOW - (3 * 86400);
+        seedPersistedSession({ sid: 'old', last_req: NOW - (3 * 86400), sts: priorStart });
         const t = newTracker();
-        OWA.setState('s', 'dsps', 7);
-        // is_new_session not set -> falls back to the stored value.
-        t.setDaysSinceLastSession(eventAt(NOW), null);
 
-        expect(t.getGlobalEventProperty('dsps')).toBe(7);
+        t.setSessionId(eventAt(NOW), null);
+        const event = new OwaEvent();
+        t.addGlobalPropertiesToEvent(event);
+
+        expect(event.get('psts')).toBe(priorStart);
+        expect(event.get('sts')).toBe(NOW);
+        // what is stored is what is sent
+        expect(event.get('psts')).toBe(OWA.getState('s_session-site', 'psts'));
+        expect(event.get('sts')).toBe(OWA.getState('s_session-site', 'sts'));
     });
 });
 
 describe('setLastRequestTime', () => {
 
-    test('promotes the prior last_req then stores the current timestamp', () => {
+    test('captures the prior last_req under its own key', () => {
         const t = newTracker();
-        OWA.setState('s', 'last_req', NOW - 1000, true);
+        seedPersistedSession({ last_req: NOW - 1000 });
 
         t.setLastRequestTime(eventAt(NOW), null);
 
-        // The OLD value rides this event (so new-session math sees the gap)...
-        expect(t.getGlobalEventProperty('last_req')).toBe(NOW - 1000);
-        // ...while the store is advanced to now for the next request.
-        expect(OWA.getState('s', 'last_req')).toBe(NOW);
+        // Kept separately because it is what events report, while s.last_req
+        // moves on. The advance is not this method's job any more -- it happens
+        // for every event, in manageState().
+        expect(OWA.getState('s_session-site', 'prior_last_req')).toBe(NOW - 1000);
+    });
+
+    test('a second tracker on the page does not overwrite the captured value', () => {
+        // By the time a second tracker runs, the first has advanced s.last_req
+        // to now. Without the guard it would capture THAT as the prior request,
+        // and the first tracker's later events would then report it.
+        const first = newTracker();
+        seedPersistedSession({ last_req: NOW - 1000 });
+
+        first.setLastRequestTime(eventAt(NOW), null);
+        const second = newTracker();
+        second.setLastRequestTime(eventAt(NOW), null);
+
+        expect(OWA.getState('s_session-site', 'prior_last_req')).toBe(NOW - 1000);
+    });
+
+    test('sessionization is decided before the advance, so it sees the prior value', () => {
+        // The reason the two steps are in this order. Reversed, the store says
+        // "now" by the time the decision is made, and the prior value has to be
+        // stashed on the tracker for the decision to still see it -- which is
+        // what a global event property was doing, and why a second tracker on
+        // the page saw a different one.
+        const t = newTracker();
+        seedPersistedSession({ sid: 'live-session', last_req: NOW - 60 });
+
+        t.setSessionId(eventAt(NOW), null);
+
+        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
+        expect(OWA.getState('s_session-site', 'sid')).toBe('live-session');
     });
 });
 
-describe('resetSessionState', () => {
+describe('settling the session store on the sessionization decision', () => {
 
-    test('clears the session store but preserves last_req', () => {
+    /*
+     * This replaced resetSessionState(). That method cleared the store and then
+     * put back the values set during the page load, because by the time it ran
+     * both were already mixed in one store with nothing to tell them apart.
+     * Keeping them apart until the decision removes the problem instead of
+     * compensating for it -- old values are in the cookie, new ones in memory.
+     */
+
+    test('a new session discards the persisted store and keeps this page load', () => {
+        seedPersistedSession({ sid: 'old-sid', source: 'news', cv1: 'plan=free' });
         const t = newTracker();
-        OWA.setState('s', 'last_req', NOW - 1, true);
-        OWA.setState('s', 'sid', 'old-sid', true);
-        OWA.setState('s', 'source', 'news', true);
+        // Set during THIS page load, before the pageview that ends the old one.
+        OWA.setState('s_session-site', 'cv1', 'plan=pro');
+        OWA.setState('s_session-site', 'last_req', NOW - 5000);
 
-        t.resetSessionState();
+        t.setSessionId(eventAt(NOW), null);
 
-        // last_req survives so isNewSession still has a reference point...
-        expect(OWA.getState('s', 'last_req')).toBe(NOW - 1);
-        // ...everything else in the session store is wiped.
-        expect(OWA.getState('s', 'sid')).toBeFalsy();
-        expect(OWA.getState('s', 'source')).toBeFalsy();
+        // The previous session's values are gone...
+        expect(OWA.getState('s_session-site', 'source')).toBeFalsy();
+        expect(OWA.getState('s_session-site', 'prior_session_id')).toBe('old-sid');
+        // ...and this page load's survived the boundary it was set for.
+        expect(OWA.getState('s_session-site', 'cv1')).toBe('plan=pro');
+    });
+
+    test('a continuing session merges the persisted store in BEHIND this page load', () => {
+        // Merge precedence. Filling gaps is right; overwriting is not, because
+        // a value set on this page is newer than one a previous page persisted.
+        // Object.assign(memory, cookie) gets this backwards and silently
+        // discards the caller's write.
+        seedPersistedSession({ sid: 'active-1', cv1: 'plan=free', cv2: 'tier=old' });
+        const t = newTracker();
+        OWA.setState('s_session-site', 'cv1', 'plan=pro');
+        OWA.setState('s_session-site', 'last_req', NOW);
+
+        t.setSessionId(eventAt(NOW), null);
+
+        expect(OWA.getState('s_session-site', 'sid')).toBe('active-1');
+        expect(OWA.getState('s_session-site', 'cv1')).toBe('plan=pro');   // memory won
+        expect(OWA.getState('s_session-site', 'cv2')).toBe('tier=old');   // gap filled
+    });
+
+    test('the advance survives the settle', () => {
+        // The advance happens after the decision and must not be undone by it:
+        // a continuing session merges the persisted store in behind memory, and
+        // the old last_req in that cookie must not win.
+        seedPersistedSession({ sid: 'active-1', last_req: NOW - 100 });
+        const t = newTracker();
+
+        t.setSessionId(eventAt(NOW), null);
+        t.advanceLastRequestTime(eventAt(NOW));
+
+        expect(OWA.getState('s_session-site', 'last_req')).toBe(NOW);
     });
 });

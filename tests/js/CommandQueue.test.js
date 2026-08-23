@@ -64,6 +64,11 @@ afterEach(() => {
     delete window.OWATracker2;
 });
 
+// Anchors a param assertion to a '?' or '&' so it cannot also match the
+// namespaced spelling: 'site_id=x' is a substring of 'owa_site_id=x', so a
+// bare toContain() passed with OR without the prefix and tested nothing.
+const escapeRe = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 describe('CommandQueue (owa_cmds) invocation', () => {
 
     test('a bare command lazily creates the default OWATracker and dispatches to it', () => {
@@ -88,12 +93,12 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
             expect(url).toContain(BASE_URL + 'log.php?');
-            expect(url).toContain('owa_event_type=base.page_request');
+            expect(url).toMatch(/[?&]event_type=base\.page_request/);
             // Proves the setSiteId command's argument survived the queue indirection
             // all the way onto the wire.
-            expect(url).toContain('owa_site_id=queue-site');
+            expect(url).toMatch(/[?&]site_id=queue-site/);
             // Values are url-encoded on the wire (the ':' / '/' become %3A / %2F).
-            expect(url).toContain('owa_page_url=' + encodeURIComponent('https://site.example/queued'));
+            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://site.example/queued'))));
         } finally {
             spy.restore();
         }
@@ -140,15 +145,15 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             // its own page url -- proving the routing kept the two streams separate.
             expect(spy.sent).toHaveLength(2);
 
-            const beaconA = spy.sent.find(u => u.includes('owa_site_id=site-A'));
-            const beaconB = spy.sent.find(u => u.includes('owa_site_id=site-B'));
+            const beaconA = spy.sent.find(u => u.match(/[?&]site_id=site-A/));
+            const beaconB = spy.sent.find(u => u.match(/[?&]site_id=site-B/));
             expect(beaconA).toBeDefined();
             expect(beaconB).toBeDefined();
             // The default tracker's beacon carries the default tracker's url (and
             // NOT site-B), and vice versa -- no cross-routing between trackers.
-            expect(beaconA).toContain('owa_page_url=' + encodeURIComponent('https://a.example/on-default'));
+            expect(beaconA).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://a.example/on-default'))));
             expect(beaconA).not.toContain('site-B');
-            expect(beaconB).toContain('owa_page_url=' + encodeURIComponent('https://b.example/on-2'));
+            expect(beaconB).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://b.example/on-2'))));
             expect(beaconB).not.toContain('site-A');
         } finally {
             spy.restore();

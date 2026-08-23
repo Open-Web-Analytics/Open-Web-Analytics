@@ -144,9 +144,9 @@ describe('domstream capture (event_queue)', () => {
 
             expect(posted).toHaveLength(1);
             const data = posted[0];
-            expect(data['owa_event_type']).toBe('dom.stream');
+            expect(data['event_type']).toBe('dom.stream');
             // The serialized stream_events blob must carry each captured type.
-            const blob = data['owa_stream_events'];
+            const blob = data['stream_events'];
             expect(blob).toContain('"event_type":"dom.scroll"');
             expect(blob).toContain('"event_type":"dom.movement"');
             expect(blob).toContain('"event_type":"dom.keypress"');

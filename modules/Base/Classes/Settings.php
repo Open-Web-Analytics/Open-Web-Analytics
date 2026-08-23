@@ -128,6 +128,57 @@ namespace OWA\Module\Base\Classes;
         }
      }
 
+     /**
+      * Settings a config-file constant actually supplied this boot.
+      *
+      * Recorded so load() can keep the database from overwriting them. An
+      * explicit define() in owa-config.php is a deliberate act by whoever runs
+      * the installation, and it used to lose: applyConfigConstants() runs before
+      * load(), and load() array_merges the database blob over the top, so a
+      * constant silently stopped having any effect the first time anyone saved
+      * the options form -- which writes EVERY field on the page, not only the
+      * one that was edited.
+      *
+      * Opt-in by construction, which is what makes it safe to change: an
+      * installation that defines no constants behaves exactly as before. Only a
+      * key someone deliberately declared changes hands, and it changes hands to
+      * what they declared.
+      *
+      * @var array<string, array<string, bool>>
+      */
+     public $config_file_constants = array();
+
+     /**
+      * Set a value that came from a config-file constant, and remember that it
+      * did. Same as set(), plus the ledger entry.
+      */
+     private function setFromConfigConstant( $module, $key, $value, $constant ) {
+
+         // The NAME, not just a flag: the options form shows the operator which
+         // constant is governing a field, and "set somewhere in owa-config.php"
+         // is not an actionable thing to tell someone.
+         $this->config_file_constants[ $module ][ $key ] = $constant;
+
+         return $this->set( $module, $key, $value );
+     }
+
+     /**
+      * The config-file constant governing a setting, or '' if none is.
+      *
+      * Templates use this to render a field as read-only and name the constant
+      * responsible. Returns the name rather than a boolean for that reason.
+      *
+      * @param string $module
+      * @param string $key
+      * @return string
+      */
+     public function configFileConstantFor( $module, $key ) {
+
+         return isset( $this->config_file_constants[ $module ][ $key ] )
+             ? (string) $this->config_file_constants[ $module ][ $key ]
+             : '';
+     }
+
      function applyConfigConstants() {
 
          if(!defined('OWA_DATA_DIR')){
@@ -136,7 +187,7 @@ namespace OWA\Module\Base\Classes;
         }
 
         if (defined('OWA_DATA_DIR')) {
-            $this->set('base', 'data_dir', OWA_DATA_DIR);
+            $this->setFromConfigConstant( 'base', 'data_dir', OWA_DATA_DIR, 'OWA_DATA_DIR');
         }
 
         if(!defined('OWA_CACHE_DIR')){
@@ -144,12 +195,12 @@ namespace OWA\Module\Base\Classes;
          }
 
          if (defined('OWA_CACHE_DIR')) {
-            $this->set('base', 'cache_dir', OWA_CACHE_DIR);
+            $this->setFromConfigConstant( 'base', 'cache_dir', OWA_CACHE_DIR, 'OWA_CACHE_DIR');
         }
 
          // Looks for log level constant
         if (defined('OWA_ERROR_LOG_LEVEL')) {
-            $this->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
+            $this->setFromConfigConstant( 'base', 'error_log_level', OWA_ERROR_LOG_LEVEL, 'OWA_ERROR_LOG_LEVEL');
         }
 
         /* FACT-TABLE PARTITIONING */
@@ -191,17 +242,48 @@ namespace OWA\Module\Base\Classes;
         // Keyed by job name; see owa_service::applyConfiguredJobs() for how an
         // entry is merged and why a bad one disables only itself.
         if (defined('OWA_SCHEDULED_JOBS') && is_array(OWA_SCHEDULED_JOBS)) {
-            $this->set('base', 'scheduled_jobs', OWA_SCHEDULED_JOBS);
+            $this->setFromConfigConstant( 'base', 'scheduled_jobs', OWA_SCHEDULED_JOBS, 'OWA_SCHEDULED_JOBS');
         }
 
         if (defined('OWA_SCHEDULER_ENABLED')) {
-            $this->set('base', 'scheduler_enabled', (bool) OWA_SCHEDULER_ENABLED);
+            $this->setFromConfigConstant( 'base', 'scheduler_enabled', (bool) OWA_SCHEDULER_ENABLED, 'OWA_SCHEDULER_ENABLED');
+        }
+
+        /* REPORTING TIMEZONE */
+
+        /*
+         * Declared here WINS over a value stored in the database -- see
+         * stripSettingsSuppliedByConstants(), which removes the stored value
+         * before load() merges it. So an operator who writes this constant gets
+         * it, and gets it permanently, rather than until the next time somebody
+         * saves the options form.
+         *
+         * That matters more for this setting than for most, because the options
+         * form writes EVERY field on the page rather than only the edited one --
+         * so timezone would enter the database the first time anyone saved
+         * General Settings for an unrelated reason.
+         *
+         * The constant exists so a scripted or CLI install can declare the zone
+         * up front, which matters because the choice is NOT retroactive: yyyymmdd
+         * and the nine date-part columns are derived in this zone and written
+         * into every fact row, so changing it later re-buckets new data while
+         * history keeps the boundaries it was recorded with.
+         *
+         * Validated rather than trusted -- date_default_timezone_set() on an
+         * unknown identifier leaves every later derivation on the previous
+         * default, which is exactly the silent wrong-bucket failure this is
+         * meant to prevent.
+         */
+        if (defined('OWA_TIMEZONE')
+            && in_array( OWA_TIMEZONE, \DateTimeZone::listIdentifiers(), true )) {
+
+            $this->setFromConfigConstant( 'base', 'timezone', OWA_TIMEZONE, 'OWA_TIMEZONE');
         }
 
         /* CONFIGURATION ID */
 
         if (defined('OWA_CONFIGURATION_ID')) {
-            $this->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
+            $this->setFromConfigConstant( 'base', 'configuration_id', OWA_CONFIGURATION_ID, 'OWA_CONFIGURATION_ID');
         }
 
         /* OBJECT CACHING */
@@ -209,7 +291,7 @@ namespace OWA\Module\Base\Classes;
         // Looks for object cache config constant
         // must comebefore user db values are fetched from db
         if (defined('OWA_CACHE_OBJECTS')) {
-            $this->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
+            $this->setFromConfigConstant( 'base', 'cache_objects', OWA_CACHE_OBJECTS, 'OWA_CACHE_OBJECTS');
         }
 
         /* STATIC CONFIG ONLY */
@@ -226,7 +308,7 @@ namespace OWA\Module\Base\Classes;
         // needs must be pinned in owa-config.php since it can no longer read
         // persisted settings from the database.
         if (defined('OWA_USE_STATIC_CONFIG_ONLY')) {
-            $this->set('base', 'useStaticConfigOnly', OWA_USE_STATIC_CONFIG_ONLY);
+            $this->setFromConfigConstant( 'base', 'useStaticConfigOnly', OWA_USE_STATIC_CONFIG_ONLY, 'OWA_USE_STATIC_CONFIG_ONLY');
         }
 
         /* DATABASE CONFIGURATION */
@@ -237,64 +319,64 @@ namespace OWA\Module\Base\Classes;
         // to the rest of the caller's overrides
 
         if (defined('OWA_DB_TYPE')) {
-            $this->set('base', 'db_type', OWA_DB_TYPE);
+            $this->setFromConfigConstant( 'base', 'db_type', OWA_DB_TYPE, 'OWA_DB_TYPE');
         }
 
         if (defined('OWA_DB_NAME')) {
-            $this->set('base', 'db_name', OWA_DB_NAME);
+            $this->setFromConfigConstant( 'base', 'db_name', OWA_DB_NAME, 'OWA_DB_NAME');
         }
 
         if (defined('OWA_DB_HOST')) {
-            $this->set('base', 'db_host', OWA_DB_HOST);
+            $this->setFromConfigConstant( 'base', 'db_host', OWA_DB_HOST, 'OWA_DB_HOST');
         }
 
         if (defined('OWA_DB_PORT')) {
-            $this->set('base', 'db_port', OWA_DB_PORT);
+            $this->setFromConfigConstant( 'base', 'db_port', OWA_DB_PORT, 'OWA_DB_PORT');
         }
 
         if (defined('OWA_DB_USER')) {
-            $this->set('base', 'db_user', OWA_DB_USER);
+            $this->setFromConfigConstant( 'base', 'db_user', OWA_DB_USER, 'OWA_DB_USER');
         }
 
         if (defined('OWA_DB_PASSWORD')) {
-            $this->set('base', 'db_password', OWA_DB_PASSWORD);
+            $this->setFromConfigConstant( 'base', 'db_password', OWA_DB_PASSWORD, 'OWA_DB_PASSWORD');
         }
 
         /* SET ERROR HANDLER */
         if (defined('OWA_ERROR_HANDLER')) {
-            $this->set('base', 'error_handler', OWA_ERROR_HANDLER);
+            $this->setFromConfigConstant( 'base', 'error_handler', OWA_ERROR_HANDLER, 'OWA_ERROR_HANDLER');
         }
 
         if (defined('OWA_PUBLIC_URL')) {
-            $this->set('base', 'public_url', OWA_PUBLIC_URL);
+            $this->setFromConfigConstant( 'base', 'public_url', OWA_PUBLIC_URL, 'OWA_PUBLIC_URL');
         }
 
         if (defined('OWA_PUBLIC_PATH')) {
-            $this->set('base', 'public_path', OWA_PUBLIC_PATH);
+            $this->setFromConfigConstant( 'base', 'public_path', OWA_PUBLIC_PATH, 'OWA_PUBLIC_PATH');
         }
 
         if (defined('OWA_QUEUE_EVENTS')) {
-            $this->set('base', 'queue_events', OWA_QUEUE_EVENTS);
+            $this->setFromConfigConstant( 'base', 'queue_events', OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
         }
 
         if (defined('OWA_EVENT_QUEUE_TYPE')) {
-            $this->set('base', 'event_queue_type', OWA_EVENT_QUEUE_TYPE);
+            $this->setFromConfigConstant( 'base', 'event_queue_type', OWA_EVENT_QUEUE_TYPE, 'OWA_EVENT_QUEUE_TYPE');
         }
 
         if (defined('OWA_EVENT_SECONDARY_QUEUE_TYPE')) {
-            $this->set('base', 'event_secondary_queue_type', OWA_EVENT_SECONDARY_QUEUE_TYPE);
+            $this->setFromConfigConstant( 'base', 'event_secondary_queue_type', OWA_EVENT_SECONDARY_QUEUE_TYPE, 'OWA_EVENT_SECONDARY_QUEUE_TYPE');
         }
 
         if (defined('OWA_USE_REMOTE_EVENT_QUEUE')) {
-            $this->set('base', 'use_remote_event_queue', OWA_USE_REMOTE_EVENT_QUEUE);
+            $this->setFromConfigConstant( 'base', 'use_remote_event_queue', OWA_USE_REMOTE_EVENT_QUEUE, 'OWA_USE_REMOTE_EVENT_QUEUE');
         }
 
         if (defined('OWA_REMOTE_EVENT_QUEUE_TYPE')) {
-            $this->set('base', 'remote_event_queue_type', OWA_REMOTE_EVENT_QUEUE_TYPE);
+            $this->setFromConfigConstant( 'base', 'remote_event_queue_type', OWA_REMOTE_EVENT_QUEUE_TYPE, 'OWA_REMOTE_EVENT_QUEUE_TYPE');
         }
 
         if (defined('OWA_REMOTE_EVENT_QUEUE_ENDPOINT')) {
-            $this->set('base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT);
+            $this->setFromConfigConstant( 'base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT, 'OWA_REMOTE_EVENT_QUEUE_ENDPOINT');
         }
 
      }
@@ -354,6 +436,23 @@ namespace OWA\Module\Base\Classes;
 
             // Same treatment, generalised -- see stripConfigFileOnlySettings().
             $db_settings = self::stripConfigFileOnlySettings( $db_settings );
+
+            /*
+             * A constant declared in owa-config.php wins over the database.
+             *
+             * Implemented the same way the config-file-only settings are -- by
+             * removing the key from the LOSING side before the merge -- because
+             * load() array_merges the database over everything applyConfigConstants()
+             * put in place, so precedence here can only be expressed as absence.
+             *
+             * Distinct from stripConfigFileOnlySettings() on purpose. That list is
+             * a SECURITY denylist: keys an authenticated web request must never be
+             * able to write, because doing so is an RCE primitive (error_log_file
+             * + report_wrapper). This is a precedence rule about what the operator
+             * explicitly declared. Same mechanism, different reason, and merging
+             * the two would lose the reason.
+             */
+            $db_settings = $this->stripSettingsSuppliedByConstants( $db_settings );
 
             $this->db_settings = $db_settings;
             $this->config_from_db = true;
@@ -714,6 +813,44 @@ namespace OWA\Module\Base\Classes;
       * @param  array $db_settings settings as read from the data store
       * @return array the same array minus any config-file-only keys
       */
+     /**
+      * Drop database values for settings a config-file constant supplied.
+      *
+      * Instance method, not static, because the ledger is per-boot: it records
+      * what THIS process's owa-config.php actually defined. An installation that
+      * defines nothing strips nothing and is completely unaffected.
+      *
+      * @param mixed $db_settings
+      * @return mixed
+      */
+     public function stripSettingsSuppliedByConstants( $db_settings ) {
+
+         if ( ! is_array( $db_settings ) ) {
+             return $db_settings;
+         }
+
+         foreach ( $this->config_file_constants as $module => $keys ) {
+
+             if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
+                 continue;
+             }
+
+             foreach ( array_keys( $keys ) as $key ) {
+
+                 if ( array_key_exists( $key, $db_settings[ $module ] ) ) {
+
+                     \OWA\Core\CoreAPI::debug( sprintf(
+                         'Ignoring stored %s.%s: supplied by a config file constant.',
+                         $module, $key ) );
+
+                     unset( $db_settings[ $module ][ $key ] );
+                 }
+             }
+         }
+
+         return $db_settings;
+     }
+
      public static function stripConfigFileOnlySettings( $db_settings ) {
 
          if ( ! is_array( $db_settings ) ) {
@@ -900,7 +1037,26 @@ namespace OWA\Module\Base\Classes;
 	 	 
          return array(
              'base' => array(
+                /*
+                 * 'ns' is the WIRE namespace. It is what keeps OWA's names from
+                 * colliding with a tracked page's own: cookie names in a shared
+                 * jar, the attribution params a customer puts on their URLs
+                 * (owa_source, owa_campaign), the cross-domain owa_state param,
+                 * and the OWA_ environment-variable prefix. Changing it breaks
+                 * every existing cookie and every campaign URL in the wild.
+                 *
+                 * 'app_ns' is the namespace for OWA's OWN admin and reporting
+                 * URLs and form fields, where OWA owns the whole query string
+                 * and has nothing to collide with. It is empty: those URLs read
+                 * 'do=base.sites', not 'owa_do=base.sites'.
+                 *
+                 * The two were one setting until the surfaces were separated.
+                 * Prefixed admin URLs are still accepted on the way in -- see
+                 * RequestContainer -- so existing bookmarks and links keep
+                 * working; only what OWA EMITS changed.
+                 */
                 'ns'                                => 'owa_',
+                'app_ns'                            => '',
                 'visitor_param'                        => 'v',
                 'session_param'                        => 's',
                 'site_session_param'                => 'ss', //sdk
