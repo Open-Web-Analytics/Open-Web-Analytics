@@ -1,0 +1,241 @@
+<?php
+
+use PHPUnit\Framework\TestCase;
+
+require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/ReportCharacterizationHarness.php';
+
+use OWA\Tests\ReportCharacterizationHarness as Harness;
+
+/**
+ * The furniture every report is supposed to come with.
+ *
+ * A report is not only its metrics and dimensions. Every one of them also gets
+ * a site selector and a date-range picker, and those do not come from the
+ * report -- they come from ReportController::pre(), which runs inside
+ * doAction() once the user is authenticated. It sets `sites`, `currentSiteId`
+ * and `period`, and folds siteId, period, startDate and endDate into the params
+ * the view renders from.
+ *
+ * The characterization fixture does NOT cover any of this, deliberately: it
+ * calls action() directly, so it records what each report declares for itself
+ * and stays free of a database and of today's date. That is the right shape for
+ * comparing one report against its own past, and the wrong shape for this --
+ * which is identical across every report, changes with the calendar, and reads
+ * the site list out of the database.
+ *
+ * So it is pinned here instead, as a contract rather than a recording: the keys
+ * have to be present and of the right kind, and their values are none of this
+ * test's business.
+ *
+ * The reason it matters for the conversion: a JSON-rendered report that forgets
+ * to run pre() loses its site selector and its date picker on every screen, and
+ * nothing in the characterization suite would say a word.
+ */
+final class ReportChromeContractTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; the site list cannot load.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+    }
+
+    /** @return array<string, array{0:string}> */
+    public static function reportProvider(): array
+    {
+        $cases = array();
+
+        // A spread rather than all 53: this is shared behaviour, so the useful
+        // question is whether it holds across the KINDS of report, not whether
+        // it holds 53 times.
+        foreach ( array( 'ReportPages', 'ReportEntryPages', 'ReportHostDetail',
+                         'ReportBrowsers', 'ReportReferringSites' ) as $name ) {
+            $cases[ $name ] = array( $name );
+        }
+
+        return $cases;
+    }
+
+    private function assertHasChrome( array $data, string $context ): void
+    {
+        $this->assertArrayHasKey( 'sites', $data,
+            "$context: no site list, so the site filter renders empty" );
+        $this->assertIsArray( $data['sites'], "$context: the site filter needs a list" );
+
+        $this->assertArrayHasKey( 'currentSiteId', $data,
+            "$context: nothing tells the site filter which site is selected" );
+
+        $this->assertArrayHasKey( 'period', $data,
+            "$context: no time period, so the date picker has nothing to show" );
+        $this->assertIsObject( $data['period'],
+            "$context: the period must be the time-period object the view asks for" );
+
+        // The picker and the filter read these from params, not from the top
+        // level -- and the report's own links carry them onward, which is how
+        // the selection survives a drill-down.
+        foreach ( array( 'siteId', 'period', 'startDate', 'endDate' ) as $key ) {
+            $this->assertArrayHasKey( $key, $data['params'],
+                "$context: params.$key is missing, so the selection cannot travel" );
+        }
+
+        /*
+         * The third control is real-time mode -- the on/off group that refreshes
+         * every widget on a timer. It is entirely client-side: OWA.report holds
+         * autoRefreshResultSets (off) and autoRefreshResultSetsInterval (15s),
+         * nothing on the server sets either, and templates/report.php builds the
+         * object with `new OWA.report()` bound to this dom_id.
+         *
+         * So there is exactly one server-side thing it depends on, and this is
+         * it. A converted report that omits dom_id gives the report object
+         * nothing to bind to, and the control -- along with the tab machinery
+         * and every widget's refresh -- silently never appears.
+         */
+        $this->assertArrayHasKey( 'dom_id', $data,
+            "$context: no dom_id, so OWA.report has nothing to bind to and the "
+            . 'real-time control never renders' );
+    }
+
+    /**
+     * @dataProvider reportProvider
+     */
+    public function testAReportComesWithItsSiteFilterAndDatePicker( string $name ): void
+    {
+        $class  = '\OWA\Module\Base\Controller\\' . $name;
+        $params = array_fill_keys( Harness::paramsFor( $name ), Harness::SENTINEL );
+
+        $data = (array) ( new $class( $params ) )->doAction();
+
+        $this->assertHasChrome( $data, $name );
+    }
+
+    /**
+     * The same must hold through the dispatcher, because that is the route the
+     * conversion moves everything onto. A report that keeps its chrome when
+     * reached directly and loses it when reached by id would break every screen
+     * the moment nav switches to report ids.
+     *
+     * @dataProvider registryRouteProvider
+     */
+    public function testTheChromeSurvivesTheRegistryRoute( string $id ): void
+    {
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => $id ) ) )->doAction();
+
+        $this->assertHasChrome( $data, "base.report&reportId=$id" );
+    }
+
+    /** @return array<string, array{0:string}> */
+    public static function registryRouteProvider(): array
+    {
+        return array(
+            'pages'           => array( 'pages' ),
+            'entry-pages'     => array( 'entry-pages' ),
+            'browsers'        => array( 'browsers' ),
+            'referring-sites' => array( 'referring-sites' ),
+        );
+    }
+
+    /**
+     * Direct and delegated must agree about the furniture, not merely both have
+     * some. Comparing the shapes catches a dispatcher that supplies its OWN
+     * period or site list instead of letting the report's pre() do it.
+     */
+    public function testTheTwoRoutesAgreeAboutTheChrome(): void
+    {
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportPages( array() ) )->doAction();
+        $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages' ) ) )->doAction();
+
+        $directKeys = array_keys( $direct['params'] );
+        $viaIdKeys  = array_keys( $viaId['params'] );
+
+        // Everything the direct route hands the view must survive the extra hop.
+        $this->assertSame( array(), array_diff( $directKeys, $viaIdKeys ),
+            'the delegated route dropped params the direct route provides' );
+
+        // ...and the only thing it adds is the id that got it there. Asserted
+        // exactly rather than ignored, so a dispatcher that started injecting
+        // its own state into the view would be visible here.
+        $this->assertSame( array( 'reportId' ), array_values( array_diff( $viaIdKeys, $directKeys ) ),
+            'the delegated route added params beyond the reportId that addressed it' );
+
+        $this->assertSame( count( $direct['sites'] ), count( $viaId['sites'] ),
+            'the two routes disagree about how many sites the filter should list' );
+
+        $this->assertSame( get_class( $direct['period'] ), get_class( $viaId['period'] ) );
+    }
+
+    /**
+     * Reports reached by id must not share a container id.
+     *
+     * dom_id used to be the action name hyphenated, and every report had its
+     * own action -- base-reportPages, base-reportEntryPages. Routing everything
+     * through base.report would have collapsed that to "base-report" for every
+     * report on the installation.
+     *
+     * Nothing keys persistence off it today, so nothing was broken. It is
+     * derived from the report identity anyway, because dom_id is what
+     * OWA.report binds to and what anything remembering per-report UI state --
+     * an active tab, real-time mode left switched on -- would naturally key on.
+     */
+    public function testReportsReachedByIdGetDistinctContainerIds(): void
+    {
+        $ids = array();
+
+        foreach ( array( 'pages', 'entry-pages', 'browsers', 'referring-sites' ) as $id ) {
+
+            $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                array( 'reportId' => $id, 'do' => 'base.report' ) ) )->doAction();
+
+            $ids[ $id ] = $data['dom_id'];
+        }
+
+        $this->assertSame( count( $ids ), count( array_unique( $ids ) ),
+            'two reports share a container id: ' . json_encode( $ids ) );
+
+        foreach ( $ids as $reportId => $domId ) {
+            $this->assertStringContainsString( str_replace( '_', '-', $reportId ), $domId,
+                "the container id for $reportId does not identify it" );
+        }
+    }
+
+    /**
+     * ...and the route that existed before is untouched, so this added an id
+     * for the new path rather than changing the old one.
+     */
+    public function testTheDirectRouteKeepsItsOriginalContainerId(): void
+    {
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages(
+            array( 'do' => 'base.reportPages' ) ) )->doAction();
+
+        $this->assertSame( 'base-reportPages', $data['dom_id'] );
+    }
+
+    /**
+     * Vacuity guard.
+     *
+     * Every assertion above is "this key exists". If pre() ever stopped running
+     * entirely the data bag would be small and they would all fail -- but if it
+     * ran and produced nothing useful they would all pass. Show the bag is the
+     * rich one.
+     */
+    public function testTheChromeIsSubstantialNotJustPresent(): void
+    {
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( array() ) )->doAction();
+
+        $this->assertGreaterThan( 20, count( $data ),
+            'doAction() should produce the full report bag, not just what action() sets' );
+
+        // action() alone yields roughly half of these; if the two are the same
+        // size then pre() did not run and the chrome assertions are hollow.
+        $this->assertGreaterThan(
+            count( Harness::snapshot( 'ReportPages' )['config'] ),
+            count( $data ),
+            'doAction() added nothing over action(), so pre() cannot have run' );
+    }
+}

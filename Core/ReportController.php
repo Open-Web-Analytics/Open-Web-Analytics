@@ -83,7 +83,30 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setView('base.report');
         $this->setViewMethod('delegate');
 
-        $this->dom_id = str_replace('.', '-', (string) $this->getParam('do'));
+        /*
+         * Derived from the report's identity, not from the action that reached
+         * it.
+         *
+         * Every report used to have its own action, so hyphenating `do` gave
+         * each one a distinct container id -- base-reportPages,
+         * base-reportEntryPages. Reaching them all through base.report collapses
+         * that to the single value "base-report" for every report on the
+         * installation.
+         *
+         * Nothing keys persistence off dom_id today, so nothing is broken by the
+         * collision right now. It is still worth not introducing: the id is what
+         * OWA.report binds to and what anything remembering per-report UI state
+         * would naturally key on, and a collision that costs nothing today is
+         * the kind that costs a confusing afternoon later.
+         *
+         * The direct route is unchanged -- there is no reportId on it -- so this
+         * adds a distinct id for the new route rather than altering the old one.
+         */
+        $reportId = $this->getParam('reportId');
+
+        $this->dom_id = $reportId
+            ? 'report-' . str_replace( array( '.', '_' ), '-', (string) $reportId )
+            : str_replace('.', '-', (string) $this->getParam('do'));
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
         $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
