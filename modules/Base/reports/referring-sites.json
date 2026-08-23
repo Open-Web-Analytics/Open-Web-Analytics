@@ -1,0 +1,23 @@
+{
+    "title": "Referrals",
+    "subview": "base.reportDimension",
+    "settings": {
+        "constraints": "medium==referral",
+        "dimensionLink": {
+            "linkColumn": "referralPageTitle",
+            "template": {
+                "do": "base.reportReferralDetail",
+                "referralPageUrl": "%s"
+            },
+            "valueColumns": "referralPageUrl"
+        },
+        "dimensions": "referralPageTitle,referralPageUrl",
+        "excludeColumns": "'referralPageUrl'",
+        "gridTitle": "Top Referrals",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
+    }
+}

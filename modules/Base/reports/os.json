@@ -1,0 +1,21 @@
+{
+    "title": "Operating Systems",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "osType",
+            "template": {
+                "do": "base.reportOsDetail",
+                "osType": "%s"
+            },
+            "valueColumns": "osType"
+        },
+        "dimensions": "osType",
+        "gridTitle": "Top Page Types",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 25,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems."
+    }
+}

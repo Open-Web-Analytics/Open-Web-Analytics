@@ -1,0 +1,21 @@
+{
+    "title": "Ad Types",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "adType",
+            "template": {
+                "do": "base.reportAdTypeDetail",
+                "adType": "%s"
+            },
+            "valueColumns": "adType"
+        },
+        "dimensions": "adType",
+        "gridTitle": "Top Ad Types",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads."
+    }
+}

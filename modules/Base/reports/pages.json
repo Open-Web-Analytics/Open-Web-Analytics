@@ -1,0 +1,22 @@
+{
+    "title": "Web Pages",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "pagePath",
+            "template": {
+                "do": "base.reportDocument",
+                "pageUrl": "%s"
+            },
+            "valueColumns": "pageUrl"
+        },
+        "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+        "excludeColumns": "'pageUrl'",
+        "gridTitle": "Top Pages",
+        "metrics": "pageViews,visits,uniquePageViews",
+        "resultsPerPage": 30,
+        "sort": "pageViews-",
+        "trendChartMetric": "pageViews",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages."
+    }
+}

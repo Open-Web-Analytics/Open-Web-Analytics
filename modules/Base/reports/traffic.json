@@ -1,0 +1,5 @@
+{
+    "view": "base.report",
+    "title": "Traffic Sources",
+    "subview": "base.reportTraffic"
+}

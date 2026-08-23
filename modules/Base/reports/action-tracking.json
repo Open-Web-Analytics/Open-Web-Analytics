@@ -1,0 +1,19 @@
+{
+    "title": "Actions",
+    "subview": "base.reportActionTracking",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "pageTitle",
+            "template": {
+                "do": "base.reportDocument",
+                "pageUrl": "%s"
+            },
+            "valueColumns": "pageUrl"
+        },
+        "metrics": "actions,uniqueActions,actionsValue",
+        "resultsPerPage": 30,
+        "sort": "actions",
+        "trendChartMetric": "actions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions performed on all pages."
+    }
+}

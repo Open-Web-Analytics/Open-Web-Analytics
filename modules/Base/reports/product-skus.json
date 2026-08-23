@@ -1,0 +1,20 @@
+{
+    "title": "Product SKUs",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "productSku",
+            "template": {
+                "do": "base.reportProductSkuDetail",
+                "productSku": "%s"
+            },
+            "valueColumns": "productSku"
+        },
+        "dimensions": "productSku",
+        "metrics": "lineItemQuantity,lineItemRevenue",
+        "resultsPerPage": 30,
+        "sort": "lineItemQuantity-",
+        "trendChartMetric": "lineItemQuantity",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs."
+    }
+}

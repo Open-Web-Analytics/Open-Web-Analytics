@@ -1,0 +1,21 @@
+{
+    "title": "Entry Pages",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "entryPagePath",
+            "template": {
+                "do": "base.reportDocument",
+                "pageUrl": "%s"
+            },
+            "valueColumns": "entryPageUrl"
+        },
+        "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+        "excludeColumns": "'entryPageUrl'",
+        "gridTitle": "Top Entry Pages",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages."
+    }
+}

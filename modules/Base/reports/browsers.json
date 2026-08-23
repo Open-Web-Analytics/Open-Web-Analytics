@@ -1,0 +1,20 @@
+{
+    "title": "Browser Types",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "browserType",
+            "template": {
+                "do": "base.reportBrowserDetail",
+                "browserType": "%s"
+            },
+            "valueColumns": "browserType"
+        },
+        "dimensions": "browserType",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 25,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "title": "Search Engines",
+    "subview": "base.reportDimension",
+    "settings": {
+        "constraints": "medium==organic-search",
+        "dimensionLink": {
+            "linkColumn": "referralWebSite",
+            "template": {
+                "do": "base.reportSearchEngineDetail",
+                "referralWebSite": "%s"
+            },
+            "valueColumns": "referralWebSite"
+        },
+        "dimensions": "referralWebSite",
+        "gridTitle": "Top Search Engines",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines."
+    }
+}

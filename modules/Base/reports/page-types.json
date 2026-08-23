@@ -1,0 +1,21 @@
+{
+    "title": "Page Types",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "pageType",
+            "template": {
+                "do": "base.reportPageTypeDetail",
+                "pageType": "%s"
+            },
+            "valueColumns": "pageType"
+        },
+        "dimensions": "pageType",
+        "gridTitle": "Top Page Types",
+        "metrics": "visits,pageViews",
+        "resultsPerPage": 25,
+        "sort": "pageViews-",
+        "trendChartMetric": "pageViews",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types."
+    }
+}

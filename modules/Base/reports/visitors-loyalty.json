@@ -1,0 +1,12 @@
+{
+    "title": "Visitor Loyalty",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensions": "priorVisitCount",
+        "metrics": "visits",
+        "resultsPerPage": 25,
+        "sort": "priorVisitCount",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources."
+    }
+}

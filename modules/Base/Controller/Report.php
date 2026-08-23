@@ -64,14 +64,60 @@ class Report extends \OWA\Core\Controller {
             return $this->delegateTo( $definition['controller'] );
         }
 
-        /*
-         * A JSON definition. Nothing renders it yet -- that arrives with the
-         * widget renderer -- and answering "not resolved" is better than
-         * answering with a blank page, because a half-built path that returns
-         * something looks like it works.
-         */
+        if ( ! empty( $definition['json'] ) ) {
+
+            return $this->renderConfigured( $id, $definition['json'] );
+        }
+
         return $this->reportNotResolved(
-            $id, 'is configuration, which this build cannot render yet', 501 );
+            $id, 'is registered with neither a controller nor a definition', 500 );
+    }
+
+    /**
+     * Load a JSON definition and render it through the one configured-report
+     * controller.
+     *
+     * The file is read HERE rather than at registration time on purpose.
+     * Module::registerReports() runs for every module that has reports, and
+     * registration happens on requests that will never render one -- so
+     * decoding at registration would put a json_decode() per report on every
+     * request, tracker beacons included. Registration stores the path; exactly
+     * one file is read, for the report actually asked for.
+     */
+    private function renderConfigured( $id, $path ) {
+
+        if ( ! is_readable( $path ) ) {
+
+            return $this->reportNotResolved(
+                $id, sprintf( 'names a definition file that cannot be read: %s', $path ), 500 );
+        }
+
+        $definition = json_decode( (string) file_get_contents( $path ), true );
+
+        if ( $definition === null && json_last_error() !== JSON_ERROR_NONE ) {
+
+            return $this->reportNotResolved(
+                $id, sprintf( 'has a definition file that is not valid JSON: %s', json_last_error_msg() ), 500 );
+        }
+
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( $definition );
+
+        if ( $error !== '' ) {
+
+            /*
+             * Refused rather than rendered with the bad key ignored. A report
+             * that quietly loses its title -- or its whole settings bag to a
+             * misspelled "setings" -- looks like a styling bug and gets chased
+             * in the wrong file.
+             */
+            return $this->reportNotResolved( $id, $error, 500 );
+        }
+
+        $target = new \OWA\Core\ConfiguredReport( $this->params );
+
+        $target->setDefinition( $definition );
+
+        return $target->doAction();
     }
 
     /**

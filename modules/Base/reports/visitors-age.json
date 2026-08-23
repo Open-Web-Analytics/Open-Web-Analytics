@@ -1,0 +1,12 @@
+{
+    "title": "Visitor Age",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensions": "daysSinceFirstVisit",
+        "metrics": "visits",
+        "resultsPerPage": 25,
+        "sort": "daysSinceFirstVisit",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources."
+    }
+}

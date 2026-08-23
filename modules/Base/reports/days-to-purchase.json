@@ -1,0 +1,12 @@
+{
+    "title": "Days To Purchase",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensions": "daysToTransaction",
+        "metrics": "transactions",
+        "resultsPerPage": 30,
+        "sort": "daysToTransaction",
+        "trendChartMetric": "transactions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "title": "Ecommerce",
+    "subview": "base.reportEcommerce",
+    "settings": {
+        "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+        "resultsPerPage": 30,
+        "sort": "transactions-",
+        "trendChartMetric": "transactions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions completed."
+    }
+}

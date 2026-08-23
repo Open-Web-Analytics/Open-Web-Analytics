@@ -1,0 +1,21 @@
+{
+    "title": "Host Names",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensionLink": {
+            "linkColumn": "hostName",
+            "template": {
+                "do": "base.reportHostDetail",
+                "hostName": "%s"
+            },
+            "valueColumns": "hostName"
+        },
+        "dimensions": "hostName",
+        "gridTitle": "Top Hosts",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts."
+    }
+}

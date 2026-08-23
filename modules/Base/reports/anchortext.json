@@ -1,0 +1,22 @@
+{
+    "view": "base.report",
+    "title": "Referral Link Text",
+    "subview": "base.reportDimension",
+    "settings": {
+        "constraints": "medium==referral",
+        "dimensionLink": {
+            "linkColumn": "referralLinkText",
+            "template": {
+                "do": "base.reportReferralLinkTextDetail",
+                "referralLinkText": "%s"
+            },
+            "valueColumns": "referralLinkText"
+        },
+        "dimensions": "referralLinkText",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "title": "Visitor Recency",
+    "subview": "base.reportDimension",
+    "settings": {
+        "dimensions": "daysSinceLastVisit",
+        "metrics": "visits",
+        "resultsPerPage": 25,
+        "sort": "daysSinceLastVisit",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources."
+    }
+}

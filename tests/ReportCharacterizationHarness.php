@@ -79,6 +79,57 @@ final class ReportCharacterizationHarness
      * of that transformation keeps the assertions exact, so a report that
      * mangles the value in any OTHER way still fails loudly.
      */
+    /**
+     * Report id => the controller class that used to implement it.
+     *
+     * These 35 reports are configuration now: modules/Base/reports/<id>.json,
+     * rendered by Core\ConfiguredReport. The map is what lets the conversion
+     * keep being checked after the controllers are gone -- the golden file
+     * records what each of them DECLARED, and that record is still the standard
+     * the JSON has to meet.
+     *
+     * So the fixture stays keyed by class name on purpose. It is a record of
+     * what those controllers did, not a directory of reports that exist now;
+     * re-keying it to report ids would rewrite the evidence.
+     */
+    public const CONVERTED = array(
+        'action-groups'             => 'ReportActionGroups',
+        'action-tracking'           => 'ReportActionTracking',
+        'ad-types'                  => 'ReportAdTypes',
+        'ads'                       => 'ReportAds',
+        'anchortext'                => 'ReportAnchortext',
+        'avg-order-value'           => 'ReportAvgOrderValue',
+        'browsers'                  => 'ReportBrowsers',
+        'commerce'                  => 'ReportCommerce',
+        'content'                   => 'ReportContent',
+        'creative-performance'      => 'ReportCreativePerformance',
+        'days-to-purchase'          => 'ReportDaysToPurchase',
+        'ecommerce'                 => 'ReportEcommerce',
+        'ecommerce-conversion-rate' => 'ReportEcommerceConversionRate',
+        'entry-pages'               => 'ReportEntryPages',
+        'exit-pages'                => 'ReportExitPages',
+        'feeds'                     => 'ReportFeeds',
+        'geolocation'               => 'ReportGeolocation',
+        'hosts'                     => 'ReportHosts',
+        'keywords'                  => 'ReportKeywords',
+        'os'                        => 'ReportOs',
+        'page-types'                => 'ReportPageTypes',
+        'pages'                     => 'ReportPages',
+        'product-categories'        => 'ReportProductCategories',
+        'product-skus'              => 'ReportProductSkus',
+        'products'                  => 'ReportProducts',
+        'referring-sites'           => 'ReportReferringSites',
+        'revenue'                   => 'ReportRevenue',
+        'search-engines'            => 'ReportSearchEngines',
+        'sources'                   => 'ReportSources',
+        'traffic'                   => 'ReportTraffic',
+        'transactions'              => 'ReportTransactions',
+        'visitors-age'              => 'ReportVisitorsAge',
+        'visitors-loyalty'          => 'ReportVisitorsLoyalty',
+        'visitors-recency'          => 'ReportVisitorsRecency',
+        'visits-to-purchase'        => 'ReportVisitsToPurchase',
+    );
+
     public const SENTINEL = 'characterization_sentinel';
 
     /** @return array<int, string> controller class short-names, sorted */
@@ -246,6 +297,29 @@ final class ReportCharacterizationHarness
         }
 
         return $all;
+    }
+
+    /** Absolute path to a converted report's definition file. */
+    public static function definitionPath( string $id ): string
+    {
+        return OWA_DIR . 'modules/Base/reports/' . $id . '.json';
+    }
+
+    /**
+     * Run a converted report from its JSON and return the same shape snapshot()
+     * returns for a controller, so the two are directly comparable.
+     */
+    public static function snapshotConfigured( string $id ): array
+    {
+        $definition = json_decode(
+            (string) file_get_contents( self::definitionPath( $id ) ), true );
+
+        $controller = new \OWA\Core\ConfiguredReport( array() );
+        $controller->setDefinition( (array) $definition );
+
+        // Converted reports are the ones that read no request parameters, so
+        // the params half of the snapshot is empty by definition.
+        return array( 'params' => array() ) + self::observe( $controller );
     }
 
     public static function goldenPath(): string

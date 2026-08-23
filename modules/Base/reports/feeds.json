@@ -1,0 +1,13 @@
+{
+    "view": "base.report",
+    "title": "Feeds",
+    "subview": "base.reportFeeds",
+    "settings": {
+        "dimensions": "feedType",
+        "metrics": "feedReaders,feedRequests,feedSubscriptions",
+        "resultsPerPage": 30,
+        "sort": "feedReaders-",
+        "trendChartMetric": "feedReaders",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds."
+    }
+}

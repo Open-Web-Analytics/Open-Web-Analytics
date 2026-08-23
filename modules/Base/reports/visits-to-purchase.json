@@ -1,0 +1,12 @@
+{
+    "title": "Visits To Purchase",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensions": "visitsToTransaction",
+        "metrics": "transactions",
+        "resultsPerPage": 30,
+        "sort": "visitsToTransaction",
+        "trendChartMetric": "transactions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors."
+    }
+}

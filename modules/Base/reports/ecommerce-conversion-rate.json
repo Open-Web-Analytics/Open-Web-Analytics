@@ -1,0 +1,12 @@
+{
+    "title": "Total Revenue",
+    "subview": "base.reportSimpleDimensional",
+    "settings": {
+        "dimensions": "date",
+        "metrics": "visits,ecommerceConversionRate",
+        "resultsPerPage": 30,
+        "sort": "date-",
+        "trendChartMetric": "ecommerceConversionRate",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits."
+    }
+}
