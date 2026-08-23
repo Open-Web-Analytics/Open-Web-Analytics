@@ -111,7 +111,7 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         }
 
         const vids = beacons
-            .map((u) => (u.match(/owa_visitor_id=(\d+)/) || [])[1])
+            .map((u) => (u.match(/[?&]visitor_id=(\d+)/) || [])[1])
             .filter(Boolean);
         // Two beacons, both carrying the SAME visitor id -> the cookie written on
         // load 1 was read back on load 2. A returning visitor is recognized, not

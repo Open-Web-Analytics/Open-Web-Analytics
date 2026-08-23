@@ -21,7 +21,18 @@ class OWA {
 	    
 	    this.overlay = '';
 	    this.config = {
+	        // The WIRE namespace: cookie names, the owa_state cross-domain
+	        // handoff and the owa_overlay anchor -- everything OWA writes into a
+	        // TRACKED PAGE's URL or cookie jar, where the names belong to the
+	        // site owner and a collision is theirs to suffer.
 	        ns: 'owa_',
+	        // The namespace for OWA's OWN channels, which is empty. The beacon's
+	        // query string is one: it is written by the tracker and read by
+	        // log.php, and nothing else contributes a param to it, so there is
+	        // nothing to collide with and the prefix was ~4 bytes per property
+	        // on every hit. The server accepts both spellings, so trackers
+	        // cached on customer sites keep working while they age out.
+	        app_ns: '',
 	        baseUrl: '',
 	        hashCookiesToDomain: true,
 	        debug: false

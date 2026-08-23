@@ -63,7 +63,7 @@ function removeBeacon() {
 }
 
 const BASE_URL = 'https://owa.example.test/';
-const URL_UNDER_TEST = BASE_URL + 'log.php?owa_event_type=base.page_request';
+const URL_UNDER_TEST = BASE_URL + 'log.php?event_type=base.page_request';
 
 function newTracker() {
     window.owa_baseUrl = BASE_URL;

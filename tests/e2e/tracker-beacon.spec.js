@@ -69,13 +69,13 @@ test.describe('the built tracker fires beacons on the wire', () => {
     test('the page_request beacon is sent to log.php with the site id', async ({ page }) => {
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
 
-        const pageview = beacons.find((u) => u.includes('owa_event_type=base.page_request'));
+        const pageview = beacons.find((u) => /[?&]event_type=base\.page_request/.test(u));
         expect(pageview, 'no base.page_request beacon was sent').toBeTruthy();
         expect(pageview).toContain('/log.php?');
-        expect(pageview).toContain('owa_site_id=e2e-tracker-harness');
+        expect(pageview).toMatch(/[?&]site_id=e2e-tracker-harness/);
         // Session/visitor identity the server needs to attribute the hit.
-        expect(pageview).toMatch(/owa_visitor_id=\d+/);
-        expect(pageview).toMatch(/owa_session_id=\d+/);
+        expect(pageview).toMatch(/[?&]visitor_id=\d+/);
+        expect(pageview).toMatch(/[?&]session_id=\d+/);
     });
 
     test('a click drives a dom.click beacon with the clicked element + site id', async ({ page }) => {
@@ -88,16 +88,16 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-btn').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.find((u) => u.includes('owa_event_type=dom.click'));
+        const click = beacons.find((u) => /[?&]event_type=dom\.click/.test(u));
         expect(click, 'no dom.click beacon was sent').toBeTruthy();
         // The clicked element's identity + the full state pipeline (site/session)
         // must ride the click beacon -- these appear AFTER target_url in the query
         // string, so their presence also proves the beacon wasn't truncated.
-        expect(click).toContain('owa_dom_element_id=tracked-btn');
+        expect(click).toMatch(/[?&]dom_element_id=tracked-btn/);
         // dom_element_tag is stored lower-cased for consistency.
-        expect(click).toContain('owa_dom_element_tag=button');
-        expect(click).toContain('owa_site_id=e2e-tracker-harness');
-        expect(click).toMatch(/owa_click_x=\d+/);
+        expect(click).toMatch(/[?&]dom_element_tag=button/);
+        expect(click).toMatch(/[?&]site_id=e2e-tracker-harness/);
+        expect(click).toMatch(/[?&]click_x=\d+/);
     });
 
     test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
@@ -114,7 +114,7 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-link').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.slice(before).find((u) => u.includes('owa_event_type=dom.click'));
+        const click = beacons.slice(before).find((u) => /[?&]event_type=dom\.click/.test(u));
         expect(click, 'no dom.click beacon was sent for the fragment link').toBeTruthy();
 
         // The browser resolves the href to an absolute URL, so target_url ends in
@@ -126,9 +126,9 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(new URL(click).hash, 'beacon URL was truncated at a fragment').toBe('');
         // Params assembled AFTER target_url still made it onto the wire -- the proof
         // the beacon was not truncated at the href's '#'.
-        expect(click).toContain('owa_dom_element_id=tracked-link');
-        expect(click).toContain('owa_site_id=e2e-tracker-harness');
-        expect(click).toMatch(/owa_click_x=\d+/);
+        expect(click).toMatch(/[?&]dom_element_id=tracked-link/);
+        expect(click).toMatch(/[?&]site_id=e2e-tracker-harness/);
+        expect(click).toMatch(/[?&]click_x=\d+/);
     });
 
     test('the tracker boots without uncaught page errors', async ({ page }) => {

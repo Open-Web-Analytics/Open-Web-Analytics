@@ -65,9 +65,14 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
     });
 
     /** Wait until log.php has been hit for the given event type. */
+    // Takes the event type and anchors it to a param boundary. A plain substring
+    // ('event_type=x') also matches the namespaced spelling ('owa_event_type=x'),
+    // so it would poll green whichever the tracker emitted and prove nothing
+    // about the beacon's param naming.
     async function awaitBeacon(beacons, eventType) {
+        const re = new RegExp('[?&]event_type=' + eventType.replace(/\./g, '\\.'));
         await expect
-            .poll(() => beacons.filter((u) => u.includes(eventType)).length, { timeout: 20_000 })
+            .poll(() => beacons.filter((u) => re.test(u)).length, { timeout: 20_000 })
             .toBeGreaterThan(0);
     }
 
@@ -88,7 +93,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         const url = root + 'tests/e2e/tracker_harness.html?base=' + encodeURIComponent(root);
         await serveHarness(page, url);
         await page.goto(url, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'owa_event_type=base.page_request');
+        await awaitBeacon(beacons, 'base.page_request');
 
         const state = await awaitSessions(1);
         expect(state.request_count).toBe(1);
@@ -109,7 +114,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         await serveHarness(page, b);
 
         await page.goto(a, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'owa_event_type=base.page_request');
+        await awaitBeacon(beacons, 'base.page_request');
         await awaitSessions(1);
 
         /*
@@ -150,9 +155,12 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // The second hit continues the session -- it must NOT re-declare a new one.
-        const second = beacons.filter((u) => u.includes('owa_event_type=base.page_request'))[1];
+        const second = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u))[1];
         expect(second).toBeTruthy();
-        expect(second).not.toContain('owa_is_new_session');
+        // Anchored on both sides: 'is_new_session' is a PREFIX of
+        // 'is_new_session_start', which rides the same beacon, so an unanchored
+        // check conflates the page-scoped flag with the one-event marker.
+        expect(second).not.toMatch(/[?&]is_new_session=/);
     });
 
     test('3 - a lost first page view does not strand the session', async ({ page }) => {
@@ -203,7 +211,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         // --- page B: delivery restored --------------------------------------
         await page.unroute('**/log.php*');
         await page.goto(b, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'owa_event_type=base.page_request');
+        await awaitBeacon(beacons, 'base.page_request');
 
         state = await awaitSessions(1);
 
@@ -214,8 +222,8 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // B had to declare a NEW session, because A's identity was never persisted.
-        const pageviews = beacons.filter((u) => u.includes('owa_event_type=base.page_request'));
-        expect(pageviews[pageviews.length - 1]).toContain('owa_is_new_session');
+        const pageviews = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u));
+        expect(pageviews[pageviews.length - 1]).toMatch(/[?&]is_new_session=/);
 
         // Arrival facts captured on A survive: they are observable only on the
         // landing hit and are unrecoverable if dropped. B's URL carries no utm_*.
@@ -252,7 +260,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
             null, { timeout: 20_000 });
         await page.evaluate(() => window.OWATracker.trackClicks());
         await page.locator('#tracked-btn').click();
-        await awaitBeacon(beacons, 'owa_event_type=dom.click');
+        await awaitBeacon(beacons, 'dom.click');
 
         await page.waitForTimeout(1500);
         const state = helper('session-state', `site=${HARNESS_SITE_ID}`);

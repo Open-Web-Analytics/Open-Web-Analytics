@@ -6,7 +6,7 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  * The other tracker unit tests (BeaconContract*, Tracker) stop at logEvent /
  * trackEvent -- they pin WHAT the tracker would send. This one goes one layer
  * deeper and pins that logEvent actually TURNS those properties into a real
- * request: the 1x1 pixel GET to log.php with the namespaced (owa_*) params, the
+ * request: the 1x1 pixel GET to log.php with the event's properties as params, the
  * logger-endpoint URL construction, the nested-array bracket encoding, and the
  * two guard rails (inactive tracker sends nothing; an over-long URL falls back
  * to the cdPost iframe instead of the pixel). No browser -- we stub Image and
@@ -42,6 +42,11 @@ afterEach(() => {
     delete window.owa_baseUrl;
 });
 
+// Anchors a param assertion to a '?' or '&' so it cannot also match the
+// namespaced spelling: 'site_id=x' is a substring of 'owa_site_id=x', so a
+// bare toContain() passed with OR without the prefix and tested nothing.
+const escapeRe = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 describe('tracker GET transport (1x1 pixel beacon)', () => {
 
     test('trackPageView fires exactly one beacon to log.php', () => {
@@ -60,14 +65,15 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         try {
             newTracker().trackPageView('https://site.example/p');
             const url = spy.sent[0];
-            // prepareRequestData prefixes every key with the ns (owa_); the GET
+            // prepareRequestData emits each key under the APP namespace, which
+            // is empty -- log.php's query string is OWA's own. The GET
             // string is param=value& pairs whose VALUES are url-encoded (keys are
             // not -- see the encoding regression test below). event_type/site_id
             // contain no structural chars so they ride verbatim; the page url's
             // ':' and '/' become %3A / %2F.
-            expect(url).toContain('owa_event_type=base.page_request');
-            expect(url).toContain('owa_site_id=transport-site');
-            expect(url).toContain('owa_page_url=' + encodeURIComponent('https://site.example/p'));
+            expect(url).toMatch(/[?&]event_type=base\.page_request/);
+            expect(url).toMatch(/[?&]site_id=transport-site/);
+            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://site.example/p'))));
         } finally {
             spy.restore();
         }
@@ -95,11 +101,11 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
-            expect(url).toContain('owa_event_type=ecommerce.transaction');
+            expect(url).toMatch(/[?&]event_type=ecommerce\.transaction/);
             // prepareRequestData flattens an array-of-objects to
-            // owa_<param>[<i>][<key>]=value -- brackets ride the wire verbatim.
-            expect(url).toContain('owa_ct_line_items[0][li_sku]=SKU-1');
-            expect(url).toContain('owa_ct_line_items[0][li_product_name]=Widget');
+            // <param>[<i>][<key>]=value -- brackets ride the wire verbatim.
+            expect(url).toContain('ct_line_items[0][li_sku]=SKU-1');
+            expect(url).toContain('ct_line_items[0][li_product_name]=Widget');
         } finally {
             spy.restore();
         }
@@ -120,14 +126,14 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             const url = spy.sent[0];
             // The raw value must NOT appear (that would mean an unencoded '#'/'&').
-            expect(url).not.toContain('owa_page_url=' + dirty);
-            expect(url).toContain('owa_page_url=' + encodeURIComponent(dirty));
+            expect(url).not.toContain('page_url=' + dirty);
+            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent(dirty))));
             // No literal fragment or stray delimiters survive from the value.
             expect(url).not.toContain('#frag');
             expect(url).not.toContain('a=1&b=2');
             // A param assembled after page_url still reaches the wire (proves the
             // beacon wasn't truncated at the first structural char in a value).
-            expect(url).toContain('owa_site_id=transport-site');
+            expect(url).toMatch(/[?&]site_id=transport-site/);
         } finally {
             spy.restore();
         }
@@ -158,7 +164,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(0);           // no pixel
             expect(posted).toHaveLength(1);             // cdPost took over
-            expect(posted[0]['owa_event_type']).toBe('base.page_request');
+            expect(posted[0]['event_type']).toBe('base.page_request');
         } finally {
             spy.restore();
         }
@@ -190,12 +196,12 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(1);            // small blob -> GET pixel
             const url = spy.sent[0];
-            expect(url).toContain('owa_event_type=dom.stream');
+            expect(url).toMatch(/[?&]event_type=dom\.stream/);
             // The raw JSON must NOT appear -- it would mean unencoded structural chars.
-            expect(url).not.toContain('owa_stream_events=[{"');
-            expect(url).toContain('owa_stream_events=' + encodeURIComponent('[{'));
+            expect(url).not.toContain('stream_events=[{"');
+            expect(url).toMatch(new RegExp('[?&]stream_events=' + escapeRe(encodeURIComponent('[{'))));
             // A param assembled after the blob still reached the wire (no truncation).
-            expect(url).toContain('owa_stream_length=12');
+            expect(url).toMatch(/[?&]stream_length=12/);
         } finally {
             spy.restore();
         }
@@ -220,10 +226,10 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(spy.sent).toHaveLength(0);            // never took the pixel path
             expect(posted).toHaveLength(1);              // went out via cdPost (POST)
             const data = posted[0];
-            expect(data['owa_event_type']).toBe('dom.stream');
+            expect(data['event_type']).toBe('dom.stream');
             // cdPost does NOT encode -- the '{' '"' ':' ride verbatim in the form value.
-            expect(data['owa_stream_events']).toContain('"event_type":"dom.click"');
-            expect(data['owa_stream_length']).toBe(12);
+            expect(data['stream_events']).toContain('"event_type":"dom.click"');
+            expect(data['stream_length']).toBe(12);
         } finally {
             spy.restore();
         }
