@@ -43,7 +43,10 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $extra = array(
             'date_range' => array( 'startDate' => '20260801', 'endDate' => '20260815' ),
             'time_range' => array( 'startTime' => 1787000000, 'endTime' => 1787200000 ),
-            'day'        => array( 'day' => '15', 'month' => '08', 'year' => '2026' ),
+            // 'day' reads startDate, not separate parts -- an easy thing to get
+            // wrong, and getting it wrong here is what surfaced the missing
+            // guard on that read.
+            'day'        => array( 'startDate' => '20260815' ),
         );
 
         $types = array(
@@ -228,6 +231,11 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testTheWebRefusesAnInvalidPeriodRatherThanSubstituting(): void
     {
+        // Rendering a report runs pre(), which loads the site list.
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
@@ -250,6 +258,11 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public function testAValidPeriodAndNoPeriodBothStillRender(): void
     {
+        // Rendering a report runs pre(), which loads the site list.
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );

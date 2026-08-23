@@ -37,6 +37,22 @@ final class ReportRegistryTest extends TestCase
         $user->setAuthStatus( true );
     }
 
+    /**
+     * Delegating to a real report runs ReportController::pre(), which loads the
+     * site list -- so those cases need a database and the rest do not.
+     *
+     * Guarded per test rather than per class on purpose. The registry's
+     * contents, its id format, its laziness and its refusal of duplicates are
+     * all checkable without one, and skipping the whole class would give that
+     * coverage up everywhere a database is absent, which includes CI's unit job.
+     */
+    private function requireDb(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; delegation loads the site list.' );
+        }
+    }
+
     private function registry(): array
     {
         return \OWA\Core\CoreAPI::getReportRegistry();
@@ -94,6 +110,8 @@ final class ReportRegistryTest extends TestCase
      */
     public function testTheRegistryRouteMatchesTheDirectRoute( string $id, string $class ): void
     {
+        $this->requireDb();
+
         $direct = (array) ( new $class( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
             array( 'reportId' => $id ) ) )->doAction();
@@ -127,12 +145,14 @@ final class ReportRegistryTest extends TestCase
      */
     public function testParametersReachTheDelegatedReport(): void
     {
+        $this->requireDb();
+
         $viaId = (array) ( new \OWA\Module\Base\Controller\Report( array(
             'reportId' => 'host-detail',
             'hostName' => Harness::SENTINEL,
         ) ) )->doAction();
 
-        $this->assertStringContainsString( Harness::SENTINEL, (string) $viaId['constraints'],
+        $this->assertStringContainsString( Harness::SENTINEL, (string) ( $viaId['constraints'] ?? '' ),
             'the delegated report built its constraint without the parameter' );
     }
 
@@ -190,6 +210,8 @@ final class ReportRegistryTest extends TestCase
      */
     public function testAnUnauthenticatedRequestIsRefusedByTheTargetsCapability(): void
     {
+        $this->requireDb();
+
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole( 'everyone' );
         $user->setAuthStatus( false );
@@ -242,7 +264,12 @@ final class ReportRegistryTest extends TestCase
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $before  = $service->getMapValue( 'reports', 'pages' );
 
-        $module = new class( 'base' ) extends \OWA\Core\Module {
+        // Module::__construct() takes no arguments and reads $this->name, which
+        // real modules set before calling it -- so passing 'base' positionally
+        // was silently dropped and the name stayed null all the way into
+        // moduleDirName(). Set the property, as a real module does.
+        $module = new class extends \OWA\Core\Module {
+            public function __construct() { $this->name = 'base'; parent::__construct(); }
             public function takeIt() { return $this->registerReport( 'pages', 'x.json' ); }
         };
 

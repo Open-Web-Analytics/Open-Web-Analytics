@@ -55,18 +55,37 @@ class TimePeriod {
         return \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
     }
 
-    function setFromMap( $map ) {
+    /**
+     * Reduce a request map to just the keys this class reads, and guarantee
+     * every one of them is present.
+     *
+     * The filtering half of this was already here; the defaults were built and
+     * then thrown away, so a caller who omitted a key -- ?period=date_range with
+     * no dates, say -- reached a read of a key that was not there. That is a
+     * warning per read, and PHP warnings are failures under CI.
+     *
+     * An absent date reads as '' rather than false so it stays a string all the
+     * way to sscanf(). Both are empty(), so the branching below is unchanged.
+     */
+    private function normalizeMap( $map ) {
 
-        // normalize map
-        $m = array(
-            'period' => false,
-            'startDate' => false,
-            'endDate' => false,
-            'startTime'  => false,
-            'endTime' => false
+        $keys = array(
+            'period'    => '',
+            'startDate' => '',
+            'endDate'   => '',
+            // Times are timestamps, not yyyymmdd strings, and they are handed
+            // straight to Date::set($ts, 'timestamp') -- so their empty value is
+            // null, which that signature accepts, and not ''.
+            'startTime' => null,
+            'endTime'   => null
         );
 
-        $map = array_intersect_key($map, $m);
+        return array_merge( $keys, array_intersect_key( (array) $map, $keys ) );
+    }
+
+    function setFromMap( $map ) {
+
+        $map = $this->normalizeMap( $map );
 
 
         // set default period if necessary
@@ -202,6 +221,9 @@ class TimePeriod {
     }
 
     function _setDates($map = array()) {
+
+        // set() reaches here without going through setFromMap, so normalize again.
+        $map = $this->normalizeMap( $map );
 
         $time_now = \OWA\Core\Lib::time_now();
         $nowDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');

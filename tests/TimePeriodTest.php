@@ -98,4 +98,164 @@ final class TimePeriodTest extends TestCase
             'an empty range should still be a usable single day'
         );
     }
+
+    /**
+     * Run $fn with a warning collector on top of the handler stack, and return
+     * every diagnostic PHP raised while it ran.
+     *
+     * OWA's bootstrap installs its own error handler, which logs a warning and
+     * returns -- so warnings are invisible when this suite runs against a real
+     * install, and are failures under CI, which is exactly the asymmetry that
+     * let the defect below reach master. Collecting them explicitly makes the
+     * assertion mean the same thing in both places.
+     */
+    private function diagnosticsDuring(callable $fn): array
+    {
+        $seen = [];
+
+        set_error_handler(
+            function ( $no, $str, $file, $line ) use ( &$seen ) {
+                $seen[] = sprintf( '%s (%s:%d)', $str, basename( (string) $file ), $line );
+                return true;
+            }
+        );
+
+        try {
+            $fn();
+        } finally {
+            restore_error_handler();
+        }
+
+        return $seen;
+    }
+
+    /**
+     * Positive control for the collector above.
+     *
+     * Without this, every assertion of "raised no warnings" would pass just as
+     * happily if the collector were wired up wrong and saw nothing at all.
+     */
+    public function testTheWarningCollectorActuallySeesWarnings()
+    {
+        $seen = $this->diagnosticsDuring(
+            function () {
+                $empty = [];
+                /** @phpstan-ignore-next-line deliberate: proving the collector fires */
+                $x = @$empty['definitely_not_there'];
+                $y = $empty['definitely_not_there'];
+            }
+        );
+
+        $this->assertNotEmpty( $seen, 'the collector must be able to observe a warning, or every use of it is vacuous' );
+        $this->assertStringContainsString( 'definitely_not_there', $seen[0] );
+    }
+
+    public static function partialMapProvider(): array
+    {
+        // Each omits at least one key the period machinery reads. None of these
+        // is exotic: 'date_range' is a valid period, so ?period=date_range with
+        // a half-filled or missing range arrives from an ordinary edited URL.
+        return [
+            'no map at all'          => [ [] ],
+            'date_range, no dates'   => [ [ 'period' => 'date_range' ] ],
+            'date_range, start only' => [ [ 'period' => 'date_range', 'startDate' => '20260801' ] ],
+            'date_range, end only'   => [ [ 'period' => 'date_range', 'endDate'   => '20260810' ] ],
+            'start date, no period'  => [ [ 'startDate' => '20260801' ] ],
+            'end date, no period'    => [ [ 'endDate'   => '20260810' ] ],
+            'named period, no dates' => [ [ 'period' => 'last_seven_days' ] ],
+            'unknown period alone'   => [ [ 'period' => 'not_a_real_period' ] ],
+        ];
+    }
+
+    /**
+     * A map that omits keys must not raise diagnostics.
+     *
+     * setFromMap() opens by building a defaults array and then discarding it --
+     * array_intersect_key() used it as a key filter only -- so any key the
+     * caller left out stayed out, and the switch below read it anyway.
+     *
+     * @dataProvider partialMapProvider
+     */
+    public function testAPartialMapRaisesNoDiagnostics( array $map )
+    {
+        $period = null;
+
+        $seen = $this->diagnosticsDuring(
+            function () use ( $map, &$period ) {
+                $period = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+                $period->setFromMap( $map );
+            }
+        );
+
+        $this->assertSame( [], $seen, "a partial map raised: " . implode( '; ', $seen ) );
+        $this->assertNotSame( '', (string) $period->get(), 'a partial map should still resolve to some period' );
+    }
+
+    /**
+     * set() never passes through setFromMap, so it needs its own normalization.
+     *
+     * 'day' and 'time_range' are not offered by the picker and are not valid
+     * period names, so setFromMap can never produce them -- set() is the only
+     * way in, and it is the path ReportVisitorsRoster used.
+     *
+     * @dataProvider bypassProvider
+     */
+    public function testSetWithNoMapRaisesNoDiagnostics( string $name )
+    {
+        $period = null;
+
+        $seen = $this->diagnosticsDuring(
+            function () use ( $name, &$period ) {
+                $period = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+                $period->set( $name, [] );
+            }
+        );
+
+        $this->assertSame( [], $seen, "set('$name') raised: " . implode( '; ', $seen ) );
+        $this->assertInstanceOf( \OWA\Module\Base\Classes\Date::class, $period->getStartDate() );
+    }
+
+    public static function bypassProvider(): array
+    {
+        return [ 'day' => [ 'day' ], 'time_range' => [ 'time_range' ], 'date_range' => [ 'date_range' ], 'today' => [ 'today' ] ];
+    }
+
+    /**
+     * Normalizing must not have changed what a well-formed map resolves to.
+     * This is the regression half: the guard is only worth having if the
+     * ordinary cases still land on exactly the same dates.
+     */
+    public function testAWellFormedMapIsUnaffectedByNormalization()
+    {
+        $this->assertSame(
+            [ '2026-08-01', '2026-08-10' ],
+            $this->span( $this->period( 'date_range', [ 'startDate' => '20260801', 'endDate' => '20260810' ] ) ),
+            'an explicit range must survive normalization intact'
+        );
+
+        $this->assertSame(
+            [ date( 'Y-m-d' ), date( 'Y-m-d' ) ],
+            $this->span( $this->period( 'today' ) ),
+            'a named period must survive normalization intact'
+        );
+    }
+
+    /**
+     * The filtering half of the original line still has to work: keys this
+     * class does not own are dropped rather than carried into the date logic.
+     */
+    public function testForeignKeysAreDiscarded()
+    {
+        $seen = $this->diagnosticsDuring(
+            function () {
+                $p = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+                $p->setFromMap( [ 'period' => 'today', 'siteId' => 'x', 'do' => 'y', 'startDate' => '20260801' ] );
+                $this->assertSame( 'today', $p->get() );
+                // 'today' wins over the stray startDate, as it did before.
+                $this->assertSame( date( 'Y-m-d' ), date( 'Y-m-d', $p->getStartDate()->getTimestamp() ) );
+            }
+        );
+
+        $this->assertSame( [], $seen );
+    }
 }
