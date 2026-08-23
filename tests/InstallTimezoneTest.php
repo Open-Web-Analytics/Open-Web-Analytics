@@ -366,13 +366,133 @@ final class InstallTimezoneTest extends TestCase
      * one that does not move. For a self-hosted product whose operator may run
      * servers in several regions, that is the omission most likely to matter.
      */
+    /**
+     * A wizard whose timezone field is governed by a constant.
+     *
+     * Rendered rather than scanned. The other tests in this file read the
+     * template as text, which cannot tell whether a branch is reachable -- and
+     * this one has two branches that must not both fire.
+     */
+    private function renderWizard( string $constant ): string
+    {
+        $t = new class('base') extends \OWA\Core\Template {
+            public $fake_constant = '';
+            function configFileConstantFor( $module, $key ) { return $this->fake_constant; }
+            function getNs() { return ''; }
+        };
+
+        $t->fake_constant = $constant;
+        $t->set('defaults', array());
+        $t->set_template('install_defaults_entry.php');
+
+        return $t->fetch();
+    }
+
+    /**
+     * The wizard is reachable with the constant already in force.
+     *
+     * The installer refuses to overwrite an existing owa-config.php, so an
+     * operator who wrote one by hand -- the documented path for a CLI install,
+     * and the usual one for a scripted deploy -- arrives at this step with
+     * OWA_TIMEZONE already deciding the answer. An editable field there would
+     * take a choice that never takes effect.
+     */
+    public function testTheWizardFieldIsDisabledWhenAConstantSuppliesIt(): void
+    {
+        $html = $this->renderWizard( 'OWA_TIMEZONE' );
+
+        $this->assertMatchesRegularExpression(
+            '/<select name="timezone" disabled="disabled">/', $html,
+            'the picker must not be editable when a constant decides the value' );
+
+        $this->assertStringContainsString( 'OWA_TIMEZONE', $html,
+            'the message has to name the constant, or it is not actionable' );
+    }
+
+    /**
+     * A disabled control is not submitted, and unlike the options page the
+     * installer validates timezone as REQUIRED -- so without a hidden carrier
+     * the wizard would refuse to advance.
+     */
+    public function testTheDisabledFieldStillSubmitsAValue(): void
+    {
+        $html = $this->renderWizard( 'OWA_TIMEZONE' );
+
+        $this->assertMatchesRegularExpression(
+            '/<input type="hidden" name="timezone"\s+value="[^"]+"/', $html,
+            'a disabled select posts nothing, and InstallBase requires the field' );
+    }
+
+    public function testWithoutAConstantTheFieldIsOrdinary(): void
+    {
+        $html = $this->renderWizard( '' );
+
+        $this->assertStringContainsString( '<select name="timezone">', $html );
+        $this->assertStringNotContainsString( 'disabled="disabled"', $html );
+        $this->assertStringNotContainsString( 'OWA_TIMEZONE', $html );
+        $this->assertStringContainsString( 'not retroactive', $html,
+            'the ordinary case keeps the warning that the choice is permanent' );
+    }
+
+    /**
+     * Both renders must offer the full picker. The conf files assign their
+     * arrays into the template scope, so including them with require_once made
+     * a second render in the same process produce an EMPTY picker -- silently,
+     * with no error and no output.
+     */
+    public function testThePickerSurvivesASecondRenderInTheSameProcess(): void
+    {
+        $first  = $this->renderWizard( 'OWA_TIMEZONE' );
+        $second = $this->renderWizard( '' );
+
+        $this->assertGreaterThan( 200, substr_count( $first, '<option' ) );
+        $this->assertSame(
+            substr_count( $first, '<option' ),
+            substr_count( $second, '<option' ),
+            'a second render must offer the same zones as the first' );
+    }
+
+    /**
+     * The server-side half. The browser honouring `disabled` is a courtesy;
+     * this is the guarantee.
+     */
+    public function testTheInstallerDoesNotStoreAConstantGovernedTimezone(): void
+    {
+        $src = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/InstallBase.php' );
+
+        $this->assertMatchesRegularExpression(
+            "/configFileConstantFor\(\s*'base',\s*'timezone'\s*\)/", $src,
+            'InstallBase must consult the constant before persisting' );
+
+        $guard = strpos( $src, 'configFileConstantFor' );
+        $store = strpos( $src, "persistSetting('base', 'timezone'" );
+
+        $this->assertNotFalse( $guard );
+        $this->assertNotFalse( $store );
+        $this->assertLessThan( $store, $guard,
+            'the guard has to come before the write, not after it' );
+    }
+
     public function testUtcIsOfferedByThePicker(): void
     {
-        require_once OWA_DIR . 'conf/country2Timezones.php';
-        require_once OWA_DIR . 'conf/countryCodes2Names.php';
+        /*
+         * Loaded into an isolated scope with require, not require_once.
+         *
+         * These files only assign their arrays into the calling scope, so
+         * require_once here made this test depend on nothing else having
+         * included them first -- and once another test in this class started
+         * RENDERING the picker, that stopped being true and the arrays arrived
+         * undefined. Order-dependent by construction; this makes it not.
+         */
+        $load = static function ( string $file ) {
+            require OWA_DIR . 'conf/' . $file;
+            return get_defined_vars();
+        };
 
-        /** @var array<string, array<string>> $timezones */
-        /** @var array<string, string> $countryCode2Name */
+        $timezones        = $load('country2Timezones.php')['timezones'];
+        $countryCode2Name = $load('countryCodes2Names.php')['countryCode2Name'];
+
         $offered = array();
 
         foreach ($timezones as $zones) {

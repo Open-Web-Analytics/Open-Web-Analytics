@@ -158,8 +158,13 @@
                 // PHPStan cannot follow a require path built from a constant.
                 /** @var array<string, array<string>> $timezones */
                 /** @var array<string, string> $countryCode2Name */
-                require_once(OWA_DIR.'conf/country2Timezones.php');
-                require_once(OWA_DIR.'conf/countryCodes2Names.php');
+                // require, NOT require_once: these files exist only to assign
+                // $timezones and $countryCode2Name into this scope, so a second
+                // render in the same process would find both undefined and the
+                // page would come out with an empty picker. Re-assigning two
+                // arrays is cheap; silently losing 285 options is not.
+                require(OWA_DIR.'conf/country2Timezones.php');
+                require(OWA_DIR.'conf/countryCodes2Names.php');
                 $selected_already = false;
                 $selected = '';
                 ksort($timezones);

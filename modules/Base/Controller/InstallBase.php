@@ -89,7 +89,18 @@ class InstallBase extends \OWA\Core\Controller\Install {
              */
             $timezone = $this->getParam('timezone');
 
-            if ( $timezone && in_array( $timezone, \DateTimeZone::listIdentifiers(), true ) ) {
+            /*
+             * A constant in owa-config.php already decides this, and wins on
+             * every boot, so storing a value here would be inert -- and would
+             * quietly take effect if the constant were ever removed. The form
+             * renders the field disabled in that case; this is the half that
+             * does not depend on the browser having honoured it.
+             */
+            if ( $this->c->configFileConstantFor( 'base', 'timezone' ) ) {
+
+                $this->e->notice( 'Timezone supplied by a config file constant; not storing the submitted value.' );
+
+            } elseif ( $timezone && in_array( $timezone, \DateTimeZone::listIdentifiers(), true ) ) {
 
                 $this->c->persistSetting('base', 'timezone', $timezone);
             }
