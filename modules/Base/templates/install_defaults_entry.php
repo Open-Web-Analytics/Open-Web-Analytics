@@ -16,6 +16,70 @@
         </p>
 
         <p class="form-row">
+            <span class="form-label">Reporting Timezone</span>
+            <span class="form-field">
+                <select name="<?php echo $view->getNs();?>timezone">
+                <?php
+                /*
+                 * Asked HERE, at install, because it is not retroactive.
+                 *
+                 * yyyymmdd and the nine date-part columns are derived in this
+                 * timezone and written INTO each fact row, so changing it later
+                 * re-buckets new rows while history keeps the old boundaries --
+                 * and nothing records which zone a row was derived under. The
+                 * shift can be up to 21 hours. Choosing it once, before any data
+                 * exists, is the only time the choice is free.
+                 *
+                 * These two conf files exist only to declare their arrays.
+                 */
+                /** @var array<string, array<string>> $timezones */
+                /** @var array<string, string> $countryCode2Name */
+                require_once(OWA_DIR.'conf/country2Timezones.php');
+                require_once(OWA_DIR.'conf/countryCodes2Names.php');
+
+                // Falls back to the CONFIGURED default, not to empty. 'defaults'
+                // is only populated when this form re-renders after a validation
+                // error, so on the first render an empty fallback would preselect
+                // whichever zone happens to sort first -- silently choosing for
+                // the operator, which is the failure this field exists to prevent.
+                $current = $view->defaults['timezone']
+                    ?? \OWA\Core\CoreAPI::getSetting('base', 'timezone');
+                $selected_already = false;
+                ksort($timezones);
+
+                foreach ( $timezones as $country => $zones ) {
+
+                    $country_name = isset($countryCode2Name[$country])
+                        ? $countryCode2Name[$country]
+                        : 'unknown - '.$country;
+
+                    echo sprintf('<optgroup label="%s">', htmlspecialchars($country_name));
+
+                    foreach ( $zones as $value ) {
+
+                        $display_value = str_replace('_', ' ', $value);
+
+                        if ( ! $selected_already && $current === $value ) {
+                            $selected_already = true;
+                            echo sprintf('<option selected="yes" value="%s">%s</option>',
+                                htmlspecialchars($value), htmlspecialchars($display_value));
+                        } else {
+                            echo sprintf('<option value="%s">%s</option>',
+                                htmlspecialchars($value), htmlspecialchars($display_value));
+                        }
+                    }
+
+                    echo '</optgroup>';
+                }
+                ?>
+                </select>
+            </span>
+            <span class="form-instructions">Statistics are bucketed into days using this
+            timezone. <strong>Changing it later is not retroactive</strong> — existing data
+            keeps the day boundaries it was recorded with.</span>
+        </p>
+
+        <p class="form-row">
             <span class="form-label">Your Admin Name</span>
             <span class="form-field">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] );?>">

@@ -422,6 +422,25 @@ class Template extends TemplateEngine {
      *
      * @return string
      */
+    /**
+     * The config-file constant governing a setting, or '' if none is.
+     *
+     * A settings field whose value comes from owa-config.php must render
+     * read-only and say which constant is responsible -- a constant beats the
+     * stored value (see Settings::stripSettingsSuppliedByConstants), so an
+     * editable field would accept a change that never takes effect. Naming the
+     * constant is what makes that actionable: "set in owa-config.php" leaves the
+     * operator hunting.
+     *
+     * @param string $module
+     * @param string $key
+     * @return string
+     */
+    function configFileConstantFor( $module, $key ) {
+
+        return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( $module, $key );
+    }
+
     function getNs() {
 
         return \OWA\Core\CoreAPI::appNs();

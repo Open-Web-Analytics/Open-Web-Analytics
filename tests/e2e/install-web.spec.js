@@ -101,6 +101,19 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         // is a separate select.
         await page.selectOption('select[name="protocol"]', INFO.install_site.startsWith('https') ? 'https://' : 'http://');
         await page.fill('input[name="domain"]', INFO.install_site.replace(/^https?:\/\//, ''));
+
+        // The wizard asks for the reporting timezone now, and installBase
+        // requires it. It is asked here because the choice is NOT retroactive:
+        // yyyymmdd and the date-part columns are derived in this zone and written
+        // into every fact row, so changing it later re-buckets new data while
+        // history keeps its old day boundaries.
+        // Europe/London deliberately, not the America/Los_Angeles default: picking
+        // the default would pass whether or not the submitted value is honoured.
+        // (UTC is not selectable -- conf/country2Timezones.php lists 285 zones
+        // and none of them is UTC, GMT or Etc/UTC.)
+        await page.selectOption('select[name="timezone"]', 'Europe/London');
+        await expect(page.locator('select[name="timezone"]')).toHaveValue('Europe/London');
+
         await page.fill('input[name="user_id"]', INFO.install_admin_id);
         await page.fill('input[name="email_address"]', INFO.install_admin_id);
         await page.fill('input[name="password"]', INFO.install_admin_pass);

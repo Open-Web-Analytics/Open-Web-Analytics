@@ -103,8 +103,15 @@ switch ($cmd) {
     case 'prepare-cli': out(prepareCli($repoRoot));             break;
     case 'webform':   out(webForm($repoRoot));                  break;
     case 'writecli':  out(writeCliConfig($repoRoot));           break;
-    case 'assert-web':out(assertInstalled($repoRoot, SCRATCH_DB_WEB, INSTALL_ADMIN_ID, 'web'));   break;
-    case 'assert-cli':out(assertInstalled($repoRoot, SCRATCH_DB_CLI, INSTALLCLI_ADMIN_ID, 'cli')); break;
+    // The web wizard SUBMITS Europe/London -- deliberately not the shipped
+    // default, so the check fails if the submitted value is ignored.
+    //
+    // The CLI installer takes its configuration from owa-config.php and asks for
+    // nothing, so it persists NO timezone at all: get() falls through to the
+    // config file and then the default. Passing null skips the check rather than
+    // asserting a value the CLI path never writes.
+    case 'assert-web':out(assertInstalled($repoRoot, SCRATCH_DB_WEB, INSTALL_ADMIN_ID, 'web', 'Europe/London')); break;
+    case 'assert-cli':out(assertInstalled($repoRoot, SCRATCH_DB_CLI, INSTALLCLI_ADMIN_ID, 'cli', null)); break;
     case 'restore':   out(restore($repoRoot));                  break;
     case 'doctor':    out(doctor($repoRoot));                   break;
     case 'info':      out(info());                              break;
@@ -425,7 +432,7 @@ function prepareCli(string $repoRoot): array
  * install_complete = true. Direct SQL (no OWA boot) so it works regardless of
  * which config file is currently in place.
  */
-function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, string $path): array
+function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, string $path, ?string $expectedTimezone = null): array
 {
     assertScratchName($db);
     $creds = liveDbCreds($repoRoot);
@@ -473,6 +480,23 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
             $checks['install_complete'] =
                 (strpos($blob, 'install_complete') !== false)
                 && (bool) preg_match('/install_complete[^;]*;b:1/', $blob);
+
+            /*
+             * 4b. The timezone the wizard was given is the one that got stored.
+             *
+             * Asserted because the choice is NOT retroactive -- yyyymmdd and the
+             * date-part columns are derived in this zone and written into every
+             * fact row -- so a wizard that collects it and drops it on the floor
+             * is worse than one that never asked: the operator believes they
+             * chose. Checked against the value the spec submits, and that value
+             * is deliberately NOT the shipped default, so this fails if the
+             * submitted timezone is ignored.
+             */
+            if ( $expectedTimezone !== null ) {
+
+                $checks['timezone_stored'] =
+                    (bool) preg_match('/timezone[^;]*;s:\d+:"' . preg_quote($expectedTimezone, '/') . '"/', $blob);
+            }
         }
     }
     // 5. Fact tables are born partitioned, with a lead of future periods.

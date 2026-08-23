@@ -206,6 +206,40 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 
 /**
+ * REPORTING TIMEZONE
+ *
+ * The timezone statistics are bucketed into calendar days with. Defaults to
+ * America/Los_Angeles if you set nothing, which is unlikely to be what you want.
+ *
+ *      define('OWA_TIMEZONE', 'Europe/London');
+ *
+ * SET THIS BEFORE YOU COLLECT DATA. The choice is not retroactive: each request
+ * is filed under a calendar day at the moment it is recorded, using the timezone
+ * in force then, and that day is written into the row. Changing it later applies
+ * only to new traffic -- existing data keeps the boundaries it was recorded
+ * with, and reports spanning the change will mix the two. Depending on how far
+ * apart the zones are, a day boundary can move by up to 21 hours.
+ *
+ * IF YOU SET THIS, IT WINS. The admin UI can also set the timezone (Options ->
+ * General), but a constant defined here overrides whatever is stored in the
+ * database, for as long as it stays defined. Comment it out again and the stored
+ * value takes over.
+ *
+ * That is true of every constant in this file: define it and it is authoritative;
+ * leave it undefined and OWA uses the database value, then the built-in default.
+ * The options form will tell you when a setting you are changing is being
+ * overridden from here.
+ *
+ * Use any identifier from https://www.php.net/manual/en/timezones.php. An
+ * unrecognised value is ignored rather than applied, because a timezone that
+ * silently failed to take effect would file every subsequent request under the
+ * wrong day. Note the UI's picker is organised by country and so does not offer
+ * UTC -- this constant does.
+ */
+//define('OWA_TIMEZONE', 'Europe/London');
+
+
+/**
  * MAXMIND GEOIP LICENCE KEY
  *
  * Only relevant if the Maxmind GeoIP module is activated.

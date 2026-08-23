@@ -73,6 +73,7 @@ namespace OWA\Core;
  * @method mixed getAvatarImage($email)
  * @method mixed getBrowserIcon($browser_family, $size = '128x128', $module = 'base')
  * @method mixed getCurrentUser()
+ * @method string configFileConstantFor(string $module, string $key)
  * @method mixed getNs()
  * @method mixed getSiteThumbnail($domain, $width = '200')
  * @method mixed getTemplatePath($module, $file)
