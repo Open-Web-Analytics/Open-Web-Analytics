@@ -51,7 +51,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
             'last_week', 'last_month', 'last_year', 'last_seven_days',
             'last_thirty_days', 'same_day_last_week', 'same_week_last_year',
             'same_month_last_year', 'last_24_hours', 'last_hour',
-            'last_half_hour', 'all_time', 'date_range', 'time_range', 'day',
+            'last_half_hour', 'date_range', 'time_range', 'day',
         );
 
         $cases = array();
@@ -106,20 +106,19 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
     /**
      * Six periods are implemented and refused.
      *
-     * _setDates() builds last_24_hours, last_hour, last_half_hour, all_time,
-     * time_range and day, but isValid() is derived from the picker's label list
-     * plus date_range -- so asking for any of them through the normal path gets
-     * the DEFAULT reporting period instead, and says so only in a debug line
-     * that is off unless debugging is on.
+     * _setDates() still builds last_24_hours, last_hour, last_half_hour,
+     * time_range and day, but getValidPeriods() does not include them, so
+     * asking for one gets the DEFAULT reporting period instead.
      *
-     * Pinned rather than fixed: whether those six should be reachable is a
-     * decision, and this records which way it currently falls so a change to
-     * either list is visible instead of silent.
+     * Left unoffered deliberately: the sub-hour periods need bound pruning at
+     * finer than day granularity before they are anything but expensive, and
+     * nothing needs them today. all_time is not on this list because it no
+     * longer exists at all -- see the test below.
      */
     public function testImplementedButUnofferedPeriodsSilentlyBecomeTheDefault(): void
     {
         $refused = array( 'last_24_hours', 'last_hour', 'last_half_hour',
-                          'all_time', 'time_range', 'day' );
+                          'time_range', 'day' );
 
         $default = $this->period()->getDefaultReportingPeriod();
 
@@ -135,12 +134,135 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         }
     }
 
+    /**
+     * all_time is gone, implementation and all.
+     *
+     * It set the start to 1 January 1969 and the end to now: a scan of every
+     * partition of every fact table, by construction, since a range that wide
+     * prunes to nothing. It was already unreachable through the normal path,
+     * which is why nobody noticed the visitor roster linking to it -- that link
+     * had been quietly serving the default period instead of the visitor's full
+     * history.
+     *
+     * Removing the case as well as the acceptance is what stops set(), which
+     * has no guard, from still being able to ask for it.
+     */
+    public function testAllTimeIsGoneEntirely(): void
+    {
+        $this->assertFalse( $this->period()->isValid( 'all_time' ) );
+
+        $source = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Classes/TimePeriod.php' );
+
+        $this->assertStringNotContainsString( 'case "all_time"', $source,
+            'the implementation must go too, or set() can still reach it' );
+
+        // ...and nothing links to it any more.
+        foreach ( glob( OWA_DIR . 'modules/Base/templates/*.php' ) as $tpl ) {
+
+            $this->assertStringNotContainsString( "'all_time'", (string) file_get_contents( $tpl ),
+                basename( $tpl ) . ' still asks for a period that no longer exists' );
+        }
+    }
+
+    /**
+     * The web and the API validate against the same list.
+     *
+     * They did not: this class accepted the picker's labels plus date_range,
+     * while ReportsRest built its own from the labels alone -- so
+     * `period=date_range` was valid over the web and rejected over the API, and
+     * a custom range could only be requested by omitting the parameter.
+     *
+     * The inference still works, and that matters: a caller sending two dates
+     * and nothing else should not have to add a parameter that carries no
+     * information.
+     */
+    public function testTheApiAndTheWebAgreeOnWhatAPeriodMayBe(): void
+    {
+        $valid = $this->period()->getValidPeriods();
+
+        $this->assertContains( 'date_range', $valid,
+            'a custom range is a period a caller may name' );
+
+        foreach ( array_keys( $this->period()->getPeriodLabels() ) as $offered ) {
+            $this->assertContains( $offered, $valid,
+                "the picker offers \"$offered\" but it is not accepted" );
+        }
+
+        // The REST controller must read that list rather than build a second one.
+        $rest = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/ReportsRest.php' );
+
+        $this->assertStringContainsString( 'getValidPeriods()', $rest,
+            'ReportsRest must validate against the shared list' );
+        $this->assertStringNotContainsString( 'getPeriodLabels()', $rest,
+            'building a second list from the dropdown labels is how these drifted apart' );
+    }
+
+    /**
+     * Naming the range must stay optional.
+     */
+    public function testTwoDatesAloneAreStillEnough(): void
+    {
+        $p = $this->fromMap( array( 'startDate' => '20260801', 'endDate' => '20260815' ) );
+
+        $this->assertSame( 'date_range', $p->get() );
+        $this->assertSame( 20260801, (int) $p->getStartDate()->get( 'yyyymmdd' ) );
+    }
+
     public function testAnArbitraryValueFallsBackRatherThanReachingTheDateArithmetic(): void
     {
         $p = $this->fromMap( array( 'period' => 'nonsense; drop table' ) );
 
         $this->assertSame( $this->period()->getDefaultReportingPeriod(), $p->get() );
         $this->assertIsObject( $p->getStartDate() );
+    }
+
+    /**
+     * The web refuses an invalid period instead of quietly substituting one.
+     *
+     * The picker constrains the choice, so reaching this means the URL was
+     * edited by hand. Answering is better than guessing -- and it is what the
+     * REST API already did, so the two now agree on what a period may be and on
+     * what happens when it is not one.
+     */
+    public function testTheWebRefusesAnInvalidPeriodRatherThanSubstituting(): void
+    {
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        foreach ( array( 'garbage', 'all_time', 'last_hour' ) as $bad ) {
+
+            $data = (array) ( new \OWA\Module\Base\Controller\ReportPages(
+                array( 'period' => $bad ) ) )->doAction();
+
+            $this->assertSame( 'base.error', $data['view'] ?? null,
+                "period=$bad was accepted and quietly replaced" );
+
+            $this->assertArrayNotHasKey( 'subview', $data,
+                "period=$bad still rendered a report" );
+
+            $this->assertStringContainsString( $bad, (string) ( $data['error_msg'] ?? '' ),
+                'the message must name the value that was refused' );
+        }
+    }
+
+    public function testAValidPeriodAndNoPeriodBothStillRender(): void
+    {
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        foreach ( array( array(), array( 'period' => 'today' ),
+                         array( 'period' => 'date_range', 'startDate' => '20260801',
+                                'endDate' => '20260815' ) ) as $params ) {
+
+            $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+
+            $this->assertSame( 'base.report', $data['view'] ?? null,
+                'a legitimate request must still render: ' . json_encode( $params ) );
+        }
     }
 
     public function testNoPeriodAtAllYieldsTheConfiguredDefault(): void

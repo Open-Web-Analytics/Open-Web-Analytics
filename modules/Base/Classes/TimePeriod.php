@@ -105,13 +105,35 @@ class TimePeriod {
     }
 
     // checks to see if the period value passsed is valid.
+    /**
+     * Every period a request may name.
+     *
+     * One list, because there were two: this class accepted the picker's labels
+     * plus date_range, while the REST controller built its own from the labels
+     * alone. The same request was therefore valid over the web and rejected
+     * over the API -- `period=date_range` -- for no reason anyone chose.
+     *
+     * date_range belongs here and not in getPeriodLabels() because that list is
+     * the DROPDOWN: a custom range is not an entry in it, it is what the
+     * calendar produces.
+     *
+     * Naming it stays optional. Two dates and no period infer date_range (see
+     * setFromMap), which is the form the API has always taken and the one that
+     * should not need a redundant parameter to keep working.
+     *
+     * @return array<int, string>
+     */
+    function getValidPeriods() {
+
+        $valid = array_keys( $this->getPeriodLabels() );
+        $valid[] = 'date_range';
+
+        return $valid;
+    }
+
     function isValid( $value ) {
 
-        $valid_periods = $this->getPeriodLabels();
-        //add in date_range
-        $valid_periods[ 'date_range' ] = '';
-
-        return array_key_exists( $value, $valid_periods );
+        return in_array( $value, $this->getValidPeriods(), true );
     }
 
     function isDefaultPeriod() {
@@ -280,10 +302,24 @@ class TimePeriod {
                 ($nowDate->get('day_of_week') * 3600 * 24);
                 break;
 
-            case "all_time":
-                $end = time();
-                $start = mktime(0, 0, 0, 1, 1, 1969);
-                break;
+            /*
+             * "all_time" is gone. It set the start to 1 January 1969 and the
+             * end to now, which is a full scan of every fact table on the
+             * installation -- across every partition, by construction, since
+             * the range cannot be pruned to any of them.
+             *
+             * It was already unreachable through the normal path: isValid() is
+             * built from the picker's labels plus date_range, so a request for
+             * it silently became the default reporting period. Removing the
+             * case makes that refusal honest instead of accidental, and stops
+             * set() -- which has no such guard -- from being able to ask for it
+             * directly.
+             *
+             * The sub-hour periods (last_hour, last_half_hour, last_24_hours)
+             * remain implemented and unoffered. They need bound pruning that
+             * works at finer than day granularity before they would be
+             * anything but expensive, and nothing needs them today.
+             */
 
             case "last_thirty_days":
                 $end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);

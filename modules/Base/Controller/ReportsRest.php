@@ -39,9 +39,20 @@ class ReportsRest extends \OWA\Core\ReportController {
 			// make sure period string is valid
 			if ( $this->get( 'period' ) ) {
 				
-				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');	
-				$lables = array_keys($period->getPeriodLabels() );
-				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $lables, 'stopOnError' => true) );				
+				/*
+				 * The same list the web path validates against, rather than a
+				 * second one built here. These had drifted: this controller
+				 * used the dropdown's labels alone, so `period=date_range` --
+				 * accepted everywhere else -- was rejected over the API, and
+				 * the only way to ask for a custom range was to omit the
+				 * parameter and let it be inferred.
+				 *
+				 * That inference stays. Naming the period is now permitted, not
+				 * required; a caller sending two dates and nothing else is
+				 * still doing the normal thing.
+				 */
+				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $period->getValidPeriods(), 'stopOnError' => true) );
 			}
 		} else {
 

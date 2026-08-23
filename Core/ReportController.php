@@ -62,6 +62,71 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
+     * An invalid period is refused rather than quietly replaced.
+     *
+     * It used to fall back to the default reporting period and say so only in a
+     * debug line, which is off unless debugging is on. That silence is not
+     * hypothetical harm: the visitor roster linked to `period=all_time` for
+     * years, all_time was never an accepted value, and every one of those links
+     * served seven days while claiming to show a visitor's whole history.
+     * Nobody could see it.
+     *
+     * The picker constrains the choice, so an invalid period means the URL was
+     * edited by hand -- exactly the case where an answer is better than a
+     * guess. This is also what the REST API already does, against the same
+     * list, so the two paths now agree on what a period may be AND on what
+     * happens when it is not one.
+     *
+     * setFromMap() keeps its fallback. It is the backstop for callers that do
+     * not come through a controller, and defence in depth is worth more than
+     * the tidiness of removing it.
+     */
+    function validate() {
+
+        $period = $this->getParam('period');
+
+        if ( $period ) {
+
+            $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+
+            $this->addValidation(
+                'period',
+                $period,
+                'inArray',
+                array(
+                    'possible_values' => $timePeriod->getValidPeriods(),
+                    'stopOnError'     => true,
+                    'errorMsg'        => sprintf(
+                        '"%s" is not a reporting period. Choose one from the date picker.',
+                        htmlspecialchars( (string) $period, ENT_QUOTES ) ),
+                )
+            );
+        }
+    }
+
+    /**
+     * Where a failed validation lands.
+     *
+     * Core\Controller has no errorAction() of its own -- doAction() calls it
+     * when validations fail, so a controller that validates without defining
+     * one fatals instead of refusing. Defining it here is part of adding the
+     * validation above, not an extra.
+     */
+    function errorAction() {
+
+        if ( ! headers_sent() ) {
+            http_response_code( 400 );
+        }
+
+        $this->set( 'error_msg', 'The report could not be shown: '
+            . implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+
+        $this->setView( 'base.error' );
+
+        return $this->data;
+    }
+
+    /**
      * Pre Action
      * Current user is fully authenticated and loaded by this point
      *
