@@ -157,7 +157,7 @@ jQuery(document).ready(function() {
     showGoalDetails();
 
     // show hide the right goal type details
-    jQuery("input[name='owa_goal[goal_type]']").change(function(e) {
+    jQuery("input[name='<?php echo $view->getNs();?>goal[goal_type]']").change(function(e) {
         showGoalDetails();
     });
 
@@ -171,7 +171,7 @@ jQuery(document).ready(function() {
 });
 
 function showGoalDetails() {
-    var val = jQuery("input[name='owa_goal[goal_type]']:checked").val();
+    var val = jQuery("input[name='<?php echo $view->getNs();?>goal[goal_type]']:checked").val();
     OWA.debug(val);
     jQuery('.goal-detail').hide();
     var selector = '#'+val+'_details';
@@ -217,12 +217,12 @@ function renderStep(step) {
 <![CDATA[
 <tr>
 <th class="">Step <*= this.step_number *></th>
-<td class=""><input type="text" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][url]" value="<*= this.url *>"></td>
-<td class=""><input type="text" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][name]" value="<*= this.name *>"></td>
+<td class=""><input type="text" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][url]" value="<*= this.url *>"></td>
+<td class=""><input type="text" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][name]" value="<*= this.name *>"></td>
 <td class="">
 
 
-<input type="checkbox" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="true"
+<input type="checkbox" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="true"
 <* if ( this.is_required ) { *>
 CHECKED
 <* } *>

@@ -763,15 +763,27 @@ class Lib {
 
             foreach ($params as $n => $v) {
 
-                // if namespace is present in param
-                if (strstr($n, $ns)) {
-                    // strip the namespace value
-                    $striped_n = substr($n, $len);
-                    //add to striped array
-                    $striped_params[$striped_n] = $v;
-
+                // The namespace has to be a PREFIX, not merely present. This
+                // used to test strstr() and then chop $len characters off the
+                // front regardless, so a name that carried 'owa_' anywhere --
+                // a host page's 'my_owa_setting' -- was both matched and then
+                // mis-sliced into a key that was never sent. Anchoring it is
+                // also what makes the namespaced and bare param sets exact
+                // complements, which RequestContainer relies on.
+                if ( strpos( (string) $n, $ns ) !== 0 ) {
+                    continue;
                 }
 
+                // strip the namespace value
+                $striped_n = substr($n, $len);
+
+                // a param named exactly the namespace has no name left
+                if ($striped_n === '' || $striped_n === false) {
+                    continue;
+                }
+
+                //add to striped array
+                $striped_params[$striped_n] = $v;
             }
 
             return $striped_params;
@@ -802,7 +814,7 @@ class Lib {
 
             if (!in_array($n, $control_params)) {
 
-                $get .= $config['ns'].$n.'='.$v.'&';
+                $get .= \OWA\Core\CoreAPI::appNs().$n.'='.$v.'&';
 
             }
         }

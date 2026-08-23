@@ -424,7 +424,7 @@ class Template extends TemplateEngine {
      */
     function getNs() {
 
-        return $this->config['ns'];
+        return \OWA\Core\CoreAPI::appNs();
     }
 
     function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
@@ -450,7 +450,7 @@ class Template extends TemplateEngine {
 
                 foreach ($all_params as $n => $v) {
 
-                    $get .= \OWA\Core\CoreAPI::getSetting('base','ns').$n.'='.$v;
+                    $get .= $this->getNs().$n.'='.$v;
 
                     $i++;
 
@@ -564,7 +564,7 @@ class Template extends TemplateEngine {
 
             foreach ($all_params as $n => $v) {
 
-                $get .= $this->config['ns'].\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
+                $get .= $this->getNs().\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
 
                 $i++;
 
@@ -1076,7 +1076,7 @@ class Template extends TemplateEngine {
 
         return sprintf(
                 '<input type="hidden" name="%snonce" value="%s">',
-                \OWA\Core\CoreAPI::getSetting('base', 'ns'),
+                $this->getNs(),
                 \OWA\Core\CoreAPI::createNonce($action));
     }
 

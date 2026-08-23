@@ -76,37 +76,37 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         ]);
         // A good environment routes straight to the config-entry form (the DB
         // fields). If the env were bad we'd see error rows instead.
-        const dbHostField = page.locator('input[name="owa_db_host"]');
+        const dbHostField = page.locator('input[name="db_host"]');
         await expect(dbHostField).toBeVisible();
 
         // --- STEP 3+4: Config entry -> installConfig (writes owa-config.php) ---
-        await page.fill('input[name="owa_public_url"]', creds.public_url);
-        await page.selectOption('select[name="owa_db_type"]', creds.db_type);
-        await page.fill('input[name="owa_db_host"]', creds.db_host);
-        await page.fill('input[name="owa_db_port"]', String(creds.db_port));
-        await page.fill('input[name="owa_db_name"]', creds.db_name); // the SCRATCH db
-        await page.fill('input[name="owa_db_user"]', creds.db_user);
-        await page.fill('input[name="owa_db_password"]', creds.db_password);
+        await page.fill('input[name="public_url"]', creds.public_url);
+        await page.selectOption('select[name="db_type"]', creds.db_type);
+        await page.fill('input[name="db_host"]', creds.db_host);
+        await page.fill('input[name="db_port"]', String(creds.db_port));
+        await page.fill('input[name="db_name"]', creds.db_name); // the SCRATCH db
+        await page.fill('input[name="db_user"]', creds.db_user);
+        await page.fill('input[name="db_password"]', creds.db_password);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_save_button"]').click(),
+            page.locator('input[name="save_button"]').click(),
         ]);
 
         // installConfig validates the connection, writes owa-config.php, and
         // redirects to the defaults-entry form (the admin-user + site fields).
-        await expect(page.locator('input[name="owa_user_id"]')).toBeVisible();
+        await expect(page.locator('input[name="user_id"]')).toBeVisible();
 
         // --- STEP 5+6: Defaults entry -> installBase (schema+admin+site) ------
         // domain must NOT start with http (installBase validation) -- protocol
         // is a separate select.
-        await page.selectOption('select[name="owa_protocol"]', INFO.install_site.startsWith('https') ? 'https://' : 'http://');
-        await page.fill('input[name="owa_domain"]', INFO.install_site.replace(/^https?:\/\//, ''));
-        await page.fill('input[name="owa_user_id"]', INFO.install_admin_id);
-        await page.fill('input[name="owa_email_address"]', INFO.install_admin_id);
-        await page.fill('input[name="owa_password"]', INFO.install_admin_pass);
+        await page.selectOption('select[name="protocol"]', INFO.install_site.startsWith('https') ? 'https://' : 'http://');
+        await page.fill('input[name="domain"]', INFO.install_site.replace(/^https?:\/\//, ''));
+        await page.fill('input[name="user_id"]', INFO.install_admin_id);
+        await page.fill('input[name="email_address"]', INFO.install_admin_id);
+        await page.fill('input[name="password"]', INFO.install_admin_pass);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_save_button"]').click(),
+            page.locator('input[name="save_button"]').click(),
         ]);
 
         // --- STEP 7: Finish ---------------------------------------------------

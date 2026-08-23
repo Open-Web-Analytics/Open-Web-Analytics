@@ -54,6 +54,7 @@ final class TemplateLatentVarTest extends TestCase
      */
     private function formSpy(): object
     {
+
         return new class('base') extends \OWA\Core\Template {
 
             function createNonceFormField($action) { return "<!--nonce:$action-->"; }
@@ -63,7 +64,11 @@ final class TemplateLatentVarTest extends TestCase
                 return 'LINK';
             }
 
-            function getNs() { return 'owa_'; }
+            // Delegates rather than hardcoding: this used to return
+            // 'owa_', which stopped being what the admin forms emit when
+            // the namespace split moved them onto app_ns. A double that
+            // pins the old answer renders markup no user ever sees.
+            function getNs() { return \OWA\Core\CoreAPI::appNs(); }
         };
     }
 
@@ -279,7 +284,7 @@ final class TemplateLatentVarTest extends TestCase
                     // what the hoisted views now always provide
                     'site' => [], 'config' => [], 'validation_errors' => [],
                 ],
-                ['name="owa_domain"', '<!--nonce:base.sitesEditSettings-->'],
+                ['name="domain"', '<!--nonce:base.sitesEditSettings-->'],
             ],
             'users_addoredit (add)' => [
                 'users_addoredit.php',
@@ -287,7 +292,7 @@ final class TemplateLatentVarTest extends TestCase
                     'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
                     'isAdmin' => false, 'roles' => ['admin', 'viewer'], 'user' => [],
                 ],
-                ['name="owa_user_id"', 'name="owa_email_address"'],
+                ['name="user_id"', 'name="email_address"'],
             ],
             'options_goal_entry (add)' => [
                 'options_goal_entry.php',
@@ -295,7 +300,7 @@ final class TemplateLatentVarTest extends TestCase
                     'headline' => 'New Goal', 'goal_number' => 1, 'siteId' => 'abc123',
                     'goal' => [], 'goal_groups' => [],
                 ],
-                ['name="owa_goal[goal_name]"', 'name="owa_goal[goal_value]"'],
+                ['name="goal[goal_name]"', 'name="goal[goal_value]"'],
             ],
         ];
     }

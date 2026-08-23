@@ -202,9 +202,9 @@ OWA.resultSetExplorer.prototype = {
         }
 
         // set sort order
-        url.setQueryParam('owa_sort', column + sortorder);
+        url.setQueryParam(OWA.util.appNs('sort'), column + sortorder);
         // remove page param
-        url.removeQueryParam('owa_page');
+        url.removeQueryParam(OWA.util.appNs('page'));
         // fetch new results
         //alert( url.getSource() );
         this.getNewResultSet( url.getSource() );
@@ -219,7 +219,7 @@ OWA.resultSetExplorer.prototype = {
 
         // get current list of dimensions from url
         var url = new OWA.uri( this.resultSet.self );
-        var dims = OWA.util.urldecode(url.getQueryParam('owa_dimensions'));
+        var dims = OWA.util.urldecode(url.getQueryParam(OWA.util.appNs('dimensions')));
 
         var new_dims = [];
 
@@ -249,7 +249,7 @@ OWA.resultSetExplorer.prototype = {
 
             new_dims = new_dims.join(',');
 
-            url.setQueryParam('owa_dimensions', new_dims);
+            url.setQueryParam(OWA.util.appNs('dimensions'), new_dims);
             this.getNewResultSet( url.getSource() );
         }
     },
@@ -259,7 +259,7 @@ OWA.resultSetExplorer.prototype = {
         var url = new OWA.uri( this.resultSet.self );
 
         // set constraints
-        url.setQueryParam('owa_constraints', constraints);
+        url.setQueryParam(OWA.util.appNs('constraints'), constraints);
 
         // fetch new results
         this.getNewResultSet( url.getSource() );
@@ -842,7 +842,7 @@ OWA.resultSetExplorer.prototype = {
 
         var url = url || this.getApiEndpoint();
         url += '?';
-        url += 'owa_do=' + method;
+        url += OWA.util.appNs('do') + '=' + method;
         var count = OWA.util.countObjectProperties(options);
         var i = 1;
         for (var option in options) {
@@ -850,7 +850,7 @@ OWA.resultSetExplorer.prototype = {
             if (options.hasOwnProperty(option)) {
 
                 if (typeof options[option] != 'undefined') {
-                    url += '&owa_' +option + '=' + OWA.util.urlEncode(options[option]);
+                    url += '&' + OWA.util.appNs(option) + '=' + OWA.util.urlEncode(options[option]);
                 }
                 i++;
             }
@@ -1316,7 +1316,7 @@ OWA.dataGrid.prototype = {
         this.constraintPicker.setRelatedMetrics( resultSet.relatedMetrics, [] );
         // add current constraints to this method call
         var resultSet_url = new OWA.uri( resultSet.self );
-        var cur_con = resultSet_url.getQueryParam('owa_constraints');
+        var cur_con = resultSet_url.getQueryParam(OWA.util.appNs('constraints'));
         this.constraintPicker.display(cur_con);
 
         // listen for the constraint change event
@@ -1494,7 +1494,7 @@ OWA.dataGrid.prototype = {
 
         var dims = '';
         var self = new OWA.uri(resultSet.self);
-        dims = OWA.util.urldecode( self.getQueryParam('owa_dimensions') );
+        dims = OWA.util.urldecode( self.getQueryParam(OWA.util.appNs('dimensions')) );
         dims = dims.split(',');
 
         return dims;

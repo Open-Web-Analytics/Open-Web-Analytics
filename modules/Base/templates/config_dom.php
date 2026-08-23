@@ -10,7 +10,10 @@ OWA.config.images_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'image
 OWA.config.log_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'log_url');?>";
 OWA.config.modules_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'modules_url');?>";
 OWA.config.api_endpoint = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');?>";
+// 'ns' names cookies -- it must stay the wire namespace. 'app_ns' is for
+// building OWA's own links, and is empty.
 OWA.config.ns = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'ns');?>";
+OWA.config.app_ns = "<?php echo \OWA\Core\CoreAPI::appNs();?>";
 OWA.config.link_template = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'link_template');?>";
 <?php if (defined('OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development') { ?>
 OWA.config.debug = true;

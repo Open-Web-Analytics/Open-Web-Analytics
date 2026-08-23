@@ -880,7 +880,26 @@ namespace OWA\Module\Base\Classes;
 	 	 
          return array(
              'base' => array(
+                /*
+                 * 'ns' is the WIRE namespace. It is what keeps OWA's names from
+                 * colliding with a tracked page's own: cookie names in a shared
+                 * jar, the attribution params a customer puts on their URLs
+                 * (owa_source, owa_campaign), the cross-domain owa_state param,
+                 * and the OWA_ environment-variable prefix. Changing it breaks
+                 * every existing cookie and every campaign URL in the wild.
+                 *
+                 * 'app_ns' is the namespace for OWA's OWN admin and reporting
+                 * URLs and form fields, where OWA owns the whole query string
+                 * and has nothing to collide with. It is empty: those URLs read
+                 * 'do=base.sites', not 'owa_do=base.sites'.
+                 *
+                 * The two were one setting until the surfaces were separated.
+                 * Prefixed admin URLs are still accepted on the way in -- see
+                 * RequestContainer -- so existing bookmarks and links keep
+                 * working; only what OWA EMITS changed.
+                 */
                 'ns'                                => 'owa_',
+                'app_ns'                            => '',
                 'visitor_param'                        => 'v',
                 'session_param'                        => 's',
                 'site_session_param'                => 'ss', //sdk

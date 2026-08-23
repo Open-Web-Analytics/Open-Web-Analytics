@@ -255,6 +255,21 @@ class CoreAPI {
         return $s->get($module, $name);
     }
 
+    /**
+     * The namespace to EMIT on OWA's own admin/reporting URLs and form fields.
+     *
+     * Empty: OWA owns its whole query string there and has nothing to collide
+     * with. Distinct from the WIRE namespace ('ns'), which still prefixes
+     * cookie names and the params OWA reads off a TRACKED page's URL, where the
+     * query string belongs to someone else.
+     *
+     * @return string
+     */
+    public static function appNs() {
+
+        return (string) \OWA\Core\CoreAPI::getSetting('base', 'app_ns');
+    }
+
     public static function setSetting($module, $name, $value, $persist = false) {
 
         $s = \OWA\Core\CoreAPI::configSingleton();

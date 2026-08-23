@@ -58,7 +58,7 @@ test.describe('admin: authentication (login / logout)', () => {
         // Login failure re-renders the login form (message 2002); it must NOT
         // land authenticated -- no Logout control, and the password field is
         // still on the page.
-        await expect(page.locator('input[name="owa_password"]')).toBeVisible();
+        await expect(page.locator('input[name="password"]')).toBeVisible();
         expect(await page.locator('text=Logout').count()).toBe(0);
     });
 
@@ -71,7 +71,7 @@ test.describe('admin: authentication (login / logout)', () => {
         // After logout, hitting an admin screen must bounce to the login form
         // rather than render the users list (the session is gone).
         await gotoAction(page, 'base.users');
-        await expect(page.locator('input[name="owa_password"]')).toBeVisible();
+        await expect(page.locator('input[name="password"]')).toBeVisible();
     });
 });
 
@@ -101,7 +101,7 @@ test.describe('admin: options update (revertible, snapshot + restore)', () => {
         // safe to change and trivially reverted -- exactly what we want for a
         // non-destructive options round-trip. Snapshot the current value first.
         await gotoAction(page, 'base.optionsGeneral');
-        const field = page.locator('input[name="owa_config[base.excluded_ips]"]');
+        const field = page.locator('input[name="config[base.excluded_ips]"]');
         await expect(field).toBeVisible();
         const original = await field.inputValue();
 
@@ -110,13 +110,13 @@ test.describe('admin: options update (revertible, snapshot + restore)', () => {
 
         const submit = async (value) => {
             await gotoAction(page, 'base.optionsGeneral');
-            const f = page.locator('input[name="owa_config[base.excluded_ips]"]');
+            const f = page.locator('input[name="config[base.excluded_ips]"]');
             await f.fill(value);
             // The form's submit BUTTON carries name=owa_action value=base.optionsUpdate
             // (the nonce is already baked in by createNonceFormField).
             await Promise.all([
                 page.waitForNavigation({ waitUntil: 'networkidle' }),
-                page.locator('button[name="owa_action"][value="base.optionsUpdate"]').click(),
+                page.locator('button[name="action"][value="base.optionsUpdate"]').click(),
             ]);
         };
 
@@ -125,7 +125,7 @@ test.describe('admin: options update (revertible, snapshot + restore)', () => {
             await submit(sentinel);
             await gotoAction(page, 'base.optionsGeneral');
             await expect(
-                page.locator('input[name="owa_config[base.excluded_ips]"]')
+                page.locator('input[name="config[base.excluded_ips]"]')
             ).toHaveValue(sentinel);
         } finally {
             // Restore the original value no matter what the assertion did.
@@ -135,7 +135,7 @@ test.describe('admin: options update (revertible, snapshot + restore)', () => {
         // And confirm the revert took (leave the install exactly as we found it).
         await gotoAction(page, 'base.optionsGeneral');
         await expect(
-            page.locator('input[name="owa_config[base.excluded_ips]"]')
+            page.locator('input[name="config[base.excluded_ips]"]')
         ).toHaveValue(original);
     });
 });
@@ -147,12 +147,12 @@ test.describe('admin: site CRUD', () => {
 
         // --- ADD ---------------------------------------------------------------
         await gotoAction(page, 'base.sitesProfile'); // add form (no siteId => add)
-        await page.fill('input[name="owa_domain"]', FIXTURE.newSiteDomain);
-        await page.fill('input[name="owa_name"]', FIXTURE.newSiteName);
-        await page.fill('textarea[name="owa_description"]', 'created by admin-actions e2e');
+        await page.fill('input[name="domain"]', FIXTURE.newSiteDomain);
+        await page.fill('input[name="name"]', FIXTURE.newSiteName);
+        await page.fill('textarea[name="description"]', 'created by admin-actions e2e');
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_submit_btn"][value="Save Profile"]').click(),
+            page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
         // sitesAdd redirects to base.sites; the new site must appear in the list.
@@ -170,17 +170,18 @@ test.describe('admin: site CRUD', () => {
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
         // On the edit form the domain is fixed (hidden) and only name/description
         // are editable; base.sitesEdit persists name.
-        await page.fill('input[name="owa_name"]', newName);
+        await page.fill('input[name="name"]', newName);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_submit_btn"][value="Save Profile"]').click(),
+            page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
         await gotoAction(page, 'base.sites');
         await expect(page.locator(`text=${newName}`).first()).toBeVisible();
 
         // --- DELETE ------------------------------------------------------------
-        // The Delete link carries the &owa_nonce=... minted by the list page.
+        // The Delete link carries the &nonce=... minted by the list page (the
+        // admin URL namespace is empty; the prefixed spelling is still accepted).
         await gotoAction(page, 'base.sites');
         const deleteLink = page
             .locator(`a[href*="base.sitesDelete"][href*="${createdSiteId}"]`)
@@ -202,13 +203,13 @@ test.describe('admin: user CRUD + site association', () => {
 
         // --- ADD ---------------------------------------------------------------
         await gotoAction(page, 'base.usersProfile'); // add form (no user_id => add)
-        await page.fill('input[name="owa_user_id"]', FIXTURE.newUserId);
-        await page.fill('input[name="owa_real_name"]', 'OWA E2E Created User');
-        await page.selectOption('select[name="owa_role"]', 'analyst');
-        await page.fill('input[name="owa_email_address"]', FIXTURE.newUserId);
+        await page.fill('input[name="user_id"]', FIXTURE.newUserId);
+        await page.fill('input[name="real_name"]', 'OWA E2E Created User');
+        await page.selectOption('select[name="role"]', 'analyst');
+        await page.fill('input[name="email_address"]', FIXTURE.newUserId);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_save_button"]').click(),
+            page.locator('input[name="save_button"]').click(),
         ]);
 
         // usersAdd redirects to base.users; the new user appears in the roster.
@@ -240,19 +241,19 @@ test.describe('admin: user CRUD + site association', () => {
         });
         await expect(userRow()).toBeVisible();
 
-        const userCheckbox = userRow().locator('input[name="owa_allowed_users[]"]');
+        const userCheckbox = userRow().locator('input[name="allowed_users[]"]');
         await expect(userCheckbox).toBeVisible();
 
         // Record the other grants so we can prove the delta left them untouched.
         const grantsBefore = await page.evaluate(() =>
-            [...document.querySelectorAll('input[name="owa_allowed_users[]"]:checked')]
+            [...document.querySelectorAll('input[name="allowed_users[]"]:checked')]
                 .map((el) => el.value)
         );
 
         await userCheckbox.check();
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_submit_btn"][value="Save Users"]').click(),
+            page.locator('input[name="submit_btn"][value="Save Users"]').click(),
         ]);
 
         // Re-open: our user is ticked (the grant round-tripped into an
@@ -260,10 +261,10 @@ test.describe('admin: user CRUD + site association', () => {
         // survives -- the property that a user the form did not target is never
         // affected, which the replace-everything version could not offer.
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
-        await expect(userRow().locator('input[name="owa_allowed_users[]"]')).toBeChecked();
+        await expect(userRow().locator('input[name="allowed_users[]"]')).toBeChecked();
 
         const grantsAfter = await page.evaluate(() =>
-            [...document.querySelectorAll('input[name="owa_allowed_users[]"]:checked')]
+            [...document.querySelectorAll('input[name="allowed_users[]"]:checked')]
                 .map((el) => el.value)
         );
         for (const value of grantsBefore) {
@@ -272,10 +273,10 @@ test.describe('admin: user CRUD + site association', () => {
 
         // --- EDIT (change role admin) -----------------------------------------
         await gotoAction(page, 'base.usersProfile', `&owa_edit=1&owa_user_id=${encodeURIComponent(FIXTURE.newUserId)}`);
-        await page.selectOption('select[name="owa_role"]', 'admin');
+        await page.selectOption('select[name="role"]', 'admin');
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_save_button"]').click(),
+            page.locator('input[name="save_button"]').click(),
         ]);
 
         await gotoAction(page, 'base.users');
@@ -289,7 +290,7 @@ test.describe('admin: user CRUD + site association', () => {
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
         await expect(userRow()).toContainText('always has access');
         await expect(userRow().locator('input[type="checkbox"]')).toBeDisabled();
-        expect(await userRow().locator('input[name="owa_allowed_users[]"]').count()).toBe(0);
+        expect(await userRow().locator('input[name="allowed_users[]"]').count()).toBe(0);
 
         // --- DELETE ------------------------------------------------------------
         await gotoAction(page, 'base.users');
@@ -393,19 +394,19 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
             { waitUntil: 'networkidle' }
         );
         // The form posts password/password2 + hidden owa_k + owa_action.
-        const pw = page.locator('input[name="owa_password"]');
+        const pw = page.locator('input[name="password"]');
         await expect(pw).toBeVisible();
         await pw.fill(newPassword);
-        await page.fill('input[name="owa_password2"]', newPassword);
+        await page.fill('input[name="password2"]', newPassword);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[name="owa_submit_btn"]').click(),
+            page.locator('input[name="submit_btn"]').click(),
         ]);
 
         // 2. usersChangePassword redirects to the login form on success. Prove the
         //    change actually took: the OLD password no longer authenticates...
         await loginAs(page, FIXTURE.pwUserId, FIXTURE.pwOldPassword);
-        await expect(page.locator('input[name="owa_password"]')).toBeVisible();
+        await expect(page.locator('input[name="password"]')).toBeVisible();
         expect(await page.locator('text=Logout').count()).toBe(0);
 
         // 3. ...and the NEW password does.
@@ -473,7 +474,7 @@ test.describe('admin: start_page default action', () => {
             .toContain(FIXTURE.siteDomain);
 
         // And it must be the report, not a bounce back to the login form.
-        expect(body).not.toMatch(/input[^>]+name="owa_password"/);
+        expect(body).not.toMatch(/input[^>]+name="password"/);
     });
 
     test('the REST endpoint does NOT default -- it reports a bad request', async ({ page }) => {

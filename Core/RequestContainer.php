@@ -92,7 +92,13 @@ class RequestContainer {
                         $v = str_replace("&gt;", ">", $v);
                     }
 
-                    $cookies[ $n ][] = $v;
+                    // $this->cookies, not a local: this branch used to
+                    // populate an undeclared $cookies that went out of scope
+                    // immediately, so a request whose Cookie header held a
+                    // SINGLE cookie -- the only way to reach this branch, since
+                    // the raw-header path above requires a ';' -- arrived with
+                    // no cookies at all, and OWA saw a stateless visitor.
+                    $this->cookies[ $n ][] = $v;
                 }
             }
         }
@@ -190,19 +196,85 @@ class RequestContainer {
 
         // get namespace
         $ns = \OWA\Core\CoreAPI::getSetting('base', 'ns');
+
         // strip action and do params of nasty include exploits.
-        if (array_key_exists( $ns.'action', $this->request)) {
+        //
+        // Both spellings are filtered. These two params choose which controller
+        // runs, so the un-namespaced forms have to be sanitized the moment they
+        // become readable -- filtering only the prefixed spelling would leave
+        // the bare one an unfiltered path into the same dispatch.
+        foreach ( array( $ns . 'action', $ns . 'do', 'action', 'do' ) as $exploitable ) {
 
-            $this->request[$ns.'action'] = \OWA\Core\Lib::fileInclusionFilter($this->request[$ns.'action']);
+            if ( array_key_exists( $exploitable, $this->request ) ) {
+
+                $this->request[ $exploitable ] =
+                    \OWA\Core\Lib::fileInclusionFilter( $this->request[ $exploitable ] );
+            }
         }
 
-        if (array_key_exists($ns.'do', $this->request)) {
+        /*
+         * Resolve every param to its un-namespaced name.
+         *
+         * OWA emits its own admin and reporting URLs without the prefix now
+         * (see the 'app_ns' setting), but every bookmark, saved report link and
+         * third-party API caller in existence still spells them 'owa_do=...'.
+         * Both are read. Where the two spellings of the SAME name collide, the
+         * namespaced value wins: it is the older contract, so a stray bare param
+         * can never displace one a caller deliberately namespaced.
+         *
+         * ORDER IS LOAD-BEARING, so this walks $this->request once rather than
+         * merging two arrays. 'action' is rekeyed to 'do' immediately below
+         * (see the reserved_words setting), which means a request carrying both
+         * -- every admin form POST does: 'do' in the query string, 'action' in
+         * the form body -- resolves to whichever sits LATER in the array. Any
+         * regrouping silently changes which controller runs. Building both
+         * spellings into one pass keeps each param in the position it arrived
+         * in, which is what preserved that behaviour when the bare spelling was
+         * added.
+         *
+         * The gate matters too. stripParams() does not just rename keys, it
+         * FILTERS: anything without the prefix is dropped. That is what stops a
+         * host application's query string reaching OWA's dispatcher when OWA is
+         * embedded in someone else's request -- WordPress's own 'action' param
+         * is exactly the collision the namespace was invented for. So bare
+         * names are accepted only for entry points that own their whole query
+         * string, and a caller that sets no instance_role -- which is every
+         * embedded integration -- keeps the prefixed-only behaviour.
+         */
+        $ns_len = strlen( (string) $ns );
 
-            $this->request[$ns.'do'] = \OWA\Core\Lib::fileInclusionFilter($this->request[$ns.'do']);
+        $from_ns      = array();
+
+        $this->owa_params = array();
+
+        foreach ( $this->request as $n => $v ) {
+
+            $n = (string) $n;
+
+            if ( $ns && strpos( $n, $ns ) === 0 ) {
+
+                $name = substr( $n, $ns_len );
+
+                // a param named exactly the namespace has no name left
+                if ( $name === '' || $name === false ) {
+                    continue;
+                }
+
+                // overwriting in place keeps the position of whichever
+                // spelling arrived first
+                $this->owa_params[ $name ] = $v;
+                $from_ns[ $name ] = true;
+
+                continue;
+            }
+
+            // the namespaced spelling of this name already supplied the value
+            if ( isset( $from_ns[ $n ] ) ) {
+                continue;
+            }
+
+            $this->owa_params[ $n ] = $v;
         }
-
-        // strip owa namespace
-        $this->owa_params = \OWA\Core\Lib::stripParams($this->request, $ns);
 
         // translate certain request variables that are reserved in javascript
         $this->owa_params = \OWA\Core\Lib::rekeyArray($this->owa_params, array_flip(\OWA\Core\CoreAPI::getSetting('base', 'reserved_words')));

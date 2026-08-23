@@ -171,6 +171,9 @@ test.describe('web-access hardening policy @server-config', () => {
         });
         expect(res.status(), 'root should redirect into the app, not render a listing').toBe(302);
         expect(res.headers()['location'] || '', 'root should redirect to an OWA entry point')
-            .toMatch(/index\.php\?owa_do=/);
+            // 'do=', not 'owa_do=': the redirect is built by OWA, and OWA's own
+            // URLs are un-namespaced now. The prefixed spelling is still ACCEPTED
+            // on the way in, which is why inbound test URLs elsewhere still use it.
+            .toMatch(/index\.php\?(owa_)?do=/);
     });
 });
