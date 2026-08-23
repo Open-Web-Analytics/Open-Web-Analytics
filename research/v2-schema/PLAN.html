@@ -657,12 +657,12 @@ namespace stripping and cookie consolidation both moved into this column.</p>
 <tbody>
 <tr><td><strong>CORS, replacing JSONP</strong></td><td><code>addCorsHeaders()</code> compared row arrays to a string and had never emitted a header; playback runs on JSONP, which bypasses same-origin by design. Fixed in PR&nbsp;#1019 — matching on host, since installs store <code>http://</code> from the install-time default while serving https, plus <code>Vary: Origin</code> because Varnish is in front. <strong>No preflight needed</strong>: the overlay authenticates by query string on a plain GET, a CORS simple request — a constraint v2 should preserve</td></tr>
 <tr><td><strong>PDO driver</strong></td><td>real bound parameters instead of <code>mysqli_real_escape_string</code>; retires hand-rolled connection handling</td></tr>
-<tr><td><strong>Bot filtering</strong></td><td><code>stripos()</code> returns <code>0</code> for a match at position 0, so any UA <em>beginning</em> with a robot token passes as human — <code>curl</code>, <code>Wget</code>, <code>Java</code> are all undetected today</td></tr>
-<tr><td><strong>Visitor id entropy</strong></td><td>~30 bits, silently merging visitors (§1.5)</td></tr>
-<tr><td><strong>Cookie + state consolidation</strong></td><td>one write format; the dual-format reader already exists, so existing cookies keep parsing</td></tr>
-<tr><td><strong>URL parameter namespacing</strong></td><td>the <code>owa_</code> prefix is a leftover from embedded-mode, long since removed</td></tr>
-<tr><td><strong><code>preconnect</code> + snippet placement</strong></td><td>removes DNS, TCP and TLS from the critical path on a cold origin — worth far more for a self-hosted tracker than for GA</td></tr>
-<tr><td><strong>Report config as JSON</strong></td><td>retrofits the v2 widget format into v1 (§1.7)</td></tr>
+<tr><td><strong>Bot filtering</strong> <span class="chip c-done">Shipped</span></td><td><code>stripos()</code> returned <code>0</code> for a match at position 0, so any UA <em>beginning</em> with a robot token passed as human — <code>curl</code>, <code>Wget</code> and <code>Java</code> were all undetected. One operator; now <code>!== false</code></td></tr>
+<tr><td><strong>Visitor id entropy</strong> <span class="chip c-done">Closed</span></td><td>~30 bits inside any one second. <strong>Not fixable</strong> — the budget is already spent and re-dividing it cancels, so this is an accepted, quantified limit rather than a defect (§1.5). The discarded salt was removed instead (PR&nbsp;#1017)</td></tr>
+<tr><td><strong>Cookie + state consolidation</strong> <span class="chip c-done">Shipped</span></td><td>one write format; the dual-format reader already exists, so existing cookies keep parsing. Now carries an <code>sv</code> version marker, so the <em>next</em> format change is routine rather than bespoke</td></tr>
+<tr><td><strong>URL parameter namespacing</strong> <span class="chip c-done">Shipped</span></td><td>the <code>owa_</code> prefix was a leftover from embedded-mode, long since removed. Split rather than deleted: <code>ns</code> still governs cookies, <code>owa_state</code>, campaign keys and the table prefix; <code>app_ns</code> governs OWA's own URLs and the beacon, and is now empty</td></tr>
+<tr><td><strong><code>preconnect</code> + snippet placement</strong> <span class="chip c-done">Shipped</span></td><td>removes DNS, TCP and TLS from the critical path on a cold origin — worth far more for a self-hosted tracker than for GA, whose origin is already warm in most browsers</td></tr>
+<tr><td><strong>Report config as JSON</strong> <span class="chip c-open">Next</span></td><td>retrofits the v2 widget format into v1 (§1.7)</td></tr>
 </tbody></table></div>
 
 <h3 id="s23"><span class="num">2.3</span>Tracker-additive — mostly NOT 1.x work after all</h3>
@@ -730,14 +730,23 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   and their cost compounds — a bot logged as human today cannot be reclassified later, because
   retroactive reprocessing is explicitly out of scope.</p>
   <ul>
-    <li>Bot <code>stripos</code> position-zero fix — one operator</li>
-    <li>Visitor id entropy — widen the random component; fix the discarded salt</li>
-    <li>Goal conversion: <strong>whole fix or none.</strong> <code>visit_duration</code> dispatches
-    to the pages-per-visit checker, <em>and</em> neither <code>npvs</code> nor
-    <code>session_duration</code> is ever written, <em>and</em> both switches lack
-    <code>break</code>. Repointing the dispatcher alone flips it from never-converts to
-    converts-on-every-session</li>
-    
+    <li>Bot <code>stripos</code> position-zero fix — one operator
+    <span class="chip c-done">Shipped</span></li>
+    <li>Visitor id entropy <span class="chip c-done">Closed</span> <span class="dash">— not by
+    fixing it. §1.5 establishes that the entropy <em>cannot</em> be improved: the construction
+    already spends 60.6 of a signed <code>BIGINT</code>'s 63 bits, and re-dividing the budget
+    provably cancels. An accepted, quantified limit (~0.8 collisions/year at 10 new
+    visitors/sec), not an open defect. The discarded salt was removed instead
+    (PR&nbsp;#1017), since it could not be honoured for the same reason.</span></li>
+    <li>Goal conversion: <strong>whole fix or none.</strong>
+    <span class="chip c-done">Shipped</span> <span class="dash">— resolved as
+    <em>none</em>, which was the honest branch. The broken types were removed rather than
+    repointed: <code>visit_duration</code> and <code>npvs</code> are gone from the dispatcher
+    <em>and</em> from the goal-entry form, so <code>url_destination</code> is the only type
+    offered and the only one evaluated. A dead option left switchable in the UI is a silent
+    no-op for whoever picks it. The per-goal state reset landed with it — <code>$match</code>,
+    <code>$start</code> and <code>$goal_value</code> once persisted across loop iterations, so
+    a goal carrying no value of its own inherited the previous goal's.</span></li>
   </ul>
 </div>
 
@@ -746,9 +755,13 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   <p class="phase-why">Everything later writes queries or crosses an origin. Do these before there
   is more code depending on the current shape.</p>
   <ul>
-    <li>PDO driver behind the existing data-access seam</li>
-    <li>CORS replacing JSONP — also unblocks the API contract work</li>
-    <li>Query builder emits a closed partition-key range whenever a time bound is given (§1.6)</li>
+    <li>PDO driver behind the existing data-access seam
+    <span class="chip c-open">Open</span> <span class="dash">— written and CI-green, but
+    <strong>not merged</strong>. Nothing downstream may assume bound parameters yet.</span></li>
+    <li>CORS replacing JSONP — also unblocks the API contract work
+    <span class="chip c-done">Shipped</span> <span class="dash">— PR&nbsp;#1019</span></li>
+    <li>Query builder emits a closed partition-key range whenever a time bound is given (§1.6)
+    <span class="chip c-done">Shipped</span></li>
   </ul>
 </div>
 
@@ -759,13 +772,30 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   item here twice.</p>
   <ul>
     <li>Modernise <code>Util.js</code>; <code>sendBeacon</code> with a body
-    <span class="chip c-done">Shipped</span> <span class="dash">— transport done 2026-08-23;
-    <code>Util.js</code> itself not yet modernised</span></li>
+    <span class="chip c-done">Shipped</span> <span class="dash">— both done 2026-08-23.
+    <code>Util.js</code> 1482&nbsp;&rarr;&nbsp;744 lines and the minified tracker bundle
+    62,297&nbsp;&rarr;&nbsp;54,694 bytes. Eighteen methods had no caller at all
+    (<code>sha256</code>, 99 lines, among them); the rest were phpjs ports of PHP's standard
+    library. Two carried real defects, not just weight: <code>strpos</code>'s index-or-false
+    return made a match at position 0 read as no match to all three callers that tested it as
+    a boolean, and <code>base64_encode</code>'s UTF-8 pre-pass emitted <strong>CESU-8</strong>
+    — every emoji crossed a domain boundary in an encoding nothing else decodes, invisibly,
+    because it round-tripped through its own decoder.</span></li>
     <li>Cookie and state consolidation <span class="chip c-done">Shipped</span>; strip the
     <code>owa_</code> namespace <span class="chip c-done">Shipped</span>; add a format
-    version marker <span class="chip c-open">Open</span> — now <em>more</em> important, since
-    one tracker means one store whose format changes underneath existing visitors</li>
-    <li><code>preconnect</code> and snippet placement guidance</li>
+    version marker <span class="chip c-done">Shipped</span> <span class="dash">— an
+    <code>sv</code> key stamped at write. The reader refuses a store written by a
+    <em>newer</em> tracker, which is the one direction sniffing cannot see: the bytes are
+    still valid JSON, so old code reads them confidently and wrong. Unmarked stores — every
+    cookie in the wild — still read, as version 0. Verified against live demo with a real
+    cookie: unmarked carried the visitor across, <code>sv=99</code> was refused.</span></li>
+    <li><code>preconnect</code> and snippet placement guidance
+    <span class="chip c-done">Shipped</span> <span class="dash">— the snippet emits
+    <code>preconnect</code>/<code>dns-prefetch</code> for the tracker origin (deliberately
+    <em>not</em> <code>crossorigin</code>, which would open a second connection nothing uses)
+    and appends the loader to <code>&lt;head&gt;</code> instead of inserting before the first
+    script element, which threw on a page whose only script was external. Demo's sample pages
+    carry hand-written copies and were updated with it.</span></li>
   </ul>
   <p class="phase-why" style="margin:12px 0 0"><strong>Moved out:</strong> engagement deltas,
   element path capture and chunk <code>seq</code> — each needs v2 storage to be a finished
@@ -777,11 +807,24 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   <p class="phase-why">Work that has to happen regardless of schema, and is cheaper before two
   reporting UIs exist.</p>
   <ul>
-    <li>Site-access UI — the current multi-select posts nothing when empty, and the controller
-    reads that as “revoke everyone”. Replace with checkbox rows and a rendered-ids field so
-    absence stops meaning revocation</li>
-    <li>Report config as JSON, retrofitted to v1 reports</li>
-    <li>Installation-wide retention as a scheduled job</li>
+    <li>Site-access UI &mdash; the current multi-select posts nothing when empty, and the controller
+    reads that as &ldquo;revoke everyone&rdquo;. Replace with checkbox rows and a rendered-ids field so
+    absence stops meaning revocation <span class="chip c-done">Shipped</span>
+    <span class="dash">&mdash; checkbox rows plus a <code>rendered_users</code> hidden field, and
+    <code>applyAssignedUserChanges( rendered, checked )</code>. The form now states what it
+    showed as well as what was ticked, so absence is absence rather than
+    revocation.</span></li>
+    <li>Report config as JSON, retrofitted to v1 reports
+    <span class="chip c-open">Open</span> <span class="dash">&mdash; <strong>the only untouched
+    item in this phase</strong>, and the next thing to build. Nothing in the tree matches it
+    yet.</span></li>
+    <li>Installation-wide retention as a scheduled job
+    <span class="chip c-done">Shipped</span> <span class="dash">&mdash; as a mechanism, opt-in by
+    design. <code>partition-rotate</code> is registered <em>with empty params</em>, so no
+    <code>keep=</code> and nothing is ever deleted; an installation that wants retention states
+    it in <code>OWA_SCHEDULED_JOBS</code>. Retention must not arrive as a side effect of
+    turning the scheduler on. If the intent was a retention <em>setting in the admin UI</em>,
+    that is still open and belongs with the reporting work.</span></li>
   </ul>
 </div>
 
@@ -808,34 +851,51 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
 </div>
 
 <div class="flag">
-  <p class="h">Status — 2026-08-23</p>
-  <p><strong>Execution is in Phase 3.</strong> Phase 1 and Phase 2 are partly done and
-  partly still open; nothing has slipped, but the order above was not followed strictly —
-  Phase 3 tracker work ran ahead because the wire-format decision (§2.1) unblocked it
-  earlier than expected.</p>
+  <p class="h">Status — 2026-08-23 (revised, end of day)</p>
+  <p><strong>Phases 1 and 3 are closed. Phase 4 has one item left.</strong> An earlier
+  revision of this note said execution was &ldquo;in Phase 3&rdquo; with Phases 1 and 2 partly
+  open. That was read against the phase lists above rather than against the tree, and the
+  lists had drifted: three items marked open were already shipped, and one was contradicted by
+  this document's own §1.5. Reconciling them against the code is what produced the statuses
+  now on each item. <em>The lists are the record; when they disagree with the code, the code
+  wins and the list is wrong.</em></p>
 
-  <p><strong>Shipped.</strong> CORS replacing JSONP (Phase 2, PR #1019 — verified in a real
-  browser by a cross-origin e2e suite, which is the only way to test it). Query-builder time
-  bounds imply a closed partition-key range (Phase 2). In Phase 3: <code>sendBeacon</code>
-  with a form-urlencoded body, which also closed the last transport that had to commit a
-  session without knowing anything was delivered; the <code>owa_</code> namespace strip; and
-  cookie/state consolidation — deferred hydration, a migration seam, per-site session stores
-  (<code>owa_s_&lt;siteId&gt;</code>, GA's <code>_ga_&lt;property&gt;</code> shape), and
-  identity supplied at tracker construction.</p>
+  <p><strong>Phase 1 is closed, but only one item was closed by fixing it.</strong> The bot
+  <code>stripos</code> operator was corrected. Goal conversion took the <em>none</em> branch of
+  its own &ldquo;whole fix or none&rdquo;: the broken types were deleted from the dispatcher and
+  from the goal-entry form rather than repointed, so nothing is offered that is not evaluated.
+  And visitor id entropy was closed by <em>proving it could not be improved</em> (§1.5) — the
+  construction already spends 60.6 of 63 bits and re-dividing the budget cancels, so it is an
+  accepted, quantified limit. Its discarded salt was removed in PR&nbsp;#1017 for the same
+  reason. Two of three closed without the fix the list called for.</p>
+
+  <p><strong>Phase 3 is closed as of 2026-08-23.</strong> The format version marker,
+  <code>Util.js</code>, and <code>preconnect</code>/snippet placement all shipped, joining the
+  transport, namespace strip and state consolidation already done. Two latent defects
+  surfaced while removing the PHP-function ports rather than from any bug report: PHP's
+  <code>strpos</code> index-or-false convention had made a match at position 0 read as
+  <em>no match</em> to every caller testing it as a boolean, and <code>base64_encode</code>
+  had been emitting <strong>CESU-8</strong> instead of UTF-8, so every emoji crossed a domain
+  boundary in an encoding nothing but OWA could decode — invisible because it round-tripped
+  through its own decoder. Both are the shape this plan's standing precondition predicts:
+  behaviour-preserving work finds what the pins were hiding.</p>
 
   <p><strong>Still open in Phase 2.</strong> The PDO driver is written and CI-green but
   <em>not merged</em> — it is not on master, so nothing downstream may assume bound
-  parameters yet.</p>
+  parameters yet. This is a merge decision, not remaining work.</p>
 
-  <p><strong>The nearest Phase 3 gap is the format version marker.</strong> It is now the
-  only unshipped half of an otherwise finished line item, and consolidation has already
-  changed store formats underneath existing visitors twice — assoc→JSON, and
-  <code>owa_s</code>→<code>owa_s_&lt;siteId&gt;</code>. Both were survivable only because a
-  bespoke migration was written each time. A marker is what makes the next one routine.</p>
+  <p><strong>Next: report config as JSON (Phase 4).</strong> The only untouched item in
+  Phase 4 and the only one of its three that was not already done. It is also the first piece
+  that is genuinely v2-shaped while still landing additively in 1.x — §1.7's generic widget
+  format with grid layout descriptors, retrofitted to v1 reports, against a reporting surface
+  already measured at 69 controllers of which roughly 60 are pure configuration.</p>
 
   <p><strong>Also removed:</strong> third-party mode, which had stopped calling
   <code>logEvent()</code> entirely — enabling it made the tracker silently send nothing.
-  Dead options are worth deleting rather than leaving switchable.</p>
+  Dead options are worth deleting rather than leaving switchable. Internet Explorer support
+  went the same way, and for a reason worth recording: the bundle ships untranspiled ES6, so
+  IE cannot parse the file containing its own IE branches. Code deciding what to do in a
+  browser that cannot load the file holding the decision is not compatibility.</p>
 </div>
 
 
