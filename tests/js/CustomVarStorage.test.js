@@ -65,8 +65,7 @@ describe('custom variable storage', () => {
         // trackPageView() tries to derive a cookie domain and jsdom has none.
         OWA.state.hydrated = {};
         OWA.state.persistenceReleased = {};
-        tracker = new OWATracker({ cookie_domain_set: true });
-        tracker.setSiteId('cv-storage-test');
+        tracker = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
     });
 
     /** The page went away. Cookies survive it; memory does not. */
@@ -96,7 +95,7 @@ describe('custom variable storage', () => {
     test('a session-scoped variable is stored in the session store', () => {
         tracker.setCustomVar(1, 'plan', 'pro', 'session');
 
-        expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
+        expect(OWA.getState('s_cv-storage-test', 'cv1')).toBe('plan=pro');
         expect(OWA.getState('b', 'cv1')).toBeFalsy();
     });
 
@@ -127,8 +126,8 @@ describe('custom variable storage', () => {
 
         // a second pageview in the SAME session must still carry it
         nextPageLoad();
-        const next = new OWATracker({ cookie_domain_set: true });
-        next.setSiteId(tracker.getSiteId());
+        const next = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
+        
         pageView(next, beacons);
 
         expect(beacons[1].is_new_session).toBeFalsy();
@@ -139,7 +138,7 @@ describe('custom variable storage', () => {
         tracker.setCustomVar(2, 'tier', 'gold', 'visitor');
 
         expect(OWA.getState('v', 'cv2')).toBe('tier=gold');
-        expect(OWA.getState('s', 'cv2')).toBeFalsy();
+        expect(OWA.getState('s_cv-storage-test', 'cv2')).toBeFalsy();
     });
 
     test('promoting a variable from session to visitor leaves no session copy', () => {
@@ -147,7 +146,7 @@ describe('custom variable storage', () => {
         tracker.setCustomVar(3, 'x', '2', 'visitor');
 
         expect(OWA.getState('v', 'cv3')).toBe('x=2');
-        expect(OWA.getState('s', 'cv3')).toBeFalsy();
+        expect(OWA.getState('s_cv-storage-test', 'cv3')).toBeFalsy();
         expect(tracker.getCustomVar(3)).toBe('x=2');
     });
 
@@ -181,7 +180,7 @@ describe('custom variable storage', () => {
         tracker.setCustomVar(6, 'a', 'b', 'visitor');
         tracker.deleteCustomVar(6);
 
-        expect(OWA.getState('s', 'cv6')).toBeFalsy();
+        expect(OWA.getState('s_cv-storage-test', 'cv6')).toBeFalsy();
         expect(OWA.getState('b', 'cv6')).toBeFalsy();
         expect(OWA.getState('v', 'cv6')).toBeFalsy();
         expect(tracker.getCustomVar(6)).toBeFalsy();
@@ -190,7 +189,13 @@ describe('custom variable storage', () => {
     describe('storage format', () => {
 
         test('every registered store serializes as JSON', () => {
-            ['v', 's', 'c', 'b', 'd'].forEach((store) => {
+            // The session store is registered under its PHYSICAL name, which
+            // carries the site: 's_<siteId>'. Asking for the logical 's' finds
+            // no registration at all, which is not the same as finding one that
+            // is not JSON -- so resolve it the way the tracker does.
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
+
+            ['v', 'c', 'b', 'd'].concat([t.storeName('s')]).forEach((store) => {
                 expect(OWA.state.getFormat(store)).toBe('json');
             });
         });
@@ -202,9 +207,9 @@ describe('custom variable storage', () => {
         test('a value containing the old separators survives a round trip', () => {
             const nasty = 'a=>b|||c';
 
-            OWA.setState('s', 'cv7', nasty);
+            OWA.setState('s_cv-storage-test', 'cv7', nasty);
 
-            expect(OWA.getState('s', 'cv7')).toBe(nasty);
+            expect(OWA.getState('s_cv-storage-test', 'cv7')).toBe(nasty);
         });
 
         /**
@@ -251,11 +256,10 @@ describe('custom variable storage', () => {
             nextPageLoad();
 
             // the seeded cookie really is in the old format
-            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s')))).toBe('assoc');
+            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s_cv-storage-test')))).toBe('assoc');
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(t, beacons);
 
             // the session continued rather than restarting...
@@ -263,10 +267,10 @@ describe('custom variable storage', () => {
             expect(beacons[0].session_id).toBe('legacy-session');
             // ...the variable set in the previous format came across...
             expect(beacons[0].cv1).toBe('plan=pro');
-            expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
+            expect(OWA.getState('s_cv-storage-test', 'cv1')).toBe('plan=pro');
 
             // ...and the cookie is now JSON.
-            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s')))).toBe('json');
+            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s_cv-storage-test')))).toBe('json');
         });
 
         test('a variable set on the page that inherits an assoc cookie is not lost by the rewrite', () => {
@@ -292,14 +296,13 @@ describe('custom variable storage', () => {
             nextPageLoad();
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             t.setCustomVar(1, 'plan', 'pro', 'session');
             pageView(t, beacons);
 
             expect(beacons[0].cv1).toBe('plan=pro');    // this page load won
             expect(beacons[0].cv2).toBe('tier=old');    // inherited from assoc
-            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s')))).toBe('json');
+            expect(Util.getCookieValueFormat(unescape(Util.readCookie('owa_s_cv-storage-test')))).toBe('json');
         });
     });
 
@@ -328,7 +331,7 @@ describe('custom variable storage', () => {
             if (sessionCookie) {
                 const sess = Object.assign({ sid: 'legacy-session' }, sessionCookie);
                 if (cdh) { sess.cdh = cdh; }
-                Util.setCookie(ns + 's', JSON.stringify(sess), 1, '/', domain);
+                Util.setCookie(ns + 's_cv-storage-test', JSON.stringify(sess), 1, '/', domain);
             }
             nextPageLoad();
         }
@@ -339,11 +342,10 @@ describe('custom variable storage', () => {
             // still stops sending the extra cookie.
             seedLegacyStore('plan=pro', { last_req: Util.getCurrentUnixTimestamp() });
 
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
 
             expect(Util.readCookie('owa_b')).toBeFalsy();
-            expect(unescape(Util.readCookie('owa_s'))).toContain('plan=pro');
+            expect(unescape(Util.readCookie('owa_s_cv-storage-test'))).toContain('plan=pro');
         });
 
         test('the value moves cookie-to-cookie, not into memory', () => {
@@ -354,19 +356,17 @@ describe('custom variable storage', () => {
             // is -- something a previous page persisted.
             seedLegacyStore('plan=pro', { last_req: Util.getCurrentUnixTimestamp() });
 
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
 
             expect(OWA.state.isPresent('s')).toBeFalsy();
-            expect(unescape(Util.readCookie('owa_s'))).toContain('plan=pro');
+            expect(unescape(Util.readCookie('owa_s_cv-storage-test'))).toContain('plan=pro');
         });
 
         test('a live session inherits the legacy value and the old cookie is dropped', () => {
             seedLegacyStore('plan=pro', { last_req: Util.getCurrentUnixTimestamp() });
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(t, beacons);
 
             expect(beacons[0].is_new_session).toBeFalsy();
@@ -374,7 +374,7 @@ describe('custom variable storage', () => {
             // it lives in the session store now, and reads back through the
             // ordinary getters -- which is what makes the migration, rather
             // than a fallback read, the thing that preserves it
-            expect(OWA.getState('s', 'cv1')).toBe('plan=pro');
+            expect(OWA.getState('s_cv-storage-test', 'cv1')).toBe('plan=pro');
             expect(t.getCustomVar(1)).toBe('plan=pro');
             expect(t.getCustomSessionVar(1)).toBe('plan=pro');
             // ...and the cookie it came from is gone, so it stops being sent
@@ -386,8 +386,7 @@ describe('custom variable storage', () => {
             seedLegacyStore('stale=lastweek', { last_req: 1000 });
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(t, beacons);
 
             expect(beacons[0].is_new_session).toBe(true);
@@ -409,13 +408,12 @@ describe('custom variable storage', () => {
                 cv1: 'plan=pro',
             });
 
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
 
             // the erase that was owed
             expect(Util.readCookie('owa_b')).toBeFalsy();
             // and the target is left exactly as the first run wrote it
-            const written = unescape(Util.readCookie('owa_s'));
+            const written = unescape(Util.readCookie('owa_s_cv-storage-test'));
             expect(written).toContain('plan=pro');
             expect(written).not.toContain('plan=free');
         });
@@ -430,10 +428,9 @@ describe('custom variable storage', () => {
                 cv2: 'kept=value',
             }, 'cv1');
 
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
 
-            const written = unescape(Util.readCookie('owa_s'));
+            const written = unescape(Util.readCookie('owa_s_cv-storage-test'));
             expect(written).toContain('kept=value');
             expect(written).not.toContain('gone=value');
             expect(Util.readCookie('owa_b')).toBeFalsy();
@@ -443,8 +440,7 @@ describe('custom variable storage', () => {
             seedLegacyStore('plan=free', { last_req: Util.getCurrentUnixTimestamp() });
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             t.setCustomVar(1, 'plan', 'pro', 'session');
             pageView(t, beacons);
 
@@ -458,13 +454,11 @@ describe('custom variable storage', () => {
             seedLegacyStore('plan=pro', { last_req: Util.getCurrentUnixTimestamp() });
 
             const beacons = [];
-            const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('cv-storage-test');
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(t, beacons);
 
             nextPageLoad();
-            const t2 = new OWATracker({ cookie_domain_set: true });
-            t2.setSiteId('cv-storage-test');
+            const t2 = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(t2, beacons);
 
             expect(beacons[1].cv1).toBe('plan=pro');
@@ -484,12 +478,11 @@ describe('custom variable storage', () => {
             pageView(tracker, beacons);
 
             expect(beacons[0].is_new_session).toBe(true);
-            expect(OWA.getState('s', 'cv2')).toBe('plan=pro');
+            expect(OWA.getState('s_cv-storage-test', 'cv2')).toBe('plan=pro');
 
             // and a later pageview in the SAME session still carries it
             nextPageLoad();
-            const next = new OWATracker({ cookie_domain_set: true });
-            next.setSiteId('cv-storage-test');
+            const next = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(next, beacons);
 
             expect(beacons[1].is_new_session).toBeFalsy();
@@ -506,18 +499,17 @@ describe('custom variable storage', () => {
             // Persist a session, then let it expire. The value is in the
             // COOKIE, which is what makes it old -- this page load did not set
             // it.
-            OWA.setState('s', 'cv3', 'stale=lastweek');
-            OWA.setState('s', 'last_req', 1000);
+            OWA.setState('s_cv-storage-test', 'cv3', 'stale=lastweek');
+            OWA.setState('s_cv-storage-test', 'last_req', 1000);
             tracker.sendAccepted();
             nextPageLoad();
 
             const beacons = [];
-            const fresh = new OWATracker({ cookie_domain_set: true });
-            fresh.setSiteId('cv-storage-test');
+            const fresh = new OWATracker({ cookie_domain_set: true, site_id: 'cv-storage-test' });
             pageView(fresh, beacons);
 
             expect(beacons[0].is_new_session).toBe(true);
-            expect(OWA.getState('s', 'cv3')).toBeFalsy();
+            expect(OWA.getState('s_cv-storage-test', 'cv3')).toBeFalsy();
             expect(beacons[0].cv3).toBeFalsy();
         });
 
@@ -535,7 +527,7 @@ describe('custom variable storage', () => {
         test('the value is held in memory, not written to the cookie', () => {
             tracker.setCustomVar(4, 'plan', 'pro', 'session');
 
-            expect(OWA.getState('s', 'cv4')).toBe('plan=pro');
+            expect(OWA.getState('s_cv-storage-test', 'cv4')).toBe('plan=pro');
             expect(document.cookie).not.toContain('plan');
         });
 

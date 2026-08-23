@@ -50,12 +50,12 @@ function wipe() {
 }
 
 function sessionCookie() {
-    const raw = Util.readCookie('owa_s');
+    const raw = Util.readCookie('owa_s_boundary-site');
     return raw ? Util.decodeCookieValue(unescape(raw)) : null;
 }
 
 function writeSessionCookie(store) {
-    Util.setCookie('owa_s', JSON.stringify(store), 1, '/', OWA.getSetting('cookie_domain'));
+    Util.setCookie('owa_s_boundary-site', JSON.stringify(store), 1, '/', OWA.getSetting('cookie_domain'));
     OWA.state.cookies = Util.readAllCookies();
 }
 
@@ -170,6 +170,6 @@ describe('crossing a session boundary', () => {
 
         expect(beacons[0].is_new_session).toBe(true);
         expect(beacons[0].cv1).toBeFalsy();
-        expect(OWA.getState('s', 'cv1')).toBeFalsy();
+        expect(OWA.getState('s_boundary-site', 'cv1')).toBeFalsy();
     });
 });

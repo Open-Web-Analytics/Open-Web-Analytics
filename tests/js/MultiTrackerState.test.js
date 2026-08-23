@@ -11,9 +11,14 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  * Two trackers on one page.
  *
  * A page can carry more than one tracker -- two site ids, typically a sub-site
- * and the network it belongs to. They deliberately SHARE the state stores
- * (sharableStateStores), so the visitor and the session are the visitor's and
- * the session's, not each tracker's private copy.
+ * and the network it belongs to. They share the VISITOR and keep their own
+ * SESSION, which is the split GA makes: _ga carries the client id across every
+ * property, _ga_<property> carries session state per property.
+ *
+ * They used to share both, and this file used to assert that as correct. It was
+ * not: a session row is loaded by session_id alone, so one shared id could not
+ * represent two sites, and the second site's facts ended up pointing at the
+ * first site's session row.
  *
  * That sharing is only real if the second tracker can see what the first one
  * derived. It runs its own manageState -- stateInit is per tracker -- so it
@@ -40,10 +45,8 @@ function reset() {
 
 /** Two trackers, each capturing its own beacons, both tracking the same page. */
 function trackBoth() {
-    const a = new OWATracker({ cookie_domain_set: true });
-    a.setSiteId('site-a');
-    const b = new OWATracker({ cookie_domain_set: true });
-    b.setSiteId('site-b');
+    const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
+    const b = new OWATracker({ cookie_domain_set: true, site_id: 'site-b' });
 
     const beacons = { a: [], b: [] };
     a.logEvent = (p) => beacons.a.push({ ...p });
@@ -60,11 +63,12 @@ describe('two trackers sharing the state stores', () => {
     beforeEach(reset);
     afterEach(reset);
 
-    test('they report ONE session, not one each', () => {
+    test('each site gets its OWN session', () => {
         const { beacons } = trackBoth();
 
         expect(beacons.a[0].session_id).toBeTruthy();
-        expect(beacons.b[0].session_id).toBe(beacons.a[0].session_id);
+        expect(beacons.b[0].session_id).toBeTruthy();
+        expect(beacons.b[0].session_id).not.toBe(beacons.a[0].session_id);
     });
 
     test('both report the session as starting here, because it did', () => {
@@ -87,21 +91,27 @@ describe('two trackers sharing the state stores', () => {
         expect(beacons.b[0].is_new_session).toBe(true);
     });
 
-    test('KNOWN LIMITATION: the two sites cannot both own the session', () => {
-        // A session row is keyed by session_id alone -- SessionHandlers::
-        // logSession() does load($event->get('session_id'), 'id') with no
-        // site_id -- so one shared session id cannot represent two sites. GA
-        // splits here: _ga holds the client id and is shared across properties,
-        // while _ga_<container-id> holds session state per property. OWA itself
-        // used to, too: the legacy compat reads still look for ss_<siteId>.
-        //
-        // Pinned as a limitation rather than asserted as correct behaviour,
-        // because neither available behaviour is right and the fix is a per-site
-        // session store.
+    test('each site owns the session its facts point at', () => {
+        /*
+         * This was pinned as a KNOWN LIMITATION and is now fixed.
+         *
+         * A session row is keyed by session_id ALONE -- SessionHandlers::
+         * logSession() does load($event->get('session_id'), 'id') with no
+         * site_id -- so one shared session id could not represent two sites.
+         * Measured against a real install before the fix: both trackers sent
+         * the same session_id, site A got a session row, site B got none, and
+         * site B's request facts referenced site A's session. Reporting for B
+         * that joined the session read A's data, silently.
+         *
+         * The store is scoped to a site now, which is where GA splits too:
+         * _ga holds the client id across every property, _ga_<property> holds
+         * session state per property. Measured on a live GA tag with two
+         * properties configured -- one _ga, two _ga_<id> cookies.
+         */
         const { beacons } = trackBoth();
 
-        expect(beacons.b[0].session_id).toBe(beacons.a[0].session_id);
         expect(beacons.a[0].site_id).not.toBe(beacons.b[0].site_id);
+        expect(beacons.a[0].session_id).not.toBe(beacons.b[0].session_id);
     });
 
     test('they report one visitor', () => {
@@ -111,26 +121,47 @@ describe('two trackers sharing the state stores', () => {
         expect(beacons.b[0].visitor_id).toBe(beacons.a[0].visitor_id);
     });
 
-    test('the second does not overwrite the first session id in the shared store', () => {
-        const { beacons } = trackBoth();
+    test('each tracker keeps its session id in its own store', () => {
+        const { a, b, beacons } = trackBoth();
 
-        expect(OWA.getState('s', 'sid')).toBe(beacons.a[0].session_id);
+        expect(OWA.getState(a.storeName('s'), 'sid')).toBe(beacons.a[0].session_id);
+        expect(OWA.getState(b.storeName('s'), 'sid')).toBe(beacons.b[0].session_id);
+
+        // and the stores really are different places
+        expect(a.storeName('s')).not.toBe(b.storeName('s'));
     });
 
-    test('a custom variable set on one rides the events of both', () => {
-        // Custom vars come off the shared stores now rather than from a global
-        // property private to the tracker that set them, so the second tracker
-        // sees a session-scoped variable the first one set.
-        const a = new OWATracker({ cookie_domain_set: true });
-        a.setSiteId('site-a');
+    test('a SESSION-scoped custom var stays with the site that set it', () => {
+        /*
+         * A consequence of scoping the session store, and the right one: a
+         * session-scoped value cannot outlive or escape its session, and
+         * sessions belong to a site now. Site B is in a different session, so a
+         * variable set on site A's session is not part of it.
+         *
+         * Visitor scope is the axis that still crosses trackers -- see below.
+         */
+        const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
         a.setCustomVar(1, 'Plan', 'Pro', 'session');
 
-        const b = new OWATracker({ cookie_domain_set: true });
-        b.setSiteId('site-b');
+        const b = new OWATracker({ cookie_domain_set: true, site_id: 'site-b' });
         const beacons = [];
         b.logEvent = (p) => beacons.push({ ...p });
         b.trackPageView('https://example.com/pricing');
 
-        expect(beacons[0].cv1).toBe('Plan=Pro');
+        expect(beacons[0].cv1).toBeUndefined();
+    });
+
+    test('a VISITOR-scoped custom var still rides the events of both', () => {
+        // The visitor is shared -- GA's _ga -- so anything scoped to the
+        // visitor is shared with it.
+        const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
+        a.setCustomVar(2, 'Tier', 'Gold', 'visitor');
+
+        const b = new OWATracker({ cookie_domain_set: true, site_id: 'site-b' });
+        const beacons = [];
+        b.logEvent = (p) => beacons.push({ ...p });
+        b.trackPageView('https://example.com/pricing');
+
+        expect(beacons[0].cv2).toBe('Tier=Gold');
     });
 });

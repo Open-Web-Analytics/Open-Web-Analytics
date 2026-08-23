@@ -425,6 +425,26 @@ class StateManager {
             'format'       : format,
             'hydrate'      : hydrate,
             'persist'      : persist,
+            /*
+             * Whether this store is the visitor's, or one site's.
+             *
+             *   'global'  one store for the page, shared by every tracker on it
+             *   'site'    one store per site id
+             *
+             * This is GA's split: _ga holds the client id and is shared across
+             * every property, _ga_<property> holds session state and there is
+             * one per property. OWA had a single shared session store, so two
+             * trackers on one page produced ONE session id -- and since a
+             * session row is loaded by session_id alone, the second site's
+             * facts pointed at the first site's session row.
+             *
+             * The scope is declared here, but the NAME is resolved by the
+             * tracker, which is the thing that knows its site: a site-scoped
+             * store is registered and read as '<name>_<siteId>'. That keeps
+             * both axes independent -- the site is in the name, the cookie
+             * DOMAIN stays in the cdh stamp inside the value.
+             */
+            'scope'        : behaviour.scope === 'site' ? 'site' : 'global',
             'collapseInto' : behaviour.collapseInto || '',
             'hydrateOn'    : hydrate === 'deferred'
                              ? ( behaviour.hydrateOn || 'isSessionizationDone' ) : '',

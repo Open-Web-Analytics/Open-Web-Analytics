@@ -82,7 +82,7 @@ function seed({ visitor = false, session = false } = {}) {
     if (session) {
         const s = { sid: SESSION_SID, last_req: now, cv1: 'plan=pro' };
         if (cdh) { s.cdh = cdh; }
-        Util.setCookie(ns + 's', JSON.stringify(s), 1, '/', domain);
+        Util.setCookie(ns + 's_partial-cookie-site', JSON.stringify(s), 1, '/', domain);
     }
     OWA.state.cookies = Util.readAllCookies();
 }

@@ -52,8 +52,7 @@ function coldPage() {
 }
 
 function newTracker() {
-    const t = new OWATracker({ cookie_domain_set: true });
-    t.setSiteId('migration-site');
+    const t = new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
     return t;
 }
 
@@ -148,5 +147,87 @@ describe('state storage migrations', () => {
         newTracker();
 
         expect(ran).toBe(2);
+    });
+
+    /**
+     * The shared session cookie is carried into this site's store.
+     *
+     * Every visitor in the world holds an 'owa_s' written before the session
+     * store was scoped to a site. Renaming the store without moving it would
+     * end every in-flight session on upgrade and drop last_req, the session id
+     * and the session's attribution -- a cost paid by every single-tracker
+     * install, which is nearly all of them, for a fix aimed at the two-tracker
+     * case.
+     */
+    describe('carrying a pre-split session into a per-site store', () => {
+
+        function seedSharedSession(values) {
+            const cdh = OWA.getSetting('hashCookiesToDomain')
+                ? Util.getCookieDomainHash(OWA.getSetting('cookie_domain'))
+                : null;
+            const store = Object.assign({}, values);
+            if (cdh) { store.cdh = cdh; }
+            Util.setCookie(OWA.getSetting('ns') + 's', JSON.stringify(store), 1, '/',
+                OWA.getSetting('cookie_domain'));
+            OWA.state.cookies = Util.readAllCookies();
+        }
+
+        test('an existing shared session becomes this site\'s session', () => {
+            seedSharedSession({ sid: 'carried-session', last_req: 1787000000 });
+
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
+
+            expect(OWA.getPersistedState(t.storeName('s'), 'sid')).toBe('carried-session');
+        });
+
+        test('the shared cookie is erased once it has been carried', () => {
+            seedSharedSession({ sid: 'carried-session', last_req: 1787000000 });
+
+            new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
+
+            expect(Util.readCookie(OWA.getSetting('ns') + 's')).toBeFalsy();
+        });
+
+        /**
+         * A SECOND site does not inherit it, and that is deliberate. The old
+         * 'owa_s' was one store shared by whatever trackers were on the page, so
+         * letting both inherit it would hand them the same session id --
+         * reproducing exactly the collision the per-site store removes. A second
+         * site never had a session of its own, so starting one fresh is the
+         * honest answer rather than a loss.
+         */
+        test('a second site does not inherit the carried session', () => {
+            seedSharedSession({ sid: 'carried-session', last_req: 1787000000 });
+
+            const first = new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
+            const second = new OWATracker({ cookie_domain_set: true, site_id: 'other-site' });
+
+            expect(OWA.getPersistedState(first.storeName('s'), 'sid')).toBe('carried-session');
+            expect(OWA.getPersistedState(second.storeName('s'), 'sid')).toBeFalsy();
+        });
+
+        test('a per-site store that already exists is not overwritten', () => {
+            // Seeded as a real COOKIE, because that is the state being guarded
+            // against: a visitor who has been here since the upgrade already has
+            // a per-site store, and the leftover shared cookie is residue that
+            // must not clobber it. Writing through the state manager would not
+            // reproduce it -- the session store is persist:'deferred', so the
+            // cookie would not exist yet.
+            const cdh = OWA.getSetting('hashCookiesToDomain')
+                ? Util.getCookieDomainHash(OWA.getSetting('cookie_domain'))
+                : null;
+            const mine = { sid: 'already-mine' };
+            if (cdh) { mine.cdh = cdh; }
+
+            Util.setCookie(OWA.getSetting('ns') + 's_migration-site', JSON.stringify(mine),
+                1, '/', OWA.getSetting('cookie_domain'));
+            seedSharedSession({ sid: 'carried-session' });
+
+            const t = new OWATracker({ cookie_domain_set: true, site_id: 'migration-site' });
+
+            expect(OWA.getPersistedState(t.storeName('s'), 'sid')).toBe('already-mine');
+            // ...and the residue is still cleaned up
+            expect(Util.readCookie(OWA.getSetting('ns') + 's')).toBeFalsy();
+        });
     });
 });

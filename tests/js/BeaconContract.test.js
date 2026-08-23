@@ -97,7 +97,7 @@ function seedEstablishedSession() {
 
     const ns = OWA.getSetting('ns');
     const domain = OWA.getSetting('cookie_domain');
-    Util.setCookie(ns + 's', JSON.stringify(session), 1, '/', domain);
+    Util.setCookie(ns + 's_contract-site', JSON.stringify(session), 1, '/', domain);
     Util.setCookie(ns + 'v', JSON.stringify(visitor), 364, '/', domain);
     OWA.state.cookies = Util.readAllCookies();
 }

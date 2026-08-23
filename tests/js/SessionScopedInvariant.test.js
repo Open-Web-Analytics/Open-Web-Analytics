@@ -84,8 +84,11 @@ describe('session-scoped properties do not vary within a session', () => {
     beforeEach(wipe);
     afterEach(wipe);
 
-    function sessionCookie() {
-        const raw = Util.readCookie('owa_s');
+    // The session store is scoped to a site now, so its cookie carries the site
+    // in the name -- 'owa_s_<siteId>', GA's _ga_<property>. Reading 'owa_s'
+    // would find the pre-split cookie, which nothing writes any more.
+    function sessionCookie(site) {
+        const raw = Util.readCookie('owa_s_' + (site || 'invariant-site'));
         return raw ? Util.decodeCookieValue(unescape(raw)) : null;
     }
 
@@ -146,7 +149,7 @@ describe('session-scoped properties do not vary within a session', () => {
 
             const store = sessionCookie();
             store.last_req = store.last_req - (60 * 3600);
-            Util.setCookie('owa_s', JSON.stringify(store), 1, '/', OWA.getSetting('cookie_domain'));
+            Util.setCookie('owa_s_invariant-site', JSON.stringify(store), 1, '/', OWA.getSetting('cookie_domain'));
 
             nextPageLoad();
             return trackAcrossASession([]);
@@ -157,22 +160,58 @@ describe('session-scoped properties do not vary within a session', () => {
 
         describe(label, () => {
 
-            test('the beacons really do share one session', () => {
+            /*
+             * The invariant is per SESSION, and a session belongs to one site.
+             *
+             * The run deliberately includes a tracker for a different site
+             * alongside the others. That tracker used to share the single
+             * 'owa_s' store and therefore the same session id -- which is the
+             * collision the per-site session store removed. Asserting one
+             * session across every beacon would now be asserting the bug.
+             *
+             * So beacons are grouped by session_id and the invariant is checked
+             * within each group, which is what it always meant.
+             */
+            function bySession(beacons) {
+                const groups = {};
+                beacons.forEach((b) => {
+                    (groups[b.session_id] = groups[b.session_id] || []).push(b);
+                });
+                return groups;
+            }
+
+            test('the site under test really does keep one session across its events', () => {
                 // Otherwise everything below is vacuous.
                 const beacons = run();
+                const groups = bySession(beacons);
 
                 expect(beacons.length).toBeGreaterThan(3);
-                beacons.forEach((b) => expect(b.session_id).toBe(beacons[0].session_id));
+
+                // the largest group is the site under test: two events on page
+                // one, plus its page-two beacon
+                const biggest = Object.values(groups).sort((a, b) => b.length - a.length)[0];
+                expect(biggest.length).toBeGreaterThan(2);
+            });
+
+            test('a tracker for a DIFFERENT site gets its own session', () => {
+                const beacons = run();
+                const sessions = Object.keys(bySession(beacons));
+
+                // one session for the site under test, one for 'other-site'
+                expect(sessions.length).toBe(2);
             });
 
             SESSION_SCOPED.forEach((prop) => {
-                test(`${prop} is identical on every event`, () => {
-                    const beacons = run();
-                    const expected = beacons[0][prop];
+                test(`${prop} is identical on every event of a session`, () => {
+                    const groups = bySession(run());
 
-                    beacons.forEach((b, i) => {
-                        expect({ event: i, prop, value: b[prop] })
-                            .toEqual({ event: i, prop, value: expected });
+                    Object.entries(groups).forEach(([sid, beacons]) => {
+                        const expected = beacons[0][prop];
+
+                        beacons.forEach((b, i) => {
+                            expect({ session: sid, event: i, prop, value: b[prop] })
+                                .toEqual({ session: sid, event: i, prop, value: expected });
+                        });
                     });
                 });
             });
@@ -205,7 +244,7 @@ describe('session-scoped properties do not vary within a session', () => {
         // The registry is only a contract if it is complete. A property added to
         // a collector without a scope would otherwise be silently unguarded.
         const t = newTracker();
-        OWA.setState('s', 'session_referer', 'x');
+        OWA.setState(t.storeName('s'), 'session_referer', 'x');
 
         const emitted = Object.keys(t.collectStateProperties())
             .concat(Object.keys(t.collectPageProperties()))
