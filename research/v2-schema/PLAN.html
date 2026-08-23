@@ -70,6 +70,7 @@ pre code{background:none;border:none;padding:0;font-size:inherit}
 .c-dec{background:var(--fwd-bg);color:var(--fwd)}
 .c-open{background:var(--open-bg);color:var(--open)}
 .c-meas{background:var(--legacy-bg);color:var(--legacy)}
+.c-done{background:var(--fwd-bg);color:var(--fwd);border:1px solid var(--fwd)}
 .legend{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:.9rem;color:var(--muted);
   border:1px solid var(--rule);border-left:3px solid var(--fwd);
   border-radius:0 5px 5px 0;padding:16px 20px;margin:34px 0}
@@ -163,6 +164,7 @@ rejected alternatives. Where something is genuinely unsettled it is marked as su
 than smoothed over.</p>
 
 <div class="legend">
+  <div><span class="chip c-done">Shipped</span> built, tested and running — see the status note in §2.5</div>
   <div><span class="chip c-dec">Decided</span> <span>settled; build it</span></div>
   <div><span class="chip c-meas">Measured</span> <span>backed by a number</span></div>
   <div><span class="chip c-open">Open</span> <span>needs a call before building</span></div>
@@ -734,10 +736,13 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   real traffic. The tracker is <em>extended, never forked</em> — a fork would mean writing every
   item here twice.</p>
   <ul>
-    <li>Modernise <code>Util.js</code>; <code>sendBeacon</code> with a body</li>
-    <li>Cookie and state consolidation; strip the <code>owa_</code> namespace; add a format
-    version marker — now <em>more</em> important, since one tracker means one store whose format
-    changes underneath existing visitors</li>
+    <li>Modernise <code>Util.js</code>; <code>sendBeacon</code> with a body
+    <span class="chip c-done">Shipped</span> <span class="dash">— transport done 2026-08-23;
+    <code>Util.js</code> itself not yet modernised</span></li>
+    <li>Cookie and state consolidation <span class="chip c-done">Shipped</span>; strip the
+    <code>owa_</code> namespace <span class="chip c-done">Shipped</span>; add a format
+    version marker <span class="chip c-open">Open</span> — now <em>more</em> important, since
+    one tracker means one store whose format changes underneath existing visitors</li>
     <li>Engagement deltas and the sticky engaged flag</li>
     <li>Element path capture; chunk <code>seq</code></li>
     <li><code>preconnect</code> and snippet placement guidance</li>
@@ -767,6 +772,38 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     <li>Parity harness as a command (§3.3)</li>
   </ul>
 </div>
+
+<div class="flag">
+  <p class="h">Status — 2026-08-23</p>
+  <p><strong>Execution is in Phase 3.</strong> Phase 1 and Phase 2 are partly done and
+  partly still open; nothing has slipped, but the order below was not followed strictly —
+  Phase 3 tracker work ran ahead because the wire-format decision (§2.1) unblocked it
+  earlier than expected.</p>
+
+  <p><strong>Shipped.</strong> CORS replacing JSONP (Phase 2, PR #1019 — verified in a real
+  browser by a cross-origin e2e suite, which is the only way to test it). Query-builder time
+  bounds imply a closed partition-key range (Phase 2). In Phase 3: <code>sendBeacon</code>
+  with a form-urlencoded body, which also closed the last transport that had to commit a
+  session without knowing anything was delivered; the <code>owa_</code> namespace strip; and
+  cookie/state consolidation — deferred hydration, a migration seam, per-site session stores
+  (<code>owa_s_&lt;siteId&gt;</code>, GA's <code>_ga_&lt;property&gt;</code> shape), and
+  identity supplied at tracker construction.</p>
+
+  <p><strong>Still open in Phase 2.</strong> The PDO driver is written and CI-green but
+  <em>not merged</em> — it is not on master, so nothing downstream may assume bound
+  parameters yet.</p>
+
+  <p><strong>The nearest Phase 3 gap is the format version marker.</strong> It is now the
+  only unshipped half of an otherwise finished line item, and consolidation has already
+  changed store formats underneath existing visitors twice — assoc→JSON, and
+  <code>owa_s</code>→<code>owa_s_&lt;siteId&gt;</code>. Both were survivable only because a
+  bespoke migration was written each time. A marker is what makes the next one routine.</p>
+
+  <p><strong>Also removed:</strong> third-party mode, which had stopped calling
+  <code>logEvent()</code> entirely — enabling it made the tracker silently send nothing.
+  Dead options are worth deleting rather than leaving switchable.</p>
+</div>
+
 
 <!-- ============ PART III ============ -->
 <section class="part" id="p3">
@@ -825,6 +862,28 @@ regression hides behind an expected one:</p>
 </tbody></table></div>
 <p>This should be a command whose output is the artefact the cutover decision is made from. “We
 reached parity” then means a specific empty list, not an opinion.</p>
+
+<div class="flag">
+  <p class="h">Attribution has a warm-up — it cannot be cut over cold</p>
+
+  <p><strong>Today attribution is decided in the browser.</strong>
+  <code>setTrafficAttribution()</code> reads the <code>owa_c</code> cookie's
+  <code>attribs</code> stack, applies the model, and the event carries the <em>decided
+  result</em> — <code>source_id</code>, <code>medium</code>, <code>campaign_id</code> — not
+  the observation that produced it.</p>
+
+  <p>Two consequences for the sequence. <strong>Existing history is not a usable touchpoint
+  log</strong>, so the server-side model cannot be validated by replaying it — parity
+  against v1 attribution would prove only that the new code reproduces the old verdicts,
+  which is not the same as proving the new model right. And <code>original</code> is a
+  <strong>sliding 60-day window</strong>, not first-touch-ever, so a server-side
+  implementation produces nothing trustworthy until it has observed 60 days of traffic.</p>
+
+  <p><strong>Therefore recording raw touchpoints is itself an additive 1.x item</strong>,
+  and an early one — earlier than the switch-over it serves. Start it and the warm-up runs
+  in the background while other phases proceed; start it at cutover and it becomes a
+  60-day hold on the one part of v2 that cannot be hurried.</p>
+</div>
 
 <h3 id="s34"><span class="num">3.4</span>Cutover sequence</h3>
 <ol>
