@@ -19,7 +19,9 @@ class CommandQueue {
 
         var name = String( cmd[0] );
 
-        if ( ! Util.strpos( name, '.' ) ) {
+        // includes(), not the old strpos() port: that returned an INDEX, and
+        // index 0 is falsy, so a name beginning with '.' answered "no dot".
+        if ( ! name.includes( '.' ) ) {
             return { object: 'OWATracker', method: name };
         }
 
@@ -44,7 +46,7 @@ class CommandQueue {
 
         var obj_name = '';
         var method = '';
-        var check = Util.strpos( cmd[0], '.' );
+        var check = String( cmd[0] ).includes( '.' );
 
         if ( ! check ) {
             obj_name = 'OWATracker';

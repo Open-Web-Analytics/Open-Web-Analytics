@@ -240,6 +240,70 @@ class StateManager {
 	 * The callback receives the state manager and runs once per page, after the
 	 * cookie domain is established and before anything downstream reads.
 	 */
+	/*
+	 * The shape a persisted store is written in.
+	 *
+	 * Storage format has now changed under live visitors twice -- assoc to JSON,
+	 * and a shared 's' to a per-site 's_<siteId>' -- and both were survivable only
+	 * because a bespoke migration was written each time. Neither could have been
+	 * detected from the data: the reader SNIFFS, guessing JSON from a leading '{'.
+	 *
+	 * A sniff answers "what does this look like", which is not the question. The
+	 * question is "which version of this tracker wrote it", and only the writer
+	 * can answer that. Stamping it is what turns the next change from bespoke into
+	 * routine.
+	 *
+	 * Bump this when the SHAPE changes -- a key renamed, a value's meaning
+	 * changed, a store split. Not when a value is merely added: an older reader
+	 * ignores an unknown key harmlessly, which is the whole point of leaving room.
+	 */
+	static get STORE_VERSION() {
+
+		return 1;
+	}
+
+	/*
+	 * The key the version rides in. Terse deliberately -- it is in every cookie,
+	 * beside 'cdh', and cookies have a size budget.
+	 */
+	static get VERSION_KEY() {
+
+		return 'sv';
+	}
+
+	/**
+	 * The version a stored value was written by. 0 means "before the marker
+	 * existed", which is every cookie in the wild today -- and is a real answer,
+	 * not a failure.
+	 */
+	versionOf( state ) {
+
+		if ( ! state || typeof state !== 'object' ) {
+			return 0;
+		}
+
+		var v = state[ StateManager.VERSION_KEY ];
+
+		return ( typeof v === 'number' || typeof v === 'string' ) ? parseInt( v, 10 ) || 0 : 0;
+	}
+
+	/**
+	 * Whether this tracker may read what it just found.
+	 *
+	 * The case that matters is a stored value written by a NEWER tracker: a
+	 * visitor who meets an updated site and then a cached older one, or a
+	 * rollback. Sniffing cannot see that at all -- the value still looks like
+	 * JSON, so the old code reads it confidently and wrong. Declining is the
+	 * point of having a marker.
+	 *
+	 * Older is fine: this tracker knows every shape it has written before, and
+	 * migrations exist for the ones that need moving.
+	 */
+	canRead( state ) {
+
+		return this.versionOf( state ) <= StateManager.STORE_VERSION;
+	}
+
 	registerMigration( name, callback ) {
 
 		this.migrations.push( { 'name': name, 'callback': callback } );
@@ -340,7 +404,12 @@ class StateManager {
 
 			for ( var key in from.state ) {
 
-				if ( ! from.state.hasOwnProperty( key ) || key === 'cdh' ) {
+				// Skip the store's own metadata. cdh belongs to the store it is
+				// leaving, and the version belongs to the WRITER -- carrying either
+				// across would describe the target with the source's facts.
+				if ( ! from.state.hasOwnProperty( key )
+					 || key === 'cdh'
+					 || key === StateManager.VERSION_KEY ) {
 					continue;
 				}
 
@@ -612,6 +681,16 @@ class StateManager {
             }
         }
 
+        /*
+         * Stamped here rather than at set(): this is the one place a store
+         * becomes a stored value, so it is the only place that can honestly say
+         * which shape was written. Values held only in memory have no version
+         * because they have no format yet.
+         */
+        if ( snapshot && typeof snapshot === 'object' ) {
+            snapshot[ StateManager.VERSION_KEY ] = StateManager.STORE_VERSION;
+        }
+
         var state_value = '';
 
         if (format === 'json') {
@@ -714,6 +793,26 @@ class StateManager {
                 var raw_cookie_value = unescape( cookie_values[i] );
                 var cookie_value = Util.decodeCookieValue( raw_cookie_value );
                 format = Util.getCookieValueFormat( raw_cookie_value );
+
+                /*
+                 * Refuse a value a NEWER tracker wrote.
+                 *
+                 * Checked before the domain hash because it is the more
+                 * fundamental question: a shape this code does not understand
+                 * cannot be reasoned about at all, whereas a domain mismatch is
+                 * a value that is understood and simply not ours.
+                 *
+                 * Treated as absent rather than repaired -- the tracker then
+                 * behaves as it does for a first-time visitor, which is a state
+                 * it already handles correctly. Guessing at a shape from the
+                 * future is how a silent corruption starts.
+                 */
+                if ( ! this.canRead( cookie_value ) ) {
+
+                    OWA.debug( 'Cookie: %s, index: %s was written by a newer tracker (v%s > v%s). Not loading.',
+                        store_name, i, this.versionOf( cookie_value ), StateManager.STORE_VERSION );
+                    continue;
+                }
 
                 if ( OWA.getSetting('hashCookiesToDomain') ) {
                     var domain = OWA.getSetting('cookie_domain');
