@@ -1,0 +1,1027 @@
+{
+    "ReportActionDetail": {
+        "params": [
+            "actionGroup",
+            "actionName"
+        ],
+        "config": {
+            "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
+            "dimensions": "actionLabel",
+            "metrics": "actions,actionsValue",
+            "resultsPerPage": "30",
+            "sort": "actions-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Action Detail: ",
+            "titleSuffix": "characterization_sentinel: characterization_sentinel",
+            "trendChartMetric": "actions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportActionGroup": {
+        "params": [
+            "actionGroup"
+        ],
+        "config": {
+            "constraints": "actionGroup==characterization_sentinel",
+            "dimensionLink": {
+                "linkColumn": "actionName",
+                "template": {
+                    "actionGroup": "%s",
+                    "actionName": "%s",
+                    "do": "base.reportActionDetail"
+                },
+                "valueColumns": [
+                    "actionName",
+                    "actionGroup"
+                ]
+            },
+            "dimensions": "actionGroup,actionName",
+            "excludeColumns": "'actionGroup'",
+            "metrics": "actions,uniqueActions,actionsValue",
+            "resultsPerPage": 25,
+            "sort": "actions-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Action Group: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "actions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportActionGroups": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "actionGroup": "%s",
+                    "do": "base.reportActionGroup"
+                },
+                "valueColumns": "actionGroup"
+            },
+            "dimensions": "actionGroup",
+            "metrics": "actions,uniqueActions,actionsValue",
+            "resultsPerPage": 25,
+            "sort": "actions-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Action Groups",
+            "titleSuffix": "",
+            "trendChartMetric": "actions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportActionTracking": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "pageTitle",
+                "template": {
+                    "do": "base.reportDocument",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "pageUrl"
+            },
+            "metrics": "actions,uniqueActions,actionsValue",
+            "resultsPerPage": 30,
+            "sort": "actions",
+            "subview": "base.reportActionTracking",
+            "title": "Actions",
+            "titleSuffix": "",
+            "trendChartMetric": "actions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions performed on all pages.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAdDetail": {
+        "params": [
+            "ad"
+        ],
+        "config": {
+            "constraints": "ad==characterization_sentinel",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimensionDetail",
+            "title": "Ad: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAdTypeDetail": {
+        "params": [
+            "adType"
+        ],
+        "config": {
+            "constraints": "adType==characterization_sentinel",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimensionDetail",
+            "title": "Ad Type: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad type.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAdTypes": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "adType",
+                "template": {
+                    "adType": "%s",
+                    "do": "base.reportAdTypeDetail"
+                },
+                "valueColumns": "adType"
+            },
+            "dimensions": "adType",
+            "gridTitle": "Top Ad Types",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Ad Types",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAds": {
+        "params": [],
+        "config": {
+            "constraints": "ad!=null",
+            "dimensionLink": {
+                "linkColumn": "ad",
+                "template": {
+                    "ad": "%s",
+                    "do": "base.reportAdDetail"
+                },
+                "valueColumns": "ad"
+            },
+            "dimensions": "ad",
+            "gridTitle": "Top Ads",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Ad Performance",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAnchortext": {
+        "params": [],
+        "config": {
+            "constraints": "medium==referral",
+            "dimensionLink": {
+                "linkColumn": "referralLinkText",
+                "template": {
+                    "do": "base.reportReferralLinkTextDetail",
+                    "referralLinkText": "%s"
+                },
+                "valueColumns": "referralLinkText"
+            },
+            "dimensions": "referralLinkText",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Referral Link Text",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
+            "view": "base.report",
+            "view_method": "delegate"
+        }
+    },
+    "ReportAvgOrderValue": {
+        "params": [],
+        "config": {
+            "dimensions": "date",
+            "metrics": "revenuePerTransaction",
+            "resultsPerPage": 30,
+            "sort": "date-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Average Order Value",
+            "titleSuffix": "",
+            "trendChartMetric": "revenuePerTransaction",
+            "trendTitle": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportBrowserDetail": {
+        "params": [
+            "browserType"
+        ],
+        "config": {
+            "constraints": "browserType==characterization_sentinel",
+            "dimension_properties": {
+                "browser_family": "characterization_sentinel"
+            },
+            "dimension_template": "dimension_browser.php",
+            "dimensions": "browserVersion",
+            "metrics": "visits,pageViews,bounces",
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Browser Detail: characterization_sentinel",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportBrowsers": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "browserType",
+                "template": {
+                    "browserType": "%s",
+                    "do": "base.reportBrowserDetail"
+                },
+                "valueColumns": "browserType"
+            },
+            "dimensions": "browserType",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Browser Types",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportCampaignDetail": {
+        "params": [
+            "campaign"
+        ],
+        "config": {
+            "constraints": "campaign==characterization_sentinel",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimensionDetail",
+            "title": "Campaign: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this campaign.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportCommerce": {
+        "params": [],
+        "config": {
+            "subview": "base.reportCommerce",
+            "title": "Ecommerce Overview",
+            "titleSuffix": "",
+            "view_method": "delegate"
+        }
+    },
+    "ReportContent": {
+        "params": [],
+        "config": {
+            "subview": "base.reportContent",
+            "title": "Content Overview",
+            "titleSuffix": "",
+            "view_method": "delegate"
+        }
+    },
+    "ReportCountryDetail": {
+        "params": [
+            "country"
+        ],
+        "config": {
+            "constraints": "country==characterization_sentinel",
+            "dimensionLink": {
+                "linkColumn": "stateRegion",
+                "template": {
+                    "country": "%s",
+                    "do": "base.reportStateDetail",
+                    "stateRegion": "%s"
+                },
+                "valueColumns": [
+                    "stateRegion",
+                    "country"
+                ]
+            },
+            "dimensions": "stateRegion,country",
+            "resultsPerPage": 30,
+            "sort": "visits",
+            "subview": "base.reportDimension",
+            "title": "Country: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportCreativePerformance": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "ad",
+                "template": {
+                    "ad": "%s",
+                    "do": "base.reportAdDetail"
+                },
+                "valueColumns": "ad"
+            },
+            "dimensions": "ad,entryPagePath",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Creative Performance",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportDaysToPurchase": {
+        "params": [],
+        "config": {
+            "dimensions": "daysToTransaction",
+            "metrics": "transactions",
+            "resultsPerPage": 30,
+            "sort": "daysToTransaction",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Days To Purchase",
+            "titleSuffix": "",
+            "trendChartMetric": "transactions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportEcommerce": {
+        "params": [],
+        "config": {
+            "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+            "resultsPerPage": 30,
+            "sort": "transactions-",
+            "subview": "base.reportEcommerce",
+            "title": "Ecommerce",
+            "titleSuffix": "",
+            "trendChartMetric": "transactions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions completed.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportEcommerceConversionRate": {
+        "params": [],
+        "config": {
+            "dimensions": "date",
+            "metrics": "visits,ecommerceConversionRate",
+            "resultsPerPage": 30,
+            "sort": "date-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Total Revenue",
+            "titleSuffix": "",
+            "trendChartMetric": "ecommerceConversionRate",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportEntryPages": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "entryPagePath",
+                "template": {
+                    "do": "base.reportDocument",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "entryPageUrl"
+            },
+            "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+            "excludeColumns": "'entryPageUrl'",
+            "gridTitle": "Top Entry Pages",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Entry Pages",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportExitPages": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "exitPagePath",
+                "template": {
+                    "do": "base.reportDocument",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "exitPageUrl"
+            },
+            "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+            "excludeColumns": "'exitPageUrl'",
+            "gridTitle": "Top Exit Pages",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Exit Pages",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportFeeds": {
+        "params": [],
+        "config": {
+            "dimensions": "feedType",
+            "metrics": "feedReaders,feedRequests,feedSubscriptions",
+            "resultsPerPage": 30,
+            "sort": "feedReaders-",
+            "subview": "base.reportFeeds",
+            "title": "Feeds",
+            "titleSuffix": "",
+            "trendChartMetric": "feedReaders",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
+            "view": "base.report",
+            "view_method": "delegate"
+        }
+    },
+    "ReportGeolocation": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "country",
+                "template": {
+                    "country": "%s",
+                    "do": "base.reportCountryDetail"
+                },
+                "valueColumns": "country"
+            },
+            "dimensions": "country,countryCode",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Visitor Geolocation",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportHostDetail": {
+        "params": [
+            "hostName"
+        ],
+        "config": {
+            "constraints": "hostName==characterization_sentinel",
+            "dimension": "hostName",
+            "metrics": "visits,pageViews,bounces",
+            "subview": "base.reportDimensionDetail",
+            "title": "Host Detail: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportHosts": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "hostName",
+                "template": {
+                    "do": "base.reportHostDetail",
+                    "hostName": "%s"
+                },
+                "valueColumns": "hostName"
+            },
+            "dimensions": "hostName",
+            "gridTitle": "Top Hosts",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Host Names",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportKeywordDetail": {
+        "params": [
+            "referralSearchTerms"
+        ],
+        "config": {
+            "constraints": "referralSearchTerms==characterization_sentinel",
+            "dimension": "referralSearchTerms",
+            "metrics": "visits,pageViews,bounces",
+            "subview": "base.reportDimensionDetail",
+            "title": "Search Term Detail: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportKeywords": {
+        "params": [],
+        "config": {
+            "constraints": "medium==organic-search",
+            "dimensionLink": {
+                "linkColumn": "referralSearchTerms",
+                "template": {
+                    "do": "base.reportKeywordDetail",
+                    "referralSearchTerms": "%s"
+                },
+                "valueColumns": "referralSearchTerms"
+            },
+            "dimensions": "referralSearchTerms",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Referring Search Terms",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
+            "view": "base.report",
+            "view_method": "delegate"
+        }
+    },
+    "ReportOs": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "osType",
+                "template": {
+                    "do": "base.reportOsDetail",
+                    "osType": "%s"
+                },
+                "valueColumns": "osType"
+            },
+            "dimensions": "osType",
+            "gridTitle": "Top Page Types",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 25,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Operating Systems",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportOsDetail": {
+        "params": [
+            "osType"
+        ],
+        "config": {
+            "constraints": "osType==characterization_sentinel",
+            "metrics": "visits,pageViews",
+            "sort": "visits-",
+            "subview": "base.reportDimensionDetail",
+            "title": "Operating System: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportPageTypeDetail": {
+        "params": [
+            "pageType"
+        ],
+        "config": {
+            "constraints": "pageType==characterization_sentinel",
+            "gridTitle": "Top Page Types",
+            "metrics": "visits,pageViews",
+            "sort": "pageViews-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Page Type: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "pageViews",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportPageTypes": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "pageType",
+                "template": {
+                    "do": "base.reportPageTypeDetail",
+                    "pageType": "%s"
+                },
+                "valueColumns": "pageType"
+            },
+            "dimensions": "pageType",
+            "gridTitle": "Top Page Types",
+            "metrics": "visits,pageViews",
+            "resultsPerPage": 25,
+            "sort": "pageViews-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Page Types",
+            "titleSuffix": "",
+            "trendChartMetric": "pageViews",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportPages": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "pagePath",
+                "template": {
+                    "do": "base.reportDocument",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "pageUrl"
+            },
+            "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+            "excludeColumns": "'pageUrl'",
+            "gridTitle": "Top Pages",
+            "metrics": "pageViews,visits,uniquePageViews",
+            "resultsPerPage": 30,
+            "sort": "pageViews-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Web Pages",
+            "titleSuffix": "",
+            "trendChartMetric": "pageViews",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProductCategories": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "productCategory",
+                "template": {
+                    "do": "base.reportProductCategoryDetail",
+                    "productCategory": "%s"
+                },
+                "valueColumns": "productCategory"
+            },
+            "dimensions": "productCategory",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "resultsPerPage": 30,
+            "sort": "lineItemQuantity-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Product SKUs",
+            "titleSuffix": "",
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all Categories.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProductCategoryDetail": {
+        "params": [],
+        "config": {
+            "constraints": "productCategory==",
+            "dimension": "productCategory",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Product Category: ",
+            "titleSuffix": null,
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProductDetail": {
+        "params": [],
+        "config": {
+            "constraints": "productName==",
+            "dimension": "productName",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Product Detail: ",
+            "titleSuffix": null,
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProductSkuDetail": {
+        "params": [],
+        "config": {
+            "constraints": "productSku==",
+            "dimension": "productSku",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Product SKU: ",
+            "titleSuffix": null,
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProductSkus": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "productSku",
+                "template": {
+                    "do": "base.reportProductSkuDetail",
+                    "productSku": "%s"
+                },
+                "valueColumns": "productSku"
+            },
+            "dimensions": "productSku",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "resultsPerPage": 30,
+            "sort": "lineItemQuantity-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Product SKUs",
+            "titleSuffix": "",
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportProducts": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "productName",
+                "template": {
+                    "do": "base.reportProductDetail",
+                    "productName": "%s"
+                },
+                "valueColumns": "productName"
+            },
+            "dimensions": "productName",
+            "metrics": "lineItemQuantity,lineItemRevenue",
+            "resultsPerPage": 30,
+            "sort": "lineItemQuantity-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Products",
+            "titleSuffix": "",
+            "trendChartMetric": "lineItemQuantity",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportReferralLinkTextDetail": {
+        "params": [
+            "referralLinkText"
+        ],
+        "config": {
+            "constraints": "referralLinkText==characterization_sentinel",
+            "dimensions": "referralLinkText",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits",
+            "subview": "base.reportDimensionDetail",
+            "title": "Referral Link Text: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from links with this text.",
+            "view": "base.report",
+            "view_method": "delegate"
+        }
+    },
+    "ReportReferringSites": {
+        "params": [],
+        "config": {
+            "constraints": "medium==referral",
+            "dimensionLink": {
+                "linkColumn": "referralPageTitle",
+                "template": {
+                    "do": "base.reportReferralDetail",
+                    "referralPageUrl": "%s"
+                },
+                "valueColumns": "referralPageUrl"
+            },
+            "dimensions": "referralPageTitle,referralPageUrl",
+            "excludeColumns": "'referralPageUrl'",
+            "gridTitle": "Top Referrals",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Referrals",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportRevenue": {
+        "params": [],
+        "config": {
+            "dimensions": "date",
+            "metrics": "transactionRevenue",
+            "resultsPerPage": 30,
+            "sort": "date-",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Total Revenue",
+            "titleSuffix": "",
+            "trendChartMetric": "transactionRevenue",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportSearchEngineDetail": {
+        "params": [
+            "referralWebSite"
+        ],
+        "config": {
+            "constraints": "medium==organic-search,referralWebSite==characterization_sentinel",
+            "dimensions": "referralWebSite",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits",
+            "subview": "base.reportDimensionDetail",
+            "title": "Search Engine: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportSearchEngines": {
+        "params": [],
+        "config": {
+            "constraints": "medium==organic-search",
+            "dimensionLink": {
+                "linkColumn": "referralWebSite",
+                "template": {
+                    "do": "base.reportSearchEngineDetail",
+                    "referralWebSite": "%s"
+                },
+                "valueColumns": "referralWebSite"
+            },
+            "dimensions": "referralWebSite",
+            "gridTitle": "Top Search Engines",
+            "metrics": "visits,pageViews,bounces",
+            "resultsPerPage": 30,
+            "sort": "visits-",
+            "subview": "base.reportDimension",
+            "title": "Search Engines",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportSourceDetail": {
+        "params": [
+            "source"
+        ],
+        "config": {
+            "constraints": "source==characterization_sentinel",
+            "dimension": "source",
+            "subview": "base.reportDimensionDetail",
+            "title": "Source Detail: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportSources": {
+        "params": [],
+        "config": {
+            "dimensionLink": {
+                "linkColumn": "source",
+                "template": {
+                    "do": "base.reportSourceDetail",
+                    "source": "%s"
+                },
+                "valueColumns": "source"
+            },
+            "dimensions": "source,medium",
+            "resultsPerPage": 30,
+            "sort": "visits",
+            "subview": "base.reportDimension",
+            "title": "Sources",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportStateDetail": {
+        "params": [
+            "country",
+            "stateRegion"
+        ],
+        "config": {
+            "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
+            "dimensions": "city,stateRegion",
+            "resultsPerPage": 30,
+            "sort": "visits",
+            "subview": "base.reportDimension",
+            "title": "State/Region: ",
+            "titleSuffix": "characterization_sentinel",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportTraffic": {
+        "params": [],
+        "config": {
+            "subview": "base.reportTraffic",
+            "title": "Traffic Sources",
+            "titleSuffix": "",
+            "view": "base.report",
+            "view_method": "delegate"
+        }
+    },
+    "ReportTransactionDetail": {
+        "params": [
+            "transactionId"
+        ],
+        "config": {
+            "subview": "base.reportTransactionDetail",
+            "title": "Transaction Detail for: ",
+            "titleSuffix": "characterization_sentinel",
+            "trans_detail": [],
+            "view_method": "delegate"
+        }
+    },
+    "ReportTransactions": {
+        "params": [],
+        "config": {
+            "subview": "base.reportTransactions",
+            "title": "Transactions Overview",
+            "titleSuffix": "",
+            "view_method": "delegate"
+        }
+    },
+    "ReportVisitorsAge": {
+        "params": [],
+        "config": {
+            "dimensions": "daysSinceFirstVisit",
+            "metrics": "visits",
+            "resultsPerPage": 25,
+            "sort": "daysSinceFirstVisit",
+            "subview": "base.reportDimension",
+            "title": "Visitor Age",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportVisitorsLoyalty": {
+        "params": [],
+        "config": {
+            "dimensions": "priorVisitCount",
+            "metrics": "visits",
+            "resultsPerPage": 25,
+            "sort": "priorVisitCount",
+            "subview": "base.reportDimension",
+            "title": "Visitor Loyalty",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportVisitorsRecency": {
+        "params": [],
+        "config": {
+            "dimensions": "daysSinceLastVisit",
+            "metrics": "visits",
+            "resultsPerPage": 25,
+            "sort": "daysSinceLastVisit",
+            "subview": "base.reportDimension",
+            "title": "Visitor Recency",
+            "titleSuffix": "",
+            "trendChartMetric": "visits",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+            "view_method": "delegate"
+        }
+    },
+    "ReportVisitsToPurchase": {
+        "params": [],
+        "config": {
+            "dimensions": "visitsToTransaction",
+            "metrics": "transactions",
+            "resultsPerPage": 30,
+            "sort": "visitsToTransaction",
+            "subview": "base.reportSimpleDimensional",
+            "title": "Visits To Purchase",
+            "titleSuffix": "",
+            "trendChartMetric": "transactions",
+            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
+            "view_method": "delegate"
+        }
+    }
+}
