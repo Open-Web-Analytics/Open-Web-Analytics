@@ -648,6 +648,26 @@ namespace OWA\Module\Base\Classes;
                  'public_path'          => true,
                  'search_engines.ini'   => true,
                  'query_strings.ini'    => true,
+
+                 /*
+                  * The role-to-capability model is configuration, not stored
+                  * state. It ships with the code and is customised the same way
+                  * the other entries here are -- from owa-config.php, which is
+                  * included from inside this object before the configuration
+                  * entity exists, so a call like
+                  *
+                  *     $this->addCapabilityToRole( 'everyone', ['view_reports'] );
+                  *
+                  * writes the defaults array and is re-applied on every request.
+                  * That route is unaffected by this listing; only a copy read
+                  * back out of the data store is dropped.
+                  *
+                  * Both keys are listed together because they are two halves of
+                  * one model, and splitting them across two storage rules would
+                  * be worse than either choice made consistently.
+                  */
+                 'capabilities'                      => true,
+                 'capabilitiesThatRequireSiteAccess' => true,
              ),
          );
      }
