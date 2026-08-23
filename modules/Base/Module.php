@@ -644,6 +644,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
         $this->registerAction( 'base.reportDaysToPurchase',          'OWA\\Module\\Base\\Controller\\ReportDaysToPurchase',         'Controller/ReportDaysToPurchase.php' );
         $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
+        $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomClicks',               'OWA\\Module\\Base\\Controller\\ReportDomClicks',              'Controller/ReportDomClicks.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportEcommerce',               'OWA\\Module\\Base\\Controller\\ReportEcommerce',              'Controller/ReportEcommerce.php' );
@@ -2382,6 +2383,93 @@ class Module extends \OWA\Core\Module {
                     'string'
             );
         }
+    }
+
+    /**
+     * Every report this module offers, under the id it is reached by.
+     *
+     * All of them name a controller today, so nothing renders differently --
+     * this is the indirection going in ahead of the conversion. `pages` reaches
+     * exactly what `base.reportPages` reached, and converting it later means
+     * changing this one line to name a JSON file instead of a class.
+     *
+     * Ids are derived from the controller names they replace, hyphenated
+     * because they are read by people and appear in URLs: `entry-pages`, not
+     * `reportEntryPages`.
+     *
+     * Called lazily by CoreAPI::getReportRegistry(), never from the module
+     * constructor -- see the note on Module::registerReports().
+     */
+    function registerReports() {
+
+        $this->registerReport( 'action-detail', array( 'controller' => 'base.reportActionDetail' ) );
+        $this->registerReport( 'action-group', array( 'controller' => 'base.reportActionGroup' ) );
+        $this->registerReport( 'action-groups', array( 'controller' => 'base.reportActionGroups' ) );
+        $this->registerReport( 'action-tracking', array( 'controller' => 'base.reportActionTracking' ) );
+        $this->registerReport( 'ad-detail', array( 'controller' => 'base.reportAdDetail' ) );
+        $this->registerReport( 'ad-type-detail', array( 'controller' => 'base.reportAdTypeDetail' ) );
+        $this->registerReport( 'ad-types', array( 'controller' => 'base.reportAdTypes' ) );
+        $this->registerReport( 'ads', array( 'controller' => 'base.reportAds' ) );
+        $this->registerReport( 'anchortext', array( 'controller' => 'base.reportAnchortext' ) );
+        $this->registerReport( 'attribution-history', array( 'controller' => 'base.reportAttributionHistory' ) );
+        $this->registerReport( 'avg-order-value', array( 'controller' => 'base.reportAvgOrderValue' ) );
+        $this->registerReport( 'browser-detail', array( 'controller' => 'base.reportBrowserDetail' ) );
+        $this->registerReport( 'browsers', array( 'controller' => 'base.reportBrowsers' ) );
+        $this->registerReport( 'campaign-detail', array( 'controller' => 'base.reportCampaignDetail' ) );
+        $this->registerReport( 'campaigns', array( 'controller' => 'base.reportCampaigns' ) );
+        $this->registerReport( 'commerce', array( 'controller' => 'base.reportCommerce' ) );
+        $this->registerReport( 'content', array( 'controller' => 'base.reportContent' ) );
+        $this->registerReport( 'country-detail', array( 'controller' => 'base.reportCountryDetail' ) );
+        $this->registerReport( 'creative-performance', array( 'controller' => 'base.reportCreativePerformance' ) );
+        $this->registerReport( 'dashboard', array( 'controller' => 'base.reportDashboard' ) );
+        $this->registerReport( 'days-to-purchase', array( 'controller' => 'base.reportDaysToPurchase' ) );
+        $this->registerReport( 'document', array( 'controller' => 'base.reportDocument' ) );
+        $this->registerReport( 'dom-clicks', array( 'controller' => 'base.reportDomClicks' ) );
+        $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
+        $this->registerReport( 'ecommerce', array( 'controller' => 'base.reportEcommerce' ) );
+        $this->registerReport( 'ecommerce-conversion-rate', array( 'controller' => 'base.reportEcommerceConversionRate' ) );
+        $this->registerReport( 'entry-pages', array( 'controller' => 'base.reportEntryPages' ) );
+        $this->registerReport( 'exit-pages', array( 'controller' => 'base.reportExitPages' ) );
+        $this->registerReport( 'feeds', array( 'controller' => 'base.reportFeeds' ) );
+        $this->registerReport( 'geolocation', array( 'controller' => 'base.reportGeolocation' ) );
+        $this->registerReport( 'goal-funnel', array( 'controller' => 'base.reportGoalFunnel' ) );
+        $this->registerReport( 'goals', array( 'controller' => 'base.reportGoals' ) );
+        $this->registerReport( 'host-detail', array( 'controller' => 'base.reportHostDetail' ) );
+        $this->registerReport( 'hosts', array( 'controller' => 'base.reportHosts' ) );
+        $this->registerReport( 'keyword-detail', array( 'controller' => 'base.reportKeywordDetail' ) );
+        $this->registerReport( 'keywords', array( 'controller' => 'base.reportKeywords' ) );
+        $this->registerReport( 'os', array( 'controller' => 'base.reportOs' ) );
+        $this->registerReport( 'os-detail', array( 'controller' => 'base.reportOsDetail' ) );
+        $this->registerReport( 'page-type-detail', array( 'controller' => 'base.reportPageTypeDetail' ) );
+        $this->registerReport( 'page-types', array( 'controller' => 'base.reportPageTypes' ) );
+        $this->registerReport( 'pages', array( 'controller' => 'base.reportPages' ) );
+        $this->registerReport( 'product-categories', array( 'controller' => 'base.reportProductCategories' ) );
+        $this->registerReport( 'product-category-detail', array( 'controller' => 'base.reportProductCategoryDetail' ) );
+        $this->registerReport( 'product-detail', array( 'controller' => 'base.reportProductDetail' ) );
+        $this->registerReport( 'product-sku-detail', array( 'controller' => 'base.reportProductSkuDetail' ) );
+        $this->registerReport( 'product-skus', array( 'controller' => 'base.reportProductSkus' ) );
+        $this->registerReport( 'products', array( 'controller' => 'base.reportProducts' ) );
+        $this->registerReport( 'referral-detail', array( 'controller' => 'base.reportReferralDetail' ) );
+        $this->registerReport( 'referral-link-text-detail', array( 'controller' => 'base.reportReferralLinkTextDetail' ) );
+        $this->registerReport( 'referring-sites', array( 'controller' => 'base.reportReferringSites' ) );
+        $this->registerReport( 'revenue', array( 'controller' => 'base.reportRevenue' ) );
+        $this->registerReport( 'search-engine-detail', array( 'controller' => 'base.reportSearchEngineDetail' ) );
+        $this->registerReport( 'search-engines', array( 'controller' => 'base.reportSearchEngines' ) );
+        $this->registerReport( 'source-detail', array( 'controller' => 'base.reportSourceDetail' ) );
+        $this->registerReport( 'sources', array( 'controller' => 'base.reportSources' ) );
+        $this->registerReport( 'state-detail', array( 'controller' => 'base.reportStateDetail' ) );
+        $this->registerReport( 'traffic', array( 'controller' => 'base.reportTraffic' ) );
+        $this->registerReport( 'transaction-detail', array( 'controller' => 'base.reportTransactionDetail' ) );
+        $this->registerReport( 'transactions', array( 'controller' => 'base.reportTransactions' ) );
+        $this->registerReport( 'visit', array( 'controller' => 'base.reportVisit' ) );
+        $this->registerReport( 'visitor', array( 'controller' => 'base.reportVisitor' ) );
+        $this->registerReport( 'visitors', array( 'controller' => 'base.reportVisitors' ) );
+        $this->registerReport( 'visitors-age', array( 'controller' => 'base.reportVisitorsAge' ) );
+        $this->registerReport( 'visitors-loyalty', array( 'controller' => 'base.reportVisitorsLoyalty' ) );
+        $this->registerReport( 'visitors-recency', array( 'controller' => 'base.reportVisitorsRecency' ) );
+        $this->registerReport( 'visitors-roster', array( 'controller' => 'base.reportVisitorsRoster' ) );
+        $this->registerReport( 'visits', array( 'controller' => 'base.reportVisits' ) );
+        $this->registerReport( 'visits-to-purchase', array( 'controller' => 'base.reportVisitsToPurchase' ) );
     }
 
     function registerNavigation() {

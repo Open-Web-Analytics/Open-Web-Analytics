@@ -927,6 +927,51 @@ class CoreAPI {
      * @param string $sortby the array value to sort the navigation array by
      * @return array|false
      */
+    /**
+     * The report registry, built on first use.
+     *
+     * Lazy on purpose, exactly as getNavigation() is: Module::__construct()
+     * runs on every request including every tracker beacon, so registration
+     * must not live there. The guard makes it idempotent -- a request that
+     * renders two reports registers once.
+     *
+     * @return array<string, array> definitions keyed by report id
+     */
+    public static function getReportRegistry() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ( $service->modules as $module ) {
+
+            if ( empty( $module->reports_registered ) ) {
+
+                $module->registerReports();
+                $module->reports_registered = true;
+            }
+        }
+
+        $map = $service->getMap( 'reports' );
+
+        return is_array( $map ) ? $map : array();
+    }
+
+    /**
+     * One report's definition, or false.
+     *
+     * @param  string $id
+     * @return array|false
+     */
+    public static function getReportDefinition( $id ) {
+
+        if ( ! $id ) {
+            return false;
+        }
+
+        $registry = \OWA\Core\CoreAPI::getReportRegistry();
+
+        return $registry[ $id ] ?? false;
+    }
+
     public static function getNavigation($view, $nav_name, $sortby ='order') {
 
         $links = array();

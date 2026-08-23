@@ -50,8 +50,17 @@ final class ReportCharacterizationHarness
         'ReportTransactionDetail',
     );
 
-    /** Not a report: the REST data-endpoint controller. */
-    private const NOT_A_REPORT = array( 'ReportsRest' );
+    /**
+     * Files under Controller/Report*.php that are not reports.
+     *
+     * ReportsRest is the REST data-endpoint controller -- its "report names"
+     * are hand-written queries, not report configurations.
+     *
+     * Report is the dispatcher that resolves a reportId. It matches the glob
+     * because of where it lives, and this harness noticed the moment it was
+     * added, which is the drift detection working rather than a nuisance.
+     */
+    private const NOT_A_REPORT = array( 'ReportsRest', 'Report' );
 
     /**
      * A fixed value for every request parameter a report reads.
