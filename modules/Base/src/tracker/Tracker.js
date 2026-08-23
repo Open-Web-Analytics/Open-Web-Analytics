@@ -334,19 +334,27 @@ class OWATracker  {
 	        }
 	    }
 	
-
-	    // private vars
-	    this.ecommerce_transaction = '';
-	    this.isClickTrackingEnabled = false;
-	    this.domstream_guid = '';
-
-	    // check to se if an overlay session is active
-	    this.checkForOverlaySession();
-
-	    // A caller that declared the cookie domain up front has established it
-	    // just as surely as setCookieDomain() does, and anything waiting on it
-	    // must hear about it either way. Without this the announcement would
-	    // only ever come from the lazy path in trackEvent().
+	    /*
+	     * ESTABLISH THE COOKIE DOMAIN NOW, before anything can write state.
+	     *
+	     * Every store stamps a hash of the cookie domain (cdh) into its value at
+	     * WRITE time, and readPersistedStore() refuses a store whose hash does not
+	     * match the current domain. This used to be resolved lazily, on the first
+	     * tracked event -- so anything written before that, which includes the
+	     * documented "set your custom vars, then track" flow, was stamped against
+	     * a domain that was not yet the real one and was silently unreadable on
+	     * the next page load.
+	     *
+	     * Moving it does not change the VALUE: setCookieDomain() with no argument
+	     * resolves document.domain, exactly what the lazy path did later. Only the
+	     * timing changes -- and with it the timing of 'cookieDomainEstablished',
+	     * so storage migrations now run before anything reads rather than after
+	     * something may already have written.
+	     *
+	     * trackEvent() still calls setCookieDomain() when it finds the domain
+	     * unset. That is a safety net for a tracker built where no domain could
+	     * be resolved, not the normal path any more.
+	     */
 	    if ( this.getOption('cookie_domain_declared') ) {
 
 	    	// an explicit setCookieDomain found ahead of us in the command queue
@@ -357,7 +365,18 @@ class OWATracker  {
 	    	// the caller declared it up front, so it is already established
 	    	OWA.doAction('cookieDomainEstablished');
 
+	    } else {
+
+	    	this.setCookieDomain();
 	    }
+
+	    // private vars
+	    this.ecommerce_transaction = '';
+	    this.isClickTrackingEnabled = false;
+	    this.domstream_guid = '';
+
+	    // check to se if an overlay session is active
+	    this.checkForOverlaySession();
 
 		OWA.doAction('tracker.init');
 	}
@@ -520,8 +539,18 @@ class OWATracker  {
         var not_passed = false;
 
         if ( ! domain ) {
-            domain = document.domain;
+            domain = ( typeof document !== 'undefined' ) ? document.domain : '';
             not_passed = true;
+
+            // Nothing to resolve from, so leave the domain unestablished rather
+            // than crashing on substr() below. A real browser always has
+            // document.domain; jsdom and non-DOM contexts do not, and this path
+            // now runs at CONSTRUCTION where it used to run on the first event,
+            // so it is reached far more often.
+            if ( ! domain ) {
+                OWA.debug( 'no document.domain to resolve a cookie domain from' );
+                return;
+            }
             //this.setOption('cookie_domain_mode', 'auto');
             //OWA.setSetting('cookie_domain_mode', 'auto');
         }
