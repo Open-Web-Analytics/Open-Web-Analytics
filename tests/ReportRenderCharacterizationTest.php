@@ -28,6 +28,33 @@ final class ReportRenderCharacterizationTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+        /*
+         *     OWA_REGEN_RENDER_GOLDEN=1 ./vendor/bin/phpunit tests/ReportRenderCharacterizationTest.php
+         *
+         * A diff in that file is the question "is this report meant to change?"
+         * -- and for a behaviour-preserving conversion the answer is no. Run it
+         * and expect NO diff; a conversion adds its own entry and moves nothing.
+         *
+         * The authentication is load-bearing and is why an earlier attempt at
+         * this gate was wrong. Rendering a report resolves a view, which needs
+         * an authenticated admin; without it every report records
+         * "did not render: (no view)" and the file is quietly replaced with 55
+         * non-renders. requireDb() does the same thing for the tests, but that
+         * runs per-test, after this.
+         */
+        if ( getenv( 'OWA_REGEN_RENDER_GOLDEN' ) && owa_test_db_available() ) {
+
+            $user = \OWA\Core\CoreAPI::getCurrentUser();
+            $user->setRole( 'admin' );
+            $user->setAuthStatus( true );
+
+            file_put_contents(
+                Render::goldenPath(),
+                json_encode( Render::captureAll(),
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "\n"
+            );
+        }
+
         self::$golden = (array) json_decode(
             (string) file_get_contents( Render::goldenPath() ), true );
     }

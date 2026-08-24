@@ -276,6 +276,25 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $view->renderDimension( 'dimension_browser.php',
             (array) ( $owa_w['properties'] ?? array() ) ); ?>
 
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'referral-badge' ): ?>
+<?php
+    /*
+     * The referring page, above a referral-detail report. Same shape as
+     * browser-badge: the widget names its template, the definition supplies
+     * only properties.
+     *
+     * It replaces `dimension_template: "dimension_referral.php"` AND the entity
+     * lookup that filled it. That lookup fetched three columns -- page_title,
+     * url and snippet. `url` is the request parameter, so it needs no lookup;
+     * the other two were filled by the referral crawl, which is gone. page_title
+     * is now the literal string "(not set)" that RefererHandlers writes as its
+     * default, and snippet is empty on every row. Rendering them meant a panel
+     * headed "(not set)" above a blank line.
+     */
+?>
+        <?php echo $view->renderDimension( 'dimension_referral.php',
+            (array) ( $owa_w['properties'] ?? array() ) ); ?>
+
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'report-links' ): ?>
 <?php
     /*

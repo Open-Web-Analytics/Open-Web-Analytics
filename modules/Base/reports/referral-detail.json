@@ -1,0 +1,41 @@
+{
+    "title": "Referral:",
+    "titleSuffix": "{referralPageUrl}",
+    "params": {
+        "referralPageUrl": {}
+    },
+    "metrics": "visits,pageViews,bounces",
+    "widgets": [
+        {
+            "type": "referral-badge",
+            "properties": {
+                "url": "{referralPageUrl}"
+            }
+        },
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this referral."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralWebSite",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            { "dimension": "referralPageUrl", "fromParam": "referralPageUrl" }
+        ]
+    }
+}

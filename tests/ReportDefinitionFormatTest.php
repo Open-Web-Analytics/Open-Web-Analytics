@@ -330,6 +330,71 @@ final class ReportDefinitionFormatTest extends TestCase
                 $this->gridWith( 'attributionList' ) ) );
     }
 
+    /**
+     * A detail panel is a widget type; the definition never names its template.
+     *
+     * referral-detail used to say `dimension_template: "dimension_referral.php"`
+     * and fill it from an entity lookup. The widget owns the template now, the
+     * same way browser-badge does, and the definition supplies only properties.
+     */
+    public function testAReferralBadgeShowsTheUrlItWasGiven(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'  => 'Referral:',
+            'params' => array( 'referralPageUrl' => array() ),
+            'widgets' => array(
+                array( 'type' => 'referral-badge',
+                       'properties' => array( 'url' => '{referralPageUrl}' ) ),
+            ),
+        ), array(), array( 'referralPageUrl' => 'https://example.com/a' ) );
+
+        /*
+         * Scoped to the panel, and to its VISIBLE text.
+         *
+         * Asserting the URL appears anywhere in $html passes on the href alone,
+         * so removing the text the panel draws would not fail it -- checked by
+         * doing exactly that.
+         */
+        $this->assertSame( 1, preg_match(
+            '~<div class="url">\s*([^<]*)~', $html, $m ),
+            'the panel must draw a url block' );
+
+        $this->assertStringContainsString( 'https://example.com/a', trim( $m[1] ),
+            'the panel must show the referring URL as text, not only as a link' );
+
+        $this->assertStringContainsString( 'Visit Site', $html,
+            'and keep the way to go there' );
+    }
+
+    /**
+     * The two fields the referral crawl used to fill are gone from the panel.
+     *
+     * page_title is now the literal string "(not set)" that RefererHandlers
+     * writes as its default, and snippet is empty on every row, so the panel
+     * was headed "(not set)" above a blank line. The columns are untouched --
+     * this is about what the panel reads.
+     */
+    public function testAReferralBadgeDoesNotShowTheFieldsNothingFills(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'  => 'Referral:',
+            'params' => array( 'referralPageUrl' => array() ),
+            'widgets' => array(
+                array( 'type' => 'referral-badge',
+                       'properties' => array( 'url' => '{referralPageUrl}' ) ),
+            ),
+        ), array(), array( 'referralPageUrl' => 'https://example.com/a' ) );
+
+        $this->assertStringNotContainsString( '(not set)', $html,
+            'the unfillable title must not be drawn' );
+        $this->assertStringNotContainsString( 'class="snippet"', $html,
+            'nor the snippet, which is empty on every row' );
+    }
+
     /** A notice is interpolated like any other authored string. */
     public function testADeprecationNoticeInterpolates(): void
     {

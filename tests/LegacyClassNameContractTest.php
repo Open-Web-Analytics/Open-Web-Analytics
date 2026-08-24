@@ -61,6 +61,7 @@ final class LegacyClassNameContractTest extends TestCase
 
     private const RETIRED = [
         'owa_reportAttributionHistoryController',
+        'owa_reportReferralDetailController',
         'owa_crawlReferralCliController',
         'owa_crawlReferralCliView',
         'owa_reportTrafficView',

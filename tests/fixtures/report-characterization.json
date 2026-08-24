@@ -1694,6 +1694,48 @@
             ]
         }
     },
+    "ReportReferralDetail": {
+        "params": [
+            "referralPageUrl"
+        ],
+        "diagnostics": [],
+        "config": {
+            "constraints": "referralPageUrl==characterization_sentinel",
+            "metrics": "visits,pageViews,bounces",
+            "subview": "base.reportWidgets",
+            "title": "Referral:",
+            "titleSuffix": "characterization_sentinel",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "properties": {
+                        "url": "characterization_sentinel"
+                    },
+                    "type": "referral-badge"
+                },
+                {
+                    "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this referral.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "referralWebSite",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
+        }
+    },
     "ReportReferralLinkTextDetail": {
         "params": [
             "referralLinkText"

@@ -220,7 +220,6 @@
     "owa_reportGoalFunnelView",
     "owa_reportGoalsController",
     "owa_reportGoalsView",
-    "owa_reportReferralDetailController",
     "owa_reportTransactionDetailController",
     "owa_reportTransactionDetailView",
     "owa_reportView",

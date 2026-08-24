@@ -29,7 +29,7 @@ final class ReportCharacterizationHarness
     private const PREFETCHING = array(
         'ReportCampaigns', 'ReportDashboard',
         'ReportDocument', 'ReportDomClicks', 'ReportDomstreams',
-        'ReportGoalFunnel', 'ReportGoals', 'ReportReferralDetail',
+        'ReportGoalFunnel', 'ReportGoals',
         'ReportVisit', 'ReportVisitor', 'ReportVisitors', 'ReportVisits',
 
         /*
@@ -98,6 +98,7 @@ final class ReportCharacterizationHarness
         'action-groups'             => 'ReportActionGroups',
         'action-tracking'           => 'ReportActionTracking',
         'attribution-history'       => 'ReportAttributionHistory',
+        'referral-detail'           => 'ReportReferralDetail',
         'ad-detail'                 => 'ReportAdDetail',
         'ad-type-detail'            => 'ReportAdTypeDetail',
         'ad-types'                  => 'ReportAdTypes',

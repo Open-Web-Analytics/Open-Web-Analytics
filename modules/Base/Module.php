@@ -629,7 +629,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
         $this->registerAction( 'base.reportGoals',                   'OWA\\Module\\Base\\Controller\\ReportGoals',                  'Controller/ReportGoals.php' );
-        $this->registerAction( 'base.reportReferralDetail',          'OWA\\Module\\Base\\Controller\\ReportReferralDetail',         'Controller/ReportReferralDetail.php' );
         $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
         $this->registerAction( 'base.reportVisit',                   'OWA\\Module\\Base\\Controller\\ReportVisit',                  'Controller/ReportVisit.php' );
         $this->registerAction( 'base.reportVisitor',                 'OWA\\Module\\Base\\Controller\\ReportVisitor',                'Controller/ReportVisitor.php' );
@@ -2393,7 +2392,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'product-sku-detail', 'reports/product-sku-detail.json' );
         $this->registerReport( 'product-skus', 'reports/product-skus.json' );
         $this->registerReport( 'products', 'reports/products.json' );
-        $this->registerReport( 'referral-detail', array( 'controller' => 'base.reportReferralDetail' ) );
+        $this->registerReport( 'referral-detail', 'reports/referral-detail.json' );
         $this->registerReport( 'referral-link-text-detail', 'reports/referral-link-text-detail.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
