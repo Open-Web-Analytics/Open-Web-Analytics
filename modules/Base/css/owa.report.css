@@ -780,3 +780,79 @@ li.constraintRow {
 }
 
 
+
+
+/* ---------------------------------------------------------------------------
+   Report grid
+   ---------------------------------------------------------------------------
+   A report is a grid of widgets; each widget says how many of the 12 columns
+   it occupies (Core\ReportGrid::COLUMNS -- the classes below are generated
+   from it, so the two cannot drift).
+
+   container-type, not media queries: widgets nest, and a widget three columns
+   wide inside a full-width one should lay out against the space IT has, not
+   against the viewport. A media query cannot see that difference.
+
+   minmax(0, 1fr), not 1fr: a bare 1fr track refuses to shrink below its
+   content, so one wide table or chart pushes the whole grid past its container
+   and the page scrolls sideways. The 0 minimum is what lets a track be smaller
+   than what is in it, which is what makes overflow-x on the widget work.
+
+   No grid-auto-flow: dense. It reorders widgets to backfill gaps, so a report
+   would silently present its widgets in an order nobody wrote.
+   --------------------------------------------------------------------------- */
+
+.owa_reportGrid {
+    container-type: inline-size;
+    container-name: owa-report;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.owa_reportGridItem {
+    /* Wide content scrolls inside its own widget rather than widening the page. */
+    min-width: 0;
+    overflow-x: auto;
+}
+.owa_span-1 { grid-column: span 1; }
+.owa_span-2 { grid-column: span 2; }
+.owa_span-3 { grid-column: span 3; }
+.owa_span-4 { grid-column: span 4; }
+.owa_span-5 { grid-column: span 5; }
+.owa_span-6 { grid-column: span 6; }
+.owa_span-7 { grid-column: span 7; }
+.owa_span-8 { grid-column: span 8; }
+.owa_span-9 { grid-column: span 9; }
+.owa_span-10 { grid-column: span 10; }
+.owa_span-11 { grid-column: span 11; }
+.owa_span-12 { grid-column: span 12; }
+
+.owa_rowspan-2 { grid-row: span 2; }
+.owa_rowspan-3 { grid-row: span 3; }
+.owa_rowspan-4 { grid-row: span 4; }
+.owa_rowspan-5 { grid-row: span 5; }
+.owa_rowspan-6 { grid-row: span 6; }
+
+/* Narrower than about a tablet: halve the grid, and let anything that asked for
+   more than half go full width rather than leaving a ragged column. */
+@container owa-report (max-width: 900px) {
+
+    .owa_reportGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+    .owa_span-7, .owa_span-8, .owa_span-9,
+    .owa_span-10, .owa_span-11, .owa_span-12 { grid-column: 1 / -1; }
+}
+
+/* Phone width: one column. Every widget is full width, and nothing spans rows,
+   because a two-row widget in a single column is just a tall gap. */
+@container owa-report (max-width: 600px) {
+
+    .owa_reportGrid { grid-template-columns: 1fr; }
+
+    .owa_reportGridItem { grid-column: 1 / -1; }
+
+    .owa_rowspan-2, .owa_rowspan-3, .owa_rowspan-4,
+    .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
+}
