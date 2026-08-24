@@ -56,8 +56,6 @@
     "owa_corsPreflightView",
     "owa_crawlDocumentCliController",
     "owa_crawlDocumentCliView",
-    "owa_crawlReferralCliController",
-    "owa_crawlReferralCliView",
     "owa_date",
     "owa_db",
     "owa_dbColumn",

@@ -59,41 +59,6 @@ class Referer extends \OWA\Core\Entity {
         $this->properties['is_searchengine']->setDataType(OWA_DTD_TINYINT);
     }
 
-    public function crawlReferer() {
-	    
-	    if ( \OWA\Core\CoreAPI::getSetting( 'base', 'fetch_refering_page_info')) {
-	    
-		    // never crawl search engines or social netowrks.
-		    $medium = $this->get('medium');
-	        
-	        if ( $medium === 'organic-search' || $this->get('is_searchengine') || $medium === 'social-network' ) {
-		        
-		        return;
-	        }
-		   
-	        $crawler = new \OWA\Core\Http;
-	        $res = $crawler->getRequest($this->get('url'));
-	        
-	        // extract title
-	        $title = $crawler->extract_title();
-	
-	        if ($title) {
-		        
-	            $this->set( 'page_title', \OWA\Core\Lib::utf8Encode( $title ) );
-	        }
-	
-	        //Extract anchortext and page snippet but not if it's a search engine...
-	        $anchortext = $crawler->extractAnchorText( $this->get('url') );
-	
-	        if ( $anchortext ) {
-		        
-		        $anchortext = \OWA\Core\Lib::utf8Encode($anchortext );
-		        
-				$this->set( 'snippet', $anchortext );
-				$this->set( 'refering_anchortext', $anchortext );
-	        }
-	    }
-    }
 }
 
 ?>

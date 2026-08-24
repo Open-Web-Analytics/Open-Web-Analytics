@@ -61,7 +61,6 @@ final class CliCommandsTest extends CliControllerTestCase
             'flush-processed-events'     => ['flush-processed-events',     'base.flushProcessedEventsCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
-            'update-referral'            => ['update-referral',            'base.crawlReferralCli'],
             'update-document'            => ['update-document',            'base.crawlDocumentCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],
         ];
@@ -373,12 +372,15 @@ final class CliCommandsTest extends CliControllerTestCase
     }
 
     // =================================================================
-    // Crawl maintenance: update-document / update-referral
-    // (cap: edit_settings). Contract-only: with no id these commands crawl
-    // EVERY stored document/referrer over the network (crawlDocument() does
-    // a live HTTP fetch), and with a non-existent id they load a blank row
-    // and fatal. Neither is safe to run in a test, so we assert only the
-    // capability gate, which runs before any crawling.
+    // Crawl maintenance: update-document (cap: edit_settings).
+    // Contract-only: with no id this crawls EVERY stored document over the
+    // network (crawlDocument() does a live HTTP fetch), and with a
+    // non-existent id it loads a blank row and fatals. Neither is safe to run
+    // in a test, so we assert only the capability gate, which runs before any
+    // crawling.
+    //
+    // update-referral was the same shape and is gone: OWA no longer fetches
+    // referring pages at all. See RefererCrawlRemovedTest.
     // =================================================================
 
     public function testUpdateDocumentRejectsUnprivilegedUser(): void
@@ -394,18 +396,6 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNotCapable($result, 'update-document requires edit_settings.');
     }
 
-    public function testUpdateReferralRejectsUnprivilegedUser(): void
-    {
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            'owa_crawlReferralCliController',
-            'crawlReferralCli.php',
-            ['ref' => '0']
-        );
-
-        $this->assertNotCapable($result, 'update-referral requires edit_settings.');
-    }
 
     // =================================================================
     // Event-queue maintenance: processEventQueue / flush-processed-events /

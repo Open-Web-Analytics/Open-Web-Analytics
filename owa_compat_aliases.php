@@ -405,8 +405,6 @@ function owa_compat_class_map(): array
         'owa_changeUserPasswordCliView' => 'OWA\\Module\\Base\\View\\ChangeUserPasswordCli',
         'owa_crawlDocumentCliController' => 'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',
         'owa_crawlDocumentCliView' => 'OWA\\Module\\Base\\View\\CrawlDocumentCli',
-        'owa_crawlReferralCliController' => 'OWA\\Module\\Base\\Controller\\CrawlReferralCli',
-        'owa_crawlReferralCliView' => 'OWA\\Module\\Base\\View\\CrawlReferralCli',
         'owa_installCheckEnvController' => 'OWA\\Module\\Base\\Controller\\InstallCheckEnv',
         'owa_installCheckEnvView' => 'OWA\\Module\\Base\\View\\InstallCheckEnv',
         'owa_installDefaultsEntryController' => 'OWA\\Module\\Base\\Controller\\InstallDefaultsEntry',

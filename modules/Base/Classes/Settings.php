@@ -1101,7 +1101,6 @@ namespace OWA\Module\Base\Classes;
                 'log_dom_clicks'                    => true,
                 'async_db'                            => false,
                 'clean_query_string'                => true,
-                'fetch_refering_page_info'            => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
                 'async_log_file'                    => 'events.txt',
