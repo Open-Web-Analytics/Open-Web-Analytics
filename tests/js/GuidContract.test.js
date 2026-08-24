@@ -60,13 +60,51 @@ describe('generateRandomGuid contract', () => {
     });
 
     test('two ids minted in the same second still differ', () => {
+        // Not a uniqueness guarantee -- this generator does not offer one, and
+        // the header above quantifies exactly that. Within a one-second bucket
+        // the space is 10^9, so 2000 draws collide with probability
+        // n^2/2N = 2000^2 / 2e9 ~= 0.2%: about one CI run in 500. Asserting
+        // 2000-of-2000 asserted a property the design explicitly lacks, and it
+        // duly failed on an unrelated pull request.
+        //
+        // The tolerance still discriminates. Expected collisions here are
+        // 0.002; six or more is not something chance produces. A generator that
+        // lost its random half -- returning the timestamp alone, or zero-filling
+        // a broken rand() -- yields ~1999 of them, not six.
+        const DRAWS = 2000;
+        const TOLERATED = 5;
+
         const ids = new Set();
 
-        for (let i = 0; i < 2000; i++) {
+        for (let i = 0; i < DRAWS; i++) {
             ids.add(Util.generateRandomGuid());
         }
 
-        expect(ids.size).toBe(2000);
+        expect(DRAWS - ids.size).toBeLessThanOrEqual(TOLERATED);
+    });
+
+    test('the id is not the timestamp alone', () => {
+        // What the test above is really for, stated so it cannot flake: with the
+        // clock held still, ids must still differ. Two draws from 10^9 collide
+        // with probability 1e-9.
+        const realClock = Util.getCurrentUnixTimestamp;
+
+        Util.getCurrentUnixTimestamp = () => 1756000000;
+
+        try {
+            const ids = new Set();
+
+            for (let i = 0; i < 50; i++) {
+                ids.add(Util.generateRandomGuid());
+            }
+
+            expect(ids.size).toBeGreaterThan(45);
+
+            // ...and the frozen clock really was used, or this proves nothing.
+            expect(Util.generateRandomGuid().substring(0, 10)).toBe('1756000000');
+        } finally {
+            Util.getCurrentUnixTimestamp = realClock;
+        }
     });
 
     test('the random component is uniform across its full range', () => {
