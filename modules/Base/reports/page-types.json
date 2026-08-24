@@ -1,13 +1,13 @@
 {
     "title": "Page Types",
     "subview": "base.reportWidgets",
+    "metrics": "visits,pageViews",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "visits,pageViews",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -19,7 +19,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "visits,pageViews",
                 "dimensions": "pageType",
                 "sort": "pageViews-",
                 "resultsPerPage": 25

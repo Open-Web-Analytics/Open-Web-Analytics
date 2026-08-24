@@ -6,13 +6,13 @@
         "actionGroup": {},
         "actionName": {}
     },
+    "metrics": "actions,actionsValue",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "actions,actionsValue",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -24,7 +24,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "actions,actionsValue",
                 "dimensions": "actionLabel",
                 "sort": "actions-",
                 "resultsPerPage": "30"

@@ -48,6 +48,12 @@ class ReportWidgets extends \OWA\Core\View {
          */
         $this->body->set( 'constraints', $this->get( 'constraints' ) );
 
+        /*
+         * Report-wide for the same reason, and the seam a metric set will
+         * swap: every widget queries the same metrics, so they are held once.
+         */
+        $this->body->set( 'metrics', $this->get( 'metrics' ) );
+
         $this->body->set_template( 'report_widgets.php' );
     }
 }

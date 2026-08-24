@@ -5,13 +5,13 @@
     "params": {
         "productName": {}
     },
+    "metrics": "lineItemQuantity,lineItemRevenue",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "lineItemQuantity,lineItemRevenue",
                 "dimensions": "date",
                 "sort": "date"
             },

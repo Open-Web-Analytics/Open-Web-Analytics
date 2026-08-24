@@ -234,7 +234,11 @@ final class ReportCharacterizationTest extends TestCase
         }
 
         $this->assertNotNull( $grid, 'pages should still declare a grid widget' );
-        $this->assertStringContainsString( 'pageViews', (string) $grid['query']['metrics'] );
+
+        // Metrics are report-wide now -- every widget queries the same ones, so
+        // they are held once and a metric set can replace them in one place.
+        // resultsPerPage is genuinely per widget and stays on the grid.
+        $this->assertStringContainsString( 'pageViews', (string) $snap['config']['metrics'] );
         $this->assertSame( 30, $grid['query']['resultsPerPage'] );
     }
 }

@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'widgets', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'metrics', 'widgets', 'settings' );
 
     /** @var array the decoded definition */
     private $definition = array();
@@ -178,6 +178,18 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * the report's structure, not one of its knobs, and because
          * getDefinitionError() has to be able to check them.
          */
+        /*
+         * Report-wide, like the constraint and for the same reason: every
+         * widget in a report asks for the same metrics -- measured across all
+         * 13 multi-widget reports, without exception. Holding it once is also
+         * what lets a metric set replace it in ONE place rather than rewriting
+         * every widget's query.
+         */
+        if ( isset( $d['metrics'] ) ) {
+
+            $this->set( 'metrics', self::interpolate( $d['metrics'], $values ) );
+        }
+
         if ( isset( $d['widgets'] ) ) {
 
             $this->set( 'widgets', self::interpolateDeep( $d['widgets'], $values ) );

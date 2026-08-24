@@ -5,13 +5,13 @@
     "params": {
         "actionGroup": {}
     },
+    "metrics": "actions,uniqueActions,actionsValue",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "actions,uniqueActions,actionsValue",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -23,7 +23,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "actions,uniqueActions,actionsValue",
                 "dimensions": "actionGroup,actionName",
                 "sort": "actions-",
                 "resultsPerPage": 25

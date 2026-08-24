@@ -18,7 +18,10 @@ $owa_widgets = (array) $view->widgets;
     $owa_id        = (string) ( $owa_w['id'] ?? 'widget' );
     $owa_container = (string) ( $owa_w['container'] ?? $owa_id );
     $owa_url       = $owa_id . 'url';
+    // A widget's own query wins, so a widget CAN ask for different metrics --
+    // none does today, and the report-wide value is what a metric set replaces.
     $owa_query     = (array) ( $owa_w['query'] ?? array() ) + array(
+        'metrics'     => $view->metrics,
         'do'          => 'reports',
         'module'      => 'base',
         'version'     => 'v1',

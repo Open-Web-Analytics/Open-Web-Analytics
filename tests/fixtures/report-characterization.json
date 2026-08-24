@@ -7,6 +7,7 @@
         "diagnostics": [],
         "config": {
             "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
+            "metrics": "actions,actionsValue",
             "subview": "base.reportWidgets",
             "title": "Action Detail: ",
             "titleSuffix": "characterization_sentinel: characterization_sentinel",
@@ -18,7 +19,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "actions,actionsValue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
@@ -29,7 +29,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "actionLabel",
-                        "metrics": "actions,actionsValue",
                         "resultsPerPage": "30",
                         "sort": "actions-"
                     },
@@ -45,6 +44,7 @@
         "diagnostics": [],
         "config": {
             "constraints": "actionGroup==characterization_sentinel",
+            "metrics": "actions,uniqueActions,actionsValue",
             "subview": "base.reportWidgets",
             "title": "Action Group: ",
             "titleSuffix": "characterization_sentinel",
@@ -56,7 +56,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "actions,uniqueActions,actionsValue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
@@ -81,7 +80,6 @@
                     },
                     "query": {
                         "dimensions": "actionGroup,actionName",
-                        "metrics": "actions,uniqueActions,actionsValue",
                         "resultsPerPage": 25,
                         "sort": "actions-"
                     },
@@ -94,6 +92,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "actions,uniqueActions,actionsValue",
             "subview": "base.reportWidgets",
             "title": "Action Groups",
             "titleSuffix": "",
@@ -105,7 +104,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "actions,uniqueActions,actionsValue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
@@ -125,7 +123,6 @@
                     },
                     "query": {
                         "dimensions": "actionGroup",
-                        "metrics": "actions,uniqueActions,actionsValue",
                         "resultsPerPage": 25,
                         "sort": "actions-"
                     },
@@ -278,6 +275,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "revenuePerTransaction",
             "subview": "base.reportWidgets",
             "title": "Average Order Value",
             "titleSuffix": "",
@@ -289,7 +287,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "revenuePerTransaction",
                         "sort": "date"
                     },
                     "title": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
@@ -300,7 +297,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "revenuePerTransaction",
                         "resultsPerPage": 30,
                         "sort": "date-"
                     },
@@ -453,6 +449,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "transactions",
             "subview": "base.reportWidgets",
             "title": "Days To Purchase",
             "titleSuffix": "",
@@ -464,7 +461,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "transactions",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
@@ -475,7 +471,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "daysToTransaction",
-                        "metrics": "transactions",
                         "resultsPerPage": 30,
                         "sort": "daysToTransaction"
                     },
@@ -503,6 +498,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "visits,ecommerceConversionRate",
             "subview": "base.reportWidgets",
             "title": "Total Revenue",
             "titleSuffix": "",
@@ -514,7 +510,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "visits,ecommerceConversionRate",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
@@ -525,7 +520,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "visits,ecommerceConversionRate",
                         "resultsPerPage": 30,
                         "sort": "date-"
                     },
@@ -765,6 +759,7 @@
         "config": {
             "constraints": "pageType==characterization_sentinel",
             "gridTitle": "Top Page Types",
+            "metrics": "visits,pageViews",
             "subview": "base.reportWidgets",
             "title": "Page Type: ",
             "titleSuffix": "characterization_sentinel",
@@ -776,7 +771,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "visits,pageViews",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.",
@@ -790,6 +784,7 @@
         "diagnostics": [],
         "config": {
             "gridTitle": "Top Page Types",
+            "metrics": "visits,pageViews",
             "subview": "base.reportWidgets",
             "title": "Page Types",
             "titleSuffix": "",
@@ -801,7 +796,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "visits,pageViews",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
@@ -821,7 +815,6 @@
                     },
                     "query": {
                         "dimensions": "pageType",
-                        "metrics": "visits,pageViews",
                         "resultsPerPage": 25,
                         "sort": "pageViews-"
                     },
@@ -835,6 +828,7 @@
         "diagnostics": [],
         "config": {
             "gridTitle": "Top Pages",
+            "metrics": "pageViews,visits,uniquePageViews",
             "subview": "base.reportWidgets",
             "title": "Web Pages",
             "titleSuffix": "",
@@ -846,7 +840,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "pageViews,visits,uniquePageViews",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
@@ -867,7 +860,6 @@
                     },
                     "query": {
                         "dimensions": "pagePath,pageTitle,pageType,pageUrl",
-                        "metrics": "pageViews,visits,uniquePageViews",
                         "resultsPerPage": 30,
                         "sort": "pageViews-"
                     },
@@ -880,6 +872,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product SKUs",
             "titleSuffix": "",
@@ -891,7 +884,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all Categories.",
@@ -911,7 +903,6 @@
                     },
                     "query": {
                         "dimensions": "productCategory",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "resultsPerPage": 30,
                         "sort": "lineItemQuantity-"
                     },
@@ -928,6 +919,7 @@
         "config": {
             "constraints": "productCategory==characterization_sentinel",
             "dimension": "productCategory",
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product Category: ",
             "titleSuffix": "characterization_sentinel",
@@ -939,7 +931,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
@@ -956,6 +947,7 @@
         "config": {
             "constraints": "productName==characterization_sentinel",
             "dimension": "productName",
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product Detail: ",
             "titleSuffix": "characterization_sentinel",
@@ -967,7 +959,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
@@ -984,6 +975,7 @@
         "config": {
             "constraints": "productSku==characterization_sentinel",
             "dimension": "productSku",
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product SKU: ",
             "titleSuffix": "characterization_sentinel",
@@ -995,7 +987,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
@@ -1008,6 +999,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product SKUs",
             "titleSuffix": "",
@@ -1019,7 +1011,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.",
@@ -1039,7 +1030,6 @@
                     },
                     "query": {
                         "dimensions": "productSku",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "resultsPerPage": 30,
                         "sort": "lineItemQuantity-"
                     },
@@ -1052,6 +1042,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Products",
             "titleSuffix": "",
@@ -1063,7 +1054,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
@@ -1083,7 +1073,6 @@
                     },
                     "query": {
                         "dimensions": "productName",
-                        "metrics": "lineItemQuantity,lineItemRevenue",
                         "resultsPerPage": 30,
                         "sort": "lineItemQuantity-"
                     },
@@ -1144,6 +1133,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "transactionRevenue",
             "subview": "base.reportWidgets",
             "title": "Total Revenue",
             "titleSuffix": "",
@@ -1155,7 +1145,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "transactionRevenue",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
@@ -1166,7 +1155,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "transactionRevenue",
                         "resultsPerPage": 30,
                         "sort": "date-"
                     },
@@ -1353,6 +1341,7 @@
         "params": [],
         "diagnostics": [],
         "config": {
+            "metrics": "transactions",
             "subview": "base.reportWidgets",
             "title": "Visits To Purchase",
             "titleSuffix": "",
@@ -1364,7 +1353,6 @@
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
-                        "metrics": "transactions",
                         "sort": "date"
                     },
                     "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
@@ -1375,7 +1363,6 @@
                     "id": "dim",
                     "query": {
                         "dimensions": "visitsToTransaction",
-                        "metrics": "transactions",
                         "resultsPerPage": 30,
                         "sort": "visitsToTransaction"
                     },

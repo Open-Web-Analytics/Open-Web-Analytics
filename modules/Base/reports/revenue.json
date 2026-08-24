@@ -1,13 +1,13 @@
 {
     "title": "Total Revenue",
     "subview": "base.reportWidgets",
+    "metrics": "transactionRevenue",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "transactionRevenue",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -19,7 +19,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "transactionRevenue",
                 "dimensions": "date",
                 "sort": "date-",
                 "resultsPerPage": 30

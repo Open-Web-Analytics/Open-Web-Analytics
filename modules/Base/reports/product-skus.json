@@ -1,13 +1,13 @@
 {
     "title": "Product SKUs",
     "subview": "base.reportWidgets",
+    "metrics": "lineItemQuantity,lineItemRevenue",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "lineItemQuantity,lineItemRevenue",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -19,7 +19,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "lineItemQuantity,lineItemRevenue",
                 "dimensions": "productSku",
                 "sort": "lineItemQuantity-",
                 "resultsPerPage": 30

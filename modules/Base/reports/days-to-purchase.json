@@ -1,13 +1,13 @@
 {
     "title": "Days To Purchase",
     "subview": "base.reportWidgets",
+    "metrics": "transactions",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "transactions",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -19,7 +19,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "transactions",
                 "dimensions": "daysToTransaction",
                 "sort": "daysToTransaction",
                 "resultsPerPage": 30

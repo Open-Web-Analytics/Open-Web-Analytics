@@ -1,13 +1,13 @@
 {
     "title": "Average Order Value",
     "subview": "base.reportWidgets",
+    "metrics": "revenuePerTransaction",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "metrics": "revenuePerTransaction",
                 "dimensions": "date",
                 "sort": "date"
             },
@@ -19,7 +19,6 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "metrics": "revenuePerTransaction",
                 "dimensions": "date",
                 "sort": "date-",
                 "resultsPerPage": 30

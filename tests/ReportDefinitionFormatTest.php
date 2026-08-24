@@ -243,4 +243,149 @@ final class ReportDefinitionFormatTest extends TestCase
             'an absent parameter constrains on empty -- which returns nothing, rather '
             . 'than dropping the constraint and returning every row' );
     }
+
+    /**
+     * Metrics are report-wide, and reach every widget's query.
+     *
+     * Every widget in every multi-widget report asks for the same metrics --
+     * measured across all 13, without exception. Holding the value once is
+     * also what will let a metric set replace it in ONE place instead of
+     * rewriting each widget's query, which is the loop-with-override this
+     * format is trying not to grow.
+     */
+    public function testReportMetricsReachEveryWidget(): void
+    {
+        $d = $this->declared( $this->base( array(
+            'metrics' => 'visits,pageViews',
+            'widgets' => array(
+                array( 'type' => 'trend', 'id' => 't', 'query' => array( 'dimensions' => 'date' ) ),
+                array( 'type' => 'grid',  'id' => 'g', 'query' => array( 'dimensions' => 'pagePath' ) ),
+            ),
+        ) ) );
+
+        $this->assertSame( 'visits,pageViews', $d['metrics'] );
+
+        foreach ( $d['widgets'] as $widget ) {
+            $this->assertArrayNotHasKey( 'metrics', $widget['query'],
+                'a widget should not carry a copy of a report-wide value' );
+        }
+    }
+
+    /** A placeholder works in the report-wide metrics too. */
+    public function testReportMetricsAreInterpolated(): void
+    {
+        $d = $this->declared(
+            $this->base( array(
+                'metrics' => 'visits,{extra}',
+                'params'  => array( 'extra' => array() ),
+            ) ),
+            array( 'extra' => 'bounces' ) );
+
+        $this->assertSame( 'visits,bounces', $d['metrics'] );
+    }
+
+    /**
+     * A widget may override the report's metrics with its own.
+     *
+     * Deliberate and supported, not a side effect of how the two arrays happen
+     * to be merged. An author who wants one widget to always show revenue
+     * regardless of which metric set is being viewed says so on that widget,
+     * and it must keep saying it: when metric sets arrive, the ambient set
+     * replaces the REPORT's metrics, and a widget that named its own is
+     * expressing that it does not want to be switched.
+     *
+     * That is also why no widget needs to name a metric set. Not naming one
+     * means "whatever is being viewed"; naming metrics means "these, always".
+     */
+    public function testAnOverridingWidgetKeepsItsOwnMetricsInTheDefinition(): void
+    {
+        $d = $this->declared( $this->base( array(
+            'metrics' => 'visits,pageViews',
+            'widgets' => array(
+                array( 'type' => 'trend', 'id' => 't', 'query' => array( 'dimensions' => 'date' ) ),
+                array( 'type' => 'grid',  'id' => 'g', 'query' => array(
+                    'metrics' => 'transactionRevenue', 'dimensions' => 'pagePath' ) ),
+            ),
+        ) ) );
+
+        $this->assertSame( 'visits,pageViews', $d['metrics'],
+            'the report-wide value is untouched by a widget overriding it' );
+
+        $widgets = $d['widgets'];
+
+        $this->assertArrayNotHasKey( 'metrics', $widgets[0]['query'],
+            'a widget that does not override carries no copy, so it follows the report' );
+
+        $this->assertSame( 'transactionRevenue', $widgets[1]['query']['metrics'],
+            'a widget that overrides keeps exactly what it asked for' );
+    }
+
+    /** An overriding widget's metrics are interpolated like anything else. */
+    public function testAnOverridingWidgetIsStillInterpolated(): void
+    {
+        $d = $this->declared(
+            $this->base( array(
+                'metrics' => 'visits',
+                'params'  => array( 'm' => array() ),
+                'widgets' => array( array( 'type' => 'grid', 'id' => 'g',
+                    'query' => array( 'metrics' => '{m}', 'dimensions' => 'pagePath' ) ) ),
+            ) ),
+            array( 'm' => 'bounces' ) );
+
+        $this->assertSame( 'bounces', $d['widgets'][0]['query']['metrics'] );
+    }
+
+    /**
+     * ...and the override actually wins in the query that gets issued.
+     *
+     * The test above reads the DECLARED bag, so it passes whichever way the
+     * template merges the two -- confirmed by reversing the merge, which failed
+     * nothing. Precedence is a rendering fact and has to be read from the
+     * rendered query.
+     */
+    public function testAnOverridingWidgetWinsInTheEmittedQuery(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'rendering a report loads the site list and the period' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        require_once __DIR__ . '/ReportCharacterizationHarness.php';
+        require_once __DIR__ . '/ReportRenderHarness.php';
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            array( 'siteId' => '1', 'period' => 'last_thirty_days' ) );
+
+        $controller->setDefinition( array(
+            'title'   => 'Override',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits,pageViews',
+            'widgets' => array(
+                array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
+                       'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'metrics' => 'transactionRevenue',
+                                         'dimensions' => 'pagePath', 'sort' => 'transactionRevenue-' ) ),
+            ),
+        ) );
+
+        $data = (array) $controller->doAction();
+        $html = (string) \OWA\Core\CoreAPI::displayView( $data );
+
+        $byVar = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $entry ) {
+            $byVar[ $entry['var'] ] = $entry['query']['metrics'] ?? '';
+        }
+
+        $this->assertSame( 'visits,pageViews', $byVar['trendurl'] ?? null,
+            'a widget that overrides nothing must query the report metrics' );
+
+        $this->assertSame( 'transactionRevenue', $byVar['dimurl'] ?? null,
+            "a widget's own metrics must win over the report's, or an author cannot "
+            . 'pin one widget while the rest follow the metric set' );
+    }
 }
