@@ -30,14 +30,36 @@ $owa_sets = $view->metrics
     ? array( '' => array() )
     : (array) $view->metricSets;
 
+$owa_setKeysReal = (bool) array_filter( array_keys( $owa_sets ), function ( $k ) { return $k !== ''; } );
+
 if ( ! $owa_sets ) {
 
     // No site, so no sets -- render once with whatever the report has.
     $owa_sets = array( '' => array() );
 }
+
+/*
+ * A report rendered per metric set needs a way to move between them, and the
+ * sets have to load lazily -- only the one being looked at should query.
+ *
+ * OWA.report already does both: a tab object owns a set's result-set
+ * explorers, addTab registers it, and createTabs builds the control and loads
+ * whichever set is active, reloading on switch. So the widgets are registered
+ * with it rather than loaded directly.
+ *
+ * The control is drawn as tabs today. That is owa.report.js's business; this
+ * template's job is to say which widgets belong to which set.
+ */
+$owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 ?>
+<?php if ( $owa_multiSet ): ?>
+<div id="report-tabs">
+<?php endif; ?>
+
 <?php foreach ( $owa_sets as $owa_setKey => $owa_set ): ?>
-<div class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
+<?php $owa_panelId = $owa_setKey === '' ? '' : 'tab_' . $owa_setKey; ?>
+<div<?php if ( $owa_panelId ): ?> id="<?php $view->out( $owa_panelId ); ?>"<?php endif; ?> class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
+<?php $owa_rses = array(); ?>
 
 <?php foreach ( $owa_widgets as $owa_w ): ?>
 <?php
@@ -98,8 +120,11 @@ if ( ! $owa_sets ) {
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
 
+<?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
+<?php endif; ?>
         </script>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'browser-badge' ): ?>
 <?php
@@ -163,8 +188,11 @@ if ( ! $owa_sets ) {
 <?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 
+<?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
+<?php endif; ?>
         </script>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 
 <?php endif; ?>
 
@@ -172,6 +200,25 @@ if ( ! $owa_sets ) {
 <?php endforeach; ?>
 
 </div>
+<?php if ( $owa_multiSet ): ?>
+<script>
+    // This set, and the widgets whose results belong to it. The tab loads them
+    // when it becomes the one being looked at.
+    var owaSet_<?php $view->out( $owa_setKey, false ); ?> = new OWA.report.tab('<?php $view->out( $owa_panelId, false ); ?>');
+    owaSet_<?php $view->out( $owa_setKey, false ); ?>.setLabel('<?php $view->out( $owa_set['label'] ?? $owa_setKey ); ?>');
+<?php foreach ( $owa_rses as $owa_rseName => $owa_rseVar ): ?>
+    owaSet_<?php $view->out( $owa_setKey, false ); ?>.addRse('<?php $view->out( $owa_rseName, false ); ?>', <?php echo $owa_rseVar; ?>);
 <?php endforeach; ?>
+    OWA.items['<?php echo $view->dom_id; ?>'].addTab( owaSet_<?php $view->out( $owa_setKey, false ); ?> );
+</script>
+<?php endif; ?>
+<?php endforeach; ?>
+
+<?php if ( $owa_multiSet ): ?>
+</div>
+<script>
+    OWA.items['<?php echo $view->dom_id; ?>'].createTabs();
+</script>
+<?php endif; ?>
 
 <?php require_once( 'js_report_templates.php' ); ?>

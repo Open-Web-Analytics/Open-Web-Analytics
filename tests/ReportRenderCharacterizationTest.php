@@ -234,4 +234,68 @@ final class ReportRenderCharacterizationTest extends TestCase
         $this->assertSame( array(), Render::queriesIn( '<p>no scripts here</p>' ) );
         $this->assertSame( array(), Render::commandsIn( '<p>no scripts here</p>' ) );
     }
+
+    /**
+     * A report with metric sets must offer a way to move between them.
+     *
+     * The check this recording did not have. Converting the multi-set reports
+     * to widgets dropped the control entirely and every query, command and
+     * binding stayed byte-identical -- because a control issues no query. The
+     * reports rendered every set stacked on the page with no way to switch,
+     * 1413 unit tests passed, and eight browser tests caught it.
+     */
+    public function testAMultiSetReportOffersAControl(): void
+    {
+        $missing = array();
+
+        foreach ( self::$golden as $id => $snapshot ) {
+
+            $control = $snapshot['control'] ?? array();
+
+            // One panel per set is what makes a report multi-set here.
+            if ( count( $control['panels'] ?? array() ) === 0 ) {
+                continue;
+            }
+
+            if ( empty( $control['container'] ) || empty( $control['built'] ) ) {
+                $missing[] = $id;
+            }
+
+            $this->assertSame( count( $control['panels'] ), $control['registered'],
+                "$id registers a different number of sets than it renders panels for" );
+        }
+
+        $this->assertSame( array(), $missing,
+            'these reports render metric sets with no way to move between them: '
+            . implode( ', ', $missing ) );
+    }
+
+    /**
+     * Exactly one thing loads a widget's data.
+     *
+     * A set registered with the control is loaded BY it, only when looked at.
+     * A report that both registers sets and loads directly would query every
+     * set on page load -- the same widgets, the same queries, all fired at
+     * once, which nothing else here would show.
+     */
+    public function testSetsAreLoadedByTheControlOrDirectlyButNotBoth(): void
+    {
+        foreach ( self::$golden as $id => $snapshot ) {
+
+            $control = $snapshot['control'] ?? array();
+
+            if ( ! empty( $control['registered'] ) ) {
+
+                $this->assertSame( 0, $control['loads'],
+                    "$id registers its sets with the control AND loads them directly, "
+                    . 'so every set queries on page load' );
+
+            } elseif ( ! empty( $snapshot['queries'] ) ) {
+
+                $this->assertGreaterThan( 0, $control['loads'] ?? 0,
+                    "$id loads nothing and has no control to load it, so its widgets "
+                    . 'never fetch anything' );
+            }
+        }
+    }
 }

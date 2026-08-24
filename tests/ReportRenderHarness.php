@@ -132,6 +132,7 @@ final class ReportRenderHarness
         return array(
             'subview'   => $data['subview'],
             'queries'   => self::queriesIn( $html ),
+            'control'   => self::controlIn( $html ),
             'explorers' => self::explorersIn( $html ),
             'commands'  => self::commandsIn( $html ),
         );
@@ -175,6 +176,52 @@ final class ReportRenderHarness
         }
 
         return $out;
+    }
+
+    /**
+     * Whether the code at an offset sits behind a `//` on its own line.
+     *
+     * Only line comments: a block comment around a push would be unusual, and
+     * treating `/*` as a comment start would misread the `*` inside a jqote
+     * tag, which every trend title contains.
+     */
+    private static function isCommentedOut( string $html, int $offset ): bool
+    {
+        $lineStart = (int) strrpos( substr( $html, 0, $offset ), "\n" );
+
+        $before = substr( $html, $lineStart, $offset - $lineStart );
+
+        return strpos( $before, '//' ) !== false;
+    }
+
+    /**
+     * How a report lets you move between its metric sets, and who loads them.
+     *
+     * Added after a conversion removed the control entirely and this recording
+     * saw NOTHING -- every query, command and binding was byte-identical,
+     * because a control issues no query. The reports rendered every set
+     * stacked on the page with no way to switch, and 1413 unit tests passed on
+     * it. Eight browser tests caught it.
+     *
+     * `loads` is the other half and matters as much: a set that is registered
+     * with the control is loaded BY it, only when looked at. A report that both
+     * registers sets and loads them directly would query every set up front.
+     *
+     * @return array
+     */
+    public static function controlIn( string $html ): array
+    {
+        preg_match_all( '/id="(tab_[a-zA-Z0-9_]+)"/', $html, $panels );
+
+        return array(
+            'container' => strpos( $html, 'id="report-tabs"' ) !== false,
+            'panels'    => $panels[1],
+            'registered'=> substr_count( $html, '.addTab(' ),
+            'built'     => substr_count( $html, 'createTabs()' ),
+            // Direct loads: present when nothing else owns loading, absent when
+            // the control does.
+            'loads'     => preg_match_all( '/\w+\.load\(\w+url\)/', $html ),
+        );
     }
 
     /**
@@ -223,34 +270,51 @@ final class ReportRenderHarness
      */
     public static function commandsIn( string $html ): array
     {
-        if ( ! preg_match_all( '/(\w+)\.asyncQueue\.push\(\s*\[(.*?)\]\s*\)\s*;/s', $html, $m ) ) {
+        if ( ! preg_match_all( '/(\w+)\.asyncQueue\.push\(\s*\[(.*?)\]\s*\)\s*;/s',
+                               $html, $m, PREG_OFFSET_CAPTURE ) ) {
 
             return array();
         }
 
         $out = array();
 
-        foreach ( $m[1] as $i => $receiver ) {
+        foreach ( $m[1] as $i => $receiverMatch ) {
 
-            $args = $m[2][ $i ];
+            /*
+             * Skip anything commented out.
+             *
+             * report_traffic.php has a makeMetricBoxes call left behind under
+             * `//`, and this recorded it as a live command -- so the fixture
+             * asserted behaviour that never runs, and a conversion would have
+             * been held to reproducing it.
+             */
+            if ( self::isCommentedOut( $html, $receiverMatch[1] ) ) {
+
+                continue;
+            }
+
+            $receiver = $receiverMatch[0];
+
+            $args = $m[2][ $i ][0];
 
             // First quoted string is the command name.
             preg_match( "/^\s*'([a-zA-Z]+)'/", $args, $name );
 
-            // Last quoted string is the element it renders into, when there is
-            // one -- refreshGrid takes none and renders into its own container.
-            preg_match_all( "/'([a-zA-Z0-9_.#-]*)'/", $args, $quoted );
-
-            $target = '';
-
-            if ( ! empty( $quoted[1] ) ) {
-
-                $last = end( $quoted[1] );
-
-                if ( $last !== ( $name[1] ?? '' ) ) {
-                    $target = $last;
-                }
-            }
+            /*
+             * The element it renders into is a TRAILING argument, when there is
+             * one at all -- refreshGrid takes none, and makeAreaChart is called
+             * both ways.
+             *
+             * It has to be the last top-level argument, not merely the last
+             * quoted string anywhere in the call. `['makeAreaChart',
+             * [{x:'date',y:'pageViews'}]]` has no target, and reading the last
+             * quoted string recorded 'pageViews' -- an axis metric written down
+             * as a container. A conversion that changed the charted metric
+             * would then have shown up as a container change.
+             */
+            $target = preg_match( "/,\s*'([a-zA-Z0-9_.#-]*)'\s*$/", $args, $trailing )
+                ? $trailing[1]
+                : '';
 
             $out[] = $receiver . '.' . ( $name[1] ?? '?' ) . ( $target !== '' ? ' -> ' . $target : '' );
         }

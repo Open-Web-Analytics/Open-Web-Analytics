@@ -36,6 +36,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -90,6 +97,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -142,6 +156,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -210,6 +231,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -252,6 +280,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -284,6 +321,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -331,6 +377,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -385,6 +440,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -439,6 +503,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -491,6 +564,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -544,6 +624,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -596,6 +685,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -633,6 +731,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -696,6 +803,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 3
+        },
         "explorers": [
             {
                 "var": "rsh",
@@ -711,7 +825,7 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart -> transactions",
+            "rsh.makeAreaChart",
             "rsh.makeMetricBoxes -> trend-metrics",
             "rsh.renderTemplate -> content-headline",
             "topproducts.refreshGrid",
@@ -769,6 +883,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 3
+        },
         "explorers": [
             {
                 "var": "rsh",
@@ -784,7 +905,7 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart -> pageViews",
+            "rsh.makeAreaChart",
             "rsh.makeMetricBoxes -> trend-metrics",
             "rsh.renderTemplate -> content-headline",
             "toppages.refreshGrid",
@@ -828,6 +949,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -880,6 +1010,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -932,6 +1071,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1000,6 +1146,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1057,6 +1210,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1109,6 +1269,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1161,6 +1330,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1213,6 +1391,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1265,6 +1450,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1302,6 +1496,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1349,6 +1552,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1386,6 +1598,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1435,6 +1656,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1487,6 +1717,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1524,6 +1763,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1556,6 +1804,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1603,6 +1858,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1655,6 +1917,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1707,6 +1976,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1744,6 +2020,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1776,6 +2059,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1808,6 +2098,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1855,6 +2152,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1907,6 +2211,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -1944,6 +2255,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -1993,6 +2313,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2045,6 +2374,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -2082,6 +2418,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2131,6 +2476,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2168,6 +2522,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2215,6 +2578,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2269,6 +2641,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2417,6 +2798,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 8
+        },
         "explorers": [
             {
                 "var": "rsh",
@@ -2452,9 +2840,8 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart -> visits",
+            "rsh.makeAreaChart",
             "rsh.renderTemplate -> visits-headline",
-            "tt.makeMetricBoxes -> organic-search",
             "tt.makeMetricBoxes",
             "tt1.makeMetricBoxes",
             "tt2.makeMetricBoxes",
@@ -2499,6 +2886,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "rsh",
@@ -2510,7 +2904,7 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart -> transactions",
+            "rsh.makeAreaChart",
             "rsh.makeMetricBoxes -> trend-metrics",
             "rsh.renderTemplate -> content-headline",
             "transactions.refreshGrid"
@@ -2551,6 +2945,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2603,6 +3006,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2655,6 +3067,15 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage"
+            ],
+            "registered": 1,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2707,6 +3128,13 @@
                 }
             }
         ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2
+        },
         "explorers": [
             {
                 "var": "trend",
@@ -2821,6 +3249,17 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage",
+                "tab_ecommerce",
+                "tab_goal_group_1"
+            ],
+            "registered": 3,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
@@ -2914,6 +3353,17 @@
                 }
             }
         ],
+        "control": {
+            "container": true,
+            "panels": [
+                "tab_site_usage",
+                "tab_ecommerce",
+                "tab_goal_group_1"
+            ],
+            "registered": 3,
+            "built": 1,
+            "loads": 0
+        },
         "explorers": [
             {
                 "var": "site_usage_trend",
