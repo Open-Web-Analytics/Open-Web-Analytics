@@ -112,12 +112,21 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const grids = page.locator('.ui-jqgrid');
         expect(await grids.count()).toBeGreaterThanOrEqual(1);
 
-        const rows = page.locator('tr.jqgrow');
+        /*
+         * Scoped to #top-pages, not the whole page.
+         *
+         * Counting every tr.jqgrow on the dashboard only ever matched the
+         * seeded page count because the OTHER grids had nothing to draw --
+         * the fixture attributed no traffic, so #top-referers took the
+         * explorer's empty branch. Now that it has a referral to show, a
+         * page-wide count measures both grids and this read 5 for 4 pages.
+         */
+        const rows = page.locator('#top-pages tr.jqgrow');
         expect(await rows.count()).toBe(FIXTURE.expectedGridRows);
 
         // The seeded titles must appear in the rendered grid text.
         const gridText = await page.evaluate(() =>
-            [...document.querySelectorAll('tr.jqgrow')]
+            [...document.querySelectorAll('#top-pages tr.jqgrow')]
                 .map((r) => r.innerText.replace(/\s+/g, ' ').trim())
                 .join('\n')
         );
@@ -126,6 +135,31 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         }
         // Each seeded page got exactly 2 pageviews; the count must render.
         expect(gridText).toMatch(/\b2\b/);
+    });
+
+    /**
+     * The referrers grid, which had nothing to draw until the fixture
+     * attributed its traffic.
+     *
+     * One row: the grid constrains to medium==referral, and of the four seeded
+     * visits exactly one is a referral -- the other three are two organic
+     * searches and a direct. So the count is the constraint working.
+     *
+     * It shows the referring URL. It used to show referralPageTitle and hide the
+     * url, but that title was only ever filled by fetching the referring page,
+     * which OWA no longer does -- so every row read '(not set)', including the
+     * link text. The column and its dimension are kept and simply stop being
+     * populated; nothing about the schema changed.
+     */
+    test('jqGrid renders the seeded referring site', async ({ page }) => {
+        await expect(page.locator('#top-referers tr.jqgrow'))
+            .toHaveCount(1, { timeout: 20_000 });
+
+        await expect(page.locator('#top-referers'))
+            .toContainText(FIXTURE.traffic.refererHost);
+
+        await expect(page.locator('#top-referers'), 'the unfillable title is still shown')
+            .not.toContainText('(not set)');
     });
 
     test('jqGrid header columns align with their data columns', async ({ page }) => {

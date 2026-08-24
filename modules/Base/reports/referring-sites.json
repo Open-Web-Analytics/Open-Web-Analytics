@@ -21,7 +21,7 @@
                 "resultsPerPage": 30
             },
             "link": {
-                "linkColumn": "referralPageTitle",
+                "linkColumn": "referralPageUrl",
                 "template": {
                     "do": "base.report",
                     "reportId": "referral-detail",
@@ -30,7 +30,7 @@
                 "valueColumns": "referralPageUrl"
             },
             "excludeColumns": [
-                "referralPageUrl"
+                "referralPageTitle"
             ]
         }
     ],

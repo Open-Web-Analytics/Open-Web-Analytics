@@ -156,8 +156,8 @@
 
     OWA.items.topreferers = new OWA.resultSetExplorer('top-referers');
     OWA.items.topreferers.options.grid.showRowNumbers = false;
-    OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referral-detail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
-    OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
+    OWA.items.topreferers.addLinkToColumn('referralPageUrl', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referral-detail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
+    OWA.items.topreferers.options.grid.excludeColumns = ['referralPageTitle'];
     OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
     OWA.items.topreferers.load(traurl);
     OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer( 'topreferers', OWA.items.topreferers );

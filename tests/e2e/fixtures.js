@@ -36,6 +36,20 @@ const FIXTURE = {
     newSiteDomain: 'https://owa-e2e-created.example.test',
     newSiteName: 'OWA E2E Created Site',
     newUserId: 'owa-e2e-created@example.test',
+    // Traffic attribution DERIVED from the referring URLs in the $visits table
+    // of seed_reporting_fixtures.php. The seeder sets only session_referer;
+    // deriveMedium/deriveSource/extractSearchTerm produce everything below, so
+    // these are the real pipeline's output, not values anyone wrote down.
+    //
+    // Chosen so each medium has a distinct count and nothing is ambiguous:
+    // organic-search 2, referral 1, direct 1.
+    traffic: {
+        sources: ['google.com', 'bing.com', 'news.ycombinator.com'],
+        searchTerms: ['open web analytics', 'owa analytics'],
+        refererUrl: 'https://news.ycombinator.com/item?id=e2e',
+        refererHost: 'news.ycombinator.com',
+        mediums: { 'organic-search': 2, referral: 1, direct: 1 },
+    },
     // The always-present optional module the module-activation test toggles.
     toggleModule: 'hello',
 };

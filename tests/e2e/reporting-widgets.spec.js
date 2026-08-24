@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { login, openConfiguredReport, configuredReportIds } = require('./fixtures');
+const { FIXTURE, login, openConfiguredReport, configuredReportIds } = require('./fixtures');
 
 /**
  * Every configured report, loaded in a real browser.
@@ -116,40 +116,61 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /**
-         * The grids load and dispatch, which is as much as this fixture can
-         * show.
+         * Each grid builds and shows the traffic it was seeded.
          *
-         * seed_reporting_fixtures.php seeds page views and transactions and no
-         * referrer at all -- no medium, no source, no search terms. So Traffic's
-         * three grids legitimately return zero rows here, and the explorer takes
-         * its empty branch, which writes a message instead of building a grid.
-         * Asserting a grid would be asserting the fixture, not the renderer.
-         *
-         * What IS checkable is that each container was reached and rendered one
-         * of the two outcomes. A widget whose explorer never loaded -- the
-         * failure this whole spec exists to catch -- leaves its container empty.
-         *
-         * Seeding referral traffic would make this a real assertion;
-         * reporting_facets_helper.php already provisions source/medium data for
-         * the API-level facet tests and is the obvious place to borrow from.
+         * The fixture attributes its four visits -- two organic-search from
+         * different engines, one referral, one direct -- so each of these three
+         * grids has rows of its own to draw. Asserting the CONTENT is what
+         * separates "the widget rendered" from "the widget rendered the right
+         * query": top-keywords is constrained to organic-search, so a widget
+         * that dropped its constraint would show the referral traffic too.
          */
-        test('each grid widget loads and renders an outcome', async ({ page }) => {
-            for (const container of ['top-sources', 'top-referrals', 'top-keywords']) {
+        test('the sources grid lists the seeded sources', async ({ page }) => {
+            const grid = page.locator('#top-sources .ui-jqgrid');
 
-                const cell = page.locator(`#${container}`);
+            await expect(grid, 'top-sources built no grid').toHaveCount(1, { timeout: 20_000 });
 
-                await expect(cell, `${container} was never rendered`)
-                    .toHaveCount(1);
-
-                await expect(cell, `${container} stayed empty -- its explorer never loaded`)
-                    .not.toBeEmpty({ timeout: 20_000 });
-
-                const built = await cell.locator('.ui-jqgrid').count();
-                const empty = (await cell.innerText()).includes('No data is available');
-
-                expect(built === 1 || empty,
-                    `${container} rendered neither a grid nor an empty-state`).toBe(true);
+            for (const source of FIXTURE.traffic.sources) {
+                await expect(page.locator('#top-sources')).toContainText(source);
             }
+        });
+
+        test('the referrals grid lists the referring page', async ({ page }) => {
+            const grid = page.locator('#top-referrals .ui-jqgrid');
+
+            await expect(grid, 'top-referrals built no grid').toHaveCount(1, { timeout: 20_000 });
+
+            await expect(page.locator('#top-referrals'))
+                .toContainText(FIXTURE.traffic.refererHost);
+        });
+
+        test('the keywords grid lists only organic-search terms', async ({ page }) => {
+            const grid = page.locator('#top-keywords .ui-jqgrid');
+
+            await expect(grid, 'top-keywords built no grid').toHaveCount(1, { timeout: 20_000 });
+
+            const cell = page.locator('#top-keywords');
+
+            for (const term of FIXTURE.traffic.searchTerms) {
+                await expect(cell).toContainText(term);
+            }
+
+            /*
+             * The widget's own constraint at work, measured by ROW COUNT.
+             *
+             * Checking that the referral's host is absent looked like a
+             * constraint test and was vacuous: the referral visit has no search
+             * term, so its host could never appear in a grid of search terms
+             * whether the constraint applied or not. Removing the constraint
+             * from the definition left that assertion passing.
+             *
+             * What the constraint actually changes is which SESSIONS reach the
+             * grid. Unconstrained, the referral and direct visits arrive too --
+             * with no search term of their own -- and the grid grows rows.
+             */
+            await expect(cell.locator('tr.jqgrow'),
+                'the keywords grid is not constrained to organic-search')
+                .toHaveCount(FIXTURE.traffic.searchTerms.length);
         });
 
         /**

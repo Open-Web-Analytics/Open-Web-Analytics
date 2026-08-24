@@ -1707,11 +1707,11 @@
                 {
                     "container": "dimension-grid",
                     "excludeColumns": [
-                        "referralPageUrl"
+                        "referralPageTitle"
                     ],
                     "id": "dim",
                     "link": {
-                        "linkColumn": "referralPageTitle",
+                        "linkColumn": "referralPageUrl",
                         "template": {
                             "do": "base.report",
                             "referralPageUrl": "%s",

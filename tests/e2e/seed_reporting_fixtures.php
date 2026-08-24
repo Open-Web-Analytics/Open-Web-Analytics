@@ -34,6 +34,23 @@ const E2E_USER_ROLE   = 'analyst';                // has view_reports + view_sit
 const E2E_USER_NAME   = 'OWA E2E Reporter';
 const E2E_PAGEVIEWS   = 8;                         // number of synthetic pageviews
 
+/*
+ * The referring URLs the four seeded visits arrive from.
+ *
+ * session_referer is the ONE input the attribution chain derives from --
+ * deriveMedium, deriveSource and extractSearchTerm all read it, and the
+ * referer/search-term dimension ids are minted off those. Two search engines
+ * and one ordinary referral give organic-search 2, referral 1, direct 1.
+ *
+ * Held here rather than only inside $visits so teardown can delete exactly the
+ * referer rows this fixture created.
+ */
+const E2E_REFERERS = [
+    'https://www.google.com/search?q=open+web+analytics',
+    'https://news.ycombinator.com/item?id=e2e',
+    'https://www.bing.com/search?q=owa+analytics',
+];
+
 // E-commerce fixture. enableEcommerceReporting is a PER-SITE setting, so the
 // seeder turns it on for the fixture site -- the global base setting of the same
 // name has been false since it was introduced and is not what any report reads.
@@ -244,6 +261,27 @@ function teardown(): array
         }
     }
 
+    /*
+     * The referer rows this fixture mints, which the loop above does not reach.
+     *
+     * Dimension rows are content-hashed and shared, so as a rule they are left
+     * alone. These are the exception: a referer row carries a page_title, the
+     * seeded referer URLs are unique to this fixture, and RefererHandlers
+     * REUSES an existing row rather than rewriting it. So a title written by an
+     * earlier run -- a real one, if that box had crawling on -- survives into
+     * the next and the fixture stops being deterministic. Deleting only the
+     * fixture's own URLs cannot touch anyone else's data.
+     */
+    foreach (E2E_REFERERS as $url) {
+        try {
+            $db = owa_coreAPI::dbSingleton();
+            $db->deleteFrom('owa_referer');
+            $db->where('id', \OWA\Core\Lib::setStringGuid($url));
+            $db->executeQuery();
+        } catch (\Throwable $e) {}
+    }
+    $removed['owa_referer'] = 'fixture rows cleared';
+
     // Remove the site_user grant (keyed by internal ids), then the user & site.
     try {
         $u = owa_coreAPI::entityFactory('base.user');
@@ -453,14 +491,41 @@ function seedPageviews(int $n): int
     // session (one day) of two pageviews; the two visits per visitor land on
     // different days so the trend line has multiple non-zero points. Every page
     // ('/', '/pricing', '/docs', '/about') appears in exactly two pageviews.
+    /*
+     * Attribution, so the Traffic reports have rows to draw.
+     *
+     * Without it every session was medium='direct' and Traffic's pie and three
+     * grids all returned nothing.
+     *
+     * Only the referring URL is seeded. `session_referer` is the single input
+     * the whole chain derives from: deriveMedium() reads it for the medium,
+     * deriveSource() for the source, extractSearchTerm() for the terms, and
+     * generateDimensionId() mints referer_id and referring_search_term_id off
+     * those. Setting medium or source here instead would state the answers and
+     * skip the code that produces them.
+     *
+     * NOT the same as the HTTP_REFERER below, which nothing derives from.
+     *
+     * Sent on EVERY request of the visit, as the tracker does: the session
+     * handler's new-session branch does not copy medium onto the session, so
+     * attribution reaches it through the update branch a later request takes.
+     * A single-request visit would stay medium='direct'.
+     *
+     * Spread so each medium has a distinct count: organic-search 2,
+     * referral 1, direct 1.
+     */
     $visits = [
-        ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing']],
-        ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about']],
+        ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing'],
+         'referer' => E2E_REFERERS[0]],
+        ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about'],
+         'referer' => E2E_REFERERS[1]],
         ['day_ago' => 9,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing']],
-        ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about']],
+        ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about'],
+         'referer' => E2E_REFERERS[2]],
     ];
 
     $count = 0;
+
     foreach ($visits as $visit) {
         $session_id = numericGuid();
         $visitor_id = $visitors[$visit['visitor']];
@@ -495,6 +560,10 @@ function seedPageviews(int $n): int
                 'guid'             => numericGuid(),
             ];
 
+            if (!empty($visit['referer'])) {
+                $props['session_referer'] = $visit['referer'];
+            }
+
             $event = owa_coreAPI::supportClassFactory('base', 'event');
             $event->setEventType('base.page_request');
             $event->setProperties($props);
@@ -509,6 +578,9 @@ function seedPageviews(int $n): int
     $rc->timestamp = time();
     return $count;
 }
+
+
+
 
 /** Numeric GUID in the tracker's format (BIGINT-safe): <time><6rand><3rand>. */
 function numericGuid(): string
