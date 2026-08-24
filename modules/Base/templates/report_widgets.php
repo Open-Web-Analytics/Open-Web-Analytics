@@ -95,17 +95,22 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
     );
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
-<?php if ( ! empty( $owa_w['heading'] ) ): ?>
-        <?php
-            /*
-             * The widget's own heading -- "Transaction Roster" above a grid.
-             *
-             * Distinct from the report's `title` and from a `headline`, which
-             * is the interpolated sentence under a trend. Three different
-             * things that all wanted the word "title" at some point.
-             */
-        ?>
-        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['heading'] ); ?></div>
+<?php
+    /*
+     * A widget's title is its name -- "Transaction Roster". Whether it is
+     * DISPLAYED is a separate choice: a widget can be named without the name
+     * being drawn, which is what a report builder listing widgets needs, and
+     * what a report wants when the surrounding layout already says what the
+     * thing is.
+     *
+     * Shown by default when there is one, since today the only widget with a
+     * title is one that displays it.
+     */
+    $owa_showTitle = ! empty( $owa_w['title'] )
+        && ( ! array_key_exists( 'showTitle', $owa_w ) || $owa_w['showTitle'] );
+?>
+<?php if ( $owa_showTitle ): ?>
+        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
 <?php endif; ?>
 
 <?php if ( ( $owa_w['type'] ?? '' ) === 'trend' ): ?>

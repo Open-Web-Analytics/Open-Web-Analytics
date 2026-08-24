@@ -696,4 +696,67 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertCount( 6, $containers, 'two widgets across three sets' );
     }
+
+    /**
+     * A widget's title is its name; showing it is a separate choice.
+     *
+     * A widget can be named without the name being drawn -- what a report
+     * builder listing widgets needs, and what a report wants when the
+     * surrounding layout already says what the thing is.
+     */
+    public function testAWidgetTitleIsShownByDefault(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'R',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
+                'title' => 'Transaction Roster', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
+        ), array() );
+
+        $this->assertStringContainsString( 'Transaction Roster', $html );
+    }
+
+    public function testAWidgetTitleCanBeHiddenWithoutLosingIt(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = array(
+            'title'   => 'R',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
+                'title' => 'Transaction Roster', 'showTitle' => false,
+                'query' => array( 'dimensions' => 'pagePath' ) ) ),
+        );
+
+        $html = $this->renderedWith( $definition, array() );
+
+        $this->assertStringNotContainsString( 'Transaction Roster', $html,
+            'showTitle false must stop it being drawn' );
+
+        // ...and the widget is still NAMED -- the definition keeps it, so
+        // anything listing widgets still has something to call this one.
+        $this->assertSame( 'Transaction Roster',
+            $definition['widgets'][0]['title'],
+            'hiding a title must not mean discarding it' );
+    }
+
+    /** A widget with no title draws no header at all. */
+    public function testAWidgetWithoutATitleDrawsNoHeader(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'R',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
+                'query' => array( 'dimensions' => 'pagePath' ) ) ),
+        ), array() );
+
+        $this->assertStringNotContainsString( 'owa_reportSectionHeader', $html );
+    }
 }

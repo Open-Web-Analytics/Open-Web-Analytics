@@ -18,7 +18,6 @@
             "type": "grid",
             "id": "transactions",
             "container": "transactions",
-            "heading": "Transaction Roster",
             "query": {
                 "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
                 "dimensions": "timestamp,transactionId",
@@ -34,7 +33,8 @@
                 },
                 "valueColumns": "transactionId"
             },
-            "excludeColumns": "'timestamp'"
+            "excludeColumns": "'timestamp'",
+            "title": "Transaction Roster"
         }
     ]
 }

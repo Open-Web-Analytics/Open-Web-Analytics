@@ -1660,7 +1660,6 @@
                 {
                     "container": "transactions",
                     "excludeColumns": "'timestamp'",
-                    "heading": "Transaction Roster",
                     "id": "transactions",
                     "link": {
                         "linkColumn": "transactionId",
@@ -1677,6 +1676,7 @@
                         "resultsPerPage": 25,
                         "sort": "timestamp-"
                     },
+                    "title": "Transaction Roster",
                     "type": "grid"
                 }
             ]
