@@ -1,20 +1,35 @@
 {
     "title": "Creative Performance",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "ad",
-            "template": {
-                "do": "base.report",
-                "reportId": "ad-detail",
-                "ad": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "ad"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads."
         },
-        "dimensions": "ad,entryPagePath",
-        "resultsPerPage": 25,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "ad,entryPagePath",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "ad",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "ad-detail",
+                    "ad": "%s"
+                },
+                "valueColumns": "ad"
+            }
+        }
+    ]
 }

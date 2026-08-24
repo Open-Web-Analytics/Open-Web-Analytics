@@ -1,24 +1,39 @@
 {
     "title": "Referrals",
-    "subview": "base.reportDimension",
-    "settings": {
-        "constraints": "medium==referral",
-        "dimensionLink": {
-            "linkColumn": "referralPageTitle",
-            "template": {
-                "do": "base.report",
-                "reportId": "referral-detail",
-                "referralPageUrl": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "referralPageUrl"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
         },
-        "dimensions": "referralPageTitle,referralPageUrl",
-        "excludeColumns": "'referralPageUrl'",
-        "gridTitle": "Top Referrals",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralPageTitle,referralPageUrl",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralPageTitle",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "referral-detail",
+                    "referralPageUrl": "%s"
+                },
+                "valueColumns": "referralPageUrl"
+            },
+            "excludeColumns": "'referralPageUrl'"
+        }
+    ],
+    "settings": {
+        "constraints": "medium==referral"
     }
 }

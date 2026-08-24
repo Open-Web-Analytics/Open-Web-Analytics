@@ -1,22 +1,35 @@
 {
     "title": "Host Names",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "hostName",
-            "template": {
-                "do": "base.report",
-                "reportId": "host-detail",
-                "hostName": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "hostName"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts."
         },
-        "dimensions": "hostName",
-        "gridTitle": "Top Hosts",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "hostName",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "hostName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "host-detail",
+                    "hostName": "%s"
+                },
+                "valueColumns": "hostName"
+            }
+        }
+    ]
 }

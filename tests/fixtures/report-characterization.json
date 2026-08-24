@@ -162,15 +162,22 @@
         "diagnostics": [],
         "config": {
             "constraints": "ad==characterization_sentinel",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Ad: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportAdTypeDetail": {
@@ -180,41 +187,63 @@
         "diagnostics": [],
         "config": {
             "constraints": "adType==characterization_sentinel",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Ad Type: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad type.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad type.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportAdTypes": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "adType",
-                "template": {
-                    "adType": "%s",
-                    "do": "base.report",
-                    "reportId": "ad-type-detail"
-                },
-                "valueColumns": "adType"
-            },
-            "dimensions": "adType",
-            "gridTitle": "Top Ad Types",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Ad Types",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "adType",
+                        "template": {
+                            "adType": "%s",
+                            "do": "base.report",
+                            "reportId": "ad-type-detail"
+                        },
+                        "valueColumns": "adType"
+                    },
+                    "query": {
+                        "dimensions": "adType",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportAds": {
@@ -222,26 +251,41 @@
         "diagnostics": [],
         "config": {
             "constraints": "ad!=null",
-            "dimensionLink": {
-                "linkColumn": "ad",
-                "template": {
-                    "ad": "%s",
-                    "do": "base.report",
-                    "reportId": "ad-detail"
-                },
-                "valueColumns": "ad"
-            },
-            "dimensions": "ad",
-            "gridTitle": "Top Ads",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Ad Performance",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "ad",
+                        "template": {
+                            "ad": "%s",
+                            "do": "base.report",
+                            "reportId": "ad-detail"
+                        },
+                        "valueColumns": "ad"
+                    },
+                    "query": {
+                        "dimensions": "ad",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportAnchortext": {
@@ -249,26 +293,42 @@
         "diagnostics": [],
         "config": {
             "constraints": "medium==referral",
-            "dimensionLink": {
-                "linkColumn": "referralLinkText",
-                "template": {
-                    "do": "base.report",
-                    "referralLinkText": "%s",
-                    "reportId": "referral-link-text-detail"
-                },
-                "valueColumns": "referralLinkText"
-            },
-            "dimensions": "referralLinkText",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Referral Link Text",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
             "view": "base.report",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "referralLinkText",
+                        "template": {
+                            "do": "base.report",
+                            "referralLinkText": "%s",
+                            "reportId": "referral-link-text-detail"
+                        },
+                        "valueColumns": "referralLinkText"
+                    },
+                    "query": {
+                        "dimensions": "referralLinkText",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportAvgOrderValue": {
@@ -312,44 +372,78 @@
         "diagnostics": [],
         "config": {
             "constraints": "browserType==characterization_sentinel",
-            "dimension_properties": {
-                "browser_family": "characterization_sentinel"
-            },
-            "dimension_template": "dimension_browser.php",
-            "dimensions": "browserVersion",
-            "metrics": "visits,pageViews,bounces",
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Browser Detail: characterization_sentinel",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "properties": {
+                        "browser_family": "characterization_sentinel"
+                    },
+                    "type": "browser-badge"
+                },
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "browserVersion",
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportBrowsers": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "browserType",
-                "template": {
-                    "browserType": "%s",
-                    "do": "base.report",
-                    "reportId": "browser-detail"
-                },
-                "valueColumns": "browserType"
-            },
-            "dimensions": "browserType",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Browser Types",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "browserType",
+                        "template": {
+                            "browserType": "%s",
+                            "do": "base.report",
+                            "reportId": "browser-detail"
+                        },
+                        "valueColumns": "browserType"
+                    },
+                    "query": {
+                        "dimensions": "browserType",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportCampaignDetail": {
@@ -359,15 +453,22 @@
         "diagnostics": [],
         "config": {
             "constraints": "campaign==characterization_sentinel",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Campaign: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this campaign.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this campaign.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportCommerce": {
@@ -397,52 +498,86 @@
         "diagnostics": [],
         "config": {
             "constraints": "country==characterization_sentinel",
-            "dimensionLink": {
-                "linkColumn": "stateRegion",
-                "template": {
-                    "country": "%s",
-                    "do": "base.report",
-                    "reportId": "state-detail",
-                    "stateRegion": "%s"
-                },
-                "valueColumns": [
-                    "stateRegion",
-                    "country"
-                ]
-            },
-            "dimensions": "stateRegion,country",
-            "resultsPerPage": 30,
-            "sort": "visits",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Country: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "stateRegion",
+                        "template": {
+                            "country": "%s",
+                            "do": "base.report",
+                            "reportId": "state-detail",
+                            "stateRegion": "%s"
+                        },
+                        "valueColumns": [
+                            "stateRegion",
+                            "country"
+                        ]
+                    },
+                    "query": {
+                        "dimensions": "stateRegion,country",
+                        "resultsPerPage": 30,
+                        "sort": "visits"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportCreativePerformance": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "ad",
-                "template": {
-                    "ad": "%s",
-                    "do": "base.report",
-                    "reportId": "ad-detail"
-                },
-                "valueColumns": "ad"
-            },
-            "dimensions": "ad,entryPagePath",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Creative Performance",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "ad",
+                        "template": {
+                            "ad": "%s",
+                            "do": "base.report",
+                            "reportId": "ad-detail"
+                        },
+                        "valueColumns": "ad"
+                    },
+                    "query": {
+                        "dimensions": "ad,entryPagePath",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportDaysToPurchase": {
@@ -532,53 +667,84 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "entryPagePath",
-                "template": {
-                    "do": "base.report",
-                    "pageUrl": "%s",
-                    "reportId": "document"
-                },
-                "valueColumns": "entryPageUrl"
-            },
-            "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
-            "excludeColumns": "'entryPageUrl'",
-            "gridTitle": "Top Entry Pages",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Entry Pages",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "excludeColumns": "'entryPageUrl'",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "entryPagePath",
+                        "template": {
+                            "do": "base.report",
+                            "pageUrl": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "entryPageUrl"
+                    },
+                    "query": {
+                        "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportExitPages": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "exitPagePath",
-                "template": {
-                    "do": "base.report",
-                    "pageUrl": "%s",
-                    "reportId": "document"
-                },
-                "valueColumns": "exitPageUrl"
-            },
-            "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
-            "excludeColumns": "'exitPageUrl'",
-            "gridTitle": "Top Exit Pages",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Exit Pages",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "excludeColumns": "'exitPageUrl'",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "exitPagePath",
+                        "template": {
+                            "do": "base.report",
+                            "pageUrl": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "exitPageUrl"
+                    },
+                    "query": {
+                        "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportFeeds": {
@@ -602,24 +768,41 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "country",
-                "template": {
-                    "country": "%s",
-                    "do": "base.report",
-                    "reportId": "country-detail"
-                },
-                "valueColumns": "country"
-            },
-            "dimensions": "country,countryCode",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Visitor Geolocation",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "country",
+                        "template": {
+                            "country": "%s",
+                            "do": "base.report",
+                            "reportId": "country-detail"
+                        },
+                        "valueColumns": "country"
+                    },
+                    "query": {
+                        "dimensions": "country,countryCode",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportHostDetail": {
@@ -629,40 +812,63 @@
         "diagnostics": [],
         "config": {
             "constraints": "hostName==characterization_sentinel",
-            "dimension": "hostName",
-            "metrics": "visits,pageViews,bounces",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Host Detail: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportHosts": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "hostName",
-                "template": {
-                    "do": "base.report",
-                    "hostName": "%s",
-                    "reportId": "host-detail"
-                },
-                "valueColumns": "hostName"
-            },
-            "dimensions": "hostName",
-            "gridTitle": "Top Hosts",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Host Names",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "hostName",
+                        "template": {
+                            "do": "base.report",
+                            "hostName": "%s",
+                            "reportId": "host-detail"
+                        },
+                        "valueColumns": "hostName"
+                    },
+                    "query": {
+                        "dimensions": "hostName",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportKeywordDetail": {
@@ -672,14 +878,22 @@
         "diagnostics": [],
         "config": {
             "constraints": "referralSearchTerms==characterization_sentinel",
-            "dimension": "referralSearchTerms",
-            "metrics": "visits,pageViews,bounces",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Search Term Detail: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportKeywords": {
@@ -687,51 +901,83 @@
         "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search",
-            "dimensionLink": {
-                "linkColumn": "referralSearchTerms",
-                "template": {
-                    "do": "base.report",
-                    "referralSearchTerms": "%s",
-                    "reportId": "keyword-detail"
-                },
-                "valueColumns": "referralSearchTerms"
-            },
-            "dimensions": "referralSearchTerms",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Referring Search Terms",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
             "view": "base.report",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "referralSearchTerms",
+                        "template": {
+                            "do": "base.report",
+                            "referralSearchTerms": "%s",
+                            "reportId": "keyword-detail"
+                        },
+                        "valueColumns": "referralSearchTerms"
+                    },
+                    "query": {
+                        "dimensions": "referralSearchTerms",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportOs": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "osType",
-                "template": {
-                    "do": "base.report",
-                    "osType": "%s",
-                    "reportId": "os-detail"
-                },
-                "valueColumns": "osType"
-            },
-            "dimensions": "osType",
-            "gridTitle": "Top Page Types",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 25,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Operating Systems",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "osType",
+                        "template": {
+                            "do": "base.report",
+                            "osType": "%s",
+                            "reportId": "os-detail"
+                        },
+                        "valueColumns": "osType"
+                    },
+                    "query": {
+                        "dimensions": "osType",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportOsDetail": {
@@ -741,14 +987,22 @@
         "diagnostics": [],
         "config": {
             "constraints": "osType==characterization_sentinel",
-            "metrics": "visits,pageViews",
-            "sort": "visits-",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Operating System: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportPageTypeDetail": {
@@ -1088,17 +1342,23 @@
         "diagnostics": [],
         "config": {
             "constraints": "referralLinkText==characterization_sentinel",
-            "dimensions": "referralLinkText",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Referral Link Text: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from links with this text.",
             "view": "base.report",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from links with this text.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportReferringSites": {
@@ -1106,27 +1366,42 @@
         "diagnostics": [],
         "config": {
             "constraints": "medium==referral",
-            "dimensionLink": {
-                "linkColumn": "referralPageTitle",
-                "template": {
-                    "do": "base.report",
-                    "referralPageUrl": "%s",
-                    "reportId": "referral-detail"
-                },
-                "valueColumns": "referralPageUrl"
-            },
-            "dimensions": "referralPageTitle,referralPageUrl",
-            "excludeColumns": "'referralPageUrl'",
-            "gridTitle": "Top Referrals",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Referrals",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "excludeColumns": "'referralPageUrl'",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "referralPageTitle",
+                        "template": {
+                            "do": "base.report",
+                            "referralPageUrl": "%s",
+                            "reportId": "referral-detail"
+                        },
+                        "valueColumns": "referralPageUrl"
+                    },
+                    "query": {
+                        "dimensions": "referralPageTitle,referralPageUrl",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportRevenue": {
@@ -1170,16 +1445,22 @@
         "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search,referralWebSite==characterization_sentinel",
-            "dimensions": "referralWebSite",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Search Engine: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportSearchEngines": {
@@ -1187,26 +1468,41 @@
         "diagnostics": [],
         "config": {
             "constraints": "medium==organic-search",
-            "dimensionLink": {
-                "linkColumn": "referralWebSite",
-                "template": {
-                    "do": "base.report",
-                    "referralWebSite": "%s",
-                    "reportId": "search-engine-detail"
-                },
-                "valueColumns": "referralWebSite"
-            },
-            "dimensions": "referralWebSite",
-            "gridTitle": "Top Search Engines",
-            "metrics": "visits,pageViews,bounces",
-            "resultsPerPage": 30,
-            "sort": "visits-",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Search Engines",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "referralWebSite",
+                        "template": {
+                            "do": "base.report",
+                            "referralWebSite": "%s",
+                            "reportId": "search-engine-detail"
+                        },
+                        "valueColumns": "referralWebSite"
+                    },
+                    "query": {
+                        "dimensions": "referralWebSite",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportSourceDetail": {
@@ -1216,37 +1512,63 @@
         "diagnostics": [],
         "config": {
             "constraints": "source==characterization_sentinel",
-            "dimension": "source",
-            "subview": "base.reportDimensionDetail",
+            "subview": "base.reportWidgets",
             "title": "Source Detail: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportSources": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "source",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "source-detail",
-                    "source": "%s"
-                },
-                "valueColumns": "source"
-            },
-            "dimensions": "source,medium",
-            "resultsPerPage": 30,
-            "sort": "visits",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Sources",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "source",
+                        "template": {
+                            "do": "base.report",
+                            "reportId": "source-detail",
+                            "source": "%s"
+                        },
+                        "valueColumns": "source"
+                    },
+                    "query": {
+                        "dimensions": "source,medium",
+                        "resultsPerPage": 30,
+                        "sort": "visits"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportStateDetail": {
@@ -1257,15 +1579,32 @@
         "diagnostics": [],
         "config": {
             "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
-            "dimensions": "city,stateRegion",
-            "resultsPerPage": 30,
-            "sort": "visits",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "State/Region: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "city,stateRegion",
+                        "resultsPerPage": 30,
+                        "sort": "visits"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportTraffic": {
@@ -1293,48 +1632,96 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "daysSinceFirstVisit",
-            "metrics": "visits",
-            "resultsPerPage": 25,
-            "sort": "daysSinceFirstVisit",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Visitor Age",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "daysSinceFirstVisit",
+                        "resultsPerPage": 25,
+                        "sort": "daysSinceFirstVisit"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportVisitorsLoyalty": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "priorVisitCount",
-            "metrics": "visits",
-            "resultsPerPage": 25,
-            "sort": "priorVisitCount",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Visitor Loyalty",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "priorVisitCount",
+                        "resultsPerPage": 25,
+                        "sort": "priorVisitCount"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportVisitorsRecency": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "daysSinceLastVisit",
-            "metrics": "visits",
-            "resultsPerPage": 25,
-            "sort": "daysSinceLastVisit",
-            "subview": "base.reportDimension",
+            "subview": "base.reportWidgets",
             "title": "Visitor Recency",
             "titleSuffix": "",
-            "trendChartMetric": "visits",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "daysSinceLastVisit",
+                        "resultsPerPage": 25,
+                        "sort": "daysSinceLastVisit"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportVisitsToPurchase": {

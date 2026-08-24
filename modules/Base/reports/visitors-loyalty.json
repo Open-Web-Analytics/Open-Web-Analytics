@@ -1,12 +1,26 @@
 {
     "title": "Visitor Loyalty",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensions": "priorVisitCount",
-        "metrics": "visits",
-        "resultsPerPage": 25,
-        "sort": "priorVisitCount",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources."
-    }
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "priorVisitCount",
+                "sort": "priorVisitCount",
+                "resultsPerPage": 25
+            }
+        }
+    ]
 }

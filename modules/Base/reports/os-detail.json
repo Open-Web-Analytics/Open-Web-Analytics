@@ -1,20 +1,28 @@
 {
     "title": "Operating System: ",
     "titleSuffix": "{osType}",
-    "subview": "base.reportDimensionDetail",
+    "subview": "base.reportWidgets",
     "params": {
         "osType": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system."
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "osType",
                 "fromParam": "osType"
             }
-        ],
-        "metrics": "visits,pageViews",
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system."
+        ]
     }
 }

@@ -1,11 +1,33 @@
 {
     "title": "State/Region: ",
     "titleSuffix": "{stateRegion}",
-    "subview": "base.reportDimension",
+    "subview": "base.reportWidgets",
     "params": {
         "country": {},
         "stateRegion": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "city,stateRegion",
+                "sort": "visits",
+                "resultsPerPage": 30
+            }
+        }
+    ],
     "settings": {
         "constraints": [
             {
@@ -16,11 +38,6 @@
                 "dimension": "stateRegion",
                 "fromParam": "stateRegion"
             }
-        ],
-        "dimensions": "city,stateRegion",
-        "resultsPerPage": 30,
-        "sort": "visits",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region."
+        ]
     }
 }

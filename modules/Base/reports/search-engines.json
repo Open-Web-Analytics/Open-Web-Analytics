@@ -1,23 +1,38 @@
 {
     "title": "Search Engines",
-    "subview": "base.reportDimension",
-    "settings": {
-        "constraints": "medium==organic-search",
-        "dimensionLink": {
-            "linkColumn": "referralWebSite",
-            "template": {
-                "do": "base.report",
-                "reportId": "search-engine-detail",
-                "referralWebSite": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "referralWebSite"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines."
         },
-        "dimensions": "referralWebSite",
-        "gridTitle": "Top Search Engines",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralWebSite",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralWebSite",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "search-engine-detail",
+                    "referralWebSite": "%s"
+                },
+                "valueColumns": "referralWebSite"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "medium==organic-search"
     }
 }

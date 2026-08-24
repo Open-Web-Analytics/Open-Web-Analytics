@@ -1,21 +1,35 @@
 {
     "title": "Browser Types",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "browserType",
-            "template": {
-                "do": "base.report",
-                "reportId": "browser-detail",
-                "browserType": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "browserType"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types."
         },
-        "dimensions": "browserType",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 25,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "browserType",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "browserType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "browser-detail",
+                    "browserType": "%s"
+                },
+                "valueColumns": "browserType"
+            }
+        }
+    ]
 }

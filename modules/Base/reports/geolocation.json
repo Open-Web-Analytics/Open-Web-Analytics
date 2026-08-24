@@ -1,20 +1,35 @@
 {
     "title": "Visitor Geolocation",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "country",
-            "template": {
-                "do": "base.report",
-                "reportId": "country-detail",
-                "country": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "country"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations."
         },
-        "dimensions": "country,countryCode",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "country,countryCode",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "country",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "country-detail",
+                    "country": "%s"
+                },
+                "valueColumns": "country"
+            }
+        }
+    ]
 }

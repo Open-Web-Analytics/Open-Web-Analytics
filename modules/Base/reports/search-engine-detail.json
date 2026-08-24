@@ -1,10 +1,22 @@
 {
     "title": "Search Engine: ",
     "titleSuffix": "{referralWebSite}",
-    "subview": "base.reportDimensionDetail",
+    "subview": "base.reportWidgets",
     "params": {
         "referralWebSite": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine."
+        }
+    ],
     "settings": {
         "constraints": [
             {
@@ -15,12 +27,6 @@
                 "dimension": "referralWebSite",
                 "fromParam": "referralWebSite"
             }
-        ],
-        "dimensions": "referralWebSite",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine."
+        ]
     }
 }

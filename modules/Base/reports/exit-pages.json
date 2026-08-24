@@ -1,23 +1,36 @@
 {
     "title": "Exit Pages",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "exitPagePath",
-            "template": {
-                "do": "base.report",
-                "reportId": "document",
-                "pageUrl": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "exitPageUrl"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site."
         },
-        "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
-        "excludeColumns": "'exitPageUrl'",
-        "gridTitle": "Top Exit Pages",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "exitPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "exitPageUrl"
+            },
+            "excludeColumns": "'exitPageUrl'"
+        }
+    ]
 }

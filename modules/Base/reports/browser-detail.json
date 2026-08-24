@@ -1,24 +1,42 @@
 {
     "title": "Browser Detail: {browserType}",
-    "subview": "base.reportDimension",
+    "subview": "base.reportWidgets",
     "params": {
         "browserType": {}
     },
+    "widgets": [
+        {
+            "type": "browser-badge",
+            "properties": {
+                "browser_family": "{browserType}"
+            }
+        },
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "browserVersion",
+                "sort": "visits-"
+            }
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "browserType",
                 "fromParam": "browserType"
             }
-        ],
-        "dimension_properties": {
-            "browser_family": "{browserType}"
-        },
-        "dimension_template": "dimension_browser.php",
-        "dimensions": "browserVersion",
-        "metrics": "visits,pageViews,bounces",
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type."
+        ]
     }
 }

@@ -101,6 +101,21 @@ if ( ! $owa_sets ) {
         <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
         </script>
 
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'browser-badge' ): ?>
+<?php
+    /*
+     * The browser's icon and family name, above a browser-detail report.
+     *
+     * The widget names its own template; the definition does not. It used to
+     * be `dimension_template: "dimension_browser.php"` in the settings, which
+     * is configuration naming a PHP file on disk -- the same class of problem
+     * as a jqote string, and one that a user-authored definition must never be
+     * able to say.
+     */
+?>
+        <?php echo $view->renderDimension( 'dimension_browser.php',
+            (array) ( $owa_w['properties'] ?? array() ) ); ?>
+
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'report-links' ): ?>
 <?php
     /*

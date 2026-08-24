@@ -1,22 +1,36 @@
 {
     "title": "Entry Pages",
-    "subview": "base.reportDimension",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "entryPagePath",
-            "template": {
-                "do": "base.report",
-                "reportId": "document",
-                "pageUrl": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "entryPageUrl"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages."
         },
-        "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
-        "excludeColumns": "'entryPageUrl'",
-        "gridTitle": "Top Entry Pages",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "entryPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "entryPageUrl"
+            },
+            "excludeColumns": "'entryPageUrl'"
+        }
+    ]
 }

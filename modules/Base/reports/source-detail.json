@@ -1,19 +1,28 @@
 {
     "title": "Source Detail: ",
     "titleSuffix": "{source}",
-    "subview": "base.reportDimensionDetail",
+    "subview": "base.reportWidgets",
     "params": {
         "source": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source."
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "source",
                 "fromParam": "source"
             }
-        ],
-        "dimension": "source",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source."
+        ]
     }
 }

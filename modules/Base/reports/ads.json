@@ -1,23 +1,38 @@
 {
     "title": "Ad Performance",
-    "subview": "base.reportDimension",
-    "settings": {
-        "constraints": "ad!=null",
-        "dimensionLink": {
-            "linkColumn": "ad",
-            "template": {
-                "do": "base.report",
-                "reportId": "ad-detail",
-                "ad": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "ad"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads."
         },
-        "dimensions": "ad",
-        "gridTitle": "Top Ads",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "ad",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "ad",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "ad-detail",
+                    "ad": "%s"
+                },
+                "valueColumns": "ad"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "ad!=null"
     }
 }

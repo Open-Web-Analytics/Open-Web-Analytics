@@ -1,20 +1,28 @@
 {
     "title": "Host Detail: ",
     "titleSuffix": "{hostName}",
-    "subview": "base.reportDimensionDetail",
+    "subview": "base.reportWidgets",
     "params": {
         "hostName": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host."
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "hostName",
                 "fromParam": "hostName"
             }
-        ],
-        "dimension": "hostName",
-        "metrics": "visits,pageViews,bounces",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host."
+        ]
     }
 }

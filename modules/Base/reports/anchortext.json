@@ -1,23 +1,39 @@
 {
     "view": "base.report",
     "title": "Referral Link Text",
-    "subview": "base.reportDimension",
-    "settings": {
-        "constraints": "medium==referral",
-        "dimensionLink": {
-            "linkColumn": "referralLinkText",
-            "template": {
-                "do": "base.report",
-                "reportId": "referral-link-text-detail",
-                "referralLinkText": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "referralLinkText"
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
         },
-        "dimensions": "referralLinkText",
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 30,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralLinkText",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralLinkText",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "referral-link-text-detail",
+                    "referralLinkText": "%s"
+                },
+                "valueColumns": "referralLinkText"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "medium==referral"
     }
 }

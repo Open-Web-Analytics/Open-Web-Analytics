@@ -1,34 +1,51 @@
 {
     "title": "Country: ",
     "titleSuffix": "{country}",
-    "subview": "base.reportDimension",
+    "subview": "base.reportWidgets",
     "params": {
         "country": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "stateRegion,country",
+                "sort": "visits",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "stateRegion",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "state-detail",
+                    "stateRegion": "%s",
+                    "country": "%s"
+                },
+                "valueColumns": [
+                    "stateRegion",
+                    "country"
+                ]
+            }
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "country",
                 "fromParam": "country"
             }
-        ],
-        "dimensionLink": {
-            "linkColumn": "stateRegion",
-            "template": {
-                "do": "base.report",
-                "reportId": "state-detail",
-                "stateRegion": "%s",
-                "country": "%s"
-            },
-            "valueColumns": [
-                "stateRegion",
-                "country"
-            ]
-        },
-        "dimensions": "stateRegion,country",
-        "resultsPerPage": 30,
-        "sort": "visits",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country."
+        ]
     }
 }

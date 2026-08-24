@@ -1,23 +1,30 @@
 {
     "title": "Ad: ",
     "titleSuffix": "{ad}",
-    "subview": "base.reportDimensionDetail",
+    "subview": "base.reportWidgets",
     "params": {
         "ad": {
             "lowercase": true
         }
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad."
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "ad",
                 "fromParam": "ad"
             }
-        ],
-        "metrics": "visits,pageViews,bounces",
-        "resultsPerPage": 25,
-        "sort": "visits-",
-        "trendChartMetric": "visits",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad."
+        ]
     }
 }
