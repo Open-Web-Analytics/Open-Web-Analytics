@@ -133,6 +133,19 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
 
             /*
+             * A list of column names, never a fragment of JavaScript.
+             *
+             * This used to be echoed raw into a JS array literal, so the
+             * definitions carried their own quoting -- "'pageUrl'". A string
+             * here would be interpolated again the moment someone restored
+             * that, so the format refuses one outright.
+             */
+            if ( isset( $widget['excludeColumns'] ) && ! is_array( $widget['excludeColumns'] ) ) {
+
+                return sprintf( 'widget %s: "excludeColumns" must be a list of column names', $i );
+            }
+
+            /*
              * There is ONE way to constrain a widget, and it adds.
              *
              * `query` is merged over the report-wide defaults with a union, so

@@ -63,7 +63,9 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": "'actionGroup'",
+                    "excludeColumns": [
+                        "actionGroup"
+                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "actionName",
@@ -618,7 +620,9 @@
                 {
                     "colspan": 6,
                     "container": "top-pages",
-                    "excludeColumns": "'pageUrl'",
+                    "excludeColumns": [
+                        "pageUrl"
+                    ],
                     "id": "toppages",
                     "link": {
                         "linkColumn": "pageTitle",
@@ -988,7 +992,9 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": "'entryPageUrl'",
+                    "excludeColumns": [
+                        "entryPageUrl"
+                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "entryPagePath",
@@ -1030,7 +1036,9 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": "'exitPageUrl'",
+                    "excludeColumns": [
+                        "exitPageUrl"
+                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "exitPagePath",
@@ -1418,7 +1426,9 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": "'pageUrl'",
+                    "excludeColumns": [
+                        "pageUrl"
+                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "pagePath",
@@ -1696,7 +1706,9 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": "'referralPageUrl'",
+                    "excludeColumns": [
+                        "referralPageUrl"
+                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "referralPageTitle",
@@ -2129,7 +2141,9 @@
                 },
                 {
                     "container": "transactions",
-                    "excludeColumns": "'timestamp'",
+                    "excludeColumns": [
+                        "timestamp"
+                    ],
                     "id": "transactions",
                     "link": {
                         "linkColumn": "transactionId",

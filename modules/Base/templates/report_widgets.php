@@ -297,7 +297,19 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>);
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['excludeColumns'] ) ): ?>
-        <?php echo $owa_id; ?>.options.grid.excludeColumns = [<?php echo $owa_w['excludeColumns']; ?>];
+        <?php
+            /*
+             * Encoded, not interpolated.
+             *
+             * This was the one value in this template echoed raw into the
+             * page, and the definitions carried their own JavaScript quoting
+             * to suit it -- "'pageUrl'", quotes included. That made a report
+             * definition able to emit arbitrary script, in the one file format
+             * that is meant to become user-authorable. A list of column names
+             * says the same thing and cannot say anything else.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.grid.excludeColumns = <?php echo json_encode( array_values( (array) $owa_w['excludeColumns'] ) ); ?>;
 <?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 

@@ -29,7 +29,9 @@
                 },
                 "valueColumns": "referralPageUrl"
             },
-            "excludeColumns": "'referralPageUrl'"
+            "excludeColumns": [
+                "referralPageUrl"
+            ]
         }
     ],
     "settings": {

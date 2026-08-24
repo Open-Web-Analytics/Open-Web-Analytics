@@ -29,7 +29,9 @@
                 },
                 "valueColumns": "entryPageUrl"
             },
-            "excludeColumns": "'entryPageUrl'"
+            "excludeColumns": [
+                "entryPageUrl"
+            ]
         }
     ]
 }

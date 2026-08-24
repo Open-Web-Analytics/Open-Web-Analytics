@@ -39,7 +39,9 @@
                     "actionGroup"
                 ]
             },
-            "excludeColumns": "'actionGroup'"
+            "excludeColumns": [
+                "actionGroup"
+            ]
         }
     ],
     "settings": {

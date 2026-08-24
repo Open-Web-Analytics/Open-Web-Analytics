@@ -32,7 +32,9 @@
                 },
                 "valueColumns": "transactionId"
             },
-            "excludeColumns": "'timestamp'",
+            "excludeColumns": [
+                "timestamp"
+            ],
             "title": "Transaction Roster"
         }
     ]

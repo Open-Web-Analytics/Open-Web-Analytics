@@ -29,7 +29,9 @@
                 },
                 "valueColumns": "exitPageUrl"
             },
-            "excludeColumns": "'exitPageUrl'"
+            "excludeColumns": [
+                "exitPageUrl"
+            ]
         }
     ]
 }

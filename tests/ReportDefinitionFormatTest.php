@@ -1285,4 +1285,67 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertSame( array(), $found );
     }
+
+    /**
+     * excludeColumns is data, not a fragment of script.
+     *
+     * It was the one value in the widget template echoed raw into the page,
+     * and the seven definitions using it carried their own JavaScript quoting
+     * to suit -- "'pageUrl'". That let a report definition emit arbitrary
+     * script, in the file format that is meant to become user-authorable.
+     */
+    public function testExcludedColumnsAreEncodedNotInterpolated(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Excluding',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'pageUrl', 'sort' => 'visits-' ),
+                       'excludeColumns' => array( "pageUrl'];alert(1);//" ) ),
+            ),
+        ), array() );
+
+        $this->assertStringNotContainsString( 'alert(1);//];', $html,
+            'a column name must not be able to close the array and run' );
+
+        $this->assertStringContainsString( 'excludeColumns = ["pageUrl\'];alert(1);\/\/"]', $html,
+            'it must arrive as an encoded string inside the list' );
+    }
+
+    /** A string is refused, since a string is what used to be interpolated. */
+    public function testAStringOfExcludedColumnsIsRefused(): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
+            'title'   => 'Excluding',
+            'widgets' => array(
+                array( 'type' => 'grid', 'excludeColumns' => "'pageUrl'" ),
+            ),
+        ) );
+
+        $this->assertStringContainsString( 'excludeColumns', $error );
+    }
+
+    /** No shipped definition uses the interpolated form. */
+    public function testNoShippedDefinitionInterpolatesExcludedColumns(): void
+    {
+        $bad = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $definition = json_decode( (string) file_get_contents( $file ), true );
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+                if ( isset( $widget['excludeColumns'] ) && ! is_array( $widget['excludeColumns'] ) ) {
+
+                    $bad[] = basename( $file );
+                }
+            }
+        }
+
+        $this->assertSame( array(), $bad );
+    }
 }

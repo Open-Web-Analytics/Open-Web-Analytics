@@ -31,7 +31,9 @@
                 },
                 "valueColumns": "pageUrl"
             },
-            "excludeColumns": "'pageUrl'"
+            "excludeColumns": [
+                "pageUrl"
+            ]
         }
     ]
 }
