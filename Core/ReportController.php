@@ -195,65 +195,28 @@ class ReportController extends \OWA\Core\AdminController {
         $this->data['do'] = $this->getParam('do');
         $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
         
-        // setup tabs
+        /*
+         * The metric sets this site offers -- site usage, e-commerce if the
+         * site has it, one per active goal group.
+         *
+         * Derived by Core\MetricSets rather than built here: a report shows one
+         * dimension measured several ways, and which ways exist depends on the
+         * site, not on the report. The interface draws them as tabs today,
+         * which is why this used to be called $tabs; that is a presentation
+         * choice and is expected to change.
+         */
         $siteId = $this->get('siteId');
-        $tabs = array();
 
-        if ( $siteId ) {
-            $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $metricSets = \OWA\Core\MetricSets::forSite( $siteId );
 
-            $site_usage = array(
-                    'tab_label'        => 'Site Usage',
-                    'metrics'        => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-                    'sort'            => 'visits-',
-                    'trendchartmetric'    =>    'visits'
-            );
+        $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
 
-            $tabs['site_usage'] = $site_usage;
+        if ( $siteId && ! \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
 
-            // ecommerce tab
-            if ( \OWA\Core\CoreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
-
-                $ecommerce = array(
-                        'tab_label'        => 'e-commerce',
-                        'metrics'        => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-                        'sort'            => 'transactionRevenue-',
-                        'trendchartmetric'    =>    'transactions'
-                );
-
-                $tabs['ecommerce'] = $ecommerce;
-            }
-            $goal_groups = $gm->getActiveGoalGroups();
-
-            if ( $goal_groups ) {
-                foreach ($goal_groups as $group) {
-                    $goal_metrics = 'visits';
-                    $active_goals = $gm->getActiveGoalsByGroup($group);
-
-                    if ( $active_goals ) {
-
-                        foreach ($active_goals as $goal) {
-                            $goal_metrics .= sprintf(',goal%sCompletions', $goal);
-                        }
-                    }
-
-                    $goal_metrics .= ',goalValueAll';
-                    $goal_group = array(
-                            'tab_label'        =>    $gm->getGoalGroupLabel($group),
-                            'metrics'        =>    $goal_metrics,
-                            'sort'            => 'goalValueAll-',
-                            'trendchartmetric'    =>    'visits'
-                    );
-                    $name = 'goal_group_'.$group;
-                    $tabs[$name] = $goal_group;
-                }
-            }
-
-            if ( ! \OWA\Core\CoreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
-
-                unset($nav['Ecommerce']);
-            }
+            unset( $nav['Ecommerce'] );
         }
+
+        $this->set('metricSets', $metricSets);
 
         $this->set('tabs', $tabs);
         $this->set('tabs_json', json_encode($tabs));
