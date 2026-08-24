@@ -75,8 +75,19 @@ test.describe('post-login redirect destination', () => {
         expect(await onLoginForm(page), 'correct credentials must not return the login form')
             .toBe(0);
 
-        expect(page.url(), 'the requested report should be resumed after login')
-            .toContain('reportDashboard');
+        // Read the parameter rather than the string: reports are addressed as
+        // base.report + a reportId now, and a substring test for 'reportId='
+        // would also match 'owa_reportId=' -- which happens to be right here,
+        // but only by accident. Parse it and the assertion says what it means.
+        const resumed = new URL(page.url()).searchParams;
+
+        expect(resumed.get('owa_reportId') ?? resumed.get('reportId'),
+            'the requested report should be resumed after login')
+            .toBe('dashboard');
+
+        expect(resumed.get('owa_do') ?? resumed.get('do'),
+            'and it should be resumed through the report dispatcher')
+            .toBe('base.report');
     });
 
     /**
