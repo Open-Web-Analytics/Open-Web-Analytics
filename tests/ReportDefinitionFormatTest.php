@@ -1217,6 +1217,166 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
+     * A report may choose its metric sets: the site's, some of the site's, or
+     * its own.
+     *
+     * Absent is the default and means the site's -- Site Usage, e-commerce when
+     * the site setting is on, one per active goal group. Those first two are
+     * global constants despite living behind MetricSets::forSite(); only
+     * e-commerce's PRESENCE varies by site, and nothing varied by report until
+     * this key. That is the gap user-authored reports need closed.
+     */
+    private function sets(): array
+    {
+        return array(
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits',
+                                   'chartMetric' => 'visits' ),
+            'ecommerce'  => array( 'label' => 'e-commerce',
+                                   'metrics' => 'visits,transactions',
+                                   'chartMetric' => 'transactions' ),
+        );
+    }
+
+    private function grid(): array
+    {
+        return array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                      'query' => array( 'dimensions' => 'campaign', 'sort' => 'visits-' ) );
+    }
+
+    /**
+     * The resolver, reached directly.
+     *
+     * Rendering cannot test this: renderedWith() assigns metricSets onto the
+     * data bag AFTER doAction(), so it overwrites whatever the definition
+     * resolved and every assertion passes whatever the resolver does. Three
+     * mutations -- ignoring the key, dropping the written order, and making a
+     * declared set ADD to the site's rather than replace them -- all survived
+     * an earlier version of these tests that went through the renderer.
+     */
+    private function resolveSets( array $declared, array $site ): array
+    {
+        $m = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSets' );
+        $m->setAccessible( true );
+
+        return $m->invoke( null, $declared, $site );
+    }
+
+    public function testAListNamesTheSitesSetsAndKeepsItsOrder(): void
+    {
+        $out = $this->resolveSets( array( 'ecommerce', 'site_usage' ), $this->sets() );
+
+        $this->assertSame( array( 'ecommerce', 'site_usage' ), array_keys( $out ),
+            'the order written is the order offered, so a report can lead with its own' );
+        $this->assertSame( $this->sets()['ecommerce'], $out['ecommerce'],
+            'and a named set is the site\'s, unchanged' );
+    }
+
+    public function testANamedSetTheSiteDoesNotHaveIsSkippedNotRefused(): void
+    {
+        // e-commerce is absent wherever the site setting is off. That is the
+        // setting working, not a broken definition.
+        $out = $this->resolveSets(
+            array( 'site_usage', 'ecommerce' ),
+            array( 'site_usage' => $this->sets()['site_usage'] ) );
+
+        $this->assertSame( array( 'site_usage' ), array_keys( $out ) );
+    }
+
+    public function testADeclaredSetReplacesTheSitesRatherThanAddingToThem(): void
+    {
+        $roi = array( 'label' => 'Return', 'metrics' => 'visits,transactionRevenue',
+                      'chartMetric' => 'transactionRevenue' );
+
+        $out = $this->resolveSets( array( 'roi' => $roi ), $this->sets() );
+
+        $this->assertSame( array( 'roi' => $roi ), $out,
+            "a declared set is this report's own, and the site's do not tag along" );
+    }
+
+    /**
+     * End to end: the definition's key reaches the data bag the view reads.
+     *
+     * Uses the site's real sets, so it asserts only what this install has --
+     * site_usage. The shape cases above cover what it cannot.
+     */
+    public function testTheDefinitionsMetricSetsReachTheView(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $controller = new \OWA\Core\ConfiguredReport( array( 'siteId' => '1' ) );
+        $controller->setDefinition( array(
+            'title'      => 'R',
+            'metricSets' => array( 'roi' => array( 'label' => 'Return', 'metrics' => 'visits' ) ),
+            'widgets'    => array( $this->grid() ),
+        ) );
+
+        $data = (array) $controller->doAction();
+
+        $this->assertSame( array( 'roi' ), array_keys( (array) $data['metricSets'] ) );
+        $this->assertStringContainsString( 'Return', (string) $data['tabs_json'],
+            'the legacy tabs the template reads are rebuilt from the resolved sets' );
+    }
+
+    /** A declared label may carry a placeholder like any other authored string. */
+    public function testADeclaredSetLabelInterpolates(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            array( 'siteId' => '1', 'campaign' => 'spring' ) );
+        $controller->setDefinition( array(
+            'title'      => 'R',
+            'params'     => array( 'campaign' => array() ),
+            'metricSets' => array( 'c' => array(
+                'label' => 'Campaign {campaign}', 'metrics' => 'visits' ) ),
+            'widgets'    => array( $this->grid() ),
+        ) );
+
+        $data = (array) $controller->doAction();
+
+        $this->assertSame( 'Campaign spring', $data['metricSets']['c']['label'] );
+    }
+
+    /**
+     * @dataProvider badMetricSetsProvider
+     */
+    public function testAnUnusableMetricSetsIsRefused( $metricSets, string $because, array $extra = array() ): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError(
+            array( 'title' => 'R', 'metricSets' => $metricSets ) + $extra );
+
+        $this->assertStringContainsString( $because, $error );
+    }
+
+    public static function badMetricSetsProvider(): array
+    {
+        return array(
+            'not an array'   => array( 'site_usage', 'must be a non-empty list' ),
+            'empty'          => array( array(), 'must be a non-empty list' ),
+            'list of objects' => array(
+                array( array( 'label' => 'x', 'metrics' => 'visits' ) ),
+                'a set is declared by writing it as an object instead' ),
+            'declared with no label' => array(
+                array( 'roi' => array( 'metrics' => 'visits' ) ),
+                'needs a "label" and "metrics"' ),
+            'declared with no metrics' => array(
+                array( 'roi' => array( 'label' => 'Return' ) ),
+                'needs a "label" and "metrics"' ),
+            'declared as a scalar' => array(
+                array( 'roi' => 'visits' ),
+                'must be an object with a "label" and "metrics"' ),
+
+            /*
+             * Naming metrics suppresses sets entirely, so saying both means one
+             * of them does nothing and the file does not say which.
+             */
+            'alongside metrics' => array(
+                array( 'site_usage' ), 'cannot both be declared',
+                array( 'metrics' => 'visits' ) ),
+        );
+    }
+
+    /**
      * Declaring `metrics` is how a report opts OUT of metric sets.
      *
      * The switch is `! $view->metrics` in report_widgets.php: a definition that

@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
 
     /**
      * Column formatters a grid widget may name.
@@ -269,6 +269,79 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         /*
+         * Which metric sets this report offers, and in what order.
+         *
+         * Absent means the site's own -- Site Usage, e-commerce when the site
+         * setting is on, and one per active goal group. That is what every
+         * definition does today and stays the default, so this key only ever
+         * narrows or replaces.
+         *
+         * Two shapes, deliberately not mixable:
+         *
+         *   [ "site_usage", "ecommerce" ]        pick from the site's, in this order
+         *   { "roi": { "label": .., "metrics": .. } }   declare this report's own
+         *
+         * A list is names, never declarations -- the same rule as
+         * excludeColumns and formatters. Naming a set the site does not have
+         * (e-commerce where it is switched off) is not an error: it is absent
+         * for that site, which is the point of the setting.
+         */
+        if ( isset( $definition['metricSets'] ) ) {
+
+            $sets = $definition['metricSets'];
+
+            if ( ! is_array( $sets ) || ! $sets ) {
+
+                return '"metricSets" must be a non-empty list of set names, or an object '
+                     . 'declaring sets; omit it entirely to use the site\'s';
+            }
+
+            $named    = array_keys( $sets ) === range( 0, count( $sets ) - 1 );
+            $declared = ! $named;
+
+            if ( $named ) {
+
+                foreach ( $sets as $name ) {
+
+                    if ( ! is_string( $name ) || $name === '' ) {
+
+                        return '"metricSets" as a list names the site\'s sets; '
+                             . 'a set is declared by writing it as an object instead';
+                    }
+                }
+            }
+
+            if ( $declared ) {
+
+                foreach ( $sets as $key => $set ) {
+
+                    if ( ! is_array( $set ) ) {
+
+                        return sprintf( 'metric set "%s" must be an object with a '
+                                      . '"label" and "metrics"', $key );
+                    }
+
+                    if ( empty( $set['label'] ) || empty( $set['metrics'] ) ) {
+
+                        return sprintf( 'metric set "%s" needs a "label" and "metrics"; '
+                                      . 'a set with neither renders as an empty tab', $key );
+                    }
+                }
+            }
+
+            /*
+             * Declaring `metrics` suppresses sets altogether -- that is the
+             * switch the widget reads. Saying both means one of them does
+             * nothing, and which one is not guessable from the file.
+             */
+            if ( isset( $definition['metrics'] ) ) {
+
+                return '"metrics" and "metricSets" cannot both be declared: naming metrics '
+                     . 'renders one grid of them and suppresses sets entirely';
+            }
+        }
+
+        /*
          * An unconstrained detail report is the failure worth refusing: it
          * renders every row rather than the one asked for, which reads as a
          * data bug and not as a broken definition.
@@ -348,6 +421,27 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * just a way for the two to disagree later.
          */
         $this->setSubview( self::SUBVIEW );
+
+        /*
+         * Metric sets, if this report chooses its own.
+         *
+         * ReportController::pre() has already put the site's sets in place, so
+         * a definition that says nothing keeps them -- which is every
+         * definition converted so far, campaigns included.
+         */
+        if ( isset( $d['metricSets'] ) ) {
+
+            $sets = self::resolveMetricSets(
+                self::interpolateDeep( $d['metricSets'], $values ),
+                (array) $this->get( 'metricSets' ) );
+
+            $this->set( 'metricSets', $sets );
+
+            $tabs = \OWA\Core\MetricSets::toLegacyTabs( $sets );
+
+            $this->set( 'tabs', $tabs );
+            $this->set( 'tabs_json', json_encode( $tabs ) );
+        }
 
         /*
          * Widgets are a setting as far as the view is concerned -- the subview
@@ -528,6 +622,42 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * @param array $values
      * @return array the widgets, with `constraints` folded into `query`
      */
+    /**
+     * The sets this report offers, from what it declared and what the site has.
+     *
+     * A list NAMES the site's sets and keeps the order it was written in, so a
+     * report can lead with the one that matters to it. A name the site does not
+     * have is skipped rather than refused -- e-commerce is absent wherever the
+     * setting is off, and that is the setting working.
+     *
+     * An object DECLARES this report's own, used as written.
+     *
+     * @param array $declared the definition's `metricSets`, interpolated
+     * @param array $site     what ReportController::pre() already resolved
+     * @return array<string, array>
+     */
+    private static function resolveMetricSets( array $declared, array $site ) {
+
+        $named = array_keys( $declared ) === range( 0, count( $declared ) - 1 );
+
+        if ( ! $named ) {
+
+            return $declared;
+        }
+
+        $out = array();
+
+        foreach ( $declared as $name ) {
+
+            if ( isset( $site[ $name ] ) ) {
+
+                $out[ $name ] = $site[ $name ];
+            }
+        }
+
+        return $out;
+    }
+
     private static function resolveWidgetConstraints( array $widgets, $reportConstraints, array $values ) {
 
         $out = array();
