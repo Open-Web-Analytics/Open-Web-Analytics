@@ -191,7 +191,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .visible {display:;}
 .invisible {display:none;}
 
-.owa .error, .owa .status {
+.owa .error, .owa .status, .owa .notice {
     color: #ffffff;
     border: 2px solid #FF0000;
     margin:20px 40px 20px 40px;
@@ -203,6 +203,17 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa .status {
     background-color: #71ad2b;
     border-color: #519600;
+    color: #FFFFFF;
+}
+
+/*
+ * A third level between status and error: something the reader should know
+ * but does not have to act on. Nothing failed, so red is wrong; nothing
+ * succeeded, so green is too. Deprecation notices are the first user.
+ */
+.owa .notice {
+    background-color: #d9a441;
+    border-color: #b8862a;
     color: #FFFFFF;
 }
 

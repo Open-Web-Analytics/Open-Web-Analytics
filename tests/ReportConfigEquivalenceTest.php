@@ -58,6 +58,22 @@ final class ReportConfigEquivalenceTest extends TestCase
         $expected = self::$golden[ $class ]['config'];
         $actual   = Harness::snapshotConfigured( $id )['config'];
 
+        /*
+         * `deprecated` is the one key a definition may add that no controller
+         * ever declared. It says the report is still here but no longer
+         * filling -- a fact about the data, not about the conversion.
+         *
+         * Dropped from the comparison rather than written into the golden file:
+         * the golden records what the CONTROLLER declared, and no controller
+         * ever declared this. Writing it there would make the record claim
+         * something untrue about code that no longer exists. The key's own
+         * behaviour is pinned in ReportDefinitionFormatTest.
+         *
+         * Unset from $actual only, so a definition that DROPS a real key still
+         * fails below.
+         */
+        unset( $actual['deprecated'] );
+
         // Whole-bag comparison, not key-by-key: a conversion that DROPPED a key
         // would pass every per-key assertion that only looks at keys present in
         // both.

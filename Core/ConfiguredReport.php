@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated' );
 
     /**
      * The renderer every configured report uses.
@@ -210,6 +210,24 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         /*
+         * A deprecation notice says a report is still here but no longer
+         * filling. Generic on purpose: any report can carry one, and the
+         * renderer neither knows nor cares why.
+         */
+        if ( isset( $definition['deprecated'] ) ) {
+
+            if ( ! is_array( $definition['deprecated'] ) ) {
+
+                return '"deprecated" must be an object with a "message"';
+            }
+
+            if ( empty( $definition['deprecated']['message'] ) ) {
+
+                return 'a deprecation notice needs a "message" saying what changed';
+            }
+        }
+
+        /*
          * An unconstrained detail report is the failure worth refusing: it
          * renders every row rather than the one asked for, which reads as a
          * data bug and not as a broken definition.
@@ -319,6 +337,11 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         $constraints = is_array( $constraints )
             ? self::buildConstraints( $constraints, $values )
             : self::interpolate( (string) $constraints, $values );
+
+        if ( isset( $d['deprecated'] ) ) {
+
+            $this->set( 'deprecated', self::interpolateDeep( $d['deprecated'], $values ) );
+        }
 
         if ( isset( $d['widgets'] ) ) {
 

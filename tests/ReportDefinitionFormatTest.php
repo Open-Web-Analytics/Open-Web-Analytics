@@ -204,6 +204,23 @@ final class ReportDefinitionFormatTest extends TestCase
                 $base + array( 'settings' => array( 'constraints' => array(
                     array( 'dimension' => 'hostName', 'fromParam' => 'hosName' ) ) ) ),
                 'undeclared parameter' ),
+
+            /*
+             * A deprecation notice with nothing to say is the same failure at
+             * report scale: the banner renders, takes the top of the report,
+             * and tells the reader neither what changed nor what to read now.
+             */
+            'deprecated is not an object' => array(
+                $base + array( 'deprecated' => 'this report is going away' ),
+                '"deprecated" must be an object' ),
+
+            'deprecated with no message' => array(
+                $base + array( 'deprecated' => array() ),
+                'needs a "message"' ),
+
+            'deprecated with an empty message' => array(
+                $base + array( 'deprecated' => array( 'message' => '' ) ),
+                'needs a "message"' ),
         );
     }
 
@@ -220,6 +237,59 @@ final class ReportDefinitionFormatTest extends TestCase
                     array( 'dimension' => 'hostName', 'fromParam' => 'hostName' ) ),
             ),
         ) ) );
+    }
+
+    /**
+     * A deprecation notice says a report is still here but no longer filling.
+     *
+     * Generic on purpose: the renderer neither knows nor cares why. Pinned here
+     * rather than against the two reports that carry one today, because the key
+     * is part of the format -- those two are just its first users.
+     */
+    public function testADeprecatedReportIsAccepted(): void
+    {
+        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError(
+            $this->base( array( 'deprecated' => array(
+                'message' => 'This report is for historical data only.' ) ) ) ) );
+    }
+
+    /** The notice reaches the view, which is what draws the banner. */
+    public function testADeprecationNoticeReachesTheView(): void
+    {
+        $d = $this->declared( $this->base( array( 'deprecated' => array(
+            'message' => 'This report is for historical data only.' ) ) ) );
+
+        $this->assertSame( 'This report is for historical data only.',
+            $d['deprecated']['message'] );
+    }
+
+    /**
+     * The template draws the banner on `! empty( $view->deprecated['message'] )`,
+     * so an ordinary report has to leave the key off entirely. Setting it empty
+     * would be the same bug in the other direction: an empty band above every
+     * report in the install.
+     */
+    public function testAnOrdinaryReportCarriesNoDeprecationNotice(): void
+    {
+        $d = $this->declared( $this->base() );
+
+        $this->assertArrayNotHasKey( 'deprecated', $d );
+    }
+
+    /** A notice is interpolated like any other authored string. */
+    public function testADeprecationNoticeInterpolates(): void
+    {
+        $d = $this->declared(
+            $this->base( array(
+                'params'     => array( 'hostName' => array() ),
+                'deprecated' => array(
+                    'message' => 'Link text for {hostName} is no longer collected.' ),
+            ) ),
+            array( 'hostName' => 'example.com' )
+        );
+
+        $this->assertSame( 'Link text for example.com is no longer collected.',
+            $d['deprecated']['message'] );
     }
 
     /**

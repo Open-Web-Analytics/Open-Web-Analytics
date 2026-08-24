@@ -802,6 +802,31 @@ li.constraintRow {
    would silently present its widgets in an order nobody wrote.
    --------------------------------------------------------------------------- */
 
+/*
+ * A report that is still here but no longer filling.
+ *
+ * The report-level form of the house banner in owa.css. Same family as
+ * .status and .error -- OWA has one banner mechanism, not a per-report one --
+ * at the `notice` level, because nothing here failed and nothing succeeded.
+ *
+ * Tightened from the page-level defaults. Those sit in the wrapper above the
+ * whole admin UI and can afford 20px of padding and 40px side margins; this
+ * one belongs to a single report and sits directly above its widget grid, so
+ * it spans the report and stays a strip. A deprecation notice is read once and
+ * then ignored for the life of the report -- it must not push the first widget
+ * below the fold.
+ *
+ * text-align is explicit because .owa_reportElement centres everything beneath
+ * it, which would leave the message floating mid-band.
+ */
+.owa .notice.owa_reportDeprecated {
+    margin: 0 0 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+}
+
 .owa_reportGrid {
     container-type: inline-size;
     container-name: owa-report;

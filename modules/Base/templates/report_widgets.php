@@ -52,6 +52,30 @@ if ( ! $owa_sets ) {
  */
 $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 ?>
+<?php if ( ! empty( $view->deprecated['message'] ) ): ?>
+<?php
+    /*
+     * A report that is still here but no longer filling.
+     *
+     * Above the metric-set loop, so it is drawn once for the report rather
+     * than once per set -- it describes the report, not a way of measuring it.
+     *
+     * `notice` is the house banner class from owa.css, the same mechanism
+     * msgs.php and the scheduler nag use; owa_reportDeprecated only tightens
+     * it for report scale. OWA has one banner, not a per-report one.
+     *
+     * Deliberately generic: the renderer neither knows nor cares WHY a report
+     * is deprecated. The first two carry one because the data behind them was
+     * collected by fetching referring pages, which OWA no longer does, and a
+     * report that silently renders nothing forever is worse than one that says
+     * so.
+     */
+?>
+<div class="notice owa_reportDeprecated" role="status">
+    <?php $view->out( $view->deprecated['message'] ); ?>
+</div>
+<?php endif; ?>
+
 <?php if ( $owa_multiSet ): ?>
 <div id="report-tabs">
 <?php endif; ?>

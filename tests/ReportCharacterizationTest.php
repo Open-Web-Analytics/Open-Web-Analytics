@@ -74,9 +74,22 @@ final class ReportCharacterizationTest extends TestCase
             "$name has no recorded baseline -- regenerate the fixture deliberately, "
             . 'and say in the commit why a new report appeared' );
 
+        $actual = Harness::snapshot( $name );
+
+        /*
+         * `deprecated` is a deliberate addition that no controller ever
+         * declared -- see ReportConfigEquivalenceTest, which reads this same
+         * fixture. Removed rather than regenerated into the baseline: this
+         * file is the pre-conversion record, and rewriting it from current
+         * output is what would make that equivalence proof tautological.
+         *
+         * Removed from $actual only, so every other drift still fails below.
+         */
+        unset( $actual['config']['deprecated'] );
+
         $this->assertSame(
             self::$golden[ $name ],
-            Harness::snapshot( $name ),
+            $actual,
             "$name declares something different from its recorded baseline. If that is "
             . 'intended, regenerate; if this is a conversion, it is a regression.'
         );

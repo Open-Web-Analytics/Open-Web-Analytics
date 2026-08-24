@@ -39,6 +39,9 @@ class ReportWidgets extends \OWA\Core\View {
 
         $this->body->set( 'widgets', $this->get( 'widgets' ) );
 
+        // Absent on almost every report; the template draws nothing for it.
+        $this->body->set( 'deprecated', $this->get( 'deprecated' ) );
+
         /*
          * Report-wide, not per widget. Every widget in a report looks at the
          * same rows -- a detail report constrains to one host, and its trend
