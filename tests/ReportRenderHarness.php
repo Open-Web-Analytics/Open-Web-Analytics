@@ -72,22 +72,19 @@ final class ReportRenderHarness
      */
     public const METRIC_SETS = array(
         'site_usage' => array(
-            'tab_label'        => 'Site Usage',
-            'metrics'          => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-            'sort'             => 'visits-',
-            'trendchartmetric' => 'visits',
+            'label'       => 'Site Usage',
+            'metrics'     => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
+            'chartMetric' => 'visits',
         ),
         'ecommerce' => array(
-            'tab_label'        => 'e-commerce',
-            'metrics'          => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-            'sort'             => 'transactionRevenue-',
-            'trendchartmetric' => 'transactions',
+            'label'       => 'e-commerce',
+            'metrics'     => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+            'chartMetric' => 'transactions',
         ),
         'goal_group_1' => array(
-            'tab_label'        => 'Goal Group One',
-            'metrics'          => 'visits,goal1Completions,goalValueAll',
-            'sort'             => 'goalValueAll-',
-            'trendchartmetric' => 'visits',
+            'label'       => 'Goal Group One',
+            'metrics'     => 'visits,goal1Completions,goalValueAll',
+            'chartMetric' => 'visits',
         ),
     );
 
@@ -110,10 +107,16 @@ final class ReportRenderHarness
 
         if ( $metricSets !== null ) {
 
-            // 'tabs' is the current template's name for this. The concept is a
-            // set of metric sets; the key goes when the templates do.
-            $data['tabs']      = $metricSets;
-            $data['tabs_json'] = json_encode( $metricSets );
+            $data['metricSets'] = $metricSets;
+
+            /*
+             * The older templates read a differently-shaped array under
+             * 'tabs'. Derived from the same input rather than written out
+             * twice, so a snapshot cannot hand the two renderers different
+             * sets. Both keys go when those templates do.
+             */
+            $data['tabs']      = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
+            $data['tabs_json'] = json_encode( $data['tabs'] );
         }
 
         /*

@@ -524,4 +524,176 @@ final class ReportDefinitionFormatTest extends TestCase
         // Positive control: the lookup must be capable of failing.
         $this->assertArrayNotHasKey( 'definitely-not-a-report', $registry );
     }
+
+    /** Render a definition against a given set of metric sets. */
+    private function renderedWith( array $definition, array $metricSets, array $params = array() ): string
+    {
+        require_once __DIR__ . '/ReportCharacterizationHarness.php';
+        require_once __DIR__ . '/ReportRenderHarness.php';
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            $params + array( 'siteId' => '1', 'period' => 'last_thirty_days' ) );
+
+        $controller->setDefinition( $definition );
+
+        $data = (array) $controller->doAction();
+
+        $data['metricSets'] = $metricSets;
+        $data['tabs']       = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
+        $data['tabs_json']  = json_encode( $data['tabs'] );
+
+        return (string) \OWA\Core\CoreAPI::displayView( $data );
+    }
+
+    private function requireDbAsAdmin(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'rendering a report loads the site list and the period' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+    }
+
+    private static function threeSets(): array
+    {
+        return array(
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits', 'chartMetric' => 'visits' ),
+            'ecommerce'  => array( 'label' => 'e-commerce', 'metrics' => 'transactions', 'chartMetric' => 'transactions' ),
+            'goals'      => array( 'label' => 'Goals', 'metrics' => 'goalValueAll', 'chartMetric' => 'visits' ),
+        );
+    }
+
+    /**
+     * A report that declares no metrics is measured every way the site offers.
+     */
+    public function testAReportWithoutMetricsRendersOncePerSet(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Browsers',
+            'subview' => 'base.reportWidgets',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'dim',
+                'container' => 'dimension-grid', 'query' => array( 'dimensions' => 'browserType' ) ) ),
+        ), self::threeSets() );
+
+        $containers = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::explorersIn( $html ) as $e ) {
+            $containers[] = $e['container'];
+        }
+
+        $this->assertSame(
+            array( 'site_usage_dimension-grid', 'ecommerce_dimension-grid', 'goals_dimension-grid' ),
+            $containers,
+            'one widget per set, each rendering into its own container' );
+
+        // ...each asking for its own set's metrics.
+        $metrics = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
+            $metrics[] = $q['query']['metrics'];
+        }
+
+        $this->assertSame( array( 'visits', 'transactions', 'goalValueAll' ), $metrics );
+    }
+
+    /**
+     * A report that DOES declare metrics has said how it measures, and renders
+     * once regardless of what the site offers.
+     *
+     * Web Pages is page views and visits; it is not "page views, measured by
+     * e-commerce". This distinction used to be implicit in which subview a
+     * report used, and it is why 21 of the multi-set reports declare metrics
+     * that never reach a query -- they are the other kind, carrying a
+     * declaration that belongs to this one.
+     */
+    public function testAReportWithMetricsRendersOnce(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Web Pages',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'pageViews,visits',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'dim',
+                'container' => 'dimension-grid', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
+        ), self::threeSets() );
+
+        $queries = \OWA\Tests\ReportRenderHarness::queriesIn( $html );
+
+        $this->assertCount( 1, $queries, 'a report that measures one way renders one widget' );
+        $this->assertSame( 'pageViews,visits', $queries[0]['query']['metrics'],
+            "the site's sets must not override what the report declared" );
+    }
+
+    /**
+     * A widget renders only for the sets it names.
+     */
+    public function testAWidgetCanBeLimitedToCertainSets(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Browsers',
+            'subview' => 'base.reportWidgets',
+            'widgets' => array(
+                array( 'type' => 'grid', 'id' => 'all', 'container' => 'all-grid',
+                       'query' => array( 'dimensions' => 'browserType' ) ),
+                array( 'type' => 'grid', 'id' => 'rev', 'container' => 'rev-grid',
+                       'metricSets' => array( 'ecommerce' ),
+                       'query' => array( 'dimensions' => 'browserType' ) ),
+            ),
+        ), self::threeSets() );
+
+        $containers = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::explorersIn( $html ) as $e ) {
+            $containers[] = $e['container'];
+        }
+
+        $this->assertSame( array(
+            'site_usage_all-grid',
+            'ecommerce_all-grid', 'ecommerce_rev-grid',
+            'goals_all-grid',
+        ), $containers,
+            'the unnamed widget renders for every set; the named one only for its own' );
+    }
+
+    /**
+     * Two sets must never render into one element.
+     *
+     * They would overwrite each other, and only one would ever be visible --
+     * with an identical command list and identical queries, so nothing in the
+     * recording would show it.
+     */
+    public function testNoTwoSetsShareAContainer(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Browsers',
+            'subview' => 'base.reportWidgets',
+            'widgets' => array(
+                array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
+                       'query' => array( 'dimensions' => 'date' ) ),
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'browserType' ) ),
+            ),
+        ), self::threeSets() );
+
+        $containers = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::explorersIn( $html ) as $e ) {
+            $containers[] = $e['container'];
+        }
+
+        $this->assertSame( $containers, array_unique( $containers ),
+            'a container is used twice, so one set is rendering over another: '
+            . implode( ', ', $containers ) );
+
+        $this->assertCount( 6, $containers, 'two widgets across three sets' );
+    }
 }

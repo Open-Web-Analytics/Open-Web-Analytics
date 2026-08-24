@@ -54,6 +54,16 @@ class ReportWidgets extends \OWA\Core\View {
          */
         $this->body->set( 'metrics', $this->get( 'metrics' ) );
 
+        /*
+         * The metric sets this report is shown for. A report is one dimension
+         * measured several ways, so the widgets are rendered once per set --
+         * each set supplying the metrics and the chart metric.
+         *
+         * Derived per site by Core\MetricSets, so a definition never lists
+         * them: which exist depends on the site's settings and goals.
+         */
+        $this->body->set( 'metricSets', $this->get( 'metricSets' ) );
+
         $this->body->set_template( 'report_widgets.php' );
     }
 }

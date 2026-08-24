@@ -10,18 +10,61 @@
  * notice.
  */
 $owa_widgets = (array) $view->widgets;
+
+/*
+ * Does this report use the site's metric sets, or does it measure one fixed
+ * way?
+ *
+ * A report that DECLARES metrics has said how it measures: Web Pages is page
+ * views and visits, and it is not "page views, measured by e-commerce". It
+ * renders once. A report that declares none is the other kind -- one dimension
+ * the site measures several ways -- and renders once per set the site offers.
+ *
+ * Today that distinction is implicit in which subview a report uses, tabbed or
+ * not. Making it follow from what the definition says is what lets the two
+ * kinds share one renderer, and it explains the dead configuration the
+ * conversion found: 21 of the 29 multi-set reports declare metrics that never
+ * reach a query, because their sets always overrode them.
+ */
+$owa_sets = $view->metrics
+    ? array( '' => array() )
+    : (array) $view->metricSets;
+
+if ( ! $owa_sets ) {
+
+    // No site, so no sets -- render once with whatever the report has.
+    $owa_sets = array( '' => array() );
+}
 ?>
-<div class="owa_reportGrid">
+<?php foreach ( $owa_sets as $owa_setKey => $owa_set ): ?>
+<div class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
 
 <?php foreach ( $owa_widgets as $owa_w ): ?>
 <?php
-    $owa_id        = (string) ( $owa_w['id'] ?? 'widget' );
-    $owa_container = (string) ( $owa_w['container'] ?? $owa_id );
+    /*
+     * A widget renders for every set unless it names the ones it is for.
+     * Absence means "whatever is being viewed"; naming sets means "only
+     * these" -- which is how a report shows, say, a revenue widget only
+     * alongside the e-commerce metrics.
+     */
+    if ( ! empty( $owa_w['metricSets'] )
+         && ! in_array( $owa_setKey, (array) $owa_w['metricSets'], true ) ) {
+        continue;
+    }
+
+    /*
+     * Containers and receivers are per set, because the widget is. Two sets
+     * rendering into one element would have the later one overwrite the
+     * earlier, and only one of them would ever be visible.
+     */
+    $owa_prefix    = $owa_setKey === '' ? '' : $owa_setKey . '_';
+    $owa_id        = $owa_prefix . (string) ( $owa_w['id'] ?? 'widget' );
+    $owa_container = $owa_prefix . (string) ( $owa_w['container'] ?? ( $owa_w['id'] ?? 'widget' ) );
     $owa_url       = $owa_id . 'url';
     // A widget's own query wins, so a widget CAN ask for different metrics --
     // none does today, and the report-wide value is what a metric set replaces.
     $owa_query     = (array) ( $owa_w['query'] ?? array() ) + array(
-        'metrics'     => $view->metrics,
+        'metrics'     => $owa_set['metrics'] ?? $view->metrics,
         'do'          => 'reports',
         'module'      => 'base',
         'version'     => 'v1',
@@ -45,8 +88,12 @@ $owa_widgets = (array) $view->widgets;
 <?php if ( ! empty( $owa_w['title'] ) ): ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['renderTemplate', '<?php echo $owa_w['title']; ?>', {d: <?php echo $owa_id; ?>}, 'replace', '<?php $view->out( $owa_id, false ); ?>-title']);
 <?php endif; ?>
-<?php if ( ! empty( $owa_w['chartMetric'] ) ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_w['chartMetric'], false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
+<?php
+    // The set's chart metric, unless the widget pinned its own.
+    $owa_chartMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
+?>
+<?php if ( $owa_chartMetric !== '' ): ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_chartMetric, false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
@@ -110,5 +157,6 @@ $owa_widgets = (array) $view->widgets;
 <?php endforeach; ?>
 
 </div>
+<?php endforeach; ?>
 
 <?php require_once( 'js_report_templates.php' ); ?>
