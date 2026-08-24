@@ -112,6 +112,11 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 return sprintf( 'widget %s needs a "type"', $i );
             }
 
+            if ( isset( $widget['more'] ) && empty( $widget['more']['reportId'] ) ) {
+
+                return sprintf( 'widget %s has a "more" link with no reportId', $i );
+            }
+
             if ( $widget['type'] !== 'report-links' ) {
 
                 continue;

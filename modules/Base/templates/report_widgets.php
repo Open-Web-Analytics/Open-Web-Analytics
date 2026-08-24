@@ -226,6 +226,24 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 
 <?php endif; ?>
 
+<?php if ( ! empty( $owa_w['more'] ) ): ?>
+        <?php
+            /*
+             * "View Full Report" -- a link from a summary widget to the report
+             * that shows the whole thing.
+             *
+             * A property of the widget rather than a sibling report-links
+             * widget, because it describes THIS widget. As a sibling it could
+             * be reordered away from the grid it refers to and mean nothing.
+             */
+        ?>
+        <div class="owa_genericHorizonalList owa_moreLinks">
+            <ul><li><a href="<?php echo $view->makeLink( array(
+                'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+                $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></li></ul>
+        </div>
+<?php endif; ?>
+
     </div>
 <?php endforeach; ?>
 

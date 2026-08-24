@@ -861,10 +861,10 @@
         ]
     },
     "content": {
-        "subview": "base.reportContent",
+        "subview": "base.reportWidgets",
         "queries": [
             {
-                "var": "aurl",
+                "var": "trendurl",
                 "query": {
                     "dimensions": "date",
                     "do": "reports",
@@ -916,13 +916,13 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 3,
-            "urls": 0
+            "loads": 3,
+            "loadsWithUrl": 0,
+            "urls": 3
         },
         "explorers": [
             {
-                "var": "rsh",
+                "var": "trend",
                 "container": "trend-chart"
             },
             {
@@ -935,9 +935,9 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart",
-            "rsh.makeMetricBoxes -> trend-metrics",
-            "rsh.renderTemplate -> content-headline",
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
             "toppages.refreshGrid",
             "toppagetypes.refreshGrid"
         ]

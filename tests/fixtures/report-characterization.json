@@ -485,10 +485,109 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "subview": "base.reportContent",
+            "metrics": "visits,pageViews,bounceRate",
+            "subview": "base.reportWidgets",
             "title": "Content Overview",
             "titleSuffix": "",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "pageViews",
+                    "container": "trend-chart",
+                    "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "colspan": 6,
+                    "container": "top-pages",
+                    "excludeColumns": "'pageUrl'",
+                    "id": "toppages",
+                    "link": {
+                        "linkColumn": "pageTitle",
+                        "template": {
+                            "do": "base.report",
+                            "pageUrl": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "pageUrl"
+                    },
+                    "more": {
+                        "label": "View Full Report »",
+                        "reportId": "pages"
+                    },
+                    "query": {
+                        "dimensions": "pageTitle,pageUrl",
+                        "metrics": "visits",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "title": "Top Pages",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 6,
+                    "container": "top-pagetypes",
+                    "id": "toppagetypes",
+                    "link": {
+                        "linkColumn": "pageType",
+                        "template": {
+                            "do": "base.report",
+                            "pageType": "%s",
+                            "reportId": "page-type-detail"
+                        },
+                        "valueColumns": "pageType"
+                    },
+                    "more": {
+                        "label": "View Full Report »",
+                        "reportId": "page-types"
+                    },
+                    "query": {
+                        "dimensions": "pageType",
+                        "metrics": "visits",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "title": "Top Page Types",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 6,
+                    "links": [
+                        {
+                            "description": "See user mouse movement and keypress recordings.",
+                            "label": "Domstream Recordings",
+                            "reportId": "domstreams"
+                        },
+                        {
+                            "description": "See which actions your user performed.",
+                            "label": "Actions",
+                            "reportId": "action-tracking"
+                        },
+                        {
+                            "description": "See which web pages users entered on.",
+                            "label": "Entry Pages",
+                            "reportId": "entry-pages"
+                        },
+                        {
+                            "description": "See which web pages users exited on.",
+                            "label": "Exit Pages",
+                            "reportId": "exit-pages"
+                        },
+                        {
+                            "description": "See trends for feed subscribers and usage.",
+                            "label": "Feeds",
+                            "reportId": "feeds"
+                        }
+                    ],
+                    "title": "Content Reports",
+                    "type": "report-links"
+                }
+            ]
         }
     },
     "ReportCountryDetail": {
