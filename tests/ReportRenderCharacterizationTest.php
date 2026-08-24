@@ -119,6 +119,40 @@ final class ReportRenderCharacterizationTest extends TestCase
     }
 
     /**
+     * Every query's results are bound to a container.
+     *
+     * A resultSetExplorer renders into the element it was constructed with,
+     * and refreshGrid takes no target of its own -- so a grid moved to the
+     * wrong container emits an identical command list and an identical query
+     * and simply renders nothing. One binding per query, or something is
+     * loading data it will never show.
+     */
+    public function testEveryQueryHasSomewhereToRender(): void
+    {
+        $unbound = array();
+
+        foreach ( self::$golden as $id => $snapshot ) {
+
+            $queries   = count( $snapshot['queries'] ?? array() );
+            $explorers = count( $snapshot['explorers'] ?? array() );
+
+            if ( $queries !== $explorers ) {
+                $unbound[] = "$id ($queries queries, $explorers explorers)";
+            }
+
+            foreach ( (array) ( $snapshot['explorers'] ?? array() ) as $receiver => $container ) {
+
+                $this->assertNotSame( '', $container,
+                    "$id: $receiver is bound to no container" );
+            }
+        }
+
+        $this->assertSame( array(), $unbound,
+            'these reports load data they do not render, or render from data they '
+            . 'do not load: ' . implode( ', ', $unbound ) );
+    }
+
+    /**
      * Every query carries a nonce.
      *
      * The value is normalised out of the fixture because it depends on the
@@ -165,6 +199,10 @@ final class ReportRenderCharacterizationTest extends TestCase
 
         $this->assertSame( array( 'trend.makeAreaChart -> trend-chart' ),
             Render::commandsIn( $html ) );
+
+        $this->assertSame( array( 'g' => 'dimension-grid' ),
+            Render::explorersIn( "var g = new OWA.resultSetExplorer('dimension-grid');" ),
+            'the container a result set renders into must be observable' );
 
         // ...and it must not invent things that are not there.
         $this->assertSame( array(), Render::queriesIn( '<p>no scripts here</p>' ) );

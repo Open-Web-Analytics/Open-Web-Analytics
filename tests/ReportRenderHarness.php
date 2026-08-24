@@ -75,6 +75,7 @@ final class ReportRenderHarness
         return array(
             'subview'   => $data['subview'],
             'queries'   => self::queriesIn( $html ),
+            'explorers' => self::explorersIn( $html ),
             'commands'  => self::commandsIn( $html ),
         );
     }
@@ -110,6 +111,36 @@ final class ReportRenderHarness
             ksort( $query );
 
             $out[ $name ] = $query;
+        }
+
+        ksort( $out );
+
+        return $out;
+    }
+
+    /**
+     * Which container each result-set explorer is bound to.
+     *
+     * Found missing while designing the widget format, which is the point of
+     * building the net before the change: a resultSetExplorer renders into the
+     * element it was CONSTRUCTED with, and refreshGrid takes no target of its
+     * own. So a grid moved to the wrong container would emit an identical
+     * command list and an identical query, and nothing here would have
+     * noticed -- the report would simply render nothing.
+     *
+     * @return array<string, string> receiver => element id
+     */
+    public static function explorersIn( string $html ): array
+    {
+        preg_match_all(
+            "/(?:var\s+)?(\w+)\s*=\s*new\s+OWA\.resultSetExplorer\(\s*'([^']*)'/",
+            $html, $m );
+
+        $out = array();
+
+        foreach ( $m[1] as $i => $receiver ) {
+
+            $out[ $receiver ] = $m[2][ $i ];
         }
 
         ksort( $out );
