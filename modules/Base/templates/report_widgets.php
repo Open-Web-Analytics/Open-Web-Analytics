@@ -95,6 +95,18 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
     );
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
+<?php if ( ! empty( $owa_w['heading'] ) ): ?>
+        <?php
+            /*
+             * The widget's own heading -- "Transaction Roster" above a grid.
+             *
+             * Distinct from the report's `title` and from a `headline`, which
+             * is the interpolated sentence under a trend. Three different
+             * things that all wanted the word "title" at some point.
+             */
+        ?>
+        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['heading'] ); ?></div>
+<?php endif; ?>
 
 <?php if ( ( $owa_w['type'] ?? '' ) === 'trend' ): ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>

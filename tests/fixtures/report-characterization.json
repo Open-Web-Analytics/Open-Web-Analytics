@@ -1640,10 +1640,46 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "subview": "base.reportTransactions",
+            "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+            "subview": "base.reportWidgets",
             "title": "Transactions Overview",
             "titleSuffix": "",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactions",
+                    "container": "trend-chart",
+                    "headline": "There were {transactions.formatted} {transactions|transaction|transactions} generating {transactionRevenue.formatted}.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "transactions",
+                    "excludeColumns": "'timestamp'",
+                    "heading": "Transaction Roster",
+                    "id": "transactions",
+                    "link": {
+                        "linkColumn": "transactionId",
+                        "template": {
+                            "do": "base.report",
+                            "reportId": "transaction-detail",
+                            "transactionId": "%s"
+                        },
+                        "valueColumns": "transactionId"
+                    },
+                    "query": {
+                        "dimensions": "timestamp,transactionId",
+                        "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
+                        "resultsPerPage": 25,
+                        "sort": "timestamp-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportVisitorsAge": {
