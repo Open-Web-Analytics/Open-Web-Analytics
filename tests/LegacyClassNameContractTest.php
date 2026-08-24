@@ -35,6 +35,10 @@ use PHPUnit\Framework\TestCase;
  * gets a clear "class not found" instead of an alias to a class that would
  * render an empty report.
  *
+ * RETIRED 2026-08-24: attribution-history's controller, which became a report
+ * definition. Its grid formatter was the last thing keeping it -- see
+ * AttributionFormatter.test.js.
+ *
  * RETIRED 2026-08-24: the referral crawler. OWA no longer fetches referring
  * pages, so its CLI controller and view are gone -- see RefererCrawlRemovedTest.
  *
@@ -56,6 +60,7 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        'owa_reportAttributionHistoryController',
         'owa_crawlReferralCliController',
         'owa_crawlReferralCliView',
         'owa_reportTrafficView',

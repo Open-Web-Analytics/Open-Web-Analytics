@@ -204,7 +204,6 @@
     "owa_refererHandlers",
     "owa_remoteQueueModule",
     "owa_repeatVisitors",
-    "owa_reportAttributionHistoryController",
     "owa_reportCampaignsController",
     "owa_reportController",
     "owa_reportDashboardController",

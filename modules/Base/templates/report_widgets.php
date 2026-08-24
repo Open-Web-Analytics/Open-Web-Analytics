@@ -335,6 +335,21 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         ?>
         <?php echo $owa_id; ?>.options.grid.excludeColumns = <?php echo json_encode( array_values( (array) $owa_w['excludeColumns'] ) ); ?>;
 <?php endif; ?>
+<?php if ( ! empty( $owa_w['formatters'] ) ): ?>
+        <?php
+            /*
+             * A column formatter is NAMED, not supplied. jqGrid resolves the
+             * name against jQuery.fn.fmatter, the same way the built-in
+             * `useServerFormatter` and `urlFormatter` defaults are resolved.
+             *
+             * The value this replaces was a JavaScript function, echoed raw
+             * from a controller. Encoded here, and the name is checked against
+             * ConfiguredReport::KNOWN_FORMATTERS before it gets this far, so a
+             * definition can select a formatter but cannot become one.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.grid.columnFormatters = <?php echo json_encode( (object) $owa_w['formatters'] ); ?>;
+<?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 
 <?php if ( ! $owa_multiSet ): ?>

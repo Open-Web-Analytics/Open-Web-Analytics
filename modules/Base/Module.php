@@ -621,7 +621,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
-        $this->registerAction( 'base.reportAttributionHistory',      'OWA\\Module\\Base\\Controller\\ReportAttributionHistory',     'Controller/ReportAttributionHistory.php' );
         $this->registerAction( 'base.reportCampaigns',               'OWA\\Module\\Base\\Controller\\ReportCampaigns',              'Controller/ReportCampaigns.php' );
         $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
         $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
@@ -2356,7 +2355,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'ad-types', 'reports/ad-types.json' );
         $this->registerReport( 'ads', 'reports/ads.json' );
         $this->registerReport( 'anchortext', 'reports/anchortext.json' );
-        $this->registerReport( 'attribution-history', array( 'controller' => 'base.reportAttributionHistory' ) );
+        $this->registerReport( 'attribution-history', 'reports/attribution-history.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
         $this->registerReport( 'browser-detail', 'reports/browser-detail.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );

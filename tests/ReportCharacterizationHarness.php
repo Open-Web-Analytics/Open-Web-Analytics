@@ -27,7 +27,7 @@ final class ReportCharacterizationHarness
      * note), so none of these is a report the harness needs to protect.
      */
     private const PREFETCHING = array(
-        'ReportAttributionHistory', 'ReportCampaigns', 'ReportDashboard',
+        'ReportCampaigns', 'ReportDashboard',
         'ReportDocument', 'ReportDomClicks', 'ReportDomstreams',
         'ReportGoalFunnel', 'ReportGoals', 'ReportReferralDetail',
         'ReportVisit', 'ReportVisitor', 'ReportVisitors', 'ReportVisits',
@@ -97,6 +97,7 @@ final class ReportCharacterizationHarness
         'action-group'              => 'ReportActionGroup',
         'action-groups'             => 'ReportActionGroups',
         'action-tracking'           => 'ReportActionTracking',
+        'attribution-history'       => 'ReportAttributionHistory',
         'ad-detail'                 => 'ReportAdDetail',
         'ad-type-detail'            => 'ReportAdTypeDetail',
         'ad-types'                  => 'ReportAdTypes',

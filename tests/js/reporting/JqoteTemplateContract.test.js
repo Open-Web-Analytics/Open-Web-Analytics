@@ -106,11 +106,23 @@ describe('jqote template contract', () => {
         expect(dead).toEqual([]);
     });
 
-    test('only the view that fetches from the shared file includes it', () => {
+    /**
+     * The shared file is gone. Its last template, `attributionCell`, moved into
+     * the named `attributionList` formatter when attribution-history became a
+     * definition -- a formatter and the markup it renders are one thing, and a
+     * template fetched by DOM id has nowhere to escape its fields.
+     *
+     * Every template that remains lives beside its consumer, which is what
+     * makes the two checks above sufficient on their own.
+     */
+    test('no shared template file, and nothing includes one', () => {
+        expect(fs.existsSync(path.join(repoRoot, 'modules/Base/templates/js_report_templates.php')))
+            .toBe(false);
+
         const includers = walk('modules/Base/templates')
-            .filter((rel) => /require_once\(\s*'js_report_templates\.php'/
+            .filter((rel) => /js_report_templates\.php/
                 .test(fs.readFileSync(path.join(repoRoot, rel), 'utf8')));
 
-        expect(includers).toEqual(['modules/Base/templates/report_dimensionalTrend.php']);
+        expect(includers).toEqual([]);
     });
 });

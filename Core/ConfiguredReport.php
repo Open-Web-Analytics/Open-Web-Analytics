@@ -52,6 +52,21 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated' );
 
     /**
+     * Column formatters a grid widget may name.
+     *
+     * A NAME, never a function. Formatters are implemented in the grid widget
+     * (jQuery.fn.fmatter in owa.resultSetExplorer.js) and a definition selects
+     * one; the definition cannot carry code, which is the gate on report
+     * configuration ever being user-authored. Same reason excludeColumns is a
+     * list of names rather than a fragment of script.
+     *
+     * Add a name here and implement it there, in that order -- an unknown name
+     * is refused, so a typo reads as an error rather than as an unformatted
+     * column.
+     */
+    const KNOWN_FORMATTERS = array( 'attributionList' );
+
+    /**
      * The renderer every configured report uses.
      *
      * Fixed here rather than named by each definition. It was a definition key
@@ -143,6 +158,32 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             if ( isset( $widget['excludeColumns'] ) && ! is_array( $widget['excludeColumns'] ) ) {
 
                 return sprintf( 'widget %s: "excludeColumns" must be a list of column names', $i );
+            }
+
+            /*
+             * `formatters` maps a column to the NAME of a formatter the widget
+             * implements. The value it replaces was a JavaScript function
+             * carried in a controller and echoed raw into the page.
+             */
+            if ( isset( $widget['formatters'] ) ) {
+
+                if ( ! is_array( $widget['formatters'] ) ) {
+
+                    return sprintf(
+                        'widget %s: "formatters" must map a column name to a formatter name', $i );
+                }
+
+                foreach ( $widget['formatters'] as $column => $formatter ) {
+
+                    if ( ! is_string( $formatter )
+                        || ! in_array( $formatter, self::KNOWN_FORMATTERS, true ) ) {
+
+                        return sprintf(
+                            'widget %s: "%s" is not a formatter this grid implements; it has %s',
+                            $i, is_string( $formatter ) ? $formatter : gettype( $formatter ),
+                            implode( ', ', self::KNOWN_FORMATTERS ) );
+                    }
+                }
             }
 
             /*

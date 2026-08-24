@@ -1089,6 +1089,72 @@ OWA.dataGrid.prototype = {
                 var name = options.colModel.realColName;
                 return rowdata[name].formatted_value;
                 //return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
+            },
+
+            /*
+             * The attribution history stored on a session: a JSON array of
+             * {md, sr, cn, ad, at, st}, oldest first.
+             *
+             * Named, not supplied. A report definition names this formatter and
+             * the widget resolves the name -- the definition never carries a
+             * function, which is the gate on it ever being user-authored. Same
+             * reason excludeColumns became a list of names.
+             *
+             * The markup was a jqote template fetched by DOM id
+             * (#attributionCell). It is here instead because a formatter and
+             * the markup it renders are one thing, and because this is the only
+             * place the fields can be escaped: jqote does not escape, and every
+             * one of these six values arrives from a URL parameter on a tracked
+             * page.
+             */
+            attributionList : function(cellvalue) {
+
+                // Cells arrive as {value, formatted_value}; the JSON is in .value.
+                var raw = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                        ? cellvalue.value
+                        : cellvalue;
+
+                if ( ! raw ) {
+                    return '(none)';
+                }
+
+                var list = raw;
+
+                if ( typeof list === 'string' ) {
+                    try {
+                        list = JSON.parse( list );
+                    } catch ( e ) {
+                        return '(none)';
+                    }
+                }
+
+                if ( ! Array.isArray( list ) || ! list.length ) {
+                    return '(none)';
+                }
+
+                var esc = function( v ) {
+                    return String( v )
+                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                        .replace( /'/g, '&#39;' );
+                };
+
+                var fields = [
+                    [ 'md', 'Medium' ], [ 'sr', 'Source' ], [ 'cn', 'Campaign' ],
+                    [ 'ad', 'Ad' ], [ 'at', 'Ad Type' ], [ 'st', 'Search Terms' ]
+                ];
+
+                return list.map( function( item, i ) {
+
+                    var parts = fields
+                        .filter( function( f ) { return item && item[ f[0] ]; } )
+                        .map( function( f ) {
+                            return '<i>' + f[1] + ':</i> ' + esc( item[ f[0] ] );
+                        } );
+
+                    return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
+                         + parts.join( ' -&gt; ' ) + '<br>';
+                } ).join( '' );
             }
 
         });

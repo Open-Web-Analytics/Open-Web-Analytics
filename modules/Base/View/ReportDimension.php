@@ -44,7 +44,6 @@ class ReportDimension extends \OWA\Core\View {
         $this->body->set('trendTitle', $this->get('trendTitle'));
         $this->body->set('constraints', $this->get('constraints'));
         $this->body->set('gridTitle', $this->get('gridTitle'));
-        $this->body->set('gridFormatters', $this->get('gridFormatters'));
         $this->body->set('excludeColumns', $this->get('excludeColumns'));
         $this->body->set_template('report_dimensionalTrend.php');
     }

@@ -385,7 +385,6 @@ function owa_compat_class_map(): array
         'owa_processFirstRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',
         'owa_processRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessRequest',
         'owa_pruneEventQueueArchivesCliController' => 'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',
-        'owa_reportAttributionHistoryController' => 'OWA\\Module\\Base\\Controller\\ReportAttributionHistory',
         'owa_reportCampaignsController' => 'OWA\\Module\\Base\\Controller\\ReportCampaigns',
         'owa_reportReferralDetailController' => 'OWA\\Module\\Base\\Controller\\ReportReferralDetail',
         'owa_sitesDeleteController' => 'OWA\\Module\\Base\\Controller\\SitesDelete',

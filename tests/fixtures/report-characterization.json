@@ -380,6 +380,41 @@
             ]
         }
     },
+    "ReportAttributionHistory": {
+        "params": [],
+        "diagnostics": [],
+        "config": {
+            "subview": "base.reportWidgets",
+            "title": "Attribution History",
+            "titleSuffix": "",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all mediums/source.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "formatters": {
+                        "latestAttributions": "attributionList"
+                    },
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "latestAttributions",
+                        "resultsPerPage": 25,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
+        }
+    },
     "ReportAvgOrderValue": {
         "params": [],
         "diagnostics": [],

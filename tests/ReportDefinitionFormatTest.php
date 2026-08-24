@@ -276,6 +276,60 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertArrayNotHasKey( 'deprecated', $d );
     }
 
+    /**
+     * A grid names a formatter; it never carries one.
+     *
+     * The value this replaces was a JavaScript function, set in a controller
+     * and echoed raw into the page. A name cannot be script, which is what
+     * lets a definition select a formatter without being able to become one --
+     * the same reasoning that made excludeColumns a list of names.
+     */
+    private function gridWith( $formatters ): array
+    {
+        return array(
+            'title'   => 'A Report',
+            'widgets' => array( array(
+                'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
+                'query' => array( 'dimensions' => 'pagePath' ),
+                'formatters' => $formatters,
+            ) ),
+        );
+    }
+
+    public function testAFormatterIsNamedByAKnownName(): void
+    {
+        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError(
+            $this->gridWith( array( 'latestAttributions' => 'attributionList' ) ) ) );
+    }
+
+    public function testAnUnknownFormatterNameIsRefused(): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError(
+            $this->gridWith( array( 'latestAttributions' => 'attributionTable' ) ) );
+
+        $this->assertStringContainsString( 'not a formatter this grid implements', $error,
+            'a typo must read as an error, not as an unformatted column' );
+        $this->assertStringContainsString( 'attributionList', $error,
+            'the error should say which names exist' );
+    }
+
+    public function testAFormatterThatIsNotAStringIsRefused(): void
+    {
+        $this->assertStringContainsString(
+            'not a formatter this grid implements',
+            \OWA\Core\ConfiguredReport::getDefinitionError(
+                $this->gridWith( array( 'latestAttributions' => array( 'function' => '...' ) ) ) ),
+            'the shape a function would arrive in must be refused' );
+    }
+
+    public function testFormattersMustBeAMapOfColumnToName(): void
+    {
+        $this->assertStringContainsString(
+            '"formatters" must map a column name to a formatter name',
+            \OWA\Core\ConfiguredReport::getDefinitionError(
+                $this->gridWith( 'attributionList' ) ) );
+    }
+
     /** A notice is interpolated like any other authored string. */
     public function testADeprecationNoticeInterpolates(): void
     {

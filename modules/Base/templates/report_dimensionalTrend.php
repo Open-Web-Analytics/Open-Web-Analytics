@@ -89,11 +89,6 @@
     dim.addLinkToColumn('<?php echo $view->dimensionLink['linkColumn'];?>', link, values);
     <?php endif; ?>
     
-    <?php if (isset($view->gridFormatters) && ! empty($view->gridFormatters) ):?>
-    <?php foreach ($view->gridFormatters as $col => $formatter): ?>
-    dim.options.grid.columnFormatters['<?php $view->out($col); ?>'] = <?php $view->out($formatter, false);?>;
-    <?php endforeach;?>
-    <?php endif;?>
     
     <?php if (!empty($view->excludeColumns)):?>
     dim.options.grid.excludeColumns = [<?php echo $view->excludeColumns;?>];
@@ -109,4 +104,3 @@
     
 </script>
 
-<?php require_once('js_report_templates.php');?>
