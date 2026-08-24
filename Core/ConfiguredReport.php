@@ -24,10 +24,10 @@ namespace OWA\Core;
  * 35 near-identical files unnecessary rather than what replaces them.
  *
  * It deliberately does NOT interpret the settings bag. Those keys are the
- * subview's vocabulary, not this class's: ReportSimpleDimensional copies eleven
- * of them into its template and would keep working if a twelfth appeared. A
- * whitelist here would mean adding a key in two places and getting a silently
- * empty widget when someone added it in one.
+ * subview's vocabulary, not this class's -- a subview reads what it needs and
+ * keeps working when a new key appears. A whitelist here would mean adding a
+ * key in two places and getting a silently empty widget when someone added it
+ * in one.
  *
  * Lives in Core rather than in the Base module because it is the machinery all
  * modules' reports run on -- and because a file named Report*.php under

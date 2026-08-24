@@ -301,10 +301,13 @@ final class ReportRenderHarness
             /*
              * Skip anything commented out.
              *
-             * report_traffic.php has a makeMetricBoxes call left behind under
+             * report_traffic.php (since deleted, when traffic became
+             * configuration) had a makeMetricBoxes call left behind under
              * `//`, and this recorded it as a live command -- so the fixture
-             * asserted behaviour that never runs, and a conversion would have
-             * been held to reproducing it.
+             * asserted behaviour that never runs, and the conversion would
+             * have been held to reproducing it. The template is gone; the
+             * guard stays, because the next recording can be misled the
+             * same way.
              */
             if ( self::isCommentedOut( $html, $receiverMatch[1] ) ) {
 

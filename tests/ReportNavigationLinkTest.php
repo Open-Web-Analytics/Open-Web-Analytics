@@ -174,7 +174,7 @@ final class ReportNavigationLinkTest extends TestCase
         // ...and must NOT match a subview, which is not a link.
         $this->assertDoesNotMatchRegularExpression(
             '/[\'"]do[\'"]\s*(?:=>|:)\s*[\'"](base\.report[A-Z][A-Za-z]*)[\'"]/',
-            "\$this->setSubview( 'base.reportSimpleDimensional' );" );
+            "\$this->setSubview( 'base.reportDimension' );" );
     }
 
     /**

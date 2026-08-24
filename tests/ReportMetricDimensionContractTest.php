@@ -12,6 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  *   ReportProducts          sort='actions'              -> grid returned no rows
  *   report_ecommerce.php    sort='transactionsRevenue-' -> jqGrid threw on null
+ *                           (template since deleted; the report is JSON now)
  *   ReportCampaigns         read the wrong setting      -> columns missing
  *
  * None of them produced a non-200, an exception, or a log line. A report with an
@@ -236,10 +237,32 @@ final class ReportMetricDimensionContractTest extends TestCase
             }
         }
 
-        $this->assertGreaterThan(300, $checked,
+        /*
+         * Derived from the corpus on disk, not a remembered number.
+         *
+         * The failure this guards is the parser quietly matching nothing: the
+         * suite stays green while checking almost none of what it claims to.
+         * Tying the floor to how many reports EXIST catches that -- a broken
+         * parser collapses `checked` while the files are all still there --
+         * and lets a deliberate deletion lower it without anyone editing a
+         * constant. A hardcoded floor cannot tell those two apart, and the
+         * only way to keep it passing is to nudge it down, which is exactly
+         * the edit that would hide the first case.
+         *
+         * Two names per report is the conservative claim: every report names
+         * at least one metric and one dimension.
+         */
+        $reports = glob(OWA_DIR . 'modules/*/reports/*.json');
+
+        $this->assertGreaterThanOrEqual(count($reports), count($scopes),
+            'fewer scopes than report definitions -- scope discovery has stopped '
+            . 'seeing reports it used to');
+
+        $this->assertGreaterThan(2 * count($reports), $checked,
             'literal metric/dimension references checked dropped sharply -- has the '
             . 'parser stopped matching, or have reports moved to runtime metric lists? '
-            . "checked=$checked across " . count($scopes) . ' scopes');
+            . "checked=$checked across " . count($scopes) . ' scopes, for '
+            . count($reports) . ' report definitions');
 
         $this->addToAssertionCount(1);
         fwrite(STDERR, sprintf(

@@ -34,6 +34,12 @@ use PHPUnit\Framework\TestCase;
  * a test go quiet. Anything referencing owa_reportPagesController and friends
  * gets a clear "class not found" instead of an alias to a class that would
  * render an empty report.
+ *
+ * RETIRED 2026-08-24, same reasoning: the 8 report VIEWS whose reports became
+ * widget configuration. Seven were bespoke views that did nothing but name a
+ * template; the eighth, ReportSimpleDimensional, was the generic subview they
+ * and the converted reports shared. Every report now renders through
+ * base.reportWidgets, so all eight and their templates are gone.
  */
 final class LegacyClassNameContractTest extends TestCase
 {
@@ -47,6 +53,14 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        'owa_reportTrafficView',
+        'owa_reportContentView',
+        'owa_reportCommerceView',
+        'owa_reportEcommerceView',
+        'owa_reportFeedsView',
+        'owa_reportTransactionsView',
+        'owa_reportActionTrackingView',
+        'owa_reportSimpleDimensionalView',
         'owa_reportActionDetailController',
         'owa_reportActionGroupController',
         'owa_reportActionGroupsController',

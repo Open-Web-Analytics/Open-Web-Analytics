@@ -161,7 +161,7 @@ final class ReportConfigEquivalenceTest extends TestCase
             'title'       => 'Web Pages',
             'titleSuffix' => '',
             'view'        => 'base.report',
-            'subview'     => 'base.reportSimpleDimensional',
+            'subview'     => 'base.reportWidgets',
             'settings'    => array( 'metrics' => 'pageViews' ),
         ) ) );
     }
