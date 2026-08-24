@@ -51,12 +51,12 @@ final class ReportRenderCharacterizationTest extends TestCase
             $cases[ $id ] = array( $id, $extra, null );
         }
 
-        // ...and the tabbed templates with a full tab set, which the test
-        // site's single tab never reaches.
-        foreach ( array_keys( Render::MULTI_TAB ) as $id ) {
+        // ...and the templates that repeat per metric set, with all three.
+        // A site with one metric set never reaches the repeat at all.
+        foreach ( array_keys( Render::MULTI_METRIC_SET ) as $id ) {
 
-            $cases[ $id . ' (3 tabs)' ] = array(
-                $id, Render::coveredReports()[ $id ] ?? array(), Render::TABS );
+            $cases[ $id . Render::MULTI_SUFFIX ] = array(
+                $id, Render::coveredReports()[ $id ] ?? array(), Render::METRIC_SETS );
         }
 
         return $cases;
@@ -65,16 +65,16 @@ final class ReportRenderCharacterizationTest extends TestCase
     /**
      * @dataProvider reportProvider
      */
-    public function testTheReportStillEmitsWhatItEmitted( string $id, array $extra, ?array $tabs ): void
+    public function testTheReportStillEmitsWhatItEmitted( string $id, array $extra, ?array $metricSets ): void
     {
         $this->requireDb();
 
-        $key = $id . ( $tabs === null ? '' : ' (3 tabs)' );
+        $key = $id . ( $metricSets === null ? '' : Render::MULTI_SUFFIX );
 
         $this->assertArrayHasKey( $key, self::$golden,
             "$id has no recorded render; regenerate deliberately and say why in the commit" );
 
-        $this->assertSame( self::$golden[ $key ], Render::snapshot( $id, $extra, $tabs ),
+        $this->assertSame( self::$golden[ $key ], Render::snapshot( $id, $extra, $metricSets ),
             "$id renders different queries or commands than it did. If this is the widget "
             . 'conversion, it is a regression; the point of the conversion is that this '
             . 'does not change.' );
@@ -89,8 +89,8 @@ final class ReportRenderCharacterizationTest extends TestCase
         $recorded = array_keys( self::$golden );
         $present  = array_keys( Render::coveredReports() );
 
-        foreach ( array_keys( Render::MULTI_TAB ) as $id ) {
-            $present[] = $id . ' (3 tabs)';
+        foreach ( array_keys( Render::MULTI_METRIC_SET ) as $id ) {
+            $present[] = $id . Render::MULTI_SUFFIX;
         }
 
         sort( $recorded );
@@ -220,9 +220,9 @@ final class ReportRenderCharacterizationTest extends TestCase
             'the container a result set renders into must be observable' );
 
         /*
-         * Repeated names must NOT collapse. The tabbed templates rebind the
-         * same variable once per tab, and keying by name recorded only the
-         * last -- two of six on a three-tab report, with the fixture looking
+         * Repeated names must NOT collapse. The templates rebind the same
+         * variable once per metric set, and keying by name recorded only the
+         * last -- two of six with three metric sets, and the fixture looked
          * complete.
          */
         $twice = "var d = new OWA.resultSetExplorer('a-grid');\nvar d = new OWA.resultSetExplorer('b-grid');";

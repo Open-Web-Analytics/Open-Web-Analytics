@@ -52,22 +52,25 @@ final class ReportRenderHarness
      * @return array
      */
     /**
-     * A tab set with all three kinds of tab in it.
+     * Three metric sets: the default one, e-commerce, and a goal group.
      *
-     * Tabs are not configuration: ReportController::pre() builds them per site
-     * from enableEcommerceReporting and the site's active goal groups. So the
-     * recording taken against the test site has exactly one tab, and the
-     * ecommerce and goal-group branches of the tabbed templates -- the loop
-     * that makes a tabbed report tabbed -- are not exercised by it at all.
+     * METRIC SETS, not "tabs". A tab is how the interface happens to present
+     * these today and is expected to change; what a report actually has is
+     * several metric sets over one dimension, and only one of them is being
+     * looked at. Naming the recording after the affordance would bake a
+     * transient UI decision into a fixture that outlives it -- and into the
+     * vocabulary of everything built on top.
      *
-     * Supplied directly rather than by creating a site with goals. The template
-     * consumes $view->tabs, so handing it a tab set drives precisely the code
-     * whose behaviour has to be preserved, deterministically, without writing
-     * rows to anyone's database or leaking a generated site id into the
-     * recording. How a SITE turns into a tab set is a different question with
-     * its own answer, and does not belong in a rendering fixture.
+     * They are not configuration either: ReportController::pre() derives them
+     * per site from enableEcommerceReporting and the site's active goal
+     * groups, so the test site has exactly one and the branches that matter
+     * are never reached by a recording taken against it.
+     *
+     * Written into $data['tabs'] below because that is what the CURRENT
+     * template calls the key. That name is the thing being replaced, not the
+     * thing being recorded.
      */
-    public const TABS = array(
+    public const METRIC_SETS = array(
         'site_usage' => array(
             'tab_label'        => 'Site Usage',
             'metrics'          => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
@@ -91,10 +94,10 @@ final class ReportRenderHarness
     /**
      * @param string $id a registered report id
      * @param array $extra request parameters beyond REQUEST (a detail report's own)
-     * @param array|null $tabs a tab set to render with, in place of the site's own
+     * @param array|null $metricSets metric sets to render with, in place of the site's own
      * @return array
      */
-    public static function snapshot( string $id, array $extra = array(), array $tabs = null ): array
+    public static function snapshot( string $id, array $extra = array(), array $metricSets = null ): array
     {
         $params = self::REQUEST + $extra + array( 'reportId' => $id );
 
@@ -105,10 +108,12 @@ final class ReportRenderHarness
             return array( 'error' => 'did not render: ' . ( $data['view'] ?? '(no view)' ) );
         }
 
-        if ( $tabs !== null ) {
+        if ( $metricSets !== null ) {
 
-            $data['tabs']      = $tabs;
-            $data['tabs_json'] = json_encode( $tabs );
+            // 'tabs' is the current template's name for this. The concept is a
+            // set of metric sets; the key goes when the templates do.
+            $data['tabs']      = $metricSets;
+            $data['tabs_json'] = json_encode( $metricSets );
         }
 
         /*
@@ -291,15 +296,18 @@ final class ReportRenderHarness
     }
 
     /**
-     * One representative tabbed report per tabbed template, rendered with a
-     * full tab set.
+     * One representative report per template that repeats itself per metric
+     * set, recorded with all three.
      *
-     * The per-tab loop lives in the TEMPLATE, not in the report, so pinning it
-     * once per template pins it for all 29 tabbed reports. Recording a
-     * three-tab variant of every one of them would triple the fixture to say
-     * the same thing 29 times.
+     * The repeat lives in the TEMPLATE, not in the report, so pinning it once
+     * per template pins it for all 29 reports that use those templates.
+     * Recording a variant of every one would triple the fixture to say the
+     * same thing 29 times.
      */
-    public const MULTI_TAB = array(
+    /** How a multi-metric-set snapshot is named in the fixture. */
+    public const MULTI_SUFFIX = ' (3 metric sets)';
+
+    public const MULTI_METRIC_SET = array(
         'browsers'    => 'base.reportDimension',
         'host-detail' => 'base.reportDimensionDetail',
     );
@@ -314,11 +322,11 @@ final class ReportRenderHarness
             $all[ $id ] = self::snapshot( $id, $extra );
         }
 
-        foreach ( self::MULTI_TAB as $id => $subview ) {
+        foreach ( self::MULTI_METRIC_SET as $id => $subview ) {
 
             $extra = self::coveredReports()[ $id ] ?? array();
 
-            $all[ $id . ' (3 tabs)' ] = self::snapshot( $id, $extra, self::TABS );
+            $all[ $id . self::MULTI_SUFFIX ] = self::snapshot( $id, $extra, self::METRIC_SETS );
         }
 
         return $all;

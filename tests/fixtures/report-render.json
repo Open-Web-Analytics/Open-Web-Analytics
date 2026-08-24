@@ -2724,7 +2724,7 @@
             "dim.refreshGrid"
         ]
     },
-    "browsers (3 tabs)": {
+    "browsers (3 metric sets)": {
         "subview": "base.reportDimension",
         "queries": [
             {
@@ -2862,7 +2862,7 @@
             "dim.refreshGrid"
         ]
     },
-    "host-detail (3 tabs)": {
+    "host-detail (3 metric sets)": {
         "subview": "base.reportDimensionDetail",
         "queries": [
             {
