@@ -1401,7 +1401,7 @@
         ]
     },
     "feeds": {
-        "subview": "base.reportFeeds",
+        "subview": "base.reportWidgets",
         "queries": [
             {
                 "var": "trendurl",
@@ -1440,9 +1440,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 2,
-            "urls": 0
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {

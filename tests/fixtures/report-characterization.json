@@ -751,17 +751,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "feedType",
             "metrics": "feedReaders,feedRequests,feedSubscriptions",
-            "resultsPerPage": 30,
-            "sort": "feedReaders-",
-            "subview": "base.reportFeeds",
+            "subview": "base.reportWidgets",
             "title": "Feeds",
             "titleSuffix": "",
-            "trendChartMetric": "feedReaders",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
             "view": "base.report",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "feedReaders",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "feedType",
+                        "resultsPerPage": 30,
+                        "sort": "feedReaders-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportGeolocation": {

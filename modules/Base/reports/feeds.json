@@ -1,13 +1,29 @@
 {
     "view": "base.report",
     "title": "Feeds",
-    "subview": "base.reportFeeds",
-    "settings": {
-        "dimensions": "feedType",
-        "metrics": "feedReaders,feedRequests,feedSubscriptions",
-        "resultsPerPage": 30,
-        "sort": "feedReaders-",
-        "trendChartMetric": "feedReaders",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds."
-    }
+    "subview": "base.reportWidgets",
+    "metrics": "feedReaders,feedRequests,feedSubscriptions",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
+            "chartMetric": "feedReaders"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "feedType",
+                "sort": "feedReaders-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
 }
