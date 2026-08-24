@@ -32,7 +32,6 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         return array_merge( array(
             'title'   => 'A Report',
-            'subview' => 'base.reportDimension',
         ), $extra );
     }
 
@@ -181,7 +180,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
     public static function refusedProvider(): array
     {
-        $base = array( 'title' => 'A Report', 'subview' => 'base.reportDimension' );
+        $base = array( 'title' => 'A Report' );
 
         return array(
             'params not an object' => array(
@@ -214,7 +213,6 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( array(
             'title'       => 'Host Detail: ',
             'titleSuffix' => '{hostName}',
-            'subview'     => 'base.reportDimensionDetail',
             'params'      => array( 'hostName' => array( 'lowercase' => false ) ),
             'settings'    => array(
                 'metrics'     => 'visits',
@@ -361,7 +359,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $controller->setDefinition( array(
             'title'   => 'Override',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits,pageViews',
             'widgets' => array(
                 array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
@@ -413,7 +410,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $controller->setDefinition( array(
             'title'   => 'Content',
-            'subview' => 'base.reportWidgets',
             'widgets' => array( array(
                 'type'  => 'report-links',
                 'title' => 'Content Reports',
@@ -449,7 +445,7 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testABadReportLinkIsRefused( array $widget, string $because ): void
     {
         $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title' => 'X', 'subview' => 'base.reportWidgets', 'widgets' => array( $widget ) ) );
+            'title' => 'X', 'widgets' => array( $widget ) ) );
 
         $this->assertNotSame( '', $error );
         $this->assertStringContainsString( $because, $error );
@@ -574,7 +570,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Browsers',
-            'subview' => 'base.reportWidgets',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'dim',
                 'container' => 'dimension-grid', 'query' => array( 'dimensions' => 'browserType' ) ) ),
         ), self::threeSets() );
@@ -616,7 +611,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Web Pages',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'pageViews,visits',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'dim',
                 'container' => 'dimension-grid', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
@@ -638,7 +632,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Browsers',
-            'subview' => 'base.reportWidgets',
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'all', 'container' => 'all-grid',
                        'query' => array( 'dimensions' => 'browserType' ) ),
@@ -675,7 +668,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Browsers',
-            'subview' => 'base.reportWidgets',
             'widgets' => array(
                 array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
                        'query' => array( 'dimensions' => 'date' ) ),
@@ -710,7 +702,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'R',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'title' => 'Transaction Roster', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
@@ -725,7 +716,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $definition = array(
             'title'   => 'R',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'title' => 'Transaction Roster', 'showTitle' => false,
@@ -751,7 +741,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'R',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'query' => array( 'dimensions' => 'pagePath' ) ) ),
@@ -787,7 +776,6 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $definition = array(
             'title'   => 'Constrained',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
@@ -864,7 +852,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $definition = array(
             'title'   => 'Constrained',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'params'  => array( 'host' => array() ),
             'widgets' => array(
@@ -904,7 +891,6 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
             'title'   => 'Constrained',
-            'subview' => 'base.reportWidgets',
             'widgets' => array(
                 array( 'type' => 'grid', 'constraints' => $constraints ),
             ),
@@ -946,7 +932,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Boxes',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array(
                 array( 'type' => 'metric-boxes', 'id' => 'fromsearch',
@@ -977,7 +962,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Pie',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array(
                 array( 'type' => 'pie', 'id' => 'medium', 'container' => 'traffic-sources',
@@ -1011,7 +995,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $definition = array(
             'title'   => 'Trend',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
         );
 
@@ -1039,7 +1022,6 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         return $this->renderedWith( array(
             'title'   => 'Links',
-            'subview' => 'base.reportWidgets',
             'metrics' => 'visits',
             'widgets' => array(
                 array( 'type' => 'report-links', 'title' => 'Related Reports',
@@ -1114,7 +1096,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
             $html = $this->renderedWith( array(
                 'title'   => 'One Title',
-                'subview' => 'base.reportWidgets',
                 'metrics' => 'visits',
                 'widgets' => array( $widget + array( 'title' => 'A Widget Title' ) ),
             ), array() );
@@ -1122,5 +1103,94 @@ final class ReportDefinitionFormatTest extends TestCase
             $this->assertSame( 1, substr_count( $html, 'A Widget Title' ),
                 "the $type widget renders its title more than once" );
         }
+    }
+
+    /**
+     * The renderer is fixed, not configured.
+     *
+     * `subview` was a definition key while the conversion was in progress and
+     * reports still rendered through a dozen different views. By the end all 53
+     * named the same one, so it was a required field with a single legal value.
+     *
+     * It is removed rather than defaulted because a definition is meant to
+     * become something a user can author, and a key naming a view can name any
+     * view in the tree. Widgets own their own rendering, which is what makes
+     * fixing it safe.
+     */
+    public function testAReportRendersThroughTheWidgetRendererWithoutSayingSo(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            array( 'siteId' => '1', 'period' => 'last_thirty_days' ) );
+
+        $controller->setDefinition( array(
+            'title'   => 'No Renderer Named',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+            ),
+        ) );
+
+        $data = (array) $controller->doAction();
+
+        $this->assertSame( \OWA\Core\ConfiguredReport::SUBVIEW, $data['subview'] ?? null,
+            'a definition that names no renderer must still reach the widget renderer' );
+    }
+
+    /** ...and a definition that tries to name one is refused. */
+    public function testADefinitionMayNotNameItsRenderer(): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
+            'title'   => 'Names A Renderer',
+            'subview' => 'base.reportWidgets',
+        ) );
+
+        $this->assertStringContainsString( 'subview', $error );
+    }
+
+    /**
+     * No definition on disk names one either.
+     *
+     * The refusal above covers a definition handed in at runtime; this covers
+     * the 53 in the tree, so a copied-and-pasted report cannot reintroduce the
+     * key and sit there refused until someone opens that report.
+     */
+    public function testNoShippedDefinitionNamesARenderer(): void
+    {
+        $named = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $definition = json_decode( (string) file_get_contents( $file ), true );
+
+            if ( isset( $definition['subview'] ) ) {
+
+                $named[] = basename( $file );
+            }
+        }
+
+        $this->assertSame( array(), $named,
+            'these definitions name a renderer, which the format no longer allows' );
+    }
+
+    /** Every shipped definition is one the format accepts. */
+    public function testEveryShippedDefinitionIsWellFormed(): void
+    {
+        $bad = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $error = \OWA\Core\ConfiguredReport::getDefinitionError(
+                (array) json_decode( (string) file_get_contents( $file ), true ) );
+
+            if ( $error !== '' ) {
+
+                $bad[ basename( $file ) ] = $error;
+            }
+        }
+
+        $this->assertSame( array(), $bad );
     }
 }

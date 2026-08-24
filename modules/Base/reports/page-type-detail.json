@@ -1,7 +1,6 @@
 {
     "title": "Page Type: ",
     "titleSuffix": "{pageType}",
-    "subview": "base.reportWidgets",
     "params": {
         "pageType": {}
     },

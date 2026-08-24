@@ -49,7 +49,22 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'metrics', 'widgets', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'params', 'metrics', 'widgets', 'settings' );
+
+    /**
+     * The renderer every configured report uses.
+     *
+     * Fixed here rather than named by each definition. It was a definition key
+     * while the conversion was in progress and reports still rendered through
+     * a dozen different subviews; all 53 named this one by the end, so it was
+     * a required field with exactly one legal value.
+     *
+     * Removing it is not only tidiness: a report definition is meant to become
+     * something a user can author, and a definition that names a renderer can
+     * point at any view in the tree. Widgets already own their own rendering,
+     * which is what makes this safe to fix.
+     */
+    const SUBVIEW = 'base.reportWidgets';
 
     /** @var array the decoded definition */
     private $definition = array();
@@ -79,7 +94,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             return 'a report definition must be an object';
         }
 
-        foreach ( array( 'title', 'subview' ) as $required ) {
+        foreach ( array( 'title' ) as $required ) {
 
             if ( ! isset( $definition[ $required ] ) || $definition[ $required ] === '' ) {
 
@@ -240,7 +255,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             $this->setView( $d['view'] );
         }
 
-        $this->setSubview( $d['subview'] );
+        $this->setSubview( self::SUBVIEW );
 
         /*
          * Widgets are a setting as far as the view is concerned -- the subview

@@ -1,7 +1,6 @@
 {
     "title": "Campaign: ",
     "titleSuffix": "{campaign}",
-    "subview": "base.reportWidgets",
     "params": {
         "campaign": {
             "lowercase": true

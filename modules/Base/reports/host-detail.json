@@ -1,7 +1,6 @@
 {
     "title": "Host Detail: ",
     "titleSuffix": "{hostName}",
-    "subview": "base.reportWidgets",
     "params": {
         "hostName": {}
     },

@@ -1,6 +1,5 @@
 {
     "title": "Average Order Value",
-    "subview": "base.reportWidgets",
     "metrics": "revenuePerTransaction",
     "widgets": [
         {

@@ -140,17 +140,18 @@ final class ReportConfigEquivalenceTest extends TestCase
     {
         return array(
             'not an object'   => array( 'pages', 'must be an object' ),
-            'no title'        => array( array( 'subview' => 'base.reportDimension' ), 'needs a "title"' ),
-            'empty title'     => array( array( 'title' => '', 'subview' => 'x' ), 'needs a "title"' ),
-            'no subview'      => array( array( 'title' => 'Pages' ), 'needs a "subview"' ),
+            'no title'        => array( array( 'metrics' => 'visits' ), 'needs a "title"' ),
+            'empty title'     => array( array( 'title' => '' ), 'needs a "title"' ),
+            'names a renderer' => array(
+                array( 'title' => 'Pages', 'subview' => 'base.reportWidgets' ), 'unknown key' ),
 
             // The failure this is really for: a key that looks right, does
             // nothing, and says nothing.
             'misspelled key'  => array(
-                array( 'title' => 'Pages', 'subview' => 'x', 'setings' => array() ), 'unknown key' ),
+                array( 'title' => 'Pages', 'setings' => array() ), 'unknown key' ),
 
             'settings scalar' => array(
-                array( 'title' => 'Pages', 'subview' => 'x', 'settings' => 'metrics' ), 'must be an object' ),
+                array( 'title' => 'Pages', 'settings' => 'metrics' ), 'must be an object' ),
         );
     }
 
@@ -161,7 +162,6 @@ final class ReportConfigEquivalenceTest extends TestCase
             'title'       => 'Web Pages',
             'titleSuffix' => '',
             'view'        => 'base.report',
-            'subview'     => 'base.reportWidgets',
             'settings'    => array( 'metrics' => 'pageViews' ),
         ) ) );
     }

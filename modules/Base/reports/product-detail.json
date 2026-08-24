@@ -1,7 +1,6 @@
 {
     "title": "Product Detail: ",
     "titleSuffix": "{productName}",
-    "subview": "base.reportWidgets",
     "params": {
         "productName": {}
     },

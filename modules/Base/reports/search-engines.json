@@ -1,6 +1,5 @@
 {
     "title": "Search Engines",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

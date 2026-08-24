@@ -1,7 +1,6 @@
 {
     "title": "Search Term Detail: ",
     "titleSuffix": "{referralSearchTerms}",
-    "subview": "base.reportWidgets",
     "params": {
         "referralSearchTerms": {}
     },

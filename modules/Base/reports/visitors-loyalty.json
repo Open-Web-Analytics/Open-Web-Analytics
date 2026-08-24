@@ -1,6 +1,5 @@
 {
     "title": "Visitor Loyalty",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

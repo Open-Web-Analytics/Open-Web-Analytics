@@ -1,6 +1,5 @@
 {
     "title": "Ad Performance",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

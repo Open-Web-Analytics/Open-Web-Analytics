@@ -1,6 +1,5 @@
 {
     "title": "Ad Types",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

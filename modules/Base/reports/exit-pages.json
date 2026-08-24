@@ -1,6 +1,5 @@
 {
     "title": "Exit Pages",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

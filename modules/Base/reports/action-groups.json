@@ -1,6 +1,5 @@
 {
     "title": "Action Groups",
-    "subview": "base.reportWidgets",
     "metrics": "actions,uniqueActions,actionsValue",
     "widgets": [
         {

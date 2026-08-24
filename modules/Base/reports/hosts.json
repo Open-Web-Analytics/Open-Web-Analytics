@@ -1,6 +1,5 @@
 {
     "title": "Host Names",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

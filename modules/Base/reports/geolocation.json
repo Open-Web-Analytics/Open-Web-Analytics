@@ -1,6 +1,5 @@
 {
     "title": "Visitor Geolocation",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

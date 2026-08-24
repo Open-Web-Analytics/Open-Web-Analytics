@@ -1,6 +1,5 @@
 {
     "title": "Products",
-    "subview": "base.reportWidgets",
     "metrics": "lineItemQuantity,lineItemRevenue",
     "widgets": [
         {

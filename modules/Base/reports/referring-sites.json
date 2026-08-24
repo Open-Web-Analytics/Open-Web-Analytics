@@ -1,6 +1,5 @@
 {
     "title": "Referrals",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

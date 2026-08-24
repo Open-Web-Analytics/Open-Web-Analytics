@@ -1,6 +1,5 @@
 {
     "title": "Days To Purchase",
-    "subview": "base.reportWidgets",
     "metrics": "transactions",
     "widgets": [
         {

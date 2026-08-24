@@ -1,7 +1,6 @@
 {
     "title": "Action Detail: ",
     "titleSuffix": "{actionGroup}: {actionName}",
-    "subview": "base.reportWidgets",
     "params": {
         "actionGroup": {},
         "actionName": {}

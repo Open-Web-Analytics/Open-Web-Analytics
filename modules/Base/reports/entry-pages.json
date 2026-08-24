@@ -1,6 +1,5 @@
 {
     "title": "Entry Pages",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

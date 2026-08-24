@@ -1,6 +1,5 @@
 {
     "title": "Content Overview",
-    "subview": "base.reportWidgets",
     "metrics": "visits,pageViews,bounceRate",
     "widgets": [
         {

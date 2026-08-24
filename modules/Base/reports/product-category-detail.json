@@ -1,7 +1,6 @@
 {
     "title": "Product Category: ",
     "titleSuffix": "{productCategory}",
-    "subview": "base.reportWidgets",
     "params": {
         "productCategory": {}
     },

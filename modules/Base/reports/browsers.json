@@ -1,6 +1,5 @@
 {
     "title": "Browser Types",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

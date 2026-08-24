@@ -1,6 +1,5 @@
 {
     "title": "Web Pages",
-    "subview": "base.reportWidgets",
     "metrics": "pageViews,visits,uniquePageViews",
     "widgets": [
         {

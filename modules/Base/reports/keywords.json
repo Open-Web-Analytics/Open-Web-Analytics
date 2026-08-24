@@ -1,7 +1,6 @@
 {
     "view": "base.report",
     "title": "Referring Search Terms",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

@@ -1,7 +1,6 @@
 {
     "view": "base.report",
     "title": "Referral Link Text",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

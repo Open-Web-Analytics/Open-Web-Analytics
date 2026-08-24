@@ -1,6 +1,5 @@
 {
     "title": "Actions",
-    "subview": "base.reportWidgets",
     "metrics": "actions,uniqueActions,actionsValue",
     "widgets": [
         {

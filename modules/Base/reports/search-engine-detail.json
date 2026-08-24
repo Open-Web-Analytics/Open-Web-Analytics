@@ -1,7 +1,6 @@
 {
     "title": "Search Engine: ",
     "titleSuffix": "{referralWebSite}",
-    "subview": "base.reportWidgets",
     "params": {
         "referralWebSite": {}
     },

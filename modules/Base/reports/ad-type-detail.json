@@ -1,7 +1,6 @@
 {
     "title": "Ad Type: ",
     "titleSuffix": "{adType}",
-    "subview": "base.reportWidgets",
     "params": {
         "adType": {
             "lowercase": true

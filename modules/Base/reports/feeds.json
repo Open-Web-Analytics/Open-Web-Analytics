@@ -1,7 +1,6 @@
 {
     "view": "base.report",
     "title": "Feeds",
-    "subview": "base.reportWidgets",
     "metrics": "feedReaders,feedRequests,feedSubscriptions",
     "widgets": [
         {

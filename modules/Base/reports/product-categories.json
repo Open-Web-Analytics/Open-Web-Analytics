@@ -1,6 +1,5 @@
 {
     "title": "Product SKUs",
-    "subview": "base.reportWidgets",
     "metrics": "lineItemQuantity,lineItemRevenue",
     "widgets": [
         {

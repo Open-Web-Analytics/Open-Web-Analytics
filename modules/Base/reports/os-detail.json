@@ -1,7 +1,6 @@
 {
     "title": "Operating System: ",
     "titleSuffix": "{osType}",
-    "subview": "base.reportWidgets",
     "params": {
         "osType": {}
     },

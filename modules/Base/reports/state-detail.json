@@ -1,7 +1,6 @@
 {
     "title": "State/Region: ",
     "titleSuffix": "{stateRegion}",
-    "subview": "base.reportWidgets",
     "params": {
         "country": {},
         "stateRegion": {}

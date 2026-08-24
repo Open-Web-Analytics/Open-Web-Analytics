@@ -1,6 +1,5 @@
 {
     "title": "Page Types",
-    "subview": "base.reportWidgets",
     "metrics": "visits,pageViews",
     "widgets": [
         {

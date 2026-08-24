@@ -1,6 +1,5 @@
 {
     "title": "Transactions Overview",
-    "subview": "base.reportWidgets",
     "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
     "widgets": [
         {

@@ -1,7 +1,6 @@
 {
     "title": "Ad: ",
     "titleSuffix": "{ad}",
-    "subview": "base.reportWidgets",
     "params": {
         "ad": {
             "lowercase": true

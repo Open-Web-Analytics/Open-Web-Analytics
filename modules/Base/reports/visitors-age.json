@@ -1,6 +1,5 @@
 {
     "title": "Visitor Age",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

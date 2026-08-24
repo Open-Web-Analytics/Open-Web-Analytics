@@ -1,6 +1,5 @@
 {
     "title": "Creative Performance",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

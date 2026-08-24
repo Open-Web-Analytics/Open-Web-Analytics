@@ -1,6 +1,5 @@
 {
     "title": "Visitor Recency",
-    "subview": "base.reportWidgets",
     "widgets": [
         {
             "type": "trend",

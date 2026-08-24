@@ -1,7 +1,6 @@
 {
     "title": "Source Detail: ",
     "titleSuffix": "{source}",
-    "subview": "base.reportWidgets",
     "params": {
         "source": {}
     },
