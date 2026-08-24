@@ -105,6 +105,40 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             return '"params" must be an object of parameter name => options';
         }
 
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $i => $widget ) {
+
+            if ( ! is_array( $widget ) || empty( $widget['type'] ) ) {
+
+                return sprintf( 'widget %s needs a "type"', $i );
+            }
+
+            if ( $widget['type'] !== 'report-links' ) {
+
+                continue;
+            }
+
+            /*
+             * A link with no target renders as an anchor to the report
+             * dispatcher with no id, which answers "no reportId was given" --
+             * a 400 where the author expected a report.
+             */
+            foreach ( (array) ( $widget['links'] ?? array() ) as $j => $link ) {
+
+                foreach ( array( 'reportId', 'label' ) as $required ) {
+
+                    if ( empty( $link[ $required ] ) ) {
+
+                        return sprintf( 'report link %s needs a "%s"', $j, $required );
+                    }
+                }
+            }
+
+            if ( empty( $widget['links'] ) ) {
+
+                return 'a report-links widget with no links renders an empty list';
+            }
+        }
+
         /*
          * An unconstrained detail report is the failure worth refusing: it
          * renders every row rather than the one asked for, which reads as a

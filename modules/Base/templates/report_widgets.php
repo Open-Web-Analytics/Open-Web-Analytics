@@ -54,6 +54,37 @@ $owa_widgets = (array) $view->widgets;
         <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
         </script>
 
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'report-links' ): ?>
+<?php
+    /*
+     * A list of links to other reports.
+     *
+     * Several reports are bespoke largely because they hand-write a block of
+     * these in HTML. Written as markup nobody can check them, and two on the
+     * Content report have pointed at the wrong report for years -- "Feeds"
+     * goes to Referral Link Text and "Entry & Exits" goes to Referrals. As
+     * data, a test can resolve every target.
+     *
+     * No query and no result-set explorer: this widget renders from its own
+     * declaration.
+     */
+?>
+<?php if ( ! empty( $owa_w['title'] ) ): ?>
+        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
+<?php endif; ?>
+        <div class="relatedReports">
+            <ul>
+<?php foreach ( (array) ( $owa_w['links'] ?? array() ) as $owa_link ): ?>
+                <li>
+                    <a href="<?php echo $view->makeLink( array(
+                        'do' => 'base.report', 'reportId' => $owa_link['reportId'] ), true ); ?>"><?php
+                        $view->out( $owa_link['label'] ); ?></a><?php
+                        if ( ! empty( $owa_link['description'] ) ): ?> - <?php $view->out( $owa_link['description'] ); endif; ?>
+                </li>
+<?php endforeach; ?>
+            </ul>
+        </div>
+
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'grid' ): ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 

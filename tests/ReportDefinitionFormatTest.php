@@ -388,4 +388,140 @@ final class ReportDefinitionFormatTest extends TestCase
             "a widget's own metrics must win over the report's, or an author cannot "
             . 'pin one widget while the rest follow the metric set' );
     }
+
+    /**
+     * A report-links widget renders its links, and nothing else.
+     *
+     * Several reports are bespoke largely because they hand-write a block of
+     * these in HTML. As markup they cannot be checked -- two links on the
+     * Content report have pointed at the wrong report for years ("Feeds" goes
+     * to Referral Link Text, "Entry & Exits" goes to Referrals). As data, the
+     * targets are checkable, which is the point of the widget.
+     */
+    public function testAReportLinksWidgetRendersItsLinks(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'rendering a report loads the site list and the period' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            array( 'siteId' => '1', 'period' => 'last_thirty_days' ) );
+
+        $controller->setDefinition( array(
+            'title'   => 'Content',
+            'subview' => 'base.reportWidgets',
+            'widgets' => array( array(
+                'type'  => 'report-links',
+                'title' => 'Content Reports',
+                'links' => array(
+                    array( 'reportId' => 'feeds', 'label' => 'Feeds',
+                           'description' => 'Feed subscribers and usage.' ),
+                    array( 'reportId' => 'entry-pages', 'label' => 'Entry Pages' ),
+                ),
+            ) ),
+        ) );
+
+        $html = (string) \OWA\Core\CoreAPI::displayView( (array) $controller->doAction() );
+
+        $this->assertStringContainsString( 'Content Reports', $html );
+
+        foreach ( array( 'feeds', 'entry-pages' ) as $id ) {
+
+            $this->assertMatchesRegularExpression(
+                '/reportId=' . preg_quote( $id, '/' ) . '\b/', $html,
+                "the widget did not link to '$id'" );
+        }
+
+        $this->assertStringContainsString( 'Feed subscribers and usage.', $html,
+            'a description should render beside its link' );
+
+        // It renders from its own declaration: no query, nothing to load.
+        $this->assertStringNotContainsString( 'report-linksurl', $html );
+    }
+
+    /**
+     * @dataProvider badLinkProvider
+     */
+    public function testABadReportLinkIsRefused( array $widget, string $because ): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
+            'title' => 'X', 'subview' => 'base.reportWidgets', 'widgets' => array( $widget ) ) );
+
+        $this->assertNotSame( '', $error );
+        $this->assertStringContainsString( $because, $error );
+    }
+
+    public static function badLinkProvider(): array
+    {
+        return array(
+            // A link with no target renders an anchor to the dispatcher with no
+            // id, which answers 400 where the author expected a report.
+            'no target' => array(
+                array( 'type' => 'report-links', 'links' => array( array( 'label' => 'Feeds' ) ) ),
+                'needs a "reportId"' ),
+
+            'no label' => array(
+                array( 'type' => 'report-links', 'links' => array( array( 'reportId' => 'feeds' ) ) ),
+                'needs a "label"' ),
+
+            'no links at all' => array(
+                array( 'type' => 'report-links', 'links' => array() ),
+                'renders an empty list' ),
+
+            'widget with no type' => array(
+                array( 'links' => array() ), 'needs a "type"' ),
+        );
+    }
+
+    /**
+     * Every report a definition links to must exist.
+     *
+     * The check hand-written HTML never had. No definition declares
+     * report-links yet -- this is what makes the bespoke conversions safe to
+     * do, and it fails the moment one names a report that is not registered.
+     */
+    public function testEveryDeclaredReportLinkResolves(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the registry loads modules' );
+        }
+
+        $registry = (array) \OWA\Core\CoreAPI::getReportRegistry();
+
+        $this->assertNotEmpty( $registry, 'no reports registered, so this proves nothing' );
+
+        $dangling = array();
+        $checked  = 0;
+
+        foreach ( (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+
+            $definition = json_decode( (string) file_get_contents( $file ), true );
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+                if ( ( $widget['type'] ?? '' ) !== 'report-links' ) {
+                    continue;
+                }
+
+                foreach ( (array) ( $widget['links'] ?? array() ) as $link ) {
+
+                    $checked++;
+
+                    if ( ! isset( $registry[ $link['reportId'] ] ) ) {
+                        $dangling[] = basename( $file ) . ' -> ' . $link['reportId'];
+                    }
+                }
+            }
+        }
+
+        $this->assertSame( array(), $dangling,
+            'these links point at reports that are not registered: ' . implode( ', ', $dangling ) );
+
+        // Positive control: the lookup must be capable of failing.
+        $this->assertArrayNotHasKey( 'definitely-not-a-report', $registry );
+    }
 }
