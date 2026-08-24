@@ -493,26 +493,72 @@ final class ReportDefinitionFormatTest extends TestCase
         $dangling = array();
         $checked  = 0;
 
-        foreach ( (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+        /*
+         * EVERY report a definition points at, not just the report-links ones.
+         *
+         * This used to skip any widget that was not report-links, which left
+         * two thirds of the targets unguarded: a grid's "View Full Report"
+         * link (`more`) and the per-row link a grid puts on a column
+         * (`link.template.reportId`). Those are the same kind of thing and fail
+         * the same way -- an anchor to the report dispatcher naming a report
+         * that does not exist, which answers 400 where the reader expected a
+         * report.
+         *
+         * It is also the exact defect that made this worth testing: two links
+         * on the Content report pointed at the wrong report for years, because
+         * as hand-written markup nobody could check them.
+         */
+        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
             foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
 
-                if ( ( $widget['type'] ?? '' ) !== 'report-links' ) {
-                    continue;
-                }
+                $targets = array();
 
                 foreach ( (array) ( $widget['links'] ?? array() ) as $link ) {
 
-                    $checked++;
+                    $targets['report-links'][] = $link['reportId'] ?? '';
+                }
 
-                    if ( ! isset( $registry[ $link['reportId'] ] ) ) {
-                        $dangling[] = basename( $file ) . ' -> ' . $link['reportId'];
+                if ( ! empty( $widget['more']['reportId'] ) ) {
+
+                    $targets['more'][] = $widget['more']['reportId'];
+                }
+
+                if ( ! empty( $widget['link']['template']['reportId'] ) ) {
+
+                    $targets['column link'][] = $widget['link']['template']['reportId'];
+                }
+
+                foreach ( $targets as $kind => $ids ) {
+
+                    foreach ( $ids as $id ) {
+
+                        $checked++;
+
+                        if ( ! isset( $registry[ $id ] ) ) {
+
+                            $dangling[] = sprintf( '%s %s -> %s', basename( $file ), $kind, $id );
+                        }
                     }
                 }
             }
         }
+
+        /*
+         * Derived from the definitions rather than remembered, so deleting a
+         * report lowers it and a parser that stopped matching does not.
+         */
+        $declared = 0;
+
+        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $declared += substr_count( (string) file_get_contents( $file ), '"reportId"' );
+        }
+
+        $this->assertSame( $declared, $checked,
+            'some declared reportId was not checked -- the walk has stopped seeing a kind of link' );
 
         $this->assertSame( array(), $dangling,
             'these links point at reports that are not registered: ' . implode( ', ', $dangling ) );
@@ -1347,5 +1393,50 @@ final class ReportDefinitionFormatTest extends TestCase
         }
 
         $this->assertSame( array(), $bad );
+    }
+
+    /**
+     * "View Full Report" belongs to any widget, not just a grid.
+     *
+     * All seven that declare one today are grids, so the block sitting inside
+     * the grid branch would look correct and pass every existing test -- while
+     * quietly making a `more` on a trend or a pie validate and then render
+     * nothing. That is the same "configuration that reads as nothing" that got
+     * gridTitle and settings.dimension deleted.
+     *
+     * @dataProvider widgetTypeProvider
+     */
+    public function testAnyWidgetCanCarryAMoreLink( array $widget ): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'More',
+            'metrics' => 'visits',
+            'widgets' => array( $widget + array(
+                'more' => array( 'reportId' => 'pages', 'label' => 'View Full Report' ) ) ),
+        ), array() );
+
+        $this->assertStringContainsString( 'owa_moreLinks', $html,
+            'this widget type dropped its "more" link' );
+    }
+
+    public static function widgetTypeProvider(): array
+    {
+        return array(
+            'trend' => array( array( 'type' => 'trend', 'id' => 't', 'container' => 'trend-chart',
+                'chartMetric' => 'visits',
+                'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ) ),
+            'grid' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'dimension-grid',
+                'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) ),
+            'pie' => array( array( 'type' => 'pie', 'id' => 'p', 'container' => 'pie',
+                'chartMetric' => 'visits',
+                'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) ),
+            'metric-boxes' => array( array( 'type' => 'metric-boxes', 'id' => 'm', 'container' => 'mb',
+                'title' => 'Boxes',
+                'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ) ),
+            'report-links' => array( array( 'type' => 'report-links', 'title' => 'R',
+                'links' => array( array( 'reportId' => 'pages', 'label' => 'Pages' ) ) ) ),
+        );
     }
 }

@@ -143,11 +143,12 @@ async function openReport(page, { reportId = 'browsers', period = 'last_thirty_d
 /**
  * Navigate to a report that renders WITHOUT tabs.
  *
- * The tabbed layout is a property of the subview, not of the report:
- * base.reportSimpleDimensional uses report_dimensionDetailNoTabs.php, so
- * #report-tabs never gains the .ui-tabs class and openReport() above would time
- * out waiting for a widget that is never built. That family is content-based
- * (Pages, Products, Transactions...) where a session tab would be meaningless.
+ * The control that gets drawn as tabs is the METRIC SET picker, and it only
+ * appears on a report that offers more than one way to measure its dimension.
+ * A report declaring its own `metrics` is measured one way, so #report-tabs
+ * never gains the .ui-tabs class and openReport() above would time out waiting
+ * for a widget that is never built. That family is content-based (Pages,
+ * Products, Transactions...) where a session tab would be meaningless.
  *
  * Waits for the grid instead, which is the load-bearing widget on those pages.
  */
@@ -157,6 +158,55 @@ async function openReportNoTabs(page, { reportId, period = 'last_thirty_days' } 
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.ui-jqgrid', { timeout: 20_000 });
+}
+
+/**
+ * Navigate to ANY configured report, without assuming what it draws.
+ *
+ * The two helpers above each wait for a widget that only some reports have --
+ * the metric-set control, or a grid. Neither can sweep the whole set: a report
+ * with no grid, or one measured a single way, would time out on a page that
+ * rendered perfectly.
+ *
+ * So this waits for the one element every configured report emits: a widget
+ * cell. If that never appears the renderer produced nothing, which is the
+ * failure worth reporting.
+ */
+async function openConfiguredReport(page, { reportId, period = 'last_thirty_days' } = {}) {
+    await page.goto(
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        { waitUntil: 'networkidle' }
+    );
+    await page.waitForSelector('.owa_reportGridItem', { timeout: 20_000 });
+}
+
+/**
+ * Every report that is configuration, read from disk.
+ *
+ * Enumerated rather than listed so a report added tomorrow is swept without
+ * anyone remembering to add it here -- which is the failure mode a hand-written
+ * list has.
+ */
+function configuredReportIds() {
+    const fs = require('fs');
+    const path = require('path');
+
+    const modules = path.join(__dirname, '..', '..', 'modules');
+    const ids = [];
+
+    for (const mod of fs.readdirSync(modules)) {
+        const dir = path.join(modules, mod, 'reports');
+        if (!fs.existsSync(dir)) {
+            continue;
+        }
+        for (const file of fs.readdirSync(dir)) {
+            if (file.endsWith('.json')) {
+                ids.push(file.slice(0, -'.json'.length));
+            }
+        }
+    }
+
+    return ids.sort();
 }
 
 module.exports = {
@@ -169,4 +219,6 @@ module.exports = {
     openReportNoTabs,
     openDashboard,
     openReport,
+    openConfiguredReport,
+    configuredReportIds,
 };
