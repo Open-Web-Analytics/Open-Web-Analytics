@@ -43,7 +43,7 @@ class ReportOs extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 25);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'osType',
-                'template'         => array('do' => 'base.reportOsDetail', 'osType' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'os-detail', 'osType' => '%s'),
                 'valueColumns'     => 'osType'));
         $this->set('trendChartMetric', 'visits');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.');

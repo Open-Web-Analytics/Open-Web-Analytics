@@ -60,8 +60,8 @@
                             <span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
                             <?php endif;?>
                             <BR>
-                            <span class="owa_moreLinks"><a href="<?php echo $view->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $view->get('site_id')),true);?>">Visitor Detail &raquo</a></span>
-                            &nbsp<span class="owa_moreLinks"><a href="<?php echo $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true);?>">Visit Detail &raquo</a></span>
+                            <span class="owa_moreLinks"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'visitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $view->get('site_id')),true);?>">Visitor Detail &raquo</a></span>
+                            &nbsp<span class="owa_moreLinks"><a href="<?php echo $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.report', 'reportId' => 'visit'), true);?>">Visit Detail &raquo</a></span>
                         </TD>
                     </table>
                 </td>
@@ -70,7 +70,7 @@
                     <?php $view->renderKpiInfobox(
 	                        '<i title="'. $row['browser_user_agent'] .'" class=" '. $view->choose_browser_icon($row['browser_type']) . '"></i>',
                         'Browser Type',
-                        $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
+                        $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.report', 'reportId' => 'visit'), true),
                         'visitSummaryKpi'
                     );?>
 
@@ -80,7 +80,7 @@
                     <?php $view->renderKpiInfobox(
                         $row['session_num_pageviews'],
                         'Pages Viewed',
-                        $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
+                        $view->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.report', 'reportId' => 'visit'), true),
                         'visitSummaryKpi'
                     );?>
 

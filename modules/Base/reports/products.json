@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "productName",
             "template": {
-                "do": "base.reportProductDetail",
+                "do": "base.report",
+                "reportId": "product-detail",
                 "productName": "%s"
             },
             "valueColumns": "productName"

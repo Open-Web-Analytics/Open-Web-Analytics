@@ -43,7 +43,7 @@ class ReportProductSkus extends \OWA\Core\ReportController {
         $this->set('sort', 'lineItemQuantity-');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array('linkColumn' => $dim_name,
-                                                'template' => array('do' => 'base.reportProductSkuDetail', $dim_name => '%s'),
+                                                'template' => array('do' => 'base.report', 'reportId' => 'product-sku-detail', $dim_name => '%s'),
                                                 'valueColumns' => $dim_name));
         $this->set('trendChartMetric', 'lineItemQuantity');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.');

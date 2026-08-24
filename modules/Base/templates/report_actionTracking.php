@@ -18,7 +18,7 @@
                                                                   'format' => 'json'), true);?>';
                                                                   
                 rsh = new OWA.resultSetExplorer('actionsByNameExplorer');
-                var link = '<?php echo $view->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s', 'actionGroup' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'action-detail', 'actionName' => '%s', 'actionGroup' => '%s'), true);?>';
                 rsh.addLinkToColumn('actionName', link, ['actionName', 'actionGroup']);
                 rsh.asyncQueue.push(['refreshGrid']);
                 rsh.load(aurl, 'grid');
@@ -39,7 +39,7 @@
                                                               'format' => 'json'), true);?>';
                                                               
                 rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
-                var link = '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'action-group', 'actionGroup' => '%s'), true);?>';
                 rshre.addLinkToColumn('actionGroup', link, ['actionGroup']);
                 rshre.asyncQueue.push(['refreshGrid']);
                 rshre.load(url);

@@ -9,4 +9,4 @@
 
 <p>Once your password has been setup you can login to OWA at the following URL:</p>
 
-<p><?php echo $view->makeAbsoluteLink(array('do' => 'base.reportDashboard'));?></p> 
+<p><?php echo $view->makeAbsoluteLink(array('do' => 'base.report', 'reportId' => 'dashboard'));?></p> 

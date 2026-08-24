@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "osType",
             "template": {
-                "do": "base.reportOsDetail",
+                "do": "base.report",
+                "reportId": "os-detail",
                 "osType": "%s"
             },
             "valueColumns": "osType"

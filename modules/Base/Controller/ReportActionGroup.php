@@ -46,7 +46,7 @@ class ReportActionGroup extends \OWA\Core\ReportController {
         $this->set('dimensionLink', array(
                 'linkColumn' => 'actionName',
                 'template' => array(
-                        'do' => 'base.reportActionDetail',
+                        'do' => 'base.report', 'reportId' => 'action-detail',
                         'actionName' => '%s',
                         'actionGroup' => '%s'),
                 'valueColumns' => array('actionName', 'actionGroup')));

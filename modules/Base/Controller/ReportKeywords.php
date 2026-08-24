@@ -44,7 +44,7 @@ class ReportKeywords extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'referralSearchTerms',
-                'template'         => array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'keyword-detail', 'referralSearchTerms' => '%s'),
                 'valueColumns'     => 'referralSearchTerms'));
         $this->set('constraints', 'medium==organic-search');
         $this->set('trendChartMetric', 'visits');

@@ -45,7 +45,7 @@ class ReportPages extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'pagePath',
-                'template'         => array('do' => 'base.reportDocument', 'pageUrl' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'document', 'pageUrl' => '%s'),
                 'valueColumns'     => 'pageUrl'));
         $this->set('trendChartMetric', 'pageViews');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.');

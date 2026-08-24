@@ -41,7 +41,7 @@
                 <div class="owa_reportSectionContent" style="min-width:500px;">
                     <div class="owa_reportSectionHeader">Latest Visits</div>
                     <?php include('report_latest_visits.php')?>
-                    <?php echo $view->makePaginationFromResultSet($view->visits, array('do' => 'base.reportVisitors'), true);?>
+                    <?php echo $view->makePaginationFromResultSet($view->visits, array('do' => 'base.report', 'reportId' => 'visitors'), true);?>
                 </div>
             </td>
             <td valign="top">
@@ -66,7 +66,7 @@ var burl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'module' => '
 	
 var bsh = new OWA.resultSetExplorer('latest-actions');
 	bsh.options.grid.showRowNumbers = false;
-	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'action-group', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
 	bsh.asyncQueue.push(['refreshGrid']);
 	bsh.load(burl);
 	OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('bsh', bsh);

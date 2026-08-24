@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "country",
             "template": {
-                "do": "base.reportCountryDetail",
+                "do": "base.report",
+                "reportId": "country-detail",
                 "country": "%s"
             },
             "valueColumns": "country"

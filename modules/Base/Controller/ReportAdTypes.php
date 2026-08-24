@@ -43,7 +43,7 @@ class ReportAdTypes extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'adType',
-                'template'         => array('do' => 'base.reportAdTypeDetail', 'adType' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'ad-type-detail', 'adType' => '%s'),
                 'valueColumns'     => 'adType'));
 
         $this->set('trendChartMetric', 'visits');

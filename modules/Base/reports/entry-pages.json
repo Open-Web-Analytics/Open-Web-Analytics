@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "entryPagePath",
             "template": {
-                "do": "base.reportDocument",
+                "do": "base.report",
+                "reportId": "document",
                 "pageUrl": "%s"
             },
             "valueColumns": "entryPageUrl"

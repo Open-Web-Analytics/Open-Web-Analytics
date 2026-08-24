@@ -7,7 +7,8 @@
         "dimensionLink": {
             "linkColumn": "referralLinkText",
             "template": {
-                "do": "base.reportReferralLinkTextDetail",
+                "do": "base.report",
+                "reportId": "referral-link-text-detail",
                 "referralLinkText": "%s"
             },
             "valueColumns": "referralLinkText"

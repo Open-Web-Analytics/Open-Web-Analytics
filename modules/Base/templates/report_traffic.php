@@ -32,7 +32,7 @@
                 <div class="owa_genericHorizonalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportSources'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'sources'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -45,7 +45,7 @@
                 <div class="owa_genericHorizonalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportKeywords'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'keywords'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -61,7 +61,7 @@
                 <div class="owa_genericHorizonalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referring-sites'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -71,16 +71,16 @@
                 <div class="relatedReports">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportSearchEngines'), true);?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'search-engines'), true);?>">Search Engines</a></span> - See which search engines your visitors are coming from.
                         </LI>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportKeywords'), true);?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'keywords'), true);?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
                         </LI>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportReferringSites'), true);?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referring-sites'), true);?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
                         </LI>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportAnchortext'), true);?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'anchortext'), true);?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
                         </LI>
                     </UL>
                 </div>
@@ -171,7 +171,7 @@ var topkeywordsurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'mo
                                                 'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId') . 'medium==organic-search')), true);?>';
 
 OWA.items.topkeywords = new OWA.resultSetExplorer('top-keywords');
-OWA.items.topkeywords.addLinkToColumn('referralSearchTerms', '<?php echo $view->makeLink(array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), true);?>', ['referralSearchTerms']);
+OWA.items.topkeywords.addLinkToColumn('referralSearchTerms', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'keyword-detail', 'referralSearchTerms' => '%s'), true);?>', ['referralSearchTerms']);
 OWA.items.topkeywords.asyncQueue.push(['refreshGrid']);
 OWA.items.topkeywords.load(topkeywordsurl);
 
@@ -184,7 +184,7 @@ var topreferralsurl = '<?php echo $view->makeApiLink(array('do' => 'reports', 'm
                                                 'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.topreferrals = new OWA.resultSetExplorer('top-referrals');
-OWA.items.topreferrals.addLinkToColumn('referralPageUrl', '<?php echo $view->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
+OWA.items.topreferrals.addLinkToColumn('referralPageUrl', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referral-detail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
 OWA.items.topreferrals.asyncQueue.push(['refreshGrid', 'top-referrals']);
 OWA.items.topreferrals.load(topreferralsurl);
 
@@ -198,7 +198,7 @@ var topsources_url = '<?php echo $view->makeApiLink(array(
         'constraints' => urlencode($view->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.topsources = new OWA.resultSetExplorer('top-sources');
-OWA.items.topsources.addLinkToColumn('source', '<?php echo $view->makeLink(array('do' => 'base.reportSourceDetail', 'source' => '%s' , 'medium' => '%s'),true);?>', ['source', 'medium']);
+OWA.items.topsources.addLinkToColumn('source', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'source-detail', 'source' => '%s' , 'medium' => '%s'),true);?>', ['source', 'medium']);
 OWA.items.topsources.asyncQueue.push(['refreshGrid', 'top-sources']);
 OWA.items.topsources.load(topsources_url);
 

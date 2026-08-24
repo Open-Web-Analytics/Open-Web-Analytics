@@ -2474,53 +2474,53 @@ class Module extends \OWA\Core\Module {
 
     function registerNavigation() {
 
-        $this->addNavigationSubGroup('Dashboard', 'base.reportDashboard', 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
+        $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
         //Ecommerce
-        $this->addNavigationSubGroup('Ecommerce', 'base.reportEcommerce', 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportRevenue', 'Revenue', 2);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportTransactions', 'Transactions', 3);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
+        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 4);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 5);
 
         //Content
-        $this->addNavigationSubGroup('Content', 'base.reportContent', 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPages', 'Top Pages', 1);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPageTypes', 'Page Types', 2);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportFeeds', 'Feeds', 7);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportExitPages', 'Exit Pages', 4);
+        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Top Pages', 1);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
 
 
         //Actions
-        $this->addNavigationSubGroup('Action Tracking', 'base.reportActionTracking', 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
-        $this->addNavigationLinkInSubGroup('Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
+        $this->addNavigationSubGroup('Action Tracking', $this->reportRef( 'action-tracking' ), 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
+        $this->addNavigationLinkInSubGroup('Action Tracking', $this->reportRef( 'action-groups' ), 'Action Groups', 2);
 
         //Visitors
-        $this->addNavigationSubGroup( 'Visitors', 'base.reportVisitors', 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportHosts', 'Domains', 2);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportOs', 'Operating Systems', 7);
+        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-recency' ), 'Visitor Recency', 4);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-age' ), 'Visitor Age', 5);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
 
         //Traffic
-        $this->addNavigationSubGroup('Traffic', 'base.reportTraffic', 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportKeywords', 'Search Terms', 1);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAds', 'Ad Performance', 6);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCreativePerformance', 'Creative Performance', 8);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
+        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'anchortext' ), 'Inbound Link Text', 2);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), 'Campaigns', 5);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), 'Ad Performance', 6);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ad-types' ), 'Ad Types', 7);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'attribution-history' ), 'Attribution History', 8);
 
         //Goals
-        $this->addNavigationSubGroup('Goals', 'base.reportGoals', 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
-        $this->addNavigationLinkInSubGroup( 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);
+        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
+        $this->addNavigationLinkInSubGroup( 'Goals', $this->reportRef( 'goal-funnel' ), 'Funnel Visualization', 1);
 
     }
 

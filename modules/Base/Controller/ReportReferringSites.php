@@ -44,7 +44,7 @@ class ReportReferringSites extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'referralPageTitle',
-                'template'         => array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'referral-detail', 'referralPageUrl' => '%s'),
                 'valueColumns'     => 'referralPageUrl'));
         $this->set('constraints', 'medium==referral');
         $this->set('trendChartMetric', 'visits');

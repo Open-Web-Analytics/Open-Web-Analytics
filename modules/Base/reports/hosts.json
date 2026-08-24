@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "hostName",
             "template": {
-                "do": "base.reportHostDetail",
+                "do": "base.report",
+                "reportId": "host-detail",
                 "hostName": "%s"
             },
             "valueColumns": "hostName"

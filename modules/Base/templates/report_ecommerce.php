@@ -47,7 +47,7 @@
                                                                   'format' => 'json'), true);?>';
 
                 rsh = new OWA.resultSetExplorer('productNameExplorer');
-                var link = '<?php echo $view->makeLink(array('do' => 'base.reportProductDetail', 'productName' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'product-detail', 'productName' => '%s'), true);?>';
                 rsh.addLinkToColumn('productName', link, ['productName']);
                 rsh.asyncQueue.push(['refreshGrid']);
                 rsh.load(aurl, 'grid');
@@ -71,7 +71,7 @@
                                                               'format' => 'json'), true);?>';
 
                 rshre = new OWA.resultSetExplorer('sourceExplorer');
-                var link = '<?php echo $view->makeLink(array('do' => 'base.reportSources', 'source' => '%s'), true);?>';
+                var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'sources', 'source' => '%s'), true);?>';
                 rshre.addLinkToColumn('source', link, ['source']);
                 rshre.asyncQueue.push(['refreshGrid']);
                 rshre.load(url);
@@ -86,20 +86,20 @@
                 <UL>
                     <li>
                         Item Level Analysis:
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportProducts'), true);?>">Product Name</a>,
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportProductSkus'), true);?>">SKU</a>,
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportProductCategories'), true);?>">Categories</a>
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'products'), true);?>">Product Name</a>,
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'product-skus'), true);?>">SKU</a>,
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'product-categories'), true);?>">Categories</a>
                     </li>
                     <li>
                         Purchase Patterns:
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportVisitsToPurchase'), true);?>">Visits to Purchase</a>,
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportDaysToPurchase'), true);?>">Days to Purchase</a>
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'visits-to-purchase'), true);?>">Visits to Purchase</a>,
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'days-to-purchase'), true);?>">Days to Purchase</a>
                     </li>
                     <li>
                         Sales Trends:
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportAvgOrderValue'), true);?>">Average Order Value</a>,
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportRevenue'), true);?>">Total Revenue</a>,
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportEcommerceConversionRate'), true);?>">Conversion Rate</a>
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'avg-order-value'), true);?>">Average Order Value</a>,
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'revenue'), true);?>">Total Revenue</a>,
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'ecommerce-conversion-rate'), true);?>">Conversion Rate</a>
                     </li>
                 </UL>
                 </div>

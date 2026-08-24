@@ -55,7 +55,7 @@ class ReportCampaigns extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'campaign',
-                'template'         => array('do' => 'base.reportCampaignDetail', 'campaign' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'campaign-detail', 'campaign' => '%s'),
                 'valueColumns'     => 'campaign'));
         $this->set('constraints', 'campaign!=null');
         $this->set('trendChartMetric', 'visits');

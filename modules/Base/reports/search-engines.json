@@ -6,7 +6,8 @@
         "dimensionLink": {
             "linkColumn": "referralWebSite",
             "template": {
-                "do": "base.reportSearchEngineDetail",
+                "do": "base.report",
+                "reportId": "search-engine-detail",
                 "referralWebSite": "%s"
             },
             "valueColumns": "referralWebSite"

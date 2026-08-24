@@ -44,7 +44,7 @@ class ReportCountryDetail extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'stateRegion',
-                'template'         => array('do' => 'base.reportStateDetail', 'stateRegion' => '%s', 'country' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'state-detail', 'stateRegion' => '%s', 'country' => '%s'),
                 'valueColumns'     => array('stateRegion', 'country')));
         $this->set('constraints', 'country=='.urlencode($value));
         $this->set('trendChartMetric', 'visits');

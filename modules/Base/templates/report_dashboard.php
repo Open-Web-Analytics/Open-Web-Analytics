@@ -16,7 +16,7 @@
 
                 <div id="top-pages" style="min-width:350px"></div>
                 <div class="owa_moreLinks">
-                    <a href="<?php echo $view->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
+                    <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'pages'), true);?>">View Full Report &raquo;</a>
                 </div>
             </div>
 
@@ -41,7 +41,7 @@
                 <div class="owa_genericHorizontalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'action-tracking'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -69,7 +69,7 @@
 
                 <div id="top-referers" style="min-width:350px"></div>
                 <div class="owa_moreLinks">
-                    <a href="<?php echo $view->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+                    <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referring-sites'), true);?>">View Full Report &raquo;</a>
                 </div>
                 <div id="test"></div>
             </div>
@@ -115,7 +115,7 @@
  
 	var bsh = new OWA.resultSetExplorer('actions-trend');
 	bsh.options.grid.showRowNumbers = false;
-	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.addLinkToColumn('actionGroup', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'action-group', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
 	bsh.asyncQueue.push(['refreshGrid']);
 	bsh.load(burl);
 	OWA.items['<?php echo $view->dom_id;?>'].registerResultSetExplorer('bsh', bsh);
@@ -134,7 +134,7 @@
 
     OWA.items.tc = new OWA.resultSetExplorer('top-pages');
     OWA.items.tc.options.grid.showRowNumbers = false;
-    OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'), true);?>', ['pageUrl']);
+    OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'document', 'pageUrl' => '%s'), true);?>', ['pageUrl']);
     OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
     OWA.items.tc.asyncQueue.push(['refreshGrid']);
     OWA.items.tc.load(tcurl);
@@ -156,7 +156,7 @@
 
     OWA.items.topreferers = new OWA.resultSetExplorer('top-referers');
     OWA.items.topreferers.options.grid.showRowNumbers = false;
-    OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $view->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
+    OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'referral-detail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
     OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
     OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
     OWA.items.topreferers.load(traurl);

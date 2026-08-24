@@ -46,7 +46,7 @@ class ReportAnchortext extends \OWA\Core\ReportController {
         $this->set('dimensionLink', array(
                 'linkColumn' => 'referralLinkText',
                 'template' => array(
-                        'do' => 'base.reportReferralLinkTextDetail',
+                        'do' => 'base.report', 'reportId' => 'referral-link-text-detail',
                         'referralLinkText' => '%s'),
                 'valueColumns' => 'referralLinkText'));
 

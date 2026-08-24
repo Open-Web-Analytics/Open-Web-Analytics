@@ -337,6 +337,59 @@ class Template extends TemplateEngine {
      *
      * @param array navigation array
      */
+    /**
+     * The link parameters a navigation entry points at.
+     *
+     * A `ref` was always a bare action name, which stopped being enough when
+     * every report started sharing one: `base.report` identifies the
+     * dispatcher, not the report. A ref may now be the whole parameter map
+     * instead -- array('do' => 'base.report', 'reportId' => 'pages') -- and a
+     * plain string still means what it always meant.
+     *
+     * @param array $link a nav link struct
+     * @return array parameters for makeLink()
+     */
+    public function navLinkParams( $link ) {
+
+        $ref = isset( $link['ref'] ) ? $link['ref'] : '';
+
+        return is_array( $ref ) ? $ref : array( 'do' => $ref );
+    }
+
+    /**
+     * Whether a navigation entry is the page being looked at.
+     *
+     * Comparing `ref` against params['do'] used to be enough. It is not any
+     * more: every report answers to do=base.report, so that test now says yes
+     * to EVERY report link at once and the whole Reports menu highlights.
+     *
+     * Every parameter the ref names has to match, which for a report means the
+     * reportId as well as the action.
+     *
+     * @param array $link a nav link struct
+     * @param array $params the current request parameters
+     * @return bool
+     */
+    public function navLinkIsCurrent( $link, $params ) {
+
+        $wanted = $this->navLinkParams( $link );
+
+        if ( empty( $wanted['do'] ) ) {
+
+            return false;
+        }
+
+        foreach ( $wanted as $key => $value ) {
+
+            if ( ! isset( $params[ $key ] ) || (string) $params[ $key ] !== (string) $value ) {
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     function makeNavigation($nav, $id = '', $class = '', $li_template = '<LI class="%s"><a href="%s">%s</a></LI>', $li_class = '') {
 
         $ul = sprintf('<UL id="%s" class="%s">', $id, $class);
@@ -347,7 +400,7 @@ class Template extends TemplateEngine {
 
             foreach($nav as $k => $v) {
 
-                $navigation .= sprintf($li_template, $li_class, $this->makeLink(array('do' => $v['ref']), true), $v['anchortext']);
+                $navigation .= sprintf($li_template, $li_class, $this->makeLink($this->navLinkParams($v), true), $v['anchortext']);
             }
 
             $navigation .= '</UL>';
@@ -366,12 +419,12 @@ class Template extends TemplateEngine {
                 $sub_nav = $this->makeNavigation($v['subgroup']);
 
                 $navigation .= sprintf('<LI class="drawer"><H2 class="nav_header"><a href="%s">%s</a></H2>%s</LI>',
-                                                $this->makeLink(array('do' => $v['ref']), true),
+                                                $this->makeLink($this->navLinkParams($v), true),
                                                 $v['anchortext'], $sub_nav);
             else:
 
                 $navigation .= sprintf('<LI class="drawer"><H2 class="nav_header"><a href="%s">%s</a></H2></LI>',
-                                                $this->makeLink(array('do' => $v['ref']), true),
+                                                $this->makeLink($this->navLinkParams($v), true),
                                                 $v['anchortext']);
 
             endif;

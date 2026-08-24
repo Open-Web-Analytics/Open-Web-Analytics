@@ -22,7 +22,7 @@
                 <div class="owa_genericHorizonalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportProducts'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'products'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -38,7 +38,7 @@
                 <div class="owa_genericHorizonalList owa_moreLinks">
                     <UL>
                         <LI>
-                            <a href="<?php echo $view->makeLink(array('do' => 'base.reportSources'), true);?>">View Full Report &raquo;</a>
+                            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'sources'), true);?>">View Full Report &raquo;</a>
                         </LI>
                     </UL>
                 </div>
@@ -76,7 +76,7 @@ var topproductsurl = '<?php echo $view->makeApiLink(array(
 
 OWA.items.topproducts = new OWA.resultSetExplorer('top-products');
 OWA.items.topproducts.addLinkToColumn('productName', '<?php echo $view->makeLink(array(
-                                                                        'do' => 'base.reportProductDetail',
+                                                                        'do' => 'base.report', 'reportId' => 'product-detail',
                                                                         'productName' => '%s'
                                                                     ),true);?>', ['productName']);
 OWA.items.topproducts.asyncQueue.push(['refreshGrid']);
@@ -93,7 +93,7 @@ var topsourcesurl = '<?php echo $view->makeApiLink(array(
 
 OWA.items.topsources = new OWA.resultSetExplorer('top-sources');
 OWA.items.topsources.addLinkToColumn('source', '<?php echo $view->makeLink(array(
-                                                                        'do' => 'base.reportSourceDetail',
+                                                                        'do' => 'base.report', 'reportId' => 'source-detail',
                                                                         'source' => '%s'
                                                                     ),true);?>', ['source']);
 OWA.items.topsources.asyncQueue.push(['refreshGrid']);

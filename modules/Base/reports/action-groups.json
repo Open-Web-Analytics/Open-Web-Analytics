@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "actionGroup",
             "template": {
-                "do": "base.reportActionGroup",
+                "do": "base.report",
+                "reportId": "action-group",
                 "actionGroup": "%s"
             },
             "valueColumns": "actionGroup"

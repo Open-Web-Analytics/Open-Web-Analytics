@@ -534,6 +534,24 @@ abstract class Module {
      * @param string       $id          stable, url-safe, human-meaningful
      * @param string|array $definition  json path relative to the module, or ['controller' => action]
      */
+    /**
+     * A navigation ref pointing at a report by its id.
+     *
+     * Reports are reached through one action now, so the action alone no longer
+     * says which report -- addNavigationLink('base.reportPages') has nothing to
+     * become except the pair.
+     *
+     *     $this->addNavigationLinkInSubGroup(
+     *         'Content', $this->reportRef( 'pages' ), 'Top Pages', 1 );
+     *
+     * @param string $id a registered report id
+     * @return array link parameters
+     */
+    protected function reportRef( $id ) {
+
+        return array( 'do' => 'base.report', 'reportId' => $id );
+    }
+
     protected function registerReport( $id, $definition ) {
 
         if ( is_string( $definition ) ) {

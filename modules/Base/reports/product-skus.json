@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "productSku",
             "template": {
-                "do": "base.reportProductSkuDetail",
+                "do": "base.report",
+                "reportId": "product-sku-detail",
                 "productSku": "%s"
             },
             "valueColumns": "productSku"

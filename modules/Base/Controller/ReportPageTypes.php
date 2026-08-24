@@ -43,7 +43,7 @@ class ReportPageTypes extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 25);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'pageType',
-                'template'         => array('do' => 'base.reportPageTypeDetail', 'pageType' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'page-type-detail', 'pageType' => '%s'),
                 'valueColumns'     => 'pageType'));
 
         $this->set('trendChartMetric', 'pageViews');

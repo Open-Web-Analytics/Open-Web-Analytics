@@ -60,7 +60,7 @@
                 <UL>
                     <li>
                         
-                        <a href="<?php echo $view->makeLink(array('do' => 'base.reportGoalFunnel'), true);?>">Conversion Funnels</a> - Goal funnel Visualization.
+                        <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'goal-funnel'), true);?>">Conversion Funnels</a> - Goal funnel Visualization.
                         
                     </li>
                 </UL>

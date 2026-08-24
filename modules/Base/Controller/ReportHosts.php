@@ -43,7 +43,7 @@ class ReportHosts extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'hostName',
-                'template'         => array('do' => 'base.reportHostDetail', 'hostName' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'host-detail', 'hostName' => '%s'),
                 'valueColumns'     => 'hostName'));
 
         $this->set('trendChartMetric', 'visits');

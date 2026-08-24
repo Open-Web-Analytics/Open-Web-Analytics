@@ -43,7 +43,7 @@ class ReportSearchEngines extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'referralWebSite',
-                'template'         => array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'search-engine-detail', 'referralWebSite' => '%s'),
                 'valueColumns'     => 'referralWebSite'));
         $this->set('constraints', 'medium==organic-search');
         $this->set('trendChartMetric', 'visits');

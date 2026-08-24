@@ -47,7 +47,7 @@ class ReportStateDetail extends \OWA\Core\ReportController {
 
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'stateRegion',
-                'template'         => array('do' => 'base.reportStateDetail', 'stateRegion' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'state-detail', 'stateRegion' => '%s'),
                 'valueColumns'     => 'stateRegion'));
 
 */

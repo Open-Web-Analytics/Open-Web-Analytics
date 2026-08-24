@@ -42,7 +42,7 @@ class ReportActionTracking extends \OWA\Core\ReportController {
         $this->set('sort', 'actions');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array('linkColumn' => 'pageTitle',
-                                                'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'),
+                                                'template' => array('do' => 'base.report', 'reportId' => 'document', 'pageUrl' => '%s'),
                                                 'valueColumns' => 'pageUrl'));
         $this->set('trendChartMetric', 'actions');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions performed on all pages.');

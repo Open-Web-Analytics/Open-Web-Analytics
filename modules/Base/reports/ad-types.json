@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "adType",
             "template": {
-                "do": "base.reportAdTypeDetail",
+                "do": "base.report",
+                "reportId": "ad-type-detail",
                 "adType": "%s"
             },
             "valueColumns": "adType"

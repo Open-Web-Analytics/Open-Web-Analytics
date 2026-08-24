@@ -52,7 +52,7 @@ var transactionsurl = '<?php echo $view->makeApiLink(array(
 
 OWA.items.transactions = new OWA.resultSetExplorer('transactions');
 OWA.items.transactions.addLinkToColumn('transactionId', '<?php echo $view->makeLink(array(
-                                                                        'do' => 'base.reportTransactionDetail',
+                                                                        'do' => 'base.report', 'reportId' => 'transaction-detail',
                                                                         'transactionId' => '%s'
                                                                     ),true);?>', ['transactionId']);
 OWA.items.transactions.options.grid.excludeColumns = ['timestamp'];

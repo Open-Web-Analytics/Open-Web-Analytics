@@ -7,7 +7,8 @@
         "dimensionLink": {
             "linkColumn": "referralSearchTerms",
             "template": {
-                "do": "base.reportKeywordDetail",
+                "do": "base.report",
+                "reportId": "keyword-detail",
                 "referralSearchTerms": "%s"
             },
             "valueColumns": "referralSearchTerms"

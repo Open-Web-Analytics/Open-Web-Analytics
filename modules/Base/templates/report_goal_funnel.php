@@ -32,11 +32,11 @@
 
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'domstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
                     </li>
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomClicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
                     </li>
                 </ul>
             </div>

@@ -69,11 +69,11 @@
                     </P>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomstreams', 'document_id' => $view->document->get('id')), true);?>">Domstreams</a></span> - mouse movement recordings.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'domstreams', 'document_id' => $view->document->get('id')), true);?>">Domstreams</a></span> - mouse movement recordings.
                     </P>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.reportDomClicks', 'document_id' => $view->document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'document_id' => $view->document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
                     </P>
                 </div>
             </TD>
@@ -93,7 +93,7 @@
                                                       'format' => 'json'), true);?>';
 
         var trshre = new OWA.resultSetExplorer('nextpages');
-        var link = '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+        var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'), true);?>';
         trshre.addLinkToColumn('pagePath', link, ['pagePath']);
         trshre.asyncQueue.push(['refreshGrid']);
         trshre.load(trurl);
@@ -107,7 +107,7 @@
                                                       'format' => 'json'), true);?>';
 
         var prshre = new OWA.resultSetExplorer('priorpages');
-        var link = '<?php echo $view->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+        var link = '<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'), true);?>';
         prshre.addLinkToColumn('priorPagePath', link, ['priorPagePath']);
         prshre.asyncQueue.push(['refreshGrid']);
         prshre.load(prurl);
@@ -121,7 +121,7 @@
                                                     'format'            => 'json'], true);?>';
 
         var vrshre = new OWA.resultSetExplorer('pagevisitors');
-        var link = '<?php echo $view->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
+        var link = '<?php echo $view->makeLink(['do' => 'base.report', 'reportId' => 'visitor', 'visitorId' => '%s'], true);?>';
         vrshre.addLinkToColumn('visitorId', link, ['visitorId']);
         vrshre.asyncQueue.push(['refreshGrid']);
         vrshre.load(vrurl);

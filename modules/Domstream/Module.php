@@ -108,7 +108,7 @@ class Module extends \OWA\Core\Module {
      */
     function registerNavigation() {
 
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportDomstreams', 'Domstreams', 5);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), 'Domstreams', 5);
     }
 
     /**

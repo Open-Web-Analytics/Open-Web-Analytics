@@ -6,7 +6,7 @@
     <?php foreach ($view->visitors as $visitor):?>
     <TR>
         <TD><img src="<?php echo $view->makeImageLink('base/i/user_icon_small.gif');?>" align="top">
-            <a href="<?php echo $view->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id']));?>">
+            <a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'visitor', 'visitor_id' => $visitor['visitor_id']));?>">
             <?php if(!empty($visitor['user_name'])):
                 $view->out( $visitor['user_name'] );
             elseif(!empty($visitor['user_email'])):

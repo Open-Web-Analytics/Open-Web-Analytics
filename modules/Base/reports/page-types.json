@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "pageType",
             "template": {
-                "do": "base.reportPageTypeDetail",
+                "do": "base.report",
+                "reportId": "page-type-detail",
                 "pageType": "%s"
             },
             "valueColumns": "pageType"

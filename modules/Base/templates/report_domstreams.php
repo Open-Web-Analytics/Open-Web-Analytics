@@ -66,7 +66,7 @@
     </tbody>
 </table>
 
-<?php echo $view->makePaginationFromResultSet($d2, array('do' => 'base.reportDomstreams'), true);?>
+<?php echo $view->makePaginationFromResultSet($d2, array('do' => 'base.report', 'reportId' => 'domstreams'), true);?>
 
 <?php else:?>
     There are no Dom Streams this time period.

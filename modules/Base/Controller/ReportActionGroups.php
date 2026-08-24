@@ -42,7 +42,7 @@ class ReportActionGroups extends \OWA\Core\ReportController {
         $this->set('sort', 'actions-');
         $this->set('resultsPerPage', 25);
         $this->set('dimensionLink', array('linkColumn' => 'actionGroup',
-                                                'template' => array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'),
+                                                'template' => array('do' => 'base.report', 'reportId' => 'action-group', 'actionGroup' => '%s'),
                                                 'valueColumns' => 'actionGroup'));
         $this->set('trendChartMetric', 'actions');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.');

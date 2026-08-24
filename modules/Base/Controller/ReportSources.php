@@ -43,7 +43,7 @@ class ReportSources extends \OWA\Core\ReportController {
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'source',
                 'template'         => array(
-                        'do'         => 'base.reportSourceDetail',
+                        'do'         => 'base.report', 'reportId' => 'source-detail',
                         'source'     => '%s'),
                 'valueColumns'     => 'source'
         ));

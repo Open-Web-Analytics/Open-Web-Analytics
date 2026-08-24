@@ -22,7 +22,7 @@
         <dd>
             <a href="<?php $view->out( $view->makeLink(
             array(
-                'do' => 'base.reportSourceDetail',
+                'do' => 'base.report', 'reportId' => 'source-detail',
                 'source' => urlencode($row['source']),
                 'site_id' => $view->get('site_id')
                 ),
@@ -40,7 +40,7 @@
         <dd>
             <a href="<?php $view->out( $view->makeLink(
             array(
-                'do' => 'base.reportKeywordDetail',
+                'do' => 'base.report', 'reportId' => 'keyword-detail',
                 'referralSearchTerms' => urlencode($row['search_term']),
                 'site_id' => $view->get('site_id')
                 ),

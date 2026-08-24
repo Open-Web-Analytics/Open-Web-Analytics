@@ -7,7 +7,20 @@
         <LI>
             <div class="owa_admin_nav_topmenu">
 
-                <div class="owa_admin_nav_topmenu_item <?php if ($l['ref'] === $view->params['do'] || ( array_key_exists('subgroup', $l) && in_array( $view->params['do'], array_column($l['subgroup'], 'ref')))) { echo ' owa_current';} ?>">
+                <div class="owa_admin_nav_topmenu_item <?php
+                    // Every report answers to do=base.report, so a link is only
+                    // "current" when its reportId matches too -- comparing the
+                    // action alone now highlights every report at once.
+                    $owa_current = $view->navLinkIsCurrent( $l, $view->params );
+
+                    if ( ! $owa_current && array_key_exists( 'subgroup', $l ) ) {
+                        foreach ( $l['subgroup'] as $owa_sub ) {
+                            if ( $view->navLinkIsCurrent( $owa_sub, $view->params ) ) { $owa_current = true; break; }
+                        }
+                    }
+
+                    if ( $owa_current ) { echo ' owa_current'; }
+                    ?>">
                     <span class="owa_admin_nav_topmenu_toggle 
                     
                     <?php 
@@ -20,7 +33,7 @@
 			      
                     ?>"></span>
               
-                    <span><i class="owa_nav_icon <?php $view->out( $l['icon_class']); ?>"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink(array('do' => $l['ref']), true);?>"><?php echo $l['anchortext'];?></a></span>
+                    <span><i class="owa_nav_icon <?php $view->out( $l['icon_class']); ?>"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink($view->navLinkParams($l), true);?>"><?php echo $l['anchortext'];?></a></span>
                     
 
                 </div>
@@ -33,7 +46,7 @@
                         <?php if (!$view->getCurrentUser()->isCapable($sgl['priviledge'], $view->currentSiteId)) continue; ?>
                         <LI>
                             <div class="owa_admin_nav_subgroup_item ">
-                                <a href="<?php echo $view->makeLink(array('do' => $sgl['ref']), true);?>"><?php echo $sgl['anchortext'];?></a>
+                                <a href="<?php echo $view->makeLink($view->navLinkParams($sgl), true);?>"><?php echo $sgl['anchortext'];?></a>
                             </div>
 
                         </LI>

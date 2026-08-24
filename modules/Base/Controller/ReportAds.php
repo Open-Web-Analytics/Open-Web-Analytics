@@ -43,7 +43,7 @@ class ReportAds extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'ad',
-                'template'         => array('do' => 'base.reportAdDetail', 'ad' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'ad-detail', 'ad' => '%s'),
                 'valueColumns'     => 'ad'));
         $this->set('constraints', 'ad!=null');
         $this->set('trendChartMetric', 'visits');

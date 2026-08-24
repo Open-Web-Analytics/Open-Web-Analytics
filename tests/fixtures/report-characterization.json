@@ -31,7 +31,8 @@
                 "template": {
                     "actionGroup": "%s",
                     "actionName": "%s",
-                    "do": "base.reportActionDetail"
+                    "do": "base.report",
+                    "reportId": "action-detail"
                 },
                 "valueColumns": [
                     "actionName",
@@ -59,7 +60,8 @@
                 "linkColumn": "actionGroup",
                 "template": {
                     "actionGroup": "%s",
-                    "do": "base.reportActionGroup"
+                    "do": "base.report",
+                    "reportId": "action-group"
                 },
                 "valueColumns": "actionGroup"
             },
@@ -82,8 +84,9 @@
             "dimensionLink": {
                 "linkColumn": "pageTitle",
                 "template": {
-                    "do": "base.reportDocument",
-                    "pageUrl": "%s"
+                    "do": "base.report",
+                    "pageUrl": "%s",
+                    "reportId": "document"
                 },
                 "valueColumns": "pageUrl"
             },
@@ -142,7 +145,8 @@
                 "linkColumn": "adType",
                 "template": {
                     "adType": "%s",
-                    "do": "base.reportAdTypeDetail"
+                    "do": "base.report",
+                    "reportId": "ad-type-detail"
                 },
                 "valueColumns": "adType"
             },
@@ -168,7 +172,8 @@
                 "linkColumn": "ad",
                 "template": {
                     "ad": "%s",
-                    "do": "base.reportAdDetail"
+                    "do": "base.report",
+                    "reportId": "ad-detail"
                 },
                 "valueColumns": "ad"
             },
@@ -193,8 +198,9 @@
             "dimensionLink": {
                 "linkColumn": "referralLinkText",
                 "template": {
-                    "do": "base.reportReferralLinkTextDetail",
-                    "referralLinkText": "%s"
+                    "do": "base.report",
+                    "referralLinkText": "%s",
+                    "reportId": "referral-link-text-detail"
                 },
                 "valueColumns": "referralLinkText"
             },
@@ -257,7 +263,8 @@
                 "linkColumn": "browserType",
                 "template": {
                     "browserType": "%s",
-                    "do": "base.reportBrowserDetail"
+                    "do": "base.report",
+                    "reportId": "browser-detail"
                 },
                 "valueColumns": "browserType"
             },
@@ -322,7 +329,8 @@
                 "linkColumn": "stateRegion",
                 "template": {
                     "country": "%s",
-                    "do": "base.reportStateDetail",
+                    "do": "base.report",
+                    "reportId": "state-detail",
                     "stateRegion": "%s"
                 },
                 "valueColumns": [
@@ -349,7 +357,8 @@
                 "linkColumn": "ad",
                 "template": {
                     "ad": "%s",
-                    "do": "base.reportAdDetail"
+                    "do": "base.report",
+                    "reportId": "ad-detail"
                 },
                 "valueColumns": "ad"
             },
@@ -418,8 +427,9 @@
             "dimensionLink": {
                 "linkColumn": "entryPagePath",
                 "template": {
-                    "do": "base.reportDocument",
-                    "pageUrl": "%s"
+                    "do": "base.report",
+                    "pageUrl": "%s",
+                    "reportId": "document"
                 },
                 "valueColumns": "entryPageUrl"
             },
@@ -443,8 +453,9 @@
             "dimensionLink": {
                 "linkColumn": "exitPagePath",
                 "template": {
-                    "do": "base.reportDocument",
-                    "pageUrl": "%s"
+                    "do": "base.report",
+                    "pageUrl": "%s",
+                    "reportId": "document"
                 },
                 "valueColumns": "exitPageUrl"
             },
@@ -487,7 +498,8 @@
                 "linkColumn": "country",
                 "template": {
                     "country": "%s",
-                    "do": "base.reportCountryDetail"
+                    "do": "base.report",
+                    "reportId": "country-detail"
                 },
                 "valueColumns": "country"
             },
@@ -526,8 +538,9 @@
             "dimensionLink": {
                 "linkColumn": "hostName",
                 "template": {
-                    "do": "base.reportHostDetail",
-                    "hostName": "%s"
+                    "do": "base.report",
+                    "hostName": "%s",
+                    "reportId": "host-detail"
                 },
                 "valueColumns": "hostName"
             },
@@ -569,8 +582,9 @@
             "dimensionLink": {
                 "linkColumn": "referralSearchTerms",
                 "template": {
-                    "do": "base.reportKeywordDetail",
-                    "referralSearchTerms": "%s"
+                    "do": "base.report",
+                    "referralSearchTerms": "%s",
+                    "reportId": "keyword-detail"
                 },
                 "valueColumns": "referralSearchTerms"
             },
@@ -593,8 +607,9 @@
             "dimensionLink": {
                 "linkColumn": "osType",
                 "template": {
-                    "do": "base.reportOsDetail",
-                    "osType": "%s"
+                    "do": "base.report",
+                    "osType": "%s",
+                    "reportId": "os-detail"
                 },
                 "valueColumns": "osType"
             },
@@ -653,8 +668,9 @@
             "dimensionLink": {
                 "linkColumn": "pageType",
                 "template": {
-                    "do": "base.reportPageTypeDetail",
-                    "pageType": "%s"
+                    "do": "base.report",
+                    "pageType": "%s",
+                    "reportId": "page-type-detail"
                 },
                 "valueColumns": "pageType"
             },
@@ -678,8 +694,9 @@
             "dimensionLink": {
                 "linkColumn": "pagePath",
                 "template": {
-                    "do": "base.reportDocument",
-                    "pageUrl": "%s"
+                    "do": "base.report",
+                    "pageUrl": "%s",
+                    "reportId": "document"
                 },
                 "valueColumns": "pageUrl"
             },
@@ -704,8 +721,9 @@
             "dimensionLink": {
                 "linkColumn": "productCategory",
                 "template": {
-                    "do": "base.reportProductCategoryDetail",
-                    "productCategory": "%s"
+                    "do": "base.report",
+                    "productCategory": "%s",
+                    "reportId": "product-category-detail"
                 },
                 "valueColumns": "productCategory"
             },
@@ -779,8 +797,9 @@
             "dimensionLink": {
                 "linkColumn": "productSku",
                 "template": {
-                    "do": "base.reportProductSkuDetail",
-                    "productSku": "%s"
+                    "do": "base.report",
+                    "productSku": "%s",
+                    "reportId": "product-sku-detail"
                 },
                 "valueColumns": "productSku"
             },
@@ -803,8 +822,9 @@
             "dimensionLink": {
                 "linkColumn": "productName",
                 "template": {
-                    "do": "base.reportProductDetail",
-                    "productName": "%s"
+                    "do": "base.report",
+                    "productName": "%s",
+                    "reportId": "product-detail"
                 },
                 "valueColumns": "productName"
             },
@@ -848,8 +868,9 @@
             "dimensionLink": {
                 "linkColumn": "referralPageTitle",
                 "template": {
-                    "do": "base.reportReferralDetail",
-                    "referralPageUrl": "%s"
+                    "do": "base.report",
+                    "referralPageUrl": "%s",
+                    "reportId": "referral-detail"
                 },
                 "valueColumns": "referralPageUrl"
             },
@@ -910,8 +931,9 @@
             "dimensionLink": {
                 "linkColumn": "referralWebSite",
                 "template": {
-                    "do": "base.reportSearchEngineDetail",
-                    "referralWebSite": "%s"
+                    "do": "base.report",
+                    "referralWebSite": "%s",
+                    "reportId": "search-engine-detail"
                 },
                 "valueColumns": "referralWebSite"
             },
@@ -951,7 +973,8 @@
             "dimensionLink": {
                 "linkColumn": "source",
                 "template": {
-                    "do": "base.reportSourceDetail",
+                    "do": "base.report",
+                    "reportId": "source-detail",
                     "source": "%s"
                 },
                 "valueColumns": "source"

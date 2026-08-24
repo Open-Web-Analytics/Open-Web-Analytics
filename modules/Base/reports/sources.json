@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "source",
             "template": {
-                "do": "base.reportSourceDetail",
+                "do": "base.report",
+                "reportId": "source-detail",
                 "source": "%s"
             },
             "valueColumns": "source"

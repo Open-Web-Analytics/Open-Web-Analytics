@@ -20,14 +20,14 @@
 
                 <td valign="" style="min-width:300px;">
                     <span style="font-size:14px; font-weight:bold;">
-                        <a href="<?php echo $view->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $view->out( $site->get('name') );?></a>
+                        <a href="<?php echo $view->makeLink( array('do' => 'base.report', 'reportId' => 'dashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $view->out( $site->get('name') );?></a>
                     </span><BR>
                     <?php if ($site->get('description') != ''):?>
                     <span class="info_text"><?php $view->out( $site->get('description') );?></span><BR>
                     <?php endif;?>
                     <span class="externalUrl"><?php $view->out( $site->get('domain') );?></span><BR><BR>
                     <div>
-                    <a href="<?php echo $view->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a>
+                    <a href="<?php echo $view->makeLink( array('do' => 'base.report', 'reportId' => 'dashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a>
                     <?php if ($view->getCurrentUser()->isCapable('edit_sites')): ?>
                         | <a href="<?php echo $view->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit Profile</a>
                         | <a href="<?php echo $view->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a>

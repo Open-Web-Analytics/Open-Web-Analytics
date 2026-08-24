@@ -6,7 +6,8 @@
         "dimensionLink": {
             "linkColumn": "referralPageTitle",
             "template": {
-                "do": "base.reportReferralDetail",
+                "do": "base.report",
+                "reportId": "referral-detail",
                 "referralPageUrl": "%s"
             },
             "valueColumns": "referralPageUrl"

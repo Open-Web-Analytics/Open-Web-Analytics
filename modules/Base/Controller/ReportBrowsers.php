@@ -43,7 +43,7 @@ class ReportBrowsers extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 25);
         $this->set('dimensionLink', array(
                 'linkColumn' => 'browserType',
-                'template' => array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'),
+                'template' => array('do' => 'base.report', 'reportId' => 'browser-detail', 'browserType' => '%s'),
                 'valueColumns' => 'browserType'));
 
         $this->set('trendChartMetric', 'visits');

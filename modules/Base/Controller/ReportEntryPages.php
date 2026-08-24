@@ -43,7 +43,7 @@ class ReportEntryPages extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn' => 'entryPagePath',
-                'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'),
+                'template' => array('do' => 'base.report', 'reportId' => 'document', 'pageUrl' => '%s'),
                 'valueColumns' => 'entryPageUrl'));
 
         $this->set('trendChartMetric', 'visits');

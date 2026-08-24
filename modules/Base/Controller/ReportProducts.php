@@ -48,7 +48,7 @@ class ReportProducts extends \OWA\Core\ReportController {
         $this->set('sort', 'lineItemQuantity-');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array('linkColumn' => 'productName',
-                                                'template' => array('do' => 'base.reportProductDetail', 'productName' => '%s'),
+                                                'template' => array('do' => 'base.report', 'reportId' => 'product-detail', 'productName' => '%s'),
                                                 'valueColumns' => 'productName'));
         $this->set('trendChartMetric', 'lineItemQuantity');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.');

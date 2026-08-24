@@ -5,7 +5,8 @@
         "dimensionLink": {
             "linkColumn": "browserType",
             "template": {
-                "do": "base.reportBrowserDetail",
+                "do": "base.report",
+                "reportId": "browser-detail",
                 "browserType": "%s"
             },
             "valueColumns": "browserType"

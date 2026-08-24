@@ -43,7 +43,7 @@ class ReportGeolocation extends \OWA\Core\ReportController {
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'country',
-                'template'         => array('do' => 'base.reportCountryDetail', 'country' => '%s'),
+                'template'         => array('do' => 'base.report', 'reportId' => 'country-detail', 'country' => '%s'),
                 'valueColumns'     => 'country'));
 
         $this->set('trendChartMetric', 'visits');
