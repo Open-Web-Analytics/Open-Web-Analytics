@@ -1,0 +1,23 @@
+{
+    "view": "base.report",
+    "title": "Referral Link Text: ",
+    "titleSuffix": "{referralLinkText}",
+    "subview": "base.reportDimensionDetail",
+    "params": {
+        "referralLinkText": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "referralLinkText",
+                "fromParam": "referralLinkText"
+            }
+        ],
+        "dimensions": "referralLinkText",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from links with this text."
+    }
+}

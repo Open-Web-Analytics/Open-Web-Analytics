@@ -1,0 +1,20 @@
+{
+    "title": "Search Term Detail: ",
+    "titleSuffix": "{referralSearchTerms}",
+    "subview": "base.reportDimensionDetail",
+    "params": {
+        "referralSearchTerms": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "referralSearchTerms",
+                "fromParam": "referralSearchTerms"
+            }
+        ],
+        "dimension": "referralSearchTerms",
+        "metrics": "visits,pageViews,bounces",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term."
+    }
+}

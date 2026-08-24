@@ -1,0 +1,24 @@
+{
+    "title": "Browser Detail: {browserType}",
+    "subview": "base.reportDimension",
+    "params": {
+        "browserType": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "browserType",
+                "fromParam": "browserType"
+            }
+        ],
+        "dimension_properties": {
+            "browser_family": "{browserType}"
+        },
+        "dimension_template": "dimension_browser.php",
+        "dimensions": "browserVersion",
+        "metrics": "visits,pageViews,bounces",
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type."
+    }
+}

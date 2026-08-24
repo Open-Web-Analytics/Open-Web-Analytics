@@ -1,0 +1,20 @@
+{
+    "title": "Product Category: ",
+    "titleSuffix": "{productCategory}",
+    "subview": "base.reportSimpleDimensional",
+    "params": {
+        "productCategory": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "productCategory",
+                "fromParam": "productCategory"
+            }
+        ],
+        "dimension": "productCategory",
+        "metrics": "lineItemQuantity,lineItemRevenue",
+        "trendChartMetric": "lineItemQuantity",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU."
+    }
+}

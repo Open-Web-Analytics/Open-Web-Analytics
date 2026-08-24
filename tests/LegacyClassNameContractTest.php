@@ -43,16 +43,26 @@ final class LegacyClassNameContractTest extends TestCase
      * Asserted absent, not merely dropped from the fixture: a retirement that
      * is only an omission cannot be told apart from an accident later.
      */
+    /** Size of the name set frozen from the untouched tree at stage 0. */
+    private const STAGE0_COUNT = 406;
+
     private const RETIRED = [
+        'owa_reportActionDetailController',
+        'owa_reportActionGroupController',
         'owa_reportActionGroupsController',
         'owa_reportActionTrackingController',
+        'owa_reportAdDetailController',
+        'owa_reportAdTypeDetailController',
         'owa_reportAdTypesController',
         'owa_reportAdsController',
         'owa_reportAnchortextController',
         'owa_reportAvgOrderValueController',
+        'owa_reportBrowserDetailController',
         'owa_reportBrowsersController',
+        'owa_reportCampaignDetailController',
         'owa_reportCommerceController',
         'owa_reportContentController',
+        'owa_reportCountryDetailController',
         'owa_reportCreativePerformanceController',
         'owa_reportDaysToPurchaseController',
         'owa_reportEcommerceController',
@@ -61,18 +71,29 @@ final class LegacyClassNameContractTest extends TestCase
         'owa_reportExitPagesController',
         'owa_reportFeedsController',
         'owa_reportGeolocationController',
+        'owa_reportHostDetailController',
         'owa_reportHostsController',
+        'owa_reportKeywordDetailController',
         'owa_reportKeywordsController',
         'owa_reportOsController',
+        'owa_reportOsDetailController',
+        'owa_reportPageTypeDetailController',
         'owa_reportPageTypesController',
         'owa_reportPagesController',
         'owa_reportProductCategoriesController',
+        'owa_reportProductCategoryDetailController',
+        'owa_reportProductDetailController',
+        'owa_reportProductSkuDetailController',
         'owa_reportProductSkusController',
         'owa_reportProductsController',
+        'owa_reportReferralLinkTextDetailController',
         'owa_reportReferringSitesController',
         'owa_reportRevenueController',
+        'owa_reportSearchEngineDetailController',
         'owa_reportSearchEnginesController',
+        'owa_reportSourceDetailController',
         'owa_reportSourcesController',
+        'owa_reportStateDetailController',
         'owa_reportTrafficController',
         'owa_reportTransactionsController',
         'owa_reportVisitorsAgeController',
@@ -126,12 +147,20 @@ final class LegacyClassNameContractTest extends TestCase
     {
         $names = $this->legacyNames();
 
-        $this->assertGreaterThan(
-            360,
+        /*
+         * Derived rather than a number that has to be nudged down after every
+         * retirement -- which is how a truncation guard stops guarding. New
+         * classes only ever push it up, so the floor is the stage-0 set less
+         * what has been deliberately retired.
+         */
+        $floor = self::STAGE0_COUNT - count(self::RETIRED);
+
+        $this->assertGreaterThanOrEqual(
+            $floor,
             count($names),
-            'Legacy class-name snapshot looks truncated; expected the stage-0 set '
-            . 'of ~406 less the ' . count(self::RETIRED) . ' names retired with the '
-            . 'report-to-configuration conversion.'
+            'Legacy class-name snapshot looks truncated: expected at least the '
+            . "stage-0 set of " . self::STAGE0_COUNT . ' less the ' . count(self::RETIRED)
+            . ' deliberately retired names.'
         );
 
         $missing = [];

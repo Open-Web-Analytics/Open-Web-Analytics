@@ -1,0 +1,27 @@
+{
+    "title": "Action Detail: ",
+    "titleSuffix": "{actionGroup}: {actionName}",
+    "subview": "base.reportSimpleDimensional",
+    "params": {
+        "actionGroup": {},
+        "actionName": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "actionName",
+                "fromParam": "actionName"
+            },
+            {
+                "dimension": "actionGroup",
+                "fromParam": "actionGroup"
+            }
+        ],
+        "dimensions": "actionLabel",
+        "metrics": "actions,actionsValue",
+        "resultsPerPage": "30",
+        "sort": "actions-",
+        "trendChartMetric": "actions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type."
+    }
+}

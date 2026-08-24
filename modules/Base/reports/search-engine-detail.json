@@ -1,0 +1,26 @@
+{
+    "title": "Search Engine: ",
+    "titleSuffix": "{referralWebSite}",
+    "subview": "base.reportDimensionDetail",
+    "params": {
+        "referralWebSite": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "medium",
+                "value": "organic-search"
+            },
+            {
+                "dimension": "referralWebSite",
+                "fromParam": "referralWebSite"
+            }
+        ],
+        "dimensions": "referralWebSite",
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 30,
+        "sort": "visits",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine."
+    }
+}

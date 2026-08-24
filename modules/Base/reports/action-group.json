@@ -1,0 +1,36 @@
+{
+    "title": "Action Group: ",
+    "titleSuffix": "{actionGroup}",
+    "subview": "base.reportSimpleDimensional",
+    "params": {
+        "actionGroup": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "actionGroup",
+                "fromParam": "actionGroup"
+            }
+        ],
+        "dimensionLink": {
+            "linkColumn": "actionName",
+            "template": {
+                "do": "base.report",
+                "reportId": "action-detail",
+                "actionName": "%s",
+                "actionGroup": "%s"
+            },
+            "valueColumns": [
+                "actionName",
+                "actionGroup"
+            ]
+        },
+        "dimensions": "actionGroup,actionName",
+        "excludeColumns": "'actionGroup'",
+        "metrics": "actions,uniqueActions,actionsValue",
+        "resultsPerPage": 25,
+        "sort": "actions-",
+        "trendChartMetric": "actions",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group."
+    }
+}

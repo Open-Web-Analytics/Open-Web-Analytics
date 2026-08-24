@@ -1,0 +1,34 @@
+{
+    "title": "Country: ",
+    "titleSuffix": "{country}",
+    "subview": "base.reportDimension",
+    "params": {
+        "country": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "country",
+                "fromParam": "country"
+            }
+        ],
+        "dimensionLink": {
+            "linkColumn": "stateRegion",
+            "template": {
+                "do": "base.report",
+                "reportId": "state-detail",
+                "stateRegion": "%s",
+                "country": "%s"
+            },
+            "valueColumns": [
+                "stateRegion",
+                "country"
+            ]
+        },
+        "dimensions": "stateRegion,country",
+        "resultsPerPage": 30,
+        "sort": "visits",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country."
+    }
+}

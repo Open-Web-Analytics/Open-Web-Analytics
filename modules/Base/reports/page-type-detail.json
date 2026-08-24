@@ -1,0 +1,21 @@
+{
+    "title": "Page Type: ",
+    "titleSuffix": "{pageType}",
+    "subview": "base.reportSimpleDimensional",
+    "params": {
+        "pageType": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "pageType",
+                "fromParam": "pageType"
+            }
+        ],
+        "gridTitle": "Top Page Types",
+        "metrics": "visits,pageViews",
+        "sort": "pageViews-",
+        "trendChartMetric": "pageViews",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type."
+    }
+}

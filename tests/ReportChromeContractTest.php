@@ -57,8 +57,8 @@ final class ReportChromeContractTest extends TestCase
         // controller directly. The converted reports get the same chrome
         // through the registry route, which testTheChromeSurvivesTheRegistryRoute
         // covers by id.
-        foreach ( array( 'ReportHostDetail', 'ReportBrowserDetail', 'ReportCountryDetail',
-                         'ReportActionDetail', 'ReportOsDetail' ) as $name ) {
+        foreach ( array( 'ReportCampaigns', 'ReportDocument', 'ReportGoals',
+                         'ReportReferralDetail', 'ReportDomClicks' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
 
@@ -151,13 +151,11 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheTwoRoutesAgreeAboutTheChrome(): void
     {
-        // host-detail is still controller-backed, so it is one of the reports
-        // that HAS both routes to compare. A converted report has only the one.
-        $params = array( 'host' => 'example.com' );
-
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportHostDetail( $params ) )->doAction();
+        // A bespoke report, which is the only kind that still HAS both routes
+        // to compare -- every configured report has only the one.
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportCampaigns( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            $params + array( 'reportId' => 'host-detail' ) ) )->doAction();
+            array( 'reportId' => 'campaigns' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -217,15 +215,15 @@ final class ReportChromeContractTest extends TestCase
      * the reportId derivation added an id for the new path rather than changing
      * the old one.
      *
-     * Was ReportPages until that became configuration and lost its action.
-     * host-detail is the same case with a controller still behind it.
+     * Was ReportPages, then ReportHostDetail; both are configuration now and
+     * have no action left. campaigns is bespoke and keeps its own.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportHostDetail(
-            array( 'do' => 'base.reportHostDetail', 'host' => 'example.com' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportCampaigns(
+            array( 'do' => 'base.reportCampaigns' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportHostDetail', $data['dom_id'] );
+        $this->assertSame( 'base-reportCampaigns', $data['dom_id'] );
     }
 
     /**

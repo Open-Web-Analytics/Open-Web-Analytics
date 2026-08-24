@@ -1,0 +1,19 @@
+{
+    "title": "Source Detail: ",
+    "titleSuffix": "{source}",
+    "subview": "base.reportDimensionDetail",
+    "params": {
+        "source": {}
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "source",
+                "fromParam": "source"
+            }
+        ],
+        "dimension": "source",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source."
+    }
+}

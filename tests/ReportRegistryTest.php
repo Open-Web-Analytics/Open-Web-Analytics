@@ -136,13 +136,15 @@ final class ReportRegistryTest extends TestCase
 
     public static function sampleReportProvider(): array
     {
-        // All still controller-backed: parameterised or bespoke reports, which
-        // this phase does not convert.
+        // The bespoke reports, which are the only ones still implemented by a
+        // controller -- and, by decision, always will be. They prefetch result
+        // sets, so they are also the ones the characterization harness cannot
+        // snapshot; this is the coverage they get instead.
         return array(
-            'parameterised'  => array( 'host-detail',  '\OWA\Module\Base\Controller\ReportHostDetail' ),
-            'another param'  => array( 'browser-detail', '\OWA\Module\Base\Controller\ReportBrowserDetail' ),
-            'bespoke stays'  => array( 'domstreams',   '\OWA\Module\Base\Controller\ReportDomstreams' ),
-            'prefetching'    => array( 'campaigns',    '\OWA\Module\Base\Controller\ReportCampaigns' ),
+            'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
+            'prefetching'    => array( 'campaigns',  '\OWA\Module\Base\Controller\ReportCampaigns' ),
+            'goals'          => array( 'goals',      '\OWA\Module\Base\Controller\ReportGoals' ),
+            'document'       => array( 'document',   '\OWA\Module\Base\Controller\ReportDocument' ),
         );
     }
 

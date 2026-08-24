@@ -1,0 +1,23 @@
+{
+    "title": "Ad Type: ",
+    "titleSuffix": "{adType}",
+    "subview": "base.reportDimensionDetail",
+    "params": {
+        "adType": {
+            "lowercase": true
+        }
+    },
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "adType",
+                "fromParam": "adType"
+            }
+        ],
+        "metrics": "visits,pageViews,bounces",
+        "resultsPerPage": 25,
+        "sort": "visits-",
+        "trendChartMetric": "visits",
+        "trendTitle": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad type."
+    }
+}

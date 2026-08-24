@@ -35,9 +35,51 @@ final class ActionRegistryTest extends TestCase
 
     public function testTheActionMapIsPopulated(): void
     {
-        // A single stray registration is what the old state looked like.
-        $this->assertGreaterThan(100, count($this->actionMap()),
-            'The action registry is near-empty, so requests are resolving through the legacy path.');
+        /*
+         * Derived from the tree rather than a round number.
+         *
+         * It was `> 100`, chosen when there were about 153 actions. Converting
+         * the reports to configuration retired 53 of them and left exactly 100,
+         * so the guard failed for a reason that was not a regression -- and the
+         * obvious repair, picking a smaller number, is how a floor like this
+         * rots until it stops detecting anything.
+         *
+         * The map covers every module, so it can only be larger than Base's own
+         * dispatchable controllers. If module registration ever fails to run,
+         * the count collapses well below this and the check fires -- which is
+         * the state this test exists to catch.
+         */
+        $floor = count($this->dispatchableBaseControllers());
+
+        $this->assertGreaterThan(1, $floor, 'no controllers found, so this proves nothing');
+
+        $this->assertGreaterThanOrEqual($floor, count($this->actionMap()),
+            'The action registry does not even cover Base, so requests are resolving '
+            . 'through the legacy path.');
+    }
+
+    /** Base controllers that can be reached as a 'do' action. */
+    private function dispatchableBaseControllers(): array
+    {
+        $out = [];
+
+        foreach (glob(OWA_BASE_DIR . '/modules/Base/Controller/*.php') as $file) {
+            $short = basename($file, '.php');
+
+            if (in_array($short, $this->exempt(), true)) {
+                continue;
+            }
+
+            $class = 'OWA\\Module\\Base\\Controller\\' . $short;
+
+            if (class_exists($class) && (new \ReflectionClass($class))->isAbstract()) {
+                continue;
+            }
+
+            $out[] = $short;
+        }
+
+        return $out;
     }
 
     /**
@@ -63,20 +105,9 @@ final class ActionRegistryTest extends TestCase
         }
 
         $missing = [];
-        foreach (glob(OWA_BASE_DIR . '/modules/Base/Controller/*.php') as $file) {
-            $short = basename($file, '.php');
-
-            if (in_array($short, $this->exempt(), true)) {
-                continue;
-            }
+        foreach ($this->dispatchableBaseControllers() as $short) {
 
             $class = 'OWA\\Module\\Base\\Controller\\' . $short;
-
-            // An abstract controller cannot be dispatched, so it has nothing to
-            // register. Checking the class beats maintaining a list of them.
-            if (class_exists($class) && (new \ReflectionClass($class))->isAbstract()) {
-                continue;
-            }
 
             if (! isset($registered[$class])) {
                 $missing[] = $short;

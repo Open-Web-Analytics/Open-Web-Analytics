@@ -93,15 +93,22 @@ final class ReportCharacterizationHarness
      * re-keying it to report ids would rewrite the evidence.
      */
     public const CONVERTED = array(
+        'action-detail'             => 'ReportActionDetail',
+        'action-group'              => 'ReportActionGroup',
         'action-groups'             => 'ReportActionGroups',
         'action-tracking'           => 'ReportActionTracking',
+        'ad-detail'                 => 'ReportAdDetail',
+        'ad-type-detail'            => 'ReportAdTypeDetail',
         'ad-types'                  => 'ReportAdTypes',
         'ads'                       => 'ReportAds',
         'anchortext'                => 'ReportAnchortext',
         'avg-order-value'           => 'ReportAvgOrderValue',
+        'browser-detail'            => 'ReportBrowserDetail',
         'browsers'                  => 'ReportBrowsers',
+        'campaign-detail'           => 'ReportCampaignDetail',
         'commerce'                  => 'ReportCommerce',
         'content'                   => 'ReportContent',
+        'country-detail'            => 'ReportCountryDetail',
         'creative-performance'      => 'ReportCreativePerformance',
         'days-to-purchase'          => 'ReportDaysToPurchase',
         'ecommerce'                 => 'ReportEcommerce',
@@ -110,18 +117,29 @@ final class ReportCharacterizationHarness
         'exit-pages'                => 'ReportExitPages',
         'feeds'                     => 'ReportFeeds',
         'geolocation'               => 'ReportGeolocation',
+        'host-detail'               => 'ReportHostDetail',
         'hosts'                     => 'ReportHosts',
+        'keyword-detail'            => 'ReportKeywordDetail',
         'keywords'                  => 'ReportKeywords',
         'os'                        => 'ReportOs',
+        'os-detail'                 => 'ReportOsDetail',
+        'page-type-detail'          => 'ReportPageTypeDetail',
         'page-types'                => 'ReportPageTypes',
         'pages'                     => 'ReportPages',
         'product-categories'        => 'ReportProductCategories',
+        'product-category-detail'   => 'ReportProductCategoryDetail',
+        'product-detail'            => 'ReportProductDetail',
+        'product-sku-detail'        => 'ReportProductSkuDetail',
         'product-skus'              => 'ReportProductSkus',
         'products'                  => 'ReportProducts',
+        'referral-link-text-detail' => 'ReportReferralLinkTextDetail',
         'referring-sites'           => 'ReportReferringSites',
         'revenue'                   => 'ReportRevenue',
+        'search-engine-detail'      => 'ReportSearchEngineDetail',
         'search-engines'            => 'ReportSearchEngines',
+        'source-detail'             => 'ReportSourceDetail',
         'sources'                   => 'ReportSources',
+        'state-detail'              => 'ReportStateDetail',
         'traffic'                   => 'ReportTraffic',
         'transactions'              => 'ReportTransactions',
         'visitors-age'              => 'ReportVisitorsAge',
@@ -354,12 +372,25 @@ final class ReportCharacterizationHarness
         $definition = json_decode(
             (string) file_get_contents( self::definitionPath( $id ) ), true );
 
-        $controller = new \OWA\Core\ConfiguredReport( array() );
-        $controller->setDefinition( (array) $definition );
+        $definition = (array) $definition;
 
-        // Converted reports are the ones that read no request parameters, so
-        // the params half of the snapshot is empty by definition.
-        return array( 'params' => array() ) + self::observe( $controller );
+        /*
+         * A definition DECLARES the parameters it reads, so they can be
+         * supplied without parsing anything -- which is what paramsFor() had to
+         * do against a controller, variable-named getParam() calls included.
+         *
+         * Sorted, because the fixture records them sorted and the two have to
+         * be comparable.
+         */
+        $params = array_keys( (array) ( $definition['params'] ?? array() ) );
+        sort( $params );
+
+        $controller = new \OWA\Core\ConfiguredReport(
+            array_fill_keys( $params, self::SENTINEL ) );
+
+        $controller->setDefinition( $definition );
+
+        return array( 'params' => $params ) + self::observe( $controller );
     }
 
     public static function goldenPath(): string

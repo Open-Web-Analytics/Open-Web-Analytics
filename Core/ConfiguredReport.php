@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'settings' );
 
     /** @var array the decoded definition */
     private $definition = array();
@@ -100,6 +100,48 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             return '"settings" must be an object';
         }
 
+        if ( isset( $definition['params'] ) && ! is_array( $definition['params'] ) ) {
+
+            return '"params" must be an object of parameter name => options';
+        }
+
+        /*
+         * An unconstrained detail report is the failure worth refusing: it
+         * renders every row rather than the one asked for, which reads as a
+         * data bug and not as a broken definition.
+         */
+        $constraints = isset( $definition['settings']['constraints'] )
+            ? $definition['settings']['constraints']
+            : null;
+
+        if ( is_array( $constraints ) ) {
+
+            foreach ( $constraints as $i => $part ) {
+
+                if ( ! is_array( $part ) || empty( $part['dimension'] ) ) {
+
+                    return sprintf( 'constraint %s needs a "dimension"', $i );
+                }
+
+                if ( ! array_key_exists( 'fromParam', $part ) && ! array_key_exists( 'value', $part ) ) {
+
+                    return sprintf( 'constraint on "%s" needs either a "value" or a "fromParam"',
+                        $part['dimension'] );
+                }
+
+                $declared = (array) ( $definition['params'] ?? array() );
+
+                if ( array_key_exists( 'fromParam', $part )
+                     && ! array_key_exists( $part['fromParam'], $declared ) ) {
+
+                    // Otherwise the constraint silently becomes `dimension==`,
+                    // matching nothing, with no clue as to why.
+                    return sprintf( 'constraint on "%s" reads the undeclared parameter "%s"',
+                        $part['dimension'], $part['fromParam'] );
+                }
+            }
+        }
+
         return '';
     }
 
@@ -115,6 +157,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         $d = $this->definition;
 
+        $values = $this->resolveParams();
+
         /*
          * pre() already sets this, and four of the converted reports set it
          * again in their action(). Kept so a definition can say so explicitly
@@ -127,11 +171,162 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         $this->setSubview( $d['subview'] );
 
-        $this->setTitle( $d['title'], isset( $d['titleSuffix'] ) ? $d['titleSuffix'] : '' );
+        $this->setTitle(
+            self::interpolate( $d['title'], $values ),
+            self::interpolate( isset( $d['titleSuffix'] ) ? $d['titleSuffix'] : '', $values ) );
 
         foreach ( (array) ( isset( $d['settings'] ) ? $d['settings'] : array() ) as $key => $value ) {
 
+            if ( $key === 'constraints' && is_array( $value ) ) {
+
+                $value = self::buildConstraints( $value, $values );
+
+            } else {
+
+                // Anywhere else a value is authored, a placeholder means the
+                // same thing. ReportBrowserDetail puts its parameter inside
+                // dimension_properties rather than in the title or the
+                // constraint, and a substitution that only knew about those two
+                // places would leave it holding the literal text "{browserType}".
+                $value = self::interpolateDeep( $value, $values );
+            }
+
             $this->set( $key, $value );
         }
+    }
+
+    /**
+     * Read the request parameters this report declares, applying the one
+     * normalisation any of them asks for.
+     *
+     * Declared rather than inferred from where they are used, so a definition
+     * says what it reads. It is also what lets a test supply every parameter a
+     * report takes without parsing the report.
+     *
+     * @return array<string,string> parameter name => value
+     */
+    private function resolveParams() {
+
+        $values = array();
+
+        foreach ( (array) ( isset( $this->definition['params'] ) ? $this->definition['params'] : array() ) as $name => $spec ) {
+
+            // A definition decoded with json_decode($s, true) hands this an
+            // array, which is how the dispatcher reads one. Cast anyway: decoded
+            // the other way an empty {} is a stdClass, and indexing that is a
+            // fatal rather than a missing option.
+            $spec  = (array) $spec;
+            $value = (string) $this->getParam( $name );
+
+            /*
+             * Three of the detail reports lowercase before constraining --
+             * ad, adType and campaign -- because the dimension is stored
+             * lowercased. Dropping that would make "Google" and "google"
+             * different ads.
+             */
+            if ( ! empty( $spec['lowercase'] ) ) {
+
+                $value = strtolower( $value );
+            }
+
+            $values[ $name ] = $value;
+        }
+
+        return $values;
+    }
+
+    /**
+     * Replace {name} with a parameter's value.
+     *
+     * Deliberately only substitution -- no filters, no expressions. The one
+     * transformation a parameter can need is declared on the parameter itself,
+     * so this stays a thing config can safely be rather than a small language
+     * that has to be evaluated.
+     *
+     * @param mixed $template
+     * @param array $values
+     * @return string
+     */
+    private static function interpolate( $template, array $values ) {
+
+        $template = (string) $template;
+
+        if ( strpos( $template, '{' ) === false ) {
+
+            return $template;
+        }
+
+        foreach ( $values as $name => $value ) {
+
+            $template = str_replace( '{' . $name . '}', $value, $template );
+        }
+
+        return $template;
+    }
+
+    /**
+     * Interpolate through a value of any shape.
+     *
+     * Arrays are walked because settings hold them -- dimension_properties and
+     * dimensionLink both nest. Non-strings are returned untouched, so an
+     * integer like resultsPerPage stays an integer.
+     *
+     * @param mixed $value
+     * @param array $values
+     * @return mixed
+     */
+    private static function interpolateDeep( $value, array $values ) {
+
+        if ( is_array( $value ) ) {
+
+            foreach ( $value as $k => $v ) {
+
+                $value[ $k ] = self::interpolateDeep( $v, $values );
+            }
+
+            return $value;
+        }
+
+        return is_string( $value ) ? self::interpolate( $value, $values ) : $value;
+    }
+
+    /**
+     * Build a constraint string from its parts.
+     *
+     * Structured rather than a string with placeholders, because the two kinds
+     * of value are encoded differently: a value taken from the request is
+     * urlencoded, a literal is not. Expressed as one template string, that
+     * difference would have to be spelled with a filter -- and every author
+     * would have to remember which side of the '==' they were on.
+     *
+     * `constraints` may still be a plain string, which is used as-is. Most
+     * reports constrain on nothing that varies.
+     *
+     * @param array $parts
+     * @param array $values
+     * @return string
+     */
+    private static function buildConstraints( array $parts, array $values ) {
+
+        $out = array();
+
+        foreach ( $parts as $part ) {
+
+            $operator = isset( $part['operator'] ) ? $part['operator'] : '==';
+
+            if ( array_key_exists( 'fromParam', $part ) ) {
+
+                $name  = $part['fromParam'];
+                $value = urlencode( isset( $values[ $name ] ) ? $values[ $name ] : '' );
+
+            } else {
+
+                $value = isset( $part['value'] ) ? $part['value'] : '';
+            }
+
+            $out[] = $part['dimension'] . $operator . $value;
+        }
+
+        return implode( ',', $out );
     }
 }
