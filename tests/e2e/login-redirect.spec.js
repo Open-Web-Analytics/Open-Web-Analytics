@@ -63,7 +63,7 @@ test.describe('post-login redirect destination', () => {
     /** Deep-linking to a report while logged out must still land on the report. */
     test('a read-only destination is still resumed after login', async ({ page }) => {
         await page.goto(
-            `?owa_do=base.reportDashboard&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
             { waitUntil: 'networkidle' }
         );
 

@@ -111,7 +111,11 @@ final class ReportNavigationLinkTest extends TestCase
         $files = array_merge(
             (array) glob( OWA_DIR . 'modules/*/templates/*.php' ),
             (array) glob( OWA_DIR . 'modules/*/Controller/*.php' ),
-            (array) glob( OWA_DIR . 'modules/Base/reports/*.json' )
+            (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ),
+            // The e2e specs navigate to these URLs for real. Leaving them out
+            // is how a swept tree still broke six browser tests: the scan said
+            // no link named a controller action while tests/e2e/ held eleven.
+            (array) glob( OWA_DIR . 'tests/e2e/*.js' )
         );
 
         foreach ( $files as $file ) {
@@ -125,6 +129,19 @@ final class ReportNavigationLinkTest extends TestCase
 
                 foreach ( $m[1] as $action ) {
                     $offenders[] = basename( $file ) . ' -> ' . $action;
+                }
+            }
+
+            /*
+             * ...and the query-string form the browser tests use. Same link,
+             * written as a URL rather than as a parameter map, and invisible to
+             * the pattern above. A comment mentioning an action is not a link,
+             * so this matches only where it is actually being navigated to.
+             */
+            if ( preg_match_all( '/owa_do=(base\.report[A-Z][A-Za-z]*)/', $body, $m2 ) ) {
+
+                foreach ( $m2[1] as $action ) {
+                    $offenders[] = basename( $file ) . ' -> owa_do=' . $action;
                 }
             }
         }
@@ -148,6 +165,11 @@ final class ReportNavigationLinkTest extends TestCase
             '/[\'"]do[\'"]\s*(?:=>|:)\s*[\'"](base\.report[A-Z][A-Za-z]*)[\'"]/',
             $sample,
             'the pattern used by the scan must be able to match the thing it looks for' );
+
+        $urlForm = "await page.goto('?owa_do=base.reportPages&owa_siteId=1');";
+
+        $this->assertMatchesRegularExpression( '/owa_do=(base\.report[A-Z][A-Za-z]*)/', $urlForm,
+            'the query-string pattern must match the form the browser tests navigate with' );
 
         // ...and must NOT match a subview, which is not a link.
         $this->assertDoesNotMatchRegularExpression(

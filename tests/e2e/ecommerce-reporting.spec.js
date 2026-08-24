@@ -48,7 +48,7 @@ test.describe('e-commerce reporting', () => {
     });
 
     test('the e-commerce tab appears on a session-based report when the site has it enabled', async ({ page }) => {
-        await openReport(page, { doName: 'base.reportBrowsers' });
+        await openReport(page, { reportId: 'browsers' });
 
         // Tabs render as <div id="tab_<key>"> -- the label itself is written
         // into the JS block below them, so the div id is the stable hook.
@@ -62,13 +62,13 @@ test.describe('e-commerce reporting', () => {
 
     test('the tabbed and untabbed report families stay as they are', async ({ page }) => {
         // Session-based -> tabs.
-        await openReport(page, { doName: 'base.reportBrowsers' });
+        await openReport(page, { reportId: 'browsers' });
         await expect(page.locator('#report-tabs > div[id^="tab_"]').first()).toBeAttached();
 
         // Content-based -> deliberately no tabs (report_dimensionDetailNoTabs).
         // Uses the no-tabs helper: openReport() waits for #report-tabs.ui-tabs,
         // a widget these pages never build.
-        await openReportNoTabs(page, { doName: 'base.reportPages' });
+        await openReportNoTabs(page, { reportId: 'pages' });
         await expect(page.locator('#report-tabs > div[id^="tab_"]')).toHaveCount(0);
     });
 
@@ -77,7 +77,7 @@ test.describe('e-commerce reporting', () => {
         // -- so transactions/transactionRevenue were never added to its metric
         // list no matter how the site was configured. The columns come from the
         // metrics string, so their absence is the observable symptom.
-        await openReport(page, { doName: 'base.reportCampaigns' });
+        await openReport(page, { reportId: 'campaigns' });
 
         const body = await page.content();
         expect(body).toContain('transactionRevenue');
@@ -85,7 +85,7 @@ test.describe('e-commerce reporting', () => {
     });
 
     test('the Products report returns the seeded line items with correct revenue', async ({ page }) => {
-        await openReportNoTabs(page, { doName: 'base.reportProducts' });
+        await openReportNoTabs(page, { reportId: 'products' });
 
         const grid = page.locator('.ui-jqgrid');
         await expect(grid).toBeAttached();
@@ -102,7 +102,7 @@ test.describe('e-commerce reporting', () => {
     });
 
     test('the Transactions report returns the seeded orders', async ({ page }) => {
-        await openReportNoTabs(page, { doName: 'base.reportTransactions' });
+        await openReportNoTabs(page, { reportId: 'transactions' });
 
         const text = await page.locator('body').innerText();
 
@@ -112,7 +112,7 @@ test.describe('e-commerce reporting', () => {
     });
 
     test('the e-commerce overview report renders the seeded totals', async ({ page }) => {
-        await openReportNoTabs(page, { doName: 'base.reportEcommerce' });
+        await openReportNoTabs(page, { reportId: 'ecommerce' });
 
         const text = await page.locator('body').innerText();
 
@@ -143,8 +143,8 @@ test.describe('e-commerce reporting', () => {
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
 
-        for (const doName of ['base.reportEcommerce', 'base.reportProducts', 'base.reportTransactions']) {
-            await openReportNoTabs(page, { doName });
+        for (const reportId of ['ecommerce', 'products', 'transactions']) {
+            await openReportNoTabs(page, { reportId });
         }
 
         expect(errors).toEqual([]);

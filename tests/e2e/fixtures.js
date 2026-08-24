@@ -114,7 +114,7 @@ async function clickAndWait(page, locator) {
 /** Navigate to the fixture site's report dashboard and let the JS build widgets. */
 async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=base.reportDashboard&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     // The reporting bundle builds charts/grids/selects from AJAX result sets
@@ -123,14 +123,18 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
 }
 
 /**
- * Navigate to a dimension report page (owa_do=base.report<Name>) and wait for
- * the jQuery-UI tabs widget to build. Unlike the dashboard, these pages render
+ * Navigate to a dimension report page and wait for the jQuery-UI tabs widget
+ * to build.
+ *
+ * Reports are addressed by id -- owa_do=base.report&owa_reportId=<id> -- not by
+ * a per-report action. Most of them no longer HAVE one: they are configuration
+ * under modules/Base/reports/, rendered by Core\ConfiguredReport. Unlike the dashboard, these pages render
  * the tabbed report layout (owa.report.createTabs -> #report-tabs.ui-tabs).
  * Defaults to Browser Types -- a plain dimension report needing no extra params.
  */
-async function openReport(page, { doName = 'base.reportBrowsers', period = 'last_thirty_days' } = {}) {
+async function openReport(page, { reportId = 'browsers', period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
@@ -147,9 +151,9 @@ async function openReport(page, { doName = 'base.reportBrowsers', period = 'last
  *
  * Waits for the grid instead, which is the load-bearing widget on those pages.
  */
-async function openReportNoTabs(page, { doName, period = 'last_thirty_days' } = {}) {
+async function openReportNoTabs(page, { reportId, period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.ui-jqgrid', { timeout: 20_000 });
