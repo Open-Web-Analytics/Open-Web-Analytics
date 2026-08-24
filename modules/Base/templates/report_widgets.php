@@ -223,7 +223,7 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
             // The label sits inside the box; see $owa_ownsTitle above. Encoded
             // rather than quoted -- it is prose and may carry an apostrophe.
         ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', '', <?php echo json_encode( (string) ( $owa_w['title'] ?? '' ) ); ?>]);
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo json_encode( (string) ( $owa_w['title'] ?? '' ) ); ?>]);
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
@@ -388,4 +388,3 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 </script>
 <?php endif; ?>
 
-<?php require_once( 'js_report_templates.php' ); ?>

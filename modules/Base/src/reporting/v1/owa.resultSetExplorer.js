@@ -806,7 +806,7 @@ OWA.resultSetExplorer.prototype = {
         }
     },
     
-    makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
+    makeMetricBoxes : function(dom_id, label, metrics, filter) {
 
         var kpi = new OWA.kpiBox();
 
@@ -815,10 +815,6 @@ OWA.resultSetExplorer.prototype = {
         }
 
         var options = {};
-
-        if (template) {
-            options.template = template;
-        }
 
         if ( label ) {
             options.label = label;
@@ -854,49 +850,6 @@ OWA.resultSetExplorer.prototype = {
         sl.generate( this.resultSet, dom_id, options);
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
-    },
-    
-    renderResultsRows : function(dom_id, template) {
-
-        if (this.resultSet.resultsRows.length > 0) {
-            var that = this;
-            dom_id = dom_id || this.dom_id;
-
-            var table = '';
-            var data = [];
-            //re-order the data into an array
-            for (var d_item in this.resultSet.resultsRows[0]) {
-
-                if (this.resultSet.resultsRows[0].hasOwnProperty(d_item)) {
-                    data.push(this.resultSet.resultsRows[0][d_item]);
-                }
-            }
-            // set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
-            jQuery.jqotetag('*');
-            //make table headers
-            var ths = jQuery('#simpleTable-headers').jqote(data);
-            // make outer table
-            table = jQuery('#simpleTable-outer').jqote({dom_id: dom_id+'_simpleTable', headers: ths});
-            // add to dom
-            jQuery('#'+dom_id).html(table);
-            // append rows
-            for(var i=0;i<= this.resultSet.resultsRows.length -1;i++) {
-
-                var cells = '';
-                for (var r_item in this.resultSet.resultsRows[i]) {
-
-                    if (this.resultSet.resultsRows[i].hasOwnProperty(r_item)) {
-                        cells += jQuery('#table-column').jqote(this.resultSet.resultsRows[i][r_item]);
-                    }
-                }
-
-                var row = jQuery('#table-row').jqote({columns: cells});
-                jQuery('#'+dom_id+'_simpleTable').append(row);
-            }
-
-        } else {
-            jQuery('#'+dom_id).html("No results to display.");
-        }
     },
     
     getApiEndpoint : function() {

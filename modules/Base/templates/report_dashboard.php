@@ -227,4 +227,3 @@
 
 </script>
 
-<?php require_once('js_report_templates.php');?>

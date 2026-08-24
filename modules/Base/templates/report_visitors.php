@@ -95,7 +95,6 @@
         </TR>
     </table>
 
-<?php require_once('js_report_templates.php');?>
 
 <script type="text/x-jqote-template" id="visitors-headline-template">
 <![CDATA[

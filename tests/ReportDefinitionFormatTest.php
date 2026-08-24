@@ -1057,8 +1057,11 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
+        // Three arguments, not four: makeMetricBoxes' second parameter used to be
+        // a jqote template id, which it forwarded to a kpiBox option that
+        // generate() never read. The label now sits in the slot it vacated.
         $this->assertStringContainsString(
-            '\'makeMetricBoxes\', \'\', \'\', "Visits From Search Engines"', $html,
+            '\'makeMetricBoxes\', \'\', "Visits From Search Engines"', $html,
             'the title must reach the box as its label' );
 
         $this->assertStringNotContainsString(
