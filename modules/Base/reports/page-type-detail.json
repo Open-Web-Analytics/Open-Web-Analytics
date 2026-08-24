@@ -24,7 +24,6 @@
                 "dimension": "pageType",
                 "fromParam": "pageType"
             }
-        ],
-        "gridTitle": "Top Page Types"
+        ]
     }
 }

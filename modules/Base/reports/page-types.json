@@ -32,8 +32,5 @@
                 "valueColumns": "pageType"
             }
         }
-    ],
-    "settings": {
-        "gridTitle": "Top Page Types"
-    }
+    ]
 }

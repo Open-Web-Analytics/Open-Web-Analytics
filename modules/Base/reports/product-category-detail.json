@@ -24,7 +24,6 @@
                 "dimension": "productCategory",
                 "fromParam": "productCategory"
             }
-        ],
-        "dimension": "productCategory"
+        ]
     }
 }

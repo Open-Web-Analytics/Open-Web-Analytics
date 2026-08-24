@@ -24,7 +24,6 @@
                 "dimension": "productName",
                 "fromParam": "productName"
             }
-        ],
-        "dimension": "productName"
+        ]
     }
 }

@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'params', 'metrics', 'widgets', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings' );
 
     /**
      * The renderer every configured report uses.
@@ -267,15 +267,14 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         $values = $this->resolveParams();
 
         /*
-         * pre() already sets this, and four of the converted reports set it
-         * again in their action(). Kept so a definition can say so explicitly
-         * and produce a byte-identical result to the controller it replaced.
+         * Neither view is named by the definition.
+         *
+         * ReportController::pre() already sets the outer view to base.report,
+         * and four converted reports used to restate it -- kept during the
+         * conversion so a definition could produce a byte-identical result to
+         * the controller it replaced. That is done, and restating a default is
+         * just a way for the two to disagree later.
          */
-        if ( ! empty( $d['view'] ) ) {
-
-            $this->setView( $d['view'] );
-        }
-
         $this->setSubview( self::SUBVIEW );
 
         /*

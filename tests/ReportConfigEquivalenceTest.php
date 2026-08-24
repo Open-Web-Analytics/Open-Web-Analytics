@@ -161,7 +161,6 @@ final class ReportConfigEquivalenceTest extends TestCase
         $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( array(
             'title'       => 'Web Pages',
             'titleSuffix' => '',
-            'view'        => 'base.report',
             'settings'    => array( 'metrics' => 'pageViews' ),
         ) ) );
     }

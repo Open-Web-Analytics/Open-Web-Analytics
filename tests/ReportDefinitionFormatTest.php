@@ -1139,15 +1139,33 @@ final class ReportDefinitionFormatTest extends TestCase
             'a definition that names no renderer must still reach the widget renderer' );
     }
 
-    /** ...and a definition that tries to name one is refused. */
-    public function testADefinitionMayNotNameItsRenderer(): void
+    /**
+     * ...and a definition that tries to name either view is refused.
+     *
+     * `view` is the outer one -- the page chrome. ReportController::pre()
+     * already sets it to base.report, and four converted reports restated it,
+     * kept during the conversion so a definition could produce a
+     * byte-identical result to the controller it replaced. Restating a default
+     * is only a way for the two to disagree later.
+     *
+     * @dataProvider rendererKeyProvider
+     */
+    public function testADefinitionMayNotNameItsRenderer( string $key, string $value ): void
     {
         $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Names A Renderer',
-            'subview' => 'base.reportWidgets',
+            'title' => 'Names A Renderer',
+            $key    => $value,
         ) );
 
-        $this->assertStringContainsString( 'subview', $error );
+        $this->assertStringContainsString( $key, $error );
+    }
+
+    public static function rendererKeyProvider(): array
+    {
+        return array(
+            'the widget renderer' => array( 'subview', 'base.reportWidgets' ),
+            'the outer view'      => array( 'view', 'base.report' ),
+        );
     }
 
     /**
@@ -1165,9 +1183,12 @@ final class ReportDefinitionFormatTest extends TestCase
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
-            if ( isset( $definition['subview'] ) ) {
+            foreach ( array( 'subview', 'view' ) as $key ) {
 
-                $named[] = basename( $file );
+                if ( isset( $definition[ $key ] ) ) {
+
+                    $named[] = basename( $file ) . " ($key)";
+                }
             }
         }
 

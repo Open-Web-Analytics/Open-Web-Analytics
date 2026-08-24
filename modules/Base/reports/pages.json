@@ -33,8 +33,5 @@
             },
             "excludeColumns": "'pageUrl'"
         }
-    ],
-    "settings": {
-        "gridTitle": "Top Pages"
-    }
+    ]
 }

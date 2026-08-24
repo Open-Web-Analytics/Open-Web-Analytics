@@ -344,7 +344,6 @@
             "subview": "base.reportWidgets",
             "title": "Referral Link Text",
             "titleSuffix": "",
-            "view": "base.report",
             "view_method": "delegate",
             "widgets": [
                 {
@@ -1060,7 +1059,6 @@
             "subview": "base.reportWidgets",
             "title": "Feeds",
             "titleSuffix": "",
-            "view": "base.report",
             "view_method": "delegate",
             "widgets": [
                 {
@@ -1227,7 +1225,6 @@
             "subview": "base.reportWidgets",
             "title": "Referring Search Terms",
             "titleSuffix": "",
-            "view": "base.report",
             "view_method": "delegate",
             "widgets": [
                 {
@@ -1335,7 +1332,6 @@
         "diagnostics": [],
         "config": {
             "constraints": "pageType==characterization_sentinel",
-            "gridTitle": "Top Page Types",
             "metrics": "visits,pageViews",
             "subview": "base.reportWidgets",
             "title": "Page Type: ",
@@ -1360,7 +1356,6 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "gridTitle": "Top Page Types",
             "metrics": "visits,pageViews",
             "subview": "base.reportWidgets",
             "title": "Page Types",
@@ -1404,7 +1399,6 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "gridTitle": "Top Pages",
             "metrics": "pageViews,visits,uniquePageViews",
             "subview": "base.reportWidgets",
             "title": "Web Pages",
@@ -1495,7 +1489,6 @@
         "diagnostics": [],
         "config": {
             "constraints": "productCategory==characterization_sentinel",
-            "dimension": "productCategory",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product Category: ",
@@ -1523,7 +1516,6 @@
         "diagnostics": [],
         "config": {
             "constraints": "productName==characterization_sentinel",
-            "dimension": "productName",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product Detail: ",
@@ -1551,7 +1543,6 @@
         "diagnostics": [],
         "config": {
             "constraints": "productSku==characterization_sentinel",
-            "dimension": "productSku",
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
             "title": "Product SKU: ",
@@ -1668,7 +1659,6 @@
             "subview": "base.reportWidgets",
             "title": "Referral Link Text: ",
             "titleSuffix": "characterization_sentinel",
-            "view": "base.report",
             "view_method": "delegate",
             "widgets": [
                 {
