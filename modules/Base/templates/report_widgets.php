@@ -387,4 +387,3 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
     OWA.items['<?php echo $view->dom_id; ?>'].createTabs();
 </script>
 <?php endif; ?>
-
