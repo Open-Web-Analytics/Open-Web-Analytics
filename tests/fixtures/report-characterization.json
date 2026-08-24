@@ -135,24 +135,72 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "pageTitle",
-                "template": {
-                    "do": "base.report",
-                    "pageUrl": "%s",
-                    "reportId": "document"
-                },
-                "valueColumns": "pageUrl"
-            },
             "metrics": "actions,uniqueActions,actionsValue",
-            "resultsPerPage": 30,
-            "sort": "actions",
-            "subview": "base.reportActionTracking",
+            "subview": "base.reportWidgets",
             "title": "Actions",
             "titleSuffix": "",
-            "trendChartMetric": "actions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions performed on all pages.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "actions",
+                    "container": "trend-chart",
+                    "headline": "There were {actions.formatted} {actions|action|actions} performed on all pages.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "colspan": 6,
+                    "container": "actionsByNameExplorer",
+                    "id": "actionsByName",
+                    "link": {
+                        "linkColumn": "actionName",
+                        "template": {
+                            "actionGroup": "%s",
+                            "actionName": "%s",
+                            "do": "base.report",
+                            "reportId": "action-detail"
+                        },
+                        "valueColumns": [
+                            "actionName",
+                            "actionGroup"
+                        ]
+                    },
+                    "query": {
+                        "dimensions": "actionGroup,actionName",
+                        "metrics": "actions",
+                        "resultsPerPage": 5,
+                        "sort": "actions-"
+                    },
+                    "title": "Actions by Name",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 6,
+                    "container": "actionsByGroupExplorer",
+                    "id": "actionsByGroup",
+                    "link": {
+                        "linkColumn": "actionGroup",
+                        "template": {
+                            "actionGroup": "%s",
+                            "do": "base.report",
+                            "reportId": "action-group"
+                        },
+                        "valueColumns": "actionGroup"
+                    },
+                    "query": {
+                        "dimensions": "actionGroup",
+                        "metrics": "actions",
+                        "resultsPerPage": 5,
+                        "sort": "actions-"
+                    },
+                    "title": "Actions by Group",
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportAdDetail": {
@@ -475,10 +523,76 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "subview": "base.reportCommerce",
-            "title": "Ecommerce Overview",
+            "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+            "subview": "base.reportWidgets",
+            "title": "E-Commerce Overview",
             "titleSuffix": "",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactions",
+                    "container": "trend-chart",
+                    "headline": "There were {transactions.formatted} {transactions|transaction|transactions} generating {transactionRevenue.formatted}.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "colspan": 6,
+                    "container": "top-products",
+                    "id": "topproducts",
+                    "link": {
+                        "linkColumn": "productName",
+                        "template": {
+                            "do": "base.report",
+                            "productName": "%s",
+                            "reportId": "product-detail"
+                        },
+                        "valueColumns": "productName"
+                    },
+                    "more": {
+                        "label": "View Full Report »",
+                        "reportId": "products"
+                    },
+                    "query": {
+                        "dimensions": "productName",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "resultsPerPage": 25,
+                        "sort": "lineItemRevenue-"
+                    },
+                    "title": "Products",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 6,
+                    "container": "top-sources",
+                    "id": "topsources",
+                    "link": {
+                        "linkColumn": "source",
+                        "template": {
+                            "do": "base.report",
+                            "reportId": "source-detail",
+                            "source": "%s"
+                        },
+                        "valueColumns": "source"
+                    },
+                    "more": {
+                        "label": "View Full Report »",
+                        "reportId": "sources"
+                    },
+                    "query": {
+                        "dimensions": "source,medium",
+                        "metrics": "transactionRevenue",
+                        "resultsPerPage": 25,
+                        "sort": "transactionRevenue-"
+                    },
+                    "title": "Traffic Sources",
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportContent": {
@@ -718,14 +832,106 @@
         "diagnostics": [],
         "config": {
             "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
-            "resultsPerPage": 30,
-            "sort": "transactions-",
-            "subview": "base.reportEcommerce",
+            "subview": "base.reportWidgets",
             "title": "Ecommerce",
             "titleSuffix": "",
-            "trendChartMetric": "transactions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions completed.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactions",
+                    "container": "trend-chart",
+                    "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "colspan": 6,
+                    "container": "productNameExplorer",
+                    "id": "productName",
+                    "link": {
+                        "linkColumn": "productName",
+                        "template": {
+                            "do": "base.report",
+                            "productName": "%s",
+                            "reportId": "product-detail"
+                        },
+                        "valueColumns": "productName"
+                    },
+                    "query": {
+                        "dimensions": "productName",
+                        "metrics": "lineItemRevenue",
+                        "resultsPerPage": 5,
+                        "sort": "lineItemRevenue-"
+                    },
+                    "title": "Top Products",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 6,
+                    "container": "sourceExplorer",
+                    "id": "source",
+                    "link": {
+                        "linkColumn": "source",
+                        "template": {
+                            "do": "base.report",
+                            "reportId": "sources",
+                            "source": "%s"
+                        },
+                        "valueColumns": "source"
+                    },
+                    "query": {
+                        "dimensions": "source",
+                        "metrics": "transactions,transactionRevenue",
+                        "resultsPerPage": 5,
+                        "sort": "transactionRevenue-"
+                    },
+                    "title": "Revenue by Source",
+                    "type": "grid"
+                },
+                {
+                    "colspan": 12,
+                    "links": [
+                        {
+                            "label": "Product Name",
+                            "reportId": "products"
+                        },
+                        {
+                            "label": "SKU",
+                            "reportId": "product-skus"
+                        },
+                        {
+                            "label": "Categories",
+                            "reportId": "product-categories"
+                        },
+                        {
+                            "label": "Visits to Purchase",
+                            "reportId": "visits-to-purchase"
+                        },
+                        {
+                            "label": "Days to Purchase",
+                            "reportId": "days-to-purchase"
+                        },
+                        {
+                            "label": "Average Order Value",
+                            "reportId": "avg-order-value"
+                        },
+                        {
+                            "label": "Total Revenue",
+                            "reportId": "revenue"
+                        },
+                        {
+                            "label": "Conversion Rate",
+                            "reportId": "ecommerce-conversion-rate"
+                        }
+                    ],
+                    "title": "E-commerce Reports",
+                    "type": "report-links"
+                }
+            ]
         }
     },
     "ReportEcommerceConversionRate": {

@@ -187,7 +187,7 @@
         ]
     },
     "action-tracking": {
-        "subview": "base.reportActionTracking",
+        "subview": "base.reportWidgets",
         "queries": [
             {
                 "var": "trendurl",
@@ -205,7 +205,7 @@
                 }
             },
             {
-                "var": "aurl",
+                "var": "actionsByNameurl",
                 "query": {
                     "dimensions": "actionGroup,actionName",
                     "do": "reports",
@@ -221,7 +221,7 @@
                 }
             },
             {
-                "var": "url",
+                "var": "actionsByGroupurl",
                 "query": {
                     "dimensions": "actionGroup",
                     "do": "reports",
@@ -242,9 +242,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 3,
-            "urls": 0
+            "loads": 3,
+            "loadsWithUrl": 0,
+            "urls": 3
         },
         "explorers": [
             {
@@ -252,20 +252,20 @@
                 "container": "trend-chart"
             },
             {
-                "var": "rsh",
+                "var": "actionsByName",
                 "container": "actionsByNameExplorer"
             },
             {
-                "var": "rshre",
+                "var": "actionsByGroup",
                 "container": "actionsByGroupExplorer"
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
-            "rsh.refreshGrid",
-            "rshre.refreshGrid"
+            "actionsByName.refreshGrid",
+            "actionsByGroup.refreshGrid"
         ]
     },
     "ad-detail": {
@@ -779,10 +779,10 @@
         ]
     },
     "commerce": {
-        "subview": "base.reportCommerce",
+        "subview": "base.reportWidgets",
         "queries": [
             {
-                "var": "aurl",
+                "var": "trendurl",
                 "query": {
                     "dimensions": "date",
                     "do": "reports",
@@ -834,13 +834,13 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 3,
-            "urls": 0
+            "loads": 3,
+            "loadsWithUrl": 0,
+            "urls": 3
         },
         "explorers": [
             {
-                "var": "rsh",
+                "var": "trend",
                 "container": "trend-chart"
             },
             {
@@ -853,9 +853,9 @@
             }
         ],
         "commands": [
-            "rsh.makeAreaChart",
-            "rsh.makeMetricBoxes -> trend-metrics",
-            "rsh.renderTemplate -> content-headline",
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
             "topproducts.refreshGrid",
             "topsources.refreshGrid"
         ]
@@ -1132,7 +1132,7 @@
         ]
     },
     "ecommerce": {
-        "subview": "base.reportEcommerce",
+        "subview": "base.reportWidgets",
         "queries": [
             {
                 "var": "trendurl",
@@ -1150,7 +1150,7 @@
                 }
             },
             {
-                "var": "aurl",
+                "var": "productNameurl",
                 "query": {
                     "dimensions": "productName",
                     "do": "reports",
@@ -1166,7 +1166,7 @@
                 }
             },
             {
-                "var": "url",
+                "var": "sourceurl",
                 "query": {
                     "dimensions": "source",
                     "do": "reports",
@@ -1187,9 +1187,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 3,
-            "urls": 0
+            "loads": 3,
+            "loadsWithUrl": 0,
+            "urls": 3
         },
         "explorers": [
             {
@@ -1197,20 +1197,20 @@
                 "container": "trend-chart"
             },
             {
-                "var": "rsh",
+                "var": "productName",
                 "container": "productNameExplorer"
             },
             {
-                "var": "rshre",
+                "var": "source",
                 "container": "sourceExplorer"
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
-            "rsh.refreshGrid",
-            "rshre.refreshGrid"
+            "productName.refreshGrid",
+            "source.refreshGrid"
         ]
     },
     "ecommerce-conversion-rate": {
