@@ -1,0 +1,1900 @@
+{
+    "action-detail": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
+                "dimensions": "actionLabel",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "actions-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "action-group": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "constraints": "actionGroup==characterization_sentinel",
+                "dimensions": "actionGroup,actionName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,uniqueActions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "actions-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "actionGroup==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,uniqueActions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "action-groups": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "actionGroup",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,uniqueActions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "actions-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,uniqueActions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "action-tracking": {
+        "subview": "base.reportActionTracking",
+        "queries": {
+            "aurl": {
+                "dimensions": "actionGroup,actionName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "5",
+                "siteId": "1",
+                "sort": "actions-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions,uniqueActions,actionsValue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "url": {
+                "dimensions": "actionGroup",
+                "do": "reports",
+                "format": "json",
+                "metrics": "actions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "5",
+                "siteId": "1",
+                "sort": "actions-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "rsh.refreshGrid",
+            "rshre.refreshGrid"
+        ]
+    },
+    "ad-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "ad==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "ad-type-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "adType==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "ad-types": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "adType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "ads": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "ad!=null",
+                "dimensions": "ad",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "ad!=null",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "anchortext": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "medium==referral",
+                "dimensions": "referralLinkText",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "medium==referral",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "avg-order-value": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "revenuePerTransaction",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "date-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "revenuePerTransaction",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "browser-detail": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "browserType==characterization_sentinel",
+                "dimensions": "browserVersion",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "browserType==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "browsers": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "browserType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "campaign-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "campaign==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "commerce": {
+        "subview": "base.reportCommerce",
+        "queries": {
+            "aurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "topproductsurl": {
+                "dimensions": "productName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "lineItemRevenue-",
+                "version": "v1"
+            },
+            "topsourcesurl": {
+                "dimensions": "source,medium",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactionRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "transactionRevenue-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "rsh.makeAreaChart -> transactions",
+            "rsh.makeMetricBoxes -> trend-metrics",
+            "rsh.renderTemplate -> content-headline",
+            "topproducts.refreshGrid",
+            "topsources.refreshGrid"
+        ]
+    },
+    "content": {
+        "subview": "base.reportContent",
+        "queries": {
+            "aurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pageViews,bounceRate",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "toppagesurl": {
+                "dimensions": "pageTitle,pageUrl",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "toppagetypesurl": {
+                "dimensions": "pageType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "rsh.makeAreaChart -> pageViews",
+            "rsh.makeMetricBoxes -> trend-metrics",
+            "rsh.renderTemplate -> content-headline",
+            "toppages.refreshGrid",
+            "toppagetypes.refreshGrid"
+        ]
+    },
+    "country-detail": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "country==characterization_sentinel",
+                "dimensions": "stateRegion,country",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "country==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "creative-performance": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "ad,entryPagePath",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "days-to-purchase": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "daysToTransaction",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "daysToTransaction",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "ecommerce": {
+        "subview": "base.reportEcommerce",
+        "queries": {
+            "aurl": {
+                "dimensions": "productName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "5",
+                "siteId": "1",
+                "sort": "lineItemRevenue-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "url": {
+                "dimensions": "source",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactions,transactionRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "5",
+                "siteId": "1",
+                "sort": "transactionRevenue-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "rsh.refreshGrid",
+            "rshre.refreshGrid"
+        ]
+    },
+    "ecommerce-conversion-rate": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,ecommerceConversionRate",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "date-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,ecommerceConversionRate",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "entry-pages": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "exit-pages": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "feeds": {
+        "subview": "base.reportFeeds",
+        "queries": {
+            "dimurl": {
+                "dimensions": "feedType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "feedReaders,feedRequests,feedSubscriptions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "feedReaders-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "feedReaders,feedRequests,feedSubscriptions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "geolocation": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "country,countryCode",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "host-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "hostName==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "hosts": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "hostName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "keyword-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "referralSearchTerms==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "keywords": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "medium==organic-search",
+                "dimensions": "referralSearchTerms",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "medium==organic-search",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "os": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "osType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "os-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "osType==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "page-type-detail": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "trendurl": {
+                "constraints": "pageType==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pageViews",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics"
+        ]
+    },
+    "page-types": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "pageType",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pageViews",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "pageViews-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pageViews",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "pages": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+                "do": "reports",
+                "format": "json",
+                "metrics": "pageViews,visits,uniquePageViews",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "pageViews-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "pageViews,visits,uniquePageViews",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "product-categories": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "productCategory",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "lineItemQuantity-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "product-category-detail": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "trendurl": {
+                "constraints": "productCategory==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics"
+        ]
+    },
+    "product-detail": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "trendurl": {
+                "constraints": "productName==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics"
+        ]
+    },
+    "product-sku-detail": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "trendurl": {
+                "constraints": "productSku==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics"
+        ]
+    },
+    "product-skus": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "productSku",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "lineItemQuantity-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "products": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "productName",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "lineItemQuantity-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "referral-link-text-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "referralLinkText==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "referring-sites": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "medium==referral",
+                "dimensions": "referralPageTitle,referralPageUrl",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "medium==referral",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "revenue": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactionRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "date-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactionRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "search-engine-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "medium==organic-search,referralWebSite==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "search-engines": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "medium==organic-search",
+                "dimensions": "referralWebSite",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "medium==organic-search",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "source-detail": {
+        "subview": "base.reportDimensionDetail",
+        "queries": {
+            "trendurl": {
+                "constraints": "source==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics"
+        ]
+    },
+    "sources": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "source,medium",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "state-detail": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
+                "dimensions": "city,stateRegion",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visits",
+                "version": "v1"
+            },
+            "trendurl": {
+                "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "traffic": {
+        "subview": "base.reportTraffic",
+        "queries": {
+            "aurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "topkeywordsurl": {
+                "constraints": "medium==organic-search",
+                "dimensions": "referralSearchTerms",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "topreferralsurl": {
+                "dimensions": "referralPageUrl",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "topsources_url": {
+                "dimensions": "source,medium",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            },
+            "tt1url": {
+                "constraints": "medium==direct",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "tt2url": {
+                "constraints": "medium==referral",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "tturl": {
+                "constraints": ",medium==organic-search",
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "vmurl": {
+                "dimensions": "medium",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "visits-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "rsh.makeAreaChart -> visits",
+            "rsh.renderTemplate -> visits-headline",
+            "tt.makeMetricBoxes -> organic-search",
+            "tt.makeMetricBoxes",
+            "tt1.makeMetricBoxes",
+            "tt2.makeMetricBoxes",
+            "vm.makePieChart",
+            "topkeywords.refreshGrid",
+            "topreferrals.refreshGrid -> top-referrals",
+            "topsources.refreshGrid -> top-sources"
+        ]
+    },
+    "transactions": {
+        "subview": "base.reportTransactions",
+        "queries": {
+            "aurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            },
+            "transactionsurl": {
+                "dimensions": "timestamp,transactionId",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "timestamp-",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "rsh.makeAreaChart -> transactions",
+            "rsh.makeMetricBoxes -> trend-metrics",
+            "rsh.renderTemplate -> content-headline",
+            "transactions.refreshGrid"
+        ]
+    },
+    "visitors-age": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "daysSinceFirstVisit",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "daysSinceFirstVisit",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "visitors-loyalty": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "priorVisitCount",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "priorVisitCount",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "visitors-recency": {
+        "subview": "base.reportDimension",
+        "queries": {
+            "dimurl": {
+                "dimensions": "daysSinceLastVisit",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "25",
+                "siteId": "1",
+                "sort": "daysSinceLastVisit",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> site_usage_trend-metrics",
+            "dim.refreshGrid"
+        ]
+    },
+    "visits-to-purchase": {
+        "subview": "base.reportSimpleDimensional",
+        "queries": {
+            "dimurl": {
+                "dimensions": "visitsToTransaction",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "resultsPerPage": "30",
+                "siteId": "1",
+                "sort": "visitsToTransaction",
+                "version": "v1"
+            },
+            "trendurl": {
+                "dimensions": "date",
+                "do": "reports",
+                "format": "json",
+                "metrics": "transactions",
+                "module": "base",
+                "nonce": "<nonce>",
+                "period": "last_thirty_days",
+                "siteId": "1",
+                "sort": "date",
+                "version": "v1"
+            }
+        },
+        "commands": [
+            "trend.renderTemplate -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "dim.refreshGrid"
+        ]
+    }
+}
