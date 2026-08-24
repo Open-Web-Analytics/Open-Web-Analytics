@@ -117,6 +117,22 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 return sprintf( 'widget %s has a "more" link with no reportId', $i );
             }
 
+            /*
+             * A widget may narrow the rows further than the report does.
+             * `traffic` is why: its three metric boxes each measure a
+             * different medium, so what they ask for genuinely differs from
+             * one another and from the report's trend.
+             */
+            $error = self::constraintsError(
+                isset( $widget['constraints'] ) ? $widget['constraints'] : null,
+                (array) ( $definition['params'] ?? array() ),
+                sprintf( 'widget %s: ', $i ) );
+
+            if ( $error !== '' ) {
+
+                return $error;
+            }
+
             if ( $widget['type'] !== 'report-links' ) {
 
                 continue;
@@ -149,35 +165,51 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * renders every row rather than the one asked for, which reads as a
          * data bug and not as a broken definition.
          */
-        $constraints = isset( $definition['settings']['constraints'] )
-            ? $definition['settings']['constraints']
-            : null;
+        return self::constraintsError(
+            isset( $definition['settings']['constraints'] ) ? $definition['settings']['constraints'] : null,
+            (array) ( $definition['params'] ?? array() ),
+            '' );
+    }
 
-        if ( is_array( $constraints ) ) {
+    /**
+     * Check one set of constraint parts, wherever it was authored.
+     *
+     * Shared by the report-wide constraint and a widget's own, so the two
+     * cannot drift into accepting different things -- a widget constraint
+     * reading an undeclared parameter fails as loudly as a report's.
+     *
+     * @param mixed $constraints the declared value; a string is used as-is
+     * @param array $declared the report's declared params
+     * @param string $where a prefix naming the widget, empty for the report
+     * @return string the first problem found, or '' if there is none
+     */
+    private static function constraintsError( $constraints, array $declared, $where ) {
 
-            foreach ( $constraints as $i => $part ) {
+        if ( ! is_array( $constraints ) ) {
 
-                if ( ! is_array( $part ) || empty( $part['dimension'] ) ) {
+            return '';
+        }
 
-                    return sprintf( 'constraint %s needs a "dimension"', $i );
-                }
+        foreach ( $constraints as $i => $part ) {
 
-                if ( ! array_key_exists( 'fromParam', $part ) && ! array_key_exists( 'value', $part ) ) {
+            if ( ! is_array( $part ) || empty( $part['dimension'] ) ) {
 
-                    return sprintf( 'constraint on "%s" needs either a "value" or a "fromParam"',
-                        $part['dimension'] );
-                }
+                return sprintf( '%sconstraint %s needs a "dimension"', $where, $i );
+            }
 
-                $declared = (array) ( $definition['params'] ?? array() );
+            if ( ! array_key_exists( 'fromParam', $part ) && ! array_key_exists( 'value', $part ) ) {
 
-                if ( array_key_exists( 'fromParam', $part )
-                     && ! array_key_exists( $part['fromParam'], $declared ) ) {
+                return sprintf( '%sconstraint on "%s" needs either a "value" or a "fromParam"',
+                    $where, $part['dimension'] );
+            }
 
-                    // Otherwise the constraint silently becomes `dimension==`,
-                    // matching nothing, with no clue as to why.
-                    return sprintf( 'constraint on "%s" reads the undeclared parameter "%s"',
-                        $part['dimension'], $part['fromParam'] );
-                }
+            if ( array_key_exists( 'fromParam', $part )
+                 && ! array_key_exists( $part['fromParam'], $declared ) ) {
+
+                // Otherwise the constraint silently becomes `dimension==`,
+                // matching nothing, with no clue as to why.
+                return sprintf( '%sconstraint on "%s" reads the undeclared parameter "%s"',
+                    $where, $part['dimension'], $part['fromParam'] );
             }
         }
 
@@ -229,9 +261,22 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             $this->set( 'metrics', self::interpolate( $d['metrics'], $values ) );
         }
 
+        /*
+         * Resolved before the settings loop below rather than inside it,
+         * because a widget's own constraint is ADDED to this one and so has to
+         * exist before the widgets are.
+         */
+        $constraints = isset( $d['settings']['constraints'] ) ? $d['settings']['constraints'] : '';
+
+        $constraints = is_array( $constraints )
+            ? self::buildConstraints( $constraints, $values )
+            : self::interpolate( (string) $constraints, $values );
+
         if ( isset( $d['widgets'] ) ) {
 
-            $this->set( 'widgets', self::interpolateDeep( $d['widgets'], $values ) );
+            $this->set( 'widgets', self::interpolateDeep(
+                self::resolveWidgetConstraints( (array) $d['widgets'], $constraints, $values ),
+                $values ) );
         }
 
         $this->setTitle(
@@ -240,9 +285,10 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         foreach ( (array) ( isset( $d['settings'] ) ? $d['settings'] : array() ) as $key => $value ) {
 
-            if ( $key === 'constraints' && is_array( $value ) ) {
+            if ( $key === 'constraints' ) {
 
-                $value = self::buildConstraints( $value, $values );
+                // Already resolved above, where the widgets could be given it.
+                $value = $constraints;
 
             } else {
 
@@ -351,6 +397,59 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         return is_string( $value ) ? self::interpolate( $value, $values ) : $value;
+    }
+
+    /**
+     * Fold each widget's own constraint into its query.
+     *
+     * ADDED to the report's rather than replacing it: a widget that narrows to
+     * one medium still wants every other row the report was already limited
+     * to, and a widget author should not have to restate the report's
+     * constraint to add one of their own.
+     *
+     * Joining here rather than in the template keeps the two kinds of value
+     * encoded in one place -- see buildConstraints() -- and means the template
+     * receives a widget whose query is already complete.
+     *
+     * @param array $widgets
+     * @param string $reportConstraints the already-built report-wide string
+     * @param array $values
+     * @return array the widgets, with `constraints` folded into `query`
+     */
+    private static function resolveWidgetConstraints( array $widgets, $reportConstraints, array $values ) {
+
+        $out = array();
+
+        foreach ( $widgets as $widget ) {
+
+            $widget = (array) $widget;
+
+            if ( isset( $widget['constraints'] ) ) {
+
+                $own = is_array( $widget['constraints'] )
+                    ? self::buildConstraints( $widget['constraints'], $values )
+                    : self::interpolate( (string) $widget['constraints'], $values );
+
+                $query = (array) ( isset( $widget['query'] ) ? $widget['query'] : array() );
+
+                /*
+                 * Empty parts are dropped rather than joined, so a report with
+                 * no constraint of its own does not hand the widget a string
+                 * with a leading comma -- an empty first clause, which is what
+                 * the template this replaces emitted for one of these three.
+                 */
+                $query['constraints'] = implode( ',',
+                    array_filter( array( $reportConstraints, $own ), 'strlen' ) );
+
+                $widget['query'] = $query;
+
+                unset( $widget['constraints'] );
+            }
+
+            $out[] = $widget;
+        }
+
+        return $out;
     }
 
     /**

@@ -759,4 +759,368 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertStringNotContainsString( 'owa_reportSectionHeader', $html );
     }
+
+    /**
+     * Read one widget's emitted query back out of the rendered page.
+     *
+     * The merge that matters happens in the template, not in the declaration,
+     * so an assertion against the declared bag would pass with the precedence
+     * reversed. Reading the query the browser will actually request is the
+     * only check that cannot go vacuous.
+     */
+    private function queryFor( string $html, string $var ): array
+    {
+        require_once __DIR__ . '/ReportRenderHarness.php';
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $entry ) {
+
+            if ( $entry['var'] === $var ) {
+
+                return (array) $entry['query'];
+            }
+        }
+
+        $this->fail( "no query named '$var' was emitted" );
+    }
+
+    private function constraintReport( array $widgetExtra, $reportConstraints = null ): array
+    {
+        $definition = array(
+            'title'   => 'Constrained',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) + $widgetExtra,
+            ),
+        );
+
+        if ( $reportConstraints !== null ) {
+
+            $definition['settings'] = array( 'constraints' => $reportConstraints );
+        }
+
+        return $this->queryFor(
+            $this->renderedWith( $definition, array(), array() ), 'dimurl' );
+    }
+
+    /**
+     * A widget narrows the report further; it does not start again.
+     *
+     * `traffic` is the case: three metric boxes, each measuring a different
+     * medium. If a widget's constraint REPLACED the report's, a widget on a
+     * detail report would quietly widen from "this one host" to every host --
+     * a data bug that reads as a reporting error, not a definition one.
+     */
+    public function testAWidgetConstraintIsAddedToTheReports(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $query = $this->constraintReport(
+            array( 'constraints' => array( array( 'dimension' => 'medium', 'value' => 'organic-search' ) ) ),
+            array( array( 'dimension' => 'host', 'value' => 'example.com' ) ) );
+
+        $this->assertSame( 'host==example.com,medium==organic-search', $query['constraints'] ?? null,
+            "a widget's constraint must narrow the report's, not replace it" );
+    }
+
+    /**
+     * The report's constraint still applies to a widget that adds none.
+     */
+    public function testAWidgetWithoutAConstraintKeepsTheReports(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $query = $this->constraintReport( array(),
+            array( array( 'dimension' => 'host', 'value' => 'example.com' ) ) );
+
+        $this->assertSame( 'host==example.com', $query['constraints'] ?? null );
+    }
+
+    /**
+     * An empty side is dropped rather than joined.
+     *
+     * The template this replaces built one of `traffic`'s three constraints by
+     * concatenating onto a report-wide part that resolved to nothing, and
+     * emitted `,medium==organic-search` -- an empty first clause. The other two
+     * were built slightly differently and were fine, which is exactly why this
+     * survived: it was one malformed string among three that looked alike.
+     */
+    public function testAWidgetConstraintDoesNotLeadWithACommaWhenTheReportHasNone(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $query = $this->constraintReport(
+            array( 'constraints' => array( array( 'dimension' => 'medium', 'value' => 'organic-search' ) ) ) );
+
+        $this->assertSame( 'medium==organic-search', $query['constraints'] ?? null,
+            'an absent report constraint must not contribute an empty clause' );
+    }
+
+    /** A widget's constraint encodes a request value, like the report's does. */
+    public function testAWidgetConstraintEncodesARequestValue(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = array(
+            'title'   => 'Constrained',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'params'  => array( 'host' => array() ),
+            'widgets' => array(
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ),
+                       'constraints' => array( array( 'dimension' => 'host', 'fromParam' => 'host' ) ) ),
+            ),
+        );
+
+        $viaWidget = $this->queryFor(
+            $this->renderedWith( $definition, array(), array( 'host' => 'a b&c' ) ), 'dimurl' );
+
+        // The same constraint, declared report-wide instead. Asserting the two
+        // agree checks the encoding without restating it: a literal written
+        // here has to account for the encode on the way out and the decode on
+        // the way back in, and getting that wrong looks like a passing test.
+        $reportWide = $definition;
+        $reportWide['settings'] = array( 'constraints' => $reportWide['widgets'][0]['constraints'] );
+        unset( $reportWide['widgets'][0]['constraints'] );
+
+        $viaReport = $this->queryFor(
+            $this->renderedWith( $reportWide, array(), array( 'host' => 'a b&c' ) ), 'dimurl' );
+
+        $this->assertSame( $viaReport['constraints'], $viaWidget['constraints'] ?? null,
+            'a widget constraint must encode a request value exactly as a report one does' );
+
+        $this->assertStringContainsString( '&', (string) $viaReport['constraints'],
+            'the value must survive the round trip intact, ampersand and all' );
+    }
+
+    /**
+     * A widget's constraint is checked exactly as the report's is.
+     *
+     * @dataProvider badWidgetConstraintProvider
+     */
+    public function testABadWidgetConstraintIsRefused( array $constraints, string $because ): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
+            'title'   => 'Constrained',
+            'subview' => 'base.reportWidgets',
+            'widgets' => array(
+                array( 'type' => 'grid', 'constraints' => $constraints ),
+            ),
+        ) );
+
+        $this->assertNotSame( '', $error, $because );
+        $this->assertStringContainsString( 'widget 0', $error,
+            'the error must name the widget, or an author cannot find it' );
+    }
+
+    public static function badWidgetConstraintProvider(): array
+    {
+        return array(
+            'no dimension' => array(
+                array( array( 'value' => 'organic-search' ) ),
+                'a constraint with nothing to constrain matches everything',
+            ),
+            'neither value nor fromParam' => array(
+                array( array( 'dimension' => 'medium' ) ),
+                'the constraint would become `medium==`, matching nothing',
+            ),
+            'undeclared parameter' => array(
+                array( array( 'dimension' => 'host', 'fromParam' => 'host' ) ),
+                'a parameter the report does not declare is never read',
+            ),
+        );
+    }
+
+    /**
+     * A metric box draws its own label, and is not also given a header.
+     *
+     * The label belongs inside the box, above the number. Rendering the
+     * widget's title as a section header as well would print the same words
+     * twice, one above the other.
+     */
+    public function testAMetricBoxesWidgetLabelsItselfWithoutADuplicateHeader(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Boxes',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'metric-boxes', 'id' => 'fromsearch',
+                       'container' => 'trend-metrics-search',
+                       'title' => 'Visits From Search Engines',
+                       'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
+            ),
+        ), array() );
+
+        $this->assertStringContainsString(
+            '\'makeMetricBoxes\', \'\', \'\', "Visits From Search Engines"', $html,
+            'the title must reach the box as its label' );
+
+        $this->assertStringNotContainsString(
+            '<div class="owa_reportSectionHeader">Visits From Search Engines</div>', $html,
+            'a widget that draws its own label must not also get the generic header' );
+    }
+
+    /**
+     * A pie charts the dimension it queries.
+     *
+     * Naming the dimension a second time in the widget would be a way for the
+     * chart and the query it charts to disagree.
+     */
+    public function testAPieChartsTheDimensionItQueries(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Pie',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'pie', 'id' => 'medium', 'container' => 'traffic-sources',
+                       'chartMetric' => 'visits',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+            ),
+        ), array() );
+
+        $this->assertStringContainsString( "medium.options.pieChart.dimension = 'medium';", $html );
+        $this->assertStringContainsString( "medium.options.pieChart.metric = 'visits';", $html );
+        $this->assertStringContainsString( "'makePieChart'", $html );
+
+        $this->assertSame( 'medium', $this->queryFor( $html, 'mediumurl' )['dimensions'] ?? null,
+            'the charted dimension must be the queried one' );
+    }
+
+    /**
+     * A trend can be drawn without the boxes underneath it.
+     *
+     * On by default -- that is how a metric set makes itself visible. `traffic`
+     * turns them off: it measures one metric and draws three boxes of its own
+     * beside the chart, so a fourth repeating the total is noise.
+     */
+    public function testATrendCanSuppressItsMetricBoxes(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $trend = array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
+                        'chartMetric' => 'visits',
+                        'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) );
+
+        $definition = array(
+            'title'   => 'Trend',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+        );
+
+        $with = $this->renderedWith( $definition + array( 'widgets' => array( $trend ) ), array() );
+
+        $this->assertStringContainsString( "'makeMetricBoxes' , 'trend-metrics'", $with,
+            'the boxes are drawn by default' );
+        $this->assertStringContainsString( 'id="trend-metrics"', $with );
+
+        $without = $this->renderedWith(
+            $definition + array( 'widgets' => array( $trend + array( 'showMetricBoxes' => false ) ) ),
+            array() );
+
+        $this->assertStringNotContainsString( 'makeMetricBoxes', $without,
+            'showMetricBoxes false must suppress the command' );
+
+        $this->assertStringNotContainsString( 'id="trend-metrics"', $without,
+            'and the element it would have drawn into, which is otherwise left empty' );
+
+        // The chart itself is untouched by the switch.
+        $this->assertStringContainsString( 'makeAreaChart', $without );
+    }
+
+    private function reportLinksHtml( array $extra = array() ): string
+    {
+        return $this->renderedWith( array(
+            'title'   => 'Links',
+            'subview' => 'base.reportWidgets',
+            'metrics' => 'visits',
+            'widgets' => array(
+                array( 'type' => 'report-links', 'title' => 'Related Reports',
+                       'links' => array(
+                           array( 'reportId' => 'keywords', 'label' => 'Keywords' ),
+                       ) ) + $extra,
+            ),
+        ), array() );
+    }
+
+    /**
+     * A title is drawn once, by whichever part of the renderer owns it.
+     *
+     * report-links drew its own header AND was given the shared one, so every
+     * such block printed its name twice -- "Content Reports" above "Content
+     * Reports". Two identical lines read as a styling accident rather than a
+     * duplicated element, which is why it survived.
+     */
+    public function testAReportLinksTitleIsDrawnExactlyOnce(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $this->assertSame( 1,
+            substr_count( $this->reportLinksHtml(),
+                '<div class="owa_reportSectionHeader">Related Reports</div>' ),
+            'the title must be rendered once, not once per renderer that knows about it' );
+    }
+
+    /**
+     * ...and the switch reaches it, which drawing its own header prevented.
+     */
+    public function testAReportLinksTitleCanBeHidden(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->reportLinksHtml( array( 'showTitle' => false ) );
+
+        $this->assertStringNotContainsString( 'owa_reportSectionHeader">Related Reports', $html,
+            'showTitle must hide a report-links title like any other' );
+
+        // Hidden, not lost: the links it names are still rendered.
+        $this->assertStringContainsString( 'Keywords</a>', $html );
+    }
+
+    /**
+     * No widget draws a title the shared header has already drawn.
+     *
+     * Written against every type rather than the two found by hand, so a new
+     * widget that renders its own header is caught when it is added rather
+     * than when someone notices the doubling on a rendered page.
+     */
+    public function testNoWidgetTypeDrawsADuplicateTitle(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $widgets = array(
+            'trend'        => array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
+                                     'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
+            'grid'         => array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+            'pie'          => array( 'type' => 'pie', 'id' => 'pie', 'container' => 'pie-chart',
+                                     'chartMetric' => 'visits',
+                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+            'metric-boxes' => array( 'type' => 'metric-boxes', 'id' => 'boxes',
+                                     'container' => 'boxes-metrics',
+                                     'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
+            'report-links' => array( 'type' => 'report-links',
+                                     'links' => array( array( 'reportId' => 'keywords', 'label' => 'Keywords' ) ) ),
+        );
+
+        foreach ( $widgets as $type => $widget ) {
+
+            $html = $this->renderedWith( array(
+                'title'   => 'One Title',
+                'subview' => 'base.reportWidgets',
+                'metrics' => 'visits',
+                'widgets' => array( $widget + array( 'title' => 'A Widget Title' ) ),
+            ), array() );
+
+            $this->assertSame( 1, substr_count( $html, 'A Widget Title' ),
+                "the $type widget renders its title more than once" );
+        }
+    }
 }

@@ -103,10 +103,14 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
      * what a report wants when the surrounding layout already says what the
      * thing is.
      *
-     * Shown by default when there is one, since today the only widget with a
-     * title is one that displays it.
+     * Shown by default when there is one -- unless the widget draws the title
+     * itself. A metric box renders its label inside the box, above the number,
+     * so the generic header would print the same name twice.
      */
-    $owa_showTitle = ! empty( $owa_w['title'] )
+    $owa_ownsTitle = in_array( $owa_w['type'] ?? '', array( 'metric-boxes' ), true );
+
+    $owa_showTitle = ! $owa_ownsTitle
+        && ! empty( $owa_w['title'] )
         && ( ! array_key_exists( 'showTitle', $owa_w ) || $owa_w['showTitle'] );
 ?>
 <?php if ( $owa_showTitle ): ?>
@@ -114,9 +118,22 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 <?php endif; ?>
 
 <?php if ( ( $owa_w['type'] ?? '' ) === 'trend' ): ?>
+<?php
+    /*
+     * The boxes under the chart, one per metric in the set.
+     *
+     * On by default -- a dimensional report's trend has always drawn them, and
+     * they are how a metric set makes itself visible. `traffic` turns them off:
+     * it measures one metric and already draws three boxes of its own beside
+     * the chart, so a fourth repeating the total is noise.
+     */
+    $owa_showMetricBoxes = ! array_key_exists( 'showMetricBoxes', $owa_w ) || $owa_w['showMetricBoxes'];
+?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
         <div id="<?php $view->out( $owa_id ); ?>-title" class="owa_reportHeadline"></div>
+<?php if ( $owa_showMetricBoxes ): ?>
         <div id="<?php $view->out( $owa_id ); ?>-metrics" style="height:auto;width:auto;"></div>
+<?php endif; ?>
         <div style="clear:both;"></div>
 
         <script>
@@ -146,8 +163,73 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
 <?php if ( $owa_chartMetric !== '' ): ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_chartMetric, false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
+<?php if ( $owa_showMetricBoxes ): ?>
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
+<?php endif; ?>
+
+<?php if ( ! $owa_multiSet ): ?>
+        <?php echo $owa_id; ?>.load();
+<?php endif; ?>
+        </script>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'metric-boxes' ): ?>
+<?php
+    /*
+     * One labelled box per metric in the query, with a sparkline.
+     *
+     * Separate from `trend`, which also draws boxes but as part of a chart:
+     * these stand alone and each one measures its OWN rows. `traffic` is the
+     * case -- three boxes, same metric, one per medium -- which is why a
+     * widget can carry a constraint of its own.
+     */
+?>
+        <div id="<?php $view->out( $owa_container ); ?>"></div>
+
+        <script>
+        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
+
+        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
+        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
+<?php if ( ! empty( $owa_w['boxWidth'] ) ): ?>
+        <?php echo $owa_id; ?>.options.metricBoxes.width = '<?php $view->out( $owa_w['boxWidth'], false ); ?>';
+<?php endif; ?>
+        <?php
+            // The label sits inside the box; see $owa_ownsTitle above. Encoded
+            // rather than quoted -- it is prose and may carry an apostrophe.
+        ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', '', <?php echo json_encode( (string) ( $owa_w['title'] ?? '' ) ); ?>]);
+
+<?php if ( ! $owa_multiSet ): ?>
+        <?php echo $owa_id; ?>.load();
+<?php endif; ?>
+        </script>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'pie' ): ?>
+<?php
+    /*
+     * A share-of-total chart: one slice per value of the query's dimension.
+     *
+     * The dimension is NOT configured separately -- it is the one the widget
+     * already queries, and naming it twice is a way for the two to disagree.
+     */
+    $owa_pieMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
+?>
+        <div id="<?php $view->out( $owa_container ); ?>"></div>
+
+        <script>
+        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
+
+        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
+        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
+        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_pieMetric, false ); ?>';
+        <?php echo $owa_id; ?>.options.pieChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
+<?php if ( ! empty( $owa_w['chartWidth'] ) ): ?>
+        <?php echo $owa_id; ?>.options.chartWidth = '<?php $view->out( $owa_w['chartWidth'], false ); ?>';
+<?php endif; ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['makePieChart']);
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
@@ -183,11 +265,12 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
      *
      * No query and no result-set explorer: this widget renders from its own
      * declaration.
+     *
+     * The title is drawn by the shared header above, not here. Drawing its own
+     * printed the name twice -- and ignored `showTitle`, so a report-links
+     * title could not be hidden at all.
      */
 ?>
-<?php if ( ! empty( $owa_w['title'] ) ): ?>
-        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
-<?php endif; ?>
         <div class="relatedReports">
             <ul>
 <?php foreach ( (array) ( $owa_w['links'] ?? array() ) as $owa_link ): ?>

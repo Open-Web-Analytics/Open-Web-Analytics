@@ -2762,10 +2762,10 @@
         ]
     },
     "traffic": {
-        "subview": "base.reportTraffic",
+        "subview": "base.reportWidgets",
         "queries": [
             {
-                "var": "aurl",
+                "var": "trendurl",
                 "query": {
                     "dimensions": "date",
                     "do": "reports",
@@ -2780,9 +2780,24 @@
                 }
             },
             {
-                "var": "tturl",
+                "var": "mediumurl",
                 "query": {
-                    "constraints": ",medium==organic-search",
+                    "dimensions": "medium",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "fromsearchurl",
+                "query": {
+                    "constraints": "medium==organic-search",
                     "dimensions": "date",
                     "do": "reports",
                     "format": "json",
@@ -2796,7 +2811,7 @@
                 }
             },
             {
-                "var": "tt1url",
+                "var": "fromdirecturl",
                 "query": {
                     "constraints": "medium==direct",
                     "dimensions": "date",
@@ -2812,7 +2827,7 @@
                 }
             },
             {
-                "var": "tt2url",
+                "var": "fromreferralurl",
                 "query": {
                     "constraints": "medium==referral",
                     "dimensions": "date",
@@ -2828,25 +2843,9 @@
                 }
             },
             {
-                "var": "vmurl",
+                "var": "topsourcesurl",
                 "query": {
-                    "dimensions": "medium",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "visits-",
-                    "version": "v1"
-                }
-            },
-            {
-                "var": "topkeywordsurl",
-                "query": {
-                    "constraints": "medium==organic-search",
-                    "dimensions": "referralSearchTerms",
+                    "dimensions": "source,medium",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",
@@ -2876,9 +2875,10 @@
                 }
             },
             {
-                "var": "topsources_url",
+                "var": "topkeywordsurl",
                 "query": {
-                    "dimensions": "source,medium",
+                    "constraints": "medium==organic-search",
+                    "dimensions": "referralSearchTerms",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",
@@ -2897,54 +2897,54 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 0,
-            "loadsWithUrl": 8,
-            "urls": 0
+            "loads": 8,
+            "loadsWithUrl": 0,
+            "urls": 8
         },
         "explorers": [
             {
-                "var": "rsh",
+                "var": "trend",
                 "container": "trend-chart"
             },
             {
-                "var": "tt",
-                "container": "trend-metrics"
-            },
-            {
-                "var": "tt1",
-                "container": "trend-metrics"
-            },
-            {
-                "var": "tt2",
-                "container": "trend-metrics"
-            },
-            {
-                "var": "vm",
+                "var": "medium",
                 "container": "traffic-sources"
             },
             {
-                "var": "topkeywords",
-                "container": "top-keywords"
+                "var": "fromsearch",
+                "container": "trend-metrics-search"
+            },
+            {
+                "var": "fromdirect",
+                "container": "trend-metrics-direct"
+            },
+            {
+                "var": "fromreferral",
+                "container": "trend-metrics-referral"
+            },
+            {
+                "var": "topsources",
+                "container": "top-sources"
             },
             {
                 "var": "topreferrals",
                 "container": "top-referrals"
             },
             {
-                "var": "topsources",
-                "container": "top-sources"
+                "var": "topkeywords",
+                "container": "top-keywords"
             }
         ],
         "commands": [
-            "rsh.makeAreaChart",
-            "rsh.renderTemplate -> visits-headline",
-            "tt.makeMetricBoxes",
-            "tt1.makeMetricBoxes",
-            "tt2.makeMetricBoxes",
-            "vm.makePieChart",
-            "topkeywords.refreshGrid",
-            "topreferrals.refreshGrid -> top-referrals",
-            "topsources.refreshGrid -> top-sources"
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "medium.makePieChart",
+            "fromsearch.makeMetricBoxes",
+            "fromdirect.makeMetricBoxes",
+            "fromreferral.makeMetricBoxes",
+            "topsources.refreshGrid",
+            "topreferrals.refreshGrid",
+            "topkeywords.refreshGrid"
         ]
     },
     "transactions": {
