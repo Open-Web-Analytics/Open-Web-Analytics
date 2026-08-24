@@ -242,8 +242,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
         foreach ( array( 'garbage', 'all_time', 'last_hour' ) as $bad ) {
 
-            $data = (array) ( new \OWA\Module\Base\Controller\ReportPages(
-                array( 'period' => $bad ) ) )->doAction();
+            $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                array( 'reportId' => 'pages', 'period' => $bad ) ) )->doAction();
 
             $this->assertSame( 'base.error', $data['view'] ?? null,
                 "period=$bad was accepted and quietly replaced" );
@@ -271,7 +271,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
                          array( 'period' => 'date_range', 'startDate' => '20260801',
                                 'endDate' => '20260815' ) ) as $params ) {
 
-            $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+            $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                $params + array( 'reportId' => 'pages' ) ) )->doAction();
 
             $this->assertSame( 'base.report', $data['view'] ?? null,
                 'a legitimate request must still render: ' . json_encode( $params ) );
@@ -354,7 +355,9 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testAReportWithNoSiteIdDoesNotInventOne(): void
     {
-        $controller = new \OWA\Module\Base\Controller\ReportPages( array() );
+        // Any ReportController would do; this is the one every configured
+        // report now runs on, and ReportPages is no longer a class.
+        $controller = new \OWA\Core\ConfiguredReport( array() );
 
         $this->assertEmpty( $controller->getParam( 'siteId' ),
             'a report with no siteId must not choose a site silently' );
@@ -372,8 +375,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         // Links in the wild carry both. Reports read siteId; the tracker and
         // some older links use site_id, and a report reached from one of those
         // must still know which site it is showing.
-        $camel = new \OWA\Module\Base\Controller\ReportPages( array( 'siteId' => 'abc' ) );
-        $snake = new \OWA\Module\Base\Controller\ReportPages( array( 'site_id' => 'abc' ) );
+        $camel = new \OWA\Core\ConfiguredReport( array( 'siteId' => 'abc' ) );
+        $snake = new \OWA\Core\ConfiguredReport( array( 'site_id' => 'abc' ) );
 
         $this->assertSame( 'abc', $camel->getParam( 'siteId' ) );
         $this->assertSame( 'abc', $snake->getParam( 'siteId' ) );
@@ -399,7 +402,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                $params + array( 'reportId' => 'pages' ) ) )->doAction();
 
         $this->assertSame( 'base.error', $data['view'] ?? null,
             'an unusable range was accepted: ' . json_encode( $params ) );
@@ -438,7 +442,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( $params ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                $params + array( 'reportId' => 'pages' ) ) )->doAction();
 
         $this->assertNotSame( 'base.error', $data['view'] ?? null,
             'a legitimate range was refused: ' . json_encode( $params ) );

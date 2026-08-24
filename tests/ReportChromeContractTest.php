@@ -50,11 +50,15 @@ final class ReportChromeContractTest extends TestCase
     {
         $cases = array();
 
-        // A spread rather than all 53: this is shared behaviour, so the useful
-        // question is whether it holds across the KINDS of report, not whether
-        // it holds 53 times.
-        foreach ( array( 'ReportPages', 'ReportEntryPages', 'ReportHostDetail',
-                         'ReportBrowsers', 'ReportReferringSites' ) as $name ) {
+        // A spread rather than all of them: this is shared behaviour, so the
+        // useful question is whether it holds across the KINDS of report.
+        //
+        // Controller-backed reports only, because this provider builds the
+        // controller directly. The converted reports get the same chrome
+        // through the registry route, which testTheChromeSurvivesTheRegistryRoute
+        // covers by id.
+        foreach ( array( 'ReportHostDetail', 'ReportBrowserDetail', 'ReportCountryDetail',
+                         'ReportActionDetail', 'ReportOsDetail' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
 
@@ -147,9 +151,13 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheTwoRoutesAgreeAboutTheChrome(): void
     {
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportPages( array() ) )->doAction();
+        // host-detail is still controller-backed, so it is one of the reports
+        // that HAS both routes to compare. A converted report has only the one.
+        $params = array( 'host' => 'example.com' );
+
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportHostDetail( $params ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages' ) ) )->doAction();
+            $params + array( 'reportId' => 'host-detail' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -205,15 +213,19 @@ final class ReportChromeContractTest extends TestCase
     }
 
     /**
-     * ...and the route that existed before is untouched, so this added an id
-     * for the new path rather than changing the old one.
+     * ...and a report still reached by its own action keeps the id it had, so
+     * the reportId derivation added an id for the new path rather than changing
+     * the old one.
+     *
+     * Was ReportPages until that became configuration and lost its action.
+     * host-detail is the same case with a controller still behind it.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages(
-            array( 'do' => 'base.reportPages' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportHostDetail(
+            array( 'do' => 'base.reportHostDetail', 'host' => 'example.com' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportPages', $data['dom_id'] );
+        $this->assertSame( 'base-reportHostDetail', $data['dom_id'] );
     }
 
     /**
@@ -268,7 +280,9 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheChromeIsSubstantialNotJustPresent(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportPages( array() ) )->doAction();
+        // Reached by id: pages is configuration now and has no other route.
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages' ) ) )->doAction();
 
         $this->assertGreaterThan( 20, count( $data ),
             'doAction() should produce the full report bag, not just what action() sets' );

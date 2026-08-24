@@ -69,7 +69,12 @@ final class ReportMetricDimensionContractTest extends TestCase
         $root  = dirname(__DIR__);
         $files = array_merge(
             glob($root . '/modules/*/Controller/Report*.php') ?: [],
-            glob($root . '/modules/*/templates/report_*.php') ?: []
+            glob($root . '/modules/*/templates/report_*.php') ?: [],
+            // Converted reports declare their metrics in JSON now. Without
+            // this, converting a report silently removes it from this contract
+            // -- which is what the count guard below caught when 35 of them
+            // moved at once.
+            glob($root . '/modules/*/reports/*.json') ?: []
         );
 
         $out = [];
@@ -87,7 +92,10 @@ final class ReportMetricDimensionContractTest extends TestCase
 
             foreach ($blocks as $block) {
                 $grab = static function (string $key) use ($block): ?string {
-                    $re = '/[\'"]' . $key . '[\'"]\s*(?:,|=>)\s*[\'"]([^\'"]*)[\'"]/';
+                    // ':' as well as ',' and '=>', so a JSON definition's
+                    // "metrics": "pageViews,visits" is read the same way the
+                    // controller's set('metrics', 'pageViews,visits') was.
+                    $re = '/[\'"]' . $key . '[\'"]\s*(?:,|=>|:)\s*[\'"]([^\'"]*)[\'"]/';
                     return preg_match($re, $block, $mm) ? $mm[1] : null;
                 };
 

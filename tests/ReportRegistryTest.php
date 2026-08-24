@@ -104,7 +104,13 @@ final class ReportRegistryTest extends TestCase
     }
 
     /**
-     * The whole promise of step 1: the new route is the old route.
+     * For a report still implemented by a controller, the new route is the old
+     * route.
+     *
+     * The converted reports are deliberately not in this provider: they have no
+     * direct route left to compare against, which is the change rather than a
+     * gap. What they render is held to the recorded baseline instead, by
+     * ReportConfigEquivalenceTest and the characterization fixture.
      *
      * @dataProvider sampleReportProvider
      */
@@ -130,12 +136,54 @@ final class ReportRegistryTest extends TestCase
 
     public static function sampleReportProvider(): array
     {
+        // All still controller-backed: parameterised or bespoke reports, which
+        // this phase does not convert.
         return array(
-            'pure config'    => array( 'pages',           '\OWA\Module\Base\Controller\ReportPages' ),
-            'another pure'   => array( 'entry-pages',     '\OWA\Module\Base\Controller\ReportEntryPages' ),
-            'links onward'   => array( 'referring-sites', '\OWA\Module\Base\Controller\ReportReferringSites' ),
-            'parameterised'  => array( 'host-detail',     '\OWA\Module\Base\Controller\ReportHostDetail' ),
-            'bespoke stays'  => array( 'domstreams',      '\OWA\Module\Base\Controller\ReportDomstreams' ),
+            'parameterised'  => array( 'host-detail',  '\OWA\Module\Base\Controller\ReportHostDetail' ),
+            'another param'  => array( 'browser-detail', '\OWA\Module\Base\Controller\ReportBrowserDetail' ),
+            'bespoke stays'  => array( 'domstreams',   '\OWA\Module\Base\Controller\ReportDomstreams' ),
+            'prefetching'    => array( 'campaigns',    '\OWA\Module\Base\Controller\ReportCampaigns' ),
+        );
+    }
+
+    /**
+     * A converted report renders through the registry, and its old action is
+     * gone.
+     *
+     * Both halves matter. The first says the JSON path actually works end to
+     * end rather than only under the harness; the second says the controller
+     * really was retired, because an action left registered would keep serving
+     * a report from code that no longer matches the configuration -- two
+     * answers to one question, with nothing to say which is authoritative.
+     *
+     * @dataProvider convertedReportProvider
+     */
+    public function testAConvertedReportRendersFromItsDefinition( string $id, string $wasAction ): void
+    {
+        $this->requireDb();
+
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => $id ) ) )->doAction();
+
+        $this->assertNotEmpty( $data['subview'] ?? '',
+            "report '$id' did not render from its definition" );
+
+        $this->assertNotSame( 'base.error', $data['view'] ?? null,
+            "report '$id' was refused" );
+
+        $actions = \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'actions', $wasAction );
+
+        $this->assertEmpty( $actions,
+            "$wasAction is still registered, so a converted report has two implementations" );
+    }
+
+    public static function convertedReportProvider(): array
+    {
+        return array(
+            'pages'           => array( 'pages',           'base.reportPages' ),
+            'entry-pages'     => array( 'entry-pages',     'base.reportEntryPages' ),
+            'referring-sites' => array( 'referring-sites', 'base.reportReferringSites' ),
+            'traffic'         => array( 'traffic',         'base.reportTraffic' ),
         );
     }
 

@@ -132,7 +132,20 @@ final class ReportCharacterizationHarness
 
     public const SENTINEL = 'characterization_sentinel';
 
-    /** @return array<int, string> controller class short-names, sorted */
+    /**
+     * Every in-scope report, named the way the fixture names it.
+     *
+     * Two kinds now: reports still implemented by a controller, and the
+     * converted ones, which are JSON. Both are named by the controller class,
+     * because the fixture records what those controllers DECLARED and that
+     * record is the standard a conversion has to meet -- renaming the keys
+     * because the implementation moved would discard the evidence.
+     *
+     * So a converted report leaves this list only when it stops being a report,
+     * never merely because its file was deleted.
+     *
+     * @return array<int, string> sorted
+     */
     public static function reportNames(): array
     {
         $names = array();
@@ -152,9 +165,23 @@ final class ReportCharacterizationHarness
             $names[] = $name;
         }
 
+        foreach ( self::CONVERTED as $class ) {
+            $names[] = $class;
+        }
+
+        $names = array_values( array_unique( $names ) );
+
         sort( $names );
 
         return $names;
+    }
+
+    /** The report id a converted report is registered under, or '' if it is not one. */
+    public static function idForConverted( string $name ): string
+    {
+        $id = array_search( $name, self::CONVERTED, true );
+
+        return $id === false ? '' : (string) $id;
     }
 
     /** Request parameters a controller reads, in source order. */
@@ -207,6 +234,19 @@ final class ReportCharacterizationHarness
      */
     public static function snapshot( string $name ): array
     {
+        /*
+         * A converted report has no controller to run, so it is run from its
+         * definition instead. Dispatching here rather than in the tests keeps
+         * "what this report declares" one question with one answer, whichever
+         * way the report happens to be implemented.
+         */
+        $convertedId = self::idForConverted( $name );
+
+        if ( $convertedId !== '' ) {
+
+            return self::snapshotConfigured( $convertedId );
+        }
+
         $class  = '\\OWA\\Module\\Base\\Controller\\' . $name;
         $params = self::paramsFor( $name );
 
