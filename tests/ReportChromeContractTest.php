@@ -56,8 +56,15 @@ final class ReportChromeContractTest extends TestCase
         // Controller-backed reports only, because this provider builds the
         // controller directly. The converted reports get the same chrome
         // through the registry route, which testTheChromeSurvivesTheRegistryRoute
-        // covers by id.
-        foreach ( array( 'ReportCampaigns', 'ReportDocument', 'ReportGoals',
+        // covers by id -- and campaigns moved there when it became a definition.
+        //
+        // The remaining bespoke reports are not interchangeable here. This
+        // provider supplies a SENTINEL for every parameter a report reads, so
+        // one that reads `period`/`startDate`/`endDate` (ReportDashboard,
+        // ReportVisitors) loses the very chrome under test, and one that reads
+        // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
+        // kinds, chosen because they survive a sentinel.
+        foreach ( array( 'ReportDocument', 'ReportGoals',
                          'ReportTransactionDetail', 'ReportDomClicks' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
@@ -146,6 +153,7 @@ final class ReportChromeContractTest extends TestCase
             // referral-detail took ReportReferralDetail's place in the spread
             // above when it became a definition.
             'referral-detail' => array( 'referral-detail' ),
+            'campaigns'       => array( 'campaigns' ),
         );
     }
 
@@ -158,9 +166,9 @@ final class ReportChromeContractTest extends TestCase
     {
         // A bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportCampaigns( array() ) )->doAction();
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportGoals( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'campaigns' ) ) )->doAction();
+            array( 'reportId' => 'goals' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -220,15 +228,16 @@ final class ReportChromeContractTest extends TestCase
      * the reportId derivation added an id for the new path rather than changing
      * the old one.
      *
-     * Was ReportPages, then ReportHostDetail; both are configuration now and
-     * have no action left. campaigns is bespoke and keeps its own.
+     * Was ReportPages, then ReportHostDetail, then ReportCampaigns; all three
+     * are configuration now and have no action left. goals is bespoke and keeps
+     * its own -- and, being dashboard-shaped, is among the last that will move.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportCampaigns(
-            array( 'do' => 'base.reportCampaigns' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportGoals(
+            array( 'do' => 'base.reportGoals' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportCampaigns', $data['dom_id'] );
+        $this->assertSame( 'base-reportGoals', $data['dom_id'] );
     }
 
     /**

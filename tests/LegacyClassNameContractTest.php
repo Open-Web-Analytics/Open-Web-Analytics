@@ -60,6 +60,7 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        'owa_reportCampaignsController',
         'owa_reportAttributionHistoryController',
         'owa_reportReferralDetailController',
         'owa_crawlReferralCliController',

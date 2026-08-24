@@ -555,6 +555,48 @@
             ]
         }
     },
+    "ReportCampaigns": {
+        "params": [],
+        "diagnostics": [],
+        "config": {
+            "constraints": "campaign!=null",
+            "subview": "base.reportWidgets",
+            "title": "Campaigns",
+            "titleSuffix": "",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from campaigns.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "campaign",
+                        "template": {
+                            "campaign": "%s",
+                            "do": "base.report",
+                            "reportId": "campaign-detail"
+                        },
+                        "valueColumns": "campaign"
+                    },
+                    "query": {
+                        "dimensions": "campaign",
+                        "resultsPerPage": 30,
+                        "sort": "visits-"
+                    },
+                    "type": "grid"
+                }
+            ]
+        }
+    },
     "ReportCommerce": {
         "params": [],
         "diagnostics": [],

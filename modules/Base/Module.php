@@ -621,7 +621,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
-        $this->registerAction( 'base.reportCampaigns',               'OWA\\Module\\Base\\Controller\\ReportCampaigns',              'Controller/ReportCampaigns.php' );
         $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
         $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
@@ -2359,7 +2358,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'browser-detail', 'reports/browser-detail.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
         $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
-        $this->registerReport( 'campaigns', array( 'controller' => 'base.reportCampaigns' ) );
+        $this->registerReport( 'campaigns', 'reports/campaigns.json' );
         $this->registerReport( 'commerce', 'reports/commerce.json' );
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'country-detail', 'reports/country-detail.json' );

@@ -1217,6 +1217,52 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
+     * Declaring `metrics` is how a report opts OUT of metric sets.
+     *
+     * The switch is `! $view->metrics` in report_widgets.php: a definition that
+     * names its own metrics renders one grid of them, and one that does not
+     * takes whatever sets the site has -- Site Usage, e-commerce when the site
+     * setting is on, and one per active goal group.
+     *
+     * This is what `campaigns` was converted onto. Its controller appended
+     * `transactions,transactionRevenue` to a single grid when
+     * enableEcommerceReporting was set, which is the same conditional
+     * MetricSets::forSite() already computes centrally, on the same setting,
+     * with six metrics instead of two. The format has no conditional and does
+     * not need one.
+     */
+    public function testADefinitionWithoutMetricsTakesTheSiteMetricSets(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $sets = array(
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits',
+                                   'chartMetric' => 'visits' ),
+            'ecommerce'  => array( 'label' => 'e-commerce',
+                                   'metrics' => 'visits,transactions,transactionRevenue',
+                                   'chartMetric' => 'transactions' ),
+        );
+
+        $grid = array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'campaign', 'sort' => 'visits-' ) );
+
+        $tabbed = $this->renderedWith(
+            array( 'title' => 'Campaigns', 'widgets' => array( $grid ) ), $sets );
+
+        $this->assertStringContainsString( 'id="report-tabs"', $tabbed,
+            'no declared metrics, so the site sets become tabs' );
+        $this->assertStringContainsString( 'e-commerce', $tabbed,
+            'including the e-commerce set, which is where its metrics now live' );
+
+        $single = $this->renderedWith(
+            array( 'title' => 'Campaigns', 'metrics' => 'visits,pageViews,bounces',
+                   'widgets' => array( $grid ) ), $sets );
+
+        $this->assertStringNotContainsString( 'id="report-tabs"', $single,
+            'declaring metrics opts out of the sets entirely' );
+    }
+
+    /**
      * A trend can be drawn without the boxes underneath it.
      *
      * On by default -- that is how a metric set makes itself visible. `traffic`
