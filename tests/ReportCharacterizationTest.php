@@ -216,8 +216,25 @@ final class ReportCharacterizationTest extends TestCase
     {
         $snap = Harness::snapshot( 'ReportPages' );
 
-        $this->assertSame( 'base.reportSimpleDimensional', $snap['config']['subview'] );
-        $this->assertStringContainsString( 'pageViews', $snap['config']['metrics'] );
-        $this->assertSame( 30, $snap['config']['resultsPerPage'] );
+        // pages is laid out as widgets now: the subview is the grid renderer,
+        // and what used to be top-level metrics/resultsPerPage is the query of
+        // the widget that asks for them. Same values, read where they now live.
+        $this->assertSame( 'base.reportWidgets', $snap['config']['subview'] );
+
+        $widgets = $snap['config']['widgets'];
+
+        $this->assertNotEmpty( $widgets, 'the harness recorded no widgets at all' );
+
+        $grid = null;
+
+        foreach ( $widgets as $widget ) {
+            if ( ( $widget['type'] ?? '' ) === 'grid' ) {
+                $grid = $widget;
+            }
+        }
+
+        $this->assertNotNull( $grid, 'pages should still declare a grid widget' );
+        $this->assertStringContainsString( 'pageViews', (string) $grid['query']['metrics'] );
+        $this->assertSame( 30, $grid['query']['resultsPerPage'] );
     }
 }

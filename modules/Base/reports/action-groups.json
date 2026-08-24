@@ -1,21 +1,38 @@
 {
     "title": "Action Groups",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "actionGroup",
-            "template": {
-                "do": "base.report",
-                "reportId": "action-group",
-                "actionGroup": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "actions,uniqueActions,actionsValue",
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "actionGroup"
+            "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
+            "chartMetric": "actions"
         },
-        "dimensions": "actionGroup",
-        "metrics": "actions,uniqueActions,actionsValue",
-        "resultsPerPage": 25,
-        "sort": "actions-",
-        "trendChartMetric": "actions",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "actions,uniqueActions,actionsValue",
+                "dimensions": "actionGroup",
+                "sort": "actions-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
+            }
+        }
+    ]
 }

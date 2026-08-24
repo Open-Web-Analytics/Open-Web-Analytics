@@ -1,12 +1,29 @@
 {
     "title": "Total Revenue",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensions": "date",
-        "metrics": "visits,ecommerceConversionRate",
-        "resultsPerPage": 30,
-        "sort": "date-",
-        "trendChartMetric": "ecommerceConversionRate",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits."
-    }
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "visits,ecommerceConversionRate",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
+            "chartMetric": "ecommerceConversionRate"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "visits,ecommerceConversionRate",
+                "dimensions": "date",
+                "sort": "date-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
 }

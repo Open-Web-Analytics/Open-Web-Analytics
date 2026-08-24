@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'settings' );
+    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'view', 'subview', 'params', 'widgets', 'settings' );
 
     /** @var array the decoded definition */
     private $definition = array();
@@ -170,6 +170,18 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         $this->setSubview( $d['subview'] );
+
+        /*
+         * Widgets are a setting as far as the view is concerned -- the subview
+         * reads them like anything else. They are a TOP-LEVEL key in the
+         * definition rather than one more entry in `settings` because they are
+         * the report's structure, not one of its knobs, and because
+         * getDefinitionError() has to be able to check them.
+         */
+        if ( isset( $d['widgets'] ) ) {
+
+            $this->set( 'widgets', self::interpolateDeep( $d['widgets'], $values ) );
+        }
 
         $this->setTitle(
             self::interpolate( $d['title'], $values ),

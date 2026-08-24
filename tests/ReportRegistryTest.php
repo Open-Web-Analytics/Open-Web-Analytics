@@ -280,7 +280,7 @@ final class ReportRegistryTest extends TestCase
         $allowed = (array) ( new \OWA\Module\Base\Controller\Report(
             array( 'reportId' => 'pages' ) ) )->doAction();
 
-        $this->assertSame( 'base.reportSimpleDimensional', $allowed['subview'] ?? null );
+        $this->assertSame( 'base.reportWidgets', $allowed['subview'] ?? null );
     }
 
     /**

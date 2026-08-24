@@ -1,12 +1,29 @@
 {
     "title": "Visits To Purchase",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensions": "visitsToTransaction",
-        "metrics": "transactions",
-        "resultsPerPage": 30,
-        "sort": "visitsToTransaction",
-        "trendChartMetric": "transactions",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors."
-    }
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "transactions",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
+            "chartMetric": "transactions"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "transactions",
+                "dimensions": "visitsToTransaction",
+                "sort": "visitsToTransaction",
+                "resultsPerPage": 30
+            }
+        }
+    ]
 }

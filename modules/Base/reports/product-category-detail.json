@@ -1,10 +1,24 @@
 {
     "title": "Product Category: ",
     "titleSuffix": "{productCategory}",
-    "subview": "base.reportSimpleDimensional",
+    "subview": "base.reportWidgets",
     "params": {
         "productCategory": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
+            "chartMetric": "lineItemQuantity"
+        }
+    ],
     "settings": {
         "constraints": [
             {
@@ -12,9 +26,6 @@
                 "fromParam": "productCategory"
             }
         ],
-        "dimension": "productCategory",
-        "metrics": "lineItemQuantity,lineItemRevenue",
-        "trendChartMetric": "lineItemQuantity",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU."
+        "dimension": "productCategory"
     }
 }

@@ -7,16 +7,35 @@
         "diagnostics": [],
         "config": {
             "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
-            "dimensions": "actionLabel",
-            "metrics": "actions,actionsValue",
-            "resultsPerPage": "30",
-            "sort": "actions-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Action Detail: ",
             "titleSuffix": "characterization_sentinel: characterization_sentinel",
-            "trendChartMetric": "actions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "actions",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "actions,actionsValue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "actionLabel",
+                        "metrics": "actions,actionsValue",
+                        "resultsPerPage": "30",
+                        "sort": "actions-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportActionGroup": {
@@ -26,55 +45,93 @@
         "diagnostics": [],
         "config": {
             "constraints": "actionGroup==characterization_sentinel",
-            "dimensionLink": {
-                "linkColumn": "actionName",
-                "template": {
-                    "actionGroup": "%s",
-                    "actionName": "%s",
-                    "do": "base.report",
-                    "reportId": "action-detail"
-                },
-                "valueColumns": [
-                    "actionName",
-                    "actionGroup"
-                ]
-            },
-            "dimensions": "actionGroup,actionName",
-            "excludeColumns": "'actionGroup'",
-            "metrics": "actions,uniqueActions,actionsValue",
-            "resultsPerPage": 25,
-            "sort": "actions-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Action Group: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "actions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "actions",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "actions,uniqueActions,actionsValue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "excludeColumns": "'actionGroup'",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "actionName",
+                        "template": {
+                            "actionGroup": "%s",
+                            "actionName": "%s",
+                            "do": "base.report",
+                            "reportId": "action-detail"
+                        },
+                        "valueColumns": [
+                            "actionName",
+                            "actionGroup"
+                        ]
+                    },
+                    "query": {
+                        "dimensions": "actionGroup,actionName",
+                        "metrics": "actions,uniqueActions,actionsValue",
+                        "resultsPerPage": 25,
+                        "sort": "actions-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportActionGroups": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "actionGroup",
-                "template": {
-                    "actionGroup": "%s",
-                    "do": "base.report",
-                    "reportId": "action-group"
-                },
-                "valueColumns": "actionGroup"
-            },
-            "dimensions": "actionGroup",
-            "metrics": "actions,uniqueActions,actionsValue",
-            "resultsPerPage": 25,
-            "sort": "actions-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Action Groups",
             "titleSuffix": "",
-            "trendChartMetric": "actions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "actions",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "actions,uniqueActions,actionsValue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "actionGroup",
+                        "template": {
+                            "actionGroup": "%s",
+                            "do": "base.report",
+                            "reportId": "action-group"
+                        },
+                        "valueColumns": "actionGroup"
+                    },
+                    "query": {
+                        "dimensions": "actionGroup",
+                        "metrics": "actions,uniqueActions,actionsValue",
+                        "resultsPerPage": 25,
+                        "sort": "actions-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportActionTracking": {
@@ -221,16 +278,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "date",
-            "metrics": "revenuePerTransaction",
-            "resultsPerPage": 30,
-            "sort": "date-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Average Order Value",
             "titleSuffix": "",
-            "trendChartMetric": "revenuePerTransaction",
-            "trendTitle": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "revenuePerTransaction",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "revenuePerTransaction",
+                        "sort": "date"
+                    },
+                    "title": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "revenuePerTransaction",
+                        "resultsPerPage": 30,
+                        "sort": "date-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportBrowserDetail": {
@@ -377,16 +453,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "daysToTransaction",
-            "metrics": "transactions",
-            "resultsPerPage": 30,
-            "sort": "daysToTransaction",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Days To Purchase",
             "titleSuffix": "",
-            "trendChartMetric": "transactions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactions",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "transactions",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "daysToTransaction",
+                        "metrics": "transactions",
+                        "resultsPerPage": 30,
+                        "sort": "daysToTransaction"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportEcommerce": {
@@ -408,16 +503,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "date",
-            "metrics": "visits,ecommerceConversionRate",
-            "resultsPerPage": 30,
-            "sort": "date-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Total Revenue",
             "titleSuffix": "",
-            "trendChartMetric": "ecommerceConversionRate",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "ecommerceConversionRate",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "visits,ecommerceConversionRate",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "visits,ecommerceConversionRate",
+                        "resultsPerPage": 30,
+                        "sort": "date-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportEntryPages": {
@@ -651,92 +765,159 @@
         "config": {
             "constraints": "pageType==characterization_sentinel",
             "gridTitle": "Top Page Types",
-            "metrics": "visits,pageViews",
-            "sort": "pageViews-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Page Type: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "pageViews",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "pageViews",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "visits,pageViews",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportPageTypes": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "pageType",
-                "template": {
-                    "do": "base.report",
-                    "pageType": "%s",
-                    "reportId": "page-type-detail"
-                },
-                "valueColumns": "pageType"
-            },
-            "dimensions": "pageType",
             "gridTitle": "Top Page Types",
-            "metrics": "visits,pageViews",
-            "resultsPerPage": 25,
-            "sort": "pageViews-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Page Types",
             "titleSuffix": "",
-            "trendChartMetric": "pageViews",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "pageViews",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "visits,pageViews",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "pageType",
+                        "template": {
+                            "do": "base.report",
+                            "pageType": "%s",
+                            "reportId": "page-type-detail"
+                        },
+                        "valueColumns": "pageType"
+                    },
+                    "query": {
+                        "dimensions": "pageType",
+                        "metrics": "visits,pageViews",
+                        "resultsPerPage": 25,
+                        "sort": "pageViews-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportPages": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "pagePath",
-                "template": {
-                    "do": "base.report",
-                    "pageUrl": "%s",
-                    "reportId": "document"
-                },
-                "valueColumns": "pageUrl"
-            },
-            "dimensions": "pagePath,pageTitle,pageType,pageUrl",
-            "excludeColumns": "'pageUrl'",
             "gridTitle": "Top Pages",
-            "metrics": "pageViews,visits,uniquePageViews",
-            "resultsPerPage": 30,
-            "sort": "pageViews-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Web Pages",
             "titleSuffix": "",
-            "trendChartMetric": "pageViews",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "pageViews",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "pageViews,visits,uniquePageViews",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "excludeColumns": "'pageUrl'",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "pagePath",
+                        "template": {
+                            "do": "base.report",
+                            "pageUrl": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "pageUrl"
+                    },
+                    "query": {
+                        "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+                        "metrics": "pageViews,visits,uniquePageViews",
+                        "resultsPerPage": 30,
+                        "sort": "pageViews-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportProductCategories": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "productCategory",
-                "template": {
-                    "do": "base.report",
-                    "productCategory": "%s",
-                    "reportId": "product-category-detail"
-                },
-                "valueColumns": "productCategory"
-            },
-            "dimensions": "productCategory",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "resultsPerPage": 30,
-            "sort": "lineItemQuantity-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Product SKUs",
             "titleSuffix": "",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all Categories.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all Categories.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "productCategory",
+                        "template": {
+                            "do": "base.report",
+                            "productCategory": "%s",
+                            "reportId": "product-category-detail"
+                        },
+                        "valueColumns": "productCategory"
+                    },
+                    "query": {
+                        "dimensions": "productCategory",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "resultsPerPage": 30,
+                        "sort": "lineItemQuantity-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportProductCategoryDetail": {
@@ -747,13 +928,24 @@
         "config": {
             "constraints": "productCategory==characterization_sentinel",
             "dimension": "productCategory",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Product Category: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportProductDetail": {
@@ -764,13 +956,24 @@
         "config": {
             "constraints": "productName==characterization_sentinel",
             "dimension": "productName",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Product Detail: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportProductSkuDetail": {
@@ -781,63 +984,112 @@
         "config": {
             "constraints": "productSku==characterization_sentinel",
             "dimension": "productSku",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Product SKU: ",
             "titleSuffix": "characterization_sentinel",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
+                    "type": "trend"
+                }
+            ]
         }
     },
     "ReportProductSkus": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "productSku",
-                "template": {
-                    "do": "base.report",
-                    "productSku": "%s",
-                    "reportId": "product-sku-detail"
-                },
-                "valueColumns": "productSku"
-            },
-            "dimensions": "productSku",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "resultsPerPage": 30,
-            "sort": "lineItemQuantity-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Product SKUs",
             "titleSuffix": "",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "productSku",
+                        "template": {
+                            "do": "base.report",
+                            "productSku": "%s",
+                            "reportId": "product-sku-detail"
+                        },
+                        "valueColumns": "productSku"
+                    },
+                    "query": {
+                        "dimensions": "productSku",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "resultsPerPage": 30,
+                        "sort": "lineItemQuantity-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportProducts": {
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensionLink": {
-                "linkColumn": "productName",
-                "template": {
-                    "do": "base.report",
-                    "productName": "%s",
-                    "reportId": "product-detail"
-                },
-                "valueColumns": "productName"
-            },
-            "dimensions": "productName",
-            "metrics": "lineItemQuantity,lineItemRevenue",
-            "resultsPerPage": 30,
-            "sort": "lineItemQuantity-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Products",
             "titleSuffix": "",
-            "trendChartMetric": "lineItemQuantity",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "lineItemQuantity",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "link": {
+                        "linkColumn": "productName",
+                        "template": {
+                            "do": "base.report",
+                            "productName": "%s",
+                            "reportId": "product-detail"
+                        },
+                        "valueColumns": "productName"
+                    },
+                    "query": {
+                        "dimensions": "productName",
+                        "metrics": "lineItemQuantity,lineItemRevenue",
+                        "resultsPerPage": 30,
+                        "sort": "lineItemQuantity-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportReferralLinkTextDetail": {
@@ -892,16 +1144,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "date",
-            "metrics": "transactionRevenue",
-            "resultsPerPage": 30,
-            "sort": "date-",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Total Revenue",
             "titleSuffix": "",
-            "trendChartMetric": "transactionRevenue",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactionRevenue",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "transactionRevenue",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "transactionRevenue",
+                        "resultsPerPage": 30,
+                        "sort": "date-"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     },
     "ReportSearchEngineDetail": {
@@ -1082,16 +1353,35 @@
         "params": [],
         "diagnostics": [],
         "config": {
-            "dimensions": "visitsToTransaction",
-            "metrics": "transactions",
-            "resultsPerPage": 30,
-            "sort": "visitsToTransaction",
-            "subview": "base.reportSimpleDimensional",
+            "subview": "base.reportWidgets",
             "title": "Visits To Purchase",
             "titleSuffix": "",
-            "trendChartMetric": "transactions",
-            "trendTitle": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
-            "view_method": "delegate"
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "transactions",
+                    "container": "trend-chart",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "metrics": "transactions",
+                        "sort": "date"
+                    },
+                    "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
+                    "type": "trend"
+                },
+                {
+                    "container": "dimension-grid",
+                    "id": "dim",
+                    "query": {
+                        "dimensions": "visitsToTransaction",
+                        "metrics": "transactions",
+                        "resultsPerPage": 30,
+                        "sort": "visitsToTransaction"
+                    },
+                    "type": "grid"
+                }
+            ]
         }
     }
 }

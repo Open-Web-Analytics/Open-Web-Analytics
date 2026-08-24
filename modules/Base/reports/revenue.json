@@ -1,12 +1,29 @@
 {
     "title": "Total Revenue",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensions": "date",
-        "metrics": "transactionRevenue",
-        "resultsPerPage": 30,
-        "sort": "date-",
-        "trendChartMetric": "transactionRevenue",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions."
-    }
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "transactionRevenue",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
+            "chartMetric": "transactionRevenue"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "transactionRevenue",
+                "dimensions": "date",
+                "sort": "date-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
 }

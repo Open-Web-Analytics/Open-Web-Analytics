@@ -1,36 +1,55 @@
 {
     "title": "Action Group: ",
     "titleSuffix": "{actionGroup}",
-    "subview": "base.reportSimpleDimensional",
+    "subview": "base.reportWidgets",
     "params": {
         "actionGroup": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "actions,uniqueActions,actionsValue",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
+            "chartMetric": "actions"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "actions,uniqueActions,actionsValue",
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "actionName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-detail",
+                    "actionName": "%s",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": [
+                    "actionName",
+                    "actionGroup"
+                ]
+            },
+            "excludeColumns": "'actionGroup'"
+        }
+    ],
     "settings": {
         "constraints": [
             {
                 "dimension": "actionGroup",
                 "fromParam": "actionGroup"
             }
-        ],
-        "dimensionLink": {
-            "linkColumn": "actionName",
-            "template": {
-                "do": "base.report",
-                "reportId": "action-detail",
-                "actionName": "%s",
-                "actionGroup": "%s"
-            },
-            "valueColumns": [
-                "actionName",
-                "actionGroup"
-            ]
-        },
-        "dimensions": "actionGroup,actionName",
-        "excludeColumns": "'actionGroup'",
-        "metrics": "actions,uniqueActions,actionsValue",
-        "resultsPerPage": 25,
-        "sort": "actions-",
-        "trendChartMetric": "actions",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group."
+        ]
     }
 }

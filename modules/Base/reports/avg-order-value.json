@@ -1,12 +1,29 @@
 {
     "title": "Average Order Value",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensions": "date",
-        "metrics": "revenuePerTransaction",
-        "resultsPerPage": 30,
-        "sort": "date-",
-        "trendChartMetric": "revenuePerTransaction",
-        "trendTitle": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions."
-    }
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "revenuePerTransaction",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
+            "chartMetric": "revenuePerTransaction"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "revenuePerTransaction",
+                "dimensions": "date",
+                "sort": "date-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
 }

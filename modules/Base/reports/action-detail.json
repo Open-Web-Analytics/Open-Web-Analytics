@@ -1,11 +1,36 @@
 {
     "title": "Action Detail: ",
     "titleSuffix": "{actionGroup}: {actionName}",
-    "subview": "base.reportSimpleDimensional",
+    "subview": "base.reportWidgets",
     "params": {
         "actionGroup": {},
         "actionName": {}
     },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "actions,actionsValue",
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
+            "chartMetric": "actions"
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "actions,actionsValue",
+                "dimensions": "actionLabel",
+                "sort": "actions-",
+                "resultsPerPage": "30"
+            }
+        }
+    ],
     "settings": {
         "constraints": [
             {
@@ -16,12 +41,6 @@
                 "dimension": "actionGroup",
                 "fromParam": "actionGroup"
             }
-        ],
-        "dimensions": "actionLabel",
-        "metrics": "actions,actionsValue",
-        "resultsPerPage": "30",
-        "sort": "actions-",
-        "trendChartMetric": "actions",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type."
+        ]
     }
 }

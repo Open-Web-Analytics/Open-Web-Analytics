@@ -282,14 +282,23 @@ final class ReportChromeContractTest extends TestCase
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
             array( 'reportId' => 'pages' ) ) )->doAction();
 
-        $this->assertGreaterThan( 20, count( $data ),
-            'doAction() should produce the full report bag, not just what action() sets' );
+        /*
+         * Named keys rather than a count.
+         *
+         * This was `count($data) > 20`, and moving pages' settings into its
+         * widgets list dropped the total to 19 -- a failure that says nothing
+         * about the chrome, which is what the test is for. Counting the bag
+         * measures how a report happens to be written; naming what pre() adds
+         * measures what the test actually cares about.
+         */
+        $declared = Harness::snapshot( 'ReportPages' )['config'];
 
-        // action() alone yields roughly half of these; if the two are the same
-        // size then pre() did not run and the chrome assertions are hollow.
-        $this->assertGreaterThan(
-            count( Harness::snapshot( 'ReportPages' )['config'] ),
-            count( $data ),
-            'doAction() added nothing over action(), so pre() cannot have run' );
+        $addedByPre = array_diff( array_keys( $data ), array_keys( $declared ) );
+
+        foreach ( array( 'sites', 'currentSiteId', 'params', 'is_default_period', 'dom_id' ) as $key ) {
+
+            $this->assertContains( $key, $addedByPre,
+                "doAction() did not add '$key' over action(), so pre() cannot have run" );
+        }
     }
 }

@@ -1,23 +1,42 @@
 {
     "title": "Web Pages",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "pagePath",
-            "template": {
-                "do": "base.report",
-                "reportId": "document",
-                "pageUrl": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "pageViews,visits,uniquePageViews",
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "pageUrl"
+            "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
+            "chartMetric": "pageViews"
         },
-        "dimensions": "pagePath,pageTitle,pageType,pageUrl",
-        "excludeColumns": "'pageUrl'",
-        "gridTitle": "Top Pages",
-        "metrics": "pageViews,visits,uniquePageViews",
-        "resultsPerPage": 30,
-        "sort": "pageViews-",
-        "trendChartMetric": "pageViews",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "pageViews,visits,uniquePageViews",
+                "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+                "sort": "pageViews-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "pagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pageUrl": "%s"
+                },
+                "valueColumns": "pageUrl"
+            },
+            "excludeColumns": "'pageUrl'"
+        }
+    ],
+    "settings": {
+        "gridTitle": "Top Pages"
     }
 }

@@ -603,6 +603,32 @@ class CoreAPI {
             \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
         endif;
 
+        /*
+         * A class that was never called owa_* has no legacy name to bridge, so
+         * the compat map has no entry for it and Lib::factory() would fall
+         * through to looking for a pre-PSR-4 file that does not exist.
+         *
+         * Tried AFTER the map, never before it: owa_reportController maps to
+         * OWA\Core\ReportController, while this convention computes
+         * OWA\Module\Base\Controller\Report -- the report dispatcher, a
+         * different class entirely. Map first means nothing that resolves today
+         * resolves anywhere new; this only catches what currently cannot
+         * resolve at all.
+         */
+        if ( \OWA\Core\Lib::resolveNamespacedClass( $class ) === null ) {
+
+            $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+                  . '\\' . $class_suffix . '\\' . ucfirst( $file );
+
+            if ( $class_suffix && class_exists( $psr4 ) ) {
+
+                $obj = new $psr4( $params );
+                $obj->module = $module;
+
+                return $obj;
+            }
+        }
+
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
 
         //if (isset($obj->module)):

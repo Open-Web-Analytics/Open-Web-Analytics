@@ -1,21 +1,38 @@
 {
     "title": "Products",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "productName",
-            "template": {
-                "do": "base.report",
-                "reportId": "product-detail",
-                "productName": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "productName"
+            "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
+            "chartMetric": "lineItemQuantity"
         },
-        "dimensions": "productName",
-        "metrics": "lineItemQuantity,lineItemRevenue",
-        "resultsPerPage": 30,
-        "sort": "lineItemQuantity-",
-        "trendChartMetric": "lineItemQuantity",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold."
-    }
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "dimensions": "productName",
+                "sort": "lineItemQuantity-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "productName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "product-detail",
+                    "productName": "%s"
+                },
+                "valueColumns": "productName"
+            }
+        }
+    ]
 }

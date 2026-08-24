@@ -1,22 +1,41 @@
 {
     "title": "Page Types",
-    "subview": "base.reportSimpleDimensional",
-    "settings": {
-        "dimensionLink": {
-            "linkColumn": "pageType",
-            "template": {
-                "do": "base.report",
-                "reportId": "page-type-detail",
-                "pageType": "%s"
+    "subview": "base.reportWidgets",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "metrics": "visits,pageViews",
+                "dimensions": "date",
+                "sort": "date"
             },
-            "valueColumns": "pageType"
+            "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
+            "chartMetric": "pageViews"
         },
-        "dimensions": "pageType",
-        "gridTitle": "Top Page Types",
-        "metrics": "visits,pageViews",
-        "resultsPerPage": 25,
-        "sort": "pageViews-",
-        "trendChartMetric": "pageViews",
-        "trendTitle": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types."
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "metrics": "visits,pageViews",
+                "dimensions": "pageType",
+                "sort": "pageViews-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "pageType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "page-type-detail",
+                    "pageType": "%s"
+                },
+                "valueColumns": "pageType"
+            }
+        }
+    ],
+    "settings": {
+        "gridTitle": "Top Page Types"
     }
 }

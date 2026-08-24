@@ -1,6 +1,6 @@
 {
     "action-detail": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "constraints": "actionName==characterization_sentinel,actionGroup==characterization_sentinel",
@@ -42,7 +42,7 @@
         ]
     },
     "action-group": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "constraints": "actionGroup==characterization_sentinel",
@@ -84,7 +84,7 @@
         ]
     },
     "action-groups": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "actionGroup",
@@ -355,7 +355,7 @@
         ]
     },
     "avg-order-value": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "date",
@@ -694,7 +694,7 @@
         ]
     },
     "days-to-purchase": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "daysToTransaction",
@@ -789,7 +789,7 @@
         ]
     },
     "ecommerce-conversion-rate": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "date",
@@ -1189,7 +1189,7 @@
         ]
     },
     "page-type-detail": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "trendurl": {
                 "constraints": "pageType==characterization_sentinel",
@@ -1215,7 +1215,7 @@
         ]
     },
     "page-types": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "pageType",
@@ -1255,7 +1255,7 @@
         ]
     },
     "pages": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "pagePath,pageTitle,pageType,pageUrl",
@@ -1295,7 +1295,7 @@
         ]
     },
     "product-categories": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "productCategory",
@@ -1335,7 +1335,7 @@
         ]
     },
     "product-category-detail": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "trendurl": {
                 "constraints": "productCategory==characterization_sentinel",
@@ -1361,7 +1361,7 @@
         ]
     },
     "product-detail": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "trendurl": {
                 "constraints": "productName==characterization_sentinel",
@@ -1387,7 +1387,7 @@
         ]
     },
     "product-sku-detail": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "trendurl": {
                 "constraints": "productSku==characterization_sentinel",
@@ -1413,7 +1413,7 @@
         ]
     },
     "product-skus": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "productSku",
@@ -1453,7 +1453,7 @@
         ]
     },
     "products": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "productName",
@@ -1561,7 +1561,7 @@
         ]
     },
     "revenue": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "date",
@@ -2067,7 +2067,7 @@
         ]
     },
     "visits-to-purchase": {
-        "subview": "base.reportSimpleDimensional",
+        "subview": "base.reportWidgets",
         "queries": {
             "dimurl": {
                 "dimensions": "visitsToTransaction",
