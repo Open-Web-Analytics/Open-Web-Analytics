@@ -11,8 +11,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
-            "chartMetric": "ecommerceConversionRate"
+            "chartMetric": "ecommerceConversionRate",
+            "headline": "There were {ecommerceConversionRate.formatted} across all visits."
         },
         {
             "type": "grid",

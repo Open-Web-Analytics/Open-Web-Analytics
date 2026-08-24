@@ -15,8 +15,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
-            "chartMetric": "lineItemQuantity"
+            "chartMetric": "lineItemQuantity",
+            "headline": "There were {lineItemQuantity.formatted} units sold for this SKU."
         }
     ],
     "settings": {

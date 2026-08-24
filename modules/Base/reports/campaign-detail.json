@@ -16,7 +16,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this campaign."
+            "headline": "There were {visits.formatted} visits from this campaign."
         }
     ],
     "settings": {

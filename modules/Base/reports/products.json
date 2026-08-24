@@ -11,8 +11,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
-            "chartMetric": "lineItemQuantity"
+            "chartMetric": "lineItemQuantity",
+            "headline": "There were {lineItemQuantity.formatted} products sold."
         },
         {
             "type": "grid",

@@ -11,8 +11,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
-            "chartMetric": "revenuePerTransaction"
+            "chartMetric": "revenuePerTransaction",
+            "headline": "Average order Value was {revenuePerTransaction.formatted} across all transactions."
         },
         {
             "type": "grid",

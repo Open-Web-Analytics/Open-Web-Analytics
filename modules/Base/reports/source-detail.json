@@ -14,7 +14,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source."
+            "headline": "There were {visits.formatted} visits from this source."
         }
     ],
     "settings": {

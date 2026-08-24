@@ -14,7 +14,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system."
+            "headline": "There were {visits.formatted} visits for this operating system."
         }
     ],
     "settings": {

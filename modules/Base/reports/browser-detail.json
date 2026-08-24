@@ -19,7 +19,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type."
+            "headline": "There were {visits.formatted} visits from this browser type."
         },
         {
             "type": "grid",

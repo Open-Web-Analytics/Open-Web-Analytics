@@ -691,6 +691,72 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
     
+    /**
+     * Render a headline from a message with named slots.
+     *
+     * The message is DATA -- a sentence a report declares -- and this does the
+     * substituting. It replaces renderTemplate for headlines, where the
+     * template was a jqote string carried in configuration: a definition that
+     * can hand a template engine arbitrary source is a definition that cannot
+     * safely be authored by a user, which is what report configuration is
+     * meant to become.
+     *
+     * Three slot forms, which is everything the 59 existing headlines used:
+     *
+     *   {visits.formatted}              the metric's formatted value
+     *   {uniquePageViews.raw}           its raw value
+     *   {visits|visit|visits}           its count, then singular, then plural
+     *
+     * One is singular; everything else, zero included, takes the plural. That
+     * is what the templates being replaced did (`> 1`), and it is right for
+     * English: "0 visits".
+     *
+     * An unknown metric renders as an empty string rather than the slot text,
+     * so a mistyped name reads as missing data rather than as markup leaking
+     * into the sentence.
+     */
+    renderHeadline : function(message, dom_id) {
+
+        dom_id = dom_id || this.dom_id;
+
+        var that = this;
+
+        var aggregate = function(name) {
+
+            var aggregates = that.resultSet
+                && that.resultSet.aggregates
+                ? that.resultSet.aggregates
+                : {};
+
+            return aggregates[name] || null;
+        };
+
+        var text = String(message).replace(/\{([^}]+)\}/g, function(whole, slot) {
+
+            var parts = slot.split('|');
+
+            // {metric|singular|plural}
+            if (parts.length === 3) {
+
+                var counted = aggregate(parts[0]);
+                var count = counted ? Number(counted.value) : 0;
+
+                return count === 1 ? parts[1] : parts[2];
+            }
+
+            var dotted = slot.split('.');
+            var agg = aggregate(dotted[0]);
+
+            if (!agg) {
+                return '';
+            }
+
+            return dotted[1] === 'raw' ? agg.value : agg.formatted_value;
+        });
+
+        jQuery('#' + dom_id).html(text);
+    },
+
     renderTemplate : function(template, params, mode, dom_id) {
 
         template = template || this.options.template.template;

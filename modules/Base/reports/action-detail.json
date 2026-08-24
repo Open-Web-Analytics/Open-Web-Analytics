@@ -16,8 +16,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
-            "chartMetric": "actions"
+            "chartMetric": "actions",
+            "headline": "There were {actions.formatted} actions of this type."
         },
         {
             "type": "grid",

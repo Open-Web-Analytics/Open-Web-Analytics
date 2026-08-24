@@ -11,8 +11,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
-            "chartMetric": "pageViews"
+            "chartMetric": "pageViews",
+            "headline": "There were {pageViews.formatted} page views for {uniquePageViews.raw} unique pages."
         },
         {
             "type": "grid",

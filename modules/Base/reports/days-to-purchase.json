@@ -11,8 +11,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
-            "chartMetric": "transactions"
+            "chartMetric": "transactions",
+            "headline": "There were {transactions.formatted} transactions from all visitors."
         },
         {
             "type": "grid",

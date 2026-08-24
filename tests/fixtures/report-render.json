@@ -56,7 +56,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -119,7 +119,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -180,7 +180,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -306,7 +306,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -349,7 +349,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -411,7 +411,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -476,7 +476,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -541,7 +541,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -602,7 +602,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -666,7 +666,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -729,7 +729,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -773,7 +773,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -1001,7 +1001,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1064,7 +1064,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1125,7 +1125,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -1268,7 +1268,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -1331,7 +1331,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1394,7 +1394,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1455,7 +1455,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -1518,7 +1518,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1562,7 +1562,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -1624,7 +1624,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1668,7 +1668,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -1732,7 +1732,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1795,7 +1795,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -1839,7 +1839,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -1880,7 +1880,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics"
         ]
@@ -1940,7 +1940,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2001,7 +2001,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2062,7 +2062,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2104,7 +2104,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics"
         ]
@@ -2145,7 +2145,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics"
         ]
@@ -2186,7 +2186,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics"
         ]
@@ -2246,7 +2246,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2307,7 +2307,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2351,7 +2351,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -2415,7 +2415,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -2476,7 +2476,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -2520,7 +2520,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -2584,7 +2584,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -2628,7 +2628,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
@@ -2690,7 +2690,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -2755,7 +2755,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -3065,7 +3065,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -3128,7 +3128,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -3191,7 +3191,7 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
@@ -3252,7 +3252,7 @@
             }
         ],
         "commands": [
-            "trend.renderTemplate -> trend-title",
+            "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
@@ -3395,15 +3395,15 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid",
-            "ecommerce_trend.renderTemplate -> ecommerce_trend-title",
+            "ecommerce_trend.renderHeadline -> ecommerce_trend-title",
             "ecommerce_trend.makeAreaChart -> ecommerce_trend-chart",
             "ecommerce_trend.makeMetricBoxes -> ecommerce_trend-metrics",
             "ecommerce_dim.refreshGrid",
-            "goal_group_1_trend.renderTemplate -> goal_group_1_trend-title",
+            "goal_group_1_trend.renderHeadline -> goal_group_1_trend-title",
             "goal_group_1_trend.makeAreaChart -> goal_group_1_trend-chart",
             "goal_group_1_trend.makeMetricBoxes -> goal_group_1_trend-metrics",
             "goal_group_1_dim.refreshGrid"
@@ -3489,13 +3489,13 @@
             }
         ],
         "commands": [
-            "site_usage_trend.renderTemplate -> site_usage_trend-title",
+            "site_usage_trend.renderHeadline -> site_usage_trend-title",
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
-            "ecommerce_trend.renderTemplate -> ecommerce_trend-title",
+            "ecommerce_trend.renderHeadline -> ecommerce_trend-title",
             "ecommerce_trend.makeAreaChart -> ecommerce_trend-chart",
             "ecommerce_trend.makeMetricBoxes -> ecommerce_trend-metrics",
-            "goal_group_1_trend.renderTemplate -> goal_group_1_trend-title",
+            "goal_group_1_trend.renderHeadline -> goal_group_1_trend-title",
             "goal_group_1_trend.makeAreaChart -> goal_group_1_trend-chart",
             "goal_group_1_trend.makeMetricBoxes -> goal_group_1_trend-metrics"
         ]

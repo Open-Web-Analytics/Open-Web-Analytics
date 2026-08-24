@@ -108,8 +108,19 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
         <?php echo $owa_id; ?>.options.sparkline.metric = 'visits';
-<?php if ( ! empty( $owa_w['title'] ) ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['renderTemplate', '<?php echo $owa_w['title']; ?>', {d: <?php echo $owa_id; ?>}, 'replace', '<?php $view->out( $owa_id, false ); ?>-title']);
+<?php if ( ! empty( $owa_w['headline'] ) ): ?>
+        <?php
+            /*
+             * A sentence with named slots, not a template. renderHeadline does
+             * the substituting, so a definition carries no jqote and cannot
+             * hand a template engine source of its own -- which is what has to
+             * be true before a report definition can be authored by a user.
+             *
+             * json_encode, not a quoted echo: a headline is prose and will
+             * contain apostrophes.
+             */
+        ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['renderHeadline', <?php echo json_encode( $owa_w['headline'] ); ?>, '<?php $view->out( $owa_id, false ); ?>-title']);
 <?php endif; ?>
 <?php
     // The set's chart metric, unless the widget pinned its own.

@@ -10,7 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site."
+            "headline": "There were {visits.formatted} visits to the site."
         },
         {
             "type": "grid",

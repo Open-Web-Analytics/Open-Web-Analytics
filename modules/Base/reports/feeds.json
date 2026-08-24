@@ -12,8 +12,8 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
-            "chartMetric": "feedReaders"
+            "chartMetric": "feedReaders",
+            "headline": "There were {feedReaders.formatted} readers of all feeds."
         },
         {
             "type": "grid",

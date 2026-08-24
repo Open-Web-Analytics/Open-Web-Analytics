@@ -10,7 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals."
+            "headline": "There were {visits.formatted} visits from referrals."
         },
         {
             "type": "grid",

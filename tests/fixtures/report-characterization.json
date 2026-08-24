@@ -16,12 +16,12 @@
                 {
                     "chartMetric": "actions",
                     "container": "trend-chart",
+                    "headline": "There were {actions.formatted} actions of this type.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.",
                     "type": "trend"
                 },
                 {
@@ -53,12 +53,12 @@
                 {
                     "chartMetric": "actions",
                     "container": "trend-chart",
+                    "headline": "There were {actions.formatted} actions for this action group.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.",
                     "type": "trend"
                 },
                 {
@@ -101,12 +101,12 @@
                 {
                     "chartMetric": "actions",
                     "container": "trend-chart",
+                    "headline": "There were {actions.formatted} actions for all action groups.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.",
                     "type": "trend"
                 },
                 {
@@ -169,12 +169,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this ad.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.",
                     "type": "trend"
                 }
             ]
@@ -194,12 +194,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this ad type.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad type.",
                     "type": "trend"
                 }
             ]
@@ -216,12 +216,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from ads.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
                     "type": "trend"
                 },
                 {
@@ -258,12 +258,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from ads.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.",
                     "type": "trend"
                 },
                 {
@@ -301,12 +301,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from referrals.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
                     "type": "trend"
                 },
                 {
@@ -344,12 +344,12 @@
                 {
                     "chartMetric": "revenuePerTransaction",
                     "container": "trend-chart",
+                    "headline": "Average order Value was {revenuePerTransaction.formatted} across all transactions.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "Average order Value was <*= this.d.resultSet.aggregates.revenuePerTransaction.formatted_value *> across all transactions.",
                     "type": "trend"
                 },
                 {
@@ -385,12 +385,12 @@
                 },
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this browser type.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type.",
                     "type": "trend"
                 },
                 {
@@ -416,12 +416,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits for all browser types.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types.",
                     "type": "trend"
                 },
                 {
@@ -460,12 +460,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this campaign.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this campaign.",
                     "type": "trend"
                 }
             ]
@@ -505,12 +505,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this country.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this country.",
                     "type": "trend"
                 },
                 {
@@ -550,12 +550,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits for all ads.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.",
                     "type": "trend"
                 },
                 {
@@ -593,12 +593,12 @@
                 {
                     "chartMetric": "transactions",
                     "container": "trend-chart",
+                    "headline": "There were {transactions.formatted} transactions from all visitors.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
                     "type": "trend"
                 },
                 {
@@ -642,12 +642,12 @@
                 {
                     "chartMetric": "ecommerceConversionRate",
                     "container": "trend-chart",
+                    "headline": "There were {ecommerceConversionRate.formatted} across all visits.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.ecommerceConversionRate.formatted_value *> across all visits.",
                     "type": "trend"
                 },
                 {
@@ -674,12 +674,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits to the site through all entry pages.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.",
                     "type": "trend"
                 },
                 {
@@ -716,12 +716,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits to the site.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site.",
                     "type": "trend"
                 },
                 {
@@ -761,12 +761,12 @@
                 {
                     "chartMetric": "feedReaders",
                     "container": "trend-chart",
+                    "headline": "There were {feedReaders.formatted} readers of all feeds.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.",
                     "type": "trend"
                 },
                 {
@@ -793,12 +793,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all locations.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.",
                     "type": "trend"
                 },
                 {
@@ -837,12 +837,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this host.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.",
                     "type": "trend"
                 }
             ]
@@ -859,12 +859,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all hosts.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts.",
                     "type": "trend"
                 },
                 {
@@ -903,12 +903,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this search term.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.",
                     "type": "trend"
                 }
             ]
@@ -927,12 +927,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from search engines.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
                     "type": "trend"
                 },
                 {
@@ -968,12 +968,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits for all operating systems.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.",
                     "type": "trend"
                 },
                 {
@@ -1012,12 +1012,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits for this operating system.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system.",
                     "type": "trend"
                 }
             ]
@@ -1040,12 +1040,12 @@
                 {
                     "chartMetric": "pageViews",
                     "container": "trend-chart",
+                    "headline": "There were {pageViews.formatted} page views for this page type.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.",
                     "type": "trend"
                 }
             ]
@@ -1065,12 +1065,12 @@
                 {
                     "chartMetric": "pageViews",
                     "container": "trend-chart",
+                    "headline": "There were {pageViews.formatted} page views for all page types.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for all page types.",
                     "type": "trend"
                 },
                 {
@@ -1109,12 +1109,12 @@
                 {
                     "chartMetric": "pageViews",
                     "container": "trend-chart",
+                    "headline": "There were {pageViews.formatted} page views for {uniquePageViews.raw} unique pages.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.",
                     "type": "trend"
                 },
                 {
@@ -1153,12 +1153,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} products sold across all Categories.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all Categories.",
                     "type": "trend"
                 },
                 {
@@ -1200,12 +1200,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} units sold for this SKU.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
                     "type": "trend"
                 }
             ]
@@ -1228,12 +1228,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} units sold for this product.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this product.",
                     "type": "trend"
                 }
             ]
@@ -1256,12 +1256,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} units sold for this SKU.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> units sold for this SKU.",
                     "type": "trend"
                 }
             ]
@@ -1280,12 +1280,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} products sold across all SKUs.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.",
                     "type": "trend"
                 },
                 {
@@ -1323,12 +1323,12 @@
                 {
                     "chartMetric": "lineItemQuantity",
                     "container": "trend-chart",
+                    "headline": "There were {lineItemQuantity.formatted} products sold.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.",
                     "type": "trend"
                 },
                 {
@@ -1368,12 +1368,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from links with this text.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from links with this text.",
                     "type": "trend"
                 }
             ]
@@ -1391,12 +1391,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from referrals.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.",
                     "type": "trend"
                 },
                 {
@@ -1435,12 +1435,12 @@
                 {
                     "chartMetric": "transactionRevenue",
                     "container": "trend-chart",
+                    "headline": "There were {transactionRevenue.formatted} across all transactions.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.transactionRevenue.formatted_value *> across all transactions.",
                     "type": "trend"
                 },
                 {
@@ -1470,12 +1470,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this search engine.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.",
                     "type": "trend"
                 }
             ]
@@ -1493,12 +1493,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from search engines.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.",
                     "type": "trend"
                 },
                 {
@@ -1537,12 +1537,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this source.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.",
                     "type": "trend"
                 }
             ]
@@ -1559,12 +1559,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all sources.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
                     "type": "trend"
                 },
                 {
@@ -1604,12 +1604,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from this state/region.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this state/region.",
                     "type": "trend"
                 },
                 {
@@ -1657,12 +1657,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all sources.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
                     "type": "trend"
                 },
                 {
@@ -1689,12 +1689,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all sources.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
                     "type": "trend"
                 },
                 {
@@ -1721,12 +1721,12 @@
             "widgets": [
                 {
                     "container": "trend-chart",
+                    "headline": "There were {visits.formatted} visits from all sources.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.",
                     "type": "trend"
                 },
                 {
@@ -1755,12 +1755,12 @@
                 {
                     "chartMetric": "transactions",
                     "container": "trend-chart",
+                    "headline": "There were {transactions.formatted} transactions from all visitors.",
                     "id": "trend",
                     "query": {
                         "dimensions": "date",
                         "sort": "date"
                     },
-                    "title": "There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.",
                     "type": "trend"
                 },
                 {
