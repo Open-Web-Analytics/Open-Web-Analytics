@@ -220,7 +220,25 @@ final class ReportRenderHarness
             'built'     => substr_count( $html, 'createTabs()' ),
             // Direct loads: present when nothing else owns loading, absent when
             // the control does.
-            'loads'     => preg_match_all( '/\w+\.load\(\w+url\)/', $html ),
+            // Both conventions are in use and both are fine: the widget template
+            // sets the url up front and calls load() with nothing, while the
+            // older bespoke templates pass the url straight to load().
+            'loads'      => preg_match_all( '/\w+\.load\(\s*\)/', $html ),
+            // Any arguments, not just one: report_actionTracking passes a
+            // second -- load(aurl, 'grid') -- and a single-argument pattern
+            // read that explorer as never loading at all.
+            'loadsWithUrl' => preg_match_all( '/\w+\.load\(\s*\w[^)]*\)/', $html ),
+            /*
+             * An explorer is told its URL up front, and whoever loads it calls
+             * load() with no argument -- the control does exactly that.
+             *
+             * Recorded because an explorer with no URL loads nothing, silently:
+             * it is constructed, registered, and its queries are all present in
+             * the page. The grid simply stays empty. That is what happened when
+             * the control was restored without this, and only the browser saw
+             * it.
+             */
+            'urls'      => substr_count( $html, '.setDataLoadUrl(' ),
         );
     }
 

@@ -292,10 +292,47 @@ final class ReportRenderCharacterizationTest extends TestCase
 
             } elseif ( ! empty( $snapshot['queries'] ) ) {
 
-                $this->assertGreaterThan( 0, $control['loads'] ?? 0,
+                $this->assertGreaterThan( 0,
+                    ( $control['loads'] ?? 0 ) + ( $control['loadsWithUrl'] ?? 0 ),
                     "$id loads nothing and has no control to load it, so its widgets "
                     . 'never fetch anything' );
             }
         }
+    }
+
+    /**
+     * Every result-set explorer is told where to load from.
+     *
+     * The failure this exists for: an explorer with no URL is constructed,
+     * registered with the control, and its query appears in the page -- and it
+     * loads nothing. The grid is simply empty. Queries, commands, bindings and
+     * the control record were all correct while the reports showed no data,
+     * and only the browser tests noticed.
+     */
+    public function testEveryExplorerKnowsWhereToLoadFrom(): void
+    {
+        $bad = array();
+
+        foreach ( self::$golden as $id => $snapshot ) {
+
+            $explorers = count( $snapshot['explorers'] ?? array() );
+
+            /*
+             * Two conventions, both fine. The widget template tells an explorer
+             * its url up front and whoever loads it calls load() with nothing;
+             * the older bespoke templates pass the url to load() directly.
+             * What matters is that every explorer has one or the other.
+             */
+            $sources = ( $snapshot['control']['urls'] ?? 0 )
+                     + ( $snapshot['control']['loadsWithUrl'] ?? 0 );
+
+            if ( $explorers > $sources ) {
+                $bad[] = "$id ($explorers explorers, $sources with somewhere to load from)";
+            }
+        }
+
+        $this->assertSame( array(), $bad,
+            'these reports build result sets that were never told where to load from, '
+            . 'so they render empty: ' . implode( ', ', $bad ) );
     }
 }

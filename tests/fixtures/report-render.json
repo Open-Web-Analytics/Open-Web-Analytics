@@ -41,7 +41,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -102,7 +104,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -161,7 +165,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -236,7 +242,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 0,
+            "loadsWithUrl": 3,
+            "urls": 0
         },
         "explorers": [
             {
@@ -287,7 +295,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -328,7 +338,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -384,7 +396,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -447,7 +461,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -510,7 +526,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -569,7 +587,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -631,7 +651,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -692,7 +714,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -738,7 +762,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -808,7 +834,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 3
+            "loads": 0,
+            "loadsWithUrl": 3,
+            "urls": 0
         },
         "explorers": [
             {
@@ -888,7 +916,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 3
+            "loads": 0,
+            "loadsWithUrl": 3,
+            "urls": 0
         },
         "explorers": [
             {
@@ -956,7 +986,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1017,7 +1049,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1076,7 +1110,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1151,7 +1187,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 0,
+            "loadsWithUrl": 3,
+            "urls": 0
         },
         "explorers": [
             {
@@ -1215,7 +1253,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1276,7 +1316,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1337,7 +1379,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1396,7 +1440,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 0,
+            "loadsWithUrl": 2,
+            "urls": 0
         },
         "explorers": [
             {
@@ -1457,7 +1503,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1503,7 +1551,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -1559,7 +1609,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1605,7 +1657,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -1663,7 +1717,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1724,7 +1780,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1770,7 +1828,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -1809,7 +1869,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -1863,7 +1925,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1922,7 +1986,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -1981,7 +2047,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2025,7 +2093,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2064,7 +2134,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2103,7 +2175,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 1
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2157,7 +2231,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2216,7 +2292,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2262,7 +2340,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2320,7 +2400,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2379,7 +2461,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2425,7 +2509,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2483,7 +2569,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2529,7 +2617,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 1
         },
         "explorers": [
             {
@@ -2585,7 +2675,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2648,7 +2740,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -2803,7 +2897,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 8
+            "loads": 0,
+            "loadsWithUrl": 8,
+            "urls": 0
         },
         "explorers": [
             {
@@ -2891,7 +2987,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 0,
+            "loadsWithUrl": 2,
+            "urls": 0
         },
         "explorers": [
             {
@@ -2952,7 +3050,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -3013,7 +3113,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -3074,7 +3176,9 @@
             ],
             "registered": 1,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -3133,7 +3237,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 2
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
         },
         "explorers": [
             {
@@ -3258,7 +3364,9 @@
             ],
             "registered": 3,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 6
         },
         "explorers": [
             {
@@ -3362,7 +3470,9 @@
             ],
             "registered": 3,
             "built": 1,
-            "loads": 0
+            "loads": 0,
+            "loadsWithUrl": 0,
+            "urls": 3
         },
         "explorers": [
             {

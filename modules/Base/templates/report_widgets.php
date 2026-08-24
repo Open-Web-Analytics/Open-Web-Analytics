@@ -106,6 +106,7 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
+        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
         <?php echo $owa_id; ?>.options.sparkline.metric = 'visits';
 <?php if ( ! empty( $owa_w['title'] ) ): ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['renderTemplate', '<?php echo $owa_w['title']; ?>', {d: <?php echo $owa_id; ?>}, 'replace', '<?php $view->out( $owa_id, false ); ?>-title']);
@@ -121,7 +122,7 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
 
 <?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
+        <?php echo $owa_id; ?>.load();
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
@@ -179,6 +180,7 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
+        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
         <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>);
@@ -189,7 +191,7 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 
 <?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load(<?php echo $owa_url; ?>);
+        <?php echo $owa_id; ?>.load();
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
