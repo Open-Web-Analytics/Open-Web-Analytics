@@ -1193,4 +1193,75 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertSame( array(), $bad );
     }
+
+    /**
+     * A widget narrows; it never widens.
+     *
+     * Stated as a table because the question "does a widget constraint add to
+     * the report's or replace it?" has to have exactly one answer, and the
+     * answer is visible only in the emitted query.
+     */
+    public function testAWidgetConstraintAlwaysNarrows(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $report = array( array( 'dimension' => 'host', 'value' => 'example.com' ) );
+        $own    = array( array( 'dimension' => 'medium', 'value' => 'organic-search' ) );
+
+        $this->assertSame( 'host==example.com',
+            $this->constraintReport( array(), $report )['constraints'] ?? null,
+            'a widget that adds nothing keeps the report constraint' );
+
+        $this->assertSame( 'medium==organic-search',
+            $this->constraintReport( array( 'constraints' => $own ), null )['constraints'] ?? null,
+            'a widget constraint stands alone when the report has none' );
+
+        $this->assertSame( 'host==example.com,medium==organic-search',
+            $this->constraintReport( array( 'constraints' => $own ), $report )['constraints'] ?? null,
+            'and is ADDED to the report constraint, never substituted for it' );
+    }
+
+    /**
+     * The other spelling is refused rather than given the opposite meaning.
+     *
+     * A widget's `query` is merged over the report-wide defaults with a union,
+     * so `constraints` written inside it wins outright and drops the report's.
+     * That is the same word, in almost the same place, doing the opposite
+     * thing -- and the failure is silent and widening.
+     */
+    public function testConstraintsInsideAWidgetQueryAreRefused(): void
+    {
+        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
+            'title'   => 'Overrides',
+            'widgets' => array(
+                array( 'type' => 'grid',
+                       'query' => array( 'dimensions' => 'medium',
+                                         'constraints' => 'medium==organic-search' ) ),
+            ),
+        ) );
+
+        $this->assertStringContainsString( 'widget 0', $error );
+        $this->assertStringContainsString( 'constraints', $error );
+    }
+
+    /** No shipped definition uses the refused spelling. */
+    public function testNoShippedWidgetPutsConstraintsInItsQuery(): void
+    {
+        $found = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $definition = json_decode( (string) file_get_contents( $file ), true );
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $i => $widget ) {
+
+                if ( isset( $widget['query']['constraints'] ) ) {
+
+                    $found[] = basename( $file ) . " widget $i";
+                }
+            }
+        }
+
+        $this->assertSame( array(), $found );
+    }
 }

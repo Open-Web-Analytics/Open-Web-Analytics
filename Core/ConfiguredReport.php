@@ -133,6 +133,27 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
 
             /*
+             * There is ONE way to constrain a widget, and it adds.
+             *
+             * `query` is merged over the report-wide defaults with a union, so
+             * a `constraints` key written inside it would win outright and
+             * silently drop the report's -- widening a detail report from one
+             * host to every host, which reads as a data bug. Two spellings
+             * with opposite meanings and no error between them is worse than
+             * either, so the overriding one is refused.
+             *
+             * If a widget ever genuinely needs to escape the report's
+             * constraint, that wants to be a key that says so.
+             */
+            if ( isset( $widget['query']['constraints'] ) ) {
+
+                return sprintf(
+                    'widget %s puts "constraints" inside "query", which would replace the '
+                    . 'report\'s rather than add to it; declare them on the widget instead',
+                    $i );
+            }
+
+            /*
              * A widget may narrow the rows further than the report does.
              * `traffic` is why: its three metric boxes each measure a
              * different medium, so what they ask for genuinely differs from
