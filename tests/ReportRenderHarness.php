@@ -51,7 +51,50 @@ final class ReportRenderHarness
      * @param array $extra request parameters beyond REQUEST (a detail report's own)
      * @return array
      */
-    public static function snapshot( string $id, array $extra = array() ): array
+    /**
+     * A tab set with all three kinds of tab in it.
+     *
+     * Tabs are not configuration: ReportController::pre() builds them per site
+     * from enableEcommerceReporting and the site's active goal groups. So the
+     * recording taken against the test site has exactly one tab, and the
+     * ecommerce and goal-group branches of the tabbed templates -- the loop
+     * that makes a tabbed report tabbed -- are not exercised by it at all.
+     *
+     * Supplied directly rather than by creating a site with goals. The template
+     * consumes $view->tabs, so handing it a tab set drives precisely the code
+     * whose behaviour has to be preserved, deterministically, without writing
+     * rows to anyone's database or leaking a generated site id into the
+     * recording. How a SITE turns into a tab set is a different question with
+     * its own answer, and does not belong in a rendering fixture.
+     */
+    public const TABS = array(
+        'site_usage' => array(
+            'tab_label'        => 'Site Usage',
+            'metrics'          => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
+            'sort'             => 'visits-',
+            'trendchartmetric' => 'visits',
+        ),
+        'ecommerce' => array(
+            'tab_label'        => 'e-commerce',
+            'metrics'          => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+            'sort'             => 'transactionRevenue-',
+            'trendchartmetric' => 'transactions',
+        ),
+        'goal_group_1' => array(
+            'tab_label'        => 'Goal Group One',
+            'metrics'          => 'visits,goal1Completions,goalValueAll',
+            'sort'             => 'goalValueAll-',
+            'trendchartmetric' => 'visits',
+        ),
+    );
+
+    /**
+     * @param string $id a registered report id
+     * @param array $extra request parameters beyond REQUEST (a detail report's own)
+     * @param array|null $tabs a tab set to render with, in place of the site's own
+     * @return array
+     */
+    public static function snapshot( string $id, array $extra = array(), array $tabs = null ): array
     {
         $params = self::REQUEST + $extra + array( 'reportId' => $id );
 
@@ -60,6 +103,12 @@ final class ReportRenderHarness
         if ( empty( $data['subview'] ) ) {
 
             return array( 'error' => 'did not render: ' . ( $data['view'] ?? '(no view)' ) );
+        }
+
+        if ( $tabs !== null ) {
+
+            $data['tabs']      = $tabs;
+            $data['tabs_json'] = json_encode( $tabs );
         }
 
         /*
@@ -81,10 +130,14 @@ final class ReportRenderHarness
     }
 
     /**
-     * Every API query the rendered report will issue, by the variable it is
-     * assigned to.
+     * Every API query the rendered report will issue, in document order.
      *
-     * @return array<string, array>
+     * A LIST, not a map keyed by variable name. The tabbed templates declare
+     * `var dimurl` once per tab, so keying by name silently kept only the last
+     * one: a three-tab report emits six queries and this recorded two. The
+     * fixture looked complete and was missing two thirds of the report.
+     *
+     * @return array<int, array>
      */
     public static function queriesIn( string $html ): array
     {
@@ -110,25 +163,24 @@ final class ReportRenderHarness
 
             ksort( $query );
 
-            $out[ $name ] = $query;
+            $out[] = array( 'var' => $name, 'query' => $query );
         }
-
-        ksort( $out );
 
         return $out;
     }
 
     /**
-     * Which container each result-set explorer is bound to.
+     * Which container each result-set explorer is bound to, in document order.
      *
-     * Found missing while designing the widget format, which is the point of
-     * building the net before the change: a resultSetExplorer renders into the
-     * element it was CONSTRUCTED with, and refreshGrid takes no target of its
-     * own. So a grid moved to the wrong container would emit an identical
-     * command list and an identical query, and nothing here would have
-     * noticed -- the report would simply render nothing.
+     * A resultSetExplorer renders into the element it was CONSTRUCTED with, and
+     * refreshGrid takes no target of its own -- so a grid moved to the wrong
+     * container emits an identical command list and an identical query, and the
+     * report simply renders nothing.
      *
-     * @return array<string, string> receiver => element id
+     * A list for the same reason the queries are: the tabbed templates rebind
+     * `var dim` once per tab.
+     *
+     * @return array<int, array>
      */
     public static function explorersIn( string $html ): array
     {
@@ -140,10 +192,8 @@ final class ReportRenderHarness
 
         foreach ( $m[1] as $i => $receiver ) {
 
-            $out[ $receiver ] = $m[2][ $i ];
+            $out[] = array( 'var' => $receiver, 'container' => $m[2][ $i ] );
         }
-
-        ksort( $out );
 
         return $out;
     }
@@ -240,6 +290,20 @@ final class ReportRenderHarness
         return $out;
     }
 
+    /**
+     * One representative tabbed report per tabbed template, rendered with a
+     * full tab set.
+     *
+     * The per-tab loop lives in the TEMPLATE, not in the report, so pinning it
+     * once per template pins it for all 29 tabbed reports. Recording a
+     * three-tab variant of every one of them would triple the fixture to say
+     * the same thing 29 times.
+     */
+    public const MULTI_TAB = array(
+        'browsers'    => 'base.reportDimension',
+        'host-detail' => 'base.reportDimensionDetail',
+    );
+
     /** @return array<string, array> */
     public static function captureAll(): array
     {
@@ -248,6 +312,13 @@ final class ReportRenderHarness
         foreach ( self::coveredReports() as $id => $extra ) {
 
             $all[ $id ] = self::snapshot( $id, $extra );
+        }
+
+        foreach ( self::MULTI_TAB as $id => $subview ) {
+
+            $extra = self::coveredReports()[ $id ] ?? array();
+
+            $all[ $id . ' (3 tabs)' ] = self::snapshot( $id, $extra, self::TABS );
         }
 
         return $all;

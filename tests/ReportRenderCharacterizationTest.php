@@ -48,7 +48,15 @@ final class ReportRenderCharacterizationTest extends TestCase
         $cases = array();
 
         foreach ( Render::coveredReports() as $id => $extra ) {
-            $cases[ $id ] = array( $id, $extra );
+            $cases[ $id ] = array( $id, $extra, null );
+        }
+
+        // ...and the tabbed templates with a full tab set, which the test
+        // site's single tab never reaches.
+        foreach ( array_keys( Render::MULTI_TAB ) as $id ) {
+
+            $cases[ $id . ' (3 tabs)' ] = array(
+                $id, Render::coveredReports()[ $id ] ?? array(), Render::TABS );
         }
 
         return $cases;
@@ -57,14 +65,16 @@ final class ReportRenderCharacterizationTest extends TestCase
     /**
      * @dataProvider reportProvider
      */
-    public function testTheReportStillEmitsWhatItEmitted( string $id, array $extra ): void
+    public function testTheReportStillEmitsWhatItEmitted( string $id, array $extra, ?array $tabs ): void
     {
         $this->requireDb();
 
-        $this->assertArrayHasKey( $id, self::$golden,
+        $key = $id . ( $tabs === null ? '' : ' (3 tabs)' );
+
+        $this->assertArrayHasKey( $key, self::$golden,
             "$id has no recorded render; regenerate deliberately and say why in the commit" );
 
-        $this->assertSame( self::$golden[ $id ], Render::snapshot( $id, $extra ),
+        $this->assertSame( self::$golden[ $key ], Render::snapshot( $id, $extra, $tabs ),
             "$id renders different queries or commands than it did. If this is the widget "
             . 'conversion, it is a regression; the point of the conversion is that this '
             . 'does not change.' );
@@ -78,6 +88,10 @@ final class ReportRenderCharacterizationTest extends TestCase
     {
         $recorded = array_keys( self::$golden );
         $present  = array_keys( Render::coveredReports() );
+
+        foreach ( array_keys( Render::MULTI_TAB ) as $id ) {
+            $present[] = $id . ' (3 tabs)';
+        }
 
         sort( $recorded );
         sort( $present );
@@ -140,10 +154,10 @@ final class ReportRenderCharacterizationTest extends TestCase
                 $unbound[] = "$id ($queries queries, $explorers explorers)";
             }
 
-            foreach ( (array) ( $snapshot['explorers'] ?? array() ) as $receiver => $container ) {
+            foreach ( (array) ( $snapshot['explorers'] ?? array() ) as $entry ) {
 
-                $this->assertNotSame( '', $container,
-                    "$id: $receiver is bound to no container" );
+                $this->assertNotSame( '', $entry['container'] ?? '',
+                    "$id: " . ( $entry['var'] ?? '?' ) . ' is bound to no container' );
             }
         }
 
@@ -166,10 +180,10 @@ final class ReportRenderCharacterizationTest extends TestCase
 
         foreach ( self::$golden as $id => $snapshot ) {
 
-            foreach ( (array) ( $snapshot['queries'] ?? array() ) as $name => $query ) {
+            foreach ( (array) ( $snapshot['queries'] ?? array() ) as $entry ) {
 
-                if ( ! isset( $query['nonce'] ) ) {
-                    $missing[] = "$id/$name";
+                if ( ! isset( $entry['query']['nonce'] ) ) {
+                    $missing[] = $id . '/' . ( $entry['var'] ?? '?' );
                 }
             }
         }
@@ -192,17 +206,29 @@ final class ReportRenderCharacterizationTest extends TestCase
 
         $queries = Render::queriesIn( $html );
 
-        $this->assertArrayHasKey( 'aurl', $queries );
-        $this->assertSame( 'visits', $queries['aurl']['metrics'] );
-        $this->assertSame( '<nonce>', $queries['aurl']['nonce'],
+        $this->assertCount( 1, $queries );
+        $this->assertSame( 'aurl', $queries[0]['var'] );
+        $this->assertSame( 'visits', $queries[0]['query']['metrics'] );
+        $this->assertSame( '<nonce>', $queries[0]['query']['nonce'],
             'the volatile value must be normalised, not passed through' );
 
         $this->assertSame( array( 'trend.makeAreaChart -> trend-chart' ),
             Render::commandsIn( $html ) );
 
-        $this->assertSame( array( 'g' => 'dimension-grid' ),
+        $this->assertSame( array( array( 'var' => 'g', 'container' => 'dimension-grid' ) ),
             Render::explorersIn( "var g = new OWA.resultSetExplorer('dimension-grid');" ),
             'the container a result set renders into must be observable' );
+
+        /*
+         * Repeated names must NOT collapse. The tabbed templates rebind the
+         * same variable once per tab, and keying by name recorded only the
+         * last -- two of six on a three-tab report, with the fixture looking
+         * complete.
+         */
+        $twice = "var d = new OWA.resultSetExplorer('a-grid');\nvar d = new OWA.resultSetExplorer('b-grid');";
+
+        $this->assertCount( 2, Render::explorersIn( $twice ),
+            'two constructions of the same variable are two widgets, not one' );
 
         // ...and it must not invent things that are not there.
         $this->assertSame( array(), Render::queriesIn( '<p>no scripts here</p>' ) );
