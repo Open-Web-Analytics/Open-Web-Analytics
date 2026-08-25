@@ -66,7 +66,9 @@ final class ActionNameValidationTest extends TestCase
     {
         // The guard must not break the legacy resolution path itself: this is
         // still how third-party module actions load.
-        $controller = \OWA\Core\CoreAPI::moduleFactory('base.reportDashboard', 'Controller', array());
+        // Any action still implemented by a controller will do; dashboard used
+        // to be one and is a report definition now.
+        $controller = \OWA\Core\CoreAPI::moduleFactory('base.reportDomstreams', 'Controller', array());
 
         $this->assertIsObject($controller);
         $this->assertSame('base', $controller->module);

@@ -1198,6 +1198,170 @@
             "site_usage_dim.refreshGrid"
         ]
     },
+    "dashboard": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "siteTrendurl",
+                "query": {
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "topContenturl",
+                "query": {
+                    "dimensions": "pageTitle,pageUrl",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "pageViews",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "pageViews-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "actionsurl",
+                "query": {
+                    "dimensions": "actionGroup,actionName",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "actions",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "actions-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "visitorTypesurl",
+                "query": {
+                    "dimensions": "isRepeatVisitor",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "visitorMediumsurl",
+                "query": {
+                    "dimensions": "medium",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "latestVisitsurl",
+                "query": {
+                    "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pagesPerVisit,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "topReferrersurl",
+                "query": {
+                    "constraints": "medium==referral",
+                    "dimensions": "referralPageTitle,referralPageUrl",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 7,
+            "loadsWithUrl": 0,
+            "urls": 7
+        },
+        "explorers": [
+            {
+                "var": "siteTrend",
+                "container": "trend-chart"
+            },
+            {
+                "var": "topContent",
+                "container": "top-pages"
+            },
+            {
+                "var": "actions",
+                "container": "actions-trend"
+            },
+            {
+                "var": "visitorTypes",
+                "container": "visitor-types"
+            },
+            {
+                "var": "visitorMediums",
+                "container": "visitor-mediums"
+            },
+            {
+                "var": "latestVisits",
+                "container": "latest-visits"
+            },
+            {
+                "var": "topReferrers",
+                "container": "top-referers"
+            }
+        ],
+        "commands": [
+            "siteTrend.makeAreaChart -> trend-chart",
+            "siteTrend.makeMetricBoxes -> siteTrend-metrics",
+            "topContent.refreshGrid",
+            "actions.refreshGrid",
+            "visitorTypes.makePieChart",
+            "visitorMediums.makePieChart",
+            "latestVisits.refreshGrid",
+            "topReferrers.refreshGrid"
+        ]
+    },
     "days-to-purchase": {
         "subview": "base.reportWidgets",
         "queries": [

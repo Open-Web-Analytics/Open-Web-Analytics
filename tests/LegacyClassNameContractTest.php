@@ -60,6 +60,12 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        'owa_reportDashboardController',
+        'owa_reportDashboardView',
+        // The GitHub release feed. Replaced by stored notifications, which are
+        // fetched on a schedule instead of during a dashboard render.
+        'owa_widgetOwaNewsController',
+        'owa_widgetOwaNewsView',
         'owa_reportGoalsController',
         'owa_reportGoalsView',
         'owa_reportDomClicksController',

@@ -27,7 +27,6 @@ final class ReportCharacterizationHarness
      * note), so none of these is a report the harness needs to protect.
      */
     private const PREFETCHING = array(
-        'ReportDashboard',
         'ReportDocument', 'ReportDomstreams',
         'ReportGoalFunnel',
         'ReportVisit', 'ReportVisitor', 'ReportVisitors', 'ReportVisits',
@@ -112,6 +111,7 @@ final class ReportCharacterizationHarness
         'campaign-detail'           => 'ReportCampaignDetail',
         'commerce'                  => 'ReportCommerce',
         'content'                   => 'ReportContent',
+        'dashboard'                 => 'ReportDashboard',
         'country-detail'            => 'ReportCountryDetail',
         'creative-performance'      => 'ReportCreativePerformance',
         'days-to-purchase'          => 'ReportDaysToPurchase',

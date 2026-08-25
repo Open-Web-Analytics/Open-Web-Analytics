@@ -205,8 +205,6 @@
     "owa_remoteQueueModule",
     "owa_repeatVisitors",
     "owa_reportController",
-    "owa_reportDashboardController",
-    "owa_reportDashboardView",
     "owa_reportDimensionDetailView",
     "owa_reportDimensionView",
     "owa_reportDocumentController",
@@ -332,7 +330,5 @@
     "owa_visitor",
     "owa_visitorHandlers",
     "owa_visitorUpdateHandlers",
-    "owa_visitors",
-    "owa_widgetOwaNewsController",
-    "owa_widgetOwaNewsView"
+    "owa_visitors"
 ]

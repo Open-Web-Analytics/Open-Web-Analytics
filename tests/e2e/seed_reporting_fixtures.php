@@ -77,6 +77,19 @@ const E2E_TXNS = [
 // real visitors: '/' and '/pricing' appear in two pageviews each, and '/docs'
 // -- the goal's own destination, which the report appends as the last bar -- in
 // two more. A funnel whose stages are all zero would render and prove nothing.
+// Notifications the bell can show and the specs can dismiss.
+//
+// Seeded rather than leaning on the real GitHub releases, because dismissing is
+// PERMANENT and per user: specs that dismissed real notifications would pass
+// once and then find nothing left to dismiss. These are removed at teardown,
+// dismissals and all.
+const E2E_NOTIFICATION_SOURCE = 'e2e_fixture';
+const E2E_NOTIFICATIONS = [
+    ['source_key' => 'e2e-n1', 'title' => 'E2E Notification One',   'body' => 'first',  'url' => 'https://example.test/n1'],
+    ['source_key' => 'e2e-n2', 'title' => 'E2E Notification Two',   'body' => 'second', 'url' => 'https://example.test/n2'],
+    ['source_key' => 'e2e-n3', 'title' => 'E2E Notification Three', 'body' => 'third',  'url' => 'https://example.test/n3'],
+];
+
 const E2E_GOAL_NUMBER = 1;
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
 const E2E_GOAL_GROUP  = '1';
@@ -254,7 +267,10 @@ function seed(): array
     $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting');
     $out['transactions_seeded'] = seedTransactions();
 
-    // 5. A goal with a funnel, so the funnel report has stages to draw and the
+    // 5. Notifications for the header bell.
+    $out['notifications_seeded'] = seedNotifications();
+
+    // 6. A goal with a funnel, so the funnel report has stages to draw and the
     //    goal metric set has a group to appear as.
     $out['goal_seeded'] = seedGoal();
 
@@ -271,6 +287,62 @@ function seed(): array
  * rename -- and `is_required` as a real boolean, because the funnel report
  * tests it with ===.
  */
+/**
+ * Global notifications with a fixture source of their own.
+ *
+ * Written straight through NotificationManager so the seeder exercises the same
+ * path the fetch job does -- including the watermark, which is why they carry
+ * ascending timestamps rather than all sharing one.
+ */
+function seedNotifications(): array
+{
+    $items = [];
+    $i     = 0;
+
+    foreach (E2E_NOTIFICATIONS as $n) {
+        $items[] = $n + ['published_at' => time() - (86400 * (count(E2E_NOTIFICATIONS) - $i))];
+        $i++;
+    }
+
+    // The watermark refuses anything older than what a source already holds, so
+    // a re-seed after a partial teardown would silently store nothing. Clear
+    // first and the seeder is idempotent.
+    unseedNotifications();
+
+    $created = \OWA\Module\Base\Classes\NotificationManager::record(
+        $items, E2E_NOTIFICATION_SOURCE);
+
+    return ['created' => $created, 'source' => E2E_NOTIFICATION_SOURCE];
+}
+
+/** Remove the fixture notifications and every dismissal pointing at them. */
+function unseedNotifications(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_notification');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['source'] ?? '') !== E2E_NOTIFICATION_SOURCE) {
+            continue;
+        }
+
+        owa_coreAPI::entityFactory('base.notification')->delete($row['id']);
+
+        $d = owa_coreAPI::dbSingleton();
+        $d->deleteFrom('owa_notification_dismissal');
+        $d->where('notification_id', $row['id']);
+        $d->executeQuery();
+
+        $removed++;
+    }
+
+    return $removed;
+}
+
 function seedGoal(): array
 {
     $steps = [];
@@ -349,6 +421,8 @@ function teardown(): array
         } catch (\Throwable $e) {}
     }
     $removed['owa_referer'] = 'fixture rows cleared';
+
+    $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
 
     /*
      * The fixture goal. Goals are a per-site SETTING, not rows, so the table

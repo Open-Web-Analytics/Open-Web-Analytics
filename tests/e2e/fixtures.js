@@ -63,6 +63,13 @@ const FIXTURE = {
         ],
         destination: '/docs',
     },
+    // Notifications seeded for the header bell. Dismissing is permanent and
+    // per user, so the specs must have their own rather than consume the real
+    // release announcements.
+    notifications: {
+        source: 'e2e_fixture',
+        titles: ['E2E Notification Three', 'E2E Notification Two', 'E2E Notification One'],
+    },
     // The always-present optional module the module-activation test toggles.
     toggleModule: 'hello',
 };
