@@ -7,7 +7,37 @@
         <option <?php if ($i == $view->goal_number): echo 'SELECTED'; endif;?> value="<?php $view->out($i, false); ?>">Goal <?php $view->out($i, false); ?></option>
         <?php endfor; ?>
     </select>
+
+    <?php
+        /*
+         * Counting scope, on the URL and nowhere else.
+         *
+         * A funnel scope is a way of LOOKING at the report, not a property of
+         * the site: persisting it would make the same link mean different
+         * things to two people. So the toggle is just a link that carries the
+         * other value, and every other parameter rides along with it.
+         */
+        $owa_other = $view->get('funnel_scope_other');
+    ?>
+    &nbsp; Counting:
+    <span class="funnelScope"><?php $view->out( $view->get('funnel_scope') === 'session' ? 'visits' : 'visitors' ); ?></span>
+    <a href="<?php echo $view->makeLink( array(
+        'do'          => 'base.report',
+        'reportId'    => 'goal-funnel',
+        'goalNumber'  => $view->goal_number,
+        'funnelScope' => $owa_other,
+    ), true ); ?>">show <?php $view->out( $owa_other === 'session' ? 'visits' : 'visitors' ); ?> instead</a>
 </div>
+
+<?php if ( $view->get('funnel_segment_error') ): ?>
+<?php
+    /*
+     * The segment was refused, so the funnel below is empty on purpose.
+     * Drawing zeroes with no explanation would read as "nobody converted".
+     */
+?>
+<div class="notice" role="status"><?php $view->out( $view->get('funnel_segment_error') ); ?></div>
+<?php endif; ?>
 
 <?php if ( $view->get('funnel') ):?>
 <table class="funnel" border="0" style="min-width:100%;">
@@ -25,7 +55,7 @@
         </td>
         <td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $view->out($step['step_number']);?>">
             <div class="funnelStepName">Step <?php $view->out($step['step_number']);?>: <?php $view->out($step['name']);?></div>
-            <div class="funnelStepCount"><?php $view->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
+            <div class="funnelStepCount"><?php $view->out($step['visitors']);?> <span class="visitorCountLabel"><?php $view->out( $view->get('funnel_scope_label') ); ?></span></div>
             <div class="funnelStepPath"><?php $view->out($step['path']);?></div>
             <div class="genericHorizontalList" style="padding-top:10px;font-size:12px;">
                 <ul class="">

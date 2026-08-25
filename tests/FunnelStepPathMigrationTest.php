@@ -109,14 +109,20 @@ final class FunnelStepPathMigrationTest extends TestCase
         $src = (string) file_get_contents(
             OWA_DIR . 'modules/Base/Controller/ReportGoalFunnel.php' );
 
+        /*
+         * The KEY is the contract, not the variable holding it. This named
+         * $funnel until the report was rewritten to count in one query, where
+         * the list became $steps -- and a test pinned to the old name reads as
+         * a regression in the thing it is guarding rather than a rename.
+         */
         $this->assertMatchesRegularExpression(
-            "/\\\$funnel\\[\\]\\s*=\\s*array\\(\\s*'path'\\s*=>/", $src,
+            "/\\\$(funnel|steps)\\[\\]\\s*=\\s*array\\(\\s*'path'\\s*=>/", $src,
             'the appended step must be keyed path, like the stored ones' );
 
-        $this->assertSame( 0, preg_match( "/\\\$funnel\\[\\]\\s*=\\s*array\\(\\s*'url'\\s*=>/", $src ),
+        $this->assertSame( 0, preg_match( "/\\\$(funnel|steps)\\[\\]\\s*=\\s*array\\(\\s*'url'\\s*=>/", $src ),
             'nothing may build a funnel element keyed url any more' );
 
-        $this->assertSame( 0, preg_match( "/\\\$step\\['url'\\]|\\\$funnel\\[[^\\]]+\\]\\['url'\\]/", $src ),
+        $this->assertSame( 0, preg_match( "/\\\$step\\['url'\\]|\\\$(funnel|steps)\\[[^\\]]+\\]\\['url'\\]/", $src ),
             'and nothing may read one' );
     }
 

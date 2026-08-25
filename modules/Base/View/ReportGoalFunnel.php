@@ -39,5 +39,17 @@ class ReportGoalFunnel extends \OWA\Core\View {
         $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
         $this->body->set('numGoals', \OWA\Core\CoreAPI::getSetting('base', 'numGoals') );
         $this->body->set('goal_number',  $this->get('goal_number') );
+
+        /*
+         * The scope toggle and any segment complaint.
+         *
+         * Listed here because this view hands the body each variable by name --
+         * a template reading one this method does not copy sees nothing at all,
+         * which is silent.
+         */
+        $this->body->set('funnel_scope',         $this->get('funnel_scope') );
+        $this->body->set('funnel_scope_other',   $this->get('funnel_scope_other') );
+        $this->body->set('funnel_scope_label',   $this->get('funnel_scope_label') );
+        $this->body->set('funnel_segment_error', $this->get('funnel_segment_error') );
     }
 }

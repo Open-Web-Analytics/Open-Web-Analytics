@@ -33,6 +33,30 @@ namespace OWA\Module\Base\Controller;
 
 class ReportGoalFunnel extends \OWA\Core\ReportController {
 
+    /**
+     * How the funnel is counted: one visitor's whole history, or one visit.
+     *
+     * On the URL and nowhere else. A funnel scope is a way of LOOKING at a
+     * report, not a property of the site, so persisting it would make the same
+     * link mean different things to two people -- and make a shared link mean
+     * something different again tomorrow.
+     */
+    const SCOPE_PARAM = 'funnelScope';
+
+    /** Subject columns, keyed by the scope that selects them. */
+    /**
+     * How many subjects a segment may select before the funnel refuses.
+     *
+     * The ids travel back as an IN list, so this bounds the statement rather
+     * than expressing a view about how big a segment is allowed to be.
+     */
+    const SEGMENT_LIMIT = 10000;
+
+    const SCOPES = array(
+        'visitor' => 'visitor_id',
+        'session' => 'session_id',
+    );
+
     function action() {
 
         $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
@@ -43,117 +67,360 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
             $goal_number = 1;
         }
 
-        $goal = $gm->getGoal($goal_number);
+        $goal   = $gm->getGoal($goal_number);
         $funnel = $gm->getGoalFunnel($goal_number);
 
+        $scope = $this->scope();
+
+        $this->set( 'funnel_scope', $scope );
+        // What the counts are counting, so the template does not have to say
+        // "visitors" when it is counting visits.
+        $this->set( 'funnel_scope_label', $scope === 'session' ? 'visits' : 'visitors' );
+        $this->set( 'funnel_scope_other', $scope === 'visitor' ? 'session' : 'visitor' );
+
         if ( $funnel ) {
-            $goal = $gm->getGoal($goal_number);
-            // find required steps. build a constraint string.
-            $required_step_constraints = '';
-            $steps_count = count($funnel);
-            for ($i=1; $i <= $steps_count ;$i++ ) {
 
-                if (array_key_exists('is_required', $funnel[$i]) && $funnel[$i]['is_required'] === true) {
+            /*
+             * The goal's own destination is the last step. Keyed `path` like
+             * every other element: the counting below reads $step['path'], and
+             * the stored steps carry that key since the rename. Built with
+             * 'url' it was the one element the loop could not read.
+             */
+            $steps = array_values( $funnel );
+            $steps[] = array(
+                'path'        => $goal['details']['goal_url'],
+                'name'        => $goal['goal_name'],
+                'step_number' => count( $steps ) + 1,
+            );
 
-                    $required_step_constraints .= 'pagePath=='.$funnel[$i]['path'].',';
+            $counted = $this->countFunnel( $steps, $scope );
+
+            $previous = null;
+
+            foreach ( $steps as $i => $step ) {
+
+                $reached = isset( $counted[ $i ] ) ? (int) $counted[ $i ] : 0;
+
+                $steps[ $i ]['visitors'] = $reached;
+
+                // The template renders by step_number. A stored step carries
+                // one; the appended goal destination is given one above. This
+                // is the backstop, so a funnel saved before the field existed
+                // still draws in order rather than as a row of blanks.
+                if ( empty( $steps[ $i ]['step_number'] ) ) {
+
+                    $steps[ $i ]['step_number'] = $i + 1;
                 }
-            }
-            $required_step_constraints = trim($required_step_constraints, ',');
-
-            //print $required_step_constraints;
-            // get total visits
-            $total_visitors_rs = \OWA\Core\CoreAPI::executeApiCommand(array(
-	            
-	            	'request_method'	=> 'GET',
-					'module'			=> 'base',
-					'version'			=> 'v1',
-		            'do'                => 'reports',
-                    'period'       => $this->get('period'),
-                    'startDate'      => $this->get('startDate'),
-                    'endDate'      => $this->get('endDate'),
-                    'constraints' => $required_step_constraints,
-                    'metrics'       => 'visitors',
-                    'siteId'      => $this->getParam( 'siteId' )
-            ));
-            //print_r($total_visitors_rs);
-            // The aggregate is an object, and this is the denominator of the
-            // conversion rate at the end of the method -- the same mistake as
-            // the per-step count below, just further from where it surfaces.
-            $total_visitors = isset( $total_visitors_rs->aggregates->visitors->value )
-                ? (int) $total_visitors_rs->aggregates->visitors->value
-                : 0;
-            //print "Total visits: $total_visitors";
-
-            $this->set( 'total_visitors',  $total_visitors);
-            // get visits for each step
-
-            // add goal url to steps array
-            // Keyed `path` like every other element: the loop below constrains on
-            // $step['path'], and the stored steps carry that key since the rename.
-            // Built with 'url' it was the one element the loop could not read.
-            $funnel[] = array('path' => $goal['details']['goal_url'], 'name' => $goal['goal_name'], 'step_number' => $steps_count + 1);
-            foreach ( $funnel as $k => $step ) {
-                $operator = '==';
-                $rs = \OWA\Core\CoreAPI::executeApiCommand(array(
-	                
-	                	'request_method'	=> 'GET',
-						'module'			=> 'base',
-						'version'			=> 'v1',
-			            'do'                => 'reports',
-                        'period'       => $this->get('period'),
-                        'startDate'      => $this->get('startDate'),
-                        'endDate'      => $this->get('endDate'),
-                        'metrics'       => 'visitors',
-                        'constraints' => 'pagePath'.$operator.$step['path'],
-                        'siteId'      => $this->getParam( 'siteId' )
-                ));
 
                 /*
-                 * `$$rs` -- a double dollar -- was a variable variable: PHP
-                 * evaluated $rs (a stdClass), used it as a variable NAME, and
-                 * fatalled with "Object of class stdClass could not be
-                 * converted to string". So this report returned a 500 for any
-                 * goal that actually had a funnel, which is why nothing caught
-                 * it: no install had ever configured one.
+                 * Drop-off against the step before, which is what a funnel
+                 * shows. The first step is the entry population, so it is 100%
+                 * of itself by definition.
                  *
-                 * The aggregate is an object -- {value, formatted_value, ...} --
-                 * so the count has to come off `value`, and as an int: the
-                 * comparison and division below are arithmetic, and the template
-                 * prints it.
+                 * No backfill guard any more: a step can no longer out-count
+                 * the one before it, because reaching step N now REQUIRES
+                 * having reached N-1. The old code needed that guard precisely
+                 * because its steps were independent counts.
                  */
-                $visitors = isset( $rs->aggregates->visitors->value )
-                    ? (int) $rs->aggregates->visitors->value
-                    : 0;
-                $funnel[$k]['visitors'] = $visitors;
+                if ( $previous === null ) {
 
-                // backfill check in case there are more visitors to this step than were at prior step.
-                if ($funnel[$k]['visitors'] <= $funnel[$k-1]['visitors']) {
-                    if ($funnel[$k-1]['visitors'] > 0 ) {
-                        $funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $funnel[$k-1]['visitors'], 4) * 100 . '%';
-                    } else {
-                        $funnel[$k]['visitor_percentage'] = '0.00%';
-                    }
+                    $steps[ $i ]['visitor_percentage'] = '100%';
+
+                } elseif ( $previous > 0 ) {
+
+                    $steps[ $i ]['visitor_percentage'] =
+                        round( $reached / $previous, 4 ) * 100 . '%';
+
                 } else {
-                    $funnel[$k]['visitor_percentage'] = '100%';
+
+                    $steps[ $i ]['visitor_percentage'] = '0.00%';
                 }
+
+                $previous = $reached;
             }
 
-            //print_r($funnel);
+            $entered = isset( $counted[0] ) ? (int) $counted[0] : 0;
+            $goal_step = end( $steps );
 
-            $goal_step = end($funnel);
-            // A site with no visitors in the period is not an error; it is a
-            // funnel nobody entered.
-            $goal_conversion_rate = $total_visitors > 0
-                ? round( $goal_step['visitors'] / $total_visitors, 2 ) * 100 . '%'
+            /*
+             * Against the population that ENTERED the funnel, not against a
+             * separate query.
+             *
+             * The denominator used to be its own request constrained on every
+             * required step at once -- `pagePath==a,pagePath==b,...`. Those are
+             * ANDed on a single fact row, and a row has one path, so it could
+             * never match; worse, constraints are keyed by column, so all but
+             * the last were silently discarded and the denominator quietly
+             * became "whoever hit the last required step".
+             */
+            $goal_conversion_rate = $entered > 0
+                ? round( $goal_step['visitors'] / $entered, 4 ) * 100 . '%'
                 : '0%';
-            $this->set('goal_conversion_rate', $goal_conversion_rate);
-            $this->set('funnel', $funnel);
 
+            $this->set( 'total_visitors', $entered );
+            $this->set( 'goal_conversion_rate', $goal_conversion_rate );
+            $this->set( 'funnel', $steps );
         }
+
         // set view stuff
         $this->setSubview('base.reportGoalFunnel');
         $this->setTitle('Funnel Visualization:', 'Goal ' . $goal_number);
         $this->set('goal_number', $goal_number);
+    }
+
+    /**
+     * visitor or session, from the URL.
+     *
+     * Anything else reads as visitor rather than erroring: the scope is a view
+     * toggle, and a mistyped one should not take a report down.
+     *
+     * @return string
+     */
+    private function scope() {
+
+        $asked = (string) $this->getParam( self::SCOPE_PARAM );
+
+        return isset( self::SCOPES[ $asked ] ) ? $asked : 'visitor';
+    }
+
+    /**
+     * How many subjects reached each step, IN ORDER.
+     *
+     * ONE query, not one per step. Per subject it takes the first time they hit
+     * each step, then counts those whose times run in order -- which is GA's
+     * "indirectly followed by": intervening pages are allowed, going backwards
+     * is not.
+     *
+     * What this replaces counted each step independently
+     * (`visitors where pagePath == step`), so it was not a funnel at all: a
+     * visitor who landed straight on the last page and never saw the first
+     * counted in the last step, and steps could out-count the ones before them.
+     *
+     * @param array  $steps ordered, each with a `path`
+     * @param string $scope visitor|session
+     * @return array step index => count
+     */
+    private function countFunnel( array $steps, $scope ) {
+
+        if ( ! $steps ) {
+
+            return array();
+        }
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $subject = self::SCOPES[ $scope ];
+
+        $params = array();
+        $select = array();
+
+        foreach ( $steps as $i => $step ) {
+
+            // The first time this subject reached the step. MIN, because a page
+            // hit twice must not read as two different positions in the order.
+            $select[] = sprintf( 'MIN(CASE WHEN d.uri = ? THEN r.timestamp END) AS t%d', $i );
+            $params[] = (string) $step['path'];
+        }
+
+        $where  = array( 'r.site_id = ?' );
+        $params[] = (string) $this->getParam( 'siteId' );
+
+        $bounds = $this->dateBounds();
+
+        if ( $bounds ) {
+
+            // Closed at both ends: the fact tables are RANGE-partitioned on
+            // yyyymmdd, and an open bound reads every partition from there on.
+            $where[]  = 'r.yyyymmdd BETWEEN ? AND ?';
+            $params[] = $bounds['start'];
+            $params[] = $bounds['end'];
+        }
+
+        /*
+         * The segment: WHICH subjects are in the funnel at all.
+         *
+         * Selected by an OUTER query through the ordinary reporting stack, so
+         * the funnel accepts exactly the constraints every other report does --
+         * validated against the registry, resolved through the same joins, and
+         * refused the same way when a name does not exist.
+         *
+         * Deliberately not folded into the WHERE below. Constraining the funnel
+         * query itself would filter the ROWS -- `medium==organic-search` would
+         * drop every step the subject reached on some other medium and the
+         * funnel would collapse for reasons that have nothing to do with the
+         * funnel. GA's segments pick the users and then count all of their
+         * events; this does the same.
+         */
+        $segment = $this->segmentSubjects( $scope );
+
+        if ( $segment === array() ) {
+
+            // A segment that matches nobody is a funnel nobody entered, not an
+            // unsegmented funnel.
+            return array_fill( 0, count( $steps ), 0 );
+        }
+
+        if ( is_array( $segment ) ) {
+
+            $where[] = 'r.' . $subject . ' IN (' . implode( ',', array_fill( 0, count( $segment ), '?' ) ) . ')';
+
+            foreach ( $segment as $id ) {
+
+                $params[] = $id;
+            }
+        }
+
+        $sql = 'SELECT ' . implode( ', ', $select )
+             . ' FROM owa_request r'
+             . ' INNER JOIN owa_document d ON d.id = r.document_id'
+             . ' WHERE ' . implode( ' AND ', $where )
+             . ' GROUP BY r.' . $subject;
+
+        $stmt = $db->query( $sql, $params );
+
+        if ( ! $stmt ) {
+
+            \OWA\Core\CoreAPI::notice( 'Goal funnel query failed.' );
+
+            return array();
+        }
+
+        $counts = array_fill( 0, count( $steps ), 0 );
+
+        foreach ( $stmt->fetchAll( \PDO::FETCH_ASSOC ) as $row ) {
+
+            $previous = null;
+
+            foreach ( $steps as $i => $step ) {
+
+                $at = $row[ 't' . $i ];
+
+                // Never reached, or reached before the step in front of it:
+                // this subject leaves the funnel here and counts in no step
+                // beyond it.
+                if ( $at === null || ( $previous !== null && $at < $previous ) ) {
+
+                    break;
+                }
+
+                $counts[ $i ]++;
+                $previous = $at;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * The subjects a constraint selects, or null when there is no constraint.
+     *
+     * Run through ResultSetManager rather than assembled here, and the reason is
+     * concrete: a dimension does not resolve to a column on this table. `medium`
+     * is denormalized onto the request, but `browserType` resolves to
+     * ua_via_.browser_type and `city` to location_dim_via_.city -- each needing
+     * the join the result-set manager already knows how to build. Hand-rolling
+     * the segment SQL would mean reimplementing that, and it would drift.
+     *
+     * A cap, and it REFUSES rather than truncating. A silently shortened id list
+     * would answer with a funnel that looks complete and counts a fraction of
+     * the people in it -- the same class of wrong-but-plausible number this
+     * report already had.
+     *
+     * @param string $scope visitor|session
+     * @return array|null  ids, or null for "no segment asked for"
+     */
+    private function segmentSubjects( $scope ) {
+
+        $constraints = (string) $this->getParam( 'constraints' );
+
+        if ( $constraints === '' ) {
+
+            return null;
+        }
+
+        $dimension = $scope === 'session' ? 'sessionId' : 'visitorId';
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->setDimensions( $rsm->dimensionsStringToArray( $dimension ) );
+        $rsm->setSiteId( $this->getParam( 'siteId' ) );
+        $rsm->setTimePeriod(
+            $this->getParam( 'period' ),
+            $this->getParam( 'startDate' ),
+            $this->getParam( 'endDate' )
+        );
+        $rsm->setConstraints( $rsm->constraintsStringToArray( $constraints ) );
+        $rsm->setLimit( self::SEGMENT_LIMIT + 1 );
+
+        $results = $rsm->getResults();
+
+        // The constraint itself was refused -- an unknown dimension, a missing
+        // value. Say so instead of quietly showing an unsegmented funnel.
+        if ( ! empty( $results->request_errors ) ) {
+
+            $this->set( 'funnel_segment_error', implode( ' ', $results->request_errors ) );
+
+            return array();
+        }
+
+        $ids = array();
+
+        foreach ( (array) ( $results->resultsRows ?? array() ) as $row ) {
+
+            if ( isset( $row[ $dimension ]['value'] ) ) {
+
+                $ids[] = $row[ $dimension ]['value'];
+            }
+        }
+
+        if ( count( $ids ) > self::SEGMENT_LIMIT ) {
+
+            $this->set( 'funnel_segment_error', sprintf(
+                'This segment selects more than %s %ss. Narrow it -- a funnel drawn from '
+                . 'part of them would look complete and count a fraction of the people in it.',
+                number_format( self::SEGMENT_LIMIT ), $scope
+            ) );
+
+            return array();
+        }
+
+        return $ids;
+    }
+
+    /**
+     * The reporting period as yyyymmdd bounds.
+     *
+     * Resolved through timePeriod, the same class the result-set manager uses,
+     * so a funnel and a report beside it cannot disagree about what "last
+     * thirty days" means.
+     *
+     * @return array|null
+     */
+    private function dateBounds() {
+
+        $period    = $this->getParam( 'period' );
+        $startDate = $this->getParam( 'startDate' );
+        $endDate   = $this->getParam( 'endDate' );
+
+        $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+
+        if ( $startDate && $endDate ) {
+
+            $timePeriod->set( 'date_range', array( 'startDate' => $startDate, 'endDate' => $endDate ) );
+
+        } elseif ( $period ) {
+
+            $timePeriod->set( $period );
+
+        } else {
+
+            return null;
+        }
+
+        $start = $timePeriod->startDate->get( 'yyyymmdd' );
+        $end   = $timePeriod->endDate->get( 'yyyymmdd' );
+
+        return ( $start && $end ) ? array( 'start' => $start, 'end' => $end ) : null;
     }
 }
 
