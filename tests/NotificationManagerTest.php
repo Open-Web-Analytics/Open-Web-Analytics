@@ -75,6 +75,19 @@ final class NotificationManagerTest extends TestCase
     // Storage: audience and dismissal
     // ---------------------------------------------------------------
 
+    /**
+     * The tests above this line are pure -- decoded JSON in, items out -- and
+     * must keep running everywhere. Everything below writes rows, and CI runs
+     * configless with no MySQL, so those skip rather than fail on a database
+     * that was never going to be there.
+     */
+    private function requireDb(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; skipping notification storage test.' );
+        }
+    }
+
     private function item( string $key, string $title = 'T' ): array
     {
         return array( array( 'source_key' => $key, 'title' => $title,
@@ -101,6 +114,10 @@ final class NotificationManagerTest extends TestCase
      */
     public static function tearDownAfterClass(): void
     {
+        if ( ! owa_test_db_available() ) {
+            return;
+        }
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->selectFrom( 'owa_notification' );
@@ -131,6 +148,8 @@ final class NotificationManagerTest extends TestCase
 
     public function testTheSameThingIsStoredOnce(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_once';
 
         $this->assertSame( 1, NM::record( $this->item( 'a' ), $source ) );
@@ -151,6 +170,8 @@ final class NotificationManagerTest extends TestCase
      */
     public function testTheFirstFetchTakesOnlyTheNewestFew(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_first';
 
         $five = array();
@@ -172,6 +193,8 @@ final class NotificationManagerTest extends TestCase
      */
     public function testTheSkippedHistoryNeverArrivesLater(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_hist';
 
         $five = array();
@@ -190,6 +213,8 @@ final class NotificationManagerTest extends TestCase
     /** A release published after the watermark is new, and is stored. */
     public function testSomethingGenuinelyNewerIsStored(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_new';
 
         NM::record( array( array( 'source_key' => 'old', 'title' => 'old',
@@ -203,6 +228,8 @@ final class NotificationManagerTest extends TestCase
 
     public function testTheSameThingCanBeAddressedToDifferentPeople(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_aud';
 
         $this->assertSame( 1, NM::record( $this->item( 'a' ), $source, 'alice' ) );
@@ -212,6 +239,8 @@ final class NotificationManagerTest extends TestCase
 
     public function testAUserSeesGlobalsAndTheirOwnButNotOtherPeoples(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_see';
 
         NM::record( $this->item( 'g', 'global' ), $source );
@@ -232,6 +261,8 @@ final class NotificationManagerTest extends TestCase
      */
     public function testDismissingAGlobalOnlyAffectsThatUser(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_dis';
 
         NM::record( $this->item( 'shared', 'shared thing' ), $source );
@@ -257,6 +288,8 @@ final class NotificationManagerTest extends TestCase
     /** Two tabs, or a double click, must not create two rows to reconcile. */
     public function testDismissingTwiceIsTheSameAsOnce(): void
     {
+        $this->requireDb();
+
         $source = $this->source() . '_twice';
 
         NM::record( $this->item( 'd2', 'twice' ), $source, 'nm-erin' );
