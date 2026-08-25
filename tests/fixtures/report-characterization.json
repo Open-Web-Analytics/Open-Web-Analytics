@@ -1153,6 +1153,14 @@
                     "type": "grid"
                 },
                 {
+                    "container": "heatmap-link",
+                    "id": "heatmap",
+                    "pagePath": "characterization_sentinel",
+                    "showTitle": true,
+                    "title": "More analytics for this Page:",
+                    "type": "heatmap-link"
+                },
+                {
                     "container": "more-analytics",
                     "id": "moreAnalytics",
                     "links": [
@@ -1173,8 +1181,6 @@
                             "reportId": "dom-clicks"
                         }
                     ],
-                    "showTitle": true,
-                    "title": "More analytics for this Page:",
                     "type": "report-links"
                 }
             ]

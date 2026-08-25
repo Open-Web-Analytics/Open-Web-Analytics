@@ -80,7 +80,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a domstream; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, document_id:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
+    /** @type {{site_id:string, document_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
     let fx;
 
     test.beforeAll(() => {
@@ -140,12 +140,15 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test('the heatmap fetches its click data from another origin', async ({ page }, testInfo) => {
         const { fetches, consoleErrors, apiRoot, pageRoot } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
+            // An ordinary dimensional query: clicks grouped by coordinate,
+            // constrained on the page. There is no clicks report any more.
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_report_name=clicks'
+                + '&owa_metrics=domClicks'
+                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
-                + '&owa_document_id=' + encodeURIComponent(fx.document_id)
+                + '&owa_constraints=' + encodeURIComponent(fx.constraints)
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
-            extra: '&document_id=' + encodeURIComponent(fx.document_id),
+            extra: '&pagePath=' + encodeURIComponent(fx.page_path),
         });
 
         // The premise: the page and the API really are different origins.
@@ -191,18 +194,19 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
 
     test('an overlay token is refused for a resource it does not name', async ({ page }, testInfo) => {
         // The scope check, exercised through a real browser fetch rather than a
-        // unit test: the heatmap token names one document.
+        // unit test: the heatmap token names one page.
         const { fetches } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_report_name=clicks'
+                + '&owa_metrics=domClicks'
+                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
-                + '&owa_document_id=some-other-document'
+                + '&owa_constraints=' + encodeURIComponent('pagePath==/some-other-page')
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
         });
 
         const call = fetches[0];
         expect(call, 'no request was issued').toBeDefined();
-        expect(call.status, 'a token must not work for a document it does not name').toBe(401);
+        expect(call.status, 'a token must not work for a page it does not name').toBe(401);
     });
 });

@@ -587,90 +587,23 @@ class ReportsRest extends \OWA\Core\ReportController {
         return $transaction;
     }
 
-function report_clicks() {
-	
-        // Fetch document object
-        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
-
-        if ( ! $this->get('document_id') ) {
-
-            // Resolve pageUrl -> document_id the same way ingestion does. During
-            // tracking, the 'page_url' property is canonicalized by
-            // owa_trackingEventHelpers::makeUrlCanonical( $url, $event ) BEFORE the
-            // document_id is generated (see module.php:164 + documentHandlers::notify),
-            // so stored ids are hashes of the *canonical* URL. We must canonicalize
-            // here too, or the lookup misses every page that carried tracking params.
-            //
-            // makeUrlCanonical() is static and needs only an event object to read
-            // the site_id from ($event->getSiteId()); pass a minimal event rather
-            // than the bare siteId string (the old code passed the string straight
-            // through eventDispatch::filter(), which both skipped canonicalization
-            // when the filter was unregistered and fataled with getSiteId()-on-
-            // string when it was). Call it directly so the result is deterministic
-            // regardless of whether the tracking filters are registered in this
-            // process. There is no autoloader, so require the one class file first.
-
-            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-            $event->setSiteId( $this->get('siteId') );
-
-            $canonical_url = \OWA\Module\Base\Classes\TrackingEventHelpers::makeUrlCanonical( urldecode( $this->get('pageUrl') ), $event );
-            $document_id   = $d->generateId( $canonical_url );
-
-        } else {
-	        
-	        $document_id = $this->get('document_id');
-        }
-
-        $d->getByColumn('id', $document_id);
-
-		// get resultSet Manager instance
-		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-		
-        $rsm->db->selectFrom('owa_click');
-        $rsm->db->selectColumn("click_x as x,
-                            click_y as y,
-                            page_width,
-                            page_height,
-                            dom_element_x,
-                            dom_element_y,
-                            position");
-
-
-        $rsm->db->orderBy('click_y', 'ASC');
-        
-        $rsm->db->where('document_id', $document_id);
-        // designate document_id a query param for result set urls
-        $rsm->setQueryStringParam( 'document_id', $document_id );
-        // designate report_name a query param for result set urls
-        $rsm->setQueryStringParam( 'report_name', 'clicks' );
-      	
-		// set site id
-		//$rsm->setSiteId( $this->get('siteId') );
-		$rsm->db->where('site_id',  $this->get('siteId') );
-		$rsm->setQueryStringParam('siteId', $this->get('siteId') );
-     
-        // set time period
-        $rsm->setTimePeriod(
-        	$this->get( 'period' ),
-            $this->get('startDate'),
-            $this->get('endDate'),
-            $this->get('startTime'),
-            $this->get('endTime')
-        );
-        
-		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;
-        $rsm->setLimit( $resultsPerPage );
-		
-		// set pagination
-        $page = $this->get( 'page' ) ?: 1;
-        $rsm->setPage( $this->get('page') );
-		
-		// fetch results
-		$rs = $rsm->queryResults();
-		
-        return $rs;
-    }
+    /*
+     * report_clicks is GONE.
+     *
+     * A heatmap is now an ordinary dimensional query:
+     *
+     *   metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x
+     *
+     * which the resolver joins click->document on its own, because pagePath is
+     * registered against document_id. That deletes ~80 lines of hand-built SQL,
+     * a second pageUrl-to-document_id resolution that had to re-implement the
+     * ingestion canonicalisation to stay correct, and the bespoke overlay token
+     * resource key it needed.
+     *
+     * It also fixes what that query could not express: identical coordinates
+     * now GROUP, so one page's 345,620 clicks arrive as distinct points with a
+     * count instead of 345,620 rows paged through a few hundred at a time.
+     */
 
 	
 }	

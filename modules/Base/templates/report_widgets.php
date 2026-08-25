@@ -357,6 +357,64 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
             </ul>
         </div>
 
+<?php elseif ( ( $owa_w['type'] ?? '' ) === 'heatmap-link' ): ?>
+<?php
+    /*
+     * "Heatmap Overlay" -- opens the tracked page itself with the click
+     * overlay switched on.
+     *
+     * The widget builds the URL; the definition supplies only the page. Same
+     * rule as browser-badge: a report definition may say WHAT a widget is
+     * about, never which action to invoke or what to put in a credential.
+     *
+     * The overlay is reached in two hops. This link goes to the launcher on
+     * OWA's own origin, which resolves the path to a real page and redirects
+     * the browser there with an #owa_overlay fragment; the tracker on that page
+     * reads the fragment and fetches the clicks.
+     *
+     * The api_url is an ORDINARY dimensional query now -- domClicks grouped by
+     * clickX and clickY, constrained on the page -- so the overlay token binds
+     * to `constraints`, a normal request parameter, rather than to a bespoke
+     * report's document_id. Identical coordinates group, so a page with
+     * hundreds of thousands of clicks answers with the few thousand distinct
+     * points that actually get drawn.
+     */
+    $owa_hm_path = (string) ( $owa_w['pagePath'] ?? '' );
+
+    if ( $owa_hm_path !== '' ):
+
+        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path );
+
+        $owa_hm_api = $view->makeOverlayApiLink( array(
+            'do'             => 'reports',
+            'module'         => 'base',
+            'version'        => 'v1',
+            'metrics'        => 'domClicks',
+            'dimensions'     => 'clickX,clickY',
+            'constraints'    => $owa_hm_constraints,
+            'resultsPerPage' => 1000,
+            'format'         => 'json',
+        ), 'constraints' );
+
+        $owa_hm_url = $view->makeLink( array(
+            'do'             => 'base.overlayLauncher',
+            'pagePath'       => $owa_hm_path,
+            'overlay_params' => base64_encode( $view->makeParamString( array(
+                'action'  => 'loadHeatmap',
+                'api_url' => $owa_hm_api,
+            ), false, 'json' ) ),
+        ), true );
+?>
+        <div class="relatedReports">
+            <ul>
+                <li>
+                    <a href="<?php echo $owa_hm_url; ?>" target="_blank">Heatmap Overlay</a>
+                     - click visualization map.
+                </li>
+            </ul>
+        </div>
+<?php endif; ?>
+
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'grid' ): ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 

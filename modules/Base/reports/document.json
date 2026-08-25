@@ -105,11 +105,17 @@
             }
         },
         {
+            "type": "heatmap-link",
+            "id": "heatmap",
+            "container": "heatmap-link",
+            "title": "More analytics for this Page:",
+            "showTitle": true,
+            "pagePath": "{pagePath}"
+        },
+        {
             "type": "report-links",
             "id": "moreAnalytics",
             "container": "more-analytics",
-            "title": "More analytics for this Page:",
-            "showTitle": true,
             "links": [
                 {
                     "reportId": "domstreams",

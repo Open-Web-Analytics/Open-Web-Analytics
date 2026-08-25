@@ -206,11 +206,6 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'clickstream'    => ['clickstream',    ['sessionId' => $bogusSession]],
             'latest_visits'  => ['latest_visits',  ['siteId' => $bogusSite]],
             'latest_actions' => ['latest_actions', ['siteId' => $bogusSite, 'startDate' => $today, 'endDate' => $today]],
-            // clicks accepts pageUrl OR document_id (wiki). This row exercises the
-            // document_id path; the pageUrl path has its own dedicated test below
-            // (testClicksByPageUrlResolvesToCanonicalDocumentId) because it also
-            // needs to pin the URL-canonicalization contract, not just the envelope.
-            'clicks'         => ['clicks',         ['siteId' => $bogusSite, 'document_id' => '999999999']],
         ];
     }
 
@@ -243,59 +238,13 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             "The 'clickstream' report requires sessionId; omitting it should return 422.");
     }
 
-    /**
-     * The clicks report resolves a `pageUrl` param to a document_id the SAME way
-     * ingestion does: the URL is run through makeUrlCanonical (which strips OWA
-     * tracking params) BEFORE being hashed. This is the contract that makes a
-     * pageUrl lookup find the clicks that were logged for that page -- during
-     * tracking the stored document_id is a hash of the *canonical* URL, so the
-     * report must canonicalize too or it silently matches nothing.
+    /*
+     * The clicks report is GONE -- a heatmap is an ordinary dimensional query
+     * now (domClicks by clickX,clickY constrained on pagePath), so there is no
+     * report_clicks to test and no pageUrl-to-document_id resolution inside it.
      *
-     * We assert it against a real seeded document rather than mocking: seed a
-     * document whose id is the hash of the canonical URL, then query the report
-     * with the pre-canonical (tracking-param-laden) pageUrl and confirm the
-     * request succeeds AND targets that document_id (surfaced as a query-string
-     * param in the result set envelope).
-     *
-     * Regression guard: report_clicks previously passed the bare siteId string
-     * where makeUrlCanonical expects an event object -- a fatal getSiteId()-on-
-     * string whenever the page_url filter was registered, and a canonicalization
-     * no-op (wrong document_id) when it was not.
+     * What that test really pinned -- that a url is canonicalised BEFORE it is
+     * hashed into a document id -- is an ingestion contract, and it stays
+     * covered by ContentDerivedIdCoverageTest and RederiveDimensionIdsTest.
      */
-    public function testClicksByPageUrlResolvesToCanonicalDocumentId(): void
-    {
-        $site = $this->makeSite();
-        $this->authenticateAs('admin');
-
-        // The canonical form of this URL has the owa_* tracking params stripped.
-        $canonicalUrl = $site['domain'] . '/pricing';
-        $pageUrl      = $canonicalUrl . '?owa_source=news&owa_campaign=launch';
-
-        // Ingestion hashes the canonical URL to derive document_id; mirror that so
-        // the report has a real row to resolve to.
-        $d = owa_coreAPI::entityFactory('base.document');
-        $expectedDocumentId = $d->generateId($canonicalUrl);
-
-        $d->set('id', $expectedDocumentId);
-        $d->set('url', $canonicalUrl);
-        $d->set('page_type', 'page');
-        $d->create();
-        $this->trackForCleanup('base.document', $expectedDocumentId, 'id');
-
-        $resp = $this->callEndpoint(
-            'owa_reportsRestController',
-            'reportsRestController.php',
-            ['report_name' => 'clicks', 'siteId' => $site['site_id'], 'pageUrl' => urlencode($pageUrl)]
-        );
-
-        $this->assertSame(201, $resp['status'],
-            'A clicks report queried by pageUrl should return 201, not fatal in URL canonicalization.');
-        $this->assertSame('base.reportsRest', $resp['view']);
-
-        // report_clicks designates the resolved document_id as a result-set query
-        // param; it must be the hash of the CANONICAL url (tracking params stripped),
-        // proving the pageUrl was canonicalized before hashing.
-        $this->assertStringContainsString((string) $expectedDocumentId, $resp['raw'],
-            'The clicks report must resolve pageUrl to the canonical document_id (owa_* params stripped before hashing).');
-    }
 }

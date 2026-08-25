@@ -2241,6 +2241,42 @@ class Module extends \OWA\Core\Module {
         );
 
         // Click Dimensions
+        /*
+         * The click's coordinates on the page.
+         *
+         * Declared so a heatmap is an ordinary dimensional query --
+         * `metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x`
+         * -- rather than a bespoke report with hand-built SQL. pagePath already
+         * resolves through document_id, which owa_click carries, so the join is
+         * the registry's to make.
+         *
+         * Grouping is the point, not a side effect: one page on a live install
+         * holds 345,620 clicks, and the heatmap only ever needed each distinct
+         * point and how often it was hit. As a dimension pair that is a GROUP
+         * BY, and the count arrives as the metric.
+         */
+        $this->registerDimension(
+            'clickX',
+            'base.click',
+            'click_x',
+            'Click X',
+            'dom',
+            'The horizontal position of the click on the page.',
+            '',
+            true
+        );
+
+        $this->registerDimension(
+            'clickY',
+            'base.click',
+            'click_y',
+            'Click Y',
+            'dom',
+            'The vertical position of the click on the page.',
+            '',
+            true
+        );
+
         $this->registerDimension(
             'domElementId',
             'base.click',

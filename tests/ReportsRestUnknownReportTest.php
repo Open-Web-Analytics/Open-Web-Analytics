@@ -52,7 +52,6 @@ final class ReportsRestUnknownReportTest extends TestCase
     {
         $names = \OWA\Module\Base\Controller\ReportsRest::getReportNames();
 
-        $this->assertContains('clicks', $names);
         $this->assertContains('transaction', $names);
         $this->assertContains('clickstream', $names);
     }
@@ -131,7 +130,7 @@ final class ReportsRestUnknownReportTest extends TestCase
     /** The check must not reject reports that do exist. */
     public function testKnownReportsPassValidation()
     {
-        foreach (['clicks', 'latest_visits'] as $name) {
+        foreach (['transaction', 'latest_visits'] as $name) {
             $this->assertFalse(
                 $this->rejectedByValidation($name),
                 sprintf('%s is implemented and must pass validation', $name)
