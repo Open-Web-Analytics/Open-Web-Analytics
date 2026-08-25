@@ -104,7 +104,7 @@ final class GoalGroupNameTest extends TestCase
                     'match_type'   => 'begins',
                     'goal_url'     => '/thanks',
                     'funnel_steps' => array(
-                        1 => array( 'name' => 'Step one', 'url' => '/a' ),
+                        1 => array( 'name' => 'Step one', 'path' => '/a' ),
                     ),
                 ),
             ),

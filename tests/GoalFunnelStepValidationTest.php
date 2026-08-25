@@ -54,9 +54,9 @@ final class GoalFunnelStepValidationTest extends TestCase
         return (bool) $validator->hasErrors;
     }
 
-    private function step( string $name, string $url ): array
+    private function step( string $name, string $path ): array
     {
-        return array( 'name' => $name, 'url' => $url );
+        return array( 'name' => $name, 'path' => $path );
     }
 
     public function testACompleteStepIsAccepted(): void
@@ -64,7 +64,7 @@ final class GoalFunnelStepValidationTest extends TestCase
         $this->assertFalse( $this->refuses( array( 1 => $this->step( 'Basket', '/basket' ) ) ) );
     }
 
-    public function testAStepWithNoUrlIsRefused(): void
+    public function testAStepWithNoPathIsRefused(): void
     {
         $this->assertTrue( $this->refuses( array( 1 => $this->step( 'Basket', '' ) ) ),
             'a step that names a stage but no page is half-filled, not optional' );
@@ -73,6 +73,37 @@ final class GoalFunnelStepValidationTest extends TestCase
     public function testAStepWithNoNameIsRefused(): void
     {
         $this->assertTrue( $this->refuses( array( 1 => $this->step( '', '/basket' ) ) ) );
+    }
+
+    /**
+     * A full web address is refused, because nothing downstream can match one.
+     *
+     * The funnel report builds `pagePath == <this>` and checkGoalStart matches
+     * it against page_uri, so https://example.com/basket matches nothing: the
+     * funnel reports zero and the goal never starts, silently. The field was
+     * labelled "Step URL" until 2026-08-25, which invited precisely this.
+     */
+    public function testAFullWebAddressIsRefused(): void
+    {
+        $this->assertTrue( $this->refuses( array(
+            1 => $this->step( 'Basket', 'https://example.com/basket' ) ) ) );
+
+        $this->assertTrue( $this->refuses( array(
+            1 => $this->step( 'Basket', 'http://example.com/basket' ) ) ),
+            'the scheme is what makes it unmatchable, not the host' );
+    }
+
+    public function testAPathIsAccepted(): void
+    {
+        $this->assertFalse( $this->refuses( array(
+            1 => $this->step( 'Basket', '/basket' ) ) ) );
+    }
+
+    /** A path that merely CONTAINS a colon is not a web address. */
+    public function testAPathWithAColonIsStillAPath(): void
+    {
+        $this->assertFalse( $this->refuses( array(
+            1 => $this->step( 'Basket', '/products/a:b' ) ) ) );
     }
 
     /**

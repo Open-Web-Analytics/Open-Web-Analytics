@@ -130,7 +130,7 @@
         <table class="management" id="funnel-steps">
             <TR>
                 <th></th>
-                <th>Step URL</th>
+                <th>Step Path</th>
                 <th>Name</th>
                 <th>Is Required?</th>
                 <th></th>
@@ -217,7 +217,7 @@ function renderStep(step) {
 <![CDATA[
 <tr>
 <th class="">Step <*= this.step_number *></th>
-<td class=""><input type="text" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][url]" value="<*= this.url *>"></td>
+<td class=""><input type="text" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][path]" value="<*= this.path *>"></td>
 <td class=""><input type="text" size="20" name="<?php echo $view->getNs();?>goal[details][funnel_steps][<*= this.step_number *>][name]" value="<*= this.name *>"></td>
 <td class="">
 

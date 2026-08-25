@@ -147,7 +147,30 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
              * had already proven non-empty. They mean something now.
              */
             $this->addValidation('step_name_'.$num, $step['name'] ?? '', 'required');
-            $this->addValidation('step_url_'.$num, $step['url'] ?? '', 'required');
+            $this->addValidation('step_path_'.$num, $step['path'] ?? '', 'required');
+
+            /*
+             * A path, not a URL, and said so rather than left to fail quietly.
+             *
+             * Every consumer treats this as a path: the funnel report builds
+             * `pagePath == <this>` and checkGoalStart matches it against the
+             * event's page_uri. A full URL therefore matches nothing -- the
+             * funnel reports zero and the goal never starts, with nothing
+             * logged. The field used to be LABELLED "Step URL", which invited
+             * exactly that.
+             *
+             * Refused rather than silently trimmed to its path: quietly
+             * rewriting what someone typed is how they end up not knowing what
+             * is stored.
+             */
+            if ( isset( $step['path'] ) && preg_match( '~^[a-z][a-z0-9+.\-]*://~i', (string) $step['path'] ) ) {
+
+                $this->addValidation( 'step_path_'.$num, '', 'required', array(
+                    'errorMsg' => sprintf(
+                        'Step %s: enter the page PATH, such as /basket -- not a full web address. '
+                        . 'Funnel steps are matched on the path alone.', $num ),
+                ) );
+            }
         }
     }
 

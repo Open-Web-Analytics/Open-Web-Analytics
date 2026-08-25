@@ -26,17 +26,17 @@
         <td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $view->out($step['step_number']);?>">
             <div class="funnelStepName">Step <?php $view->out($step['step_number']);?>: <?php $view->out($step['name']);?></div>
             <div class="funnelStepCount"><?php $view->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
-            <div class="funnelStepUrl"><?php $view->out($step['url']);?></div>
+            <div class="funnelStepUrl"><?php $view->out($step['path']);?></div>
             <div class="genericHorizontalList" style="padding-top:10px;font-size:12px;">
                 <ul class="">
 
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'domstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'domstreams', 'pagePath' => $step['path']), true);?>">Watch Domstreams</a></span>
                     </li>
 
                     <li>
-                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
+                        <span class="inline_h4"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'pagePath' => $step['path']), true);?>">Analyze Dom Clicks</a></span>
                     </li>
                 </ul>
             </div>

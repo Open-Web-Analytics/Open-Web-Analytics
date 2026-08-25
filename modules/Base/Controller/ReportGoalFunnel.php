@@ -55,7 +55,7 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
 
                 if (array_key_exists('is_required', $funnel[$i]) && $funnel[$i]['is_required'] === true) {
 
-                    $required_step_constraints .= 'pagePath=='.$funnel[$i]['url'].',';
+                    $required_step_constraints .= 'pagePath=='.$funnel[$i]['path'].',';
                 }
             }
             $required_step_constraints = trim($required_step_constraints, ',');
@@ -96,7 +96,7 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
                         'startDate'      => $this->get('startDate'),
                         'endDate'      => $this->get('endDate'),
                         'metrics'       => 'visitors',
-                        'constraints' => 'pagePath'.$operator.$step['url'],
+                        'constraints' => 'pagePath'.$operator.$step['path'],
                         'siteId'      => $this->getParam( 'siteId' )
                 ));
 

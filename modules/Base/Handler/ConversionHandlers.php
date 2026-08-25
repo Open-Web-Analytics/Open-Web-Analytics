@@ -301,7 +301,7 @@ class ConversionHandlers extends \OWA\Core\Observer {
         if ( array_key_exists( 'funnel_steps', $goal['details'] ) ) {
             // check the first step
             $step = $goal['details']['funnel_steps'][1];
-            $pattern = sprintf('@%s@i', $step['url']);
+            $pattern = sprintf('@%s@i', $step['path']);
             $check = preg_match($pattern, $page_uri );
             if ($check > 0) {
                 return $goal['goal_number'];
