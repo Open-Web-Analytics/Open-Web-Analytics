@@ -29,7 +29,7 @@ final class ReportCharacterizationHarness
     private const PREFETCHING = array(
         'ReportDashboard',
         'ReportDocument', 'ReportDomstreams',
-        'ReportGoalFunnel', 'ReportGoals',
+        'ReportGoalFunnel',
         'ReportVisit', 'ReportVisitor', 'ReportVisitors', 'ReportVisits',
 
         /*
@@ -121,6 +121,7 @@ final class ReportCharacterizationHarness
         'exit-pages'                => 'ReportExitPages',
         'feeds'                     => 'ReportFeeds',
         'geolocation'               => 'ReportGeolocation',
+        'goals'                     => 'ReportGoals',
         'host-detail'               => 'ReportHostDetail',
         'hosts'                     => 'ReportHosts',
         'keyword-detail'            => 'ReportKeywordDetail',
@@ -369,7 +370,21 @@ final class ReportCharacterizationHarness
         $all = array();
 
         foreach ( self::reportNames() as $name ) {
-            $all[ $name ] = self::snapshot( $name );
+
+            $snapshot = self::snapshot( $name );
+
+            /*
+             * `deprecated` is stripped here for the same reason the assertion
+             * strips it from actual: this file is the PRE-CONVERSION record,
+             * and no controller ever declared the key. Without this, a
+             * regeneration bakes it into the baseline and the very next run
+             * fails -- the golden claiming a key the comparison has just
+             * removed. Regenerating is supposed to be the way OUT of a
+             * failure, not a way into one.
+             */
+            unset( $snapshot['config']['deprecated'] );
+
+            $all[ $name ] = $snapshot;
         }
 
         return $all;
