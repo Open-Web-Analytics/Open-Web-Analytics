@@ -142,6 +142,62 @@ final class ActionRegistryTest extends TestCase
             'Registered actions point at classes that do not exist: ' . implode(', ', $broken));
     }
 
+    /**
+     * REST routes are a SECOND registration map, and nothing checked it.
+     *
+     * registerRestApiRoute() stores its own class name and include path in
+     * $restApiRoutes -- not in the action map -- so
+     * testRegisteredClassesActuallyExist() above does not see it. A controller
+     * registered in both places (every REST controller here) can be renamed in
+     * one and left stale in the other, and the action-map test still passes.
+     * The break then surfaces only when a client actually calls that endpoint.
+     *
+     * The file is checked as well as the class: simpleFactory() includes the
+     * registered path, so a path typo fatals even when the class autoloads
+     * fine under PSR-4.
+     */
+    public function testRegisteredRestRouteClassesActuallyExist(): void
+    {
+        $routes = \OWA\Core\CoreAPI::serviceSingleton()->getAllRestApiRoutes();
+
+        $this->assertNotEmpty($routes, 'no REST API routes registered at all');
+
+        $broken = [];
+        $seen   = 0;
+
+        foreach ($routes as $module => $versions) {
+            foreach ($versions as $version => $names) {
+                foreach ($names as $name => $methods) {
+                    foreach ($methods as $method => $meta) {
+
+                        $seen++;
+                        $where = sprintf('%s %s/%s/%s', $method, $module, $version, $name);
+
+                        $class = $meta['class_name'] ?? '';
+
+                        if (strncmp($class, 'owa_', 4) === 0) {
+                            $class = \OWA\Core\Lib::resolveNamespacedClass($class) ?? $class;
+                        }
+
+                        if (! $class || ! class_exists($class)) {
+                            $broken[] = $where . ' -> class ' . ($meta['class_name'] ?? '(none)');
+                            continue;
+                        }
+
+                        if (! empty($meta['file']) && ! file_exists($meta['file'])) {
+                            $broken[] = $where . ' -> file ' . $meta['file'];
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan(1, $seen, 'only one REST route seen -- the map did not load');
+
+        $this->assertSame([], $broken,
+            'REST routes point at a class or file that does not exist: ' . implode(', ', $broken));
+    }
+
     public function testARegisteredActionResolvesWithoutTheLegacyPath(): void
     {
         $map = $this->actionMap();
