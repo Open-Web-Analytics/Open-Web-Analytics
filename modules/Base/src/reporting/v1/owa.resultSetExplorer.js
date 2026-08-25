@@ -155,7 +155,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
         grid: {
             showRowNumbers: true,
             excludeColumns: [],
-            columnFormatters: {}
+            columnFormatters: {},
+            /*
+             * The dimension chooser and the Filter control above a grid.
+             *
+             * On by default -- that is what an EXPLORER is. Off for a grid whose
+             * rows were computed rather than queried: the goal funnel's steps
+             * come from one ordered query the report ran itself, so there is no
+             * result-set URL behind them to re-query with a different dimension
+             * or a new constraint. Drawing the controls anyway offers the reader
+             * choices that cannot do anything.
+             */
+            showExplorerControls: true
         },
         template: {
             template: '',
@@ -1342,8 +1353,14 @@ OWA.dataGrid.prototype = {
 
     injectDomElements : function(resultSet) {
 
+        // A grid whose data was computed rather than queried has nothing to
+        // explore FROM -- see options.grid.showExplorerControls.
+        var showControls = this.options.grid.showExplorerControls !== false;
+
         var p = '';
-        p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
+        if ( showControls ) {
+            p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
+        }
         p += '<div style="clear:both;"></div>';
         p += '<table id="'+ this.dom_id + '_grid"></table>';
         p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
@@ -1351,6 +1368,13 @@ OWA.dataGrid.prototype = {
 
         var that = this;
         jQuery('#'+that.dom_id).append(p);
+
+        if ( ! showControls ) {
+
+            // The grid element is in place; the controls that would sit above
+            // it are the part being skipped.
+            return;
+        }
 
         // add top level controls
         // secondard dimension picker

@@ -469,100 +469,139 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size:14px;
 }
 
-.owa .funnel {
-    padding: 0px;
-    margin: 0px;
+/* ---------------------------------------------------------------------------
+ * Goal funnel
+ *
+ * Rewritten with the report. The funnel used to run DOWN the page as a
+ * three-column table, and the styling went with it: fixed-height background
+ * images for the flow arrows, two identical .funnelFlow rules one after the
+ * other, and `color:;` declarations that do nothing.
+ *
+ * It now reads left to right, which is what makes the drop-off legible -- the
+ * bars shorten as you read -- and the numbers are repeated in a table beneath
+ * for the values a bar cannot carry.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_funnelControls {
+    padding: 0 0 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
-.owa .funnel td {
-
-    padding: 10px;
+.owa .owa_funnelControl {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 25px;
 }
 
-.owa .funnel .funnelMiddle {
+.owa .owa_funnelControl > label {
+    font-size: 12px;
+    color: #707070;
+    margin-right: 6px;
+}
 
+/* The scope switch sits inline in the bar; the Live View control it borrows
+   its markup from floats right in the report header instead. */
+.owa .owa_funnelControls .autoRefreshControl {
+    float: none;
+    display: inline-block;
+}
+
+.owa .owa_funnelControls .autoRefreshControl .label {
+    font-size: 12px;
+    color: #707070;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.owa .owa_funnelControls .autoRefreshControl .buttons {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.owa .owa_funnelControlRight {
+    float: right;
+    margin-right: 0;
+}
+
+.owa .owa_funnelHeadline {
+    font-size: 26px;
+    font-weight: bold;
+    padding-bottom: 20px;
+}
+
+/* One column per step, laid out in order. Flex so a funnel with three steps and
+   one with eight both fill the width without a per-step width being computed. */
+.owa .owa_funnelChart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    width: 100%;
+}
+
+.owa .owa_funnelStepColumn {
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
 }
 
-.owa .funnel .funnelLargeNumber {
-
-    font-size:20px;
-    font-weight: bold;
-    padding-bottom:10px;
+/* The bar grows from the bottom of a fixed area, so every column's baseline
+   lines up and the heights are comparable. */
+.owa .owa_funnelBarArea {
+    height: 180px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
-.owa .funnel .funnelStepName {
-
-    font-size:18px;
-    font-weight: bold;
-    color:;
-    padding-bottom:5px;
+.owa .owa_funnelBar {
+    width: 70%;
+    background-color: #4A90D9;
+    border-radius: 3px 3px 0 0;
+    min-height: 0;
 }
 
-.owa .funnel .funnelStepPath {
-
-    font-size:12px;
-    color: #707070;
-    padding-bottom:5px;
-}
-
-.owa .funnel .funnelStepCount {
-
-    font-size:26px;
-    font-weight: bold;
-    color:;
-    padding:10px 0px 10px 0px;
-}
-
-.owa .funnel span.visitorCountLabel {
-
-    vertical-align:middle;
-    font-size:12px;
-    font-weight:normal;
+.owa .owa_funnelStepNumber {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: #9f9f9f;
 }
 
-.owa .funnel .funnelStep {
-
-    background-color: #D6F5FF;
-    padding: 15px;
+.owa .funnelStepName {
+    font-size: 15px;
+    font-weight: bold;
+    padding-bottom: 4px;
 }
 
-.owa .funnel .funnelFlow {
-    background-image: url('../i/funnel_flow.png');
-    height: 150px;
-    background-repeat: no-repeat;
-    background-position: center;
+.owa .funnelStepCount {
+    font-size: 22px;
+    font-weight: bold;
+    padding: 4px 0;
 }
 
-.owa .funnel .funnelFlow {
-    background-image: url('../i/funnel_flow.png');
-    height: 150px;
-    background-repeat: no-repeat;
-    background-position: center;
+.owa span.visitorCountLabel {
+    vertical-align: middle;
+    font-size: 12px;
+    font-weight: normal;
+    color: #9f9f9f;
 }
 
-.owa .funnel .entranceCount {
-
-    padding: 0px 30px 0px 0px;
-    margin-bottom: 10px;
-    background-image: url('../i/funnel_entrance_arrow.png');
-    height: 27px;
-    font-size: 26px;
-    background-repeat: no-repeat;
-    background-position: right;
-
+/* Paths are long and must not stretch a column: the flex row would then stop
+   sharing the width evenly. */
+.owa .funnelStepPath {
+    font-size: 12px;
+    color: #707070;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.owa .funnel .exitCount {
-
-    padding: 0px 0px 0px 30px;
-    margin-bottom: 10px;
-    background-image: url('../i/funnel_exit_arrow.png');
-    height: 27px;
-    font-size: 26px;
-    background-repeat: no-repeat;
-    background-position: left;
+.owa .owa_funnelDrop {
+    font-size: 12px;
+    color: #707070;
+    padding-top: 8px;
 }
 
 .owa .secondaryText {

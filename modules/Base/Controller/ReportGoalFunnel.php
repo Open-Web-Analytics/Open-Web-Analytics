@@ -158,6 +158,8 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
                 : '0%';
 
             $this->set( 'total_visitors', $entered );
+            $this->set( 'funnel_table', $this->stepsAsResultSet(
+                $steps, $entered, $scope === 'session' ? 'visits' : 'visitors' ) );
             $this->set( 'goal_conversion_rate', $goal_conversion_rate );
             $this->set( 'funnel', $steps );
         }
@@ -166,6 +168,72 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
         $this->setSubview('base.reportGoalFunnel');
         $this->setTitle('Funnel Visualization:', 'Goal ' . $goal_number);
         $this->set('goal_number', $goal_number);
+    }
+
+    /**
+     * The steps shaped as a RESULT SET, so the grid control can draw them.
+     *
+     * The table under the funnel is the same grid every other report uses,
+     * rather than a hand-written <table> that would drift from it. The grid
+     * takes a result set, so the computed steps are given the shape one has:
+     * a row per step, each cell carrying its own name, label and value.
+     *
+     * Its explorer controls are switched off at the call site. A grid normally
+     * offers a secondary dimension and a Filter, and both re-query the result
+     * set's own URL -- there is no such URL here, because these rows came from
+     * one ordered query this report ran itself.
+     *
+     * @param array $steps
+     * @param int $entered the population that entered the funnel
+     * @param string $label what the counts count
+     * @return array
+     */
+    private function stepsAsResultSet( array $steps, $entered, $label ) {
+
+        $rows = array();
+
+        foreach ( $steps as $i => $step ) {
+
+            $count = (int) $step['visitors'];
+            $prior = $i > 0 ? (int) $steps[ $i - 1 ]['visitors'] : null;
+
+            $dropped   = $prior === null ? null : $prior - $count;
+            $of_entry  = $entered > 0 ? round( ( $count / $entered ) * 100, 1 ) . '%' : '0%';
+
+            $rows[] = array(
+                'step'      => self::cell( 'dimension', 'step', 'Step', $step['step_number'] ),
+                'name'      => self::cell( 'dimension', 'name', 'Name', $step['name'] ),
+                'page'      => self::cell( 'dimension', 'page', 'Page', $step['path'] ),
+                'reached'   => self::cell( 'metric', 'reached', ucfirst( $label ), $count, 'integer' ),
+                'continued' => self::cell( 'metric', 'continued', 'Continued',
+                                   $i > 0 ? $step['visitor_percentage'] : '' ),
+                'dropped'   => self::cell( 'metric', 'dropped', 'Dropped',
+                                   $dropped === null ? '' : $dropped, 'integer' ),
+                'ofEntry'   => self::cell( 'metric', 'ofEntry', 'Of entry', $of_entry ),
+            );
+        }
+
+        return array(
+            'resultsRows'     => $rows,
+            'resultsReturned' => count( $rows ),
+            'resultsTotal'    => count( $rows ),
+            // The grid skips a redraw when the guid is unchanged, so it has to
+            // differ whenever the numbers do.
+            'guid'            => md5( json_encode( $rows ) ),
+        );
+    }
+
+    /** One result-set cell, in the shape the grid reads. */
+    private static function cell( $type, $name, $label, $value, $dataType = 'string' ) {
+
+        return array(
+            'result_type'     => $type,
+            'name'            => $name,
+            'label'           => $label,
+            'value'           => $value,
+            'formatted_value' => (string) $value,
+            'data_type'       => $dataType,
+        );
     }
 
     /**

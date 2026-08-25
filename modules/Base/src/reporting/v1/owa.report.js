@@ -592,14 +592,27 @@ OWA.report.timePeriodControl.prototype = {
         this.selectedPeriod = period;
     },
     
+    /**
+     * yyyymmdd as the date string the CALENDARS parse.
+     *
+     * The year is FOUR digits, because the datepickers are created with
+     * `dateFormat: 'mm-dd-yy'` and in jQuery UI's date format `yy` is a
+     * four-digit year -- `y` is the two-digit one. This emitted two ('07-27-26'
+     * for 20260727), so jQuery UI threw "Missing number at position 6" parsing
+     * the defaultDate it was handed, the calendars never received the period's
+     * dates, and they showed something unrelated to the period named beside
+     * them.
+     *
+     * The label reads from this too, so a date range now shows its full year.
+     */
     formatYyyymmdd : function( yyyymmdd, sep ) {
-        
+
         sep = sep || '-';
-        
-        var year = yyyymmdd.substr(2,2);
+
+        var year = yyyymmdd.substr(0,4);
         var month = yyyymmdd.substr(4,2);
         var day = yyyymmdd.substr(6,2);
-        
+
         return month + sep + day + sep + year;
     },
     
