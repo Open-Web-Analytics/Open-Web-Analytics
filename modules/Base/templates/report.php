@@ -41,7 +41,7 @@ jQuery(document).ready(function(){
             <TD valign="top" class="owa_reportLeftNavColumn">
                 <div>
                     <div id="owa_reportNavPanel">
-                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params['do']);?>
+                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params['do'] ?? '');?>
                     </div>
                 </div>
             </TD>

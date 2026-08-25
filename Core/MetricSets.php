@@ -165,7 +165,10 @@ class MetricSets {
                 // Never read -- see forSite(). Present because the template
                 // indexes it, and a missing key is a warning on every render.
                 'sort'             => '',
-                'trendchartmetric' => $set['chartMetric'],
+                // Same reasoning as `sort` above: a set that arrives without one
+                // is a missing key on every render, not a fatal. Report
+                // definitions get a default filled in before they reach here.
+                'trendchartmetric' => $set['chartMetric'] ?? '',
             );
         }
 

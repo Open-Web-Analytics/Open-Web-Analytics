@@ -36,7 +36,13 @@ class ReportDomClicks extends \OWA\Core\ReportController {
     function action() {
         
         $d = \OWA\Core\CoreAPI::entityFactory('base.document');
-        
+
+        // Before the branches, not after them. It sat below the pageUrl and
+        // pagePath branches, so either one would set the slug and then have it
+        // reset to '' on the next line -- the title lost its subject on every
+        // route except document_id.
+        $title_slug = '';
+
         if ($this->getParam('pageUrl')) {
             $pageUrl = $this->getParam('pageUrl');
             $d->getByColumn('url', $pageUrl);
@@ -51,14 +57,11 @@ class ReportDomClicks extends \OWA\Core\ReportController {
             $title_slug = $pagePath;
         }
         
-        // Only assigned inside the branch below, but read by setTitle() after it.
-        $title_slug = '';
-
         if ($this->getParam('document_id')) {
             $did = $this->getParam('document_id');
             $d->load( $did );
             $pageUrl = $d->get('url');
-            $this->set('constraints', 'pageUrl=='.urlencode($pageUrl));
+            $this->set('constraints', 'pageUrl=='.urlencode( (string) $pageUrl ));
             $title_slug = isset($pagePath) ? $pagePath : '';
         }
         

@@ -223,7 +223,10 @@ class View extends \OWA\Core\Base {
 
             if (array_key_exists('params', $this->data)) {
                 $this->subview->body->set('params', $this->data['params']);
-                $this->subview->body->set('do', $this->data['params']['do']);
+
+                // Not every request carries `do` -- a report reached by reportId
+                // does not -- and reading it unconditionally warned on those.
+                $this->subview->body->set('do', $this->data['params']['do'] ?? '');
             }
 
             // Load subview

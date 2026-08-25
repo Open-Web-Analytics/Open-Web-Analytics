@@ -249,6 +249,16 @@ class Metric extends \OWA\Core\Base {
             return $this->select;
         } else {
             $db = \OWA\Core\CoreAPI::dbSingleton();
+
+            /*
+             * Initialised, and the switch says so when it does not recognise a
+             * type. It had no default, so an unrecognised aggregation returned
+             * an undefined $statement -- a SELECT with a hole in it, built and
+             * run without complaint. The outcome is the same as before (there
+             * is nothing sensible to aggregate with), but it is now stated.
+             */
+            $statement = null;
+
             switch ( $this->type ) {
                 
                 case 'count':
@@ -263,6 +273,13 @@ class Metric extends \OWA\Core\Base {
                 case 'sum':
                     $statement = $db->sum( $this->getColumn() );
                     break;
+
+                default:
+                    \OWA\Core\CoreAPI::error( sprintf(
+                        'Metric "%s" has aggregation type "%s", which is not one of '
+                        . 'count, distinct_count or sum. Its column will be missing '
+                        . 'from the query.',
+                        (string) $this->getName(), (string) $this->type ) );
             }
             
             return array( $statement, $this->getName() );

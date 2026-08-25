@@ -33,21 +33,15 @@
 #   bash tests/tools/scratch_db_run.sh --via web
 #   bash tests/tools/scratch_db_run.sh --filter GoalGroup
 #
-# THE SUITE DOES NOT PASS UNDER THIS YET, and that is the point rather than a
-# fault in it. Against a fresh install it reports issues the live install hides,
-# because a configured install registers an error handler that swallows them and
-# because ambient rows keep the null paths from being reached:
+# The suite passes under this as of 2026-08-25. It did not when it was written:
+# a fresh install surfaced eight defects the live one hides, because a configured
+# install registers an error handler that swallows warnings and because ambient
+# rows keep the null paths from being reached. All are fixed. Two were behaviour
+# bugs rather than noise -- the dom-clicks report lost its title on every route
+# but document_id, and a metric with an unrecognised aggregation built a SELECT
+# with a hole in it.
 #
-#   Core/Metric.php:268                       undefined $statement -- the switch
-#                                             has no default, so an unrecognised
-#                                             aggregation returns a broken SELECT
-#   Core/View.php:226                         undefined array key "do" (14x)
-#   CommerceTransactionHandlers.php:102,103   round(null)
-#   ReportDomClicks.php:61                    urlencode(null)
-#   tests/PartitionOperationsTest.php:1411    non-variable passed by reference
-#
-# All pre-existing and none of them fixed here. Fix them and this goes green;
-# until then a non-zero exit is expected and the list above is the backlog.
+# If this goes red, that is the point of it. Read the warning, do not silence it.
 #
 set -uo pipefail
 

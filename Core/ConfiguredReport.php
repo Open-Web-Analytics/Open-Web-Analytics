@@ -642,6 +642,16 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( ! $named ) {
 
+            /*
+             * `chartMetric` stays optional and is NOT defaulted. An absent one
+             * already means "draw no chart" -- report_widgets.php guards on
+             * `!== ''` before issuing makeAreaChart, the same way `traffic`
+             * suppresses its metric boxes. Filling one in would hand a chart to
+             * a set that asked for none.
+             *
+             * The warning this looked like it should fix was in the renderer
+             * assuming the key, and is fixed there.
+             */
             return $declared;
         }
 

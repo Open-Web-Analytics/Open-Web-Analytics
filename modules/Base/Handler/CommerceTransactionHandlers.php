@@ -98,9 +98,9 @@ class CommerceTransactionHandlers extends \OWA\Core\Observer {
             $ct->set( 'order_id', trim( (string) $event->get( 'ct_order_id' ) ) );
             $ct->set( 'order_source', trim( strtolower( (string) $event->get( 'ct_order_source' ) ) ) );
             $ct->set( 'gateway', trim( strtolower( (string) $event->get( 'ct_gateway' ) ) ) );
-            $ct->set( 'total_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( $event->get( 'ct_total' ), 2 ) ) );
-            $ct->set( 'tax_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( $event->get( 'ct_tax' ), 2 ) ) );
-            $ct->set( 'shipping_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );
+            $ct->set( 'total_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( (float) $event->get( 'ct_total' ), 2 ) ) );
+            $ct->set( 'tax_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( (float) $event->get( 'ct_tax' ), 2 ) ) );
+            $ct->set( 'shipping_revenue', \OWA\Core\Lib::prepareCurrencyValue( round( (float) $event->get( 'ct_shipping' ), 2 ) ) );
             $ct->set( 'days_since_first_session', $event->get('days_since_first_session') );
             $ct->set( 'num_prior_sessions', $event->get('num_prior_sessions') );
 

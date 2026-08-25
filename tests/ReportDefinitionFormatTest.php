@@ -1282,6 +1282,38 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( array( 'site_usage' ), array_keys( $out ) );
     }
 
+    /**
+     * A declared set need not name a chart metric, and does not get given one.
+     *
+     * An absent `chartMetric` already means "draw no chart": report_widgets.php
+     * guards on `!== ''` before issuing makeAreaChart, the same way `traffic`
+     * suppresses its metric boxes. Defaulting it to the set's first metric --
+     * which this briefly did -- hands a chart to a set that asked for none.
+     *
+     * The warning that prompted it was the renderer reading a key that was not
+     * there, which is fixed in MetricSets::toLegacyTabs.
+     */
+    public function testADeclaredSetKeepsItsChartMetricAbsent(): void
+    {
+        $out = $this->resolveSets(
+            array( 'roi' => array( 'label' => 'Return',
+                                   'metrics' => 'transactionRevenue,visits' ) ),
+            $this->sets() );
+
+        $this->assertArrayNotHasKey( 'chartMetric', $out['roi'],
+            'an absent chart metric means no chart, and must stay absent' );
+    }
+
+    public function testADeclaredChartMetricIsLeftAlone(): void
+    {
+        $out = $this->resolveSets(
+            array( 'roi' => array( 'label' => 'Return', 'metrics' => 'visits,transactions',
+                                   'chartMetric' => 'transactions' ) ),
+            $this->sets() );
+
+        $this->assertSame( 'transactions', $out['roi']['chartMetric'] );
+    }
+
     public function testADeclaredSetReplacesTheSitesRatherThanAddingToThem(): void
     {
         $roi = array( 'label' => 'Return', 'metrics' => 'visits,transactionRevenue',
