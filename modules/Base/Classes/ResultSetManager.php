@@ -119,6 +119,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'timestamp'        => array($this, 'formatSeconds'),
             'percentage'     => array($this, 'formatPercentage'),
             'integer'         => array($this, 'numberFormatter'),
+            'boolean'         => array($this, 'booleanFormatter'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -1139,6 +1140,19 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
 
         return $value;
+    }
+
+    /**
+     * A boolean dimension reads as Yes or No, never as 1 and null.
+     *
+     * NULL is the important half. These columns store 1 for true and leave the
+     * row NULL for false rather than writing 0, so an unformatted pie slice is
+     * labelled with an empty string and a grid cell shows nothing at all --
+     * which reads as missing data rather than as "no".
+     */
+    function booleanFormatter($value) {
+
+        return ! empty( $value ) ? 'Yes' : 'No';
     }
 
     function numberFormatter($value) {

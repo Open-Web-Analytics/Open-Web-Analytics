@@ -266,6 +266,10 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
         <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_pieMetric, false ); ?>';
         <?php echo $owa_id; ?>.options.pieChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
+<?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
+        <?php // Raw value -> label, so a boolean pie can read New/Repeat rather than No/Yes. ?>
+        <?php echo $owa_id; ?>.options.pieChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
+<?php endif; ?>
 <?php if ( ! empty( $owa_w['chartWidth'] ) ): ?>
         <?php echo $owa_id; ?>.options.chartWidth = '<?php $view->out( $owa_w['chartWidth'], false ); ?>';
 <?php endif; ?>

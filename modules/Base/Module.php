@@ -647,6 +647,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates',                      'Controller/Updates.php' );
         $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply',                 'Controller/UpdatesApply.php' );
         $this->registerAction( 'base.notificationsRest',              'OWA\\Module\\Base\\Controller\\NotificationsRest',           'Controller/NotificationsRest.php' );
+        $this->registerAction( 'base.notificationReadRest',           'OWA\\Module\\Base\\Controller\\NotificationReadRest',        'Controller/NotificationReadRest.php' );
         $this->registerAction( 'base.notificationDismissRest',       'OWA\\Module\\Base\\Controller\\NotificationDismissRest',    'Controller/NotificationDismissRest.php' );
         $this->registerAction( 'base.notificationsFetchCli',        'OWA\\Module\\Base\\Controller\\NotificationsFetchCli',       'Controller/NotificationsFetchCli.php' );
         $this->registerAction( 'base.updatesApplyCli',               'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',              'Controller/UpdatesApplyCli.php' );
@@ -784,6 +785,7 @@ class Module extends \OWA\Core\Module {
 		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', 'Controller/DeleteUserRest.php', [ 'params_order' => ['user_id'] ] );
 		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest', 'Controller/SiteAddAllowedUserRest.php' );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest', 'Controller/NotificationsRest.php' );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationReadRest', 'Controller/NotificationReadRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
     }
@@ -1513,7 +1515,11 @@ class Module extends \OWA\Core\Module {
             'visitor',
             'Repeat Site Visitor.',
             '',
-            true
+            true,
+            // Declared boolean so it FORMATS as Yes/No wherever it is shown.
+            // The column stores 1 for true and NULL for false, so without this
+            // a pie slice is labelled with an empty string.
+            'boolean'
         );
 
         $this->registerDimension(
@@ -2655,7 +2661,7 @@ class Module extends \OWA\Core\Module {
                 'queue_item',
                 'scheduled_job',
                 'notification',
-                'notification_dismissal',
+                'notification_state',
                 'job_lock',
                 'site_user')
             );

@@ -145,6 +145,8 @@ OWA.resultSetExplorer = function(dom_id, options) {
             metric: '',
             dimension: '',
             metrics: [],
+            // Raw dimension value -> slice label, set by a report definition.
+            valueLabels: null,
             numSlices: 5
         },
         sparkline: {

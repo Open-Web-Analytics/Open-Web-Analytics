@@ -201,6 +201,38 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
 
             /*
+             * `valueLabels` renames a dimension's VALUES for display.
+             *
+             * A boolean dimension stores 1 and 0, and the generic formatter
+             * turns those into Yes and No -- correct, but a pie of "Yes 62% /
+             * No 38%" makes the reader supply the question from the title. The
+             * labels belong to the report, not to the dimension: the same
+             * column reads as New/Repeat here and could reasonably read as
+             * something else elsewhere.
+             *
+             * Keys are the RAW values as strings, because that is what the
+             * query returns and what a definition author can see in the data.
+             */
+            if ( isset( $widget['valueLabels'] ) ) {
+
+                if ( ! is_array( $widget['valueLabels'] ) ) {
+
+                    return sprintf(
+                        'widget %s: "valueLabels" must map a dimension value to a label', $i );
+                }
+
+                foreach ( $widget['valueLabels'] as $value => $label ) {
+
+                    if ( ! is_string( $label ) ) {
+
+                        return sprintf(
+                            'widget %s: the label for value "%s" must be a string, not %s',
+                            $i, $value, gettype( $label ) );
+                    }
+                }
+            }
+
+            /*
              * A widget may name a derived metric list rather than spell one
              * out. Checked here so a typo is a definition error at load rather
              * than a query for a metric named "@activeGoalCompletion".

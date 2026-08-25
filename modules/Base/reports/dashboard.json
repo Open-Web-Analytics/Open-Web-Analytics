@@ -79,7 +79,12 @@
                 "dimensions": "isRepeatVisitor",
                 "sort": "visits-"
             },
-            "chartMetric": "visits"
+            "chartMetric": "visits",
+            "valueLabels": {
+                "1": "Repeat",
+                "0": "New",
+                "": "New"
+            }
         },
         {
             "type": "pie",
