@@ -64,7 +64,7 @@ final class ReportChromeContractTest extends TestCase
         // ReportVisitors) loses the very chrome under test, and one that reads
         // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
         // kinds, chosen because they survive a sentinel.
-        foreach ( array( 'ReportDocument', 'ReportGoals',
+        foreach ( array( 'ReportDocument',
                          'ReportTransactionDetail', 'ReportVisitorsRoster' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
@@ -167,9 +167,9 @@ final class ReportChromeContractTest extends TestCase
     {
         // A bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportGoals( array() ) )->doAction();
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportDocument( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'goals' ) ) )->doAction();
+            array( 'reportId' => 'document' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -229,16 +229,17 @@ final class ReportChromeContractTest extends TestCase
      * the reportId derivation added an id for the new path rather than changing
      * the old one.
      *
-     * Was ReportPages, then ReportHostDetail, then ReportCampaigns; all three
-     * are configuration now and have no action left. goals is bespoke and keeps
-     * its own -- and, being dashboard-shaped, is among the last that will move.
+     * Was ReportPages, then ReportHostDetail, then ReportCampaigns, then
+     * ReportGoals; all four are configuration now and have no action left.
+     * document still prefetches -- it loads a document entity for its header --
+     * so it keeps its own.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportGoals(
-            array( 'do' => 'base.reportGoals' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportDocument(
+            array( 'do' => 'base.reportDocument' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportGoals', $data['dom_id'] );
+        $this->assertSame( 'base-reportDocument', $data['dom_id'] );
     }
 
     /**

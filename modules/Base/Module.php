@@ -626,7 +626,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
-        $this->registerAction( 'base.reportGoals',                   'OWA\\Module\\Base\\Controller\\ReportGoals',                  'Controller/ReportGoals.php' );
         $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
         $this->registerAction( 'base.reportVisit',                   'OWA\\Module\\Base\\Controller\\ReportVisit',                  'Controller/ReportVisit.php' );
         $this->registerAction( 'base.reportVisitor',                 'OWA\\Module\\Base\\Controller\\ReportVisitor',                'Controller/ReportVisitor.php' );
@@ -2374,7 +2373,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'feeds', 'reports/feeds.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goal-funnel', array( 'controller' => 'base.reportGoalFunnel' ) );
-        $this->registerReport( 'goals', array( 'controller' => 'base.reportGoals' ) );
+        $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'host-detail', 'reports/host-detail.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
         $this->registerReport( 'keyword-detail', 'reports/keyword-detail.json' );

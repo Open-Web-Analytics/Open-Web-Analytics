@@ -1,0 +1,42 @@
+{
+    "title": "Goals",
+    "metrics": "visits,goalCompletionsAll,goalConversionRateAll,goalAbandonRateAll,goalValueAll",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "colspan": 12,
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "goalCompletionsAll",
+            "headline": "There were {goalCompletionsAll.formatted} {goalCompletionsAll|goal|goals} completed."
+        },
+        {
+            "type": "metric-boxes",
+            "id": "goalMetrics",
+            "container": "goalMetrics",
+            "title": "Goal Performance",
+            "colspan": 6,
+            "boxWidth": "150px",
+            "query": {
+                "metrics": "@activeGoalCompletions"
+            },
+            "showTitle": true
+        },
+        {
+            "type": "report-links",
+            "title": "Related Reports",
+            "colspan": 6,
+            "links": [
+                {
+                    "reportId": "goal-funnel",
+                    "label": "Conversion Funnels",
+                    "description": "Goal funnel Visualization."
+                }
+            ]
+        }
+    ]
+}

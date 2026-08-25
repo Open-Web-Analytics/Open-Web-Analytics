@@ -77,6 +77,52 @@ test.describe('every configured report renders in a browser', () => {
      * whose widgets each constrain to different rows, so it exercises the
      * per-widget constraint path end to end.
      */
+    /**
+     * The goals report is the first definition whose metrics are DERIVED per
+     * site: the boxes measure one metric per goal the site has configured, so
+     * a static list could not express them. Nothing but a browser against a
+     * seeded goal exercises that resolution end to end.
+     */
+    test.describe('the goals report measures the goals this site has', () => {
+
+        test.beforeEach(async ({ page }) => {
+            await login(page);
+            await openConfiguredReport(page, { reportId: 'goals' });
+        });
+
+        test('the trend chart paints a canvas', async ({ page }) => {
+            await expect(page.locator('#trend-chart canvas').first())
+                .toBeVisible({ timeout: 20_000 });
+        });
+
+        test('the Goal Performance panel draws a box for the seeded goal', async ({ page }) => {
+            // The panel exists only because the site has an active goal. On a
+            // site with none the widget is dropped rather than drawn empty,
+            // which is why this asserts a BOX and not merely the container.
+            const box = page.locator('#goalMetrics .owa_metricInfobox').first();
+
+            await expect(box).toBeVisible({ timeout: 20_000 });
+
+            // Labelled by the METRIC, which names the goal -- not by the
+            // panel. A panel measuring one metric per goal that labelled every
+            // box "Goal Performance" would say nothing about which goal.
+            await expect(box).toContainText(FIXTURE.goal.name);
+            await expect(box).not.toContainText('Goal Performance');
+        });
+
+        test('the panel keeps its own section header', async ({ page }) => {
+            // The header is the widget's, drawn like any other widget's,
+            // because the boxes no longer borrow the title.
+            await expect(page.locator('.owa_reportSectionHeader', { hasText: 'Goal Performance' }).first())
+                .toBeVisible({ timeout: 20_000 });
+        });
+
+        test('the related reports link to the funnel', async ({ page }) => {
+            await expect(page.locator('a', { hasText: 'Conversion Funnels' }).first())
+                .toBeVisible();
+        });
+    });
+
     test.describe('the traffic report draws its widgets', () => {
 
         test.beforeEach(async ({ page }) => {

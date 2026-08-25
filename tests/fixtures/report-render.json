@@ -1781,6 +1781,46 @@
             "site_usage_dim.refreshGrid"
         ]
     },
+    "goals": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "trendurl",
+                "query": {
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,goalCompletionsAll,goalConversionRateAll,goalAbandonRateAll,goalValueAll",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
+        },
+        "explorers": [
+            {
+                "var": "trend",
+                "container": "trend-chart"
+            }
+        ],
+        "commands": [
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics"
+        ]
+    },
     "host-detail": {
         "subview": "base.reportWidgets",
         "queries": [

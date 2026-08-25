@@ -143,7 +143,7 @@ final class ReportRegistryTest extends TestCase
         return array(
             'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
             'prefetching'    => array( 'visitors',   '\OWA\Module\Base\Controller\ReportVisitors' ),
-            'goals'          => array( 'goals',      '\OWA\Module\Base\Controller\ReportGoals' ),
+            'visit'          => array( 'visit',      '\OWA\Module\Base\Controller\ReportVisit' ),
             'document'       => array( 'document',   '\OWA\Module\Base\Controller\ReportDocument' ),
         );
     }

@@ -1282,6 +1282,43 @@
             ]
         }
     },
+    "ReportGoals": {
+        "params": [],
+        "diagnostics": [],
+        "config": {
+            "metrics": "visits,goalCompletionsAll,goalConversionRateAll,goalAbandonRateAll,goalValueAll",
+            "subview": "base.reportWidgets",
+            "title": "Goals",
+            "titleSuffix": "",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "goalCompletionsAll",
+                    "colspan": 12,
+                    "container": "trend-chart",
+                    "headline": "There were {goalCompletionsAll.formatted} {goalCompletionsAll|goal|goals} completed.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "colspan": 6,
+                    "links": [
+                        {
+                            "description": "Goal funnel Visualization.",
+                            "label": "Conversion Funnels",
+                            "reportId": "goal-funnel"
+                        }
+                    ],
+                    "title": "Related Reports",
+                    "type": "report-links"
+                }
+            ]
+        }
+    },
     "ReportHostDetail": {
         "params": [
             "hostName"
