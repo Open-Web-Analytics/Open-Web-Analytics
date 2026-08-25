@@ -1259,6 +1259,135 @@
             "dim.refreshGrid"
         ]
     },
+    "dom-clicks": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "trendurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "domClicks",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "domidsurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementId",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "domClicks",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "domClicks-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "domnamesurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementName",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "domClicks",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "domClicks-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "htmltagsurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementTag",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "domClicks",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "domClicks-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "domclassesurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementClass",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "domClicks",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "domClicks-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 5,
+            "loadsWithUrl": 0,
+            "urls": 5
+        },
+        "explorers": [
+            {
+                "var": "trend",
+                "container": "trend-chart"
+            },
+            {
+                "var": "domids",
+                "container": "topDomIds"
+            },
+            {
+                "var": "domnames",
+                "container": "topDomNames"
+            },
+            {
+                "var": "htmltags",
+                "container": "topHtmlTags"
+            },
+            {
+                "var": "domclasses",
+                "container": "topDomClasses"
+            }
+        ],
+        "commands": [
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "domids.refreshGrid",
+            "domnames.refreshGrid",
+            "htmltags.refreshGrid",
+            "domclasses.refreshGrid"
+        ]
+    },
     "ecommerce": {
         "subview": "base.reportWidgets",
         "queries": [

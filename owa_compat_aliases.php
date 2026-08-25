@@ -430,8 +430,6 @@ function owa_compat_class_map(): array
         'owa_reportDashboardView' => 'OWA\\Module\\Base\\View\\ReportDashboard',
         'owa_reportDocumentController' => 'OWA\\Module\\Base\\Controller\\ReportDocument',
         'owa_reportDocumentView' => 'OWA\\Module\\Base\\View\\ReportDocument',
-        'owa_reportDomClicksController' => 'OWA\\Module\\Base\\Controller\\ReportDomClicks',
-        'owa_reportDomClicksView' => 'OWA\\Module\\Base\\View\\ReportDomClicks',
         'owa_reportDomstreamsController' => 'OWA\\Module\\Base\\Controller\\ReportDomstreams',
         'owa_reportDomstreamsView' => 'OWA\\Module\\Base\\View\\ReportDomstreams',
         'owa_reportGoalFunnelController' => 'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',

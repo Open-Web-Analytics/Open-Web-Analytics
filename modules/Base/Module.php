@@ -624,7 +624,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
         $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
-        $this->registerAction( 'base.reportDomClicks',               'OWA\\Module\\Base\\Controller\\ReportDomClicks',              'Controller/ReportDomClicks.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
         $this->registerAction( 'base.reportGoals',                   'OWA\\Module\\Base\\Controller\\ReportGoals',                  'Controller/ReportGoals.php' );
@@ -2366,7 +2365,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'dashboard', array( 'controller' => 'base.reportDashboard' ) );
         $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', array( 'controller' => 'base.reportDocument' ) );
-        $this->registerReport( 'dom-clicks', array( 'controller' => 'base.reportDomClicks' ) );
+        $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );

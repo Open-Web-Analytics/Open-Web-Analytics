@@ -73,7 +73,7 @@
                     </P>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'document_id' => $view->document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
+                        <span class="inline_h3"><a href="<?php echo $view->makeLink(array('do' => 'base.report', 'reportId' => 'dom-clicks', 'pagePath' => $view->document->get('uri')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
                     </P>
                 </div>
             </TD>

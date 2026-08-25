@@ -907,6 +907,77 @@
             ]
         }
     },
+    "ReportDomClicks": {
+        "params": [
+            "pagePath"
+        ],
+        "diagnostics": [],
+        "config": {
+            "constraints": "pagePath==characterization_sentinel",
+            "metrics": "domClicks",
+            "subview": "base.reportWidgets",
+            "title": "Dom Clicks: ",
+            "titleSuffix": "characterization_sentinel",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "domClicks",
+                    "container": "trend-chart",
+                    "headline": "There were {domClicks.formatted} dom clicks for this web page.",
+                    "id": "trend",
+                    "query": {
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "topDomIds",
+                    "id": "domids",
+                    "query": {
+                        "dimensions": "domElementId",
+                        "resultsPerPage": 5,
+                        "sort": "domClicks-"
+                    },
+                    "title": "Dom IDs",
+                    "type": "grid"
+                },
+                {
+                    "container": "topDomNames",
+                    "id": "domnames",
+                    "query": {
+                        "dimensions": "domElementName",
+                        "resultsPerPage": 5,
+                        "sort": "domClicks-"
+                    },
+                    "title": "Name Attributes",
+                    "type": "grid"
+                },
+                {
+                    "container": "topHtmlTags",
+                    "id": "htmltags",
+                    "query": {
+                        "dimensions": "domElementTag",
+                        "resultsPerPage": 5,
+                        "sort": "domClicks-"
+                    },
+                    "title": "HTML Tags",
+                    "type": "grid"
+                },
+                {
+                    "container": "topDomClasses",
+                    "id": "domclasses",
+                    "query": {
+                        "dimensions": "domElementClass",
+                        "resultsPerPage": 5,
+                        "sort": "domClicks-"
+                    },
+                    "title": "Dom Classes",
+                    "type": "grid"
+                }
+            ]
+        }
+    },
     "ReportEcommerce": {
         "params": [],
         "diagnostics": [],

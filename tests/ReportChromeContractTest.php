@@ -65,7 +65,7 @@ final class ReportChromeContractTest extends TestCase
         // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
         // kinds, chosen because they survive a sentinel.
         foreach ( array( 'ReportDocument', 'ReportGoals',
-                         'ReportTransactionDetail', 'ReportDomClicks' ) as $name ) {
+                         'ReportTransactionDetail', 'ReportVisitorsRoster' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
 
@@ -154,6 +154,7 @@ final class ReportChromeContractTest extends TestCase
             // above when it became a definition.
             'referral-detail' => array( 'referral-detail' ),
             'campaigns'       => array( 'campaigns' ),
+            'dom-clicks'      => array( 'dom-clicks' ),
         );
     }
 
