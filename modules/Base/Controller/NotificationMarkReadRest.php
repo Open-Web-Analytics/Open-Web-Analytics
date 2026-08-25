@@ -15,7 +15,7 @@ use OWA\Module\Base\Classes\NotificationManager;
  *
  * The user id comes from the SESSION, never a parameter.
  */
-class NotificationReadRest extends \OWA\Core\AdminController {
+class NotificationMarkReadRest extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
@@ -42,12 +42,12 @@ class NotificationReadRest extends \OWA\Core\AdminController {
     function success() {
 
         http_response_code(202);
-        $this->setView( 'base.notificationReadRest' );
+        $this->setView( 'base.notificationMarkReadRest' );
     }
 
     function errorAction() {
 
         http_response_code(422);
-        $this->setView( 'base.notificationReadRest' );
+        $this->setView( 'base.notificationMarkReadRest' );
     }
 }
