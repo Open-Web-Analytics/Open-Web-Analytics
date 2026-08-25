@@ -960,7 +960,12 @@
                         "sort": "visits-"
                     },
                     "title": "Visitor Types",
-                    "type": "pie"
+                    "type": "pie",
+                    "valueLabels": {
+                        "": "New",
+                        "0": "New",
+                        "1": "Repeat"
+                    }
                 },
                 {
                     "chartMetric": "visits",

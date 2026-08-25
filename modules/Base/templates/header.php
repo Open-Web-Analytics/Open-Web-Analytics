@@ -44,7 +44,7 @@
                 aria-expanded="false" aria-controls="owa_notificationPanel"
                 aria-label="Notifications">
             <i class="fas fa-bell"></i>
-            <span id="owa_notificationBadge" class="owa_notificationBadge" hidden>0</span>
+            <span id="owa_notificationBadge" class="owa_notificationBadge">0</span>
         </button>
         <div id="owa_notificationPanel" class="owa_notificationPanel" hidden>
             <div class="owa_notificationPanelHeader">Notifications</div>
@@ -68,10 +68,30 @@
         // whose URLs are rewritten.
         var apiUrl = <?php echo json_encode( $owa_apiUrl ); ?>;
 
-        // The badge IS the count of what we hold. Never computed anywhere else.
-        function paintBadge(n) {
-            badge.textContent = n;
-            badge.hidden = (n === 0);
+        // The badge counts the UNREAD rows we hold -- not how many rows there
+        // are, because a read notification stays on screen without counting.
+        // Still derived from the content and nowhere else.
+        function paintBadge() {
+            var unread = items.querySelectorAll('.owa_notification.is-unread').length;
+
+            badge.textContent = unread;
+            // Never hidden: an empty badge is still the control people look
+            // for, and a bell that only sometimes has one moves under the
+            // cursor.
+            badge.classList.toggle('is-zero', unread === 0);
+        }
+
+        function markRead(id, el) {
+            if (!el.classList.contains('is-unread')) { return; }
+
+            // Unbold immediately; the row stays either way, and a click that
+            // looks like nothing happened invites a second one.
+            el.classList.remove('is-unread');
+            paintBadge();
+
+            fetch(apiUrl + '&notificationId=' + encodeURIComponent(id),
+                  { method: 'POST', credentials: 'same-origin' })
+                .catch(function () { /* the next load re-reads the truth */ });
         }
 
         function dismiss(id, el) {
@@ -83,7 +103,7 @@
                     // just been told, and a round trip to learn what we did
                     // would make the click feel slower than it is.
                     el.remove();
-                    paintBadge(items.querySelectorAll('.owa_notification').length);
+                    paintBadge();
                     if (!items.querySelector('.owa_notification')) { renderEmpty(); }
                 })
                 .catch(function () { /* leave it on screen; the next load re-reads */ });
@@ -91,10 +111,29 @@
 
         function renderEmpty() {
             items.innerHTML = '';
+            paintBadge();
             var p = document.createElement('p');
             p.className = 'info_text';
             p.textContent = 'Nothing new.';
             items.appendChild(p);
+        }
+
+        // An icon per TYPE. Unknown types get a neutral bell rather than
+        // nothing, so a row never renders with an empty hole where the icon is.
+        var ICONS = { release: 'fa-box', general: 'fa-bell' };
+
+        // "3d" rather than a date, the way a notification list reads. Falls
+        // back to a real date past a week, where "37d" stops being useful.
+        function relativeTime(seconds) {
+            var diff = Math.floor(Date.now() / 1000) - seconds;
+
+            if (diff < 60)     { return 'just now'; }
+            if (diff < 3600)   { return Math.floor(diff / 60) + 'm'; }
+            if (diff < 86400)  { return Math.floor(diff / 3600) + 'h'; }
+            if (diff < 604800) { return Math.floor(diff / 86400) + 'd'; }
+
+            return new Date(seconds * 1000)
+                .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         }
 
         function render(list) {
@@ -104,45 +143,73 @@
 
             list.forEach(function (n) {
                 var row = document.createElement('div');
-                row.className = 'owa_notification';
+                // is-unread is what the styling keys on, and what the badge
+                // counts. One class, one source of truth.
+                row.className = 'owa_notification' + (n.read ? '' : ' is-unread');
 
-                var meta = document.createElement('div');
-                meta.className = 'owa_notificationMeta';
-                if (n.published_at) {
-                    var when = document.createElement('span');
-                    when.className = 'info_text';
-                    when.textContent = new Date(n.published_at * 1000)
-                        .toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                    meta.appendChild(when);
-                }
-                var x = document.createElement('button');
-                x.type = 'button';
-                x.className = 'owa_notificationDismiss';
-                x.textContent = 'Dismiss';
-                x.addEventListener('click', function () { dismiss(n.id, row); });
-                meta.appendChild(x);
-                row.appendChild(meta);
+                var icon = document.createElement('span');
+                icon.className = 'owa_notificationIcon';
+                var glyph = document.createElement('i');
+                glyph.className = 'fas ' + (ICONS[n.type] || ICONS.general);
+                glyph.setAttribute('aria-hidden', 'true');
+                icon.appendChild(glyph);
+                row.appendChild(icon);
+
+                var main = document.createElement('div');
+                main.className = 'owa_notificationMain';
 
                 var title = document.createElement('div');
                 title.className = 'owa_notificationTitle';
                 if (n.url) {
                     var a = document.createElement('a');
                     a.href = n.url;
-                    // textContent throughout: release notes are other people's
-                    // text and none of it is markup here.
+                    // A new tab, deliberately: these point at github.com, and
+                    // marking read is a request of our own -- letting the same
+                    // click navigate away races it.
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    // textContent throughout: these are other people's words
+                    // and none of them are markup here.
                     a.textContent = n.title;
                     title.appendChild(a);
                 } else {
                     title.textContent = n.title;
                 }
-                row.appendChild(title);
+                main.appendChild(title);
 
-                if (n.body) {
-                    var body = document.createElement('div');
-                    body.className = 'owa_notificationBody';
-                    body.textContent = n.body;
-                    row.appendChild(body);
+                if (n.excerpt) {
+                    var excerpt = document.createElement('div');
+                    excerpt.className = 'owa_notificationExcerpt';
+                    excerpt.textContent = n.excerpt;
+                    main.appendChild(excerpt);
                 }
+
+                if (n.published_at) {
+                    var when = document.createElement('div');
+                    when.className = 'owa_notificationWhen';
+                    when.textContent = relativeTime(n.published_at);
+                    main.appendChild(when);
+                }
+
+                row.appendChild(main);
+
+                // An x, not the word "Dismiss": the row is already busy, and
+                // this is the control people look for in the corner.
+                var x = document.createElement('button');
+                x.type = 'button';
+                x.className = 'owa_notificationDismiss';
+                x.setAttribute('aria-label', 'Dismiss notification');
+                x.textContent = '\u00d7';
+                x.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dismiss(n.id, row);
+                });
+                row.appendChild(x);
+
+                // Anywhere on the row, the way a notification list behaves --
+                // not only the headline.
+                row.addEventListener('click', function () { markRead(n.id, row); });
 
                 items.appendChild(row);
             });
@@ -158,7 +225,7 @@
                 // "nothing to show".
                 var list = (data && data.data && data.data.notifications) || [];
                 render(list);
-                paintBadge(list.length);
+                paintBadge();
             })
             .catch(function () { renderEmpty(); });
 

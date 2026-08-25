@@ -75,6 +75,63 @@ final class NotificationManagerTest extends TestCase
     // Storage: audience and dismissal
     // ---------------------------------------------------------------
 
+    // ---------------------------------------------------------------
+    // Excerpts -- pure, so no database
+    // ---------------------------------------------------------------
+
+    /**
+     * Release notes are markdown. Dropping them raw into a notification panel
+     * shows people `## Overview` and `[text](url)`.
+     */
+    public function testTheExcerptStripsTheMarkdownThatActuallyAppears(): void
+    {
+        $out = NM::excerpt( "## Overview\n\n- a [link](https://x.test) and **bold** `code`" );
+
+        $this->assertStringNotContainsString( '#', $out );
+        $this->assertStringNotContainsString( '](', $out );
+        $this->assertStringNotContainsString( '**', $out );
+        $this->assertStringContainsString( 'link', $out, 'the link TEXT survives; only the target goes' );
+    }
+
+    public function testAShortBodyIsLeftAlone(): void
+    {
+        $this->assertSame( 'Just a few words.', NM::excerpt( 'Just a few words.' ) );
+    }
+
+    public function testALongBodyIsCutToTheWordLimit(): void
+    {
+        $out = NM::excerpt( implode( ' ', array_fill( 0, 200, 'word' ) ) );
+
+        // The words, plus the ellipsis glued to the last one.
+        $this->assertCount( NM::EXCERPT_WORDS, explode( ' ', $out ) );
+        $this->assertStringEndsWith( "\xE2\x80\xA6", $out );
+    }
+
+    /**
+     * A pathological body must not become a pathological row. The column is
+     * TEXT and would happily take 40kB.
+     */
+    public function testAnExcerptIsBoundedInCharactersToo(): void
+    {
+        $out = NM::excerpt( implode( ' ', array_fill( 0, NM::EXCERPT_WORDS, str_repeat( 'x', 500 ) ) ) );
+
+        $this->assertLessThanOrEqual( NM::EXCERPT_MAX_CHARS, mb_strlen( $out ) );
+    }
+
+    /** Cutting UTF-8 by bytes can end halfway through a character. */
+    public function testCuttingMultibyteTextLeavesValidUtf8(): void
+    {
+        $out = NM::excerpt( implode( ' ', array_fill( 0, 400, 'ほげ' ) ) );
+
+        $this->assertTrue( mb_check_encoding( $out, 'UTF-8' ) );
+    }
+
+    public function testAnEmptyBodyGivesAnEmptyExcerpt(): void
+    {
+        $this->assertSame( '', NM::excerpt( '' ) );
+        $this->assertSame( '', NM::excerpt( "\n\n  \n" ) );
+    }
+
     /**
      * The tests above this line are pure -- decoded JSON in, items out -- and
      * must keep running everywhere. Everything below writes rows, and CI runs
@@ -137,10 +194,10 @@ final class NotificationManagerTest extends TestCase
 
             \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->delete( $id );
 
-            // ...and the dismissals that pointed at them, or the join table
-            // grows orphans forever.
+            // ...and the per-user state that pointed at them, or the join
+            // table grows orphans forever.
             $d = \OWA\Core\CoreAPI::dbSingleton();
-            $d->deleteFrom( 'owa_notification_dismissal' );
+            $d->deleteFrom( 'owa_notification_state' );
             $d->where( 'notification_id', $id );
             $d->executeQuery();
         }
@@ -283,6 +340,124 @@ final class NotificationManagerTest extends TestCase
         $this->assertSame( $before - 1, NM::unreadCountFor( 'nm-carol' ) );
         $this->assertSame( $otherBefore, NM::unreadCountFor( 'nm-dave' ),
             'one user dismissing a global must not clear it for anyone else' );
+    }
+
+    /**
+     * Reading is not dismissing. This is the distinction the whole state table
+     * exists for, and collapsing them is what the first version did.
+     */
+    public function testReadingKeepsItInTheListButOutOfTheCount(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_read';
+
+        NM::record( $this->item( 'r1', 'read me' ), $source, 'nm-frank' );
+
+        $before = NM::unreadCountFor( 'nm-frank' );
+        $listed = count( NM::undismissedFor( 'nm-frank', 1000 ) );
+
+        $id = null;
+
+        foreach ( NM::undismissedFor( 'nm-frank', 1000 ) as $row ) {
+            if ( $row['title'] === 'read me' ) { $id = $row['id']; }
+        }
+
+        $this->assertNotNull( $id );
+        NM::markRead( $id, 'nm-frank' );
+
+        $this->assertSame( $before - 1, NM::unreadCountFor( 'nm-frank' ),
+            'reading clears it from the badge' );
+        $this->assertSame( $listed, count( NM::undismissedFor( 'nm-frank', 1000 ) ),
+            'and leaves it on screen -- that is the whole point' );
+
+        foreach ( NM::undismissedFor( 'nm-frank', 1000 ) as $row ) {
+            if ( $row['id'] === $id ) {
+                $this->assertTrue( $row['read'], 'the row carries its own read state' );
+            }
+        }
+    }
+
+    /**
+     * Dismissing marks read too. Something you have finished with cannot still
+     * be waiting to be looked at.
+     */
+    public function testDismissingAlsoMarksRead(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_dr';
+
+        NM::record( $this->item( 'd1', 'both' ), $source, 'nm-gail' );
+
+        $id = null;
+
+        foreach ( NM::undismissedFor( 'nm-gail', 1000 ) as $row ) {
+            if ( $row['title'] === 'both' ) { $id = $row['id']; }
+        }
+
+        $this->assertNotNull( $id );
+
+        $unreadBefore = NM::unreadCountFor( 'nm-gail' );
+
+        NM::dismiss( $id, 'nm-gail' );
+
+        // One less unread and one less listed -- NOT zero: this user also sees
+        // every global notification on the install, which is the audience rule
+        // working.
+        $this->assertSame( $unreadBefore - 1, NM::unreadCountFor( 'nm-gail' ) );
+        $this->assertNotContains( $id, array_column( NM::undismissedFor( 'nm-gail', 1000 ), 'id' ) );
+    }
+
+    /** Re-reading must not move the timestamp of when it was first read. */
+    public function testMarkingReadTwiceIsIdempotent(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_rr';
+
+        NM::record( $this->item( 'r2', 'twice read' ), $source, 'nm-hank' );
+
+        $id = null;
+
+        foreach ( NM::undismissedFor( 'nm-hank', 1000 ) as $row ) {
+            if ( $row['title'] === 'twice read' ) { $id = $row['id']; }
+        }
+
+        $this->assertNotNull( $id );
+
+        $unreadBefore = NM::unreadCountFor( 'nm-hank' );
+        $listedBefore = count( NM::undismissedFor( 'nm-hank', 1000 ) );
+
+        $this->assertTrue( (bool) NM::markRead( $id, 'nm-hank' ) );
+        $this->assertTrue( (bool) NM::markRead( $id, 'nm-hank' ) );
+
+        // Reading twice is reading once, and neither reading removed it.
+        $this->assertSame( $unreadBefore - 1, NM::unreadCountFor( 'nm-hank' ) );
+        $this->assertCount( $listedBefore, NM::undismissedFor( 'nm-hank', 1000 ) );
+    }
+
+    /** Reading is per user, like dismissing. */
+    public function testReadingIsPerUser(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_pu';
+
+        NM::record( $this->item( 'shared2', 'shared read' ), $source );
+
+        $id = null;
+
+        foreach ( NM::undismissedFor( 'nm-ivy', 1000 ) as $row ) {
+            if ( $row['title'] === 'shared read' ) { $id = $row['id']; }
+        }
+
+        $otherBefore = NM::unreadCountFor( 'nm-jack' );
+
+        NM::markRead( $id, 'nm-ivy' );
+
+        $this->assertSame( $otherBefore, NM::unreadCountFor( 'nm-jack' ),
+            'one user reading a global must not clear it for anyone else' );
     }
 
     /** Two tabs, or a double click, must not create two rows to reconcile. */

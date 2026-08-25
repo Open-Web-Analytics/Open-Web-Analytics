@@ -68,7 +68,20 @@ const FIXTURE = {
     // release announcements.
     notifications: {
         source: 'e2e_fixture',
-        titles: ['E2E Notification Three', 'E2E Notification Two', 'E2E Notification One'],
+        // Newest first, matching published_at descending.
+        titles: [
+            'E2E Notification Five',
+            'E2E Notification Four',
+            'E2E Notification Three',
+            'E2E Notification Two',
+            'E2E Notification One',
+        ],
+        // One per mutating spec: reading and dismissing persist, so specs must
+        // not share a subject.
+        toRead: 'E2E Notification Five',
+        toDismiss: 'E2E Notification Four',
+        toDismissAndReload: 'E2E Notification Three',
+        untouched: 'E2E Notification One',
     },
     // The always-present optional module the module-activation test toggles.
     toggleModule: 'hello',

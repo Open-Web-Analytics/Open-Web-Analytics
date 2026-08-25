@@ -62,6 +62,19 @@ class Notification extends \OWA\Core\Entity {
         $user_id->setIndex();
         $this->setProperty($user_id);
 
+        /*
+         * What KIND of thing this is -- 'release' today.
+         *
+         * Separate from `source` on purpose: source is WHERE it came from and
+         * is dedupe machinery, type is what it MEANS and drives presentation.
+         * Two sources can produce the same type, and one source could
+         * eventually produce several, so a UI keyed on source would be reading
+         * the wrong column.
+         */
+        $type = new \OWA\Module\Base\Classes\DbColumn( 'type', OWA_DTD_VARCHAR255 );
+        $type->setIndex();
+        $this->setProperty($type);
+
         $title = new \OWA\Module\Base\Classes\DbColumn( 'title', OWA_DTD_VARCHAR255 );
         $this->setProperty($title);
 
@@ -69,6 +82,28 @@ class Notification extends \OWA\Core\Entity {
         // VARCHAR that would silently truncate mid-sentence.
         $body = new \OWA\Module\Base\Classes\DbColumn( 'body', OWA_DTD_TEXT );
         $this->setProperty($body);
+
+        /*
+         * The short plain-text line the panel shows under the headline.
+         *
+         * Stored rather than derived on read: it is the same answer every time,
+         * and computing it per request means stripping markdown from every
+         * notification on every page load that opens the panel.
+         *
+         * The trade is that it is fixed at WRITE time -- changing
+         * EXCERPT_WORDS does not rewrite the rows already stored. That is the
+         * normal cost of keeping a derived value, and the alternative is
+         * paying for the derivation forever.
+         *
+         * TEXT, not VARCHAR(255), even though the value is short by design.
+         * How short is a TUNING decision -- EXCERPT_WORDS -- and this install
+         * runs with an empty sql_mode, so an excerpt that outgrew a VARCHAR
+         * would be truncated SILENTLY and mid-character rather than refused.
+         * Making the column indifferent means the word count can be changed
+         * later without anyone having to remember this column exists.
+         */
+        $excerpt = new \OWA\Module\Base\Classes\DbColumn( 'excerpt', OWA_DTD_TEXT );
+        $this->setProperty($excerpt);
 
         $url = new \OWA\Module\Base\Classes\DbColumn( 'url', OWA_DTD_VARCHAR255 );
         $this->setProperty($url);

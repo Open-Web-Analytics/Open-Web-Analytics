@@ -3,15 +3,16 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Adds owa_notification and owa_notification_dismissal.
+ * Adds owa_notification and owa_notification_state.
  *
  * owa_notification holds one row per thing worth telling operators about --
  * today a GitHub release, previously fetched synchronously on every dashboard
  * render and never stored at all.
  *
- * owa_notification_dismissal holds one row per (notification, user) that has
- * been dismissed. The row's existence IS the state, so the unread count is the
- * notifications with no row for that user.
+ * owa_notification_state holds one row per (notification, user), carrying when
+ * they READ it and when they DISMISSED it. Two independent facts: reading
+ * clears the badge and unbolds the headline, dismissing removes it from the
+ * list.
  *
  * Two small tables, no locks worth worrying about, so this does not require CLI
  * mode -- unlike the updates that rewrite fact tables.
@@ -32,7 +33,7 @@ class Update018 extends \OWA\Core\Update {
     var $is_cli_mode_required = false;
 
     /** The tables this update owns, in creation order. */
-    const TABLES = array( 'notification', 'notification_dismissal' );
+    const TABLES = array( 'notification', 'notification_state' );
 
     function up( $force = false ) {
 

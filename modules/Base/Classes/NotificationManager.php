@@ -22,6 +22,41 @@ class NotificationManager {
     const SOURCE_GITHUB = 'github_release';
 
     /**
+     * What a notification IS, as opposed to where it came from.
+     *
+     * Drives the icon the panel draws. Kept apart from `source` because source
+     * is dedupe machinery: two sources can mean the same kind of thing, and one
+     * source could eventually mean several, so presentation keyed on source
+     * would be reading the wrong column.
+     */
+    const TYPE_RELEASE = 'release';
+
+    /** Notifications with no type, or a type the panel does not know. */
+    const TYPE_GENERAL = 'general';
+
+    /**
+     * Words kept in the excerpt shown under a headline.
+     *
+     * The panel shows a headline and a hint of the body, the way any social
+     * notification list does -- not the whole of a release note, which runs to
+     * screenfuls of markdown.
+     */
+    const EXCERPT_WORDS = 20;
+
+    /**
+     * Backstop on an excerpt, in characters.
+     *
+     * Not a storage limit -- the column is TEXT and does not care. This is
+     * here so a pathological body (one 40kB "word", a minified blob in a
+     * release note) cannot become a 40kB notification row, and so the panel
+     * always gets something that fits on two lines.
+     *
+     * Generous on purpose: EXCERPT_WORDS is the knob that decides length, and
+     * this should not quietly become the real one when someone turns it up.
+     */
+    const EXCERPT_MAX_CHARS = 1000;
+
+    /**
      * The ceiling on one read of the table.
      *
      * Not a page size -- the badge counts everything undismissed, so it has to
@@ -93,6 +128,61 @@ class NotificationManager {
     }
 
     /**
+     * A short, plain-text hint of a body.
+     *
+     * Release notes are markdown with headings, links and list bullets, and
+     * dropping raw markdown into a notification panel shows people `## Overview`
+     * and `[text](url)`. This is not a markdown renderer -- it strips the few
+     * things that actually appear and collapses the rest to a sentence.
+     *
+     * Pure, so the truncation is testable without a database.
+     *
+     * @param string $body
+     * @param int $words
+     * @return string
+     */
+    public static function excerpt( $body, $words = self::EXCERPT_WORDS ) {
+
+        $text = (string) $body;
+
+        // Fenced code and headings read as noise once the markup is gone.
+        $text = preg_replace( '/```.*?```/s', ' ', $text );
+        $text = preg_replace( '/^\s{0,3}#{1,6}\s*/m', ' ', $text );
+        // Links: keep the text, drop the target.
+        $text = preg_replace( '/\[([^\]]*)\]\([^)]*\)/', '$1', $text );
+        // Bullets, emphasis and the stray backtick.
+        $text = preg_replace( '/^\s{0,3}[-*+]\s+/m', ' ', $text );
+        $text = str_replace( array( '**', '__', '`', '>' ), ' ', $text );
+
+        $text = trim( preg_replace( '/\s+/', ' ', (string) $text ) );
+
+        if ( $text === '' ) {
+
+            return '';
+        }
+
+        $parts = explode( ' ', $text );
+
+        $ellipsis = "\xE2\x80\xA6";
+
+        $out = count( $parts ) <= $words
+            ? $text
+            // A single ellipsis character, not three dots: one glyph, and it
+            // cannot be broken across a line.
+            : implode( ' ', array_slice( $parts, 0, $words ) ) . $ellipsis;
+
+        if ( mb_strlen( $out ) > self::EXCERPT_MAX_CHARS ) {
+
+            // mb_substr, not substr: cutting a UTF-8 string by bytes can end
+            // halfway through a character and produce something no longer
+            // valid UTF-8.
+            $out = rtrim( mb_substr( $out, 0, self::EXCERPT_MAX_CHARS - 1 ) ) . $ellipsis;
+        }
+
+        return $out;
+    }
+
+    /**
      * Write items that are not already stored.
      *
      * Idempotent on (source, source_key, user_id): the job sees the same
@@ -103,9 +193,10 @@ class NotificationManager {
      * @param array $items from a from*() transform
      * @param string $source
      * @param string $userId '' for everyone
+     * @param string $type what these ARE; drives the icon the panel draws
      * @return int how many were created
      */
-    public static function record( array $items, $source, $userId = '' ) {
+    public static function record( array $items, $source, $userId = '', $type = self::TYPE_GENERAL ) {
 
         $created = 0;
 
@@ -161,9 +252,12 @@ class NotificationManager {
             $n->set( 'id', $n->generateId( $source . $item['source_key'] . $userId ) );
             $n->set( 'source', $source );
             $n->set( 'source_key', (string) $item['source_key'] );
+            $n->set( 'type', (string) ( $item['type'] ?? $type ) );
             $n->set( 'user_id', (string) $userId );
             $n->set( 'title', (string) ( $item['title'] ?? '' ) );
             $n->set( 'body', (string) ( $item['body'] ?? '' ) );
+            // Derived once, here, rather than on every read.
+            $n->set( 'excerpt', self::excerpt( $item['body'] ?? '' ) );
             $n->set( 'url', (string) ( $item['url'] ?? '' ) );
             $n->set( 'published_at', (int) ( $item['published_at'] ?? 0 ) );
             $n->set( 'created_at', time() );
@@ -258,13 +352,13 @@ class NotificationManager {
     public static function undismissedFor( $userId, $limit = 25 ) {
 
         /*
-         * Read the dismissals FIRST. The builder is a singleton holding one
+         * Read the per-user state FIRST. The builder is a singleton holding one
          * query's state, so running a second query part-way through building
          * this one clobbers it -- the outer select then executes with whatever
          * the inner one left behind. It fails loudly here, but the general
          * shape of that bug does not have to.
          */
-        $dismissed = self::dismissedIdsFor( $userId );
+        $states = self::statesFor( $userId );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -286,10 +380,16 @@ class NotificationManager {
                 continue;
             }
 
-            if ( isset( $dismissed[ (string) ( $row['id'] ?? '' ) ] ) ) {
+            $state = $states[ (string) ( $row['id'] ?? '' ) ] ?? null;
+
+            if ( $state && $state['dismissed'] ) {
 
                 continue;
             }
+
+            // Carried on the row: a READ notification stays in the list, it
+            // just stops being bold and stops counting.
+            $row['read'] = (bool) ( $state && $state['read'] );
 
             $out[] = $row;
 
@@ -302,70 +402,137 @@ class NotificationManager {
         return $out;
     }
 
-    /** notification_id => true, for everything this user has dismissed. */
-    private static function dismissedIdsFor( $userId ) {
+    /**
+     * notification_id => state row, for everything this user has acted on.
+     *
+     * One read for both facts. Asking separately would mean two queries to
+     * answer one question, and two chances for them to disagree about a row
+     * written between them.
+     *
+     * @return array<string, array{read:bool, dismissed:bool}>
+     */
+    private static function statesFor( $userId ) {
 
         if ( (string) $userId === '' ) {
 
-            // Nobody is not a user. Returning nothing dismissed here would show
-            // a logged-out viewer every notification ever stored.
+            // Nobody is not a user. Returning nothing here would show a
+            // logged-out viewer every notification ever stored, all unread.
             return array();
         }
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_notification_dismissal' );
-        $db->selectColumn( 'notification_id' );
+        $db->selectFrom( 'owa_notification_state' );
+        $db->selectColumn( '*' );
         $db->where( 'user_id', (string) $userId );
 
-        $ids = array();
+        $states = array();
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $ids[ (string) $row['notification_id'] ] = true;
+            $states[ (string) $row['notification_id'] ] = array(
+                'read'      => ( (int) ( $row['read_at'] ?? 0 ) ) > 0,
+                'dismissed' => ( (int) ( $row['dismissed_at'] ?? 0 ) ) > 0,
+            );
         }
 
-        return $ids;
-    }
-
-    /** How many the badge should show. */
-    public static function unreadCountFor( $userId ) {
-
-        return count( self::undismissedFor( $userId, self::MAX_ROWS ) );
+        return $states;
     }
 
     /**
-     * Record that one user is done with one notification.
+     * How many the badge shows: undismissed AND unread.
      *
-     * Idempotent: dismissing twice is the same as dismissing once, because the
-     * id is derived from the pair. Two tabs, or a double click, must not create
-     * two rows that then have to be reconciled.
+     * Not the length of the list. Reading something clears it from the count
+     * while leaving it on screen, which is the whole point of separating the
+     * two states -- so the badge and the list deliberately disagree, and the
+     * client must not compute one from the other.
+     */
+    public static function unreadCountFor( $userId ) {
+
+        $unread = 0;
+
+        foreach ( self::undismissedFor( $userId, self::MAX_ROWS ) as $row ) {
+
+            if ( empty( $row['read'] ) ) {
+
+                $unread++;
+            }
+        }
+
+        return $unread;
+    }
+
+    /**
+     * Record that one user has READ one notification.
      *
-     * @return bool
+     * It stays in their list. The headline stops being bold and it stops
+     * counting towards the badge, and that is all.
+     */
+    public static function markRead( $notificationId, $userId ) {
+
+        return self::stamp( $notificationId, $userId, 'read_at' );
+    }
+
+    /**
+     * Record that one user is DONE with one notification.
+     *
+     * Dismissing also marks it read. Something you have finished with cannot
+     * still be waiting to be looked at, and leaving read_at unset would let a
+     * dismissed notification keep inflating the badge if it ever came back
+     * into the list.
      */
     public static function dismiss( $notificationId, $userId ) {
+
+        if ( ! self::stamp( $notificationId, $userId, 'read_at' ) ) {
+
+            return false;
+        }
+
+        return self::stamp( $notificationId, $userId, 'dismissed_at' );
+    }
+
+    /**
+     * Set one timestamp on one user's state row, creating the row if needed.
+     *
+     * Both facts go through here so they cannot drift into different ideas of
+     * what a state row is. Idempotent: the id is derived from the pair, and an
+     * already-set timestamp is left alone rather than moved -- "when did I
+     * first read this" should not change because a second tab loaded the
+     * panel.
+     *
+     * @param string $column read_at | dismissed_at
+     * @return bool
+     */
+    private static function stamp( $notificationId, $userId, $column ) {
 
         if ( ! $notificationId || ! $userId ) {
 
             return false;
         }
 
-        $d = \OWA\Core\CoreAPI::entityFactory( 'base.notification_dismissal' );
+        $state = \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' );
 
-        $id = $d->generateId( $notificationId . $userId );
+        $id = $state->generateId( $notificationId . $userId );
 
-        $d->load( $id );
+        $state->load( $id );
 
-        if ( $d->get( 'id' ) ) {
+        if ( $state->get( 'id' ) ) {
 
-            return true;
+            if ( ( (int) $state->get( $column ) ) > 0 ) {
+
+                return true;
+            }
+
+            $state->set( $column, time() );
+
+            return (bool) $state->update();
         }
 
-        $d->set( 'id', $id );
-        $d->set( 'notification_id', $notificationId );
-        $d->set( 'user_id', (string) $userId );
-        $d->set( 'dismissed_at', time() );
+        $state->set( 'id', $id );
+        $state->set( 'notification_id', $notificationId );
+        $state->set( 'user_id', (string) $userId );
+        $state->set( $column, time() );
 
-        return (bool) $d->create();
+        return (bool) $state->create();
     }
 }

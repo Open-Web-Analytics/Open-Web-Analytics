@@ -56,7 +56,8 @@ class NotificationsFetchCli extends \OWA\Core\Controller\Cli {
         }
 
         $items   = NotificationManager::fromGithubReleases( $decoded );
-        $created = NotificationManager::record( $items, NotificationManager::SOURCE_GITHUB );
+        $created = NotificationManager::record(
+            $items, NotificationManager::SOURCE_GITHUB, '', NotificationManager::TYPE_RELEASE );
 
         $this->e->notice( sprintf(
             '%d release(s) seen, %d new notification(s) stored.', count( $items ), $created ) );

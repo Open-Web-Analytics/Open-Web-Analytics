@@ -84,10 +84,17 @@ const E2E_TXNS = [
 // once and then find nothing left to dismiss. These are removed at teardown,
 // dismissals and all.
 const E2E_NOTIFICATION_SOURCE = 'e2e_fixture';
+//
+// One per MUTATING spec, plus spares. Reading and dismissing both persist, so
+// two specs sharing a row means whichever runs second finds it already acted
+// on -- and the failure looks like a bug in the feature rather than in the
+// fixtures.
 const E2E_NOTIFICATIONS = [
     ['source_key' => 'e2e-n1', 'title' => 'E2E Notification One',   'body' => 'first',  'url' => 'https://example.test/n1'],
     ['source_key' => 'e2e-n2', 'title' => 'E2E Notification Two',   'body' => 'second', 'url' => 'https://example.test/n2'],
     ['source_key' => 'e2e-n3', 'title' => 'E2E Notification Three', 'body' => 'third',  'url' => 'https://example.test/n3'],
+    ['source_key' => 'e2e-n4', 'title' => 'E2E Notification Four',  'body' => 'fourth', 'url' => 'https://example.test/n4'],
+    ['source_key' => 'e2e-n5', 'title' => 'E2E Notification Five',  'body' => 'fifth',  'url' => 'https://example.test/n5'],
 ];
 
 const E2E_GOAL_NUMBER = 1;
@@ -309,13 +316,27 @@ function seedNotifications(): array
     // first and the seeder is idempotent.
     unseedNotifications();
 
-    $created = \OWA\Module\Base\Classes\NotificationManager::record(
-        $items, E2E_NOTIFICATION_SOURCE);
+    /*
+     * One at a time, oldest first.
+     *
+     * record() caps a source's FIRST write at INITIAL_LIMIT and then refuses
+     * anything older than what it already holds -- correct for a feed, and it
+     * would silently give the specs 3 of these 5. Adding them one by one, each
+     * newer than the last, means every one clears the watermark and the seeder
+     * still goes through exactly the path the fetch job uses.
+     */
+    $created = 0;
+
+    foreach ($items as $item) {
+        $created += \OWA\Module\Base\Classes\NotificationManager::record(
+            [$item], E2E_NOTIFICATION_SOURCE, '',
+            \OWA\Module\Base\Classes\NotificationManager::TYPE_RELEASE);
+    }
 
     return ['created' => $created, 'source' => E2E_NOTIFICATION_SOURCE];
 }
 
-/** Remove the fixture notifications and every dismissal pointing at them. */
+/** Remove the fixture notifications and every per-user state row pointing at them. */
 function unseedNotifications(): int
 {
     $db = owa_coreAPI::dbSingleton();
@@ -333,7 +354,7 @@ function unseedNotifications(): int
         owa_coreAPI::entityFactory('base.notification')->delete($row['id']);
 
         $d = owa_coreAPI::dbSingleton();
-        $d->deleteFrom('owa_notification_dismissal');
+        $d->deleteFrom('owa_notification_state');
         $d->where('notification_id', $row['id']);
         $d->executeQuery();
 
@@ -717,6 +738,17 @@ function seedPageviews(int $n): int
                 'visitor_id'       => $visitor_id,
                 'is_new_session'   => $isFirst,
                 'is_new_visitor'   => $isFirst && $visit['new_visitor'],
+                /*
+                 * is_repeat_visitor is deliberately NOT set here.
+                 *
+                 * The seeder fires real events through logEvent, so the value
+                 * is DERIVED from is_new_visitor like any tracked hit. Passing
+                 * it explicitly made it worse, not better -- the tracker
+                 * property pipeline processes a supplied value differently
+                 * from an absent one, and the rows came out NULL where leaving
+                 * it alone gives 0. A fixture that sets it would also stop
+                 * exercising the derivation this suite exists to cover.
+                 */
                 'page_url'         => $url,
                 'page_title'       => 'E2E ' . ($page === '/' ? 'Home' : trim($page, '/')),
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'],

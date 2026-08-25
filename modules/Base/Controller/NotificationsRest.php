@@ -70,13 +70,30 @@ class NotificationsRest extends \OWA\Core\AdminController {
 
         foreach ( $rows as $row ) {
 
-            // Named explicitly rather than handing back the row: the table
-            // carries source/source_key, which are dedupe machinery and not
-            // something an API should promise to keep.
+            /*
+             * Named explicitly rather than handing back the row: the table
+             * carries source/source_key, which are dedupe machinery and not
+             * something an API should promise to keep.
+             *
+             * An EXCERPT, not the body. The panel shows a headline and a hint
+             * the way any social notification list does, and release notes run
+             * to screenfuls of markdown -- sending all of them so the client
+             * can throw most away is a page-load cost for nothing. Anyone who
+             * wants the whole thing follows the link.
+             */
             $out[] = array(
                 'id'           => $row['id'],
+                // Read notifications STAY in the list; they just stop being
+                // bold and stop counting towards the badge.
+                'read'         => ! empty( $row['read'] ),
+                'type'         => ( $row['type'] ?? '' ) ?: NotificationManager::TYPE_GENERAL,
                 'title'        => $row['title'],
-                'body'         => $row['body'],
+                // Read, not computed: the column holds it. Falls back to
+                // deriving one so a row written before this column existed
+                // still shows something rather than a bare headline.
+                'excerpt'      => ( $row['excerpt'] ?? '' ) !== ''
+                                    ? $row['excerpt']
+                                    : NotificationManager::excerpt( $row['body'] ?? '' ),
                 'url'          => $row['url'],
                 'published_at' => (int) $row['published_at'],
             );
