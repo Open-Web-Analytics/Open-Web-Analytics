@@ -219,12 +219,74 @@ async function openReportNoTabs(page, { reportId, period = 'last_thirty_days' } 
  * cell. If that never appears the renderer produced nothing, which is the
  * failure worth reporting.
  */
-async function openConfiguredReport(page, { reportId, period = 'last_thirty_days' } = {}) {
+async function openConfiguredReport(page, { reportId, period = 'last_thirty_days', params = {} } = {}) {
+
+    /*
+     * Every parameter the definition DECLARES, supplied.
+     *
+     * A report that enumerates a constraint is refused outright when the value
+     * behind it is missing -- rendering a detail report's heading over
+     * site-wide data is worse than an error. So a sweep that opens every report
+     * has to arrive with each one's parameters, or it is opening the error view
+     * and timing out waiting for a widget that will never be drawn.
+     *
+     * A sentinel is enough: this spec is watching for console errors while the
+     * widgets build, not for rows. Matching nothing renders empty widgets,
+     * which is exactly what these reports did before the guard existed.
+     */
+    const declared = declaredReportParams(reportId);
+    const all = Object.assign({}, declared, params);
+
+    const query = Object.keys(all)
+        .map((k) => `&owa_${encodeURIComponent(k)}=${encodeURIComponent(all[k])}`)
+        .join('');
+
     await page.goto(
-        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}` + query,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.owa_reportGridItem', { timeout: 20_000 });
+}
+
+/** The value a swept report is given for a parameter it declares. */
+const REPORT_PARAM_SENTINEL = 'e2e_sentinel';
+
+/**
+ * The parameters a report definition declares, each set to the sentinel.
+ *
+ * Read from the definition rather than listed, for the same reason the ids are:
+ * a report that gains a parameter tomorrow is swept correctly without anyone
+ * remembering this file exists.
+ *
+ * @returns {Object<string,string>}
+ */
+function declaredReportParams(reportId) {
+    const fs = require('fs');
+    const path = require('path');
+
+    const modules = path.join(__dirname, '..', '..', 'modules');
+    const out = {};
+
+    for (const mod of fs.readdirSync(modules)) {
+        const file = path.join(modules, mod, 'reports', `${reportId}.json`);
+
+        if (!fs.existsSync(file)) {
+            continue;
+        }
+
+        let def;
+        try {
+            def = JSON.parse(fs.readFileSync(file, 'utf8'));
+        } catch (e) {
+            return out;
+        }
+
+        for (const name of Object.keys((def && def.params) || {})) {
+            out[name] = REPORT_PARAM_SENTINEL;
+        }
+    }
+
+    return out;
 }
 
 /**
@@ -268,4 +330,6 @@ module.exports = {
     openReport,
     openConfiguredReport,
     configuredReportIds,
+    declaredReportParams,
+    REPORT_PARAM_SENTINEL,
 };
