@@ -257,8 +257,29 @@ function seed(): array
         $pw->update();
     }
 
-    // 3. Pageview data so a report renders a chart + grid. Only seed if this
-    //    site has no requests yet, so re-running doesn't pile up rows.
+    /*
+     * 3. Pageview data so a report renders a chart + grid. Only top up to
+     *    E2E_PAGEVIEWS, so re-running doesn't pile up rows.
+     *
+     *    NOTE THE TRAP: this tops up, it never REWRITES. Once the site has its
+     *    full complement, seeding is a no-op and every existing row survives
+     *    verbatim -- including rows whose shape came from a since-fixed
+     *    derivation. That is not hypothetical: after is_repeat_visitor's NULL
+     *    bug was fixed, re-seeding left the two pre-fix NULL session rows in
+     *    place, and the fixture looked like it was still producing them. It was
+     *    not producing anything at all.
+     *
+     *    So: after changing anything that derives a stored property, run
+     *    `teardown` before `seed`. A seed alone proves nothing about the new
+     *    code. 'pageviews_seeded' => 0 in the output is the tell.
+     *
+     *    A PARTIAL top-up is worse than either: seedPageviews() always walks
+     *    $visits from the start and stops at $n, so topping up 2 of 8 replays
+     *    visit 0 with a fresh session id and leaves the fixture with visits the
+     *    specs don't expect. Hence the flag below -- an incomplete count means
+     *    a previous run died midway, and the fixture should be torn down, not
+     *    patched up.
+     */
     $existing = countSiteRequests(md5(E2E_SITE_DOMAIN));
     $seeded = 0;
     if ($existing < E2E_PAGEVIEWS) {
@@ -267,6 +288,16 @@ function seed(): array
 
     $out['pageviews_seeded']  = $seeded;
     $out['pageviews_total']   = countSiteRequests(md5(E2E_SITE_DOMAIN));
+
+    // Loud enough to notice when a "seed" changed nothing, or resumed a partial
+    // one. Both mean the rows on disk are not what the current code writes.
+    if ($existing > 0) {
+        $out['pageviews_note'] = $existing >= E2E_PAGEVIEWS
+            ? 'kept ' . $existing . ' existing pageview(s); nothing rewritten -- run teardown first '
+              . 'if you changed a derived property'
+            : 'resumed a PARTIAL fixture (' . $existing . ' existing); tear down and re-seed for a '
+              . 'deterministic set';
+    }
     // 4. E-commerce. The setting is per-site; enabling it is what makes the
     //    e-commerce tab appear on the session-based reports and lets the
     //    commerce reports return rows.
