@@ -120,6 +120,11 @@ final class ReportConfigEquivalenceTest extends TestCase
      * Catches the reverse of a missing file: a definition left behind by a
      * rename, which would sit there being loaded by nobody and diverging from
      * the report it looks like it belongs to.
+     *
+     * Accounted for by EITHER map. Every definition used to be a conversion, so
+     * CONVERTED was the whole ledger; an authored report has no controller to
+     * be listed against, and refusing it would have the harness forbid the
+     * thing the format is for.
      */
     public function testEveryDefinitionFileBelongsToAConvertedReport(): void
     {
@@ -131,7 +136,7 @@ final class ReportConfigEquivalenceTest extends TestCase
 
         sort( $onDisk );
 
-        $claimed = array_keys( Harness::CONVERTED );
+        $claimed = array_merge( array_keys( Harness::CONVERTED ), Harness::AUTHORED );
         sort( $claimed );
 
         $this->assertSame( $claimed, $onDisk,

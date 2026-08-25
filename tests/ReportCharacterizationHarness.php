@@ -151,6 +151,20 @@ final class ReportCharacterizationHarness
         'visits-to-purchase'        => 'ReportVisitsToPurchase',
     );
 
+    /**
+     * Definitions written as definitions, with no controller behind them.
+     *
+     * CONVERTED maps a report to the controller it replaced, which was every
+     * definition while the conversion was the only way one came to exist. It is
+     * not any more: the format exists so reports can be AUTHORED, and the first
+     * one that is has no predecessor to be equivalent to.
+     *
+     * Kept separate rather than folded in, because the two mean different
+     * things -- a converted report has a recorded standard to meet, an authored
+     * one has only its own baseline.
+     */
+    public const AUTHORED = array( 'latest-visits' );
+
     public const SENTINEL = 'characterization_sentinel';
 
     /**

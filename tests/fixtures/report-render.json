@@ -1866,6 +1866,45 @@
             "site_usage_dim.refreshGrid"
         ]
     },
+    "latest-visits": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "dimurl",
+                "query": {
+                    "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pagesPerVisit,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "30",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 1,
+            "loadsWithUrl": 0,
+            "urls": 1
+        },
+        "explorers": [
+            {
+                "var": "dim",
+                "container": "dimension-grid"
+            }
+        ],
+        "commands": [
+            "dim.refreshGrid"
+        ]
+    },
     "os": {
         "subview": "base.reportWidgets",
         "queries": [

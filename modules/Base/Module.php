@@ -2380,6 +2380,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'hosts', 'reports/hosts.json' );
         $this->registerReport( 'keyword-detail', 'reports/keyword-detail.json' );
         $this->registerReport( 'keywords', 'reports/keywords.json' );
+        $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
         $this->registerReport( 'os', 'reports/os.json' );
         $this->registerReport( 'os-detail', 'reports/os-detail.json' );
         $this->registerReport( 'page-type-detail', 'reports/page-type-detail.json' );
@@ -2447,6 +2448,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-age' ), 'Visitor Age', 5);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
 
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
