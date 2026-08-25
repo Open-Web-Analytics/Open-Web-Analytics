@@ -72,6 +72,22 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
         // check that goal type is present
         $this->addValidation('goal_type', $goal['goal_type'], 'required');
 
+        /*
+         * A renamed goal group must be given an actual name.
+         *
+         * The field is optional -- leaving it empty keeps the group's default
+         * label -- but a name of nothing but spaces is not "no rename", it is a
+         * blank label. Every goal group with an active goal becomes a metric-set
+         * tab on every tabbed report, so a blank name is an unlabelled tab
+         * across the whole reporting UI.
+         */
+        $new_group_name = (string) $this->getParam('new_goal_group_name');
+
+        if ( $new_group_name !== '' && trim( $new_group_name ) === '' ) {
+
+            $this->addValidation('new_goal_group_name', '', 'required');
+        }
+
         if ($goal['goal_type'] === 'url_destination') {
             // check that match_type is present
             $this->addValidation('match_type', $goal['details']['match_type'], 'required');
@@ -107,9 +123,16 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
         //$goal_groups = owa_coreAPI::getSiteSetting($site_id, 'goal_groups');
         $gm->saveGoal($goal['goal_number'], $goal);
 
-        if ( $this->get( 'new_goal_group_name' ) ) {
-            $gm->saveGoalGroupLabel($goal['goal_group'], $this->get( 'new_goal_group_name' ) );
-            //$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
+        /*
+         * Trimmed, and tested for length rather than truthiness: a group named
+         * "0" is falsy in PHP, so the old check discarded that rename silently
+         * and the label appeared not to save.
+         */
+        $new_group_name = trim( (string) $this->get( 'new_goal_group_name' ) );
+
+        if ( $new_group_name !== '' ) {
+
+            $gm->saveGoalGroupLabel( $goal['goal_group'], $new_group_name );
         }
 
         \OWA\Core\CoreAPI::debug('New goals: '.print_r($gm->goals,true));
