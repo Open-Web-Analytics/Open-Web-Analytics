@@ -442,4 +442,52 @@ final class CronTest extends TestCase
         $this->assertNull(\OWA\Core\Cron::previousMatch($parsed, 1789000000, 'Not/AZone'));
         $this->assertNull(\OWA\Core\Cron::nextAfter($parsed, 1789000000, 'Not/AZone'));
     }
+
+    /**
+     * `@daily` is midnight exactly, so a job that calls a third-party API on it
+     * makes every install request at the same instant -- and most servers keep
+     * UTC, so timezones do not even spread it.
+     */
+    public function testDailySpreadGivesDifferentInstallsDifferentTimes(): void
+    {
+        $a = \OWA\Core\Cron::dailySpreadFor( 'https://a.example/owa/' );
+        $b = \OWA\Core\Cron::dailySpreadFor( 'https://b.example/owa/' );
+
+        $this->assertNotSame( $a, $b );
+        $this->assertNotSame( '0 0 * * *', $a, 'the whole point is not to be midnight' );
+    }
+
+    /**
+     * ...and the SAME install keeps its time. The scheduler decides due-ness by
+     * comparing the last satisfied occurrence against the expression, so an
+     * expression that moved between runs would leave a job firing repeatedly or
+     * never being due again.
+     */
+    public function testDailySpreadIsStableForOneInstall(): void
+    {
+        $this->assertSame(
+            \OWA\Core\Cron::dailySpreadFor( 'https://a.example/owa/' ),
+            \OWA\Core\Cron::dailySpreadFor( 'https://a.example/owa/' ) );
+    }
+
+    /** It must parse as an ordinary expression, not a special case. */
+    public function testDailySpreadIsAValidExpression(): void
+    {
+        $parsed = \OWA\Core\Cron::parse( \OWA\Core\Cron::dailySpreadFor( 'seed' ) );
+
+        $this->assertIsArray( $parsed );
+    }
+
+    /** The two fields must not be correlated, or the times collapse. */
+    public function testTheSpreadActuallySpreads(): void
+    {
+        $seen = array();
+
+        for ( $i = 0; $i < 500; $i++ ) {
+            $seen[ \OWA\Core\Cron::dailySpreadFor( "install-$i" ) ] = true;
+        }
+
+        $this->assertGreaterThan( 300, count( $seen ),
+            '500 installs landing on few times would still be a spike' );
+    }
 }

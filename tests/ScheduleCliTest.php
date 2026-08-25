@@ -107,11 +107,31 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /** Only that one job ships; everything else is opt-in. */
-    public function testOnlyPartitionRotateIsRegisteredByDefault()
+    public function testTheDefaultJobsAreRegistered()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertSame(['rotate-partitions'], array_keys($jobs));
+        // Named exactly, not counted: a job appearing here means every install
+        // starts running something on a timer, which is a decision rather than
+        // a detail. fetch-notifications joined rotate-partitions when the OWA
+        // News panel stopped calling api.github.com during page renders.
+        $this->assertSame(['rotate-partitions', 'fetch-notifications'], array_keys($jobs));
+    }
+
+    /**
+     * No default job may fire at midnight.
+     *
+     * fetch-notifications calls a THIRD PARTY. `@daily` is `0 0 * * *`, so
+     * every install would call it at the same instant, and most servers keep
+     * UTC so timezones would not spread it either. Each install derives its own
+     * minute and hour from something stable about itself.
+     */
+    public function testNoJobThatCallsOutIsScheduledAtMidnight()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertNotSame('@daily', $jobs['fetch-notifications']['schedule']);
+        $this->assertNotSame('0 0 * * *', $jobs['fetch-notifications']['schedule']);
     }
 
     /** Every registered job must name a real command and parse. */

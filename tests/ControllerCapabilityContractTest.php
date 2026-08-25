@@ -91,10 +91,11 @@ final class ControllerCapabilityContractTest extends TestCase
         'FlushCacheCli',
         'InstallCli',
         'UpdatesApplyCli',
+        // Runs from the scheduler and the shell only, like the others here.
+        'NotificationsFetchCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',
-        'WidgetOwaNews',
 
         // The "your schema is out of date" notice. Core\Controller::updateAction()
         // redirects here as part of that interception, so the page has to be
