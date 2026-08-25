@@ -702,8 +702,19 @@ class CoreAPI {
         // require. The legacy name built below ('owa_base_Update011_update')
         // has not existed since the PSR-4 relocation, so resolving it first is
         // what makes updates loadable at all.
+        // Callers name the update two different ways. Module::getUpdates()
+        // passes the PSR-4 class basename it just read off disk ('Update017'),
+        // while the updatesApply CLI's apply=/rollback= arguments are written
+        // by a human as 'base.17' and arrive here as a bare sequence. Only the
+        // first resolved, so targeted apply and rollback both fell through to
+        // the legacy branch and died looking for owa_base_17_update.php -- a
+        // filename that has not existed since the PSR-4 relocation.
+        $basename = preg_match( '/^\d+$/', (string) $filename )
+            ? sprintf( 'Update%03d', (int) $filename )
+            : $filename;
+
         $namespaced = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
-                    . '\\Update\\' . $filename;
+                    . '\\Update\\' . $basename;
 
         if ( class_exists( $namespaced ) ) {
 
