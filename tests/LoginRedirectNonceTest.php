@@ -103,7 +103,7 @@ final class LoginRedirectNonceTest extends TestCase
 
         foreach ($withNonce as $name) {
             $this->assertMatchesRegularExpression(
-                '/(Add|Edit|Delete|Update|Apply|Activate|Deactivate|Install)/',
+                '/(Add|Edit|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install)/',
                 $name,
                 sprintf(
                     '%s requires a nonce but does not look like a write. If it is read-only '

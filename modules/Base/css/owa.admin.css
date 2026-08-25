@@ -55,3 +55,109 @@
     font-size: 12px;
     text-decoration: none;
 }
+/* Notifications: a bell in the header, a badge counting what is behind it, and
+   the panel that opens on click. The badge is drawn only when there is
+   something to count -- an empty circle reads as a broken feature. */
+
+.owa .owa_notificationBell {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 12px;
+}
+
+.owa .owa_notificationToggle {
+    background: none;
+    border: 0;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: inherit;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.owa .owa_notificationBadge {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    min-width: 16px;
+    padding: 1px 4px;
+    border-radius: 8px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 14px;
+    text-align: center;
+}
+
+/* [hidden] loses to the display above without this. */
+.owa .owa_notificationBadge[hidden],
+.owa .owa_notificationPanel[hidden] {
+    display: none;
+}
+
+.owa .owa_notificationPanel {
+    position: absolute;
+    top: 28px;
+    right: 0;
+    z-index: 1000;
+    width: 340px;
+    max-height: 420px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-align: left;
+}
+
+.owa .owa_notificationPanelHeader {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e5e5;
+    font-weight: bold;
+}
+
+.owa .owa_notificationItems {
+    padding: 4px 0;
+}
+
+.owa .owa_notification {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.owa .owa_notification:last-child {
+    border-bottom: 0;
+}
+
+.owa .owa_notificationMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.owa .owa_notificationDismiss {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: #707070;
+    font-size: 11px;
+    text-decoration: underline;
+}
+
+.owa .owa_notificationTitle {
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+/* Release notes carry their own newlines and run long. */
+.owa .owa_notificationBody {
+    margin-top: 4px;
+    max-height: 6em;
+    overflow: hidden;
+    color: #555;
+    font-size: 12px;
+    white-space: pre-line;
+}
