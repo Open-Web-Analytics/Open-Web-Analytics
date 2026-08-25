@@ -124,6 +124,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s19">1.9 Non-goals</a>
   <a href="#s110">1.10 The tables</a>
   <a href="#s111">1.11 The API delta</a>
+  <a href="#s112">1.12 Booleans</a>
   <a class="r-part" href="#p2">II · Additive in 1.x</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
@@ -645,7 +646,41 @@ breaks only if it names something that fell out.</p>
 <!-- ============ PART II ============ -->
 <section class="part" id="p2">
   <p class="part-n">Part Two</p>
-  <h2>Additive work in 1.x</h2>
+  <h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
+<p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact
+columns are nullable with no default, so <code>is_repeat_visitor</code> holds
+<code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a
+distinct <code>GROUP BY</code> bucket. A pie over the dimension draws two separate slices that
+both format as &ldquo;No&rdquo;, which is how this was found.</p>
+
+<p>The cause in 1.x was a derivation that returned <code>true</code> for one branch and fell off
+the end for the other (<code>setRepeatVisitorFlag</code>, unchanged since 2015). That specific
+bug is fixed, but the <em>shape</em> is the problem: nothing in the schema, the entity layer or
+the ingestion pipeline stops a write path leaving NULL in a column that has only two meanings.</p>
+
+<p>For v2:</p>
+<ul>
+<li><strong>Declare booleans NOT NULL DEFAULT 0.</strong> The storage should refuse the third
+value rather than rely on every writer remembering. 1.x cannot retrofit this cheaply — it is an
+ALTER over every install&rsquo;s session and fact tables — which is exactly why it belongs in a
+schema that is being defined rather than migrated.</li>
+<li><strong>Give the type a formatter, not each report.</strong> A boolean dimension should
+render as Yes/No wherever it is shown, from its declared type. 1.x now does this, and the same
+seam should exist in v2 rather than every widget re-solving it.</li>
+<li><strong>Let a report rename the values.</strong> Yes/No is the correct default and a poor
+label for a specific question — &ldquo;New/Repeat&rdquo; reads better on a visitor-type chart.
+1.x added a per-widget <code>valueLabels</code> map for this; keep the split, with the type
+supplying the default and the report overriding it.</li>
+<li><strong>Decide NULL&rsquo;s meaning where it is genuinely unknown.</strong> Some flags really
+do have an unknown state. Those want an explicit three-state type, not an accidental one.</li>
+</ul>
+
+<p><em>Open question:</em> whether 1.x should backfill the existing NULLs or normalise at read
+time. Reporting currently cannot express a normalised column — the dimension registry prefixes a
+table alias onto whatever it is given, so <code>COALESCE(...)</code> is not expressible as a
+dimension today.</p>
+
+<h2>Additive work in 1.x</h2>
   <p class="part-note">What ships now, reduces risk, and is inherited by v2 rather than redone.</p>
 </section>
 
