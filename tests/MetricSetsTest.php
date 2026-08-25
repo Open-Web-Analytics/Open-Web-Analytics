@@ -190,6 +190,33 @@ final class MetricSetsTest extends TestCase
         }
     }
 
+    /**
+     * The flat per-goal list the `goals` report draws its boxes from.
+     *
+     * Deliberately NOT a metric set: sets become tabs, and this is a panel
+     * inside one report. Registering it would grow a tab on every tabbed
+     * report in the install, which is the kind of change that shows up
+     * somewhere nobody was looking.
+     */
+    public function testActiveGoalCompletionsIsNotOfferedAsASet(): void
+    {
+        foreach ( \OWA\Core\MetricSets::forSite( md5( 'metric-sets-probe.example' ) ) as $key => $set ) {
+
+            $this->assertNotSame( 'activeGoalCompletions', $key );
+            $this->assertStringNotContainsString( 'activeGoalCompletions', (string) $set['metrics'] );
+        }
+    }
+
+    /**
+     * A site with no active goals yields no metrics -- not a list with a hole
+     * in it, and not the string "goalCompletions".
+     */
+    public function testASiteWithNoActiveGoalsMeasuresNoGoals(): void
+    {
+        $this->assertSame( '',
+            \OWA\Core\MetricSets::activeGoalCompletions( md5( 'metric-sets-probe.example' ) ) );
+    }
+
     /** A group with no active goals still measures visits and the total. */
     public function testAnEmptyGoalGroupIsStillUsable(): void
     {

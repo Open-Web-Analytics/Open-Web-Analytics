@@ -67,6 +67,20 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_FORMATTERS = array( 'attributionList' );
 
     /**
+     * Metric lists a widget can ask for by NAME instead of spelling out.
+     *
+     * `"metrics": "@activeGoalCompletions"` resolves per site, because the
+     * metrics only exist per site: one per goal the site has configured. A
+     * static list cannot say that, and it is the only thing standing between
+     * the goals report and being a definition like the rest.
+     *
+     * Whitelisted for the same reason formatters are -- the value reaches a
+     * query -- and kept deliberately small. A report that wants an arbitrary
+     * derived list wants a controller.
+     */
+    const KNOWN_METRIC_SOURCES = array( 'activeGoalCompletions' );
+
+    /**
      * The renderer every configured report uses.
      *
      * Fixed here rather than named by each definition. It was a definition key
@@ -183,6 +197,28 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                             $i, is_string( $formatter ) ? $formatter : gettype( $formatter ),
                             implode( ', ', self::KNOWN_FORMATTERS ) );
                     }
+                }
+            }
+
+            /*
+             * A widget may name a derived metric list rather than spell one
+             * out. Checked here so a typo is a definition error at load rather
+             * than a query for a metric named "@activeGoalCompletion".
+             */
+            if ( isset( $widget['query']['metrics'] )
+                && is_string( $widget['query']['metrics'] )
+                && strpos( $widget['query']['metrics'], '@' ) === 0 ) {
+
+                $source = substr( $widget['query']['metrics'], 1 );
+
+                if ( ! in_array( $source, self::KNOWN_METRIC_SOURCES, true ) ) {
+
+                    return sprintf(
+                        'widget %s: "%s" is not a metric source this report can resolve; it has %s',
+                        $i, $source,
+                        implode( ', ', array_map(
+                            static function ( $n ) { return '@' . $n; },
+                            self::KNOWN_METRIC_SOURCES ) ) );
                 }
             }
 
@@ -480,9 +516,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( isset( $d['widgets'] ) ) {
 
-            $this->set( 'widgets', self::interpolateDeep(
+            $this->set( 'widgets', self::resolveMetricSources( self::interpolateDeep(
                 self::resolveWidgetConstraints( (array) $d['widgets'], $constraints, $values ),
-                $values ) );
+                $values ), $this->getParam( 'siteId' ) ) );
         }
 
         $this->setTitle(
@@ -663,6 +699,63 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
                 $out[ $name ] = $site[ $name ];
             }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Replace a widget's named metric list with the site's actual metrics.
+     *
+     * A widget whose list resolves to nothing is DROPPED rather than rendered
+     * empty: asking for no metrics returns no columns, and a headed panel with
+     * no boxes in it reads as a broken report rather than as a site that has
+     * not configured any goals. The controller this replaced made the same
+     * choice with `if ($view->goal_metrics)`.
+     *
+     * @param array<int,array> $widgets
+     * @param string $siteId
+     * @return array<int,array> re-indexed, since a dropped widget leaves a hole
+     */
+    private static function resolveMetricSources( array $widgets, $siteId ) {
+
+        $out = array();
+
+        foreach ( $widgets as $widget ) {
+
+            $declared = isset( $widget['query']['metrics'] ) ? $widget['query']['metrics'] : null;
+
+            if ( ! is_string( $declared ) || strpos( $declared, '@' ) !== 0 ) {
+
+                $out[] = $widget;
+                continue;
+            }
+
+            // Dispatch on the NAME, not on "it must be the only one" -- that
+            // holds today and stops holding the moment a second source exists,
+            // silently resolving the wrong list.
+            switch ( substr( $declared, 1 ) ) {
+
+                case 'activeGoalCompletions':
+                    $metrics = \OWA\Core\MetricSets::activeGoalCompletions( $siteId );
+                    break;
+
+                default:
+                    // getDefinitionError() rejects an unknown source before a
+                    // report can be loaded, so reaching this means the
+                    // whitelist grew without a case being added for it.
+                    $metrics = '';
+                    break;
+            }
+
+            if ( $metrics === '' ) {
+
+                continue;
+            }
+
+            $widget['query']['metrics'] = $metrics;
+
+            $out[] = $widget;
         }
 
         return $out;

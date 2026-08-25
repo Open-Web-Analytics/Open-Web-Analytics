@@ -100,6 +100,39 @@ class MetricSets {
         return $sets;
     }
 
+    /**
+     * One metric per ACTIVE GOAL, flat, across every group.
+     *
+     * Not a metric set and deliberately not registered as one: sets become
+     * tabs, and this is a panel of boxes inside one report. Adding it to
+     * forSite() would grow a spurious tab on every tabbed report in the
+     * install.
+     *
+     * It is the list `goals` draws its Goal Performance boxes from, which its
+     * controller assembled inline. A site with no active goals yields an empty
+     * string -- the report drops the panel rather than asking for no metrics,
+     * which is what the controller's `if ($view->goal_metrics)` did.
+     *
+     * @param string $siteId
+     * @return string comma-separated metric names, or '' when the site has no active goals
+     */
+    public static function activeGoalCompletions( $siteId ) {
+
+        $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
+
+        $metrics = array();
+
+        foreach ( (array) $manager->getActiveGoals() as $goal ) {
+
+            if ( isset( $goal['goal_number'] ) ) {
+
+                $metrics[] = sprintf( 'goal%sCompletions', $goal['goal_number'] );
+            }
+        }
+
+        return implode( ',', $metrics );
+    }
+
     /** The set name for a goal group. */
     public static function goalGroupKey( $group ) {
 
