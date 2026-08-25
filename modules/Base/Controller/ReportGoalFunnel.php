@@ -76,7 +76,12 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
                     'siteId'      => $this->getParam( 'siteId' )
             ));
             //print_r($total_visitors_rs);
-            $total_visitors = $total_visitors_rs->aggregates->visitors;
+            // The aggregate is an object, and this is the denominator of the
+            // conversion rate at the end of the method -- the same mistake as
+            // the per-step count below, just further from where it surfaces.
+            $total_visitors = isset( $total_visitors_rs->aggregates->visitors->value )
+                ? (int) $total_visitors_rs->aggregates->visitors->value
+                : 0;
             //print "Total visits: $total_visitors";
 
             $this->set( 'total_visitors',  $total_visitors);
@@ -103,7 +108,22 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
                         'siteId'      => $this->getParam( 'siteId' )
                 ));
 
-                $visitors = $rs->aggregates->visitors ? $$rs->aggregates->visitors : 0;
+                /*
+                 * `$$rs` -- a double dollar -- was a variable variable: PHP
+                 * evaluated $rs (a stdClass), used it as a variable NAME, and
+                 * fatalled with "Object of class stdClass could not be
+                 * converted to string". So this report returned a 500 for any
+                 * goal that actually had a funnel, which is why nothing caught
+                 * it: no install had ever configured one.
+                 *
+                 * The aggregate is an object -- {value, formatted_value, ...} --
+                 * so the count has to come off `value`, and as an int: the
+                 * comparison and division below are arithmetic, and the template
+                 * prints it.
+                 */
+                $visitors = isset( $rs->aggregates->visitors->value )
+                    ? (int) $rs->aggregates->visitors->value
+                    : 0;
                 $funnel[$k]['visitors'] = $visitors;
 
                 // backfill check in case there are more visitors to this step than were at prior step.
@@ -121,7 +141,11 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
             //print_r($funnel);
 
             $goal_step = end($funnel);
-            $goal_conversion_rate = round($goal_step['visitors'] / $total_visitors, 2) * 100 . '%';
+            // A site with no visitors in the period is not an error; it is a
+            // funnel nobody entered.
+            $goal_conversion_rate = $total_visitors > 0
+                ? round( $goal_step['visitors'] / $total_visitors, 2 ) * 100 . '%'
+                : '0%';
             $this->set('goal_conversion_rate', $goal_conversion_rate);
             $this->set('funnel', $funnel);
 
