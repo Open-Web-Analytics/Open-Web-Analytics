@@ -122,15 +122,32 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
         }
 
         foreach ($goal['details']['funnel_steps'] as $num => $step) {
-            if (empty($step['name']) || empty($step['url'])) {
-                return;
+
+            /*
+             * A step with nothing in it is a row the user added and left alone,
+             * not a mistake. The constructor drops those -- but it cannot be
+             * relied on here, because Controller::__construct calls validate()
+             * BEFORE the subclass constructor body runs, so this always sees
+             * the raw submission. Same rule, applied where the decision is made.
+             */
+            if ( ! \OWA\Core\Lib::array_values_assoc( (array) $step ) ) {
+
+                continue;
             }
 
-            // check that step name is present
-            $this->addValidation('step_name_'.$num, $step['name'], 'required');
-
-            // check that step url is present
-            $this->addValidation('step_url_'.$num, $step['url'], 'required');
+            /*
+             * Anything else has at least one value, so a missing name or url is
+             * a HALF-FILLED step -- a mistake worth reporting.
+             *
+             * This used to `return` on one, which did three wrong things at
+             * once: it accepted the half-filled step silently, it skipped every
+             * later step, and it abandoned the rest of validate() with them.
+             * The two checks below were unreachable because of it, and
+             * tautological when they did run -- `required` on values the guard
+             * had already proven non-empty. They mean something now.
+             */
+            $this->addValidation('step_name_'.$num, $step['name'] ?? '', 'required');
+            $this->addValidation('step_url_'.$num, $step['url'] ?? '', 'required');
         }
     }
 
