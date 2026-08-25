@@ -166,6 +166,43 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         ).toBe(201);
         expect(call.length, 'the response body was empty').toBeGreaterThan(0);
 
+        /*
+         * The clicks actually came back.
+         *
+         * A 201 with a non-empty envelope is NOT enough: an empty result set is
+         * also a 201 with a body, so the assertions above pass just as happily
+         * when the query matched nothing. That is not hypothetical here -- the
+         * heatmap reaches clicks by JOINING to the document that owns the path,
+         * so a fixture without a real document row would answer exactly that
+         * way, and this spec would have gone green while the feature was
+         * broken.
+         */
+        expect(call.body, 'the fetch captured no body to check').toBeTruthy();
+
+        /*
+         * Asserted on the captured TEXT, not parsed: the harness records a
+         * prefix of the response, so JSON.parse would throw on a perfectly good
+         * body and report a data problem that is really a truncation.
+         *
+         * On resultsTotal, and NOT on the presence of 'clickX' or 'resultsRows'.
+         * Those strings appear in the envelope's own self/next links, which echo
+         * the request's dimensions back -- so an EMPTY result set contains every
+         * one of them, and asserting on them passes whether or not a single
+         * click was found. Verified by breaking the fixture's document row: the
+         * substring version stayed green with nothing joined.
+         */
+        const body = String(call.body);
+
+        const failure = `  body: ${body.slice(0, 600)}`;
+
+        const total = body.match(/"resultsTotal"\s*:\s*"?(\d+)/);
+
+        expect(total, `the response carried no resultsTotal\n${failure}`).not.toBeNull();
+
+        expect(Number(total[1]),
+            `the heatmap query resolved the page but matched no clicks\n${failure}`
+        ).toBeGreaterThan(0);
+
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);
     });
