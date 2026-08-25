@@ -158,6 +158,8 @@ function owa_compat_class_map(): array
         'owa_os' => 'OWA\\Module\\Base\\Entity\\Os',
         'owa_queue_item' => 'OWA\\Module\\Base\\Entity\\QueueItem',
         'owa_job_lock' => 'OWA\\Module\\Base\\Entity\\JobLock',
+        'owa_notification' => 'OWA\\Module\\Base\\Entity\\Notification',
+        'owa_notification_dismissal' => 'OWA\\Module\\Base\\Entity\\NotificationDismissal',
         'owa_scheduled_job' => 'OWA\\Module\\Base\\Entity\\ScheduledJob',
         'owa_referer' => 'OWA\\Module\\Base\\Entity\\Referer',
         'owa_request' => 'OWA\\Module\\Base\\Entity\\Request',
@@ -342,6 +344,11 @@ function owa_compat_class_map(): array
         'owa_resetSecretsCliView' => 'OWA\\Module\\Base\\View\\ResetSecretsCli',
         'owa_siteAddAllowedUserRestController' => 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',
         'owa_siteAddAllowedUserRestView' => 'OWA\\Module\\Base\\View\\SiteAddAllowedUserRest',
+        'owa_notificationsRestController' => 'OWA\\Module\\Base\\Controller\\NotificationsRest',
+        'owa_notificationsRestView' => 'OWA\\Module\\Base\\View\\NotificationsRest',
+        'owa_notificationDismissRestController' => 'OWA\\Module\\Base\\Controller\\NotificationDismissRest',
+        'owa_notificationDismissRestView' => 'OWA\\Module\\Base\\View\\NotificationDismissRest',
+        'owa_notificationsFetchCliController' => 'OWA\\Module\\Base\\Controller\\NotificationsFetchCli',
         'owa_sitesRestController' => 'OWA\\Module\\Base\\Controller\\SitesRest',
         'owa_sitesRestView' => 'OWA\\Module\\Base\\View\\SitesRest',
         'owa_usersRestController' => 'OWA\\Module\\Base\\Controller\\UsersRest',
@@ -426,8 +433,6 @@ function owa_compat_class_map(): array
         'owa_overlayLauncherView' => 'OWA\\Module\\Base\\View\\OverlayLauncher',
         'owa_passwordResetFormController' => 'OWA\\Module\\Base\\Controller\\PasswordResetForm',
         'owa_passwordResetFormView' => 'OWA\\Module\\Base\\View\\PasswordResetForm',
-        'owa_reportDashboardController' => 'OWA\\Module\\Base\\Controller\\ReportDashboard',
-        'owa_reportDashboardView' => 'OWA\\Module\\Base\\View\\ReportDashboard',
         'owa_reportDocumentController' => 'OWA\\Module\\Base\\Controller\\ReportDocument',
         'owa_reportDocumentView' => 'OWA\\Module\\Base\\View\\ReportDocument',
         'owa_reportDomstreamsController' => 'OWA\\Module\\Base\\Controller\\ReportDomstreams',
@@ -470,8 +475,6 @@ function owa_compat_class_map(): array
         'owa_usersResetPasswordView' => 'OWA\\Module\\Base\\View\\UsersResetPassword',
         'owa_usersSetPasswordController' => 'OWA\\Module\\Base\\Controller\\UsersSetPassword',
         'owa_usersSetPasswordView' => 'OWA\\Module\\Base\\View\\UsersSetPassword',
-        'owa_widgetOwaNewsController' => 'OWA\\Module\\Base\\Controller\\WidgetOwaNews',
-        'owa_widgetOwaNewsView' => 'OWA\\Module\\Base\\View\\WidgetOwaNews',
 
         // modules/base flat pages — EDGE cases (Phase 6 stage 3):
         // report.php (owa_reportView + 3 dimensional subviews) and the

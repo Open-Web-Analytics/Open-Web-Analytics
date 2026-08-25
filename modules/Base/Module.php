@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 17;
+        $this->required_schema_version = 18;
         return parent::__construct();
     }
 
@@ -621,7 +621,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
-        $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
         $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
@@ -647,6 +646,9 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesRest',                     'OWA\\Module\\Base\\Controller\\SitesRest',                    'Controller/SitesRest.php' );
         $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates',                      'Controller/Updates.php' );
         $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply',                 'Controller/UpdatesApply.php' );
+        $this->registerAction( 'base.notificationsRest',              'OWA\\Module\\Base\\Controller\\NotificationsRest',           'Controller/NotificationsRest.php' );
+        $this->registerAction( 'base.notificationDismissRest',       'OWA\\Module\\Base\\Controller\\NotificationDismissRest',    'Controller/NotificationDismissRest.php' );
+        $this->registerAction( 'base.notificationsFetchCli',        'OWA\\Module\\Base\\Controller\\NotificationsFetchCli',       'Controller/NotificationsFetchCli.php' );
         $this->registerAction( 'base.updatesApplyCli',               'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',              'Controller/UpdatesApplyCli.php' );
         $this->registerAction( 'base.users',                         'OWA\\Module\\Base\\Controller\\Users',                        'Controller/Users.php' );
         $this->registerAction( 'base.usersAdd',                      'OWA\\Module\\Base\\Controller\\UsersAdd',                     'Controller/UsersAdd.php' );
@@ -659,7 +661,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );
         $this->registerAction( 'base.usersRest',                     'OWA\\Module\\Base\\Controller\\UsersRest',                    'Controller/UsersRest.php' );
         $this->registerAction( 'base.usersSetPassword',              'OWA\\Module\\Base\\Controller\\UsersSetPassword',             'Controller/UsersSetPassword.php' );
-        $this->registerAction( 'base.widgetOwaNews',                 'OWA\\Module\\Base\\Controller\\WidgetOwaNews',                'Controller/WidgetOwaNews.php' );
     }
 
     /**
@@ -671,6 +672,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
+        $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
@@ -725,6 +727,36 @@ class Module extends \OWA\Core\Module {
         // on. ScheduleCliTest pins the empty array for exactly that reason.
         $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
 
+        /*
+         * Daily is the right cadence for release announcements: they are not
+         * urgent, and the endpoint is rate limited per IP. Nothing renders from
+         * the network any more, so a missed run costs a day's freshness rather
+         * than a broken dashboard.
+         *
+         * NOT '@daily'. That is `0 0 * * *` -- midnight exactly -- so every
+         * install running this job would call api.github.com at the same
+         * instant, and most servers keep UTC, so timezones would not even
+         * spread it. GitHub cannot tell that from an attack. Each install
+         * derives its own minute and hour instead, and keeps it.
+         *
+         * The seed must be stable and install-specific. public_url is both, and
+         * the fallbacks matter: an install that has not been configured yet has
+         * no public_url, and seeding every one of those from the same empty
+         * string would put exactly the installs most likely to share an image
+         * back on the same minute. The directory path differs per install even
+         * then.
+         */
+        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+
+        if ( $seed === '' ) {
+
+            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
+        }
+
+        $this->registerJob(
+            'fetch-notifications', 'fetch-notifications',
+            \OWA\Core\Cron::dailySpreadFor( $seed ), array() );
+
         // NOT registering update-ua-regexes here, deliberately.
         //
         // It would fit -- the patterns go stale on their own and monthly is
@@ -751,6 +783,8 @@ class Module extends \OWA\Core\Module {
         $this->registerRestApiRoute( 'v1', 'users', 'POST', 'OWA\\Module\\Base\\Controller\\AddUserRest', 'Controller/AddUserRest.php' );
 		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', 'Controller/DeleteUserRest.php', [ 'params_order' => ['user_id'] ] );
 		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest', 'Controller/SiteAddAllowedUserRest.php' );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest', 'Controller/NotificationsRest.php' );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
     }
 
@@ -2361,7 +2395,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'country-detail', 'reports/country-detail.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
-        $this->registerReport( 'dashboard', array( 'controller' => 'base.reportDashboard' ) );
+        $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', array( 'controller' => 'base.reportDocument' ) );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
@@ -2620,6 +2654,8 @@ class Module extends \OWA\Core\Module {
                 'commerce_line_item_fact',
                 'queue_item',
                 'scheduled_job',
+                'notification',
+                'notification_dismissal',
                 'job_lock',
                 'site_user')
             );
