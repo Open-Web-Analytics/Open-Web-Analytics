@@ -42,7 +42,16 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
 
         $goal = $this->getParam('goal');
 
-        foreach ($goal['details']['funnel_steps'] as $num => $step) {
+        /*
+         * Only a funnel goal has steps, and most goals are not funnel goals, so
+         * the key is legitimately absent far more often than it is present.
+         * Iterating it unguarded warned on every ordinary goal save -- invisible
+         * on an install that does not surface warnings, and a hard failure under
+         * the suite's failOnWarning.
+         */
+        $funnel_steps = $goal['details']['funnel_steps'] ?? null;
+
+        foreach ( is_array( $funnel_steps ) ? $funnel_steps : array() as $num => $step ) {
             $check = \OWA\Core\Lib::array_values_assoc($step);
             if (!empty($check)) {
                 $step['step_number'] = $num;
