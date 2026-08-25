@@ -78,33 +78,6 @@
             }
         },
         {
-            "type": "grid",
-            "id": "pagevisitors",
-            "container": "pagevisitors",
-            "title": "Visitors",
-            "query": {
-                "metrics": "visits,pageViews",
-                "dimensions": "visitorId",
-                "sort": "visits-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "pagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "visitorId",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "visitor",
-                    "visitorId": "%s"
-                },
-                "valueColumns": "visitorId"
-            }
-        },
-        {
             "type": "heatmap-link",
             "id": "heatmap",
             "container": "heatmap-link",

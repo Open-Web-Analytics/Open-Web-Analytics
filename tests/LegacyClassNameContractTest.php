@@ -60,6 +60,19 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        // RETIRED 2026-08-25: the visitor-detail family. visitors became a
+        // report definition; visit, visits, visitors-roster and visitor were
+        // dropped -- nothing linked to them and none was in the navigation.
+        'owa_reportVisitorsController',
+        'owa_reportVisitorsView',
+        'owa_reportVisitorController',
+        'owa_reportVisitorView',
+        'owa_reportVisitController',
+        'owa_reportVisitView',
+        'owa_reportVisitsController',
+        'owa_reportVisitsView',
+        'owa_reportVisitorsRosterController',
+        'owa_reportVisitorsRosterView',
         // RETIRED 2026-08-25: document became a report definition. Its card was
         // dropped and the rest models as widgets.
         'owa_reportDocumentController',

@@ -1475,23 +1475,6 @@
                     "sort": "visits-",
                     "version": "v1"
                 }
-            },
-            {
-                "var": "pagevisitorsurl",
-                "query": {
-                    "constraints": "pagePath==characterization_sentinel",
-                    "dimensions": "visitorId",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits,pageViews",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "resultsPerPage": "15",
-                    "siteId": "1",
-                    "sort": "visits-",
-                    "version": "v1"
-                }
             }
         ],
         "control": {
@@ -1499,9 +1482,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 4,
+            "loads": 3,
             "loadsWithUrl": 0,
-            "urls": 4
+            "urls": 3
         },
         "explorers": [
             {
@@ -1515,10 +1498,6 @@
             {
                 "var": "nextpages",
                 "container": "nextpages"
-            },
-            {
-                "var": "pagevisitors",
-                "container": "pagevisitors"
             }
         ],
         "commands": [
@@ -1526,8 +1505,7 @@
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "priorpages.refreshGrid",
-            "nextpages.refreshGrid",
-            "pagevisitors.refreshGrid"
+            "nextpages.refreshGrid"
         ]
     },
     "dom-clicks": {
@@ -3675,6 +3653,88 @@
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "transactions.refreshGrid"
+        ]
+    },
+    "visitors": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "trendurl",
+                "query": {
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "latestVisitsurl",
+                "query": {
+                    "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pagesPerVisit,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "browserTypesurl",
+                "query": {
+                    "dimensions": "browserType",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 3,
+            "loadsWithUrl": 0,
+            "urls": 3
+        },
+        "explorers": [
+            {
+                "var": "trend",
+                "container": "trend-chart"
+            },
+            {
+                "var": "latestVisits",
+                "container": "latest-visits"
+            },
+            {
+                "var": "browserTypes",
+                "container": "top-browsers"
+            }
+        ],
+        "commands": [
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "latestVisits.refreshGrid",
+            "browserTypes.refreshGrid"
         ]
     },
     "visitors-age": {

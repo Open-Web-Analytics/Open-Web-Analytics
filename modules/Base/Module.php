@@ -632,11 +632,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
         $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
-        $this->registerAction( 'base.reportVisit',                   'OWA\\Module\\Base\\Controller\\ReportVisit',                  'Controller/ReportVisit.php' );
-        $this->registerAction( 'base.reportVisitor',                 'OWA\\Module\\Base\\Controller\\ReportVisitor',                'Controller/ReportVisitor.php' );
-        $this->registerAction( 'base.reportVisitors',                'OWA\\Module\\Base\\Controller\\ReportVisitors',               'Controller/ReportVisitors.php' );
-        $this->registerAction( 'base.reportVisitorsRoster',          'OWA\\Module\\Base\\Controller\\ReportVisitorsRoster',         'Controller/ReportVisitorsRoster.php' );
-        $this->registerAction( 'base.reportVisits',                  'OWA\\Module\\Base\\Controller\\ReportVisits',                 'Controller/ReportVisits.php' );
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
@@ -2484,14 +2479,10 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transaction-detail', array( 'controller' => 'base.reportTransactionDetail' ) );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
-        $this->registerReport( 'visit', array( 'controller' => 'base.reportVisit' ) );
-        $this->registerReport( 'visitor', array( 'controller' => 'base.reportVisitor' ) );
-        $this->registerReport( 'visitors', array( 'controller' => 'base.reportVisitors' ) );
+        $this->registerReport( 'visitors', 'reports/visitors.json' );
         $this->registerReport( 'visitors-age', 'reports/visitors-age.json' );
         $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
         $this->registerReport( 'visitors-recency', 'reports/visitors-recency.json' );
-        $this->registerReport( 'visitors-roster', array( 'controller' => 'base.reportVisitorsRoster' ) );
-        $this->registerReport( 'visits', array( 'controller' => 'base.reportVisits' ) );
         $this->registerReport( 'visits-to-purchase', 'reports/visits-to-purchase.json' );
     }
 

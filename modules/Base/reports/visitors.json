@@ -1,0 +1,79 @@
+{
+    "title": "Visitors",
+    "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "colspan": 12,
+            "chartMetric": "uniqueVisitors",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {uniqueVisitors.formatted} {uniqueVisitors|visitor|visitors} to this web site."
+        },
+        {
+            "type": "grid",
+            "id": "latestVisits",
+            "container": "latest-visits",
+            "title": "Latest Visits",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits,pagesPerVisit,visitDuration",
+                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "more": {
+                "reportId": "latest-visits"
+            }
+        },
+        {
+            "type": "report-links",
+            "id": "visitorReports",
+            "title": "Visitor Reports",
+            "colspan": 6,
+            "links": [
+                {
+                    "reportId": "visitors-loyalty",
+                    "label": "Visitor Loyalty",
+                    "description": "See how long ago your visitors first came to your web site."
+                },
+                {
+                    "reportId": "geolocation",
+                    "label": "Geo-location",
+                    "description": "See which parts of the world your visitors are coming from."
+                },
+                {
+                    "reportId": "hosts",
+                    "label": "Domains",
+                    "description": "See which Networks or Internet hosts your visitors are coming from."
+                }
+            ]
+        },
+        {
+            "type": "grid",
+            "id": "browserTypes",
+            "container": "top-browsers",
+            "title": "Browser Types",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits",
+                "dimensions": "browserType",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "link": {
+                "linkColumn": "browserType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "browser-detail",
+                    "browserType": "%s"
+                },
+                "valueColumns": "browserType"
+            }
+        }
+    ]
+}

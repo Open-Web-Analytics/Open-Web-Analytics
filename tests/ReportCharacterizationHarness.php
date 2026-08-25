@@ -27,19 +27,8 @@ final class ReportCharacterizationHarness
      * note), so none of these is a report the harness needs to protect.
      */
     private const PREFETCHING = array(
-        'ReportDocument', 'ReportDomstreams',
+        'ReportDomstreams',
         'ReportGoalFunnel',
-        'ReportVisit', 'ReportVisitor', 'ReportVisitors', 'ReportVisits',
-
-        /*
-         * Found by this harness rather than by reading the code: it reads two
-         * request parameters and puts neither into its configuration, because
-         * it builds a raw SQL query with the db singleton and hands the rows to
-         * a template. An earlier classification counted it as a parameterised
-         * config report on the strength of those getParam() calls, which is
-         * what a source-level heuristic sees.
-         */
-        'ReportVisitorsRoster',
 
         /*
          * Also found by running it rather than reading it: it fetches a
@@ -98,6 +87,7 @@ final class ReportCharacterizationHarness
         'action-tracking'           => 'ReportActionTracking',
         'attribution-history'       => 'ReportAttributionHistory',
         'document'                  => 'ReportDocument',
+        'visitors'                  => 'ReportVisitors',
         'dom-clicks'                => 'ReportDomClicks',
         'campaigns'                 => 'ReportCampaigns',
         'referral-detail'           => 'ReportReferralDetail',

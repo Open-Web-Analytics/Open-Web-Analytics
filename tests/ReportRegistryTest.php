@@ -142,8 +142,8 @@ final class ReportRegistryTest extends TestCase
         // snapshot; this is the coverage they get instead.
         return array(
             'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
-            'prefetching'    => array( 'visitors',   '\OWA\Module\Base\Controller\ReportVisitors' ),
-            'visit'          => array( 'visit',      '\OWA\Module\Base\Controller\ReportVisit' ),
+            'prefetching'    => array( 'goal-funnel', '\OWA\Module\Base\Controller\ReportGoalFunnel' ),
+            'entity detail'  => array( 'transaction-detail', '\OWA\Module\Base\Controller\ReportTransactionDetail' ),
         );
     }
 

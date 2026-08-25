@@ -60,11 +60,10 @@ final class ReportChromeContractTest extends TestCase
         //
         // The remaining bespoke reports are not interchangeable here. This
         // provider supplies a SENTINEL for every parameter a report reads, so
-        // one that reads `period`/`startDate`/`endDate` (ReportDashboard,
-        // ReportVisitors) loses the very chrome under test, and one that reads
+        // one that reads `period`/`startDate`/`endDate` (ReportDashboard) loses the very chrome under test, and one that reads
         // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
         // kinds, chosen because they survive a sentinel.
-        foreach ( array( 'ReportTransactionDetail', 'ReportVisitorsRoster' ) as $name ) {
+        foreach ( array( 'ReportTransactionDetail' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
 
@@ -195,9 +194,9 @@ final class ReportChromeContractTest extends TestCase
     {
         // A bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportVisitorsRoster( array() ) )->doAction();
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportTransactionDetail( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'visitors-roster' ) ) )->doAction();
+            array( 'reportId' => 'transaction-detail' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -264,10 +263,10 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportVisitorsRoster(
-            array( 'do' => 'base.reportVisitorsRoster' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportTransactionDetail(
+            array( 'do' => 'base.reportTransactionDetail' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportVisitorsRoster', $data['dom_id'] );
+        $this->assertSame( 'base-reportTransactionDetail', $data['dom_id'] );
     }
 
     /**
