@@ -54,6 +54,11 @@ beforeAll(() => {
 
     require('jquery-ui-dist/jquery-ui.js');
 
+    // The control renders its markup with jQote2 (jqoteapp), the same plugin
+    // reporting-entry.js loads in the browser. Without it the control cannot be
+    // built at all, and this file could only ever test the formatter.
+    require('../../modules/Base/src/reporting/v1/includes/jquery/jQote2/jquery.jqote2.js');
+
     const src = require('fs').readFileSync(
         require('path').join(__dirname, '..', '..',
             'modules/Base/src/reporting/v1/owa.report.js'), 'utf8');
@@ -145,6 +150,142 @@ describe('the year survives the round trip', () => {
 
             expect(parse(formatYyyymmdd(yyyymmdd)).getFullYear()).toBe(year);
         }
+    });
+});
+
+/**
+ * The widget itself, not just the formatter.
+ *
+ * The formatter round trip above was necessary and not sufficient: the calendars
+ * are INLINE, and defaultDate only decides which month opens on an empty field
+ * -- it never selects a date. So both calendars sat with nothing selected,
+ * highlighting today, whatever period was named beside them. A test that only
+ * checked the string could not see that, which is why this drives the control.
+ */
+describe('the control selects the period on both calendars', () => {
+
+    function build(start, end) {
+
+        document.body.innerHTML = '<div id="owa_reportPeriodLabelContainer"></div>';
+
+        return new OWA.report.timePeriodControl('#owa_reportPeriodLabelContainer', {
+            startDate: start,
+            endDate: end,
+            selectedPeriod: 'date_range',
+        });
+    }
+
+    function selected(id) {
+        return $('#' + id).datepicker('getDate');
+    }
+
+    test.each(PERIODS)('%s', (period, start, end) => {
+
+        build(start, end);
+
+        const gotStart = selected('owa_report-datepicker-start');
+        const gotEnd = selected('owa_report-datepicker-end');
+
+        // Null here means nothing is selected, which is the bug: an inline
+        // calendar with no date just highlights today.
+        expect(gotStart).not.toBeNull();
+        expect(gotEnd).not.toBeNull();
+
+        expect(asYyyymmdd(gotStart)).toBe(start);
+        expect(asYyyymmdd(gotEnd)).toBe(end);
+    });
+
+    test.each(PERIODS)('%s: the end calendar is not before the start', (period, start, end) => {
+
+        build(start, end);
+
+        expect(selected('owa_report-datepicker-end').getTime())
+            .toBeGreaterThanOrEqual(selected('owa_report-datepicker-start').getTime());
+    });
+
+    /**
+     * The two calendars constrain each other from the start, rather than only
+     * once something is clicked -- which is how an end could be chosen before
+     * its own start.
+     */
+    test('the calendars bound each other on load', () => {
+
+        build('20260727', '20260825');
+
+        const minOfEnd = $('#owa_report-datepicker-end').datepicker('option', 'minDate');
+        const maxOfStart = $('#owa_report-datepicker-start').datepicker('option', 'maxDate');
+
+        // Absent means the calendars do not bound each other at all.
+        expect(minOfEnd).toBeTruthy();
+        expect(maxOfStart).toBeTruthy();
+
+        expect(asYyyymmdd(new Date(minOfEnd))).toBe('20260727');
+        expect(asYyyymmdd(new Date(maxOfStart))).toBe('20260825');
+    });
+
+    /** A missing date must not take the picker down. */
+    test('an absent date leaves the calendar empty rather than throwing', () => {
+
+        expect(() => build('', '')).not.toThrow();
+    });
+});
+
+/**
+ * Choosing specific dates means the report is no longer on a named period, so
+ * the predefined-period menu must stop claiming otherwise. It is the control a
+ * reader looks at to know what they are seeing, and leaving "Last Thirty Days"
+ * selected beside a custom range says something untrue.
+ */
+describe('the predefined period menu gives way to a custom range', () => {
+
+    function build(period) {
+
+        document.body.innerHTML = '<div id="owa_reportPeriodLabelContainer"></div>';
+
+        return new OWA.report.timePeriodControl('#owa_reportPeriodLabelContainer', {
+            startDate: '20260727',
+            endDate: '20260825',
+            selectedPeriod: period,
+        });
+    }
+
+    const PLACEHOLDER = 'Select...';
+
+    test('a named period starts out selected in the menu', () => {
+
+        build('last_thirty_days');
+
+        expect($('#owa_reportPeriodFilter').val()).not.toBe(PLACEHOLDER);
+    });
+
+    test('applying a date range returns the menu to its placeholder', () => {
+
+        const control = build('last_thirty_days');
+
+        control.clearFixedPeriodSelection();
+
+        expect($('#owa_reportPeriodFilter').val()).toBe(PLACEHOLDER);
+    });
+
+    test('clicking a day on a calendar returns the menu to its placeholder', () => {
+
+        build('last_thirty_days');
+
+        // Drive the calendar's own handler, which is what a click reaches.
+        const onSelect = $('#owa_report-datepicker-start').datepicker('option', 'onSelect');
+
+        expect(typeof onSelect).toBe('function');
+
+        onSelect.call($('#owa_report-datepicker-start')[0], '07-29-2026');
+
+        expect($('#owa_reportPeriodFilter').val()).toBe(PLACEHOLDER);
+    });
+
+    test('the placeholder is the first option, so it can be selected by index', () => {
+
+        build('last_thirty_days');
+
+        expect($('#owa_reportPeriodFilter option').first().text().trim()).toBe(PLACEHOLDER);
     });
 });
 
