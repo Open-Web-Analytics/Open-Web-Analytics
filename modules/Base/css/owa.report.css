@@ -499,10 +499,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding-bottom:5px;
 }
 
-.owa .funnel .funnelStepUrl {
+.owa .funnel .funnelStepPath {
 
     font-size:12px;
-    font-weight:;
     color: #707070;
     padding-bottom:5px;
 }

@@ -26,7 +26,7 @@
         <td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $view->out($step['step_number']);?>">
             <div class="funnelStepName">Step <?php $view->out($step['step_number']);?>: <?php $view->out($step['name']);?></div>
             <div class="funnelStepCount"><?php $view->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
-            <div class="funnelStepUrl"><?php $view->out($step['path']);?></div>
+            <div class="funnelStepPath"><?php $view->out($step['path']);?></div>
             <div class="genericHorizontalList" style="padding-top:10px;font-size:12px;">
                 <ul class="">
 
