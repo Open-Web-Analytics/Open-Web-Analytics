@@ -176,6 +176,35 @@ class ResultSetManager extends \OWA\Core\Base {
                     continue;
                 }
 
+                /*
+                 * A name that resolves to nothing is refused for the same
+                 * reason, and reported here rather than where the constraint is
+                 * applied: applyConstraint() runs once for the result set and
+                 * again for the aggregates, so the same misspelling would be
+                 * reported twice.
+                 *
+                 * It used to fall through applyConstraint() doing nothing, so
+                 * the query ran WITHOUT that filter and answered with the
+                 * unconstrained total -- the identical failure the check above
+                 * exists to stop, differing only in cause: a misspelled name
+                 * rather than a lost value. Measured before this,
+                 * `bogusDimension==direct` returned exactly what no constraint
+                 * at all returned, while a valid name matching nothing
+                 * correctly returned none.
+                 */
+                if ( ! $this->isDimension( $constraint['name'] )
+                     && ! $this->isMetric( $constraint['name'] ) ) {
+
+                    $this->addError( sprintf(
+                        '"%s" is not a dimension or a metric, so it cannot be constrained '
+                        . 'on. Refusing to run the query unconstrained -- an unknown name '
+                        . 'is not a request for everything.',
+                        $constraint['name']
+                    ) );
+
+                    continue;
+                }
+
                 $this->setConstraint($constraint['name'], $constraint['value'], $constraint['operator']);
             }
         }
