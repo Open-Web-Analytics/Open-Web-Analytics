@@ -69,6 +69,57 @@ final class GoalGroupNameTest extends TestCase
         $this->assertFalse( $this->refuses( '0' ) );
     }
 
+    /**
+     * A goal with no funnel steps validates cleanly.
+     *
+     * Only a funnel goal has steps, so this is the ordinary case. It used to
+     * warn three times -- undefined "details", an offset on null, then foreach
+     * over null -- because validate()'s guard was INVERTED: it returned when
+     * the steps were present and fell through into the loop when they were not.
+     *
+     * Invisible on a configured install, whose error handler swallows warnings;
+     * a hard failure in CI, which runs configless under failOnWarning.
+     *
+     * Un-inverting it also makes the two step validations below reachable for
+     * the first time. That changes no outcome: they assert `required` on values
+     * the loop has already required to be non-empty, so they cannot fail. The
+     * funnel steps are effectively unvalidated either way -- worth its own fix,
+     * not this one.
+     */
+    public function testAGoalWithNoFunnelStepsValidatesCleanly(): void
+    {
+        $this->assertFalse( $this->refuses( 'Signups' ),
+            'an ordinary goal has no steps, and that is not an error' );
+    }
+
+    public function testAFunnelGoalWithCompleteStepsValidatesCleanly(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OptionsGoalEdit( array(
+            'goal' => array(
+                'goal_number' => '1',
+                'goal_status' => 'active',
+                'goal_group'  => '1',
+                'goal_type'   => 'url_destination',
+                'details'     => array(
+                    'match_type'   => 'begins',
+                    'goal_url'     => '/thanks',
+                    'funnel_steps' => array(
+                        1 => array( 'name' => 'Step one', 'url' => '/a' ),
+                    ),
+                ),
+            ),
+        ) );
+
+        $controller->validate();
+
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+        $validator = $v->getValue( $controller );
+        $validator->doValidations();
+
+        $this->assertFalse( (bool) $validator->hasErrors );
+    }
+
     public function testAnOrdinaryNameIsAccepted(): void
     {
         $this->assertFalse( $this->refuses( 'Signups' ) );

@@ -105,7 +105,19 @@ class OptionsGoalEdit extends \OWA\Core\AdminController {
             $this->addValidation('goal_url', $goal['details']['goal_url'], 'required');
         }
 
-        if (isset($goal['details']['funnel_steps'])) {
+        /*
+         * Inverted: this returned when the steps WERE present and fell through
+         * into the loop when they were not. So a funnel goal returned before
+         * its steps were ever checked -- the two validations below have been
+         * unreachable -- and an ordinary goal, which has no steps at all,
+         * iterated null and warned.
+         *
+         * Only a funnel goal has steps, so having none is the normal case and
+         * simply means there is nothing further to validate.
+         */
+        if ( ! isset( $goal['details']['funnel_steps'] )
+            || ! is_array( $goal['details']['funnel_steps'] ) ) {
+
             return;
         }
 
