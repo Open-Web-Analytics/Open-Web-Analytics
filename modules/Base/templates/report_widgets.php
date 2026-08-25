@@ -131,7 +131,22 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
      * itself. A metric box renders its label inside the box, above the number,
      * so the generic header would print the same name twice.
      */
-    $owa_ownsTitle = in_array( $owa_w['type'] ?? '', array( 'metric-boxes' ), true );
+    /*
+     * A metric box renders its label INSIDE the box, above the number, so a
+     * metric-boxes widget normally keeps its title for that and the generic
+     * section header is suppressed -- otherwise the same name prints twice.
+     * `traffic` is that case three times over: three widgets, one metric each,
+     * each title naming the metric it measures.
+     *
+     * `showTitle: true` says the title is a SECTION HEADING instead. `goals`
+     * needs it: its panel draws one box per goal the site has configured, and
+     * labelling every box "Goal Performance" would say nothing about which
+     * goal. Declared rather than inferred from the metric count -- a site with
+     * exactly one goal resolves to exactly one metric, so counting cannot tell
+     * a panel from a box.
+     */
+    $owa_ownsTitle = ( $owa_w['type'] ?? '' ) === 'metric-boxes'
+        && empty( $owa_w['showTitle'] );
 
     $owa_showTitle = ! $owa_ownsTitle
         && ! empty( $owa_w['title'] )
@@ -223,7 +238,8 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
             // The label sits inside the box; see $owa_ownsTitle above. Encoded
             // rather than quoted -- it is prose and may carry an apostrophe.
         ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo json_encode( (string) ( $owa_w['title'] ?? '' ) ); ?>]);
+        <?php // Only a single-metric widget lends its title to the box; see $owa_ownsTitle. ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo json_encode( $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ); ?>]);
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
