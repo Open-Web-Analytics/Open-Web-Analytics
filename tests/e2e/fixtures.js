@@ -50,6 +50,19 @@ const FIXTURE = {
         refererHost: 'news.ycombinator.com',
         mediums: { 'organic-search': 2, referral: 1, direct: 1 },
     },
+    // The goal + funnel seeded by seed_reporting_fixtures.php. Its step paths
+    // are ones the pageview fixture already visits, so every stage of the
+    // funnel has real visitors -- including `destination`, which the report
+    // appends as the funnel's last bar from the goal's own goal_url.
+    goal: {
+        number: 1,
+        name: 'E2E Signup Funnel',
+        steps: [
+            { name: 'E2E Step Home', path: '/' },
+            { name: 'E2E Step Pricing', path: '/pricing' },
+        ],
+        destination: '/docs',
+    },
     // The always-present optional module the module-activation test toggles.
     toggleModule: 'hello',
 };

@@ -68,6 +68,24 @@ const E2E_TXNS = [
     ]],
 ];
 
+// Goal + funnel fixture. Goals are a PER-SITE setting, and until this existed no
+// install on the box had a single funnel step -- so nothing exercised
+// ReportGoalFunnel's step loop, and a rename that broke its final bar shipped
+// unnoticed.
+//
+// The paths are ones the pageview fixture already visits, so every stage has
+// real visitors: '/' and '/pricing' appear in two pageviews each, and '/docs'
+// -- the goal's own destination, which the report appends as the last bar -- in
+// two more. A funnel whose stages are all zero would render and prove nothing.
+const E2E_GOAL_NUMBER = 1;
+const E2E_GOAL_NAME   = 'E2E Signup Funnel';
+const E2E_GOAL_GROUP  = '1';
+const E2E_GOAL_URL    = '/docs';
+const E2E_GOAL_STEPS  = [
+    1 => ['name' => 'E2E Step Home',    'path' => '/',        'is_required' => true],
+    2 => ['name' => 'E2E Step Pricing', 'path' => '/pricing', 'is_required' => true],
+];
+
 // A second fixture user with the ADMIN role, so the admin-actions e2e suite
 // (tests/e2e/admin-actions.spec.js) can drive the write flows that need
 // edit_users / edit_sites / edit_settings / edit_modules capabilities. The
@@ -235,8 +253,58 @@ function seed(): array
     owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting', true);
     $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting');
     $out['transactions_seeded'] = seedTransactions();
+
+    // 5. A goal with a funnel, so the funnel report has stages to draw and the
+    //    goal metric set has a group to appear as.
+    $out['goal_seeded'] = seedGoal();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * One active url_destination goal with a two-step funnel.
+ *
+ * Shaped the way GoalManager reads it: keyed by goal number, `goal_status`
+ * active so it reaches activeGoals, and `goal_group` set so the group becomes a
+ * metric set. Steps carry `path` -- the key every consumer reads since the
+ * rename -- and `is_required` as a real boolean, because the funnel report
+ * tests it with ===.
+ */
+function seedGoal(): array
+{
+    $steps = [];
+
+    foreach (E2E_GOAL_STEPS as $n => $step) {
+        $steps[$n] = $step + ['step_number' => $n];
+    }
+
+    $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+
+    $goals[E2E_GOAL_NUMBER] = [
+        'goal_number' => E2E_GOAL_NUMBER,
+        'goal_name'   => E2E_GOAL_NAME,
+        'goal_status' => 'active',
+        'goal_group'  => E2E_GOAL_GROUP,
+        'goal_type'   => 'url_destination',
+        'details'     => [
+            'match_type'   => 'exact',
+            'goal_url'     => E2E_GOAL_URL,
+            'funnel_steps' => $steps,
+        ],
+    ];
+
+    owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+
+    $stored = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+    $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
+
+    return [
+        'goal_number' => E2E_GOAL_NUMBER,
+        'steps'       => count($back),
+        'paths'       => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
+        'goal_url'    => E2E_GOAL_URL,
+    ];
 }
 
 function teardown(): array
@@ -281,6 +349,29 @@ function teardown(): array
         } catch (\Throwable $e) {}
     }
     $removed['owa_referer'] = 'fixture rows cleared';
+
+    /*
+     * The fixture goal. Goals are a per-site SETTING, not rows, so the table
+     * loop above cannot reach it -- and a goal left behind keeps converting
+     * against real traffic and keeps its group showing as a metric-set tab on
+     * every tabbed report.
+     *
+     * Only this goal number is removed: an install may have its own goals in
+     * other slots, and clearing the setting wholesale would take them too.
+     */
+    try {
+        $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+
+        if (array_key_exists(E2E_GOAL_NUMBER, $goals)) {
+            unset($goals[E2E_GOAL_NUMBER]);
+            owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+            $removed['goal'] = 'fixture goal removed';
+        } else {
+            $removed['goal'] = 'none';
+        }
+    } catch (\Throwable $e) {
+        $removed['goal'] = 'skip: ' . $e->getMessage();
+    }
 
     // Remove the site_user grant (keyed by internal ids), then the user & site.
     try {
