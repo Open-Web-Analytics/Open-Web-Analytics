@@ -448,24 +448,115 @@ class Entity {
      * Persist new object
      *
      */
+    /**
+     * The value to WRITE for a column, resolving an unset one by its declared type.
+     *
+     * create() sets EVERY column, so a column nobody assigned goes into the
+     * INSERT explicitly. Until the PDO driver landed (#1028) that did not
+     * matter: the old driver interpolated values as quoted literals, so a PHP
+     * null became '' and MySQL -- with sql_mode empty -- coerced '' to 0 for a
+     * numeric column. Eleven years of rows were written that way.
+     *
+     * PDO binds the null instead, so the same code now stores a real NULL. On
+     * demo that flipped ~70 session columns and ~14 request columns from 0 to
+     * NULL overnight (2026-08-21), including is_repeat_visitor, every goal_N,
+     * and every commerce_*. Each distinct value is its own GROUP BY bucket, so
+     * a two-state fact started reporting as three.
+     *
+     * This restores the pre-#1028 STORED REPRESENTATION rather than inventing a
+     * new one -- the point is that old rows and new rows agree, which is what
+     * anything reading across the boundary depends on.
+     *
+     * TIMESTAMP and anything unrecognised are deliberately left NULL: the old
+     * path turned those into '0000-00-00', which is not a value worth
+     * restoring and is refused outright under STRICT_ALL_TABLES.
+     *
+     * @param string $col column name
+     * @return mixed the value to write
+     */
+    protected function writeValue( $col ) {
+
+        $value = $this->get( $col, false );
+
+        if ( $value !== null ) {
+
+            return $value;
+        }
+
+        if ( ! isset( $this->properties[ $col ] ) ) {
+
+            return $value;
+        }
+
+        $type = (string) $this->properties[ $col ]->get( 'data_type' );
+
+        // Numeric: '' coerced to 0 under the old driver.
+        if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
+
+            return 0;
+        }
+
+        // Character and binary: '' stayed '' under the old driver.
+        if ( in_array( $type, $this->textColumnTypes(), true ) ) {
+
+            return '';
+        }
+
+        return $value;
+    }
+
+    /**
+     * The declared column types that hold characters or bytes, as the loaded
+     * dialect spells them.
+     *
+     * Derived from the constants for the same reason as numericColumnTypes():
+     * a literal list of MySQL spellings would be a DDL grammar sitting in the
+     * entity layer, and would stop matching -- silently -- on the first dialect
+     * that names its string types differently.
+     *
+     * OWA_DTD_VARCHAR is deliberately excluded: its value is a sprintf template
+     * ('VARCHAR(%s)'), never a type a column actually carries.
+     *
+     * @return array
+     */
+    protected function textColumnTypes() {
+
+        $text = array();
+
+        foreach ( array(
+            'OWA_DTD_VARCHAR10',
+            'OWA_DTD_VARCHAR255',
+            'OWA_DTD_TEXT',
+            'OWA_DTD_BLOB',
+        ) as $constant ) {
+
+            if ( defined( $constant ) ) {
+
+                $text[] = (string) constant( $constant );
+            }
+        }
+
+        return array_values( array_unique( $text ) );
+    }
+
     function create() {
-        
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $all_cols = $this->getColumns();
-        
+
         $db->insertInto($this->getTableName());
-        
+
         // Control loop
         foreach ($all_cols as $k => $v){
-        
+
             // drop column is it is marked as auto-incement as DB will take care of that.
             if ($this->properties[$v]->auto_increment === true) {
                 ;
             } else {
-                
-                $db->set($v, $this->get($v, false));
+
+                $db->set($v, $this->writeValue($v));
             }
-                
+
         }
     
         // Persist object
@@ -528,8 +619,11 @@ class Entity {
             // change a property without going through set(), so those values are
             // not marked dirty, and a dirty-only update would silently stop
             // persisting them. Every column written before is still written.
+            // Same type resolution as create(): a column that IS written must
+            // not land as NULL where the column has only a zero meaning. See
+            // writeValue().
             if ($this->get($v, false) || array_key_exists($v, $this->dirty)) {
-                $db->set($v, $this->get($v, false));
+                $db->set($v, $this->writeValue($v));
             }
         }
         

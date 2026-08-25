@@ -227,7 +227,9 @@ class Module extends \OWA\Core\Module {
             'is_new_visitor'                => array (
                 'required'                        => true,
                 'data_type'                        => 'boolean',
-                ' default_value'                => false
+                // Key had a LEADING SPACE, so isset($property['default_value'])
+                // never matched and this default was dead for its whole life.
+                'default_value'                => false
             ),
 
             'user_name'                        => array(
@@ -371,6 +373,11 @@ class Module extends \OWA\Core\Module {
 
             'is_repeat_visitor' => array(
                 'required'            => true,
+                // Declared, so the pipeline can resolve the value by type when a
+                // callback returns nothing. Without it setDataType() is a no-op
+                // for this property and a null derivation reached the database.
+                'data_type'            => 'boolean',
+                'default_value'        => false,
                 'callbacks'            => array('owa_trackingEventHelpers::setRepeatVisitorFlag')
             ),
 

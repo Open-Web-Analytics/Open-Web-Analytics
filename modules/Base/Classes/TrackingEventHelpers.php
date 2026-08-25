@@ -155,10 +155,36 @@ class TrackingEventHelpers {
             // filter value
             $value = $eq->filter( $name, $value, $event );
 
+            /*
+             * Re-apply the declared type AFTER filtering.
+             *
+             * setDataType() above runs on the value as it arrived, so it only
+             * ever sanitised input. A callback runs after it and its return
+             * value went to the database untouched -- which is how a derivation
+             * that falls off the end (returning null) wrote NULL into a column
+             * whose declared type is boolean. setRepeatVisitorFlag did exactly
+             * that from 2015 until 8d24fc65.
+             *
+             * Only when a value actually came back null: a callback that
+             * deliberately returns 0, '' or false keeps what it returned.
+             */
+            if ( $data_type && $value === null ) {
+
+                $value = $this->setDataType( $value, $data_type );
+            }
+
             //set default value
             if ( $required && ! $value && $value !== 0 && $value !== "0") {
 
-                if ( isset( $property['default_value'] ) && $property['default_value'] ) {
+                /*
+                 * array_key_exists, not isset() && truthiness.
+                 *
+                 * The old test could never apply a FALSY default -- `false` and
+                 * `0` are the only defaults a boolean or counter would want, and
+                 * both failed the truthy check. So the one case a default exists
+                 * for was the one case it was skipped.
+                 */
+                if ( array_key_exists( 'default_value', $property ) ) {
 
                     $value = $property['default_value'];
                 }
