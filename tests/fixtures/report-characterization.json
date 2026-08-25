@@ -698,24 +698,24 @@
                     "colspan": 6,
                     "container": "top-pages",
                     "excludeColumns": [
-                        "pageUrl"
+                        "pagePath"
                     ],
                     "id": "toppages",
                     "link": {
                         "linkColumn": "pageTitle",
                         "template": {
                             "do": "base.report",
-                            "pageUrl": "%s",
+                            "pagePath": "%s",
                             "reportId": "document"
                         },
-                        "valueColumns": "pageUrl"
+                        "valueColumns": "pagePath"
                     },
                     "more": {
                         "label": "View Full Report »",
                         "reportId": "pages"
                     },
                     "query": {
-                        "dimensions": "pageTitle,pageUrl",
+                        "dimensions": "pageTitle,pagePath",
                         "metrics": "visits",
                         "resultsPerPage": 25,
                         "sort": "visits-"
@@ -900,23 +900,23 @@
                     "colspan": 6,
                     "container": "top-pages",
                     "excludeColumns": [
-                        "pageUrl"
+                        "pagePath"
                     ],
                     "id": "topContent",
                     "link": {
                         "linkColumn": "pageTitle",
                         "template": {
                             "do": "base.report",
-                            "pageUrl": "%s",
+                            "pagePath": "%s",
                             "reportId": "document"
                         },
-                        "valueColumns": "pageUrl"
+                        "valueColumns": "pagePath"
                     },
                     "more": {
                         "reportId": "pages"
                     },
                     "query": {
-                        "dimensions": "pageTitle,pageUrl",
+                        "dimensions": "pageTitle,pagePath",
                         "metrics": "pageViews",
                         "resultsPerPage": 10,
                         "sort": "pageViews-"
@@ -1058,6 +1058,124 @@
                         "sort": "daysToTransaction"
                     },
                     "type": "grid"
+                }
+            ]
+        }
+    },
+    "ReportDocument": {
+        "params": [
+            "pagePath"
+        ],
+        "diagnostics": [],
+        "config": {
+            "metrics": "visits,pageViews",
+            "subview": "base.reportWidgets",
+            "title": "Page Detail: ",
+            "titleSuffix": "characterization_sentinel",
+            "view_method": "delegate",
+            "widgets": [
+                {
+                    "chartMetric": "pageViews",
+                    "container": "trend-chart",
+                    "headline": "There were {pageViews.formatted} page views for this page.",
+                    "id": "trend",
+                    "query": {
+                        "constraints": "pagePath==characterization_sentinel",
+                        "dimensions": "date",
+                        "sort": "date"
+                    },
+                    "type": "trend"
+                },
+                {
+                    "container": "priorpages",
+                    "id": "priorpages",
+                    "link": {
+                        "linkColumn": "priorPagePath",
+                        "template": {
+                            "do": "base.report",
+                            "pagePath": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "priorPagePath"
+                    },
+                    "query": {
+                        "constraints": "pagePath==characterization_sentinel",
+                        "dimensions": "priorPagePath,priorPageTitle",
+                        "metrics": "visits",
+                        "resultsPerPage": 15,
+                        "sort": "visits-"
+                    },
+                    "title": "Prior Pages Viewed",
+                    "type": "grid"
+                },
+                {
+                    "container": "nextpages",
+                    "id": "nextpages",
+                    "link": {
+                        "linkColumn": "pagePath",
+                        "template": {
+                            "do": "base.report",
+                            "pagePath": "%s",
+                            "reportId": "document"
+                        },
+                        "valueColumns": "pagePath"
+                    },
+                    "query": {
+                        "constraints": "priorPagePath==characterization_sentinel",
+                        "dimensions": "pagePath,pageTitle",
+                        "metrics": "visits",
+                        "resultsPerPage": 15,
+                        "sort": "visits-"
+                    },
+                    "title": "Next Pages Viewed",
+                    "type": "grid"
+                },
+                {
+                    "container": "pagevisitors",
+                    "id": "pagevisitors",
+                    "link": {
+                        "linkColumn": "visitorId",
+                        "template": {
+                            "do": "base.report",
+                            "reportId": "visitor",
+                            "visitorId": "%s"
+                        },
+                        "valueColumns": "visitorId"
+                    },
+                    "query": {
+                        "constraints": "pagePath==characterization_sentinel",
+                        "dimensions": "visitorId",
+                        "metrics": "visits,pageViews",
+                        "resultsPerPage": 15,
+                        "sort": "visits-"
+                    },
+                    "title": "Visitors",
+                    "type": "grid"
+                },
+                {
+                    "container": "more-analytics",
+                    "id": "moreAnalytics",
+                    "links": [
+                        {
+                            "description": "mouse movement recordings.",
+                            "label": "Domstreams",
+                            "params": {
+                                "pagePath": "characterization_sentinel"
+                            },
+                            "reportId": "domstreams"
+                        },
+                        {
+                            "description": "analysis of dom clicks.",
+                            "label": "Dom Clicks",
+                            "params": {
+                                "pagePath": "characterization_sentinel"
+                            },
+                            "reportId": "dom-clicks"
+                        }
+                    ],
+                    "showTitle": true,
+                    "title": "More analytics for this Page:",
+                    "type": "report-links"
                 }
             ]
         }
@@ -1295,21 +1413,18 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": [
-                        "entryPageUrl"
-                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "entryPagePath",
                         "template": {
                             "do": "base.report",
-                            "pageUrl": "%s",
+                            "pagePath": "%s",
                             "reportId": "document"
                         },
-                        "valueColumns": "entryPageUrl"
+                        "valueColumns": "entryPagePath"
                     },
                     "query": {
-                        "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+                        "dimensions": "entryPagePath,entryPageTitle",
                         "resultsPerPage": 30,
                         "sort": "visits-"
                     },
@@ -1339,21 +1454,18 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": [
-                        "exitPageUrl"
-                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "exitPagePath",
                         "template": {
                             "do": "base.report",
-                            "pageUrl": "%s",
+                            "pagePath": "%s",
                             "reportId": "document"
                         },
-                        "valueColumns": "exitPageUrl"
+                        "valueColumns": "exitPagePath"
                     },
                     "query": {
-                        "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+                        "dimensions": "exitPagePath,exitPageTitle",
                         "resultsPerPage": 30,
                         "sort": "visits-"
                     },
@@ -1766,21 +1878,18 @@
                 },
                 {
                     "container": "dimension-grid",
-                    "excludeColumns": [
-                        "pageUrl"
-                    ],
                     "id": "dim",
                     "link": {
                         "linkColumn": "pagePath",
                         "template": {
                             "do": "base.report",
-                            "pageUrl": "%s",
+                            "pagePath": "%s",
                             "reportId": "document"
                         },
-                        "valueColumns": "pageUrl"
+                        "valueColumns": "pagePath"
                     },
                     "query": {
-                        "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+                        "dimensions": "pagePath,pageTitle,pageType",
                         "resultsPerPage": 30,
                         "sort": "pageViews-"
                     },

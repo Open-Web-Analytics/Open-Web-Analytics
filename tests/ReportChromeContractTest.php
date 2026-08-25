@@ -64,8 +64,7 @@ final class ReportChromeContractTest extends TestCase
         // ReportVisitors) loses the very chrome under test, and one that reads
         // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
         // kinds, chosen because they survive a sentinel.
-        foreach ( array( 'ReportDocument',
-                         'ReportTransactionDetail', 'ReportVisitorsRoster' ) as $name ) {
+        foreach ( array( 'ReportTransactionDetail', 'ReportVisitorsRoster' ) as $name ) {
             $cases[ $name ] = array( $name );
         }
 
@@ -134,10 +133,39 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheChromeSurvivesTheRegistryRoute( string $id ): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => $id ) ) )->doAction();
+        /*
+         * Every parameter the definition declares, supplied.
+         *
+         * A definition that enumerates a constraint is refused when the value
+         * behind it is missing -- rendering site-wide data under a detail
+         * report's heading is worse than an error. So a chrome test has to
+         * arrive with the report's parameters, or it is testing the error view.
+         */
+        $params = array( 'reportId' => $id );
+
+        foreach ( self::declaredParams( $id ) as $name ) {
+
+            $params[ $name ] = 'chrome_contract_sentinel';
+        }
+
+        $data = (array) ( new \OWA\Module\Base\Controller\Report( $params ) )->doAction();
 
         $this->assertHasChrome( $data, "base.report&reportId=$id" );
+    }
+
+    /** @return array<int,string> the parameter names a definition declares */
+    private static function declaredParams( string $id ): array
+    {
+        $file = OWA_DIR . 'modules/Base/reports/' . $id . '.json';
+
+        if ( ! is_readable( $file ) ) {
+
+            return array();
+        }
+
+        $def = json_decode( (string) file_get_contents( $file ), true );
+
+        return array_keys( (array) ( $def['params'] ?? array() ) );
     }
 
     /** @return array<string, array{0:string}> */
@@ -167,9 +195,9 @@ final class ReportChromeContractTest extends TestCase
     {
         // A bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportDocument( array() ) )->doAction();
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportVisitorsRoster( array() ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'document' ) ) )->doAction();
+            array( 'reportId' => 'visitors-roster' ) ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -236,10 +264,10 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportDocument(
-            array( 'do' => 'base.reportDocument' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportVisitorsRoster(
+            array( 'do' => 'base.reportVisitorsRoster' ) ) )->doAction();
 
-        $this->assertSame( 'base-reportDocument', $data['dom_id'] );
+        $this->assertSame( 'base-reportVisitorsRoster', $data['dom_id'] );
     }
 
     /**

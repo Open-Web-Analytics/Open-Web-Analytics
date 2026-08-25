@@ -113,6 +113,31 @@ class Report extends \OWA\Core\Controller {
             return $this->reportNotResolved( $id, $error, 500 );
         }
 
+        /*
+         * A constraint parameter the request did not supply.
+         *
+         * 400 rather than 500: the definition is fine, the request is not. And
+         * refused rather than rendered, because both silent outcomes are worse
+         * than an error -- see ConfiguredReport::constraintParams().
+         */
+        $missing = array();
+
+        foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {
+
+            if ( (string) $this->getParam( $name ) === '' ) {
+
+                $missing[] = $name;
+            }
+        }
+
+        if ( $missing ) {
+
+            return $this->reportNotResolved( $id,
+                sprintf( 'is constrained on %s, which the request did not supply',
+                    implode( ', ', $missing ) ),
+                400 );
+        }
+
         $target = new \OWA\Core\ConfiguredReport( $this->params );
 
         $target->setDefinition( $definition );

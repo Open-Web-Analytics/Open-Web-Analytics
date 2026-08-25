@@ -669,6 +669,99 @@ final class ReportDefinitionFormatTest extends TestCase
      * report-links yet -- this is what makes the bespoke conversions safe to
      * do, and it fails the moment one names a report that is not registered.
      */
+    /**
+     * A link must carry the parameters its TARGET is constrained on.
+     *
+     * The link-resolution test above proves the target exists. This proves the
+     * link is usable once you follow it: a report that enumerates a constraint
+     * is refused outright when the value is missing, so a link that names the
+     * right report and hands it the wrong parameter lands on a 400.
+     *
+     * That is not hypothetical -- it is exactly what the pageUrl-to-pagePath
+     * move would have done silently. Five places linked into `document` with
+     * pageUrl; the moment `document` declared pagePath instead, every one of
+     * them was a dead link, and nothing in the suite said so. The render
+     * golden records each report's queries and commands but not its link
+     * URLs, so it could not have.
+     *
+     * Only DECLARED parameters are checked. A link may carry extras -- the
+     * dispatcher ignores what a report does not read.
+     */
+    public function testEveryLinkCarriesTheParametersItsTargetRequires(): void
+    {
+        $declared = array();
+
+        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $def = json_decode( (string) file_get_contents( $file ), true );
+
+            $declared[ basename( $file, '.json' ) ] =
+                \OWA\Core\ConfiguredReport::constraintParams( (array) $def );
+        }
+
+        $this->assertNotEmpty( $declared, 'no definitions read, so this proves nothing' );
+
+        $broken  = array();
+        $checked = 0;
+
+        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $name = basename( $file );
+            $def  = json_decode( (string) file_get_contents( $file ), true );
+
+            foreach ( (array) ( $def['widgets'] ?? array() ) as $widget ) {
+
+                $widget = (array) $widget;
+                $links  = array();
+
+                // A grid's per-row link.
+                if ( isset( $widget['link']['template']['reportId'] ) ) {
+
+                    $links[] = array( $widget['link']['template']['reportId'],
+                                      array_keys( (array) $widget['link']['template'] ) );
+                }
+
+                // A report-links entry, whose params are a separate map.
+                foreach ( (array) ( $widget['links'] ?? array() ) as $link ) {
+
+                    $link = (array) $link;
+
+                    if ( isset( $link['reportId'] ) ) {
+
+                        $links[] = array( $link['reportId'],
+                                          array_keys( (array) ( $link['params'] ?? array() ) ) );
+                    }
+                }
+
+                foreach ( $links as $pair ) {
+
+                    list( $target, $supplied ) = $pair;
+
+                    // Only reports that ARE definitions can be checked.
+                    if ( ! array_key_exists( $target, $declared ) ) {
+
+                        continue;
+                    }
+
+                    $checked++;
+
+                    $missing = array_diff( $declared[ $target ], $supplied );
+
+                    foreach ( $missing as $param ) {
+
+                        $broken[] = sprintf( '%s -> %s (missing "%s")', $name, $target, $param );
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 0, $checked, 'no links to configured reports were examined' );
+
+        $this->assertSame( array(), $broken,
+            'these links land on a report constrained on a parameter they do not carry: '
+            . implode( ', ', $broken ) );
+    }
+
     public function testEveryDeclaredReportLinkResolves(): void
     {
         if ( ! owa_test_db_available() ) {

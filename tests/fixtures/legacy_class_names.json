@@ -207,8 +207,6 @@
     "owa_reportController",
     "owa_reportDimensionDetailView",
     "owa_reportDimensionView",
-    "owa_reportDocumentController",
-    "owa_reportDocumentView",
     "owa_reportDomstreamsController",
     "owa_reportDomstreamsView",
     "owa_reportGoalFunnelController",

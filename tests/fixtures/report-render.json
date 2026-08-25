@@ -1009,7 +1009,7 @@
             {
                 "var": "toppagesurl",
                 "query": {
-                    "dimensions": "pageTitle,pageUrl",
+                    "dimensions": "pageTitle,pagePath",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",
@@ -1219,7 +1219,7 @@
             {
                 "var": "topContenturl",
                 "query": {
-                    "dimensions": "pageTitle,pageUrl",
+                    "dimensions": "pageTitle,pagePath",
                     "do": "reports",
                     "format": "json",
                     "metrics": "pageViews",
@@ -1421,6 +1421,113 @@
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
             "dim.refreshGrid"
+        ]
+    },
+    "document": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "trendurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pageViews",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "priorpagesurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "priorPagePath,priorPageTitle",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "15",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "nextpagesurl",
+                "query": {
+                    "constraints": "priorPagePath==characterization_sentinel",
+                    "dimensions": "pagePath,pageTitle",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "15",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "pagevisitorsurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "visitorId",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pageViews",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "15",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 4,
+            "loadsWithUrl": 0,
+            "urls": 4
+        },
+        "explorers": [
+            {
+                "var": "trend",
+                "container": "trend-chart"
+            },
+            {
+                "var": "priorpages",
+                "container": "priorpages"
+            },
+            {
+                "var": "nextpages",
+                "container": "nextpages"
+            },
+            {
+                "var": "pagevisitors",
+                "container": "pagevisitors"
+            }
+        ],
+        "commands": [
+            "trend.renderHeadline -> trend-title",
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "priorpages.refreshGrid",
+            "nextpages.refreshGrid",
+            "pagevisitors.refreshGrid"
         ]
     },
     "dom-clicks": {
@@ -1716,7 +1823,7 @@
             {
                 "var": "site_usage_dimurl",
                 "query": {
-                    "dimensions": "entryPagePath,entryPageUrl,entryPageTitle",
+                    "dimensions": "entryPagePath,entryPageTitle",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
@@ -1779,7 +1886,7 @@
             {
                 "var": "site_usage_dimurl",
                 "query": {
-                    "dimensions": "exitPagePath,exitPageUrl,exitPageTitle",
+                    "dimensions": "exitPagePath,exitPageTitle",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
@@ -2467,7 +2574,7 @@
             {
                 "var": "dimurl",
                 "query": {
-                    "dimensions": "pagePath,pageTitle,pageType,pageUrl",
+                    "dimensions": "pagePath,pageTitle,pageType",
                     "do": "reports",
                     "format": "json",
                     "metrics": "pageViews,visits,uniquePageViews",

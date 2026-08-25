@@ -1,0 +1,133 @@
+{
+    "title": "Page Detail: ",
+    "titleSuffix": "{pagePath}",
+    "params": {
+        "pagePath": {}
+    },
+    "metrics": "visits,pageViews",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "pageViews",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "constraints": [
+                {
+                    "dimension": "pagePath",
+                    "fromParam": "pagePath"
+                }
+            ],
+            "headline": "There were {pageViews.formatted} page views for this page."
+        },
+        {
+            "type": "grid",
+            "id": "priorpages",
+            "container": "priorpages",
+            "title": "Prior Pages Viewed",
+            "query": {
+                "metrics": "visits",
+                "dimensions": "priorPagePath,priorPageTitle",
+                "sort": "visits-",
+                "resultsPerPage": 15
+            },
+            "constraints": [
+                {
+                    "dimension": "pagePath",
+                    "fromParam": "pagePath"
+                }
+            ],
+            "link": {
+                "linkColumn": "priorPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "priorPagePath"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "nextpages",
+            "container": "nextpages",
+            "title": "Next Pages Viewed",
+            "query": {
+                "metrics": "visits",
+                "dimensions": "pagePath,pageTitle",
+                "sort": "visits-",
+                "resultsPerPage": 15
+            },
+            "constraints": [
+                {
+                    "dimension": "priorPagePath",
+                    "fromParam": "pagePath"
+                }
+            ],
+            "link": {
+                "linkColumn": "pagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "pagePath"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "pagevisitors",
+            "container": "pagevisitors",
+            "title": "Visitors",
+            "query": {
+                "metrics": "visits,pageViews",
+                "dimensions": "visitorId",
+                "sort": "visits-",
+                "resultsPerPage": 15
+            },
+            "constraints": [
+                {
+                    "dimension": "pagePath",
+                    "fromParam": "pagePath"
+                }
+            ],
+            "link": {
+                "linkColumn": "visitorId",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "visitor",
+                    "visitorId": "%s"
+                },
+                "valueColumns": "visitorId"
+            }
+        },
+        {
+            "type": "report-links",
+            "id": "moreAnalytics",
+            "container": "more-analytics",
+            "title": "More analytics for this Page:",
+            "showTitle": true,
+            "links": [
+                {
+                    "reportId": "domstreams",
+                    "label": "Domstreams",
+                    "description": "mouse movement recordings.",
+                    "params": {
+                        "pagePath": "{pagePath}"
+                    }
+                },
+                {
+                    "reportId": "dom-clicks",
+                    "label": "Dom Clicks",
+                    "description": "analysis of dom clicks.",
+                    "params": {
+                        "pagePath": "{pagePath}"
+                    }
+                }
+            ]
+        }
+    ]
+}

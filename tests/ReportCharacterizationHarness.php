@@ -97,6 +97,7 @@ final class ReportCharacterizationHarness
         'action-groups'             => 'ReportActionGroups',
         'action-tracking'           => 'ReportActionTracking',
         'attribution-history'       => 'ReportAttributionHistory',
+        'document'                  => 'ReportDocument',
         'dom-clicks'                => 'ReportDomClicks',
         'campaigns'                 => 'ReportCampaigns',
         'referral-detail'           => 'ReportReferralDetail',

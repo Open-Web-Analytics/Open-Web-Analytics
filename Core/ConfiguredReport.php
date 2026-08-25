@@ -310,6 +310,44 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                         return sprintf( 'report link %s needs a "%s"', $j, $required );
                     }
                 }
+
+                /*
+                 * Parameters to carry to the target report.
+                 *
+                 * `document` links to domstreams and dom-clicks, and both are
+                 * ABOUT a page -- so a link that carried only a reportId would
+                 * land on a report constrained on a parameter it was not given,
+                 * which is now refused outright. A plain reportId is still the
+                 * common case and stays optional.
+                 *
+                 * A flat map of name => value, values interpolated from the
+                 * report's own declared parameters. Never nested and never
+                 * anything but a scalar: this is a URL query string, and the
+                 * one thing a definition must not be able to do is carry
+                 * structure a template will later evaluate.
+                 */
+                if ( isset( $link['params'] ) ) {
+
+                    if ( ! is_array( $link['params'] ) ) {
+
+                        return sprintf(
+                            'report link %s: "params" must map a parameter name to a value', $j );
+                    }
+
+                    foreach ( $link['params'] as $name => $value ) {
+
+                        if ( ! is_string( $name ) || $name === '' ) {
+
+                            return sprintf( 'report link %s: a param name must be a string', $j );
+                        }
+
+                        if ( is_array( $value ) || is_object( $value ) ) {
+
+                            return sprintf(
+                                'report link %s: param "%s" must be a scalar', $j, $name );
+                        }
+                    }
+                }
             }
 
             if ( empty( $widget['links'] ) ) {
@@ -576,6 +614,65 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
             $this->set( $key, $value );
         }
+    }
+
+    /**
+     * The parameters this report's CONSTRAINTS read.
+     *
+     * Enumerating a constraint is the definition saying what the report is
+     * about, so the value behind it is required: `document` constrained on
+     * pagePath is not a page report without a page.
+     *
+     * It used to fail silently either way. buildConstraints() emitted
+     * `pagePath==` for an absent value -- a constraint no fact row carries, so
+     * the widget returned nothing and said nothing about why. Dropping the
+     * empty clause instead is worse: the query then has no constraint at all
+     * and the report renders SITE-WIDE data under a "Page Detail" heading,
+     * which reads as real.
+     *
+     * So the caller checks this before rendering and refuses. Only constraint
+     * parameters are collected -- one read solely by a title is cosmetic, and
+     * a missing one should not take the report down.
+     *
+     * @param array $definition
+     * @return array<int,string> declared parameter names, in definition order
+     */
+    public static function constraintParams( array $definition ) {
+
+        $names = array();
+
+        $collect = static function ( $constraints ) use ( &$names ) {
+
+            if ( ! is_array( $constraints ) ) {
+
+                // A plain string constrains on nothing that varies.
+                return;
+            }
+
+            foreach ( $constraints as $part ) {
+
+                $part = (array) $part;
+
+                if ( isset( $part['fromParam'] ) && $part['fromParam'] !== '' ) {
+
+                    $names[] = (string) $part['fromParam'];
+                }
+            }
+        };
+
+        $collect( $definition['settings']['constraints'] ?? null );
+
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+            $collect( ( (array) $widget )['constraints'] ?? null );
+        }
+
+        // Declared params only: a constraint naming something the definition
+        // never declared is an authoring error, and getDefinitionError is
+        // where that belongs -- not a 400 blamed on the request.
+        $declared = array_keys( (array) ( $definition['params'] ?? array() ) );
+
+        return array_values( array_unique( array_intersect( $names, $declared ) ) );
     }
 
     /**

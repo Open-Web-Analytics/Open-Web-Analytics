@@ -60,6 +60,10 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        // RETIRED 2026-08-25: document became a report definition. Its card was
+        // dropped and the rest models as widgets.
+        'owa_reportDocumentController',
+        'owa_reportDocumentView',
         'owa_reportDashboardController',
         'owa_reportDashboardView',
         // The GitHub release feed. Replaced by stored notifications, which are

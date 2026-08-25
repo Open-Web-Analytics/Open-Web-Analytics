@@ -338,8 +338,18 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
             <ul>
 <?php foreach ( (array) ( $owa_w['links'] ?? array() ) as $owa_link ): ?>
                 <li>
-                    <a href="<?php echo $view->makeLink( array(
-                        'do' => 'base.report', 'reportId' => $owa_link['reportId'] ), true ); ?>"><?php
+                    <?php
+                        /*
+                         * Any parameters the link declares travel with it --
+                         * a link to a report that is ABOUT something has to
+                         * say what. Merged UNDER do/reportId so a declared
+                         * param cannot rewrite the target.
+                         */
+                        $owa_link_params = array( 'do' => 'base.report',
+                                                  'reportId' => $owa_link['reportId'] )
+                            + (array) ( $owa_link['params'] ?? array() );
+                    ?>
+                    <a href="<?php echo $view->makeLink( $owa_link_params, true ); ?>"><?php
                         $view->out( $owa_link['label'] ); ?></a><?php
                         if ( ! empty( $owa_link['description'] ) ): ?> - <?php $view->out( $owa_link['description'] ); endif; ?>
                 </li>

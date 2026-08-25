@@ -435,8 +435,6 @@ function owa_compat_class_map(): array
         'owa_overlayLauncherView' => 'OWA\\Module\\Base\\View\\OverlayLauncher',
         'owa_passwordResetFormController' => 'OWA\\Module\\Base\\Controller\\PasswordResetForm',
         'owa_passwordResetFormView' => 'OWA\\Module\\Base\\View\\PasswordResetForm',
-        'owa_reportDocumentController' => 'OWA\\Module\\Base\\Controller\\ReportDocument',
-        'owa_reportDocumentView' => 'OWA\\Module\\Base\\View\\ReportDocument',
         'owa_reportDomstreamsController' => 'OWA\\Module\\Base\\Controller\\ReportDomstreams',
         'owa_reportDomstreamsView' => 'OWA\\Module\\Base\\View\\ReportDomstreams',
         'owa_reportGoalFunnelController' => 'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',

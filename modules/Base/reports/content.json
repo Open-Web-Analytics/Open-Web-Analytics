@@ -21,7 +21,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "visits",
-                "dimensions": "pageTitle,pageUrl",
+                "dimensions": "pageTitle,pagePath",
                 "sort": "visits-",
                 "resultsPerPage": 25
             },
@@ -30,12 +30,12 @@
                 "template": {
                     "do": "base.report",
                     "reportId": "document",
-                    "pageUrl": "%s"
+                    "pagePath": "%s"
                 },
-                "valueColumns": "pageUrl"
+                "valueColumns": "pagePath"
             },
             "excludeColumns": [
-                "pageUrl"
+                "pagePath"
             ],
             "more": {
                 "reportId": "pages",
