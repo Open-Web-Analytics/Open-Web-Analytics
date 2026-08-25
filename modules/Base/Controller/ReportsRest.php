@@ -140,9 +140,39 @@ class ReportsRest extends \OWA\Core\ReportController {
 	}
 	
 	function success() {
-		
-		http_response_code(201);
-		
+
+		/*
+		 * A malformed request is not a success, whatever the envelope contains.
+		 *
+		 * This answered 201 unconditionally, so a query refused for naming a
+		 * dimension that does not exist -- or for a constraint whose value went
+		 * missing -- came back as success carrying an `errors` array that a
+		 * client had no reason to read. The status is the only part most callers
+		 * check.
+		 *
+		 * 422 rather than 400: the request is well-formed HTTP and the
+		 * parameters are the right shape, they just cannot be honoured. It is
+		 * the code this controller already answers with for a failed validation.
+		 */
+		/*
+		 * $this->data, not $this->get().
+		 *
+		 * On a controller set() writes the data the VIEW is handed while get()
+		 * reads a REQUEST PARAMETER -- they are not a pair. Reading the response
+		 * back with get('response') returns null on every request, so this
+		 * answered 201 unconditionally and looked like it worked.
+		 */
+		$response = $this->data['response'] ?? null;
+
+		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
+
+			http_response_code(422);
+
+		} else {
+
+			http_response_code(201);
+		}
+
 		$this->setView( 'base.reportsRest' );
 	}
 	

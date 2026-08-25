@@ -140,6 +140,63 @@ final class ConstraintRefusalTest extends TestCase
     }
 
     /**
+     * A malformed request is not queried at all.
+     *
+     * Recording the error and running anyway was the worst of both: the caller
+     * got the complaint AND a full set of numbers computed without the filter
+     * they asked for. Numbers that look right are worse than none.
+     */
+    public function testARefusedConstraintMeansNoQueryRuns(): void
+    {
+        $rsm = $this->rsm();
+        $rsm->setSiteId(md5('owa-test-site'));
+        $rsm->metrics = $rsm->metricsStringToArray('pageViews');
+        $rsm->setDimensions($rsm->dimensionsStringToArray('pagePath'));
+        $rsm->setTimePeriod('date_range', '20100101', '20301231', '', '');
+        $rsm->setConstraints($rsm->constraintsStringToArray('bogusDimension==direct'));
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame(0, (int) $rs->resultsTotal,
+            'a refused request must not return rows -- unfiltered numbers look real');
+        $this->assertNotEmpty($rs->request_errors,
+            'the caller must be told why nothing came back');
+    }
+
+    /**
+     * The distinction the gate depends on.
+     *
+     * Most of $errors is routine -- a denormalized dimension such as
+     * productName resolves only against certain entities, so lookupDimension()
+     * records "not a registered dimension" during perfectly ordinary reports.
+     * Measured: it fires twice in a clean run of the suite with no bad input
+     * anywhere. Gating on "any error" would refuse to run those reports.
+     */
+    public function testARoutineLookupMissDoesNotRefuseTheQuery(): void
+    {
+        $rsm = $this->rsm();
+
+        $rsm->addError('productName is not a registered dimension.');
+
+        $this->assertFalse($rsm->hasRequestErrors(),
+            'a routine internal miss must not be mistaken for a malformed request');
+    }
+
+    public function testAMalformedRequestIsDistinguishedFromNoise(): void
+    {
+        $rsm = $this->rsm();
+
+        $rsm->addError('routine noise');
+        $this->assertFalse($rsm->hasRequestErrors());
+
+        $rsm->addRequestError('the caller asked for something impossible');
+        $this->assertTrue($rsm->hasRequestErrors());
+
+        // A request error is still reported alongside the rest.
+        $this->assertContains('the caller asked for something impossible', $this->errorsOf($rsm));
+    }
+
+    /**
      * siteId is set as a constraint internally, so the name check must not
      * reject it -- it is a registered dimension, and site scoping runs through
      * exactly this path.
