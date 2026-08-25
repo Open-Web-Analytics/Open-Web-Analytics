@@ -118,8 +118,12 @@ namespace OWA\Module\Base\Classes;
 
      private function loadConfigFile() {
  
-        //$file = $this->get('base', 'config_file');
-        $file = OWA_DIR.'owa-config.php';
+        /*
+         * The same setting isConfigFilePresent() checks. It used to check one
+         * path and include another, so the two could disagree about which file
+         * an install was running on.
+         */
+        $file = $this->get('base', 'config_file');
         
         if ( $this->isConfigFilePresent() ) {
             

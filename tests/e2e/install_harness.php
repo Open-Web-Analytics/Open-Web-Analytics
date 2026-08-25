@@ -444,6 +444,31 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
 
     $checks = [];
 
+    /*
+     * 0. The wizard WROTE a config file, and it points at the database the form
+     *    was given.
+     *
+     * Only the web path: the CLI installer requires a config to already exist
+     * and `writecli` supplies it, so there the file proves nothing about the
+     * installer. On the web path it is the installer's own output, and the one
+     * step with nothing else to vouch for it -- a wizard that created a working
+     * schema but no config leaves an install that cannot boot, and every other
+     * check here would still pass.
+     */
+    if ($path === 'web') {
+        $configPath = $repoRoot . CONFIG_FILE;
+        $checks['config_file_written'] = file_exists($configPath);
+        $checks['config_names_scratch_db'] = false;
+
+        if ($checks['config_file_written']) {
+            $written = (string) file_get_contents($configPath);
+            $checks['config_names_scratch_db'] = (bool) preg_match(
+                "/define\s*\(\s*['\"]OWA_DB_NAME['\"]\s*,\s*['\"]"
+                    . preg_quote($db, '/') . "['\"]/",
+                $written);
+        }
+    }
+
     // 1. Core tables exist.
     foreach (['owa_user', 'owa_site', 'owa_configuration'] as $t) {
         $r = mysqli_query($m, "SHOW TABLES LIKE '" . mysqli_real_escape_string($m, $t) . "'");
