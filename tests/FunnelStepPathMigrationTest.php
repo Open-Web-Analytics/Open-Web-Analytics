@@ -26,6 +26,12 @@ final class FunnelStepPathMigrationTest extends TestCase
         return \OWA\Module\Base\Update\Update017::migrateGoals( $goals );
     }
 
+    /** Likewise the shipped reverse. */
+    private function revert( array $goals ): array
+    {
+        return \OWA\Module\Base\Update\Update017::revertGoals( $goals );
+    }
+
     private function goalWith( array $steps ): array
     {
         return array( 1 => array( 'goal_number' => 1, 'goal_status' => 'active',
@@ -123,5 +129,72 @@ final class FunnelStepPathMigrationTest extends TestCase
 
         $this->assertSame( 17, $u->getDefaultProperties()['schema_version'] );
         $this->assertTrue( $u->hasMethod( 'down' ), 'an update that rewrites data must reverse' );
+    }
+
+    public function testDownMovesTheValueBackToUrl(): void {
+
+        $out = $this->revert( $this->goalWith( array(
+            1 => array( 'name' => 'Pricing', 'path' => '/pricing' ) ) ) );
+        $step = $out[1]['details']['funnel_steps'][1];
+
+        $this->assertSame( '/pricing', $step['url'] );
+        $this->assertArrayNotHasKey( 'path', $step, 'down leaves one shape behind, not both' );
+        $this->assertSame( 'Pricing', $step['name'], 'the rest of the step survives the reverse too' );
+        $this->assertSame( array( 'name', 'url' ), array_keys( $step ),
+            'and the key returns to its position, not to the end of the step' );
+    }
+
+    public function testRunningDownAgainChangesNothing(): void {
+
+        $once  = $this->revert( $this->goalWith( array(
+            1 => array( 'path' => '/pricing' ) ) ) );
+        $twice = $this->revert( $once );
+
+        $this->assertSame( $once, $twice, 'down must be safe to re-run' );
+    }
+
+    public function testDownOnAStepWithBothKeepsUrl(): void {
+
+        $out = $this->revert( $this->goalWith( array(
+            1 => array( 'url' => '/old', 'path' => '/new' ) ) ) );
+        $step = $out[1]['details']['funnel_steps'][1];
+
+        $this->assertSame( '/old', $step['url'], 'the key down migrates TO wins, as up does' );
+        $this->assertArrayNotHasKey( 'path', $step );
+    }
+
+    public function testDownLeavesAGoalWithNoFunnelAlone(): void {
+
+        $goals = array( 1 => array( 'goal_name' => 'No funnel', 'details' => array( 'goal_url' => '/x' ) ) );
+
+        $this->assertSame( $goals, $this->revert( $goals ) );
+    }
+
+    /**
+     * The property the pair has to have together: the store ends up in exactly
+     * one of two shapes, and getting there twice is the same as getting there
+     * once. Asserting each direction alone would not catch a reverse that lost
+     * a step, reordered keys, or left both keys behind.
+     */
+    public function testTheMigrationRoundTrips(): void {
+
+        $original = $this->goalWith( array(
+            1 => array( 'name' => 'Pricing', 'url' => '/pricing', 'is_required' => true ) ) );
+
+        $up   = $this->migrate( $original );
+        $down = $this->revert( $up );
+
+        // assertSame, deliberately: a rollback has to hand back what it was
+        // given, so the structure must be IDENTICAL, not merely equal.
+        $this->assertSame( $original, $down, 'down( up( x ) ) is x' );
+        $this->assertSame( $up, $this->migrate( $down ), 'and up( down( up( x ) ) ) is up( x )' );
+
+        // What lets assertSame hold: the key is renamed in place. Written the
+        // obvious way -- set the new key, unset the old -- it would append, and
+        // the rolled-back step would read name,is_required,url.
+        $this->assertSame(
+            array( 'name', 'path', 'is_required' ),
+            array_keys( $up[1]['details']['funnel_steps'][1] ),
+            'the renamed key stays where the operator put it' );
     }
 }
