@@ -83,7 +83,10 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
             // get visits for each step
 
             // add goal url to steps array
-            $funnel[] = array('url' => $goal['details']['goal_url'], 'name' => $goal['goal_name'], 'step_number' => $steps_count + 1);
+            // Keyed `path` like every other element: the loop below constrains on
+            // $step['path'], and the stored steps carry that key since the rename.
+            // Built with 'url' it was the one element the loop could not read.
+            $funnel[] = array('path' => $goal['details']['goal_url'], 'name' => $goal['goal_name'], 'step_number' => $steps_count + 1);
             foreach ( $funnel as $k => $step ) {
                 $operator = '==';
                 $rs = \OWA\Core\CoreAPI::executeApiCommand(array(

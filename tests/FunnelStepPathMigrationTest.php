@@ -85,6 +85,35 @@ final class FunnelStepPathMigrationTest extends TestCase
         $this->assertSame( $goals, $this->migrate( $goals ) );
     }
 
+    /**
+     * Every element of the funnel array is keyed `path`, including the one the
+     * report appends itself.
+     *
+     * ReportGoalFunnel adds the goal's own destination as a final synthetic
+     * step, and the loop that follows constrains on $step['path']. It was built
+     * with 'url', so after the rename that one element -- the goal itself, the
+     * last bar of the funnel -- produced `pagePath==` and matched nothing.
+     *
+     * Source-scanned because reaching the loop needs a configured funnel, a
+     * goalNumber and traffic: no install here has a single funnel step, which
+     * is exactly why the suite did not catch it.
+     */
+    public function testTheReportBuildsItsAppendedStepWithTheSameKeyItReads(): void
+    {
+        $src = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/ReportGoalFunnel.php' );
+
+        $this->assertMatchesRegularExpression(
+            "/\\\$funnel\\[\\]\\s*=\\s*array\\(\\s*'path'\\s*=>/", $src,
+            'the appended step must be keyed path, like the stored ones' );
+
+        $this->assertSame( 0, preg_match( "/\\\$funnel\\[\\]\\s*=\\s*array\\(\\s*'url'\\s*=>/", $src ),
+            'nothing may build a funnel element keyed url any more' );
+
+        $this->assertSame( 0, preg_match( "/\\\$step\\['url'\\]|\\\$funnel\\[[^\\]]+\\]\\['url'\\]/", $src ),
+            'and nothing may read one' );
+    }
+
     /** The class exists, declares the version the module now requires, and reverses. */
     public function testTheUpdateDeclaresTheRequiredSchemaVersion(): void
     {
