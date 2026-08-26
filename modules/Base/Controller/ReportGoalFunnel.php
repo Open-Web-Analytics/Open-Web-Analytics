@@ -43,30 +43,17 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
      */
     const SCOPE_PARAM = 'funnelScope';
 
+    /**
+     * The segment -- which people the funnel is drawn for -- is not the
+     * funnel's own idea. It lives in ReportSegment, which the domstreams report
+     * uses too, so a constraint means the same thing in both: it picks the
+     * PEOPLE, and their whole activity is then counted.
+     *
+     * @var \OWA\Module\Base\Classes\ReportSegment|null
+     */
+    private $segment = null;
+
     /** Subject columns, keyed by the scope that selects them. */
-    /**
-     * How many subjects a segment may select before the funnel refuses.
-     *
-     * The ids travel back as an IN list, so this bounds the statement rather
-     * than expressing a view about how big a segment is allowed to be.
-     */
-    const SEGMENT_LIMIT = 10000;
-
-    /**
-     * Dimension groups the segment filter does not offer.
-     *
-     * `site`: the report is already scoped to one site, and the site filter in
-     * the report chrome is where that is chosen. Offering siteId here is either
-     * redundant or a way to ask for a contradiction.
-     *
-     * `time`: the reporting period already bounds the funnel, and a date inside
-     * the SEGMENT means something almost nobody intends -- the segment selects
-     * PEOPLE, so `date==20260825` would pick everyone active that day and then
-     * count their steps across the whole period. It reads like "the funnel on
-     * that day" and is not.
-     */
-    const EXCLUDED_FILTER_GROUPS = array( 'site', 'time' );
-
     const SCOPES = array(
         'visitor' => 'visitor_id',
         'session' => 'session_id',
@@ -407,180 +394,67 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
     /**
      * What the filter control may constrain on.
      *
-     * The funnel's segment accepts the same constraints every other report does,
-     * so the picker has to offer the same choices -- and the authority on those
-     * is the reporting stack, not a list written out here. A list of our own
-     * would offer names the segment then refuses.
-     *
-     * Taken from an AGGREGATE-ONLY query: asking for a metric with no dimensions
-     * still comes back carrying the full related-dimension and related-metric
-     * lists (measured: 10 groups, 70 dimensions), and costs one aggregate rather
-     * than a group-by over every visitor in the period.
+     * Delegated, because the funnel's segment is the same segment the
+     * domstreams report uses and a picker that offered different choices in the
+     * two places would be lying about one of them.
      *
      * @return array {dimensions, metrics} in the shape the picker reads
      */
     private function filterOptions() {
 
-        $empty = array( 'dimensions' => array(), 'metrics' => array() );
-
-        /*
-         * No period, no query. The report normally always has one, but this
-         * controller is also constructed directly -- by the registry contract
-         * test, and by anything checking a route -- and a picker is decoration:
-         * it must never be the reason a report cannot render.
-         */
-        if ( ! $this->getParam( 'period' )
-             && ! ( $this->getParam( 'startDate' ) && $this->getParam( 'endDate' ) ) ) {
-
-            return $empty;
-        }
-
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
-        $rsm->setSiteId( $this->getParam( 'siteId' ) );
-        $rsm->setTimePeriod(
-            $this->getParam( 'period' ),
-            $this->getParam( 'startDate' ),
-            $this->getParam( 'endDate' )
-        );
-        $rsm->setLimit( 1 );
-
-        try {
-
-            $rs = $rsm->getResults();
-
-        } catch ( \Throwable $e ) {
-
-            \OWA\Core\CoreAPI::notice( 'Goal funnel could not build its filter options: ' . $e->getMessage() );
-
-            return $empty;
-        }
-
-        $dimensions = (array) ( $rs->relatedDimensions ?? array() );
-
-        foreach ( self::EXCLUDED_FILTER_GROUPS as $group ) {
-
-            unset( $dimensions[ $group ] );
-        }
-
-        return array(
-            'dimensions' => $dimensions,
-            'metrics'    => (array) ( $rs->relatedMetrics ?? array() ),
-        );
+        return $this->segment()->options();
     }
 
     /**
-     * The subjects a constraint selects, or null when there is no constraint.
+     * The subjects the segment selects, or null when none was asked for.
      *
-     * Run through ResultSetManager rather than assembled here, and the reason is
-     * concrete: a dimension does not resolve to a column on this table. `medium`
-     * is denormalized onto the request, but `browserType` resolves to
-     * ua_via_.browser_type and `city` to location_dim_via_.city -- each needing
-     * the join the result-set manager already knows how to build. Hand-rolling
-     * the segment SQL would mean reimplementing that, and it would drift.
-     *
-     * A cap, and it REFUSES rather than truncating. A silently shortened id list
-     * would answer with a funnel that looks complete and counts a fraction of
-     * the people in it -- the same class of wrong-but-plausible number this
-     * report already had.
+     * The refusal message is lifted onto the view here rather than inside the
+     * segment: the segment knows WHY it selected nobody, and the template knows
+     * where to say so, and neither should have to know the other.
      *
      * @param string $scope visitor|session
      * @return array|null  ids, or null for "no segment asked for"
      */
     private function segmentSubjects( $scope ) {
 
-        $constraints = (string) $this->getParam( 'constraints' );
+        $ids = $this->segment()->subjects( $scope );
 
-        if ( $constraints === '' ) {
+        $error = $this->segment()->getError();
 
-            return null;
-        }
+        if ( $error ) {
 
-        $dimension = $scope === 'session' ? 'sessionId' : 'visitorId';
-
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
-        $rsm->setDimensions( $rsm->dimensionsStringToArray( $dimension ) );
-        $rsm->setSiteId( $this->getParam( 'siteId' ) );
-        $rsm->setTimePeriod(
-            $this->getParam( 'period' ),
-            $this->getParam( 'startDate' ),
-            $this->getParam( 'endDate' )
-        );
-        $rsm->setConstraints( $rsm->constraintsStringToArray( $constraints ) );
-        $rsm->setLimit( self::SEGMENT_LIMIT + 1 );
-
-        $results = $rsm->getResults();
-
-        // The constraint itself was refused -- an unknown dimension, a missing
-        // value. Say so instead of quietly showing an unsegmented funnel.
-        if ( ! empty( $results->request_errors ) ) {
-
-            $this->set( 'funnel_segment_error', implode( ' ', $results->request_errors ) );
-
-            return array();
-        }
-
-        $ids = array();
-
-        foreach ( (array) ( $results->resultsRows ?? array() ) as $row ) {
-
-            if ( isset( $row[ $dimension ]['value'] ) ) {
-
-                $ids[] = $row[ $dimension ]['value'];
-            }
-        }
-
-        if ( count( $ids ) > self::SEGMENT_LIMIT ) {
-
-            $this->set( 'funnel_segment_error', sprintf(
-                'This segment selects more than %s %ss. Narrow it -- a funnel drawn from '
-                . 'part of them would look complete and count a fraction of the people in it.',
-                number_format( self::SEGMENT_LIMIT ), $scope
-            ) );
-
-            return array();
+            $this->set( 'funnel_segment_error', $error );
         }
 
         return $ids;
     }
 
+    /** The segment, built once from the request. */
+    private function segment() {
+
+        if ( ! $this->segment ) {
+
+            $this->segment = new \OWA\Module\Base\Classes\ReportSegment(
+                $this->getParam( 'siteId' ),
+                $this->getParam( 'period' ),
+                $this->getParam( 'startDate' ),
+                $this->getParam( 'endDate' ),
+                (string) $this->getParam( 'constraints' )
+            );
+        }
+
+        return $this->segment;
+    }
+
     /**
-     * The reporting period as yyyymmdd bounds.
-     *
-     * Resolved through timePeriod, the same class the result-set manager uses,
-     * so a funnel and a report beside it cannot disagree about what "last
-     * thirty days" means.
+     * The reporting period as yyyymmdd bounds. Same resolution the segment
+     * uses, so the two halves of the query cannot disagree about the period.
      *
      * @return array|null
      */
     private function dateBounds() {
 
-        $period    = $this->getParam( 'period' );
-        $startDate = $this->getParam( 'startDate' );
-        $endDate   = $this->getParam( 'endDate' );
-
-        $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
-
-        if ( $startDate && $endDate ) {
-
-            $timePeriod->set( 'date_range', array( 'startDate' => $startDate, 'endDate' => $endDate ) );
-
-        } elseif ( $period ) {
-
-            $timePeriod->set( $period );
-
-        } else {
-
-            return null;
-        }
-
-        $start = $timePeriod->startDate->get( 'yyyymmdd' );
-        $end   = $timePeriod->endDate->get( 'yyyymmdd' );
-
-        return ( $start && $end ) ? array( 'start' => $start, 'end' => $end ) : null;
+        return $this->segment()->bounds();
     }
 }
 

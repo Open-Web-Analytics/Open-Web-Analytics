@@ -115,9 +115,9 @@ test.describe('reporting: goal funnel', () => {
     test('the control bar offers the goal, the scope and an edit link', async ({ page }) => {
         await openFunnel(page);
 
-        await expect(page.locator('.owa_funnelControls #goalChooser')).toBeVisible();
+        await expect(page.locator('.owa_reportControls #goalChooser')).toBeVisible();
         await expect(page.locator('#funnelScopeSwitch')).toBeVisible();
-        await expect(page.locator('.owa_funnelControls a[href*="optionsGoalEntry"]')).toBeVisible();
+        await expect(page.locator('.owa_reportControls a[href*="optionsGoalEntry"]')).toBeVisible();
     });
 
     /**
@@ -192,10 +192,10 @@ test.describe('reporting: goal funnel', () => {
         const boxes = {};
 
         for (const [name, selector] of Object.entries({
-            goal:   '.owa_funnelControls #goalChooser',
+            goal:   '.owa_reportControls #goalChooser',
             scope:  '#funnelScopeSwitch .buttons',
             filter: '#funnelFilter .toggle-button',
-            edit:   '.owa_funnelControls a[href*="optionsGoalEntry"]',
+            edit:   '.owa_reportControls a[href*="optionsGoalEntry"]',
         })) {
             const box = await page.locator(selector).first().boundingBox();
             expect(box, `${name} control has no box`).not.toBeNull();
@@ -217,12 +217,12 @@ test.describe('reporting: goal funnel', () => {
     test('opening the filter does not move the rest of the bar', async ({ page }) => {
         await openFunnel(page);
 
-        const before = await page.locator('.owa_funnelControls a[href*="optionsGoalEntry"]').boundingBox();
+        const before = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
 
         await page.locator('#funnelFilter .toggle-button').click();
         await expect(page.locator('#funnelFilter .builder')).toBeVisible();
 
-        const after = await page.locator('.owa_funnelControls a[href*="optionsGoalEntry"]').boundingBox();
+        const after = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
 
         expect(Math.abs(after.y - before.y)).toBeLessThan(3);
     });

@@ -470,6 +470,88 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 /* ---------------------------------------------------------------------------
+ * Report control bar
+ *
+ * The row of controls a report puts under its title: what is being counted,
+ * which goal, which people, and a link to whatever configures it.
+ *
+ * Shared rather than per-report, and the reason is that the controls are NOT
+ * ours. The scope switch borrows the Live View control's markup, the filter
+ * borrows the grid's constraint builder, and each of them arrives with its own
+ * label class and its own idea of whether it is inline. Styling that in one
+ * report means the next report to reuse a control inherits none of it and the
+ * bar comes apart -- which is what these rules exist to prevent.
+ *
+ * Used by the goal funnel and by domstreams.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportControls {
+    padding: 0 0 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.owa .owa_reportControl {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 25px;
+}
+
+/* Every control in the bar is labelled the same way and sits on the same line:
+   a label on the left, then the control. The scope switch borrows the Live View
+   markup and the filter borrows the grid's constraint builder, so both bring
+   their own label classes -- they are pulled onto the same footing here rather
+   than each being styled where it came from. */
+.owa .owa_reportControl > label,
+.owa .owa_reportControl > .label,
+.owa .owa_reportControls .autoRefreshControl .label {
+    display: inline-block;
+    font-size: 12px;
+    color: #707070;
+    margin-right: 6px;
+    padding: 0;
+    vertical-align: middle;
+}
+
+/* The builder's own container is a block by default, which would drop the
+   toggle onto its own line and break the row. */
+.owa .owa_reportControl .constraintPicker,
+.owa .owa_reportControl .constraintPickerContainer {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+}
+
+/* The panel hangs BELOW the bar rather than growing it, so opening the filter
+   does not move the controls beside it. */
+.owa .owa_reportControl .constraintPickerContainer .builder {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    margin: 6px 0 0 0;
+    min-width: 760px;
+}
+
+/* The scope switch sits inline in the bar; the Live View control it borrows
+   its markup from floats right in the report header instead. */
+.owa .owa_reportControls .autoRefreshControl {
+    float: none;
+    display: inline-block;
+}
+
+
+.owa .owa_reportControls .autoRefreshControl .buttons {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.owa .owa_reportControlRight {
+    float: right;
+    margin-right: 0;
+}
+
+/* ---------------------------------------------------------------------------
  * Goal funnel
  *
  * Rewritten with the report. The funnel used to run DOWN the page as a
@@ -481,72 +563,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
  * bars shorten as you read -- and the numbers are repeated in a table beneath
  * for the values a bar cannot carry.
  * ------------------------------------------------------------------------- */
-
-.owa .owa_funnelControls {
-    padding: 0 0 15px 0;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.owa .owa_funnelControl {
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 25px;
-}
-
-/* Every control in the bar is labelled the same way and sits on the same line:
-   a label on the left, then the control. The scope switch borrows the Live View
-   markup and the filter borrows the grid's constraint builder, so both bring
-   their own label classes -- they are pulled onto the same footing here rather
-   than each being styled where it came from. */
-.owa .owa_funnelControl > label,
-.owa .owa_funnelControl > .label,
-.owa .owa_funnelControls .autoRefreshControl .label {
-    display: inline-block;
-    font-size: 12px;
-    color: #707070;
-    margin-right: 6px;
-    padding: 0;
-    vertical-align: middle;
-}
-
-/* The builder's own container is a block by default, which would drop the
-   toggle onto its own line and break the row. */
-.owa .owa_funnelControl .constraintPicker,
-.owa .owa_funnelControl .constraintPickerContainer {
-    display: inline-block;
-    vertical-align: middle;
-    position: relative;
-}
-
-/* The panel hangs BELOW the bar rather than growing it, so opening the filter
-   does not move the controls beside it. */
-.owa .owa_funnelControl .constraintPickerContainer .builder {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 100;
-    margin: 6px 0 0 0;
-    min-width: 760px;
-}
-
-/* The scope switch sits inline in the bar; the Live View control it borrows
-   its markup from floats right in the report header instead. */
-.owa .owa_funnelControls .autoRefreshControl {
-    float: none;
-    display: inline-block;
-}
-
-
-.owa .owa_funnelControls .autoRefreshControl .buttons {
-    display: inline-block;
-    vertical-align: middle;
-}
-
-.owa .owa_funnelControlRight {
-    float: right;
-    margin-right: 0;
-}
 
 .owa .owa_funnelHeadline {
     font-size: 26px;

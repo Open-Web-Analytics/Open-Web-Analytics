@@ -63,6 +63,42 @@ const FIXTURE = {
         ],
         destination: '/docs',
     },
+    /*
+     * The DOM recordings seeded by seedDomstreams().
+     *
+     * `a` is stored as THREE rows -- one per flush of the tracker's event queue
+     * -- which is what a real recording is. Each row carries the cumulative
+     * elapsed seconds at the moment it was flushed, so the recording's duration
+     * is the LARGEST of them (95) and not their sum (147) or the first written
+     * (12). Those three numbers are all different on purpose: a fixture where
+     * they agree cannot tell a grouped-and-aggregated list from an ungrouped
+     * one.
+     *
+     * The two recordings are attached to visits with different mediums, which
+     * is what makes the segment filter testable: filtering to `a.medium` must
+     * leave one recording, not two.
+     */
+    domstreams: {
+        recordings: 2,
+        a: {
+            medium: 'organic-search',
+            page: '/pricing',
+            duration: 95,
+            durationLabel: '0:01:35',
+            segments: 3,
+            bytes: 600,
+            sizeLabel: '600 B',
+        },
+        b: {
+            medium: 'referral',
+            page: '/',
+            duration: 8,
+            durationLabel: '0:00:08',
+            segments: 1,
+            bytes: 90,
+            sizeLabel: '90 B',
+        },
+    },
     // Notifications seeded for the header bell. Dismissing is permanent and
     // per user, so the specs must have their own rather than consume the real
     // release announcements.

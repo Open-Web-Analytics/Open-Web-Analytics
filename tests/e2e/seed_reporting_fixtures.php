@@ -312,8 +312,143 @@ function seed(): array
     //    goal metric set has a group to appear as.
     $out['goal_seeded'] = seedGoal();
 
+    // 7. DOM recordings, so the domstreams report has recordings to list --
+    //    including one stored as several chunks, which is the case its
+    //    aggregates exist for.
+    $out['domstreams_seeded'] = seedDomstreams();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * DOM recordings for the domstreams report.
+ *
+ * WHY THE FIRST ONE IS THREE ROWS
+ *
+ * Because that is what a real recording is. The tracker flushes its event queue
+ * on a timer, so one recording is stored as however many rows it took, all
+ * sharing a domstream_guid, and each carrying the CUMULATIVE elapsed seconds at
+ * the moment it was flushed. A fixture of one row per recording would report
+ * the same numbers whether the report grouped and aggregated or not.
+ *
+ * The three chunks carry 12, 40 and 95 seconds and are written out of order, so
+ * "the last one" and "the largest" are different answers and neither is "the
+ * first row". Together they hold 600 bytes of events.
+ *
+ * WHY EACH IS ON A DIFFERENT VISIT
+ *
+ * The segment filter selects VISITS, so the two recordings have to belong to
+ * visits that differ in something the filter can name. They are attached to
+ * sessions with different mediums, and both mediums are reported back in the
+ * fixture info -- a spec that hardcoded "organic-search" would be asserting
+ * against the referer list rather than against what was seeded.
+ *
+ * @return array what was seeded, for the fixture info
+ */
+function seedDomstreams(): array
+{
+    $site_id = md5(E2E_SITE_DOMAIN);
+    $db      = owa_coreAPI::dbSingleton();
+    $db->connect();
+
+    /*
+     * The visits the two recordings are attached to, chosen BY MEDIUM rather
+     * than by whatever the optimiser returns first. The medium is what the
+     * fixture then promises the specs, so it has to be the thing selected on --
+     * picking a session and reading its medium back would make the fixture
+     * describe the query plan.
+     *
+     * Both mediums are derived by the attribution chain from the referring URLs
+     * in E2E_REFERERS, so they are the real pipeline's output.
+     */
+    $recordings = [
+        ['medium' => 'organic-search', 'page' => '/pricing', 'chunks' => [12 => 100, 95 => 350, 40 => 150]],
+        ['medium' => 'referral',       'page' => '/',        'chunks' => [8  => 90]],
+    ];
+
+    $seeded = 0;
+    $out    = [];
+
+    foreach ($recordings as $i => $recording) {
+
+        $found = $db->get_results(
+            "SELECT id, visitor_id, medium, yyyymmdd FROM owa_session"
+            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
+            . " AND medium = '" . $db->prepare($recording['medium']) . "' LIMIT 1"
+        );
+
+        if (!is_array($found) || !$found) {
+            $out[] = ['medium' => $recording['medium'], 'skipped' => 'no visit with this medium'];
+            continue;
+        }
+
+        $session = (array) $found[0];
+        $guid    = numericGuid();
+
+        // Idempotent the way the rest of the seeder is: a recording already
+        // present for this page and visit is left alone rather than doubled.
+        $existing = $db->get_results(
+            "SELECT domstream_guid FROM owa_domstream"
+            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
+            . " AND session_id = " . (int) $session['id']
+            . " AND page_url = '" . $db->prepare(E2E_SITE_DOMAIN . $recording['page']) . "' LIMIT 1"
+        );
+
+        if (is_array($existing) && $existing) {
+            $out[] = [
+                'medium'   => $session['medium'],
+                'page'     => $recording['page'],
+                'duration' => max(array_keys($recording['chunks'])),
+                'segments' => count($recording['chunks']),
+            ];
+            continue;
+        }
+
+        // Midday on the visit's own day, matching seedPageviews() so the
+        // recording lands inside the same reporting window as everything else.
+        $ts = mktime(12, 0, 0,
+            (int) substr((string) $session['yyyymmdd'], 4, 2),
+            (int) substr((string) $session['yyyymmdd'], 6, 2),
+            (int) substr((string) $session['yyyymmdd'], 0, 4));
+
+        $offset = 0;
+
+        foreach ($recording['chunks'] as $duration => $bytes) {
+
+            $ds = owa_coreAPI::entityFactory('base.domstream');
+
+            $ds->set('id', numericGuid());
+            $ds->set('site_id', $site_id);
+            $ds->set('domstream_guid', $guid);
+            $ds->set('session_id', $session['id']);
+            $ds->set('visitor_id', $session['visitor_id']);
+            $ds->set('page_url', E2E_SITE_DOMAIN . $recording['page']);
+            $ds->set('page_width', 1280);
+            $ds->set('page_height', 800);
+            $ds->set('duration', $duration);
+            $ds->set('events', str_repeat('e', $bytes));
+            $ds->set('timestamp', $ts + $offset);
+            $ds->set('yyyymmdd', (int) $session['yyyymmdd']);
+            $ds->set('year', (int) substr((string) $session['yyyymmdd'], 0, 4));
+            $ds->set('month', (int) substr((string) $session['yyyymmdd'], 4, 2));
+            $ds->set('day', (int) substr((string) $session['yyyymmdd'], 6, 2));
+            $ds->create();
+
+            $offset += 30;
+            $seeded++;
+        }
+
+        $out[] = [
+            'medium'   => $session['medium'],
+            'page'     => $recording['page'],
+            'duration' => max(array_keys($recording['chunks'])),
+            'segments' => count($recording['chunks']),
+            'bytes'    => array_sum($recording['chunks']),
+        ];
+    }
+
+    return ['seeded' => $seeded, 'recordings' => $out];
 }
 
 /**
@@ -440,7 +575,7 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact',
+    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();

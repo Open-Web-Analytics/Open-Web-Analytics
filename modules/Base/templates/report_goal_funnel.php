@@ -28,9 +28,9 @@ foreach ( $owa_steps as $owa_s ) {
 }
 ?>
 
-<div class="owa_funnelControls">
+<div class="owa_reportControls">
 
-    <span class="owa_funnelControl">
+    <span class="owa_reportControl">
         <label for="goalChooser">Goal</label>
         <select id="goalChooser">
             <?php for ($i = 1; $i <= $view->numGoals; $i++):?>
@@ -47,7 +47,7 @@ foreach ( $owa_steps as $owa_s ) {
          * it would make one link mean different things to two people.
          */
     ?>
-    <span class="owa_funnelControl">
+    <span class="owa_reportControl">
         <div class="autoRefreshControl" id="funnelScopeSwitch">
             <span class="label">Counting:</span>
             <span class="buttons">
@@ -71,12 +71,12 @@ foreach ( $owa_steps as $owa_s ) {
          * toggle, which is why this is a bare container.
          */
     ?>
-    <span class="owa_funnelControl">
+    <span class="owa_reportControl">
         <span class="label">Filter:</span>
         <span id="funnelFilter" class="constraintPicker"></span>
     </span>
 
-    <span class="owa_funnelControl owa_funnelControlRight">
+    <span class="owa_reportControl owa_reportControlRight">
         <a href="<?php echo $view->makeLink( array(
             'do'          => 'base.optionsGoalEntry',
             'goal_number' => $view->goal_number,

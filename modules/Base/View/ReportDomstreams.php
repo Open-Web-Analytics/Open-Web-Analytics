@@ -31,10 +31,29 @@ namespace OWA\Module\Base\View;
 
 class ReportDomstreams extends \OWA\Core\View {
 
+    /**
+     * Every value the template reads is forwarded here BY NAME.
+     *
+     * The body is a separate template with its own scope, so a value the
+     * controller set but this method does not mention simply is not there --
+     * and a missing template variable is not an error, it is an undefined that
+     * reaches whatever reads it. Adding a control to the report means adding
+     * its line here too.
+     */
     function render() {
 
-        $this->body->set('domstreams', $this->get('domstreams'));
         $this->body->set_template('report_domstreams.php');
+
+        $this->body->set('domstreams', $this->get('domstreams'));
+        $this->body->set('domstreams_pagination', $this->get('domstreams_pagination'));
+        $this->body->set('domstreams_total', $this->get('domstreams_total'));
+
+        // The segment filter, and why it selected nobody when it did.
+        $this->body->set('domstreams_filter_dimensions', $this->get('domstreams_filter_dimensions'));
+        $this->body->set('domstreams_filter_metrics', $this->get('domstreams_filter_metrics'));
+        $this->body->set('domstreams_constraints', $this->get('domstreams_constraints'));
+        $this->body->set('domstreams_segment_error', $this->get('domstreams_segment_error'));
+
         $doc = $this->get('document');
         $this->body->set('document', $doc);
         $this->body->set('properties', $this->get('item_properties'));

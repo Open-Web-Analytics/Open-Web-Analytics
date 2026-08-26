@@ -1168,6 +1168,52 @@ OWA.dataGrid.prototype = {
                     return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
                          + parts.join( ' -&gt; ' ) + '<br>';
                 } ).join( '' );
+            },
+
+            /*
+             * The Play link on a domstream recording.
+             *
+             * Named, not supplied: the report names this formatter and the cell
+             * carries only DATA -- {overlay, url, width, height}. A report that
+             * assembled the anchor itself would be handing the grid markup, and
+             * the grid has no way to tell markup it built from markup it was
+             * given.
+             *
+             * The href is the recorded page with the player's parameters on the
+             * fragment, which is how the overlay reaches the tracker on that
+             * page. The viewport travels as data attributes because the click
+             * handler needs it to size the window -- the replay positions events
+             * against the geometry they were recorded in.
+             */
+            domstreamPlayer : function( cellvalue ) {
+
+                var data = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                         ? cellvalue.value
+                         : cellvalue;
+
+                if ( typeof data === 'string' ) {
+                    try {
+                        data = JSON.parse( data );
+                    } catch ( e ) {
+                        return '';
+                    }
+                }
+
+                if ( ! data || ! data.url || ! data.overlay ) {
+                    return '';
+                }
+
+                var esc = function( v ) {
+                    return String( v )
+                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                        .replace( /'/g, '&#39;' );
+                };
+
+                return '<a class="play" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
+                     + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
+                     + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
+                     + '">Play</a>';
             }
 
         });
