@@ -36,7 +36,6 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
 
-        $this->type = 'options';
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
     }
@@ -83,7 +82,14 @@ class CustomReportSave extends \OWA\Core\AdminController {
             return $this->refuse( $result['error'] );
         }
 
-        $this->setStatusCode( 2504 );
+        /*
+         * Created and saved say different things, because they answer different
+         * questions -- "did my new report get made" and "did my change stick".
+         *
+         * Codes of their own, too. This used to set 2504, which the shared
+         * catalogue defines as "Goal Saved."
+         */
+        $this->setStatusCode( $id === '' ? 2510 : 2511 );
 
         // Straight to the report itself. The author's next question is always
         // whether it looks right, and the roster cannot answer that.
@@ -111,33 +117,37 @@ class CustomReportSave extends \OWA\Core\AdminController {
     }
 
     /**
-     * Back to the builder with what was typed, and why it was refused.
+     * Back to the builder, with what was typed and why it was refused.
      *
-     * Re-rendering rather than redirecting is what keeps the author's work: a
-     * redirect would hand back an empty form and the reason for it.
+     * DELEGATED rather than rendered here, the same way the report dispatcher
+     * delegates: the builder is a reporting screen and needs the chrome that
+     * ReportController::pre() supplies, and this controller is a write that
+     * redirects on success. Setting the report view from here instead produced
+     * an entirely blank page -- no site list, no period, nothing for the view
+     * to render -- so an author who mistyped a metric name got a blank screen
+     * rather than a message.
+     *
+     * Making THIS a ReportController was the other thing tried, and it broke
+     * the success path: setRedirectAction() copies the controller's data into
+     * the redirect, and the report chrome is a site list and a period object.
+     *
+     * The submitted definition rides along in the params, so the builder
+     * redraws what the author had rather than what was last stored.
      */
     private function refuse( $message ) {
 
-        $this->set( 'custom_report_error', $message );
+        $params = $this->params;
 
-        $this->setView( 'base.options' );
-        $this->setSubview( 'base.customReportEdit' );
+        $params['do']                = 'base.customReportEdit';
+        $params['customReportError'] = $message;
 
-        $this->set( 'custom_report_id', (string) $this->getParam( 'customReportId' ) );
-        $this->set( 'custom_report_name', (string) $this->getParam( 'customReportName' ) );
+        $target = new CustomReportEdit( $params );
 
-        $decoded = json_decode( (string) $this->getParam( 'customReportDefinition' ), true );
-
-        $this->set( 'custom_report_definition', is_array( $decoded ) ? $decoded : array() );
-
-        $this->set( 'metric_choices',    CustomReportEdit::metricChoices() );
-        $this->set( 'dimension_choices', CustomReportEdit::dimensionChoices() );
-        $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES );
-        $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
+        return $target->doAction();
     }
 
     function errorAction() {
 
-        $this->refuse( 'A custom report needs a name and at least one widget.' );
+        return $this->refuse( 'A custom report needs a name and at least one widget.' );
     }
 }

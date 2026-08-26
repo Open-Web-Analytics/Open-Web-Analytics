@@ -44,8 +44,21 @@ $_owa_messages = [
     2501 => ['headline' => 'Success', 'message' => 'The module was activated successfully.'],
     2502 => ['headline' => 'Success', 'message' => 'The module was deactivated successfully.'],
     2503 => ['headline' => 'Success', 'message' => 'Options reset to Default Values.'],
-    2504 => ['headline' => 'Success', 'message' => 'Entity %s Schema Created.'],
+    // 2504 was declared TWICE -- 'Entity %s Schema Created.' and then 'Goal
+    // Saved.' -- and in a PHP array literal the later key silently wins. So the
+    // schema message had been unreachable, and anything that set 2504 for any
+    // reason said "Goal Saved.". The schema one moves to a free code; the goal
+    // one keeps 2504 because OptionsGoalEdit sets it and that is the message it
+    // is meant to show.
     2504 => ['headline' => 'Success', 'message' => 'Goal Saved.'],
+    2505 => ['headline' => 'Success', 'message' => 'Entity %s Schema Created.'],
+
+    // Custom reports. Their own codes rather than borrowing 2504, which is why
+    // saving a custom report used to report "Goal Saved."
+    2510 => ['headline' => 'Success', 'message' => 'Custom report created.'],
+    2511 => ['headline' => 'Success', 'message' => 'Custom report saved.'],
+    2512 => ['headline' => 'Success', 'message' => 'Custom report deleted.'],
+    2513 => ['headline' => 'Error', 'message' => 'That custom report could not be deleted.'],
 
 
     //User managment
@@ -71,8 +84,11 @@ $_owa_messages = [
     3204 => ['headline' => 'Success', 'message' => 'Site Deleted.'],
     3206 => ['headline' => 'Error', 'message' => 'A site with that domain already exists.'],
     3207 => ['headline' => 'Error', 'message' => 'You must enter a domain when adding a web site.'],
-    3208 => ['headline' => 'Error', 'message' => 'That site does not exist.'],
+    // Same duplication as 2504: 'That site does not exist.' was shadowed and
+    // therefore unreachable. Both are real messages, so the shadowed one is
+    // given a code of its own rather than deleted.
     3208 => ['headline' => 'Error', 'message' => 'Please remove the http:// from your beginning of your domain.'],
+    3209 => ['headline' => 'Error', 'message' => 'That site does not exist.'],
 
 
     //install
@@ -86,8 +102,12 @@ $_owa_messages = [
     3307 => ['headline' => 'Error', 'message' => 'Updates failed. Check OWA\'s error log file for more details and try again.'],
     3308 => ['headline' => 'Success', 'message' => 'Updates were applied.'],
     3309 => ['headline' => 'Error', 'message' => 'Site Domain is required.'],
-    3310 => ['headline' => 'Error', 'message' => 'E-mail Address is required.'],
+    // ...and again. 'E-mail Address is required.' was the shadowed one. It moves
+    // to 3312, NOT 3311 -- three controllers already set 3311 for the generic
+    // form-error message, so reusing it would swap their message for this one
+    // and reintroduce the same class of bug from the other end.
     3310 => ['headline' => 'Error', 'message' => 'Password is required.'],
+    3312 => ['headline' => 'Error', 'message' => 'E-mail Address is required.'],
     3311 => ['headline' => 'Error', 'message' => 'These updates must be applied using the command line interface (CLI). Run <code>\'/path/to/php cli.php cmd=update\'</code> from your server\'s command shell to apply these updates. For more information on updating see the install/update page on the wiki.'],
 
     // Graph related

@@ -27,8 +27,12 @@ class CustomReportEdit extends \OWA\Core\View {
         $this->body->set( 'custom_report_error', $this->get( 'custom_report_error' ) );
 
         $this->body->set( 'metric_choices', $this->get( 'metric_choices' ) );
+        $this->body->set( 'metric_entities', $this->get( 'metric_entities' ) );
+        $this->body->set( 'dimension_entities', $this->get( 'dimension_entities' ) );
         $this->body->set( 'dimension_choices', $this->get( 'dimension_choices' ) );
         $this->body->set( 'widget_types', $this->get( 'widget_types' ) );
         $this->body->set( 'max_widgets', $this->get( 'max_widgets' ) );
+        $this->body->set( 'max_metrics', $this->get( 'max_metrics' ) );
+        $this->body->set( 'max_dimensions', $this->get( 'max_dimensions' ) );
     }
 }

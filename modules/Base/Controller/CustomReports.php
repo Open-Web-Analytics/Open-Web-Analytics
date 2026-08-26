@@ -64,7 +64,33 @@ class CustomReports extends \OWA\Core\ReportController {
          */
         $sees_all = (bool) $user->isCapable( 'edit_users' );
 
-        $reports = \OWA\Module\Base\Classes\CustomReports::roster( $user_id, $sees_all );
+        /*
+         * The sort rides on the URL rather than being remembered, so a link to
+         * the roster shows the same order to whoever opens it. Both halves come
+         * from the request and neither is trusted: the column is resolved
+         * through an allowlist, and the direction is a boolean.
+         */
+        $sort = (string) $this->getParam( 'rosterSort' );
+
+        if ( ! isset( \OWA\Module\Base\Classes\CustomReports::ROSTER_SORTS[ $sort ] ) ) {
+
+            $sort = \OWA\Module\Base\Classes\CustomReports::ROSTER_DEFAULT_SORT;
+        }
+
+        $descending = $this->getParam( 'rosterDesc' );
+        $descending = $descending === null || $descending === ''
+            ? null
+            : (bool) $descending;
+
+        $reports = \OWA\Module\Base\Classes\CustomReports::roster(
+            $user_id, $sees_all, $sort, $descending );
+
+        // What the headings need to draw themselves: which one is active, and
+        // which way, so each can link to the OPPOSITE of what it shows now.
+        $this->set( 'roster_sort', $sort );
+        $this->set( 'roster_desc', $descending === null
+            ? ( $sort === \OWA\Module\Base\Classes\CustomReports::ROSTER_DEFAULT_SORT )
+            : $descending );
 
         $this->set( 'custom_reports', $reports );
         $this->set( 'sees_all', $sees_all );
@@ -79,12 +105,44 @@ class CustomReports extends \OWA\Core\ReportController {
         $this->set( 'title', 'Custom Reports' );
 
         /*
-         * The roster is a list of reports, not a report: it has no period and
-         * no site of its own. The sites filter is hidden for the same reason
-         * the Sites roster hides it -- there is nothing on this page it would
-         * change.
+         * $this->data, NOT $this->get().
+         *
+         * Controller::get() is getParam() -- it reads the REQUEST. Asking it
+         * for something action() set returns whatever the URL happened to
+         * carry, which is nothing, so the count read as 0 and the New button
+         * was never offered.
          */
-        $this->hideReportingNavigation();
+        $this->set( 'title_count', count( (array) ( $this->data['custom_reports'] ?? array() ) ) );
+
+        /*
+         * New sits on the title's line, because it acts on the whole screen.
+         * Offered only to someone who may author one -- a reader who cannot
+         * would get a button that leads to a refusal.
+         */
+        if ( ! empty( $this->data['may_author'] ) ) {
+
+            $this->set( 'title_actions', array(
+                array(
+                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                                   ->makeLink( array( 'do' => 'base.customReportEdit' ) ),
+                    'label' => 'New Custom Report',
+                    'icon'  => 'fa-plus',
+                ),
+            ) );
+        }
+
+        /*
+         * The reporting NAV stays: the roster is part of the reporting UI, and
+         * a reader who opens it should be able to get anywhere else from it
+         * without going back first.
+         *
+         * The period picker and Live View do NOT: this is a list of reports,
+         * not a report of a time range, and neither control would change
+         * anything on the page. The sites filter goes for the same reason --
+         * a custom report is site-agnostic, so the list is the same whichever
+         * site is selected.
+         */
+        $this->hideTimeControls();
         $this->hideSitesFilter();
     }
 }

@@ -71,9 +71,42 @@ jQuery(document).ready(function(){
                 </div>
                 <?php endif;?>
                 <div class="reportSectionContainer">
+                    <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
                     <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
                     <div id="liveViewSwitch" style="width:auto;float:right; padding-right:30px;"></div>
-                    <div class="owa_reportTitle"><?php echo $view->title;?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span></div>
+                    <?php endif;?>
+                    <?php
+                        /*
+                         * Actions belonging to the SCREEN, on the title's line.
+                         *
+                         * Declared as data -- url, label, icon -- rather than
+                         * as markup a controller echoes, so a controller cannot
+                         * put arbitrary HTML into the report header.
+                         *
+                         * Floated right like the period picker, which is what
+                         * puts them on the title's line rather than under it.
+                         */
+                    ?>
+                    <?php if ( $view->get( 'title_actions' ) ): ?>
+                    <div class="owa_titleActions">
+                        <?php foreach ( (array) $view->get( 'title_actions' ) as $owa_action ): ?>
+                        <a class="owa_button" href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
+                            if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
+                                $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
+                            endif; ?><?php $view->out( $owa_action['label'] ); ?></a>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="owa_reportTitle"><?php echo $view->title;?><?php
+                        /*
+                         * A count beside the title, as a quiet pill. It says how
+                         * much is on the page, which a heading alone does not,
+                         * without competing with the heading for attention.
+                         */
+                        ?><?php if ( $view->get( 'title_count' ) !== null && $view->get( 'title_count' ) !== '' ): ?><span
+                            class="owa_titleCount"><?php $view->out( $view->get( 'title_count' ) ); ?></span><?php
+                        endif; ?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span></div>
 
                     <div class="clear"></div>
                     <?php echo $view->subview;?>
@@ -84,7 +117,11 @@ jQuery(document).ready(function(){
     </table>
 </div>
 <script>
+<?php if ( ! $view->get( 'hideTimeControls' ) ):?>
 OWA.items['<?php echo $view->dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');
-OWA.items['<?php echo $view->dom_id;?>'].showSiteFilter();
 OWA.items['<?php echo $view->dom_id;?>'].showAutoRefreshControl({label: 'Live View:', target: '#liveViewSwitch'});
+<?php endif;?>
+<?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
+OWA.items['<?php echo $view->dom_id;?>'].showSiteFilter();
+<?php endif;?>
 </script>

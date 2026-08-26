@@ -66,6 +66,26 @@ class CustomReports {
     const MAX_WIDGETS = 10;
 
     /**
+     * How many metrics one query may ask for.
+     *
+     * A limit on READABILITY as much as on cost. A metric-boxes widget draws a
+     * box per metric and a trend draws a box per metric under its chart, so
+     * beyond about four they stop fitting a row and the widget reads as a wall
+     * of numbers. Every metric is also another aggregate in the query.
+     */
+    const MAX_METRICS = 4;
+
+    /**
+     * How many dimensions one query may group by.
+     *
+     * Same number, different reason. Each dimension is another GROUP BY column
+     * and another join, so rows multiply with every one added -- and a grid
+     * grouped six ways is a list of near-unique rows, which answers nothing a
+     * reader came for.
+     */
+    const MAX_DIMENSIONS = 4;
+
+    /**
      * The widget types the builder offers.
      *
      * A SUBSET of what the renderer can draw, and deliberately so. The others
@@ -85,6 +105,23 @@ class CustomReports {
 
     /** Roster ordering: most recently changed first. */
     const ROSTER_LIMIT = 500;
+
+    /**
+     * What the roster may be ordered by, and the column each one means.
+     *
+     * An ALLOWLIST, because the sort arrives from a URL and reaches an ORDER BY
+     * -- which cannot be a bound parameter. Mapping a known key to a known
+     * column is what keeps a reader's choice from being SQL, the same rule the
+     * reporting stack applies to every dimension and metric name.
+     */
+    const ROSTER_SORTS = array(
+        'name'    => 'name',
+        'author'  => 'user_id',
+        'updated' => 'last_updated_timestamp',
+    );
+
+    /** Ordered by when it changed, newest first: the useful default for a list. */
+    const ROSTER_DEFAULT_SORT = 'updated';
 
     /**
      * Why this definition may not be stored, or '' if it may.
@@ -157,6 +194,25 @@ class CustomReports {
             return $error;
         }
 
+        $error = self::validateFieldCount(
+            isset( $definition['metrics'] ) ? $definition['metrics'] : '',
+            self::MAX_METRICS, 'metrics', 'the report metric set',
+            'the boxes stop fitting a row and the numbers stop being readable' );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
+        $error = self::validateCombination(
+            isset( $definition['metrics'] ) ? $definition['metrics'] : '',
+            '', '', 'the report metric set' );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
         return '';
     }
 
@@ -184,6 +240,47 @@ class CustomReports {
 
                 return $error;
             }
+        }
+
+        $error = self::validateFieldCount(
+            isset( $query['metrics'] ) ? $query['metrics'] : '',
+            self::MAX_METRICS, 'metrics', $where,
+            'the boxes stop fitting a row and the numbers stop being readable' );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
+        $error = self::validateFieldCount(
+            isset( $query['dimensions'] ) ? $query['dimensions'] : '',
+            self::MAX_DIMENSIONS, 'dimensions', $where,
+            'every dimension multiplies the rows, and a grid grouped that many ways '
+          . 'is a list of near-unique rows' );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
+        /*
+         * ...and everything asked for has to be ASKABLE TOGETHER.
+         *
+         * Metrics, dimensions AND the dimensions named by the widget's
+         * constraints: a query is answered from one fact table, and that table
+         * has to serve all three. Checked after the names resolve, because a
+         * combination check on a name that does not exist would report the
+         * wrong problem.
+         */
+        $error = self::validateCombination(
+            isset( $query['metrics'] ) ? $query['metrics'] : '',
+            isset( $query['dimensions'] ) ? $query['dimensions'] : '',
+            isset( $widget['constraints'] ) ? $widget['constraints'] : '',
+            $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
         }
 
         /*
@@ -252,6 +349,139 @@ class CustomReports {
         return '';
     }
 
+    /**
+     * Whether these metrics can be asked for in one query.
+     *
+     * Every metric is computed from one or more FACT TABLES, and a query is
+     * answered from one of them -- so a set is only askable if its metrics
+     * share a table. `domClicks` is measured in the click table alone and
+     * `visits` in the session or the request; no table holds both, so asking
+     * for them together is not a thin result, it is not a question.
+     *
+     * The answer comes from ResultSetManager, which performs exactly this
+     * reduction when it chooses a base entity. Asking IT rather than keeping a
+     * list here is what stops the two drifting: a metric registered tomorrow is
+     * covered without anything being added.
+     *
+     * @param string|array $metrics
+     * @param string|array $dimensions
+     * @param string $constraints the widget's constraint string, if any
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateCombination( $metrics, $dimensions = '', $constraints = '', $where = '' ) {
+
+        $names = self::asNames( $metrics );
+        $dims  = self::asNames( $dimensions );
+
+        /*
+         * Constraints contribute their DIMENSIONS to the same reduction -- the
+         * engine folds them in with getDimensionsFromConstraints(), so a
+         * constraint on a field the fact table does not carry breaks a query
+         * exactly as a dimension does.
+         */
+        foreach ( self::constraintDimensions( $constraints ) as $name ) {
+
+            $dims[] = $name;
+        }
+
+        // Nothing to reconcile: one field is always askable on its own.
+        if ( count( $names ) + count( $dims ) < 2 ) {
+
+            return '';
+        }
+
+        if ( ! $names ) {
+
+            /*
+             * Dimensions alone cannot be reduced here: the entity list starts
+             * from the METRICS, and a widget with none inherits the report's.
+             * Left to the query, which checks the pair it actually runs with.
+             */
+            return '';
+        }
+
+        $rsm = new ResultSetManager;
+
+        $clash = $rsm->firstIncompatible( $names, $dims );
+
+        if ( ! $clash ) {
+
+            return '';
+        }
+
+        /*
+         * The message NAMES BOTH SIDES. Listing everything asked for tells the
+         * author nothing they can act on; naming the field that broke the set
+         * and what it clashes with tells them which one to remove.
+         */
+        return $where . ': ' . ResultSetManager::incompatibleMessage(
+            $clash['name'], $clash['with'], $clash['kind'] );
+    }
+
+    /**
+     * At most $max of one kind of field in one query.
+     *
+     * @param string|array $fields
+     * @param int    $max
+     * @param string $kind   metrics|dimensions, for the message
+     * @param string $where
+     * @param string $why    what goes wrong past the limit
+     * @return string
+     */
+    private static function validateFieldCount( $fields, $max, $kind, $where, $why ) {
+
+        $names = self::asNames( $fields );
+
+        if ( count( $names ) <= $max ) {
+
+            return '';
+        }
+
+        return sprintf(
+            '%s asks for %d %s; %d is the most one widget can carry. Beyond that %s -- '
+          . 'split them across widgets instead.',
+            $where, count( $names ), $kind, $max, $why );
+    }
+
+    /** A comma string or list, as trimmed non-empty names. */
+    private static function asNames( $value ) {
+
+        $names = is_array( $value ) ? $value : explode( ',', (string) $value );
+
+        return array_values( array_filter( array_map( 'trim', $names ) ) );
+    }
+
+    /**
+     * The dimension names a constraint string mentions.
+     *
+     * A constraint is `name==value`, comma separated. Only the NAME matters
+     * here, and only when it is a dimension -- a constraint on a metric is a
+     * having clause and does not decide the fact table.
+     *
+     * @param string $constraints
+     * @return array
+     */
+    private static function constraintDimensions( $constraints ) {
+
+        $out = array();
+
+        foreach ( self::asNames( $constraints ) as $clause ) {
+
+            // Split on the first operator character; the operators are
+            // ==, !=, >, <, >=, <=, =~ and so on, all starting with one of these.
+            $name = preg_split( '/[=!<>~]/', $clause, 2 )[0];
+            $name = trim( (string) $name );
+
+            if ( $name !== '' && self::isDimension( $name ) ) {
+
+                $out[] = $name;
+            }
+        }
+
+        return $out;
+    }
+
     /** Whether the name resolves as either kind -- what a sort may be. */
     private static function isKnownName( $name ) {
 
@@ -313,7 +543,7 @@ class CustomReports {
      * @param bool   $all     true for a user who may see everyone's
      * @return array
      */
-    public static function roster( $user_id, $all = false ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -326,7 +556,29 @@ class CustomReports {
             $params[] = (string) $user_id;
         }
 
-        $sql .= ' ORDER BY last_updated_timestamp DESC LIMIT ' . (int) self::ROSTER_LIMIT;
+        /*
+         * The column comes from the allowlist, never from the request. An
+         * unknown key falls back to the default rather than erroring: a sort is
+         * a way of looking at a list, and a bad one should not take the list
+         * away.
+         */
+        $key = isset( self::ROSTER_SORTS[ $sort ] ) ? $sort : self::ROSTER_DEFAULT_SORT;
+
+        /*
+         * Direction defaults to what each column is usually wanted in: a date
+         * newest-first, a name A-to-Z. Asking for "updated" and getting the
+         * oldest first is right once and wrong every other time.
+         */
+        if ( $descending === null ) {
+
+            $descending = ( $key === 'updated' );
+        }
+
+        // A literal, not a parameter: ASC and DESC are the only two values this
+        // can ever be, chosen here rather than passed through.
+        $sql .= ' ORDER BY ' . self::ROSTER_SORTS[ $key ]
+              . ( $descending ? ' DESC' : ' ASC' )
+              . ' LIMIT ' . (int) self::ROSTER_LIMIT;
 
         // get_results(), not query()->fetchAll(): query() returns the DRIVER's
         // own result and only PDO's has fetchAll(). Null for both no rows and a

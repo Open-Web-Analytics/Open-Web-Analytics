@@ -33,13 +33,31 @@ namespace OWA\Module\Base\Controller;
  *
  * @since owa 1.8.0
  */
-class CustomReportEdit extends \OWA\Core\AdminController {
+/*
+ * A REPORTING screen, not an options screen.
+ *
+ * It was an options screen first, copied from the goal forms, and that was
+ * wrong twice over. An options screen configures the INSTALLATION -- settings,
+ * users, modules -- and a custom report is not a setting; it is something the
+ * author makes, which is why the roster is already a reporting screen.
+ *
+ * It was also wrong concretely. View/Options.php loads owa.admin.css and
+ * nothing else, so the builder's own rules never reached it and the whole page
+ * rendered unstyled; and jQuery UI's stylesheet is loaded by report pages only,
+ * so the widget dialog opened as an unstyled block. Both were symptoms of the
+ * screen being in the wrong family, and both go away here rather than being
+ * patched around.
+ *
+ * The third thing it fixes is the site. A report is viewed against one, and the
+ * site the author is building against is the one the View link and the share
+ * URL use -- the reporting chrome puts that filter on the page instead of it
+ * travelling invisibly.
+ */
+class CustomReportEdit extends \OWA\Core\ReportController {
 
     function __construct( $params ) {
 
         parent::__construct( $params );
-
-        $this->type = 'options';
 
         // Authoring, not viewing. A reader who may open a shared report does
         // not necessarily get to build one.
@@ -94,7 +112,31 @@ class CustomReportEdit extends \OWA\Core\AdminController {
          */
         $definition = $report ? (array) $report['definition'] : array();
 
-        $this->set( 'custom_report_name', $report ? $report['name'] : '' );
+        $name = $report ? $report['name'] : '';
+
+        /*
+         * A REFUSED save comes back through here, carrying what the author
+         * typed. Those win over the stored row -- redrawing the last saved
+         * version would quietly discard the edit they are being asked to fix.
+         */
+        if ( $this->getParam( 'customReportError' ) ) {
+
+            $this->set( 'custom_report_error', $this->getParam( 'customReportError' ) );
+
+            $submitted = json_decode( (string) $this->getParam( 'customReportDefinition' ), true );
+
+            if ( is_array( $submitted ) ) {
+
+                $definition = $submitted;
+            }
+
+            if ( (string) $this->getParam( 'customReportName' ) !== '' ) {
+
+                $name = (string) $this->getParam( 'customReportName' );
+            }
+        }
+
+        $this->set( 'custom_report_name', $name );
         $this->set( 'custom_report_definition', $definition );
 
         /*
@@ -108,10 +150,27 @@ class CustomReportEdit extends \OWA\Core\AdminController {
          */
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
 
+        /*
+         * Which fact tables each metric can be measured in.
+         *
+         * The builder narrows the picker with it: once a metric is chosen, only
+         * metrics sharing a table stay offered, so an impossible set cannot be
+         * assembled. Sent as data because the filtering has to happen per
+         * keystroke -- asking the server on every selection would make the
+         * picker feel broken, and the answer never changes within a page.
+         *
+         * Server-side validation still refuses an illegal set on save. This is
+         * the same answer arriving earlier, not a replacement for it.
+         */
+        $this->set( 'metric_entities', self::metricEntities() );
+        $this->set( 'dimension_entities', self::dimensionEntities() );
+
         $this->set( 'metric_choices',    self::metricChoices() );
         $this->set( 'dimension_choices', self::dimensionChoices() );
         $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES );
         $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
+        $this->set( 'max_metrics',       \OWA\Module\Base\Classes\CustomReports::MAX_METRICS );
+        $this->set( 'max_dimensions',    \OWA\Module\Base\Classes\CustomReports::MAX_DIMENSIONS );
     }
 
     /**
@@ -132,6 +191,77 @@ class CustomReportEdit extends \OWA\Core\AdminController {
     public static function dimensionChoices() {
 
         return self::choices( \OWA\Core\CoreAPI::getAllDimensions() );
+    }
+
+    /**
+     * metric name => the fact tables it can be measured in.
+     *
+     * Read from ResultSetManager, which is what actually decides, so the
+     * builder cannot come to a different conclusion from the query engine.
+     *
+     * @return array<string,array>
+     */
+    public static function metricEntities() {
+
+        $out = array();
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllMetrics() ) as $name ) {
+
+            $out[ $name ] = $rsm->compatibleEntities( array( $name ) );
+        }
+
+        return $out;
+    }
+
+    /**
+     * dimension name => the fact tables it is related to.
+     *
+     * The same relation ResultSetManager checks when it picks a base entity, so
+     * the builder narrows on exactly what the query engine would refuse.
+     *
+     * @return array<string,array>
+     */
+    public static function dimensionEntities() {
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        /*
+         * The fact tables a query can be answered from. Taken from the metric
+         * registry rather than listed, so a module adding a fact table and
+         * metrics for it is covered without a change here.
+         */
+        $entities = array();
+
+        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllMetrics() ) as $metric ) {
+
+            foreach ( $rsm->compatibleEntities( array( $metric ) ) as $entity ) {
+
+                $entities[ $entity ] = true;
+            }
+        }
+
+        $entities = array_keys( $entities );
+
+        $out = array();
+
+        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllDimensions() ) as $name ) {
+
+            $related = array();
+
+            foreach ( $entities as $entity ) {
+
+                if ( $rsm->isDimensionRelated( $name, $entity ) ) {
+
+                    $related[] = $entity;
+                }
+            }
+
+            $out[ $name ] = $related;
+        }
+
+        return $out;
     }
 
     /**
@@ -180,7 +310,22 @@ class CustomReportEdit extends \OWA\Core\AdminController {
     function success() {
 
         $this->setSubview( 'base.customReportEdit' );
-        $this->setView( 'base.options' );
-        $this->set( 'title', $this->get( 'custom_report_id' ) ? 'Edit Custom Report' : 'New Custom Report' );
+        $this->setView( 'base.report' );
+        // $this->data, not $this->get() -- get() reads the request, and this
+        // was set by action().
+        $this->set( 'title', ! empty( $this->data['custom_report_id'] )
+            ? 'Edit Custom Report' : 'New Custom Report' );
+
+        /*
+         * The reporting NAV is hidden: this is one screen about one report, and
+         * the left menu is for moving between reports.
+         *
+         * The period picker and Live View go too -- the builder runs no query,
+         * so neither would change anything on it. The sites filter STAYS,
+         * because the site is a real input here: it decides which site the View
+         * link and the saved report's URL name.
+         */
+        $this->hideReportingNavigation();
+        $this->hideTimeControls();
     }
 }

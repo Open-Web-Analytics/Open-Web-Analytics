@@ -213,6 +213,160 @@ final class CustomReportsTest extends TestCase
      * to 9999 would leave this passing. The number is the requirement, so the
      * number is what the test says.
      */
+    // ------------------------------------------------------------------
+    // What can be asked for TOGETHER
+    // ------------------------------------------------------------------
+
+    /**
+     * A query is answered from ONE fact table.
+     *
+     * Every metric is computed from one or more of them, every dimension is
+     * related to some of them, and a constraint contributes its dimension to
+     * the same reduction. So a combination is only askable if one table serves
+     * all of it -- clicks live in owa_click and visits in owa_session, and no
+     * table has both.
+     *
+     * This was SILENT. The engine detected it ('illegal metric combination')
+     * and reported it through addError(), which is where routine misses go and
+     * which reports swallow -- so an impossible set came back as an empty or
+     * nonsensical report with nothing said. It is a request error now: refused,
+     * and named.
+     */
+    public function testMetricsFromDifferentFactTablesAreRefused(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,domClicks';
+
+        $error = CustomReports::validate($definition);
+
+        $this->assertNotSame('', $error, 'clicks and visits cannot be counted together');
+
+        // BOTH SIDES named: which field broke it, and what it clashed with.
+        // Listing everything asked for tells an author nothing to act on.
+        $this->assertStringContainsString('domClicks', $error);
+        $this->assertStringContainsString('visits', $error);
+    }
+
+    /** ...and a combination that IS askable is left alone. */
+    public function testMetricsSharingAFactTableAreAccepted(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews';
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * A dimension can be as impossible as a metric, for the same reason: the
+     * base entity has to be related to it too.
+     */
+    public function testTheCheckReachesDimensionsAndConstraints(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        // pagePath is on the request but not the session, so it decides which
+        // of the two tables answers -- it does not make the query impossible.
+        $this->assertSame(array('base.request'),
+            $rsm->compatibleEntities(array('visits'), array('pagePath')));
+
+        // ...and a dimension no fact table carries leaves nothing.
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $this->assertSame(array(),
+            $rsm->compatibleEntities(array('visits'), array('notARealDimension')));
+    }
+
+    /** The offender is the field that emptied the set, not the whole list. */
+    public function testTheClashNamesTheFieldThatCausedIt(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $clash = $rsm->firstIncompatible(array('visits', 'uniqueVisitors', 'domClicks'));
+
+        $this->assertNotNull($clash);
+        $this->assertSame('domClicks', $clash['name'], 'the LAST one added is what broke it');
+        $this->assertSame('metric', $clash['kind']);
+        $this->assertContains('visits', $clash['with']);
+    }
+
+    public function testACompatibleSetHasNoClash(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $this->assertNull($rsm->firstIncompatible(array('visits', 'uniqueVisitors')));
+    }
+
+    // ------------------------------------------------------------------
+    // How much can be asked for
+    // ------------------------------------------------------------------
+
+    /**
+     * FOUR, written out rather than taken from the constant.
+     *
+     * A fixture built from the constant under test follows it anywhere it
+     * moves, so raising the cap would leave the test passing.
+     */
+    public function testAtMostFourMetricsAndFourDimensions(): void
+    {
+        $this->assertSame(4, CustomReports::MAX_METRICS);
+        $this->assertSame(4, CustomReports::MAX_DIMENSIONS);
+
+        /*
+         * The dimension is dropped for the metric-count cases so that only the
+         * COUNT is under test. Left in, a four-metric set including bounceRate
+         * fails for a different and correct reason -- bounceRate is measured on
+         * the session and pagePath lives on the request, so they cannot be
+         * grouped together. That is the compatibility rule doing its job, and
+         * it would make this test look like a limit failure.
+         */
+        $definition = $this->definition();
+        unset( $definition['widgets'][1]['query']['dimensions'] );
+        unset( $definition['widgets'][1]['query']['sort'] );
+
+        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews,bounceRate';
+        $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
+
+        $definition['widgets'][1]['query']['metrics'] =
+            'visits,uniqueVisitors,pageViews,bounceRate,visitDuration';
+        $this->assertStringContainsString('4 is the most',
+            CustomReports::validate($definition), 'five metrics is refused');
+
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['metrics'] = 'pageViews';
+        $definition['widgets'][1]['query']['sort']    = 'pageViews-';
+
+        $definition['widgets'][1]['query']['dimensions'] = 'pagePath,browserType,city,country';
+        $this->assertSame('', CustomReports::validate($definition), 'four dimensions is allowed');
+
+        $definition['widgets'][1]['query']['dimensions'] =
+            'pagePath,browserType,city,country,medium';
+        $this->assertStringContainsString('4 is the most',
+            CustomReports::validate($definition), 'five dimensions is refused');
+    }
+
+    /**
+     * The builder is handed the same answer the engine would give.
+     *
+     * It narrows its pickers with these maps, so if they disagreed with
+     * ResultSetManager the builder would offer combinations the save then
+     * refuses -- which is the failure this whole check exists to remove.
+     */
+    public function testTheBuilderIsGivenTheCompatibilityMaps(): void
+    {
+        $metrics = \OWA\Module\Base\Controller\CustomReportEdit::metricEntities();
+
+        $this->assertNotEmpty($metrics);
+        $this->assertContains('base.click', $metrics['domClicks']);
+        $this->assertNotContains('base.click', $metrics['visits']);
+
+        $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities();
+
+        $this->assertNotEmpty($dimensions);
+        $this->assertContains('base.request', $dimensions['pagePath']);
+        $this->assertNotContains('base.session', $dimensions['pagePath'],
+            'pagePath is not on the session, which is why it narrows the choice of table');
+    }
+
     public function testAtMostTenWidgets(): void
     {
         $this->assertSame(10, CustomReports::MAX_WIDGETS,

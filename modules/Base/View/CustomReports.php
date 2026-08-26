@@ -24,5 +24,7 @@ class CustomReports extends \OWA\Core\View {
         $this->body->set( 'sees_all', $this->get( 'sees_all' ) );
         $this->body->set( 'may_author', $this->get( 'may_author' ) );
         $this->body->set( 'current_user_id', $this->get( 'current_user_id' ) );
+        $this->body->set( 'roster_sort', $this->get( 'roster_sort' ) );
+        $this->body->set( 'roster_desc', $this->get( 'roster_desc' ) );
     }
 }

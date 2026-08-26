@@ -266,6 +266,19 @@ class ReportController extends \OWA\Core\AdminController {
         $this->set('hideReportingNavigation', true);
     }
 
+    /**
+     * Hide the period picker and the Live View switch.
+     *
+     * For a screen that is inside the reporting UI but is not a report of a
+     * time range -- the custom report roster lists reports, and neither a date
+     * range nor a refresh timer means anything to a list of them. Offering
+     * controls that change nothing is worse than offering none.
+     */
+    protected function hideTimeControls() {
+
+        $this->set('hideTimeControls', true);
+    }
+
     protected function hideSitesFilter() {
 
         $this->set('hideSitesFilter', true);

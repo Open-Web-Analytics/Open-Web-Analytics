@@ -13,33 +13,57 @@ $owa_author    = (bool) $view->get('may_author');
 $owa_me        = (string) $view->get('current_user_id');
 ?>
 
-<div class="owa_reportControls">
-
-    <span class="owa_reportControl">
-        <span class="label"><?php $view->out( count( $owa_reports ) ); ?>
-            <?php $view->out( count( $owa_reports ) === 1 ? 'report' : 'reports' ); ?></span>
-    </span>
-
-    <?php if ( $owa_author ): ?>
-    <span class="owa_reportControl owa_reportControlRight">
-        <a class="owa_button" href="<?php echo $view->makeLink( array(
-            'do' => 'base.customReportEdit',
-        ) ); ?>">New Custom Report</a>
-    </span>
-    <?php endif; ?>
-
-    <div style="clear:both;"></div>
-</div>
-
 <?php if ( $owa_reports ): ?>
 
 <div class="owa_reportSectionContent">
-<table class="management">
+<table class="management owa_customReportRoster">
     <thead>
         <tr>
-            <th>Report</th>
-            <th>Created by</th>
-            <th>Last updated</th>
+            <?php
+                /*
+                 * Sortable headings.
+                 *
+                 * Each links to sorting BY ITSELF; the one already active links
+                 * to the opposite direction, which is what makes a second click
+                 * reverse rather than do nothing. The arrow marks which column
+                 * the order is actually by -- without it a sorted list and an
+                 * unsorted one look identical.
+                 *
+                 * Sorting is server-side and on the URL, so the order survives
+                 * a reload and travels with a link.
+                 */
+                $owa_sort = (string) $view->get('roster_sort');
+                $owa_desc = (bool) $view->get('roster_desc');
+
+                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc ) {
+
+                    $active = ( $owa_sort === $key );
+
+                    // Clicking the active column reverses it; clicking another
+                    // starts that column in its own natural direction.
+                    $next = $active ? ! $owa_desc : ( $key === 'updated' );
+
+                    $url = $view->makeLink( array(
+                        'do'         => 'base.customReports',
+                        'rosterSort' => $key,
+                        'rosterDesc' => $next ? '1' : '0',
+                    ) );
+
+                    printf(
+                        '<th class="%s"><a href="%s">%s</a>%s</th>',
+                        $active ? 'owa_sorted' : '',
+                        $url,
+                        htmlspecialchars( $label, ENT_QUOTES ),
+                        $active
+                            ? '<i class="fa ' . ( $owa_desc ? 'fa-caret-down' : 'fa-caret-up' )
+                              . ' owa_sortIndicator"></i>'
+                            : ''
+                    );
+                };
+            ?>
+            <?php $owa_heading( 'name', 'Report' ); ?>
+            <?php $owa_heading( 'author', 'Created by' ); ?>
+            <?php $owa_heading( 'updated', 'Last updated' ); ?>
             <th></th>
         </tr>
     </thead>
@@ -67,7 +91,7 @@ $owa_me        = (string) $view->get('current_user_id');
                 <?php $view->out( $owa_when ? date( 'M j, Y g:i a', $owa_when ) : '' ); ?>
             </td>
 
-            <td class="data_cell">
+            <td class="data_cell owa_rosterAction">
                 <?php if ( $owa_author && $owa_mine ): ?>
                 <a href="<?php echo $view->makeLink( array(
                     'do' => 'base.customReportEdit',

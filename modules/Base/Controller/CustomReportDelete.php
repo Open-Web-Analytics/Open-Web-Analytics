@@ -64,7 +64,7 @@ class CustomReportDelete extends \OWA\Core\AdminController {
 
             \OWA\Module\Base\Classes\CustomReports::delete( $id );
 
-            $this->setStatusCode( 2504 );
+            $this->setStatusCode( 2512 );
 
         } else {
 
@@ -74,7 +74,7 @@ class CustomReportDelete extends \OWA\Core\AdminController {
              * Distinguishing them would tell a caller whether an id they are
              * not allowed to touch exists.
              */
-            $this->setStatusCode( 3311 );
+            $this->setStatusCode( 2513 );
         }
 
         $this->setRedirectAction( 'base.customReports' );

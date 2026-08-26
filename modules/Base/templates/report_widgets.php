@@ -26,7 +26,24 @@ $owa_widgets = (array) $view->widgets;
  * conversion found: 21 of the 29 multi-set reports declare metrics that never
  * reach a query, because their sets always overrode them.
  */
-$owa_sets = $view->metrics
+/*
+ * A USER-AUTHORED report renders once, never per metric set.
+ *
+ * The site's metric sets are a property of the site, and a shipped report that
+ * declares no metrics of its own opts into them -- that is how `pages` gets its
+ * Site Usage / e-commerce / goal tabs. A custom report is the other kind by
+ * construction: its author chose every widget and what each one measures, and
+ * a report-level metric set if they wanted one.
+ *
+ * Left to inherit, a custom report grew a tab per site metric set showing the
+ * same widgets in each -- and worse, silently showed NOTHING. In multi-set mode
+ * widgets deliberately do not load themselves; they are registered with the tab
+ * machinery, which loads whichever tab is active. So a custom report rendered
+ * its containers and never fetched a row into any of them.
+ */
+$owa_authored = (bool) $view->get( 'custom_report_id' );
+
+$owa_sets = ( $view->metrics || $owa_authored )
     ? array( '' => array() )
     : (array) $view->metricSets;
 
@@ -50,8 +67,31 @@ if ( ! $owa_sets ) {
  * The control is drawn as tabs today. That is owa.report.js's business; this
  * template's job is to say which widgets belong to which set.
  */
-$owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
+$owa_multiSet = ! $view->metrics && ! $owa_authored
+    && count( $owa_sets ) > 0 && $owa_setKeysReal;
 ?>
+<?php if ( $view->get( 'custom_report_id' ) ): ?>
+<?php
+    /*
+     * What you can DO to this report, as opposed to what it says.
+     *
+     * A line of its own under the title and above the widgets, because these
+     * act on the whole report -- putting Edit beside a widget would suggest it
+     * edited that widget.
+     *
+     * Only for a user-authored report: a shipped one has no row behind it, so
+     * there is nothing to edit, duplicate or delete. More will live here
+     * (duplicate, share), which is why it is a bar rather than a link.
+     */
+?>
+<div class="owa_reportCommands">
+    <a class="owa_reportCommand" href="<?php echo $view->makeLink( array(
+        'do'             => 'base.customReportEdit',
+        'customReportId' => $view->get( 'custom_report_id' ),
+    ), true ); ?>"><i class="fa fa-pencil-alt owa_reportCommandIcon"></i>Edit report</a>
+</div>
+<?php endif; ?>
+
 <?php if ( ! empty( $view->deprecated['message'] ) ): ?>
 <?php
     /*

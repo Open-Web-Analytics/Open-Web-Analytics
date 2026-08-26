@@ -959,6 +959,7 @@ li.constraintRow {
     .owa_rowspan-2, .owa_rowspan-3, .owa_rowspan-4,
     .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
 }
+
 /* ---------------------------------------------------------------------------
  * Custom report builder
  *
@@ -1195,4 +1196,314 @@ li.constraintRow {
     .owa .owa_builderCanvas { grid-template-columns: 1fr; }
 
     .owa .owa_builderBlock, .owa .owa_builderAdd { grid-column: 1 / -1; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Custom report roster
+ *
+ * Values read left to right, because they are words -- a report name and a user
+ * id are read from their first character, and centring them puts every row's
+ * first character in a different place. Only the action column is centred: it
+ * holds one short control, and centring keeps it away from the table edge.
+ * ------------------------------------------------------------------------- */
+
+.owa table.owa_customReportRoster th,
+.owa table.owa_customReportRoster td {
+    text-align: left;
+    vertical-align: top;
+}
+
+.owa table.owa_customReportRoster td.owa_rosterAction,
+.owa table.owa_customReportRoster th:last-child {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+ * Report command bar
+ *
+ * What you can DO to a report, under its title and above its widgets. Only
+ * user-authored reports have one today -- a shipped report has no row behind it
+ * to edit -- and it is a bar rather than a link because duplicate and share
+ * belong here next.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportCommands {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 0 0 12px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.owa .owa_reportCommand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.owa .owa_reportCommandIcon {
+    opacity: 0.6;
+}
+
+.owa .owa_reportCommand:hover .owa_reportCommandIcon {
+    opacity: 1;
+}
+
+/* A sortable heading, and the arrow marking the one the order is actually by. */
+.owa table.owa_customReportRoster th a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.owa table.owa_customReportRoster th a:hover {
+    text-decoration: underline;
+}
+
+.owa table.owa_customReportRoster th.owa_sorted a {
+    font-weight: bold;
+}
+
+.owa .owa_sortIndicator {
+    margin-left: 5px;
+    opacity: 0.7;
+}
+
+/* A count beside a report title, and actions on the title's line. */
+.owa .owa_titleCount {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background-color: #e6e6e6;
+    color: #505050;
+    font-size: 12px;
+    font-weight: normal;
+    vertical-align: middle;
+}
+
+.owa .owa_titleActions {
+    float: right;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.owa .owa_titleActionIcon {
+    margin-right: 6px;
+    opacity: 0.8;
+}
+
+/* ---------------------------------------------------------------------------
+ * Widget configuration modal
+ *
+ * jQuery UI supplies the dialog frame and almost no opinion about what goes in
+ * it, so without these the contents are a stack of unstyled labels and boxes.
+ * The frame is restyled too: its default is a rounded grey chrome that does not
+ * match anything else in the reporting UI.
+ * ------------------------------------------------------------------------- */
+
+.owa_widgetDialogFrame.ui-dialog {
+    padding: 0;
+    border: 1px solid #c0c0c0;
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    background: #ffffff;
+}
+
+.owa_widgetDialogFrame .ui-dialog-titlebar {
+    border: 0;
+    border-bottom: 1px solid #e6e6e6;
+    border-radius: 6px 6px 0 0;
+    background: #f7f7f7;
+    padding: 14px 18px;
+    font-size: 15px;
+}
+
+.owa_widgetDialogFrame .ui-dialog-title {
+    font-weight: bold;
+    color: #303030;
+}
+
+.owa_widgetDialogFrame .ui-dialog-content {
+    padding: 18px;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane {
+    margin: 0;
+    border: 0;
+    border-top: 1px solid #e6e6e6;
+    background: #fafafa;
+    border-radius: 0 0 6px 6px;
+    padding: 12px 18px;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane .ui-dialog-buttonset {
+    margin: 0;
+    float: right;
+}
+
+/* The dialog's own buttons, so Done reads as the action and Cancel as the way
+   out -- jQuery UI renders both identically. */
+.owa_widgetDialogFrame .ui-dialog-buttonpane button {
+    margin: 0 0 0 8px;
+    padding: 7px 16px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #404040;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child {
+    border-color: #3c78b4;
+    background: #3c78b4;
+    color: #ffffff;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:hover {
+    border-color: #999999;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child:hover {
+    background: #33689e;
+    border-color: #33689e;
+}
+
+/* The fields inside. Grouped rows sit side by side and fall to one column when
+   there is no room, rather than overflowing the dialog. */
+.owa .owa_widgetDialog,
+.owa_widgetDialog {
+    font-size: 13px;
+}
+
+.owa_widgetDialog .owa_builderField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 16px;
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
+.owa_widgetDialog .owa_builderField > label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_widgetDialog .owa_builderFieldRow {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.owa_widgetDialog input[type=text],
+.owa_widgetDialog select {
+    padding: 7px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 100%;
+}
+
+.owa_widgetDialog input[type=text]:focus,
+.owa_widgetDialog select:focus {
+    border-color: #3c78b4;
+    outline: none;
+}
+
+.owa_widgetDialog .owa_builderHelp {
+    font-size: 11px;
+    color: #808080;
+}
+
+.owa_widgetDialog code {
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 11px;
+}
+
+/* Chosen inside the dialog: match the plain inputs beside it. */
+.owa_widgetDialog .chosen-container-multi .chosen-choices,
+.owa_pillFieldHost .chosen-container-multi .chosen-choices {
+    padding: 3px 4px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-image: none;
+    background-color: #ffffff;
+}
+
+.owa_widgetDialog .chosen-container-active .chosen-choices {
+    border-color: #3c78b4;
+    box-shadow: none;
+}
+
+/* The page behind a modal, dimmed.
+ *
+ * jQuery UI draws .ui-widget-overlay for modal:true, and the bundled theme
+ * leaves it so faint that the dialog reads as floating over a live page --
+ * which invites clicking the page underneath and wondering why nothing
+ * responds. Dimming says plainly that the dialog is the only thing to answer.
+ *
+ * Not inside .owa: the overlay is appended to <body>, outside that scope. */
+.ui-widget-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1a1a1a;
+    opacity: 0.45;
+    filter: none;
+    z-index: 1000;
+}
+
+/* ...and the dialog sits above it. */
+.owa_widgetDialogFrame.ui-dialog {
+    z-index: 1001;
+}
+
+/* ---------------------------------------------------------------------------
+ * Metric (KPI) boxes
+ *
+ * They cascade left to right inside their widget and wrap when they run out of
+ * room. They used to STACK: .owa_metricInfobox carries width:100% with
+ * float:left, and a 100%-wide float takes a whole row each, so a four-metric
+ * widget was a column of four boxes down the page.
+ *
+ * The container had no styling at all, which is why the floats had nothing to
+ * arrange them within.
+ * ------------------------------------------------------------------------- */
+
+.owa .metricInfoboxesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.owa .metricInfoboxesContainer .owa_metricInfobox {
+    /* Flex arranges them now, so the float and the full-width sizing that
+       fought it both go. margin is gap's job. */
+    float: none;
+    width: auto;
+    margin: 0;
+
+    /* Share the row evenly, wrapping once they would go under ~135px. A widget
+       showing two metrics gets two half-width boxes rather than two narrow ones
+       against a wide gap. */
+    flex: 1 1 135px;
+}
+
+/* A report that asks for a specific box width gets it: goals draws one box per
+   configured goal and sizes them so a row of them stays readable. An explicit
+   width means "this wide", not "share the row". */
+.owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
+    flex: 0 0 auto;
 }

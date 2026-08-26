@@ -67,6 +67,10 @@ class ReportWidgets extends \OWA\Core\View {
          */
         $this->body->set( 'metricSets', $this->get( 'metricSets' ) );
 
+        // Set only for a user-authored report; a shipped one has no row behind
+        // it and so nothing to edit.
+        $this->body->set( 'custom_report_id', $this->get( 'custom_report_id' ) );
+
         $this->body->set_template( 'report_widgets.php' );
     }
 }

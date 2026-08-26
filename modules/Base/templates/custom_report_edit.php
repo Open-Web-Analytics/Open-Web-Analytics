@@ -64,9 +64,22 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_builderField">
             <label for="reportMetricSet">Report metric set</label>
-            <select id="reportMetricSet" multiple="multiple" size="4"></select>
+            <?php
+                /*
+                 * Enhanced by CHOSEN, the same control the grid's secondary
+                 * dimension picker uses: type to filter a long list, and each
+                 * thing you pick becomes a pill with its own remove.
+                 *
+                 * The same control rather than one of our own, because a second
+                 * searchable multi-select that behaved almost the same would be
+                 * the kind of difference nobody can justify later.
+                 */
+            ?>
+            <select id="reportMetricSet" class="owa_builderChosen" multiple="multiple"></select>
             <div class="owa_builderHelp">
                 The metrics this report offers as a whole, independent of any one widget.
+                At most <?php $view->out( (int) $view->get('max_metrics') ); ?>, and they
+                have to be measured in the same place &mdash; the list narrows as you choose.
             </div>
         </div>
     </div>
@@ -86,7 +99,14 @@ $owa_max        = (int) $view->get('max_widgets');
     <div id="customReportCanvas" class="owa_builderCanvas"></div>
 
     <div class="owa_builderActions">
-        <input type="submit" class="owa_button" value="Save report" />
+        <?php
+            /*
+             * An id, because this button is no longer the only submit on the
+             * page: the builder renders inside the report chrome now, and the
+             * site filter brings a form of its own.
+             */
+        ?>
+        <input type="submit" id="customReportSubmit" class="owa_button" value="Save report" />
 
         <?php if ( $owa_id ): ?>
         <a class="owa_button owa_buttonQuiet" href="<?php echo $view->makeLink( array(
@@ -135,12 +155,12 @@ $owa_max        = (int) $view->get('max_widgets');
     <div class="owa_builderFieldRow">
         <div class="owa_builderField">
             <label for="dlgMetrics">Metrics</label>
-            <select id="dlgMetrics" multiple="multiple" size="8"></select>
+            <select id="dlgMetrics" class="owa_builderChosen" multiple="multiple"></select>
         </div>
 
         <div class="owa_builderField">
             <label for="dlgDimensions">Dimensions</label>
-            <select id="dlgDimensions" multiple="multiple" size="8"></select>
+            <select id="dlgDimensions" class="owa_builderChosen" multiple="multiple"></select>
         </div>
     </div>
 
@@ -170,8 +190,14 @@ $owa_max        = (int) $view->get('max_widgets');
     // was never real.
     var METRICS    = <?php echo json_encode( (array) $view->get('metric_choices') ); ?>;
     var DIMENSIONS = <?php echo json_encode( (array) $view->get('dimension_choices') ); ?>;
+    // metric name -> the fact tables it can be measured in. Used to narrow the
+    // metric pickers so an unaskable combination cannot be assembled.
+    var METRIC_ENTITIES    = <?php echo json_encode( (array) $view->get('metric_entities') ); ?>;
+    var DIMENSION_ENTITIES = <?php echo json_encode( (array) $view->get('dimension_entities') ); ?>;
     var TYPES      = <?php echo json_encode( $owa_types ); ?>;
-    var MAX        = <?php echo (int) $owa_max; ?>;
+    var MAX         = <?php echo (int) $owa_max; ?>;
+    var MAX_METRICS    = <?php echo (int) $view->get('max_metrics'); ?>;
+    var MAX_DIMENSIONS = <?php echo (int) $view->get('max_dimensions'); ?>;
 
     /*
      * The grid the report is drawn on. These mirror Core\ReportGrid, which
@@ -232,6 +258,171 @@ $owa_max        = (int) $view->get('max_widgets');
                 .prop( 'selected', selected.indexOf( choice.name ) !== -1 )
                 .text( choice.label + ' (' + choice.name + ')' ) );
         } );
+    }
+
+    /**
+     * The fact tables that could answer for all of these metrics at once.
+     *
+     * The same reduction the query engine performs when it picks a base entity:
+     * intersect the tables each metric can come from. Empty means the set
+     * cannot be queried -- not that it would return few rows, but that there is
+     * no single table holding them, so it is not a question.
+     */
+    function compatibleEntities( names ) {
+
+        var entities = null;
+
+        for ( var i = 0; i < names.length; i++ ) {
+
+            var mine = METRIC_ENTITIES[ names[ i ] ] || [];
+
+            if ( entities === null ) {
+                entities = mine.slice();
+                continue;
+            }
+
+            entities = entities.filter( function ( e ) { return mine.indexOf( e ) !== -1; } );
+
+            if ( ! entities.length ) {
+                return [];
+            }
+        }
+
+        return entities || [];
+    }
+
+    /**
+     * Narrow the DIMENSION picker the same way.
+     *
+     * A dimension has to be related to a fact table that can also answer the
+     * chosen metrics -- `pagePath` is on the request but not the session, so
+     * asking for it beside a session-only metric is as impossible as mixing
+     * clicks with visits. Same reduction, one step further on.
+     */
+    function narrowDimensions() {
+
+        var $select  = jQuery( '#dlgDimensions' );
+        var selected = $select.val() || [];
+        var metrics  = jQuery( '#dlgMetrics' ).val() || [];
+
+        var full = selected.length >= MAX_DIMENSIONS;
+
+        var allowed = DIMENSIONS.filter( function ( choice ) {
+
+            if ( selected.indexOf( choice.name ) !== -1 ) {
+                return true;
+            }
+
+            if ( full ) {
+                return false;
+            }
+
+            return allowedWith( metrics, selected.concat( [ choice.name ] ) );
+        } );
+
+        fillChoices( $select, allowed, selected );
+
+        chosenSync( '#dlgDimensions' );
+    }
+
+    /**
+     * Whether these metrics and dimensions could be answered by one fact table.
+     *
+     * DIMENSION_ENTITIES maps a dimension to the tables it is related to, the
+     * same relation ResultSetManager::isDimensionRelated() reports.
+     */
+    function allowedWith( metrics, dimensions ) {
+
+        var entities = compatibleEntities( metrics );
+
+        if ( metrics.length && ! entities.length ) {
+            return false;
+        }
+
+        for ( var i = 0; i < dimensions.length; i++ ) {
+
+            var mine = DIMENSION_ENTITIES[ dimensions[ i ] ] || [];
+
+            if ( ! entities.length ) {
+                entities = mine.slice();
+                continue;
+            }
+
+            entities = entities.filter( function ( e ) { return mine.indexOf( e ) !== -1; } );
+
+            if ( ! entities.length ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Narrow a metric picker to what can still be combined with what is chosen.
+     *
+     * Rebuilt rather than disabled item by item, because chosen renders its own
+     * list from the select and only re-reads it on chosen:updated. An option
+     * left in place but unusable would still appear in the search results.
+     */
+    function narrowMetrics( selector ) {
+
+        var $select  = jQuery( selector );
+        var selected = $select.val() || [];
+
+        var full = selected.length >= MAX_METRICS;
+
+        var allowed = METRICS.filter( function ( choice ) {
+
+            if ( selected.indexOf( choice.name ) !== -1 ) {
+                return true;   // already chosen: never remove it under the author
+            }
+
+            // At the cap nothing more is offered, rather than offered and then
+            // refused on save.
+            if ( full ) {
+                return false;
+            }
+
+            return compatibleEntities( selected.concat( [ choice.name ] ) ).length > 0;
+        } );
+
+        fillChoices( $select, allowed, selected );
+
+        chosenSync( selector );
+    }
+
+    /**
+     * Enhance a <select multiple> into the searchable pill control.
+     *
+     * CHOSEN, the same widget the grid's secondary dimension picker uses.
+     *
+     * The explicit width is not decoration. chosen-js 1.x sizes its container
+     * from the select's offsetWidth AT ENHANCEMENT TIME, which is 0 inside a
+     * display:none parent -- and the widget dialog is hidden until it is
+     * opened, so without this its two pickers enhance to a couple of pixels
+     * wide and are unusable. The same trap is documented on the constraint
+     * builder's dimension picker, which enhances inside a hidden .builder.
+     */
+    function chosenify( selector ) {
+
+        jQuery( selector ).chosen( {
+            width: '100%',
+            no_results_text: 'Name not found.',
+            placeholder_text_multiple: 'Type to search…',
+        } );
+    }
+
+    /**
+     * Re-sync a chosen control to its select after setting values in code.
+     *
+     * chosen-js 1.x ignores a programmatic .val() until told; the event was
+     * renamed from liszt:updated in 0.9.x, which is why anything written
+     * against the old name silently does nothing.
+     */
+    function chosenSync( selector ) {
+
+        jQuery( selector ).trigger( 'chosen:updated' );
     }
 
     function fillRange( $select, from, to, selected ) {
@@ -323,12 +514,24 @@ $owa_max        = (int) $view->get('max_widgets');
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, names( query.metrics ) );
         fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, names( query.dimensions ) );
 
+        // The options were just replaced, so chosen has to be told before it
+        // will show them -- and again after the dialog is open, because that is
+        // when it can finally measure itself.
+        chosenSync( '#dlgMetrics' );
+        chosenSync( '#dlgDimensions' );
+
+        narrowMetrics( '#dlgMetrics' );
+        narrowDimensions();
+
         jQuery( '#dlgSort' ).val( query.sort || '' );
         jQuery( '#dlgConstraints' ).val( widget.constraints || '' );
 
         jQuery( '#widgetDialog' )
             .dialog( 'option', 'title', widget.title || ( 'Widget ' + ( index + 1 ) ) )
             .dialog( 'open' );
+
+        chosenSync( '#dlgMetrics' );
+        chosenSync( '#dlgDimensions' );
     }
 
     /** Read the dialog back into the widget it was opened on. */
@@ -384,10 +587,26 @@ $owa_max        = (int) $view->get('max_widgets');
         draw();
     }
 
+    chosenify( '#dlgMetrics' );
+    chosenify( '#dlgDimensions' );
+
+    // Choosing a metric changes what else is askable alongside it.
+    jQuery( '#dlgMetrics' ).on( 'change', function () {
+        narrowMetrics( '#dlgMetrics' );
+        // Choosing a metric can rule dimensions out, so both are redrawn.
+        narrowDimensions();
+    } );
+    jQuery( '#dlgDimensions' ).on( 'change', narrowDimensions );
+    jQuery( '#reportMetricSet' ).on( 'change', function () { narrowMetrics( '#reportMetricSet' ); } );
+
     jQuery( '#widgetDialog' ).dialog( {
         autoOpen: false,
         modal: true,
         width: Math.min( 760, jQuery( window ).width() - 40 ),
+        // A class on the FRAME, which jQuery UI builds outside this element --
+        // the frame is what carries the titlebar and the button pane, so the
+        // dialog chrome cannot be styled through #widgetDialog alone.
+        dialogClass: 'owa_widgetDialogFrame',
         buttons: [
             { text: 'Done', click: function () { applyDialog(); jQuery( this ).dialog( 'close' ); } },
             { text: 'Cancel', click: function () { editing = null; jQuery( this ).dialog( 'close' ); } }
@@ -430,6 +649,10 @@ $owa_max        = (int) $view->get('max_widgets');
         } );
 
     fillChoices( jQuery( '#reportMetricSet' ), METRICS, names( definition.metrics ) );
+
+    chosenify( '#reportMetricSet' );
+
+    narrowMetrics( '#reportMetricSet' );
 
     // The definition is assembled at submit rather than kept in step with every
     // keystroke: one place it is built means one place it can be wrong.

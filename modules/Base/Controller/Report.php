@@ -232,6 +232,13 @@ class Report extends \OWA\Core\Controller {
 
         $target->setDefinition( $definition );
 
+        /*
+         * Which report this is, so the renderer can offer the things you can do
+         * TO it -- editing it, and in time sharing and duplicating it. A shipped
+         * report has no such row and gets no command bar.
+         */
+        $target->set( 'custom_report_id', $report['id'] );
+
         return $target->doAction();
     }
 
