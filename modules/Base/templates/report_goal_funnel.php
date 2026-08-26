@@ -193,7 +193,6 @@ foreach ( $owa_steps as $owa_s ) {
 
         OWA.items.funnelSteps = new OWA.resultSetExplorer( 'funnel-steps-grid' );
         OWA.items.funnelSteps.options.grid.showExplorerControls = false;
-        OWA.items.funnelSteps.options.grid.showRowNumbers = false;
         OWA.items.funnelSteps.setResultSet( funnelTable );
         OWA.items.funnelSteps.refreshGrid();
     }

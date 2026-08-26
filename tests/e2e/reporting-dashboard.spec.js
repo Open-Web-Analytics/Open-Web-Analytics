@@ -499,8 +499,21 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const headsBefore = await page.locator('.ui-jqgrid-htable th').allInnerTexts();
         expect(headsBefore.map((h) => h.trim())).not.toContain('Date');
 
-        // Pick "Date" through the real chosen click path (open, click the Date result).
-        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
+        // Grouped by exactly one dimension to begin with, so the split below is
+        // the plus doing something rather than a second picker already present.
+        await expect(page.locator('.owa_dimSlot')).toHaveCount(1);
+
+        /*
+         * ADD a dimension, through the real chosen click path.
+         *
+         * The bar has one picker per dimension now, so the FIRST one holds
+         * browserType and choosing in it would REPLACE rather than add. The
+         * plus is what adds, which is the action this test is about -- it
+         * appends an empty picker, and choosing in that one splits the grid.
+         */
+        await page.locator('.owa_dimAdd').first().click();
+
+        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').last();
         await picker.click();
         await picker.locator('.chosen-results li.active-result', { hasText: /^Date$/ }).first().click();
 
@@ -510,6 +523,10 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
                 { timeout: 15_000 })
             .toContain('Date');
         await expect(page.locator('tr.jqgrow')).toHaveCount(5);
+
+        // Added, not swapped: Browser Type is still a column.
+        expect((await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()))
+            .toContain('Browser Type');
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
         // and the dates are DISTINCT -- i.e. the grid really grouped by date.

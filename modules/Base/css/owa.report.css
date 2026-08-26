@@ -58,12 +58,30 @@
     color:#505050; background-color:#cccccc;
 }
 
+/* Grid cells get room on both sides.
+ *
+ * jqGrid's own padding is barely a pixel, which was hidden while every row
+ * started with a row-number column -- that column did the spacing for the one
+ * beside it. With row numbers off, the first value sits against the border, so
+ * the cells space themselves.
+ *
+ * !important because jqGrid writes padding into its own stylesheet at the same
+ * specificity and later in the cascade. */
 .ui-jqgrid tr.jqgrow td {
-    font-size:10px;
+    font-size: 10px;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
 }
 
 .ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
-    font-size:10px;
+    font-size: 10px;
+}
+
+/* The heading has to line up with the values under it, so it takes the same
+   inset. div, because jqGrid puts the label in one inside the th. */
+.ui-jqgrid .ui-jqgrid-htable th.ui-th-column div {
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .clear {
@@ -954,6 +972,17 @@ li.constraintRow {
     min-width: 0;
     overflow-x: auto;
 }
+
+/* ...except while a dropdown is open in it.
+ *
+ * overflow-x:auto computes overflow-y to auto as well, so the widget is a
+ * scroll box in both directions and a chosen drop opening downwards is cut off
+ * by it -- measured at 278px tall with 74px showing. Lifted only for as long as
+ * a list is open, so wide tables still scroll inside their widget the rest of
+ * the time. */
+.owa_reportGridItem.owa_dropdownOpen {
+    overflow: visible;
+}
 .owa_span-1 { grid-column: span 1; }
 .owa_span-2 { grid-column: span 2; }
 .owa_span-3 { grid-column: span 3; }
@@ -1541,6 +1570,109 @@ li.constraintRow {
    width means "this wide", not "share the row". */
 .owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
     flex: 0 0 auto;
+}
+
+/* How many filters are on, beside the Filter toggle.
+ *
+ * Red because it changes what the numbers beside it MEAN: a filtered grid and
+ * an unfiltered one look identical, and a reader draws conclusions from the
+ * rows in front of them. Hidden at zero -- an always-present badge is furniture
+ * and stops being read. */
+.owa .constraintPickerContainer .constraintCount {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 5px;
+    padding: 1px 6px;
+    border-radius: 9px;
+    background-color: #c0392b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 16px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dimension pickers, in the grid's control bar
+ *
+ * One picker per dimension the grid is grouped by, and a plus for another.
+ * A select, not a pill, because refining is about CHANGING what you are looking
+ * at -- pills are for curating a set, which is what editing a widget is.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_dimensionSelectors {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+/* Each picker reads as a PILL with a dropdown arrow, and sizes to its own
+   text rather than to a fixed width -- three dimensions named "Medium",
+   "Browser Type" and "Date" should take the room those words need and no more.
+   The list itself opens over the widget, which is chosen's own behaviour: its
+   drop is absolutely positioned, so it costs no space in the bar. */
+.owa .owa_dimSlot {
+    display: inline-block;
+    min-width: 0;
+    max-width: 220px;
+}
+
+.owa .owa_dimSlot .chosen-container {
+    font-size: 11px;
+    max-width: 100%;
+    /* Content width, not the 100% chosen was given at enhancement time. */
+    width: auto !important;
+}
+
+.owa .owa_dimSlot .chosen-container .chosen-single {
+    height: auto;
+    padding: 3px 22px 3px 9px;
+    border: 1px solid #cccccc;
+    border-radius: 12px;
+    background: #e6e6e6;
+    box-shadow: none;
+    color: #303030;
+    line-height: 1.4;
+}
+
+.owa .owa_dimSlot .chosen-container .chosen-single span {
+    margin-right: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.owa .owa_dimSlot .chosen-container-active .chosen-single {
+    border-color: #999999;
+}
+
+/* The drop is wider than the pill that opened it -- a name has to be readable
+   even when the trigger is only as wide as "Date". */
+.owa .owa_dimSlot .chosen-container .chosen-drop {
+    min-width: 240px;
+    width: auto;
+}
+
+.owa .owa_dimAdd {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    padding: 0;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-color: #f5f5f5;
+    color: #505050;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.owa .owa_dimAdd:hover {
+    border-color: #999999;
+    background-color: #ececec;
 }
 
 /* How many filters are on, beside the Filter toggle.

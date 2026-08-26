@@ -153,7 +153,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
             metric: ''
         },
         grid: {
-            showRowNumbers: true,
+            /*
+             * OFF by default.
+             *
+             * The column numbered the rows on screen, which is not a fact about
+             * the data -- it renumbers when the sort changes and starts again
+             * at 1 on page two, so it never identifies anything. It cost a
+             * column of width in every grid on every report, and width is what
+             * a widget three columns wide has least of.
+             *
+             * Still an option: a caller that wants them can ask.
+             */
+            showRowNumbers: false,
             excludeColumns: [],
             columnFormatters: {},
             /*
@@ -604,6 +615,26 @@ OWA.resultSetExplorer.prototype = {
                         if (this.columnLinks.hasOwnProperty(y)) {
                             //alert(this.dom_id + ' : '+y);
                             var template = this.columnLinks[y].template;
+
+                            /*
+                             * The linked column may not be in this result set.
+                             *
+                             * A link template is registered once, for a column
+                             * the report was built with -- but the reader can
+                             * now change WHICH dimensions the grid groups by,
+                             * and swapping one out takes its column with it. A
+                             * template for a column that is no longer there has
+                             * nothing to apply to.
+                             *
+                             * Latent until the dimension controls could replace
+                             * the FIRST dimension: the old single-slot picker
+                             * only ever changed the secondary one, so the
+                             * linked column could not disappear and this read
+                             * ...[y].name on undefined only in theory.
+                             */
+                            if ( ! this.resultSet.resultsRows[i][y] ) {
+                                continue;
+                            }
 
                             if (this.resultSet.resultsRows[i][y].name.length > 0) {
                                 //if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
@@ -1499,7 +1530,7 @@ OWA.dataGrid.prototype = {
          * option an array index for a value, so choosing "Date" asked the grid
          * to group by "7".
          */
-        var pills = new OWA.dimensionPills(
+        var dimensionControls = new OWA.dimensionSelectors(
             '#' + this.dom_id + '_grid_secondDimensionChooser',
             {
                 choices: resultSet.relatedDimensions || {},
@@ -1510,7 +1541,7 @@ OWA.dataGrid.prototype = {
             }
         );
 
-        pills.display();
+        dimensionControls.display();
 
         /*
          * Built ONCE, and deliberately not refreshed on refetch.
@@ -1758,31 +1789,36 @@ OWA.dataGrid.prototype = {
  */
 
 /**
- * The dimensions a grid is grouped by, as pills with a plus.
+ * The dimensions a grid is grouped by: one picker each, and a plus for another.
  *
  * WHAT IT REPLACES
  *
  * A single "Secondary Dimension" select. The grid groups by a LIST -- the
  * dimensions travel in one URL parameter and changeDimension() has always
- * appended to them -- so the select showed one slot of something that was
- * already plural, and what the grid was actually grouped by was legible only
- * from its columns.
+ * appended to them -- so the select showed one slot of something already
+ * plural, and what the grid was grouped by was legible only from its columns.
  *
- * It also made the control behave differently on its first use than after:
- * the swap-or-append branch keys off previousDimensionName, which starts empty,
- * so the first pick added a dimension and every pick after replaced one, with
- * nothing on screen to explain the difference. Pills make the state the thing
- * you edit.
+ * It also behaved differently on its first use than after: the swap-or-append
+ * branch keys off previousDimensionName, which starts empty, so the first pick
+ * ADDED a dimension and every pick after REPLACED one, with nothing on screen
+ * to explain the difference.
  *
- * THE FIRST ONE HAS NO REMOVE
+ * A PICKER PER DIMENSION, NOT A PILL EACH
  *
- * It is what the report is about -- "Top Pages" without pagePath is not that
- * report -- so it is shown and not removable. Everything after it can go.
+ * Deliberately unlike the widget-edit modal, which uses pills. Refining is
+ * about CHANGING what you are looking at -- swap this dimension for that one --
+ * and a select is the control for changing a choice. Pills are for curating a
+ * set, which is what editing a widget's definition is. The two screens look
+ * different because the actions are different.
+ *
+ * The first picker always holds a dimension: a grid grouped by nothing is not a
+ * state the report has, so that one offers no blank. The rest can be cleared,
+ * which is how a dimension is removed.
  *
  * @param string target_dom_selector
- * @param object options {dimensions, max, onChange}
+ * @param object options {choices, selected, max, onChange}
  */
-OWA.dimensionPills = function ( target_dom_selector, options ) {
+OWA.dimensionSelectors = function ( target_dom_selector, options ) {
 
     this.dom_selector = target_dom_selector;
 
@@ -1794,7 +1830,7 @@ OWA.dimensionPills = function ( target_dom_selector, options ) {
          * a menu, and chosen renders each family as a heading.
          */
         choices: {},
-        // Names currently grouped by, primary first.
+        // Names currently grouped by, in column order.
         selected: [],
         // Each one is another GROUP BY and another join, and rows multiply.
         max: 4,
@@ -1804,126 +1840,151 @@ OWA.dimensionPills = function ( target_dom_selector, options ) {
     this.selected = ( this.options.selected || [] ).slice();
 };
 
-OWA.dimensionPills.prototype = {
+OWA.dimensionSelectors.prototype = {
 
     value : function () {
 
         return this.selected.slice();
     },
 
-    labelFor : function ( name ) {
+    /**
+     * One picker's options: everything legal, minus what the OTHER pickers
+     * hold. Its own value stays, or the control would clear itself on render.
+     */
+    optionsFor : function ( $select, index, blankLabel ) {
 
-        var found = name;
+        var that = this;
+        var mine = this.selected[ index ];
+
+        if ( blankLabel !== null ) {
+            $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( '' ) );
+        }
 
         jQuery.each( this.options.choices || {}, function ( family, dims ) {
 
+            var $group = jQuery( '<optgroup>' ).attr( 'label', family );
+            var added  = 0;
+
             jQuery.each( dims || [], function ( i, dim ) {
 
-                if ( dim && dim.name === name ) {
-                    found = dim.label || name;
-                    return false;
+                if ( ! dim || ! dim.name ) {
+                    return;
                 }
-            } );
-        } );
 
-        return found;
+                // Used in another picker: offering it here would let one grid
+                // group by the same dimension twice.
+                if ( dim.name !== mine && that.selected.indexOf( dim.name ) !== -1 ) {
+                    return;
+                }
+
+                $group.append( jQuery( '<option>' ).attr( 'value', dim.name )
+                    .prop( 'selected', dim.name === mine )
+                    .text( dim.label || dim.name ) );
+
+                added++;
+            } );
+
+            // A family with nothing left to offer would render as a heading
+            // with nothing under it.
+            if ( added ) {
+                $select.append( $group );
+            }
+        } );
     },
 
     display : function () {
 
-        var that = this;
+        var that  = this;
         var $root = jQuery( this.dom_selector );
 
-        $root.addClass( 'owa_dimensionPills' ).empty();
+        $root.addClass( 'owa_dimensionSelectors' ).empty();
 
-        this.selected.forEach( function ( name, i ) {
+        this.selected.forEach( function ( name, index ) {
 
-            var $pill = jQuery( '<span class="owa_dimPill">' )
-                .attr( 'data-name', name )
-                .append( jQuery( '<span class="owa_dimPillLabel">' ).text( that.labelFor( name ) ) );
+            var $slot = jQuery( '<span class="owa_dimSlot">' ).attr( 'data-index', index );
 
-            // The primary keeps no remove: emptying it would leave the grid
-            // grouped by nothing, which is not a state the report has.
-            if ( i > 0 ) {
-                $pill.append( jQuery( '<a href="#" class="owa_dimPillRemove" title="Remove">' ).text( '\u00d7' ) );
-            } else {
-                $pill.addClass( 'owa_dimPillPrimary' ).attr( 'title', 'The dimension this report is about' );
-            }
+            var $select = jQuery( '<select class="owa_dimSelect">' )
+                .attr( 'data-placeholder', index === 0 ? 'Dimension' : 'Add dimension' );
 
-            $root.append( $pill );
-        } );
+            // The first has no blank: the grid must be grouped by something.
+            that.optionsFor( $select, index, index === 0 ? null : '' );
 
-        if ( this.selected.length < this.options.max ) {
-
-            $root.append( jQuery( '<span class="owa_dimPillAdd">' )
-                .append( jQuery( '<select class="owa_dimPillSelect" data-placeholder="Add dimension"><option value=""></option></select>' ) ) );
-
-            var $select = $root.find( '.owa_dimPillSelect' );
-
-            // An optgroup per family, which chosen renders as a heading. The
-            // family a dimension belongs to is how a reader finds it among
-            // seventy.
-            jQuery.each( this.options.choices || {}, function ( family, dims ) {
-
-                var $group = jQuery( '<optgroup>' ).attr( 'label', family );
-                var added  = 0;
-
-                jQuery.each( dims || [], function ( i, dim ) {
-
-                    if ( ! dim || ! dim.name ) {
-                        return;
-                    }
-
-                    if ( that.selected.indexOf( dim.name ) !== -1 ) {
-                        return;   // already grouped by: offering it again does nothing
-                    }
-
-                    $group.append( jQuery( '<option>' ).attr( 'value', dim.name )
-                        .text( dim.label || dim.name ) );
-
-                    added++;
-                } );
-
-                // A family whose every dimension is already in use would render
-                // as a heading with nothing under it.
-                if ( added ) {
-                    $select.append( $group );
-                }
-            } );
+            $slot.append( $select );
+            $root.append( $slot );
 
             $select.chosen( { no_results_text: 'Name not found.', width: '100%' } );
+
+            /*
+             * Let the list escape the widget while it is open.
+             *
+             * .owa_reportGridItem carries overflow-x:auto so a wide table
+             * scrolls inside its own widget rather than widening the page --
+             * and per CSS, one axis being non-visible computes the OTHER to
+             * auto. So the widget is a scroll box in both directions and the
+             * dropdown is clipped by it: measured at 278px tall with 74px
+             * visible.
+             *
+             * Lifted only while a list is open, so the reason the overflow
+             * exists still holds the rest of the time.
+             */
+            $select.on( 'chosen:showing_dropdown', function () {
+                jQuery( this ).closest( '.owa_reportGridItem' ).addClass( 'owa_dropdownOpen' );
+            } );
+
+            $select.on( 'chosen:hiding_dropdown', function () {
+                jQuery( this ).closest( '.owa_reportGridItem' ).removeClass( 'owa_dropdownOpen' );
+            } );
 
             $select.on( 'change', function () {
 
                 var picked = jQuery( this ).val();
 
                 if ( picked ) {
-                    that.selected.push( picked );
-                    that.display();
-                    that.changed();
+                    that.selected[ index ] = picked;
+                } else {
+                    // Cleared: that is how a dimension is removed. Never the
+                    // first, which offers no blank to begin with.
+                    that.selected.splice( index, 1 );
                 }
-            } );
-        }
 
-        $root.on( 'click', '.owa_dimPillRemove', function ( e ) {
-
-            e.preventDefault();
-
-            var name = jQuery( this ).closest( '.owa_dimPill' ).attr( 'data-name' );
-            var at   = that.selected.indexOf( name );
-
-            if ( at > 0 ) {          // never the primary
-                that.selected.splice( at, 1 );
                 that.display();
                 that.changed();
-            }
+            } );
         } );
+
+        if ( this.selected.length < this.options.max ) {
+
+            var $add = jQuery( '<button type="button" class="owa_dimAdd" title="Group by another dimension">' )
+                .text( '+' );
+
+            $add.on( 'click', function ( e ) {
+
+                e.preventDefault();
+
+                /*
+                 * The new picker is drawn empty and the grid is NOT refetched
+                 * yet -- there is nothing to group by until something is
+                 * chosen, and refetching on an empty slot would reload the
+                 * same data.
+                 */
+                that.selected.push( '' );
+                that.display();
+
+                jQuery( that.dom_selector + ' .owa_dimSlot' ).last()
+                    .find( '.chosen-container' ).trigger( 'mousedown' );
+            } );
+
+            $root.append( $add );
+        }
     },
 
     changed : function () {
 
         if ( typeof this.options.onChange === 'function' ) {
-            this.options.onChange( this.value() );
+
+            // Empty slots are a control state, not a grouping. The grid is
+            // asked for the dimensions that were actually chosen.
+            this.options.onChange( this.selected.filter( Boolean ) );
         }
     }
 };
