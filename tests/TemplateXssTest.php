@@ -74,18 +74,14 @@ final class TemplateXssTest extends TestCase
         return $t->fetch();
     }
 
-    public function testDocumentNavSumEscapesUrlAndTitle(): void
-    {
-        // Reached via row_visitSummary.php on the dashboard "latest visits" panel.
-        $html = $this->renderBaseTemplate('documentNavSum.php', [
-            'row' => [
-                'document_url'        => self::URL_PAYLOAD,
-                'document_page_title' => self::TEXT_PAYLOAD,
-                'document_page_type'  => 'page',
-            ],
-        ]);
-        $this->assertEscaped($html, 'documentNavSum.php');
-    }
+    /*
+     * documentNavSum.php and row_visitSummary.php are GONE.
+     *
+     * They were the per-visit CARD stack, alive only for the visitor report,
+     * which was dropped 2026-08-25 along with visit, visits and
+     * visitors-roster. The escaping rule they were checked against still
+     * applies to every remaining template through the sweep below.
+     */
 
     public function testItemDocumentEscapesUrlAndTitle(): void
     {
@@ -124,25 +120,7 @@ final class TemplateXssTest extends TestCase
         $this->assertEscaped($html, 'new_session_email.php');
     }
 
-    public function testVisitorsRosterEscapesVisitorNameAndBranches(): void
-    {
-        // The visitor roster (reportVisitors) shows tracker-set user_name/email.
-        // This template used a legacy short-open tag (<?) for its if/elseif so
-        // with short_open_tag=Off it rendered the PHP as literal text; converting
-        // it to <?php means the branch (and the escaping) actually run now.
-        $html = $this->renderBaseTemplate('report_visitors_roster.php', [
-            'headline'     => 'Visitors',
-            'period_label' => 'Last 30 Days',
-            'visitors'     => [
-                ['visitor_id' => '1785002347504724034', 'user_name' => self::TEXT_PAYLOAD, 'user_email' => ''],
-            ],
-        ]);
-        $this->assertEscaped($html, 'report_visitors_roster.php');
-        // Guard against the short-tag regression: the raw PHP control structure
-        // must not leak into the output as literal text.
-        $this->assertStringNotContainsString('<?', $html, 'raw PHP short tag leaked into output');
-        $this->assertStringNotContainsString('endif;', $html, 'PHP control structure rendered as literal text');
-    }
+    /* visitors-roster's template is gone with the report. */
 
     /**
      * Unit-level guard for the scheme whitelist itself: only http/https/mailto/

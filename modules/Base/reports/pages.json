@@ -1,0 +1,36 @@
+{
+    "title": "Web Pages",
+    "metrics": "pageViews,visits,uniquePageViews",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "pageViews",
+            "headline": "There were {pageViews.formatted} page views for {uniquePageViews.raw} unique pages."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "pagePath,pageTitle,pageType",
+                "sort": "pageViews-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "pagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "pagePath"
+            }
+        }
+    ]
+}

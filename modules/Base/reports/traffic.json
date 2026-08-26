@@ -1,0 +1,180 @@
+{
+    "title": "Traffic Sources",
+    "metrics": "visits",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "colspan": 12,
+            "showMetricBoxes": false,
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "visits",
+            "headline": "There were {visits.formatted} {visits|visit|visits} from all mediums."
+        },
+        {
+            "type": "pie",
+            "id": "medium",
+            "container": "traffic-sources",
+            "colspan": 6,
+            "rowspan": 3,
+            "chartMetric": "visits",
+            "chartWidth": "300px",
+            "query": {
+                "dimensions": "medium",
+                "sort": "visits-"
+            }
+        },
+        {
+            "type": "metric-boxes",
+            "id": "fromsearch",
+            "container": "trend-metrics-search",
+            "title": "Visits From Search Engines",
+            "colspan": 6,
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "constraints": [
+                { "dimension": "medium", "value": "organic-search" }
+            ]
+        },
+        {
+            "type": "metric-boxes",
+            "id": "fromdirect",
+            "container": "trend-metrics-direct",
+            "title": "Visits From Direct Navigation",
+            "colspan": 6,
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "constraints": [
+                { "dimension": "medium", "value": "direct" }
+            ]
+        },
+        {
+            "type": "metric-boxes",
+            "id": "fromreferral",
+            "container": "trend-metrics-referral",
+            "title": "Visits From Referrals",
+            "colspan": 6,
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "constraints": [
+                { "dimension": "medium", "value": "referral" }
+            ]
+        },
+        {
+            "type": "grid",
+            "id": "topsources",
+            "container": "top-sources",
+            "title": "Top Sources",
+            "colspan": 6,
+            "query": {
+                "dimensions": "source,medium",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "source",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "source-detail",
+                    "source": "%s",
+                    "medium": "%s"
+                },
+                "valueColumns": [ "source", "medium" ]
+            },
+            "more": {
+                "reportId": "sources",
+                "label": "View Full Report »"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "topreferrals",
+            "container": "top-referrals",
+            "title": "Top Referrals",
+            "colspan": 6,
+            "query": {
+                "dimensions": "referralPageUrl",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "referralPageUrl",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "referral-detail",
+                    "referralPageUrl": "%s"
+                },
+                "valueColumns": [ "referralPageUrl" ]
+            },
+            "more": {
+                "reportId": "referring-sites",
+                "label": "View Full Report »"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "topkeywords",
+            "container": "top-keywords",
+            "title": "Top Keywords",
+            "colspan": 6,
+            "query": {
+                "dimensions": "referralSearchTerms",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "constraints": [
+                { "dimension": "medium", "value": "organic-search" }
+            ],
+            "link": {
+                "linkColumn": "referralSearchTerms",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "keyword-detail",
+                    "referralSearchTerms": "%s"
+                },
+                "valueColumns": [ "referralSearchTerms" ]
+            },
+            "more": {
+                "reportId": "keywords",
+                "label": "View Full Report »"
+            }
+        },
+        {
+            "type": "report-links",
+            "title": "Related Reports",
+            "colspan": 6,
+            "links": [
+                {
+                    "reportId": "search-engines",
+                    "label": "Search Engines",
+                    "description": "See which search engines your visitors are coming from."
+                },
+                {
+                    "reportId": "keywords",
+                    "label": "Keywords",
+                    "description": "See what keywords your visitor are using to find your web site."
+                },
+                {
+                    "reportId": "referring-sites",
+                    "label": "Referring Web Sites",
+                    "description": "See which web sites are linking to your web site."
+                },
+                {
+                    "reportId": "anchortext",
+                    "label": "Inbound Link Text",
+                    "description": "See what words Referring Web Sites use to describe your web site."
+                }
+            ]
+        }
+    ]
+}

@@ -196,26 +196,14 @@ final class TemplateLatentVarTest extends TestCase
         $this->assertStringNotContainsString('scope=""', $out);
     }
 
-    /**
-     * The visitor roster's headline shows the reporting period.
+    /*
+     * The visitor-roster headline test is GONE with its template.
      *
-     * `$date_label` was never set by anything, so the <H2> rendered as
-     * "Visitors: " with a dangling colon. Report::setPeriod() already pushes
-     * 'period_label' onto the subview body unconditionally (Report.php:140),
-     * which is where the label was always meant to come from.
+     * visitors-roster was dropped 2026-08-25: nothing linked to it and it was
+     * not in the navigation, so it was unreachable in the running app. The
+     * latent-variable rule it demonstrated is still enforced for every other
+     * template by the sweep in this file.
      */
-    public function testVisitorsRosterHeadlineShowsThePeriodLabel(): void
-    {
-        $out = $this->render(new \OWA\Core\Template('base'), 'report_visitors_roster.php', [
-            'headline'     => 'Visitors',
-            'period_label' => 'Last 30 Days',
-            'visitors'     => [],
-        ]);
-
-        $this->assertStringContainsString('Visitors: Last 30 Days', $out);
-        // Guard the dangling-colon regression specifically.
-        $this->assertDoesNotMatchRegularExpression('/Visitors:\s*<\/H2>/i', $out);
-    }
 
     /**
      * The three admin add/edit forms render on the ADD path, where the record

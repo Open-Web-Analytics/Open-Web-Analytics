@@ -26,9 +26,142 @@ use PHPUnit\Framework\TestCase;
  * Maintenance contract: this fixture is APPEND-mostly. A name may be added when
  * new classes ship. A name may only be REMOVED when its deprecation window has
  * elapsed and the alias is intentionally retired — never to make the test pass.
+ *
+ * RETIRED 2026-08-24, deliberately: the 35 report controllers that became
+ * configuration (modules/Base/reports/*.json, rendered by Core\ConfiguredReport).
+ * They are listed in RETIRED below and asserted to be GONE, so the removal is a
+ * decision this suite records and enforces rather than a fixture edit that made
+ * a test go quiet. Anything referencing owa_reportPagesController and friends
+ * gets a clear "class not found" instead of an alias to a class that would
+ * render an empty report.
+ *
+ * RETIRED 2026-08-24: attribution-history's controller, which became a report
+ * definition. Its grid formatter was the last thing keeping it -- see
+ * AttributionFormatter.test.js.
+ *
+ * RETIRED 2026-08-24: the referral crawler. OWA no longer fetches referring
+ * pages, so its CLI controller and view are gone -- see RefererCrawlRemovedTest.
+ *
+ * RETIRED 2026-08-24, same reasoning: the 8 report VIEWS whose reports became
+ * widget configuration. Seven were bespoke views that did nothing but name a
+ * template; the eighth, ReportSimpleDimensional, was the generic subview they
+ * and the converted reports shared. Every report now renders through
+ * base.reportWidgets, so all eight and their templates are gone.
  */
 final class LegacyClassNameContractTest extends TestCase
 {
+    /**
+     * Legacy names retired when their reports became configuration.
+     *
+     * Asserted absent, not merely dropped from the fixture: a retirement that
+     * is only an omission cannot be told apart from an accident later.
+     */
+    /** Size of the name set frozen from the untouched tree at stage 0. */
+    private const STAGE0_COUNT = 406;
+
+    private const RETIRED = [
+        // RETIRED 2026-08-26: transaction-detail, removed rather than converted.
+        // It was the per-transaction drill-down off the Transaction Roster --
+        // one record as label/value rows plus its line items. Nothing else
+        // linked to it. The REST report it read (report_transaction) is a
+        // public endpoint and stays.
+        'owa_reportTransactionDetailController',
+        'owa_reportTransactionDetailView',
+        // RETIRED 2026-08-25: the visitor-detail family. visitors became a
+        // report definition; visit, visits, visitors-roster and visitor were
+        // dropped -- nothing linked to them and none was in the navigation.
+        'owa_reportVisitorsController',
+        'owa_reportVisitorsView',
+        'owa_reportVisitorController',
+        'owa_reportVisitorView',
+        'owa_reportVisitController',
+        'owa_reportVisitView',
+        'owa_reportVisitsController',
+        'owa_reportVisitsView',
+        'owa_reportVisitorsRosterController',
+        'owa_reportVisitorsRosterView',
+        // RETIRED 2026-08-25: document became a report definition. Its card was
+        // dropped and the rest models as widgets.
+        'owa_reportDocumentController',
+        'owa_reportDocumentView',
+        'owa_reportDashboardController',
+        'owa_reportDashboardView',
+        // The GitHub release feed. Replaced by stored notifications, which are
+        // fetched on a schedule instead of during a dashboard render.
+        'owa_widgetOwaNewsController',
+        'owa_widgetOwaNewsView',
+        'owa_reportGoalsController',
+        'owa_reportGoalsView',
+        'owa_reportDomClicksController',
+        'owa_reportDomClicksView',
+        'owa_reportCampaignsController',
+        'owa_reportAttributionHistoryController',
+        'owa_reportReferralDetailController',
+        'owa_crawlReferralCliController',
+        'owa_crawlReferralCliView',
+        'owa_reportTrafficView',
+        'owa_reportContentView',
+        'owa_reportCommerceView',
+        'owa_reportEcommerceView',
+        'owa_reportFeedsView',
+        'owa_reportTransactionsView',
+        'owa_reportActionTrackingView',
+        'owa_reportSimpleDimensionalView',
+        'owa_reportActionDetailController',
+        'owa_reportActionGroupController',
+        'owa_reportActionGroupsController',
+        'owa_reportActionTrackingController',
+        'owa_reportAdDetailController',
+        'owa_reportAdTypeDetailController',
+        'owa_reportAdTypesController',
+        'owa_reportAdsController',
+        'owa_reportAnchortextController',
+        'owa_reportAvgOrderValueController',
+        'owa_reportBrowserDetailController',
+        'owa_reportBrowsersController',
+        'owa_reportCampaignDetailController',
+        'owa_reportCommerceController',
+        'owa_reportContentController',
+        'owa_reportCountryDetailController',
+        'owa_reportCreativePerformanceController',
+        'owa_reportDaysToPurchaseController',
+        'owa_reportEcommerceController',
+        'owa_reportEcommerceConversionRateController',
+        'owa_reportEntryPagesController',
+        'owa_reportExitPagesController',
+        'owa_reportFeedsController',
+        'owa_reportGeolocationController',
+        'owa_reportHostDetailController',
+        'owa_reportHostsController',
+        'owa_reportKeywordDetailController',
+        'owa_reportKeywordsController',
+        'owa_reportOsController',
+        'owa_reportOsDetailController',
+        'owa_reportPageTypeDetailController',
+        'owa_reportPageTypesController',
+        'owa_reportPagesController',
+        'owa_reportProductCategoriesController',
+        'owa_reportProductCategoryDetailController',
+        'owa_reportProductDetailController',
+        'owa_reportProductSkuDetailController',
+        'owa_reportProductSkusController',
+        'owa_reportProductsController',
+        'owa_reportReferralLinkTextDetailController',
+        'owa_reportReferringSitesController',
+        'owa_reportRevenueController',
+        'owa_reportSearchEngineDetailController',
+        'owa_reportSearchEnginesController',
+        'owa_reportSourceDetailController',
+        'owa_reportSourcesController',
+        'owa_reportStateDetailController',
+        'owa_reportTrafficController',
+        'owa_reportTransactionsController',
+        'owa_reportVisitorsAgeController',
+        'owa_reportVisitorsLoyaltyController',
+        'owa_reportVisitorsRecencyController',
+        'owa_reportVisitsToPurchaseController',
+    ];
+
     public static function setUpBeforeClass(): void
     {
         // Full boot so directly-declared classes are loadable on demand and any
@@ -37,15 +170,57 @@ final class LegacyClassNameContractTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
+    /**
+     * The retired names are actually gone.
+     *
+     * The other half of removing them from the frozen set. Without this, an
+     * alias could quietly come back -- or never have been removed -- and the
+     * fixture would simply have stopped watching.
+     */
+    public function testRetiredLegacyNamesAreGone(): void
+    {
+        $stillThere = [];
+
+        foreach (self::RETIRED as $name) {
+            if (class_exists($name) || interface_exists($name) || trait_exists($name)) {
+                $stillThere[] = $name;
+            }
+        }
+
+        $this->assertSame([], $stillThere,
+            "these names were retired but still resolve:\n" . implode("\n", $stillThere));
+    }
+
+    /**
+     * ...and none of them is still in the frozen set, so the two halves cannot
+     * drift into disagreeing about what was retired.
+     */
+    public function testRetiredNamesAreNotInTheFrozenSet(): void
+    {
+        $overlap = array_intersect($this->legacyNames(), self::RETIRED);
+
+        $this->assertSame([], array_values($overlap),
+            'a retired name is still listed as one that must resolve');
+    }
+
     public function testEveryLegacyClassNameStillResolves(): void
     {
         $names = $this->legacyNames();
 
-        $this->assertGreaterThan(
-            400,
+        /*
+         * Derived rather than a number that has to be nudged down after every
+         * retirement -- which is how a truncation guard stops guarding. New
+         * classes only ever push it up, so the floor is the stage-0 set less
+         * what has been deliberately retired.
+         */
+        $floor = self::STAGE0_COUNT - count(self::RETIRED);
+
+        $this->assertGreaterThanOrEqual(
+            $floor,
             count($names),
-            'Legacy class-name snapshot looks truncated; expected the full '
-            . '~406-name set frozen at stage 0.'
+            'Legacy class-name snapshot looks truncated: expected at least the '
+            . "stage-0 set of " . self::STAGE0_COUNT . ' less the ' . count(self::RETIRED)
+            . ' deliberately retired names.'
         );
 
         $missing = [];

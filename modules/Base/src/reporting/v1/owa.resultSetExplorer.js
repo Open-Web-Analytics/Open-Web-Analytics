@@ -145,6 +145,8 @@ OWA.resultSetExplorer = function(dom_id, options) {
             metric: '',
             dimension: '',
             metrics: [],
+            // Raw dimension value -> slice label, set by a report definition.
+            valueLabels: null,
             numSlices: 5
         },
         sparkline: {
@@ -153,7 +155,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
         grid: {
             showRowNumbers: true,
             excludeColumns: [],
-            columnFormatters: {}
+            columnFormatters: {},
+            /*
+             * The dimension chooser and the Filter control above a grid.
+             *
+             * On by default -- that is what an EXPLORER is. Off for a grid whose
+             * rows were computed rather than queried: the goal funnel's steps
+             * come from one ordered query the report ran itself, so there is no
+             * result-set URL behind them to re-query with a different dimension
+             * or a new constraint. Drawing the controls anyway offers the reader
+             * choices that cannot do anything.
+             */
+            showExplorerControls: true
         },
         template: {
             template: '',
@@ -691,6 +704,72 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
     
+    /**
+     * Render a headline from a message with named slots.
+     *
+     * The message is DATA -- a sentence a report declares -- and this does the
+     * substituting. It replaces renderTemplate for headlines, where the
+     * template was a jqote string carried in configuration: a definition that
+     * can hand a template engine arbitrary source is a definition that cannot
+     * safely be authored by a user, which is what report configuration is
+     * meant to become.
+     *
+     * Three slot forms, which is everything the 59 existing headlines used:
+     *
+     *   {visits.formatted}              the metric's formatted value
+     *   {uniquePageViews.raw}           its raw value
+     *   {visits|visit|visits}           its count, then singular, then plural
+     *
+     * One is singular; everything else, zero included, takes the plural. That
+     * is what the templates being replaced did (`> 1`), and it is right for
+     * English: "0 visits".
+     *
+     * An unknown metric renders as an empty string rather than the slot text,
+     * so a mistyped name reads as missing data rather than as markup leaking
+     * into the sentence.
+     */
+    renderHeadline : function(message, dom_id) {
+
+        dom_id = dom_id || this.dom_id;
+
+        var that = this;
+
+        var aggregate = function(name) {
+
+            var aggregates = that.resultSet
+                && that.resultSet.aggregates
+                ? that.resultSet.aggregates
+                : {};
+
+            return aggregates[name] || null;
+        };
+
+        var text = String(message).replace(/\{([^}]+)\}/g, function(whole, slot) {
+
+            var parts = slot.split('|');
+
+            // {metric|singular|plural}
+            if (parts.length === 3) {
+
+                var counted = aggregate(parts[0]);
+                var count = counted ? Number(counted.value) : 0;
+
+                return count === 1 ? parts[1] : parts[2];
+            }
+
+            var dotted = slot.split('.');
+            var agg = aggregate(dotted[0]);
+
+            if (!agg) {
+                return '';
+            }
+
+            return dotted[1] === 'raw' ? agg.value : agg.formatted_value;
+        });
+
+        jQuery('#' + dom_id).html(text);
+    },
+
     renderTemplate : function(template, params, mode, dom_id) {
 
         template = template || this.options.template.template;
@@ -740,7 +819,7 @@ OWA.resultSetExplorer.prototype = {
         }
     },
     
-    makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
+    makeMetricBoxes : function(dom_id, label, metrics, filter) {
 
         var kpi = new OWA.kpiBox();
 
@@ -749,10 +828,6 @@ OWA.resultSetExplorer.prototype = {
         }
 
         var options = {};
-
-        if (template) {
-            options.template = template;
-        }
 
         if ( label ) {
             options.label = label;
@@ -788,49 +863,6 @@ OWA.resultSetExplorer.prototype = {
         sl.generate( this.resultSet, dom_id, options);
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
-    },
-    
-    renderResultsRows : function(dom_id, template) {
-
-        if (this.resultSet.resultsRows.length > 0) {
-            var that = this;
-            dom_id = dom_id || this.dom_id;
-
-            var table = '';
-            var data = [];
-            //re-order the data into an array
-            for (var d_item in this.resultSet.resultsRows[0]) {
-
-                if (this.resultSet.resultsRows[0].hasOwnProperty(d_item)) {
-                    data.push(this.resultSet.resultsRows[0][d_item]);
-                }
-            }
-            // set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
-            jQuery.jqotetag('*');
-            //make table headers
-            var ths = jQuery('#simpleTable-headers').jqote(data);
-            // make outer table
-            table = jQuery('#simpleTable-outer').jqote({dom_id: dom_id+'_simpleTable', headers: ths});
-            // add to dom
-            jQuery('#'+dom_id).html(table);
-            // append rows
-            for(var i=0;i<= this.resultSet.resultsRows.length -1;i++) {
-
-                var cells = '';
-                for (var r_item in this.resultSet.resultsRows[i]) {
-
-                    if (this.resultSet.resultsRows[i].hasOwnProperty(r_item)) {
-                        cells += jQuery('#table-column').jqote(this.resultSet.resultsRows[i][r_item]);
-                    }
-                }
-
-                var row = jQuery('#table-row').jqote({columns: cells});
-                jQuery('#'+dom_id+'_simpleTable').append(row);
-            }
-
-        } else {
-            jQuery('#'+dom_id).html("No results to display.");
-        }
     },
     
     getApiEndpoint : function() {
@@ -1070,6 +1102,118 @@ OWA.dataGrid.prototype = {
                 var name = options.colModel.realColName;
                 return rowdata[name].formatted_value;
                 //return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
+            },
+
+            /*
+             * The attribution history stored on a session: a JSON array of
+             * {md, sr, cn, ad, at, st}, oldest first.
+             *
+             * Named, not supplied. A report definition names this formatter and
+             * the widget resolves the name -- the definition never carries a
+             * function, which is the gate on it ever being user-authored. Same
+             * reason excludeColumns became a list of names.
+             *
+             * The markup was a jqote template fetched by DOM id
+             * (#attributionCell). It is here instead because a formatter and
+             * the markup it renders are one thing, and because this is the only
+             * place the fields can be escaped: jqote does not escape, and every
+             * one of these six values arrives from a URL parameter on a tracked
+             * page.
+             */
+            attributionList : function(cellvalue) {
+
+                // Cells arrive as {value, formatted_value}; the JSON is in .value.
+                var raw = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                        ? cellvalue.value
+                        : cellvalue;
+
+                if ( ! raw ) {
+                    return '(none)';
+                }
+
+                var list = raw;
+
+                if ( typeof list === 'string' ) {
+                    try {
+                        list = JSON.parse( list );
+                    } catch ( e ) {
+                        return '(none)';
+                    }
+                }
+
+                if ( ! Array.isArray( list ) || ! list.length ) {
+                    return '(none)';
+                }
+
+                var esc = function( v ) {
+                    return String( v )
+                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                        .replace( /'/g, '&#39;' );
+                };
+
+                var fields = [
+                    [ 'md', 'Medium' ], [ 'sr', 'Source' ], [ 'cn', 'Campaign' ],
+                    [ 'ad', 'Ad' ], [ 'at', 'Ad Type' ], [ 'st', 'Search Terms' ]
+                ];
+
+                return list.map( function( item, i ) {
+
+                    var parts = fields
+                        .filter( function( f ) { return item && item[ f[0] ]; } )
+                        .map( function( f ) {
+                            return '<i>' + f[1] + ':</i> ' + esc( item[ f[0] ] );
+                        } );
+
+                    return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
+                         + parts.join( ' -&gt; ' ) + '<br>';
+                } ).join( '' );
+            },
+
+            /*
+             * The Play link on a domstream recording.
+             *
+             * Named, not supplied: the report names this formatter and the cell
+             * carries only DATA -- {overlay, url, width, height}. A report that
+             * assembled the anchor itself would be handing the grid markup, and
+             * the grid has no way to tell markup it built from markup it was
+             * given.
+             *
+             * The href is the recorded page with the player's parameters on the
+             * fragment, which is how the overlay reaches the tracker on that
+             * page. The viewport travels as data attributes because the click
+             * handler needs it to size the window -- the replay positions events
+             * against the geometry they were recorded in.
+             */
+            domstreamPlayer : function( cellvalue ) {
+
+                var data = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                         ? cellvalue.value
+                         : cellvalue;
+
+                if ( typeof data === 'string' ) {
+                    try {
+                        data = JSON.parse( data );
+                    } catch ( e ) {
+                        return '';
+                    }
+                }
+
+                if ( ! data || ! data.url || ! data.overlay ) {
+                    return '';
+                }
+
+                var esc = function( v ) {
+                    return String( v )
+                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                        .replace( /'/g, '&#39;' );
+                };
+
+                return '<a class="play" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
+                     + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
+                     + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
+                     + '">Play</a>';
             }
 
         });
@@ -1255,8 +1399,16 @@ OWA.dataGrid.prototype = {
 
     injectDomElements : function(resultSet) {
 
+        // A grid whose data was computed rather than queried has nothing to
+        // explore FROM -- see options.grid.showExplorerControls.
+        // NOT this.options.grid: createGrid() hands the explorer's grid options
+        // straight in as `options`, so inside a dataGrid they ARE this.options.
+        var showControls = this.options.showExplorerControls !== false;
+
         var p = '';
-        p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
+        if ( showControls ) {
+            p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
+        }
         p += '<div style="clear:both;"></div>';
         p += '<table id="'+ this.dom_id + '_grid"></table>';
         p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
@@ -1264,6 +1416,13 @@ OWA.dataGrid.prototype = {
 
         var that = this;
         jQuery('#'+that.dom_id).append(p);
+
+        if ( ! showControls ) {
+
+            // The grid element is in place; the controls that would sit above
+            // it are the part being skipped.
+            return;
+        }
 
         // add top level controls
         // secondard dimension picker

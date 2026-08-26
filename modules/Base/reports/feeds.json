@@ -1,0 +1,27 @@
+{
+    "title": "Feeds",
+    "metrics": "feedReaders,feedRequests,feedSubscriptions",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "feedReaders",
+            "headline": "There were {feedReaders.formatted} readers of all feeds."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "feedType",
+                "sort": "feedReaders-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

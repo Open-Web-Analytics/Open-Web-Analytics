@@ -44,7 +44,9 @@
         "phpstan:migration": "phpstan analyse -c phpstan-migration.neon --memory-limit=1G",
         "phpstan:templates": "phpstan analyse -c phpstan-templates.neon --memory-limit=1G",
         "test": "phpunit",
-        "test:isolation": "bash tests/tools/isolation_sweep.sh"
+        "test:isolation": "bash tests/tools/isolation_sweep.sh",
+        "test:scratch": "bash tests/tools/scratch_db_run.sh",
+        "test:configless": "bash tests/tools/configless_run.sh"
     },
     "extra": {
         "merge-plugin": {

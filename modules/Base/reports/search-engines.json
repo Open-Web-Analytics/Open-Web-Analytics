@@ -1,0 +1,37 @@
+{
+    "title": "Search Engines",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from search engines."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralWebSite",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralWebSite",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "search-engine-detail",
+                    "referralWebSite": "%s"
+                },
+                "valueColumns": "referralWebSite"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "medium==organic-search"
+    }
+}

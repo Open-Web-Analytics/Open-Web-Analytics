@@ -1,0 +1,27 @@
+{
+    "title": "Total Revenue",
+    "metrics": "visits,ecommerceConversionRate",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "ecommerceConversionRate",
+            "headline": "There were {ecommerceConversionRate.formatted} across all visits."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "date",
+                "sort": "date-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

@@ -114,6 +114,16 @@ abstract class Module {
     var $nav_links;
 
     /**
+     * Whether registerReports() has run for this module this request.
+     *
+     * Mirrors how nav guards itself with `empty( $v->nav_links )`. Kept as its
+     * own flag rather than inferred from the registry being non-empty, because
+     * a module that legitimately registers no reports would otherwise be asked
+     * again on every lookup.
+     */
+    public $reports_registered = false;
+
+    /**
      * Array of metric names that this module implements
      *
      * @var mixed
@@ -474,6 +484,104 @@ abstract class Module {
     function registerNavigation() {
 
         return false;
+    }
+
+    /**
+     * Abstract hook for registering a module's reports.
+     *
+     * Called LAZILY -- from the registry, when a report is actually needed --
+     * and deliberately NOT from the constructor, which is where registerMetrics(),
+     * registerDimensions(), registerJobs() and the rest are called from.
+     *
+     * The constructor runs on every request, including every tracker beacon
+     * through log.php. Registering reports there would put a file read and a
+     * json_decode on the logging path for each one, which is the opposite of the
+     * direction that path has been going. registerNavigation() is the precedent
+     * to follow, and for exactly the same reason.
+     */
+    function registerReports() {
+
+        return false;
+    }
+
+    /**
+     * Registers one report under a stable id.
+     *
+     * The id is the report's public identity -- it appears in every URL, every
+     * nav link and every inter-report link -- so it should read like a name
+     * (`pages`, `entry-pages`) rather than like a class.
+     *
+     * A definition is either a path to a JSON file, relative to the module:
+     *
+     *     $this->registerReport( 'pages', 'reports/pages.json' );
+     *
+     * ...or an array naming a controller, for a report that is not
+     * configuration and never will be:
+     *
+     *     $this->registerReport( 'domstreams', [ 'controller' => 'base.reportDomstreams' ] );
+     *
+     * That second form is what lets the registry be the single indirection for
+     * every report. Conversion order stops mattering, because a config that says
+     * "link to `document`" resolves whether `document` is JSON yet or not; and
+     * the reports that stay applications -- the heatmap, the session player --
+     * are reachable and linkable without the config format growing an escape
+     * hatch to accommodate them.
+     *
+     * Registration records the definition ONLY. Nothing is read from disk here;
+     * a JSON file is parsed when the report is rendered, so listing the registry
+     * costs no parsing at all.
+     *
+     * @param string       $id          stable, url-safe, human-meaningful
+     * @param string|array $definition  json path relative to the module, or ['controller' => action]
+     */
+    /**
+     * A navigation ref pointing at a report by its id.
+     *
+     * Reports are reached through one action now, so the action alone no longer
+     * says which report -- addNavigationLink('base.reportPages') has nothing to
+     * become except the pair.
+     *
+     *     $this->addNavigationLinkInSubGroup(
+     *         'Content', $this->reportRef( 'pages' ), 'Top Pages', 1 );
+     *
+     * @param string $id a registered report id
+     * @return array link parameters
+     */
+    protected function reportRef( $id ) {
+
+        return array( 'do' => 'base.report', 'reportId' => $id );
+    }
+
+    protected function registerReport( $id, $definition ) {
+
+        if ( is_string( $definition ) ) {
+            $definition = array( 'json' => $this->path . $definition );
+        }
+
+        $definition['module'] = $this->name;
+
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $existing = $s->getMapValue( 'reports', $id );
+
+        if ( $existing ) {
+
+            /*
+             * Refused rather than overwritten, and loudly. A silently shadowed
+             * report is unreachable with nothing in the interface to explain
+             * why -- and since the id is the public identity, whichever module
+             * lost would also lose its URLs.
+             */
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Report id "%s" is already registered by the %s module; %s cannot take it.',
+                $id, $existing['module'], $this->name ) );
+
+            return false;
+        }
+
+        $s->setMapValue( 'reports', $id, $definition );
+
+        return true;
     }
 
 

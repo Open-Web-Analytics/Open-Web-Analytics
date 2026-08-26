@@ -1,0 +1,70 @@
+{
+    "title": "Dom Clicks: ",
+    "titleSuffix": "{pagePath}",
+    "params": {
+        "pagePath": {}
+    },
+    "metrics": "domClicks",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "domClicks",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {domClicks.formatted} dom clicks for this web page."
+        },
+        {
+            "type": "grid",
+            "id": "domids",
+            "container": "topDomIds",
+            "title": "Dom IDs",
+            "query": {
+                "dimensions": "domElementId",
+                "sort": "domClicks-",
+                "resultsPerPage": 5
+            }
+        },
+        {
+            "type": "grid",
+            "id": "domnames",
+            "container": "topDomNames",
+            "title": "Name Attributes",
+            "query": {
+                "dimensions": "domElementName",
+                "sort": "domClicks-",
+                "resultsPerPage": 5
+            }
+        },
+        {
+            "type": "grid",
+            "id": "htmltags",
+            "container": "topHtmlTags",
+            "title": "HTML Tags",
+            "query": {
+                "dimensions": "domElementTag",
+                "sort": "domClicks-",
+                "resultsPerPage": 5
+            }
+        },
+        {
+            "type": "grid",
+            "id": "domclasses",
+            "container": "topDomClasses",
+            "title": "Dom Classes",
+            "query": {
+                "dimensions": "domElementClass",
+                "sort": "domClicks-",
+                "resultsPerPage": 5
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            { "dimension": "pagePath", "fromParam": "pagePath" }
+        ]
+    }
+}

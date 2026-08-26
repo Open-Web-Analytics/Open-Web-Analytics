@@ -1,0 +1,36 @@
+{
+    "title": "Action Groups",
+    "metrics": "actions,uniqueActions,actionsValue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "actions",
+            "headline": "There were {actions.formatted} actions for all action groups."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "actionGroup",
+                "sort": "actions-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
+            }
+        }
+    ]
+}

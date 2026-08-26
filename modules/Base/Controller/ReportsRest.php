@@ -30,6 +30,25 @@ class ReportsRest extends \OWA\Core\ReportController {
 	
 	function validate() {
 		
+		/*
+		 * The same range rule the web path enforces, from the same place, so the
+		 * two cannot drift on what a date range is -- as they had drifted on
+		 * what a period is until both were pointed at getValidPeriods().
+		 *
+		 * Applied to every report this controller serves, not just the generic
+		 * resultset branch: the named reports below take the same startDate and
+		 * endDate parameters and had the same inverted-window behaviour.
+		 */
+		$range = new \OWA\Core\Validation\DateRange();
+
+		$range->setValues( array(
+			'period'    => $this->getParam('period'),
+			'startDate' => $this->getParam('startDate'),
+			'endDate'   => $this->getParam('endDate'),
+		) );
+
+		$this->setValidation( 'dateRange', $range );
+
 		// if no report name is specified do these validations necesary for generic resultSet.
 		if ( ! $this->get('report_name') ) {
 			
@@ -39,9 +58,20 @@ class ReportsRest extends \OWA\Core\ReportController {
 			// make sure period string is valid
 			if ( $this->get( 'period' ) ) {
 				
-				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');	
-				$lables = array_keys($period->getPeriodLabels() );
-				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $lables, 'stopOnError' => true) );				
+				/*
+				 * The same list the web path validates against, rather than a
+				 * second one built here. These had drifted: this controller
+				 * used the dropdown's labels alone, so `period=date_range` --
+				 * accepted everywhere else -- was rejected over the API, and
+				 * the only way to ask for a custom range was to omit the
+				 * parameter and let it be inferred.
+				 *
+				 * That inference stays. Naming the period is now permitted, not
+				 * required; a caller sending two dates and nothing else is
+				 * still doing the normal thing.
+				 */
+				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $period->getValidPeriods(), 'stopOnError' => true) );
 			}
 		} else {
 
@@ -110,9 +140,39 @@ class ReportsRest extends \OWA\Core\ReportController {
 	}
 	
 	function success() {
-		
-		http_response_code(201);
-		
+
+		/*
+		 * A malformed request is not a success, whatever the envelope contains.
+		 *
+		 * This answered 201 unconditionally, so a query refused for naming a
+		 * dimension that does not exist -- or for a constraint whose value went
+		 * missing -- came back as success carrying an `errors` array that a
+		 * client had no reason to read. The status is the only part most callers
+		 * check.
+		 *
+		 * 422 rather than 400: the request is well-formed HTTP and the
+		 * parameters are the right shape, they just cannot be honoured. It is
+		 * the code this controller already answers with for a failed validation.
+		 */
+		/*
+		 * $this->data, not $this->get().
+		 *
+		 * On a controller set() writes the data the VIEW is handed while get()
+		 * reads a REQUEST PARAMETER -- they are not a pair. Reading the response
+		 * back with get('response') returns null on every request, so this
+		 * answered 201 unconditionally and looked like it worked.
+		 */
+		$response = $this->data['response'] ?? null;
+
+		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
+
+			http_response_code(422);
+
+		} else {
+
+			http_response_code(201);
+		}
+
 		$this->setView( 'base.reportsRest' );
 	}
 	
@@ -557,90 +617,23 @@ class ReportsRest extends \OWA\Core\ReportController {
         return $transaction;
     }
 
-function report_clicks() {
-	
-        // Fetch document object
-        $d = \OWA\Core\CoreAPI::entityFactory('base.document');
-
-        if ( ! $this->get('document_id') ) {
-
-            // Resolve pageUrl -> document_id the same way ingestion does. During
-            // tracking, the 'page_url' property is canonicalized by
-            // owa_trackingEventHelpers::makeUrlCanonical( $url, $event ) BEFORE the
-            // document_id is generated (see module.php:164 + documentHandlers::notify),
-            // so stored ids are hashes of the *canonical* URL. We must canonicalize
-            // here too, or the lookup misses every page that carried tracking params.
-            //
-            // makeUrlCanonical() is static and needs only an event object to read
-            // the site_id from ($event->getSiteId()); pass a minimal event rather
-            // than the bare siteId string (the old code passed the string straight
-            // through eventDispatch::filter(), which both skipped canonicalization
-            // when the filter was unregistered and fataled with getSiteId()-on-
-            // string when it was). Call it directly so the result is deterministic
-            // regardless of whether the tracking filters are registered in this
-            // process. There is no autoloader, so require the one class file first.
-
-            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-            $event->setSiteId( $this->get('siteId') );
-
-            $canonical_url = \OWA\Module\Base\Classes\TrackingEventHelpers::makeUrlCanonical( urldecode( $this->get('pageUrl') ), $event );
-            $document_id   = $d->generateId( $canonical_url );
-
-        } else {
-	        
-	        $document_id = $this->get('document_id');
-        }
-
-        $d->getByColumn('id', $document_id);
-
-		// get resultSet Manager instance
-		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-		
-        $rsm->db->selectFrom('owa_click');
-        $rsm->db->selectColumn("click_x as x,
-                            click_y as y,
-                            page_width,
-                            page_height,
-                            dom_element_x,
-                            dom_element_y,
-                            position");
-
-
-        $rsm->db->orderBy('click_y', 'ASC');
-        
-        $rsm->db->where('document_id', $document_id);
-        // designate document_id a query param for result set urls
-        $rsm->setQueryStringParam( 'document_id', $document_id );
-        // designate report_name a query param for result set urls
-        $rsm->setQueryStringParam( 'report_name', 'clicks' );
-      	
-		// set site id
-		//$rsm->setSiteId( $this->get('siteId') );
-		$rsm->db->where('site_id',  $this->get('siteId') );
-		$rsm->setQueryStringParam('siteId', $this->get('siteId') );
-     
-        // set time period
-        $rsm->setTimePeriod(
-        	$this->get( 'period' ),
-            $this->get('startDate'),
-            $this->get('endDate'),
-            $this->get('startTime'),
-            $this->get('endTime')
-        );
-        
-		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;
-        $rsm->setLimit( $resultsPerPage );
-		
-		// set pagination
-        $page = $this->get( 'page' ) ?: 1;
-        $rsm->setPage( $this->get('page') );
-		
-		// fetch results
-		$rs = $rsm->queryResults();
-		
-        return $rs;
-    }
+    /*
+     * report_clicks is GONE.
+     *
+     * A heatmap is now an ordinary dimensional query:
+     *
+     *   metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x
+     *
+     * which the resolver joins click->document on its own, because pagePath is
+     * registered against document_id. That deletes ~80 lines of hand-built SQL,
+     * a second pageUrl-to-document_id resolution that had to re-implement the
+     * ingestion canonicalisation to stay correct, and the bespoke overlay token
+     * resource key it needed.
+     *
+     * It also fixes what that query could not express: identical coordinates
+     * now GROUP, so one page's 345,620 clicks arrive as distinct points with a
+     * count instead of 345,620 rows paged through a few hundred at a time.
+     */
 
 	
 }	

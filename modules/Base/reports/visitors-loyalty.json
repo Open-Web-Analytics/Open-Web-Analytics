@@ -1,0 +1,25 @@
+{
+    "title": "Visitor Loyalty",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all sources."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "priorVisitCount",
+                "sort": "priorVisitCount",
+                "resultsPerPage": 25
+            }
+        }
+    ]
+}

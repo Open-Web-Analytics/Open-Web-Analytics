@@ -1,0 +1,25 @@
+{
+    "title": "Visitor Age",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all sources."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "daysSinceFirstVisit",
+                "sort": "daysSinceFirstVisit",
+                "resultsPerPage": 25
+            }
+        }
+    ]
+}

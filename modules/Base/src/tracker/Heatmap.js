@@ -23,11 +23,37 @@ class Heatmap {
 	    this.createCanvas(w,h);
 	    this.canvas = document.getElementById('owa_heatmap');
 	    this.context = this.canvas.getContext('2d');
-	    //this.calcRegions();
+
+	    /*
+	     * Gradients accumulate OFF screen, and the visible canvas is painted
+	     * from it.
+	     *
+	     * They used to be drawn straight onto the visible canvas, which was
+	     * then recoloured a dot at a time. That is wrong twice over. Once a
+	     * region has been recoloured its pixels hold colour, not the black
+	     * alpha ramp the next dot composites against -- so wherever two clicks
+	     * overlapped, the second one blended into the first one's colour and
+	     * the result was neither click's intensity. And it cost a
+	     * getImageData/putImageData round trip PER CLICK: on a page with
+	     * 345,620 of them that is 345,620 canvas reads.
+	     *
+	     * Accumulating alpha off screen and colourising the whole canvas once
+	     * per fetch is the standard way round, and makes overlap mean what it
+	     * should -- more clicks, hotter.
+	     */
+	    this.shadowCanvas = document.createElement('canvas');
+	    this.shadowCanvas.width = w;
+	    this.shadowCanvas.height = h;
+	    this.shadowContext = this.shadowCanvas.getContext('2d', { willReadFrequently: true });
 	
 	    this.options = {
 		    
 	        dotSize: 12,
+	        // Alpha a single click contributes at the centre of its dot. Points
+	        // arrive grouped with a count, so N clicks on one pixel stack to
+	        // N * this -- which is what makes a hot spot hot rather than every
+	        // dot being identically faint.
+	        dotAlpha: 0.08,
 	        numRegions: 40,
 	        alphaIncrement:50,
 	        demoMode: false,
@@ -54,18 +80,6 @@ class Heatmap {
 	    this.lock = false;
 	}
 	
-    /**
-     * Marks a region as dirty so that it can be re-rendered
-     * @depricated
-     */
-    markRegionDirty(region_num) {
-        if (region_num >= 0) {
-            this.dirtyRegions[region_num] = true;
-            OWA_instance.debug("marking region dirty: %s", region_num);
-        } else {
-            OWA_instance.debug("no region to mark dirty!");
-        }
-    }
 
     showControlPanel() {
         var that = this;
@@ -260,46 +274,44 @@ class Heatmap {
 
     }
 
+    /**
+     * The fetched rows as plottable points.
+     *
+     * A heatmap is now an ordinary dimensional query -- domClicks grouped by
+     * clickX and clickY -- so a row is {clickX:{value},clickY:{value},
+     * domClicks:{value}} rather than the flat {x,y} the bespoke clicks report
+     * used to alias into being. The count comes back as the metric, which is
+     * the weight each point is drawn with.
+     */
     getClicks() {
-	    
-        //OWA_instance.debug("getClicks is logging %s", this.clicks['page']);
-        return this.clicks.resultsRows;
-    }
 
-    /**
-     * Looks up the a region's top lower right corner plot points
-     */
-    getRegion(num) {
-	    
-        //OWA_instance.debug("Getting dims for region %s", num);
-        return this.regions[num];
-    }
+        var rows = ( this.clicks && this.clicks.resultsRows ) ? this.clicks.resultsRows : [];
+        var points = [];
 
-    /**
-     * Sets the color of a pixels a region based on their alpha values
-     * @depircated
-     */
-    setColor(num) {
-        OWA_instance.debug("About to set color for region %s", num);
-        var dims = this.getRegion(num);
-        OWA_instance.debug("set color coords %s %s", dims.x, dims.y);
+        for ( var i = 0; i < rows.length; i++ ) {
 
-        // get the actual pixel data from the region
-        var canvasData = this.context.getImageData(dims.x, dims.y, this.regionWidth, this.regionHeight);
-        var pix = canvasData.data;
+            var row = rows[i];
 
-        // Loop over each pixel and invert the color.
-        for (var i = 0, n = pix.length; i < n; i += 4) {
-            var rgb = this.getRgbFromAlpha(pix[i+3]);
-            pix[i  ] = Math.round(parseInt(rgb.r)); // red
-            pix[i+1] = Math.round(parseInt(rgb.g)); // green
-            pix[i+2] = Math.round(parseInt(rgb.b)); // blue
+            if ( ! row || ! row.clickX || ! row.clickY ) {
+                continue;
+            }
 
+            var x = parseInt( row.clickX.value, 10 );
+            var y = parseInt( row.clickY.value, 10 );
+
+            if ( isNaN( x ) || isNaN( y ) ) {
+                continue;
+            }
+
+            var weight = row.domClicks ? parseInt( row.domClicks.value, 10 ) : 1;
+
+            points.push( { x: x, y: y, weight: ( weight > 0 ? weight : 1 ) } );
         }
 
-        // Draw the ImageData object at the given (x,y) coordinates.
-        this.context.putImageData(canvasData,dims.x,dims.y);
+        return points;
     }
+
+
 
     getRgbFromAlpha(alpha) {
 		
@@ -366,83 +378,7 @@ class Heatmap {
         }
     }
 
-    /**
-     * Find the region that a set of coordinates falls into
-     */
-    findRegion(x, y) {
-	    
-        x = parseFloat(x);
-        y = parseFloat(y);
-        // walk the outer x map in ascending order
-        OWA_instance.debug("finding region for %s", x,y);
-        for (i in this.regionsMap) {
-            // look for the first value that is greater that or equals to the x coordinate
-            if (this.regionsMap.hasOwnProperty(i)) {
-                OWA_instance.debug("regionmap i: %s", i);
-                if (x <= i) {
-                    // For that x coordinate walk the inner map in ascending order
-                    OWA_instance.debug("regionmap x chosen: %s. x was: %s", i, x);
-                    for ( n in this.regionsMap[i]) {
-                        // find the first value that is greater than or equals to the y coordinate
-                        if (this.regionsMap[i].hasOwnProperty(n)) {
-                            //OWA_instance.debug("what is this %s", n);
-                            if (y <= n) {
-                                // Return the region number
-                                OWA_instance.debug("stopping on regionmap y: %s", n);
-                                OWA_instance.debug("regionmap y: %s", n);
-                                OWA_instance.debug("region chosen: %s (i = %s, n = %s)", this.regionsMap[i][n], i , n);
-                                return this.regionsMap[i][n];
-                            }
-                        }
 
-                    }
-                }
-            }
-        }
-        // Something went wrong as the coordinate does not fit into any region
-        //OWA_instance.debug("can't find region for %s %s", x, y);
-    }
-
-    /**
-     * Chop the document up into a set of regions
-     */
-    calcRegions() {
-
-        // Calculate the region dimensions. This is controlled by the option numRegion.
-        // More regions will increase the speed of rendering.
-        this.regionWidth = Math.round((this.docDimensions.w / this.options.numRegions) * 100)/100;
-        this.regionHeight = Math.round((this.docDimensions.h / this.options.numRegions) * 100)/100;
-        OWA_instance.debug("Region dims: %s %s", this.regionWidth, this.regionHeight);
-
-        var count = 0;
-
-        // y loop
-        for (var y = this.regionHeight, n = this.docDimensions.h; y <= n; y+=this.regionHeight) {
-            y = Math.round(y  * 100)/100 -.00;
-            OWA_instance.debug("calcregions y value", y);
-            // x loop
-            for (var x = this.regionWidth, nn = this.docDimensions.w; x <= nn; x+=this.regionWidth) {
-                x = Math.round(x * 100)/100 -.00;
-                // add region
-                this.regions[count] = {'x': x - this.regionWidth, 'y': y - this.regionHeight};
-                //create inner y map
-                if (!this.regionsMap[x]) {
-                    this.regionsMap[x] = Array();
-                }
-                //add region to inner map
-                this.regionsMap[x][y] = count;
-                //OWA_instance.debug("adding to map: %s %s %s",x,y,count);
-
-                if (this.options.strokeRegions === true) {
-                    this.strokeRegion(count);
-                }
-
-                count++;
-            }
-
-            //OWA_instance.debug("x Count: %s", this.regions.length);
-        }
-    }
 
     /**
      * Generates random data
@@ -466,111 +402,91 @@ class Heatmap {
      * Plots dots on a the canvas
      *
      */
+    /**
+     * Plots a page of points onto the accumulation canvas, then paints.
+     *
+     * Every point contributes a radial alpha gradient scaled by how many clicks
+     * landed there. Overlapping gradients ADD, which is the whole idea of a
+     * heatmap and is what the old per-dot recolouring destroyed.
+     */
     plotDotsRound(data) {
 
-        for( var i = 0; i < data.length; i++) {
+        var size = this.options.dotSize;
+        var w    = this.docDimensions.w;
+        var h    = this.docDimensions.h;
 
-            if ((data[i].x + this.options.dotSize) > this.docDimensions.w) {
-                 data[i].x = data[i].x - this.options.dotSize;
-            }
+        for ( var i = 0; i < data.length; i++ ) {
 
-            if ((data[i].y + this.options.dotSize) > this.docDimensions.h) {
-                 data[i].y = data[i].y - this.options.dotSize;
-            }
+            var x = data[i].x;
+            var y = data[i].y;
 
+            // Off the page entirely: nothing sensible to draw. Clicks recorded
+            // at a wider viewport than the one being viewed land here.
+            if ( x < 0 || y < 0 || x > w || y > h ) {
 
-            if ((data[i].x <= this.docDimensions.w) && (data[i].y <= this.docDimensions.h)) {
-                OWA_instance.debug("plotting %s %s", data[i].x, data[i].y);
-            } else {
-                OWA_instance.debug("not getting image data. coordinates %s %s are outside the canvas", data[i].x, data[i].y);
+                OWA_instance.debug( "skipping click outside the canvas: %s %s", x, y );
                 continue;
             }
 
-            if ((data[i].x >= 0) && (data[i].y >= 0)) {
-                OWA_instance.debug("plotting %s %s", data[i].x, data[i].y);
-            } else {
-                OWA_instance.debug("not getting image data. coordinates %s %s less than zero.", data[i].x, data[i].y);
-                continue;
-            }
+            /*
+             * Alpha rises with the click count but saturates, so one very hot
+             * point cannot flatten the rest of the map into a single colour.
+             * Anything at or above the cap is simply "as hot as it gets".
+             */
+            var weight = data[i].weight || 1;
+            var alpha  = Math.min( 1, this.options.dotAlpha * weight );
 
-            // create a radial gradient with the defined parameters. we want to draw an alphamap
-            var rgr = this.context.createRadialGradient(data[i].x,data[i].y,7,data[i].x,data[i].y,this.options.dotSize);
-            // the center of the radial gradient has .1 alpha value
-            rgr.addColorStop(0, 'rgba(0,0,0,0.1)');
-            // and it fades out to 0
-            rgr.addColorStop(1, 'rgba(0,0,0,0)');
-            // drawing the gradient
-            this.context.fillStyle = rgr;
-            this.context.fillRect(data[i].x-this.options.dotSize,data[i].y-this.options.dotSize,2*this.options.dotSize,2*this.options.dotSize);
+            var rgr = this.shadowContext.createRadialGradient( x, y, 0, x, y, size );
+            rgr.addColorStop( 0, 'rgba(0,0,0,' + alpha + ')' );
+            rgr.addColorStop( 1, 'rgba(0,0,0,0)' );
 
-            // mark region dirty
-            //this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
-            this.setColorForDot(data[i].x, data[i].y);
+            this.shadowContext.fillStyle = rgr;
+            this.shadowContext.fillRect( x - size, y - size, 2 * size, 2 * size );
         }
-        // color dirty Regions
-        //this.processDirtyRegions();
 
+        this.colorize();
     }
 
     /**
-     * Sets the color of a pixels a region based on their alpha values
+     * Paints the visible canvas from the accumulated alpha, in ONE pass.
+     *
+     * This replaces setColorForDot(), which did a getImageData, a pixel loop
+     * and a putImageData for every single click.
      */
-    setColorForDot( x, y ) {
+    colorize() {
 
-        OWA_instance.debug("About to set color for %s, %s", x, y);
+        var w = this.shadowCanvas.width;
+        var h = this.shadowCanvas.height;
 
+        if ( w < 1 || h < 1 ) {
 
-        var radius = this.options.dotSize * 1.3; // little extra just in case
-        x = x - radius;
-        y = y - radius;
-        var width = this.docDimensions.w;
-        var height = this.docDimensions.h;
-        var x2 = this.options.dotSize * 2;
-                
-        if( x + x2 > width ) {
-            x = width - x2;
-        }
-        
-        if( x < 0 ) {
-            x = 0;
-        }
-        
-        if(y < 0) {
-            y = 0;
-        }
-        
-        if( y + x2 > height ) {
-            y = height - x2;
+            return;
         }
 
-        // get the actual pixel data from the region
-        var canvasData = this.context.getImageData(x, y, x2, x2);
-        var pix = canvasData.data;
+        var image = this.shadowContext.getImageData( 0, 0, w, h );
+        var pix   = image.data;
 
-        // Loop over each pixel and invert the color.
-        for (var i = 0, n = pix.length; i < n; i += 4) {
-            var rgb = this.getRgbFromAlpha(pix[i+3]);
-            pix[i  ] = Math.round(parseInt(rgb.r)); // red
-            pix[i+1] = Math.round(parseInt(rgb.g)); // green
-            pix[i+2] = Math.round(parseInt(rgb.b)); // blue
+        for ( var i = 0, n = pix.length; i < n; i += 4 ) {
 
-        }
+            var alpha = pix[ i + 3 ];
 
-        // Draw the ImageData object at the given (x,y) coordinates.
-        this.context.putImageData(canvasData,x,y);
-    }
+            // Untouched pixels stay transparent; colouring them would paint the
+            // whole page the coldest colour rather than leaving it alone.
+            if ( alpha === 0 ) {
 
-    processDirtyRegions() {
-
-        for (i in this.dirtyRegions) {
-            if (this.dirtyRegions.hasOwnProperty(i)) {
-                this.setColor(i);
+                continue;
             }
+
+            var rgb = this.getRgbFromAlpha( alpha );
+
+            pix[ i ]     = Math.round( parseInt( rgb.r ) );
+            pix[ i + 1 ] = Math.round( parseInt( rgb.g ) );
+            pix[ i + 2 ] = Math.round( parseInt( rgb.b ) );
         }
 
-        this.dirtyRegions = new Array();
-
+        this.context.putImageData( image, 0, 0 );
     }
+
 
     applyBlur() {
 
@@ -616,9 +532,6 @@ class Heatmap {
         jQuery("body").append('<canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:999999;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     }
     
-    getDataPoints() {
-    
-    }
 
 }
 

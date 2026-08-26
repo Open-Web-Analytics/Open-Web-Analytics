@@ -1,0 +1,30 @@
+{
+    "title": "Referral Link Text: ",
+    "deprecated": {
+        "message": "This report is for historical data only. The dimensions in this report are now deprecated."
+    },
+    "titleSuffix": "{referralLinkText}",
+    "params": {
+        "referralLinkText": {}
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from links with this text."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "referralLinkText",
+                "fromParam": "referralLinkText"
+            }
+        ]
+    }
+}

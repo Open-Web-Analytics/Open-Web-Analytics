@@ -1,0 +1,37 @@
+{
+    "title": "Campaigns",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from campaigns."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "campaign",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "campaign",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "campaign-detail",
+                    "campaign": "%s"
+                },
+                "valueColumns": "campaign"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "campaign!=null"
+    }
+}

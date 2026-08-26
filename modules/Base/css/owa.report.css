@@ -469,101 +469,179 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size:14px;
 }
 
-.owa .funnel {
-    padding: 0px;
-    margin: 0px;
+/* ---------------------------------------------------------------------------
+ * Report control bar
+ *
+ * The row of controls a report puts under its title: what is being counted,
+ * which goal, which people, and a link to whatever configures it.
+ *
+ * Shared rather than per-report, and the reason is that the controls are NOT
+ * ours. The scope switch borrows the Live View control's markup, the filter
+ * borrows the grid's constraint builder, and each of them arrives with its own
+ * label class and its own idea of whether it is inline. Styling that in one
+ * report means the next report to reuse a control inherits none of it and the
+ * bar comes apart -- which is what these rules exist to prevent.
+ *
+ * Used by the goal funnel and by domstreams.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportControls {
+    padding: 0 0 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
-.owa .funnel td {
-
-    padding: 10px;
+.owa .owa_reportControl {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 25px;
 }
 
-.owa .funnel .funnelMiddle {
+/* Every control in the bar is labelled the same way and sits on the same line:
+   a label on the left, then the control. The scope switch borrows the Live View
+   markup and the filter borrows the grid's constraint builder, so both bring
+   their own label classes -- they are pulled onto the same footing here rather
+   than each being styled where it came from. */
+.owa .owa_reportControl > label,
+.owa .owa_reportControl > .label,
+.owa .owa_reportControls .autoRefreshControl .label {
+    display: inline-block;
+    font-size: 12px;
+    color: #707070;
+    margin-right: 6px;
+    padding: 0;
+    vertical-align: middle;
+}
 
+/* The builder's own container is a block by default, which would drop the
+   toggle onto its own line and break the row. */
+.owa .owa_reportControl .constraintPicker,
+.owa .owa_reportControl .constraintPickerContainer {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+}
+
+/* The panel hangs BELOW the bar rather than growing it, so opening the filter
+   does not move the controls beside it. */
+.owa .owa_reportControl .constraintPickerContainer .builder {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    margin: 6px 0 0 0;
+    min-width: 760px;
+}
+
+/* The scope switch sits inline in the bar; the Live View control it borrows
+   its markup from floats right in the report header instead. */
+.owa .owa_reportControls .autoRefreshControl {
+    float: none;
+    display: inline-block;
+}
+
+
+.owa .owa_reportControls .autoRefreshControl .buttons {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.owa .owa_reportControlRight {
+    float: right;
+    margin-right: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Goal funnel
+ *
+ * Rewritten with the report. The funnel used to run DOWN the page as a
+ * three-column table, and the styling went with it: fixed-height background
+ * images for the flow arrows, two identical .funnelFlow rules one after the
+ * other, and `color:;` declarations that do nothing.
+ *
+ * It now reads left to right, which is what makes the drop-off legible -- the
+ * bars shorten as you read -- and the numbers are repeated in a table beneath
+ * for the values a bar cannot carry.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_funnelHeadline {
+    font-size: 26px;
+    font-weight: bold;
+    padding-bottom: 20px;
+}
+
+/* One column per step, laid out in order. Flex so a funnel with three steps and
+   one with eight both fill the width without a per-step width being computed. */
+.owa .owa_funnelChart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    width: 100%;
+}
+
+.owa .owa_funnelStepColumn {
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
 }
 
-.owa .funnel .funnelLargeNumber {
-
-    font-size:20px;
-    font-weight: bold;
-    padding-bottom:10px;
+/* The bar grows from the bottom of a fixed area, so every column's baseline
+   lines up and the heights are comparable. */
+.owa .owa_funnelBarArea {
+    height: 180px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
-.owa .funnel .funnelStepName {
-
-    font-size:18px;
-    font-weight: bold;
-    color:;
-    padding-bottom:5px;
+.owa .owa_funnelBar {
+    width: 70%;
+    background-color: #4A90D9;
+    border-radius: 3px 3px 0 0;
+    min-height: 0;
 }
 
-.owa .funnel .funnelStepUrl {
-
-    font-size:12px;
-    font-weight:;
-    color: #707070;
-    padding-bottom:5px;
-}
-
-.owa .funnel .funnelStepCount {
-
-    font-size:26px;
-    font-weight: bold;
-    color:;
-    padding:10px 0px 10px 0px;
-}
-
-.owa .funnel span.visitorCountLabel {
-
-    vertical-align:middle;
-    font-size:12px;
-    font-weight:normal;
+.owa .owa_funnelStepNumber {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: #9f9f9f;
 }
 
-.owa .funnel .funnelStep {
-
-    background-color: #D6F5FF;
-    padding: 15px;
+.owa .funnelStepName {
+    font-size: 15px;
+    font-weight: bold;
+    padding-bottom: 4px;
 }
 
-.owa .funnel .funnelFlow {
-    background-image: url('../i/funnel_flow.png');
-    height: 150px;
-    background-repeat: no-repeat;
-    background-position: center;
+.owa .funnelStepCount {
+    font-size: 22px;
+    font-weight: bold;
+    padding: 4px 0;
 }
 
-.owa .funnel .funnelFlow {
-    background-image: url('../i/funnel_flow.png');
-    height: 150px;
-    background-repeat: no-repeat;
-    background-position: center;
+.owa span.visitorCountLabel {
+    vertical-align: middle;
+    font-size: 12px;
+    font-weight: normal;
+    color: #9f9f9f;
 }
 
-.owa .funnel .entranceCount {
-
-    padding: 0px 30px 0px 0px;
-    margin-bottom: 10px;
-    background-image: url('../i/funnel_entrance_arrow.png');
-    height: 27px;
-    font-size: 26px;
-    background-repeat: no-repeat;
-    background-position: right;
-
+/* Paths are long and must not stretch a column: the flex row would then stop
+   sharing the width evenly. */
+.owa .funnelStepPath {
+    font-size: 12px;
+    color: #707070;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.owa .funnel .exitCount {
-
-    padding: 0px 0px 0px 30px;
-    margin-bottom: 10px;
-    background-image: url('../i/funnel_exit_arrow.png');
-    height: 27px;
-    font-size: 26px;
-    background-repeat: no-repeat;
-    background-position: left;
+.owa .owa_funnelDrop {
+    font-size: 12px;
+    color: #707070;
+    padding-top: 8px;
 }
 
 .owa .secondaryText {
@@ -780,3 +858,104 @@ li.constraintRow {
 }
 
 
+
+
+/* ---------------------------------------------------------------------------
+   Report grid
+   ---------------------------------------------------------------------------
+   A report is a grid of widgets; each widget says how many of the 12 columns
+   it occupies (Core\ReportGrid::COLUMNS -- the classes below are generated
+   from it, so the two cannot drift).
+
+   container-type, not media queries: widgets nest, and a widget three columns
+   wide inside a full-width one should lay out against the space IT has, not
+   against the viewport. A media query cannot see that difference.
+
+   minmax(0, 1fr), not 1fr: a bare 1fr track refuses to shrink below its
+   content, so one wide table or chart pushes the whole grid past its container
+   and the page scrolls sideways. The 0 minimum is what lets a track be smaller
+   than what is in it, which is what makes overflow-x on the widget work.
+
+   No grid-auto-flow: dense. It reorders widgets to backfill gaps, so a report
+   would silently present its widgets in an order nobody wrote.
+   --------------------------------------------------------------------------- */
+
+/*
+ * A report that is still here but no longer filling.
+ *
+ * The report-level form of the house banner in owa.css. Same family as
+ * .status and .error -- OWA has one banner mechanism, not a per-report one --
+ * at the `notice` level, because nothing here failed and nothing succeeded.
+ *
+ * Tightened from the page-level defaults. Those sit in the wrapper above the
+ * whole admin UI and can afford 20px of padding and 40px side margins; this
+ * one belongs to a single report and sits directly above its widget grid, so
+ * it spans the report and stays a strip. A deprecation notice is read once and
+ * then ignored for the life of the report -- it must not push the first widget
+ * below the fold.
+ *
+ * text-align is explicit because .owa_reportElement centres everything beneath
+ * it, which would leave the message floating mid-band.
+ */
+.owa .notice.owa_reportDeprecated {
+    margin: 0 0 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.owa_reportGrid {
+    container-type: inline-size;
+    container-name: owa-report;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.owa_reportGridItem {
+    /* Wide content scrolls inside its own widget rather than widening the page. */
+    min-width: 0;
+    overflow-x: auto;
+}
+.owa_span-1 { grid-column: span 1; }
+.owa_span-2 { grid-column: span 2; }
+.owa_span-3 { grid-column: span 3; }
+.owa_span-4 { grid-column: span 4; }
+.owa_span-5 { grid-column: span 5; }
+.owa_span-6 { grid-column: span 6; }
+.owa_span-7 { grid-column: span 7; }
+.owa_span-8 { grid-column: span 8; }
+.owa_span-9 { grid-column: span 9; }
+.owa_span-10 { grid-column: span 10; }
+.owa_span-11 { grid-column: span 11; }
+.owa_span-12 { grid-column: span 12; }
+
+.owa_rowspan-2 { grid-row: span 2; }
+.owa_rowspan-3 { grid-row: span 3; }
+.owa_rowspan-4 { grid-row: span 4; }
+.owa_rowspan-5 { grid-row: span 5; }
+.owa_rowspan-6 { grid-row: span 6; }
+
+/* Narrower than about a tablet: halve the grid, and let anything that asked for
+   more than half go full width rather than leaving a ragged column. */
+@container owa-report (max-width: 900px) {
+
+    .owa_reportGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+    .owa_span-7, .owa_span-8, .owa_span-9,
+    .owa_span-10, .owa_span-11, .owa_span-12 { grid-column: 1 / -1; }
+}
+
+/* Phone width: one column. Every widget is full width, and nothing spans rows,
+   because a two-row widget in a single column is just a tall gap. */
+@container owa-report (max-width: 600px) {
+
+    .owa_reportGrid { grid-template-columns: 1fr; }
+
+    .owa_reportGridItem { grid-column: 1 / -1; }
+
+    .owa_rowspan-2, .owa_rowspan-3, .owa_rowspan-4,
+    .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
+}

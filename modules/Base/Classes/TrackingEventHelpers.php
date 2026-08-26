@@ -540,13 +540,22 @@ class TrackingEventHelpers {
         return $count === null ? $days : $count;
     }
 
+    /**
+     * Is this session's visitor a returning one?
+     *
+     * Returns a BOOLEAN both ways. It used to return true for a repeat visitor
+     * and fall off the end for a new one, so the "false" case was NULL -- and
+     * `is_repeat_visitor` is a required derived property, so every new
+     * visitor's session stored NULL rather than 0.
+     *
+     * That is not merely untidy. NULL and 0 are two distinct values for a
+     * two-state fact, so anything GROUPing on the column -- the isRepeatVisitor
+     * dimension, and any pie or grid built on it -- gets three buckets and
+     * reports "No" twice.
+     */
     static function setRepeatVisitorFlag( $flag, $event ) {
 
-        // set repeat visitor type flag visitor is not new.
-        if ( ! $event->get( 'is_new_visitor' ) ) {
-
-            return true;
-        }
+        return ! $event->get( 'is_new_visitor' );
     }
 
     static function deriveYear( $year, $event ) {

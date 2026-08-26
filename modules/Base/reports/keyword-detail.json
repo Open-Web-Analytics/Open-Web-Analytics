@@ -1,0 +1,27 @@
+{
+    "title": "Search Term Detail: ",
+    "titleSuffix": "{referralSearchTerms}",
+    "params": {
+        "referralSearchTerms": {}
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this search term."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "referralSearchTerms",
+                "fromParam": "referralSearchTerms"
+            }
+        ]
+    }
+}

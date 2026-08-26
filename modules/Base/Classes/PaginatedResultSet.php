@@ -130,6 +130,18 @@ class PaginatedResultSet {
     
     var $errors;
 
+    /**
+     * The subset of $errors that mean the REQUEST was malformed.
+     *
+     * Separate because most of $errors is routine: a denormalized dimension
+     * resolves only against certain entities, so an ordinary product report
+     * records "not a registered dimension" without anything being wrong. Only
+     * these should turn a response into a failure.
+     *
+     * @var array
+     */
+    var $request_errors = array();
+
 
     function __construct() {
 

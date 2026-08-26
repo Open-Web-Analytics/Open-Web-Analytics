@@ -1,0 +1,25 @@
+{
+    "title": "Visitor Recency",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all sources."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "daysSinceLastVisit",
+                "sort": "daysSinceLastVisit",
+                "resultsPerPage": 25
+            }
+        }
+    ]
+}

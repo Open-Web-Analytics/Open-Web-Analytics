@@ -56,6 +56,40 @@ class Cron {
     );
 
     /**
+     * A daily expression at a minute and hour derived from `$seed`.
+     *
+     * `@daily` is `0 0 * * *` -- midnight EXACTLY. A job that calls somebody
+     * else's API on that schedule means every install running it makes the same
+     * request at the same instant, and most servers keep UTC, so "the same
+     * instant" is not even spread by timezone. That is a thundering herd
+     * pointed at a third party, and the third party sees it as an attack
+     * whatever we meant by it.
+     *
+     * Spread, not RANDOM. The scheduler decides whether a job is due by
+     * comparing the occurrence it last satisfied against the expression, so an
+     * expression that changed between runs would leave a job either firing
+     * repeatedly or never being due again. Seeding from something stable per
+     * install -- and constant across restarts, deploys and this process's
+     * lifetime -- makes each install pick its own time and keep it.
+     *
+     * Both fields come from independent slices of the digest. Deriving the hour
+     * from the minute (say, `$minute % 24`) would correlate them and collapse
+     * the 1440 possible times onto far fewer.
+     *
+     * @param string $seed something stable and install-specific
+     * @return string a five-field cron expression
+     */
+    public static function dailySpreadFor( $seed ) {
+
+        $digest = md5( (string) $seed );
+
+        $minute = hexdec( substr( $digest, 0, 6 ) ) % 60;
+        $hour   = hexdec( substr( $digest, 6, 6 ) ) % 24;
+
+        return sprintf( '%d %d * * *', $minute, $hour );
+    }
+
+    /**
      * How far back nextDueSince() will look for an unsatisfied occurrence.
      *
      * A job that has not run in years should still run once, but walking minute

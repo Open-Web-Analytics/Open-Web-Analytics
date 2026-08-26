@@ -1,0 +1,29 @@
+{
+    "title": "Product Detail: ",
+    "titleSuffix": "{productName}",
+    "params": {
+        "productName": {}
+    },
+    "metrics": "lineItemQuantity,lineItemRevenue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "lineItemQuantity",
+            "headline": "There were {lineItemQuantity.formatted} units sold for this product."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "productName",
+                "fromParam": "productName"
+            }
+        ]
+    }
+}

@@ -98,6 +98,21 @@ class ResultSetManager extends \OWA\Core\Base {
     var $metricObjectsByEntityMap = array();
     var $metricObjectsCache = array();
     var $errors = array();
+
+    /**
+     * Errors that mean the REQUEST is malformed, as opposed to noise.
+     *
+     * Kept apart from $errors because most entries there are routine: a
+     * denormalized dimension such as productName resolves only against certain
+     * entities, so lookupDimension() records "not a registered dimension" during
+     * perfectly ordinary product reports. Measured -- it fires twice in a clean
+     * run of the suite with no bad input anywhere.
+     *
+     * So "any error" cannot gate the query; only these can.
+     *
+     * @var array
+     */
+    var $request_errors = array();
     var $formatters = array();
     var $segment;
     var $pagination;
@@ -119,6 +134,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'timestamp'        => array($this, 'formatSeconds'),
             'percentage'     => array($this, 'formatPercentage'),
             'integer'         => array($this, 'numberFormatter'),
+            'boolean'         => array($this, 'booleanFormatter'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -165,10 +181,39 @@ class ResultSetManager extends \OWA\Core\Base {
 
                 if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
 
-                    $this->addError( sprintf(
+                    $this->addRequestError( sprintf(
                         'The "%s" constraint was given no value. Refusing to run the '
                         . 'query unconstrained -- a missing value is not a request for '
                         . 'everything.',
+                        $constraint['name']
+                    ) );
+
+                    continue;
+                }
+
+                /*
+                 * A name that resolves to nothing is refused for the same
+                 * reason, and reported here rather than where the constraint is
+                 * applied: applyConstraint() runs once for the result set and
+                 * again for the aggregates, so the same misspelling would be
+                 * reported twice.
+                 *
+                 * It used to fall through applyConstraint() doing nothing, so
+                 * the query ran WITHOUT that filter and answered with the
+                 * unconstrained total -- the identical failure the check above
+                 * exists to stop, differing only in cause: a misspelled name
+                 * rather than a lost value. Measured before this,
+                 * `bogusDimension==direct` returned exactly what no constraint
+                 * at all returned, while a valid name matching nothing
+                 * correctly returned none.
+                 */
+                if ( ! $this->isDimension( $constraint['name'] )
+                     && ! $this->isMetric( $constraint['name'] ) ) {
+
+                    $this->addRequestError( sprintf(
+                        '"%s" is not a dimension or a metric, so it cannot be constrained '
+                        . 'on. Refusing to run the query unconstrained -- an unknown name '
+                        . 'is not a request for everything.',
                         $constraint['name']
                     ) );
 
@@ -1141,6 +1186,19 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $value;
     }
 
+    /**
+     * A boolean dimension reads as Yes or No, never as 1 and null.
+     *
+     * NULL is the important half. These columns store 1 for true and leave the
+     * row NULL for false rather than writing 0, so an unformatted pie slice is
+     * labelled with an empty string and a grid cell shows nothing at all --
+     * which reads as missing data rather than as "no".
+     */
+    function booleanFormatter($value) {
+
+        return ! empty( $value ) ? 'Yes' : 'No';
+    }
+
     function numberFormatter($value) {
 	if(is_null($value)){
             return $value;
@@ -1523,6 +1581,30 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->all_columns[$name] = $col;
     }
 
+    /**
+     * The request asked for something that cannot be honoured.
+     *
+     * A query is NOT run when one of these is recorded. Returning rows anyway
+     * is what made the original bug so hard to see: the caller got an error in
+     * a field it had no reason to read AND a plausible set of numbers computed
+     * without the filter it asked for, under a success status.
+     *
+     * Reserved for what a caller can fix by sending a different request.
+     * Routine internal misses stay in addError().
+     */
+    function addRequestError($msg) {
+
+        $this->request_errors[] = $msg;
+
+        $this->addError($msg);
+    }
+
+    /** Whether the request is malformed, so no query should run. */
+    function hasRequestErrors() {
+
+        return ! empty( $this->request_errors );
+    }
+
     function addError($msg) {
 
         $this->errors[] = $msg;
@@ -1656,7 +1738,26 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @return paginatedResultSet obj
      */
     function getResults() {
-		
+
+        /*
+         * A malformed request is not run at all.
+         *
+         * Recording the error and querying anyway meant the caller received
+         * BOTH the complaint and a full set of numbers computed without the
+         * filter they asked for -- and, over REST, under a 201. Numbers that
+         * look right are worse than none, because nothing downstream doubts
+         * them.
+         *
+         * The result set still carries the errors, so the caller is told why.
+         */
+        if ( $this->hasRequestErrors() ) {
+
+            $this->resultSet->errors = $this->errors;
+        $this->resultSet->request_errors = $this->request_errors;
+
+            return $this->resultSet;
+        }
+
 		// determin the best fact table ot use forthe query based on
 		// the metrics and dimensions requested
         $bm = $this->chooseBaseEntity();
@@ -1744,6 +1845,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		
 		// set any metric/dimension combination errors
         $this->resultSet->errors = $this->errors;
+        $this->resultSet->request_errors = $this->request_errors;
 		
 		// set related dimensions
         $this->resultSet->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
@@ -1788,6 +1890,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         
 		// add any errors that should be returned in the result set
         $this->resultSet->errors = $this->errors;
+        $this->resultSet->request_errors = $this->request_errors;
         
         if ( ! empty( $this->limit ) ) {
 	        

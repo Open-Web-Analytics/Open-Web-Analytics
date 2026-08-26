@@ -592,17 +592,70 @@ OWA.report.timePeriodControl.prototype = {
         this.selectedPeriod = period;
     },
     
+    /**
+     * yyyymmdd as the date string the CALENDARS parse.
+     *
+     * The year is FOUR digits, because the datepickers are created with
+     * `dateFormat: 'mm-dd-yy'` and in jQuery UI's date format `yy` is a
+     * four-digit year -- `y` is the two-digit one. This emitted two ('07-27-26'
+     * for 20260727), so jQuery UI threw "Missing number at position 6" parsing
+     * the defaultDate it was handed, the calendars never received the period's
+     * dates, and they showed something unrelated to the period named beside
+     * them.
+     *
+     * The label reads from this too, so a date range now shows its full year.
+     */
     formatYyyymmdd : function( yyyymmdd, sep ) {
-        
+
         sep = sep || '-';
-        
-        var year = yyyymmdd.substr(2,2);
+
+        var year = yyyymmdd.substr(0,4);
         var month = yyyymmdd.substr(4,2);
         var day = yyyymmdd.substr(6,2);
-        
+
         return month + sep + day + sep + year;
     },
     
+    /**
+     * yyyymmdd as a Date, the inverse of what the submit handler emits.
+     *
+     * 'yymmdd' is jQuery UI's four-digit-year-month-day, which is exactly the
+     * shape the server speaks -- the same format the submit handler formats
+     * back into. Returns null for an absent or unparseable value rather than
+     * throwing, because a missing date must not take the whole picker down.
+     */
+    /**
+     * Put the predefined-period menu back to its placeholder.
+     *
+     * Choosing specific dates means the report is no longer on a named period,
+     * so leaving "Last Thirty Days" selected in the menu says something untrue
+     * -- and it is the control the reader looks at to know what they are seeing.
+     *
+     * The placeholder is the first option and carries no value of its own, so it
+     * is selected by INDEX rather than by a value that does not exist.
+     */
+    clearFixedPeriodSelection : function() {
+
+        jQuery( '#owa_reportPeriodFilter' ).prop( 'selectedIndex', 0 );
+    },
+
+    parseYyyymmdd : function( yyyymmdd ) {
+
+        if ( ! yyyymmdd ) {
+
+            return null;
+        }
+
+        try {
+
+            return jQuery.datepicker.parseDate( 'yymmdd', String( yyyymmdd ) );
+
+        } catch ( e ) {
+
+            return null;
+        }
+    },
+
     setStartDate : function( yyyymmdd ) {
         
         this.startDate = yyyymmdd;
@@ -705,6 +758,9 @@ OWA.report.timePeriodControl.prototype = {
                             jQuery.datepicker._defaults.dateFormat,
                             selectedDate, instance.settings );
                     
+                    // Picking a day means this is a custom range.
+                    that.clearFixedPeriodSelection();
+
                     // constrain min date
                     jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', date);        
                     // constrain new max date using value from end date picker
@@ -729,6 +785,9 @@ OWA.report.timePeriodControl.prototype = {
                             jQuery.datepicker._defaults.dateFormat,
                             selectedDate, instance.settings );
                     
+                    // Picking a day means this is a custom range.
+                    that.clearFixedPeriodSelection();
+
                     // constrain min date using value from start date picker
                     jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', 
                         jQuery("#owa_report-datepicker-start").datepicker( "getDate" )
@@ -739,11 +798,36 @@ OWA.report.timePeriodControl.prototype = {
                 },
                 defaultDate: that.formatYyyymmdd( that.getEndDate() )
             });
+
+            /*
+             * The two calendars bound each other from the start.
+             *
+             * Without this they only constrain one another once something is
+             * clicked -- the onSelect handlers above are what set minDate and
+             * maxDate -- so on load the end calendar would happily offer a date
+             * before its own start.
+             *
+             * The dates themselves are already selected by the defaultDate each
+             * picker was created with. That is worth stating because it looks
+             * like it needs a setDate() and does not: for an INLINE picker
+             * defaultDate is the selection, and it fills the display field too.
+             * A setDate() here was measured to change nothing.
+             */
+            var owaStartDate = that.parseYyyymmdd( that.getStartDate() );
+            var owaEndDate   = that.parseYyyymmdd( that.getEndDate() );
+
+            if ( owaStartDate && owaEndDate ) {
+                jQuery( "#owa_report-datepicker-end" ).datepicker( 'option', 'minDate', owaStartDate );
+                jQuery( "#owa_report-datepicker-start" ).datepicker( 'option', 'maxDate', owaEndDate );
+            }
             
             // trigger owa_new_time_period_set event when 
             // submit button is pressed
             jQuery('#owa_reportPeriodFilterSubmit').click(function() {
-            
+
+                // The report is on a date range now, not on a named period.
+                that.clearFixedPeriodSelection();
+
                 jQuery(that.dom_id).trigger(
                     'owa_new_time_period_set', 
                     [

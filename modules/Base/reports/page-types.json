@@ -1,0 +1,36 @@
+{
+    "title": "Page Types",
+    "metrics": "visits,pageViews",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "pageViews",
+            "headline": "There were {pageViews.formatted} page views for all page types."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "pageType",
+                "sort": "pageViews-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "pageType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "page-type-detail",
+                    "pageType": "%s"
+                },
+                "valueColumns": "pageType"
+            }
+        }
+    ]
+}

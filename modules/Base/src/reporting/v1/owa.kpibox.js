@@ -8,7 +8,6 @@ OWA.kpiBox = function( options ) {
     // config options
     this.options = {
 
-        template: '#metricInfobox',
         width: ''
     };
 

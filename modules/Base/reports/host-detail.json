@@ -1,0 +1,27 @@
+{
+    "title": "Host Detail: ",
+    "titleSuffix": "{hostName}",
+    "params": {
+        "hostName": {}
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this host."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "hostName",
+                "fromParam": "hostName"
+            }
+        ]
+    }
+}

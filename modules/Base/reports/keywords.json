@@ -1,0 +1,37 @@
+{
+    "title": "Referring Search Terms",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from search engines."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralSearchTerms",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralSearchTerms",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "keyword-detail",
+                    "referralSearchTerms": "%s"
+                },
+                "valueColumns": "referralSearchTerms"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "medium==organic-search"
+    }
+}

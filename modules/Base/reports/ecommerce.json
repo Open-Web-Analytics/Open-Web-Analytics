@@ -1,0 +1,100 @@
+{
+    "title": "Ecommerce",
+    "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "transactions",
+            "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed."
+        },
+        {
+            "type": "grid",
+            "id": "productName",
+            "container": "productNameExplorer",
+            "title": "Top Products",
+            "colspan": 6,
+            "query": {
+                "metrics": "lineItemRevenue",
+                "dimensions": "productName",
+                "sort": "lineItemRevenue-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "productName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "product-detail",
+                    "productName": "%s"
+                },
+                "valueColumns": "productName"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "source",
+            "container": "sourceExplorer",
+            "title": "Revenue by Source",
+            "colspan": 6,
+            "query": {
+                "metrics": "transactions,transactionRevenue",
+                "dimensions": "source",
+                "sort": "transactionRevenue-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "source",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "sources",
+                    "source": "%s"
+                },
+                "valueColumns": "source"
+            }
+        },
+        {
+            "type": "report-links",
+            "title": "E-commerce Reports",
+            "colspan": 12,
+            "links": [
+                {
+                    "reportId": "products",
+                    "label": "Product Name"
+                },
+                {
+                    "reportId": "product-skus",
+                    "label": "SKU"
+                },
+                {
+                    "reportId": "product-categories",
+                    "label": "Categories"
+                },
+                {
+                    "reportId": "visits-to-purchase",
+                    "label": "Visits to Purchase"
+                },
+                {
+                    "reportId": "days-to-purchase",
+                    "label": "Days to Purchase"
+                },
+                {
+                    "reportId": "avg-order-value",
+                    "label": "Average Order Value"
+                },
+                {
+                    "reportId": "revenue",
+                    "label": "Total Revenue"
+                },
+                {
+                    "reportId": "ecommerce-conversion-rate",
+                    "label": "Conversion Rate"
+                }
+            ]
+        }
+    ]
+}

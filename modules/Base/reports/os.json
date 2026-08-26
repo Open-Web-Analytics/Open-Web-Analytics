@@ -1,0 +1,34 @@
+{
+    "title": "Operating Systems",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits for all operating systems."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "osType",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "osType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "os-detail",
+                    "osType": "%s"
+                },
+                "valueColumns": "osType"
+            }
+        }
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "title": "Campaign: ",
+    "titleSuffix": "{campaign}",
+    "params": {
+        "campaign": {
+            "lowercase": true
+        }
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this campaign."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "campaign",
+                "fromParam": "campaign"
+            }
+        ]
+    }
+}

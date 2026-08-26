@@ -1,0 +1,34 @@
+{
+    "title": "Ad Types",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from ads."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "adType",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "adType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "ad-type-detail",
+                    "adType": "%s"
+                },
+                "valueColumns": "adType"
+            }
+        }
+    ]
+}

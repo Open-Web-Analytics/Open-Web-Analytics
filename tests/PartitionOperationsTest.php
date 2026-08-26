@@ -1408,7 +1408,8 @@ final class PartitionOperationsTest extends TestCase
 
             $t     = $this->tieredTable(120);
             $rows  = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
-            $lead  = end($db->getPartitionSpans($t))['less_than'];
+            $spans = $db->getPartitionSpans($t);
+            $lead  = end($spans)['less_than'];
 
             $plan = $db->planPartitionCompaction($t, $limit, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
 

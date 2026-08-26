@@ -1,0 +1,41 @@
+{
+    "title": "Browser Detail: {browserType}",
+    "params": {
+        "browserType": {}
+    },
+    "widgets": [
+        {
+            "type": "browser-badge",
+            "properties": {
+                "browser_family": "{browserType}"
+            }
+        },
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this browser type."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "browserVersion",
+                "sort": "visits-"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "browserType",
+                "fromParam": "browserType"
+            }
+        ]
+    }
+}

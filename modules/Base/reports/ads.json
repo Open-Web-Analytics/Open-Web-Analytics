@@ -1,0 +1,37 @@
+{
+    "title": "Ad Performance",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from ads."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "ad",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "ad",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "ad-detail",
+                    "ad": "%s"
+                },
+                "valueColumns": "ad"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": "ad!=null"
+    }
+}

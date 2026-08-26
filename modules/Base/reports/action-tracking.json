@@ -1,0 +1,65 @@
+{
+    "title": "Actions",
+    "metrics": "actions,uniqueActions,actionsValue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "actions",
+            "headline": "There were {actions.formatted} {actions|action|actions} performed on all pages."
+        },
+        {
+            "type": "grid",
+            "id": "actionsByName",
+            "container": "actionsByNameExplorer",
+            "title": "Actions by Name",
+            "colspan": 6,
+            "query": {
+                "metrics": "actions",
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "actionName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-detail",
+                    "actionName": "%s",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": [
+                    "actionName",
+                    "actionGroup"
+                ]
+            }
+        },
+        {
+            "type": "grid",
+            "id": "actionsByGroup",
+            "container": "actionsByGroupExplorer",
+            "title": "Actions by Group",
+            "colspan": 6,
+            "query": {
+                "metrics": "actions",
+                "dimensions": "actionGroup",
+                "sort": "actions-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
+            }
+        }
+    ]
+}

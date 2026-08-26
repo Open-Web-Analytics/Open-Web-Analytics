@@ -1,0 +1,69 @@
+{
+    "title": "E-Commerce Overview",
+    "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "transactions",
+            "headline": "There were {transactions.formatted} {transactions|transaction|transactions} generating {transactionRevenue.formatted}."
+        },
+        {
+            "type": "grid",
+            "id": "topproducts",
+            "container": "top-products",
+            "title": "Products",
+            "colspan": 6,
+            "query": {
+                "metrics": "lineItemQuantity,lineItemRevenue",
+                "dimensions": "productName",
+                "sort": "lineItemRevenue-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "productName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "product-detail",
+                    "productName": "%s"
+                },
+                "valueColumns": "productName"
+            },
+            "more": {
+                "reportId": "products",
+                "label": "View Full Report »"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "topsources",
+            "container": "top-sources",
+            "title": "Traffic Sources",
+            "colspan": 6,
+            "query": {
+                "metrics": "transactionRevenue",
+                "dimensions": "source,medium",
+                "sort": "transactionRevenue-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "source",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "source-detail",
+                    "source": "%s"
+                },
+                "valueColumns": "source"
+            },
+            "more": {
+                "reportId": "sources",
+                "label": "View Full Report »"
+            }
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "title": "Product SKUs",
+    "metrics": "lineItemQuantity,lineItemRevenue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "lineItemQuantity",
+            "headline": "There were {lineItemQuantity.formatted} products sold across all Categories."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "productCategory",
+                "sort": "lineItemQuantity-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "productCategory",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "product-category-detail",
+                    "productCategory": "%s"
+                },
+                "valueColumns": "productCategory"
+            }
+        }
+    ]
+}

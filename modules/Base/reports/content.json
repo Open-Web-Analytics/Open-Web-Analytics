@@ -1,0 +1,104 @@
+{
+    "title": "Content Overview",
+    "metrics": "visits,pageViews,bounceRate",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "pageViews",
+            "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages."
+        },
+        {
+            "type": "grid",
+            "id": "toppages",
+            "container": "top-pages",
+            "title": "Top Pages",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits",
+                "dimensions": "pageTitle,pagePath",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "pageTitle",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "pagePath"
+            },
+            "excludeColumns": [
+                "pagePath"
+            ],
+            "more": {
+                "reportId": "pages",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "toppagetypes",
+            "container": "top-pagetypes",
+            "title": "Top Page Types",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits",
+                "dimensions": "pageType",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "pageType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "page-type-detail",
+                    "pageType": "%s"
+                },
+                "valueColumns": "pageType"
+            },
+            "more": {
+                "reportId": "page-types",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "report-links",
+            "title": "Content Reports",
+            "colspan": 6,
+            "links": [
+                {
+                    "reportId": "domstreams",
+                    "label": "Domstream Recordings",
+                    "description": "See user mouse movement and keypress recordings."
+                },
+                {
+                    "reportId": "action-tracking",
+                    "label": "Actions",
+                    "description": "See which actions your user performed."
+                },
+                {
+                    "reportId": "entry-pages",
+                    "label": "Entry Pages",
+                    "description": "See which web pages users entered on."
+                },
+                {
+                    "reportId": "exit-pages",
+                    "label": "Exit Pages",
+                    "description": "See which web pages users exited on."
+                },
+                {
+                    "reportId": "feeds",
+                    "label": "Feeds",
+                    "description": "See trends for feed subscribers and usage."
+                }
+            ]
+        }
+    ]
+}

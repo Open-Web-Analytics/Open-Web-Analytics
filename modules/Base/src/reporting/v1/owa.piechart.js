@@ -147,7 +147,34 @@ OWA.pieChart.prototype = {
 
                 for(var i=0;i<=iterations -1;i++) {
 
-                    var item = {label: resultSet.resultsRows[i][dimension].value, data: resultSet.resultsRows[i][metric].value * 1};
+                    // The FORMATTED value when there is one, falling back to
+                    // the raw one. A boolean dimension stores 1 for true and
+                    // NULL for false, so the raw value labels slices "1" and
+                    // "" -- and any dimension with a formatter was being shown
+                    // unformatted here while the grid showed it properly.
+                    var cell = resultSet.resultsRows[i][dimension];
+
+                    // The report's own label for this VALUE wins: a boolean
+                    // pie formats as Yes/No, which is correct but makes the
+                    // reader supply the question from the title. Keyed on the
+                    // raw value, which is what the query returned.
+                    // Flat: the explorer's options.pieChart.* are merged down
+                    // onto this chart, so here they are this.options.* -- the
+                    // same way dimension and metric are read above.
+                    var labels = that.options.valueLabels;
+                    var raw_key = (cell.value === null || cell.value === undefined) ? '' : String(cell.value);
+
+                    var slice_label;
+
+                    if (labels && Object.prototype.hasOwnProperty.call(labels, raw_key)) {
+                        slice_label = labels[raw_key];
+                    } else if (cell.formatted_value === null || cell.formatted_value === undefined || cell.formatted_value === '') {
+                        slice_label = cell.value;
+                    } else {
+                        slice_label = cell.formatted_value;
+                    }
+
+                    var item = {label: slice_label, data: resultSet.resultsRows[i][metric].value * 1};
                     data.push(item);
                     count = count + resultSet.resultsRows[i][metric].value;
                 }

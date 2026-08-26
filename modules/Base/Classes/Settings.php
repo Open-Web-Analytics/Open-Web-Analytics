@@ -118,8 +118,12 @@ namespace OWA\Module\Base\Classes;
 
      private function loadConfigFile() {
  
-        //$file = $this->get('base', 'config_file');
-        $file = OWA_DIR.'owa-config.php';
+        /*
+         * The same setting isConfigFilePresent() checks. It used to check one
+         * path and include another, so the two could disagree about which file
+         * an install was running on.
+         */
+        $file = $this->get('base', 'config_file');
         
         if ( $this->isConfigFilePresent() ) {
             
@@ -1101,7 +1105,6 @@ namespace OWA\Module\Base\Classes;
                 'log_dom_clicks'                    => true,
                 'async_db'                            => false,
                 'clean_query_string'                => true,
-                'fetch_refering_page_info'            => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
                 'async_log_file'                    => 'events.txt',
@@ -1398,9 +1401,18 @@ namespace OWA\Module\Base\Classes;
       */
      public function createConfigFile($config_values) {
 
-         if (file_exists(OWA_DIR.'owa-config.php')) {
-             \OWA\Core\CoreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".OWA_DIR.'owa-config.php');
-             require_once(OWA_DIR . 'owa-config.php');
+         /*
+          * The same setting the loader reads.
+          *
+          * This method used to build the path itself while isConfigFilePresent()
+          * and loadConfigFile() consulted `config_file`, so the installer could
+          * write one file and the loader read another. They cannot disagree now.
+          */
+         $file = $this->get('base', 'config_file');
+
+         if (file_exists($file)) {
+             \OWA\Core\CoreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".$file);
+             require_once($file);
             return true;
          }
 
@@ -1413,7 +1425,7 @@ namespace OWA\Module\Base\Classes;
          $configFileTemplate = file(OWA_DIR . 'owa-config-dist.php');
          \OWA\Core\CoreAPI::debug('found sample config file.');
 
-         $handle = fopen(OWA_DIR . 'owa-config.php', 'w');
+         $handle = fopen($file, 'w');
 
         foreach ($configFileTemplate as $line_num => $line) {
             switch (substr($line,0,20)) {
@@ -1456,9 +1468,9 @@ namespace OWA\Module\Base\Classes;
         }
 
         fclose($handle);
-        chmod(OWA_DIR . 'owa-config.php', 0750);
+        chmod($file, 0750);
         \OWA\Core\CoreAPI::debug('Config file created');
-        require_once(OWA_DIR . 'owa-config.php');
+        require_once($file);
         return true;
 
     }

@@ -1,0 +1,55 @@
+{
+    "title": "Action Group: ",
+    "titleSuffix": "{actionGroup}",
+    "params": {
+        "actionGroup": {}
+    },
+    "metrics": "actions,uniqueActions,actionsValue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "actions",
+            "headline": "There were {actions.formatted} actions for this action group."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "actionName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-detail",
+                    "actionName": "%s",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": [
+                    "actionName",
+                    "actionGroup"
+                ]
+            },
+            "excludeColumns": [
+                "actionGroup"
+            ]
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "actionGroup",
+                "fromParam": "actionGroup"
+            }
+        ]
+    }
+}

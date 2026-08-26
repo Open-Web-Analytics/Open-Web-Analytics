@@ -40,8 +40,10 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
      */
     public function action() {
         
-        $config_file = OWA_DIR.'owa-config.php';
-        $temp_file = OWA_DIR.'owa-config.tmp.php';
+        // The same setting the loader and the installer use, so this rewrites
+        // the file the install is actually running on.
+        $config_file = \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' );
+        $temp_file   = $config_file . '.tmp';
         
         // make this check a validator
         if ( file_exists( $config_file ) ) {

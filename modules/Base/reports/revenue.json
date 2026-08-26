@@ -1,0 +1,27 @@
+{
+    "title": "Total Revenue",
+    "metrics": "transactionRevenue",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "transactionRevenue",
+            "headline": "There were {transactionRevenue.formatted} across all transactions."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "date",
+                "sort": "date-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

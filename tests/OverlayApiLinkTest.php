@@ -47,13 +47,20 @@ final class OverlayApiLinkTest extends TestCase
 
     private function heatmapLink(\OWA\Core\Template $t): string
     {
+        /*
+         * The real heatmap query: clicks grouped by coordinate, constrained on
+         * the page. The token pins `constraints`, because that is the parameter
+         * carrying which page the link is for -- there is no clicks report and
+         * no document_id any more.
+         */
         return $t->makeOverlayApiLink([
-            'document_id' => 'doc-12345',
+            'metrics'     => 'domClicks',
+            'dimensions'  => 'clickX,clickY',
+            'constraints' => 'pagePath==' . urlencode('/pricing'),
             'module'      => 'base',
             'version'     => 'v1',
             'do'          => 'reports',
-            'report_name' => 'clicks',
-        ], 'document_id');
+        ], 'constraints');
     }
 
     public function testTheHeatmapLinkCarriesTheSiteBeingReportedOn(): void
@@ -89,8 +96,8 @@ final class OverlayApiLinkTest extends TestCase
     {
         $link = $this->heatmapLink($this->reportTemplate());
 
-        $this->assertStringContainsString('document_id=doc-12345', $link);
-        $this->assertStringContainsString('report_name=clicks', $link);
+        $this->assertStringContainsString('metrics=domClicks', $link);
+        $this->assertStringContainsString('constraints=', $link);
         $this->assertStringContainsString('do=reports', $link);
         $this->assertStringContainsString('overlayToken=', $link);
     }
@@ -111,7 +118,9 @@ final class OverlayApiLinkTest extends TestCase
         $permitted = \OWA\Core\OverlayToken::permits(
             $token,
             'reports',
-            static fn($name) => $name === 'document_id' ? 'doc-12345' : ''
+            static fn($name) => $name === 'constraints'
+                ? 'pagePath==' . urlencode('/pricing')
+                : ''
         );
 
         $this->assertTrue($permitted, 'the minted token does not permit its own link');

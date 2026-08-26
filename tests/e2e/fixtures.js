@@ -36,6 +36,89 @@ const FIXTURE = {
     newSiteDomain: 'https://owa-e2e-created.example.test',
     newSiteName: 'OWA E2E Created Site',
     newUserId: 'owa-e2e-created@example.test',
+    // Traffic attribution DERIVED from the referring URLs in the $visits table
+    // of seed_reporting_fixtures.php. The seeder sets only session_referer;
+    // deriveMedium/deriveSource/extractSearchTerm produce everything below, so
+    // these are the real pipeline's output, not values anyone wrote down.
+    //
+    // Chosen so each medium has a distinct count and nothing is ambiguous:
+    // organic-search 2, referral 1, direct 1.
+    traffic: {
+        sources: ['google.com', 'bing.com', 'news.ycombinator.com'],
+        searchTerms: ['open web analytics', 'owa analytics'],
+        refererUrl: 'https://news.ycombinator.com/item?id=e2e',
+        refererHost: 'news.ycombinator.com',
+        mediums: { 'organic-search': 2, referral: 1, direct: 1 },
+    },
+    // The goal + funnel seeded by seed_reporting_fixtures.php. Its step paths
+    // are ones the pageview fixture already visits, so every stage of the
+    // funnel has real visitors -- including `destination`, which the report
+    // appends as the funnel's last bar from the goal's own goal_url.
+    goal: {
+        number: 1,
+        name: 'E2E Signup Funnel',
+        steps: [
+            { name: 'E2E Step Home', path: '/' },
+            { name: 'E2E Step Pricing', path: '/pricing' },
+        ],
+        destination: '/docs',
+    },
+    /*
+     * The DOM recordings seeded by seedDomstreams().
+     *
+     * `a` is stored as THREE rows -- one per flush of the tracker's event queue
+     * -- which is what a real recording is. Each row carries the cumulative
+     * elapsed seconds at the moment it was flushed, so the recording's duration
+     * is the LARGEST of them (95) and not their sum (147) or the first written
+     * (12). Those three numbers are all different on purpose: a fixture where
+     * they agree cannot tell a grouped-and-aggregated list from an ungrouped
+     * one.
+     *
+     * The two recordings are attached to visits with different mediums, which
+     * is what makes the segment filter testable: filtering to `a.medium` must
+     * leave one recording, not two.
+     */
+    domstreams: {
+        recordings: 2,
+        a: {
+            medium: 'organic-search',
+            page: '/pricing',
+            duration: 95,
+            durationLabel: '0:01:35',
+            segments: 3,
+            bytes: 600,
+            sizeLabel: '600 B',
+        },
+        b: {
+            medium: 'referral',
+            page: '/',
+            duration: 8,
+            durationLabel: '0:00:08',
+            segments: 1,
+            bytes: 90,
+            sizeLabel: '90 B',
+        },
+    },
+    // Notifications seeded for the header bell. Dismissing is permanent and
+    // per user, so the specs must have their own rather than consume the real
+    // release announcements.
+    notifications: {
+        source: 'e2e_fixture',
+        // Newest first, matching published_at descending.
+        titles: [
+            'E2E Notification Five',
+            'E2E Notification Four',
+            'E2E Notification Three',
+            'E2E Notification Two',
+            'E2E Notification One',
+        ],
+        // One per mutating spec: reading and dismissing persist, so specs must
+        // not share a subject.
+        toRead: 'E2E Notification Five',
+        toDismiss: 'E2E Notification Four',
+        toDismissAndReload: 'E2E Notification Three',
+        untouched: 'E2E Notification One',
+    },
     // The always-present optional module the module-activation test toggles.
     toggleModule: 'hello',
 };
@@ -114,7 +197,7 @@ async function clickAndWait(page, locator) {
 /** Navigate to the fixture site's report dashboard and let the JS build widgets. */
 async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=base.reportDashboard&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     // The reporting bundle builds charts/grids/selects from AJAX result sets
@@ -123,14 +206,18 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
 }
 
 /**
- * Navigate to a dimension report page (owa_do=base.report<Name>) and wait for
- * the jQuery-UI tabs widget to build. Unlike the dashboard, these pages render
+ * Navigate to a dimension report page and wait for the jQuery-UI tabs widget
+ * to build.
+ *
+ * Reports are addressed by id -- owa_do=base.report&owa_reportId=<id> -- not by
+ * a per-report action. Most of them no longer HAVE one: they are configuration
+ * under modules/Base/reports/, rendered by Core\ConfiguredReport. Unlike the dashboard, these pages render
  * the tabbed report layout (owa.report.createTabs -> #report-tabs.ui-tabs).
  * Defaults to Browser Types -- a plain dimension report needing no extra params.
  */
-async function openReport(page, { doName = 'base.reportBrowsers', period = 'last_thirty_days' } = {}) {
+async function openReport(page, { reportId = 'browsers', period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
@@ -139,20 +226,132 @@ async function openReport(page, { doName = 'base.reportBrowsers', period = 'last
 /**
  * Navigate to a report that renders WITHOUT tabs.
  *
- * The tabbed layout is a property of the subview, not of the report:
- * base.reportSimpleDimensional uses report_dimensionDetailNoTabs.php, so
- * #report-tabs never gains the .ui-tabs class and openReport() above would time
- * out waiting for a widget that is never built. That family is content-based
- * (Pages, Products, Transactions...) where a session tab would be meaningless.
+ * The control that gets drawn as tabs is the METRIC SET picker, and it only
+ * appears on a report that offers more than one way to measure its dimension.
+ * A report declaring its own `metrics` is measured one way, so #report-tabs
+ * never gains the .ui-tabs class and openReport() above would time out waiting
+ * for a widget that is never built. That family is content-based (Pages,
+ * Products, Transactions...) where a session tab would be meaningless.
  *
  * Waits for the grid instead, which is the load-bearing widget on those pages.
  */
-async function openReportNoTabs(page, { doName, period = 'last_thirty_days' } = {}) {
+async function openReportNoTabs(page, { reportId, period = 'last_thirty_days' } = {}) {
     await page.goto(
-        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.ui-jqgrid', { timeout: 20_000 });
+}
+
+/**
+ * Navigate to ANY configured report, without assuming what it draws.
+ *
+ * The two helpers above each wait for a widget that only some reports have --
+ * the metric-set control, or a grid. Neither can sweep the whole set: a report
+ * with no grid, or one measured a single way, would time out on a page that
+ * rendered perfectly.
+ *
+ * So this waits for the one element every configured report emits: a widget
+ * cell. If that never appears the renderer produced nothing, which is the
+ * failure worth reporting.
+ */
+async function openConfiguredReport(page, { reportId, period = 'last_thirty_days', params = {} } = {}) {
+
+    /*
+     * Every parameter the definition DECLARES, supplied.
+     *
+     * A report that enumerates a constraint is refused outright when the value
+     * behind it is missing -- rendering a detail report's heading over
+     * site-wide data is worse than an error. So a sweep that opens every report
+     * has to arrive with each one's parameters, or it is opening the error view
+     * and timing out waiting for a widget that will never be drawn.
+     *
+     * A sentinel is enough: this spec is watching for console errors while the
+     * widgets build, not for rows. Matching nothing renders empty widgets,
+     * which is exactly what these reports did before the guard existed.
+     */
+    const declared = declaredReportParams(reportId);
+    const all = Object.assign({}, declared, params);
+
+    const query = Object.keys(all)
+        .map((k) => `&owa_${encodeURIComponent(k)}=${encodeURIComponent(all[k])}`)
+        .join('');
+
+    await page.goto(
+        `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}` + query,
+        { waitUntil: 'networkidle' }
+    );
+    await page.waitForSelector('.owa_reportGridItem', { timeout: 20_000 });
+}
+
+/** The value a swept report is given for a parameter it declares. */
+const REPORT_PARAM_SENTINEL = 'e2e_sentinel';
+
+/**
+ * The parameters a report definition declares, each set to the sentinel.
+ *
+ * Read from the definition rather than listed, for the same reason the ids are:
+ * a report that gains a parameter tomorrow is swept correctly without anyone
+ * remembering this file exists.
+ *
+ * @returns {Object<string,string>}
+ */
+function declaredReportParams(reportId) {
+    const fs = require('fs');
+    const path = require('path');
+
+    const modules = path.join(__dirname, '..', '..', 'modules');
+    const out = {};
+
+    for (const mod of fs.readdirSync(modules)) {
+        const file = path.join(modules, mod, 'reports', `${reportId}.json`);
+
+        if (!fs.existsSync(file)) {
+            continue;
+        }
+
+        let def;
+        try {
+            def = JSON.parse(fs.readFileSync(file, 'utf8'));
+        } catch (e) {
+            return out;
+        }
+
+        for (const name of Object.keys((def && def.params) || {})) {
+            out[name] = REPORT_PARAM_SENTINEL;
+        }
+    }
+
+    return out;
+}
+
+/**
+ * Every report that is configuration, read from disk.
+ *
+ * Enumerated rather than listed so a report added tomorrow is swept without
+ * anyone remembering to add it here -- which is the failure mode a hand-written
+ * list has.
+ */
+function configuredReportIds() {
+    const fs = require('fs');
+    const path = require('path');
+
+    const modules = path.join(__dirname, '..', '..', 'modules');
+    const ids = [];
+
+    for (const mod of fs.readdirSync(modules)) {
+        const dir = path.join(modules, mod, 'reports');
+        if (!fs.existsSync(dir)) {
+            continue;
+        }
+        for (const file of fs.readdirSync(dir)) {
+            if (file.endsWith('.json')) {
+                ids.push(file.slice(0, -'.json'.length));
+            }
+        }
+    }
+
+    return ids.sort();
 }
 
 module.exports = {
@@ -165,4 +364,8 @@ module.exports = {
     openReportNoTabs,
     openDashboard,
     openReport,
+    openConfiguredReport,
+    configuredReportIds,
+    declaredReportParams,
+    REPORT_PARAM_SENTINEL,
 };

@@ -1,0 +1,29 @@
+{
+    "title": "Page Type: ",
+    "titleSuffix": "{pageType}",
+    "params": {
+        "pageType": {}
+    },
+    "metrics": "visits,pageViews",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "pageViews",
+            "headline": "There were {pageViews.formatted} page views for this page type."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "pageType",
+                "fromParam": "pageType"
+            }
+        ]
+    }
+}

@@ -1,0 +1,153 @@
+{
+    "title": "Dashboard",
+    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "siteTrend",
+            "container": "trend-chart",
+            "title": "Site Metrics",
+            "showTitle": true,
+            "colspan": 12,
+            "chartMetric": "visits",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "topContent",
+            "container": "top-pages",
+            "title": "Top Content",
+            "colspan": 6,
+            "query": {
+                "metrics": "pageViews",
+                "dimensions": "pageTitle,pagePath",
+                "sort": "pageViews-",
+                "resultsPerPage": 10
+            },
+            "link": {
+                "linkColumn": "pageTitle",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "pagePath"
+            },
+            "more": {
+                "reportId": "pages"
+            },
+            "excludeColumns": [
+                "pagePath"
+            ]
+        },
+        {
+            "type": "grid",
+            "id": "actions",
+            "container": "actions-trend",
+            "title": "Actions",
+            "colspan": 6,
+            "query": {
+                "metrics": "actions",
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
+            },
+            "more": {
+                "reportId": "action-tracking"
+            }
+        },
+        {
+            "type": "pie",
+            "id": "visitorTypes",
+            "container": "visitor-types",
+            "title": "Visitor Types",
+            "colspan": 3,
+            "query": {
+                "metrics": "visits",
+                "dimensions": "isRepeatVisitor",
+                "sort": "visits-"
+            },
+            "chartMetric": "visits",
+            "valueLabels": {
+                "1": "Repeat",
+                "0": "New",
+                "": "New"
+            }
+        },
+        {
+            "type": "pie",
+            "id": "visitorMediums",
+            "container": "visitor-mediums",
+            "title": "Traffic Sources",
+            "colspan": 3,
+            "chartMetric": "visits",
+            "query": {
+                "metrics": "visits",
+                "dimensions": "medium",
+                "sort": "visits-"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "latestVisits",
+            "container": "latest-visits",
+            "title": "Latest Visits",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits,pagesPerVisit,visitDuration",
+                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "more": {
+                "reportId": "latest-visits"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "topReferrers",
+            "container": "top-referers",
+            "title": "Top Referrers",
+            "colspan": 6,
+            "constraints": [
+                {
+                    "dimension": "medium",
+                    "value": "referral"
+                }
+            ],
+            "query": {
+                "metrics": "visits",
+                "dimensions": "referralPageTitle,referralPageUrl",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "excludeColumns": [
+                "referralPageTitle"
+            ],
+            "link": {
+                "linkColumn": "referralPageUrl",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "referral-detail",
+                    "referralPageUrl": "%s"
+                },
+                "valueColumns": "referralPageUrl"
+            },
+            "more": {
+                "reportId": "referring-sites"
+            }
+        }
+    ]
+}

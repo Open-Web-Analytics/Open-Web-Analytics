@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 16;
+        $this->required_schema_version = 18;
         return parent::__construct();
     }
 
@@ -583,7 +583,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
         $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
-        $this->registerAction( 'base.crawlReferralCli',              'OWA\\Module\\Base\\Controller\\CrawlReferralCli',             'Controller/CrawlReferralCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
@@ -629,74 +628,9 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
-        $this->registerAction( 'base.reportActionDetail',            'OWA\\Module\\Base\\Controller\\ReportActionDetail',           'Controller/ReportActionDetail.php' );
-        $this->registerAction( 'base.reportActionGroup',             'OWA\\Module\\Base\\Controller\\ReportActionGroup',            'Controller/ReportActionGroup.php' );
-        $this->registerAction( 'base.reportActionGroups',            'OWA\\Module\\Base\\Controller\\ReportActionGroups',           'Controller/ReportActionGroups.php' );
-        $this->registerAction( 'base.reportActionTracking',          'OWA\\Module\\Base\\Controller\\ReportActionTracking',         'Controller/ReportActionTracking.php' );
-        $this->registerAction( 'base.reportAdDetail',                'OWA\\Module\\Base\\Controller\\ReportAdDetail',               'Controller/ReportAdDetail.php' );
-        $this->registerAction( 'base.reportAdTypeDetail',            'OWA\\Module\\Base\\Controller\\ReportAdTypeDetail',           'Controller/ReportAdTypeDetail.php' );
-        $this->registerAction( 'base.reportAdTypes',                 'OWA\\Module\\Base\\Controller\\ReportAdTypes',                'Controller/ReportAdTypes.php' );
-        $this->registerAction( 'base.reportAds',                     'OWA\\Module\\Base\\Controller\\ReportAds',                    'Controller/ReportAds.php' );
-        $this->registerAction( 'base.reportAnchortext',              'OWA\\Module\\Base\\Controller\\ReportAnchortext',             'Controller/ReportAnchortext.php' );
-        $this->registerAction( 'base.reportAttributionHistory',      'OWA\\Module\\Base\\Controller\\ReportAttributionHistory',     'Controller/ReportAttributionHistory.php' );
-        $this->registerAction( 'base.reportAvgOrderValue',           'OWA\\Module\\Base\\Controller\\ReportAvgOrderValue',          'Controller/ReportAvgOrderValue.php' );
-        $this->registerAction( 'base.reportBrowserDetail',           'OWA\\Module\\Base\\Controller\\ReportBrowserDetail',          'Controller/ReportBrowserDetail.php' );
-        $this->registerAction( 'base.reportBrowsers',                'OWA\\Module\\Base\\Controller\\ReportBrowsers',               'Controller/ReportBrowsers.php' );
-        $this->registerAction( 'base.reportCampaignDetail',          'OWA\\Module\\Base\\Controller\\ReportCampaignDetail',         'Controller/ReportCampaignDetail.php' );
-        $this->registerAction( 'base.reportCampaigns',               'OWA\\Module\\Base\\Controller\\ReportCampaigns',              'Controller/ReportCampaigns.php' );
-        $this->registerAction( 'base.reportCommerce',                'OWA\\Module\\Base\\Controller\\ReportCommerce',               'Controller/ReportCommerce.php' );
-        $this->registerAction( 'base.reportContent',                 'OWA\\Module\\Base\\Controller\\ReportContent',                'Controller/ReportContent.php' );
-        $this->registerAction( 'base.reportCountryDetail',           'OWA\\Module\\Base\\Controller\\ReportCountryDetail',          'Controller/ReportCountryDetail.php' );
-        $this->registerAction( 'base.reportCreativePerformance',     'OWA\\Module\\Base\\Controller\\ReportCreativePerformance',    'Controller/ReportCreativePerformance.php' );
-        $this->registerAction( 'base.reportDashboard',               'OWA\\Module\\Base\\Controller\\ReportDashboard',              'Controller/ReportDashboard.php' );
-        $this->registerAction( 'base.reportDaysToPurchase',          'OWA\\Module\\Base\\Controller\\ReportDaysToPurchase',         'Controller/ReportDaysToPurchase.php' );
-        $this->registerAction( 'base.reportDocument',                'OWA\\Module\\Base\\Controller\\ReportDocument',               'Controller/ReportDocument.php' );
-        $this->registerAction( 'base.reportDomClicks',               'OWA\\Module\\Base\\Controller\\ReportDomClicks',              'Controller/ReportDomClicks.php' );
+        $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
-        $this->registerAction( 'base.reportEcommerce',               'OWA\\Module\\Base\\Controller\\ReportEcommerce',              'Controller/ReportEcommerce.php' );
-        $this->registerAction( 'base.reportEcommerceConversionRate', 'OWA\\Module\\Base\\Controller\\ReportEcommerceConversionRate', 'Controller/ReportEcommerceConversionRate.php' );
-        $this->registerAction( 'base.reportEntryPages',              'OWA\\Module\\Base\\Controller\\ReportEntryPages',             'Controller/ReportEntryPages.php' );
-        $this->registerAction( 'base.reportExitPages',               'OWA\\Module\\Base\\Controller\\ReportExitPages',              'Controller/ReportExitPages.php' );
-        $this->registerAction( 'base.reportFeeds',                   'OWA\\Module\\Base\\Controller\\ReportFeeds',                  'Controller/ReportFeeds.php' );
-        $this->registerAction( 'base.reportGeolocation',             'OWA\\Module\\Base\\Controller\\ReportGeolocation',            'Controller/ReportGeolocation.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
-        $this->registerAction( 'base.reportGoals',                   'OWA\\Module\\Base\\Controller\\ReportGoals',                  'Controller/ReportGoals.php' );
-        $this->registerAction( 'base.reportHostDetail',              'OWA\\Module\\Base\\Controller\\ReportHostDetail',             'Controller/ReportHostDetail.php' );
-        $this->registerAction( 'base.reportHosts',                   'OWA\\Module\\Base\\Controller\\ReportHosts',                  'Controller/ReportHosts.php' );
-        $this->registerAction( 'base.reportKeywordDetail',           'OWA\\Module\\Base\\Controller\\ReportKeywordDetail',          'Controller/ReportKeywordDetail.php' );
-        $this->registerAction( 'base.reportKeywords',                'OWA\\Module\\Base\\Controller\\ReportKeywords',               'Controller/ReportKeywords.php' );
-        $this->registerAction( 'base.reportOs',                      'OWA\\Module\\Base\\Controller\\ReportOs',                     'Controller/ReportOs.php' );
-        $this->registerAction( 'base.reportOsDetail',                'OWA\\Module\\Base\\Controller\\ReportOsDetail',               'Controller/ReportOsDetail.php' );
-        $this->registerAction( 'base.reportPageTypeDetail',          'OWA\\Module\\Base\\Controller\\ReportPageTypeDetail',         'Controller/ReportPageTypeDetail.php' );
-        $this->registerAction( 'base.reportPageTypes',               'OWA\\Module\\Base\\Controller\\ReportPageTypes',              'Controller/ReportPageTypes.php' );
-        $this->registerAction( 'base.reportPages',                   'OWA\\Module\\Base\\Controller\\ReportPages',                  'Controller/ReportPages.php' );
-        $this->registerAction( 'base.reportProductCategories',       'OWA\\Module\\Base\\Controller\\ReportProductCategories',      'Controller/ReportProductCategories.php' );
-        $this->registerAction( 'base.reportProductCategoryDetail',   'OWA\\Module\\Base\\Controller\\ReportProductCategoryDetail',  'Controller/ReportProductCategoryDetail.php' );
-        $this->registerAction( 'base.reportProductDetail',           'OWA\\Module\\Base\\Controller\\ReportProductDetail',          'Controller/ReportProductDetail.php' );
-        $this->registerAction( 'base.reportProductSkuDetail',        'OWA\\Module\\Base\\Controller\\ReportProductSkuDetail',       'Controller/ReportProductSkuDetail.php' );
-        $this->registerAction( 'base.reportProductSkus',             'OWA\\Module\\Base\\Controller\\ReportProductSkus',            'Controller/ReportProductSkus.php' );
-        $this->registerAction( 'base.reportProducts',                'OWA\\Module\\Base\\Controller\\ReportProducts',               'Controller/ReportProducts.php' );
-        $this->registerAction( 'base.reportReferralDetail',          'OWA\\Module\\Base\\Controller\\ReportReferralDetail',         'Controller/ReportReferralDetail.php' );
-        $this->registerAction( 'base.reportReferralLinkTextDetail',  'OWA\\Module\\Base\\Controller\\ReportReferralLinkTextDetail', 'Controller/ReportReferralLinkTextDetail.php' );
-        $this->registerAction( 'base.reportReferringSites',          'OWA\\Module\\Base\\Controller\\ReportReferringSites',         'Controller/ReportReferringSites.php' );
-        $this->registerAction( 'base.reportRevenue',                 'OWA\\Module\\Base\\Controller\\ReportRevenue',                'Controller/ReportRevenue.php' );
-        $this->registerAction( 'base.reportSearchEngineDetail',      'OWA\\Module\\Base\\Controller\\ReportSearchEngineDetail',     'Controller/ReportSearchEngineDetail.php' );
-        $this->registerAction( 'base.reportSearchEngines',           'OWA\\Module\\Base\\Controller\\ReportSearchEngines',          'Controller/ReportSearchEngines.php' );
-        $this->registerAction( 'base.reportSourceDetail',            'OWA\\Module\\Base\\Controller\\ReportSourceDetail',           'Controller/ReportSourceDetail.php' );
-        $this->registerAction( 'base.reportSources',                 'OWA\\Module\\Base\\Controller\\ReportSources',                'Controller/ReportSources.php' );
-        $this->registerAction( 'base.reportStateDetail',             'OWA\\Module\\Base\\Controller\\ReportStateDetail',            'Controller/ReportStateDetail.php' );
-        $this->registerAction( 'base.reportTraffic',                 'OWA\\Module\\Base\\Controller\\ReportTraffic',                'Controller/ReportTraffic.php' );
-        $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
-        $this->registerAction( 'base.reportTransactions',            'OWA\\Module\\Base\\Controller\\ReportTransactions',           'Controller/ReportTransactions.php' );
-        $this->registerAction( 'base.reportVisit',                   'OWA\\Module\\Base\\Controller\\ReportVisit',                  'Controller/ReportVisit.php' );
-        $this->registerAction( 'base.reportVisitor',                 'OWA\\Module\\Base\\Controller\\ReportVisitor',                'Controller/ReportVisitor.php' );
-        $this->registerAction( 'base.reportVisitors',                'OWA\\Module\\Base\\Controller\\ReportVisitors',               'Controller/ReportVisitors.php' );
-        $this->registerAction( 'base.reportVisitorsAge',             'OWA\\Module\\Base\\Controller\\ReportVisitorsAge',            'Controller/ReportVisitorsAge.php' );
-        $this->registerAction( 'base.reportVisitorsLoyalty',         'OWA\\Module\\Base\\Controller\\ReportVisitorsLoyalty',        'Controller/ReportVisitorsLoyalty.php' );
-        $this->registerAction( 'base.reportVisitorsRecency',         'OWA\\Module\\Base\\Controller\\ReportVisitorsRecency',        'Controller/ReportVisitorsRecency.php' );
-        $this->registerAction( 'base.reportVisitorsRoster',          'OWA\\Module\\Base\\Controller\\ReportVisitorsRoster',         'Controller/ReportVisitorsRoster.php' );
-        $this->registerAction( 'base.reportVisits',                  'OWA\\Module\\Base\\Controller\\ReportVisits',                 'Controller/ReportVisits.php' );
-        $this->registerAction( 'base.reportVisitsToPurchase',        'OWA\\Module\\Base\\Controller\\ReportVisitsToPurchase',       'Controller/ReportVisitsToPurchase.php' );
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
@@ -712,6 +646,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesRest',                     'OWA\\Module\\Base\\Controller\\SitesRest',                    'Controller/SitesRest.php' );
         $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates',                      'Controller/Updates.php' );
         $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply',                 'Controller/UpdatesApply.php' );
+        $this->registerAction( 'base.notificationsRest',              'OWA\\Module\\Base\\Controller\\NotificationsRest',           'Controller/NotificationsRest.php' );
+        $this->registerAction( 'base.notificationMarkReadRest',           'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest',        'Controller/NotificationMarkReadRest.php' );
+        $this->registerAction( 'base.notificationDismissRest',       'OWA\\Module\\Base\\Controller\\NotificationDismissRest',    'Controller/NotificationDismissRest.php' );
+        $this->registerAction( 'base.notificationsFetchCli',        'OWA\\Module\\Base\\Controller\\NotificationsFetchCli',       'Controller/NotificationsFetchCli.php' );
         $this->registerAction( 'base.updatesApplyCli',               'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',              'Controller/UpdatesApplyCli.php' );
         $this->registerAction( 'base.users',                         'OWA\\Module\\Base\\Controller\\Users',                        'Controller/Users.php' );
         $this->registerAction( 'base.usersAdd',                      'OWA\\Module\\Base\\Controller\\UsersAdd',                     'Controller/UsersAdd.php' );
@@ -724,7 +662,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );
         $this->registerAction( 'base.usersRest',                     'OWA\\Module\\Base\\Controller\\UsersRest',                    'Controller/UsersRest.php' );
         $this->registerAction( 'base.usersSetPassword',              'OWA\\Module\\Base\\Controller\\UsersSetPassword',             'Controller/UsersSetPassword.php' );
-        $this->registerAction( 'base.widgetOwaNews',                 'OWA\\Module\\Base\\Controller\\WidgetOwaNews',                'Controller/WidgetOwaNews.php' );
     }
 
     /**
@@ -736,6 +673,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
+        $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
@@ -752,7 +690,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('partition-rotate', 'base.partitionRotateCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
-        $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
         $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
@@ -791,6 +728,36 @@ class Module extends \OWA\Core\Module {
         // on. ScheduleCliTest pins the empty array for exactly that reason.
         $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
 
+        /*
+         * Daily is the right cadence for release announcements: they are not
+         * urgent, and the endpoint is rate limited per IP. Nothing renders from
+         * the network any more, so a missed run costs a day's freshness rather
+         * than a broken dashboard.
+         *
+         * NOT '@daily'. That is `0 0 * * *` -- midnight exactly -- so every
+         * install running this job would call api.github.com at the same
+         * instant, and most servers keep UTC, so timezones would not even
+         * spread it. GitHub cannot tell that from an attack. Each install
+         * derives its own minute and hour instead, and keeps it.
+         *
+         * The seed must be stable and install-specific. public_url is both, and
+         * the fallbacks matter: an install that has not been configured yet has
+         * no public_url, and seeding every one of those from the same empty
+         * string would put exactly the installs most likely to share an image
+         * back on the same minute. The directory path differs per install even
+         * then.
+         */
+        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+
+        if ( $seed === '' ) {
+
+            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
+        }
+
+        $this->registerJob(
+            'fetch-notifications', 'fetch-notifications',
+            \OWA\Core\Cron::dailySpreadFor( $seed ), array() );
+
         // NOT registering update-ua-regexes here, deliberately.
         //
         // It would fit -- the patterns go stale on their own and monthly is
@@ -817,6 +784,9 @@ class Module extends \OWA\Core\Module {
         $this->registerRestApiRoute( 'v1', 'users', 'POST', 'OWA\\Module\\Base\\Controller\\AddUserRest', 'Controller/AddUserRest.php' );
 		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', 'Controller/DeleteUserRest.php', [ 'params_order' => ['user_id'] ] );
 		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest', 'Controller/SiteAddAllowedUserRest.php' );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest', 'Controller/NotificationsRest.php' );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', 'Controller/NotificationMarkReadRest.php', [ 'params_order' => ['notificationId'] ] );
+		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
     }
 
@@ -1545,7 +1515,11 @@ class Module extends \OWA\Core\Module {
             'visitor',
             'Repeat Site Visitor.',
             '',
-            true
+            true,
+            // Declared boolean so it FORMATS as Yes/No wherever it is shown.
+            // The column stores 1 for true and NULL for false, so without this
+            // a pie slice is labelled with an empty string.
+            'boolean'
         );
 
         $this->registerDimension(
@@ -2261,6 +2235,42 @@ class Module extends \OWA\Core\Module {
         );
 
         // Click Dimensions
+        /*
+         * The click's coordinates on the page.
+         *
+         * Declared so a heatmap is an ordinary dimensional query --
+         * `metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x`
+         * -- rather than a bespoke report with hand-built SQL. pagePath already
+         * resolves through document_id, which owa_click carries, so the join is
+         * the registry's to make.
+         *
+         * Grouping is the point, not a side effect: one page on a live install
+         * holds 345,620 clicks, and the heatmap only ever needed each distinct
+         * point and how often it was hit. As a dimension pair that is a GROUP
+         * BY, and the count arrives as the metric.
+         */
+        $this->registerDimension(
+            'clickX',
+            'base.click',
+            'click_x',
+            'Click X',
+            'dom',
+            'The horizontal position of the click on the page.',
+            '',
+            true
+        );
+
+        $this->registerDimension(
+            'clickY',
+            'base.click',
+            'click_y',
+            'Click Y',
+            'dom',
+            'The vertical position of the click on the page.',
+            '',
+            true
+        );
+
         $this->registerDimension(
             'domElementId',
             'base.click',
@@ -2391,55 +2401,139 @@ class Module extends \OWA\Core\Module {
         }
     }
 
+    /**
+     * Every report this module offers, under the id it is reached by.
+     *
+     * All of them name a controller today, so nothing renders differently --
+     * this is the indirection going in ahead of the conversion. `pages` reaches
+     * exactly what `base.reportPages` reached, and converting it later means
+     * changing this one line to name a JSON file instead of a class.
+     *
+     * Ids are derived from the controller names they replace, hyphenated
+     * because they are read by people and appear in URLs: `entry-pages`, not
+     * `reportEntryPages`.
+     *
+     * Called lazily by CoreAPI::getReportRegistry(), never from the module
+     * constructor -- see the note on Module::registerReports().
+     */
+    function registerReports() {
+
+        $this->registerReport( 'action-detail', 'reports/action-detail.json' );
+        $this->registerReport( 'action-group', 'reports/action-group.json' );
+        $this->registerReport( 'action-groups', 'reports/action-groups.json' );
+        $this->registerReport( 'action-tracking', 'reports/action-tracking.json' );
+        $this->registerReport( 'ad-detail', 'reports/ad-detail.json' );
+        $this->registerReport( 'ad-type-detail', 'reports/ad-type-detail.json' );
+        $this->registerReport( 'ad-types', 'reports/ad-types.json' );
+        $this->registerReport( 'ads', 'reports/ads.json' );
+        $this->registerReport( 'anchortext', 'reports/anchortext.json' );
+        $this->registerReport( 'attribution-history', 'reports/attribution-history.json' );
+        $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
+        $this->registerReport( 'browser-detail', 'reports/browser-detail.json' );
+        $this->registerReport( 'browsers', 'reports/browsers.json' );
+        $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
+        $this->registerReport( 'campaigns', 'reports/campaigns.json' );
+        $this->registerReport( 'commerce', 'reports/commerce.json' );
+        $this->registerReport( 'content', 'reports/content.json' );
+        $this->registerReport( 'country-detail', 'reports/country-detail.json' );
+        $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
+        $this->registerReport( 'dashboard', 'reports/dashboard.json' );
+        $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
+        $this->registerReport( 'document', 'reports/document.json' );
+        $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
+        $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
+        $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
+        $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
+        $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );
+        $this->registerReport( 'exit-pages', 'reports/exit-pages.json' );
+        $this->registerReport( 'feeds', 'reports/feeds.json' );
+        $this->registerReport( 'geolocation', 'reports/geolocation.json' );
+        $this->registerReport( 'goal-funnel', array( 'controller' => 'base.reportGoalFunnel' ) );
+        $this->registerReport( 'goals', 'reports/goals.json' );
+        $this->registerReport( 'host-detail', 'reports/host-detail.json' );
+        $this->registerReport( 'hosts', 'reports/hosts.json' );
+        $this->registerReport( 'keyword-detail', 'reports/keyword-detail.json' );
+        $this->registerReport( 'keywords', 'reports/keywords.json' );
+        $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
+        $this->registerReport( 'os', 'reports/os.json' );
+        $this->registerReport( 'os-detail', 'reports/os-detail.json' );
+        $this->registerReport( 'page-type-detail', 'reports/page-type-detail.json' );
+        $this->registerReport( 'page-types', 'reports/page-types.json' );
+        $this->registerReport( 'pages', 'reports/pages.json' );
+        $this->registerReport( 'product-categories', 'reports/product-categories.json' );
+        $this->registerReport( 'product-category-detail', 'reports/product-category-detail.json' );
+        $this->registerReport( 'product-detail', 'reports/product-detail.json' );
+        $this->registerReport( 'product-sku-detail', 'reports/product-sku-detail.json' );
+        $this->registerReport( 'product-skus', 'reports/product-skus.json' );
+        $this->registerReport( 'products', 'reports/products.json' );
+        $this->registerReport( 'referral-detail', 'reports/referral-detail.json' );
+        $this->registerReport( 'referral-link-text-detail', 'reports/referral-link-text-detail.json' );
+        $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
+        $this->registerReport( 'revenue', 'reports/revenue.json' );
+        $this->registerReport( 'search-engine-detail', 'reports/search-engine-detail.json' );
+        $this->registerReport( 'search-engines', 'reports/search-engines.json' );
+        $this->registerReport( 'source-detail', 'reports/source-detail.json' );
+        $this->registerReport( 'sources', 'reports/sources.json' );
+        $this->registerReport( 'state-detail', 'reports/state-detail.json' );
+        $this->registerReport( 'traffic', 'reports/traffic.json' );
+        $this->registerReport( 'transactions', 'reports/transactions.json' );
+        $this->registerReport( 'visitors', 'reports/visitors.json' );
+        $this->registerReport( 'visitors-age', 'reports/visitors-age.json' );
+        $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
+        $this->registerReport( 'visitors-recency', 'reports/visitors-recency.json' );
+        $this->registerReport( 'visits-to-purchase', 'reports/visits-to-purchase.json' );
+    }
+
     function registerNavigation() {
 
-        $this->addNavigationSubGroup('Dashboard', 'base.reportDashboard', 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
+        $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
         //Ecommerce
-        $this->addNavigationSubGroup('Ecommerce', 'base.reportEcommerce', 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportRevenue', 'Revenue', 2);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportTransactions', 'Transactions', 3);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
-        $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
+        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 4);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 5);
 
         //Content
-        $this->addNavigationSubGroup('Content', 'base.reportContent', 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPages', 'Top Pages', 1);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPageTypes', 'Page Types', 2);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportFeeds', 'Feeds', 7);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
-        $this->addNavigationLinkInSubGroup( 'Content', 'base.reportExitPages', 'Exit Pages', 4);
+        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Top Pages', 1);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
 
 
         //Actions
-        $this->addNavigationSubGroup('Action Tracking', 'base.reportActionTracking', 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
-        $this->addNavigationLinkInSubGroup('Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
+        $this->addNavigationSubGroup('Action Tracking', $this->reportRef( 'action-tracking' ), 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
+        $this->addNavigationLinkInSubGroup('Action Tracking', $this->reportRef( 'action-groups' ), 'Action Groups', 2);
 
         //Visitors
-        $this->addNavigationSubGroup( 'Visitors', 'base.reportVisitors', 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportHosts', 'Domains', 2);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
-        $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportOs', 'Operating Systems', 7);
+        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-recency' ), 'Visitor Recency', 4);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-age' ), 'Visitor Age', 5);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
 
         //Traffic
-        $this->addNavigationSubGroup('Traffic', 'base.reportTraffic', 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportKeywords', 'Search Terms', 1);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAds', 'Ad Performance', 6);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCreativePerformance', 'Creative Performance', 8);
-        $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
+        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'anchortext' ), 'Inbound Link Text', 2);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), 'Campaigns', 5);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), 'Ad Performance', 6);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ad-types' ), 'Ad Types', 7);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'attribution-history' ), 'Attribution History', 8);
 
         //Goals
-        $this->addNavigationSubGroup('Goals', 'base.reportGoals', 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
-        $this->addNavigationLinkInSubGroup( 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);
+        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
+        $this->addNavigationLinkInSubGroup( 'Goals', $this->reportRef( 'goal-funnel' ), 'Funnel Visualization', 1);
 
     }
 
@@ -2597,6 +2691,8 @@ class Module extends \OWA\Core\Module {
                 'commerce_line_item_fact',
                 'queue_item',
                 'scheduled_job',
+                'notification',
+                'notification_state',
                 'job_lock',
                 'site_user')
             );

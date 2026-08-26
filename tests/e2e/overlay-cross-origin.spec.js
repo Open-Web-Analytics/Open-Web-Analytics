@@ -80,7 +80,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a domstream; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, document_id:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
+    /** @type {{site_id:string, document_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
     let fx;
 
     test.beforeAll(() => {
@@ -140,12 +140,15 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test('the heatmap fetches its click data from another origin', async ({ page }, testInfo) => {
         const { fetches, consoleErrors, apiRoot, pageRoot } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
+            // An ordinary dimensional query: clicks grouped by coordinate,
+            // constrained on the page. There is no clicks report any more.
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_report_name=clicks'
+                + '&owa_metrics=domClicks'
+                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
-                + '&owa_document_id=' + encodeURIComponent(fx.document_id)
+                + '&owa_constraints=' + encodeURIComponent(fx.constraints)
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
-            extra: '&document_id=' + encodeURIComponent(fx.document_id),
+            extra: '&pagePath=' + encodeURIComponent(fx.page_path),
         });
 
         // The premise: the page and the API really are different origins.
@@ -162,6 +165,43 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             + `  console: ${JSON.stringify(consoleErrors)}`
         ).toBe(201);
         expect(call.length, 'the response body was empty').toBeGreaterThan(0);
+
+        /*
+         * The clicks actually came back.
+         *
+         * A 201 with a non-empty envelope is NOT enough: an empty result set is
+         * also a 201 with a body, so the assertions above pass just as happily
+         * when the query matched nothing. That is not hypothetical here -- the
+         * heatmap reaches clicks by JOINING to the document that owns the path,
+         * so a fixture without a real document row would answer exactly that
+         * way, and this spec would have gone green while the feature was
+         * broken.
+         */
+        expect(call.body, 'the fetch captured no body to check').toBeTruthy();
+
+        /*
+         * Asserted on the captured TEXT, not parsed: the harness records a
+         * prefix of the response, so JSON.parse would throw on a perfectly good
+         * body and report a data problem that is really a truncation.
+         *
+         * On resultsTotal, and NOT on the presence of 'clickX' or 'resultsRows'.
+         * Those strings appear in the envelope's own self/next links, which echo
+         * the request's dimensions back -- so an EMPTY result set contains every
+         * one of them, and asserting on them passes whether or not a single
+         * click was found. Verified by breaking the fixture's document row: the
+         * substring version stayed green with nothing joined.
+         */
+        const body = String(call.body);
+
+        const failure = `  body: ${body.slice(0, 600)}`;
+
+        const total = body.match(/"resultsTotal"\s*:\s*"?(\d+)/);
+
+        expect(total, `the response carried no resultsTotal\n${failure}`).not.toBeNull();
+
+        expect(Number(total[1]),
+            `the heatmap query resolved the page but matched no clicks\n${failure}`
+        ).toBeGreaterThan(0);
 
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);
@@ -191,18 +231,19 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
 
     test('an overlay token is refused for a resource it does not name', async ({ page }, testInfo) => {
         // The scope check, exercised through a real browser fetch rather than a
-        // unit test: the heatmap token names one document.
+        // unit test: the heatmap token names one page.
         const { fetches } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_report_name=clicks'
+                + '&owa_metrics=domClicks'
+                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
-                + '&owa_document_id=some-other-document'
+                + '&owa_constraints=' + encodeURIComponent('pagePath==/some-other-page')
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
         });
 
         const call = fetches[0];
         expect(call, 'no request was issued').toBeDefined();
-        expect(call.status, 'a token must not work for a document it does not name').toBe(401);
+        expect(call.status, 'a token must not work for a page it does not name').toBe(401);
     });
 });

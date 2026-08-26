@@ -1,0 +1,40 @@
+{
+    "title": "Referrals",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from referrals."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "referralPageTitle,referralPageUrl",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "referralPageUrl",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "referral-detail",
+                    "referralPageUrl": "%s"
+                },
+                "valueColumns": "referralPageUrl"
+            },
+            "excludeColumns": [
+                "referralPageTitle"
+            ]
+        }
+    ],
+    "settings": {
+        "constraints": "medium==referral"
+    }
+}

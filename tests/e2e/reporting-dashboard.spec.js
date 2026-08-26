@@ -112,12 +112,21 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const grids = page.locator('.ui-jqgrid');
         expect(await grids.count()).toBeGreaterThanOrEqual(1);
 
-        const rows = page.locator('tr.jqgrow');
+        /*
+         * Scoped to #top-pages, not the whole page.
+         *
+         * Counting every tr.jqgrow on the dashboard only ever matched the
+         * seeded page count because the OTHER grids had nothing to draw --
+         * the fixture attributed no traffic, so #top-referers took the
+         * explorer's empty branch. Now that it has a referral to show, a
+         * page-wide count measures both grids and this read 5 for 4 pages.
+         */
+        const rows = page.locator('#top-pages tr.jqgrow');
         expect(await rows.count()).toBe(FIXTURE.expectedGridRows);
 
         // The seeded titles must appear in the rendered grid text.
         const gridText = await page.evaluate(() =>
-            [...document.querySelectorAll('tr.jqgrow')]
+            [...document.querySelectorAll('#top-pages tr.jqgrow')]
                 .map((r) => r.innerText.replace(/\s+/g, ' ').trim())
                 .join('\n')
         );
@@ -126,6 +135,31 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         }
         // Each seeded page got exactly 2 pageviews; the count must render.
         expect(gridText).toMatch(/\b2\b/);
+    });
+
+    /**
+     * The referrers grid, which had nothing to draw until the fixture
+     * attributed its traffic.
+     *
+     * One row: the grid constrains to medium==referral, and of the four seeded
+     * visits exactly one is a referral -- the other three are two organic
+     * searches and a direct. So the count is the constraint working.
+     *
+     * It shows the referring URL. It used to show referralPageTitle and hide the
+     * url, but that title was only ever filled by fetching the referring page,
+     * which OWA no longer does -- so every row read '(not set)', including the
+     * link text. The column and its dimension are kept and simply stop being
+     * populated; nothing about the schema changed.
+     */
+    test('jqGrid renders the seeded referring site', async ({ page }) => {
+        await expect(page.locator('#top-referers tr.jqgrow'))
+            .toHaveCount(1, { timeout: 20_000 });
+
+        await expect(page.locator('#top-referers'))
+            .toContainText(FIXTURE.traffic.refererHost);
+
+        await expect(page.locator('#top-referers'), 'the unfillable title is still shown')
+            .not.toContainText('(not set)');
     });
 
     test('jqGrid header columns align with their data columns', async ({ page }) => {
@@ -448,13 +482,14 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
     test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {
         // FUNCTIONAL test (not just "a column appeared"): the Browser Types report
-        // has ONE row for the fixture data -- all 8 pageviews are Chrome (seeded
-        // UA), so the grid is a single "Chrome" row. The seeder spreads those views
-        // across FOUR distinct days (day_ago 23/16/9/2, see
-        // seed_reporting_fixtures.php), so adding "Date" as the secondary dimension
+        // has ONE row for the fixture data -- every seeded pageview is Chrome
+        // (seeded UA), so the grid is a single "Chrome" row. The seeder spreads
+        // those views across FIVE distinct days (day_ago 23/16/9/4/2, see
+        // seed_reporting_fixtures.php -- the day_ago 4 visit is the one that walks
+        // the goal funnel in order), so adding "Date" as the secondary dimension
         // must requery (owa.resultSetExplorer.changeDimension -> getNewResultSet
         // with owa_dimensions=browserType,date) and split the one Chrome row into
-        // exactly FOUR rows (Chrome x each day), each carrying a rendered Date value.
+        // exactly FIVE rows (Chrome x each day), each carrying a rendered Date value.
         // This pins the real outcome: the right dimension is added AND the server
         // returns the correctly grouped result set -- catching a break anywhere in
         // pick -> event -> URL rewrite -> requery -> re-render, not just DOM width.
@@ -474,15 +509,15 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
             .poll(async () => (await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()),
                 { timeout: 15_000 })
             .toContain('Date');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(4);
+        await expect(page.locator('tr.jqgrow')).toHaveCount(5);
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
-        // and the four dates are DISTINCT -- i.e. the grid really grouped by date.
+        // and the dates are DISTINCT -- i.e. the grid really grouped by date.
         const rowText = await page.locator('tr.jqgrow').allInnerTexts();
         expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
         const dates = rowText.map((t) => (t.match(/\b(20\d{6})\b/) || [])[1]).filter(Boolean);
-        expect(dates).toHaveLength(4);
-        expect(new Set(dates).size).toBe(4);
+        expect(dates).toHaveLength(5);
+        expect(new Set(dates).size).toBe(5);
     });
 
     test('applying a filter constraint requeries and filters the grid result set', async ({ page }) => {

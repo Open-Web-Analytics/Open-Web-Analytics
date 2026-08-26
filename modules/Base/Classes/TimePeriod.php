@@ -55,18 +55,109 @@ class TimePeriod {
         return \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
     }
 
-    function setFromMap( $map ) {
+    /**
+     * Reduce a request map to just the keys this class reads, and guarantee
+     * every one of them is present.
+     *
+     * The filtering half of this was already here; the defaults were built and
+     * then thrown away, so a caller who omitted a key -- ?period=date_range with
+     * no dates, say -- reached a read of a key that was not there. That is a
+     * warning per read, and PHP warnings are failures under CI.
+     *
+     * An absent date reads as '' rather than false so it stays a string all the
+     * way to sscanf(). Both are empty(), so the branching below is unchanged.
+     */
+    private static function normalizeMap( $map ) {
 
-        // normalize map
-        $m = array(
-            'period' => false,
-            'startDate' => false,
-            'endDate' => false,
-            'startTime'  => false,
-            'endTime' => false
+        $keys = array(
+            'period'    => '',
+            'startDate' => '',
+            'endDate'   => '',
+            // Times are timestamps, not yyyymmdd strings, and they are handed
+            // straight to Date::set($ts, 'timestamp') -- so their empty value is
+            // null, which that signature accepts, and not ''.
+            'startTime' => null,
+            'endTime'   => null
         );
 
-        $map = array_intersect_key($map, $m);
+        return array_merge( $keys, array_intersect_key( (array) $map, $keys ) );
+    }
+
+    /**
+     * Why a request map does not describe a usable date range, or '' if it does.
+     *
+     * A range is both bounds or neither. One bound alone is not a range: an end
+     * date on its own resolved its missing start to today, so asking for
+     * "up to the 10th" produced a window running from today BACKWARDS to the
+     * 10th -- inverted, and silently so.
+     *
+     * Only asked when a range is what the request is actually for: an explicit
+     * period=date_range, or dates with no period at all. A named relative
+     * period wins over any dates sent with it, so partial dates alongside
+     * 'today' are ignored rather than refused.
+     *
+     * Equal bounds are legal and deliberate -- a single day is a range whose
+     * ends are equal, which is how ReportVisitorsRoster asks for one.
+     *
+     * Static and free of settings so both the web and REST paths can ask
+     * before building anything, and so it holds without a database.
+     *
+     * @param array $map request parameters
+     * @return string a user-facing reason, or '' when the map is usable
+     */
+    public static function getRangeError( $map ) {
+
+        $map    = self::normalizeMap( $map );
+        $period = trim( (string) $map['period'] );
+        $start  = trim( (string) $map['startDate'] );
+        $end    = trim( (string) $map['endDate'] );
+
+        $asksForRange = ( $period === 'date_range' )
+                     || ( $period === '' && ( $start !== '' || $end !== '' ) );
+
+        if ( ! $asksForRange ) {
+
+            return '';
+        }
+
+        if ( $start === '' && $end === '' ) {
+
+            return 'A date range needs a start date and an end date.';
+        }
+
+        if ( $start === '' ) {
+
+            return 'A date range needs a start date. An end date on its own does not describe a range.';
+        }
+
+        if ( $end === '' ) {
+
+            return 'A date range needs an end date. A start date on its own does not describe a range.';
+        }
+
+        // Both bounds are compared as yyyymmdd, where string order and
+        // chronological order agree -- but only for eight digits. Anything else
+        // would make the comparison below meaningless rather than false.
+        foreach ( array( 'start date' => $start, 'end date' => $end ) as $label => $value ) {
+
+            if ( ! preg_match( '/^\d{8}$/', $value ) ) {
+
+                return sprintf( 'The %s "%s" is not a date. Dates are yyyymmdd.',
+                    $label, htmlspecialchars( $value, ENT_QUOTES ) );
+            }
+        }
+
+        if ( $start > $end ) {
+
+            return sprintf( 'The start date (%s) is after the end date (%s).', $start, $end );
+        }
+
+        return '';
+    }
+
+    function setFromMap( $map ) {
+
+        $map = self::normalizeMap( $map );
 
 
         // set default period if necessary
@@ -105,13 +196,35 @@ class TimePeriod {
     }
 
     // checks to see if the period value passsed is valid.
+    /**
+     * Every period a request may name.
+     *
+     * One list, because there were two: this class accepted the picker's labels
+     * plus date_range, while the REST controller built its own from the labels
+     * alone. The same request was therefore valid over the web and rejected
+     * over the API -- `period=date_range` -- for no reason anyone chose.
+     *
+     * date_range belongs here and not in getPeriodLabels() because that list is
+     * the DROPDOWN: a custom range is not an entry in it, it is what the
+     * calendar produces.
+     *
+     * Naming it stays optional. Two dates and no period infer date_range (see
+     * setFromMap), which is the form the API has always taken and the one that
+     * should not need a redundant parameter to keep working.
+     *
+     * @return array<int, string>
+     */
+    function getValidPeriods() {
+
+        $valid = array_keys( $this->getPeriodLabels() );
+        $valid[] = 'date_range';
+
+        return $valid;
+    }
+
     function isValid( $value ) {
 
-        $valid_periods = $this->getPeriodLabels();
-        //add in date_range
-        $valid_periods[ 'date_range' ] = '';
-
-        return array_key_exists( $value, $valid_periods );
+        return in_array( $value, $this->getValidPeriods(), true );
     }
 
     function isDefaultPeriod() {
@@ -180,6 +293,9 @@ class TimePeriod {
     }
 
     function _setDates($map = array()) {
+
+        // set() reaches here without going through setFromMap, so normalize again.
+        $map = self::normalizeMap( $map );
 
         $time_now = \OWA\Core\Lib::time_now();
         $nowDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
@@ -280,10 +396,24 @@ class TimePeriod {
                 ($nowDate->get('day_of_week') * 3600 * 24);
                 break;
 
-            case "all_time":
-                $end = time();
-                $start = mktime(0, 0, 0, 1, 1, 1969);
-                break;
+            /*
+             * "all_time" is gone. It set the start to 1 January 1969 and the
+             * end to now, which is a full scan of every fact table on the
+             * installation -- across every partition, by construction, since
+             * the range cannot be pruned to any of them.
+             *
+             * It was already unreachable through the normal path: isValid() is
+             * built from the picker's labels plus date_range, so a request for
+             * it silently became the default reporting period. Removing the
+             * case makes that refusal honest instead of accidental, and stops
+             * set() -- which has no such guard -- from being able to ask for it
+             * directly.
+             *
+             * The sub-hour periods (last_hour, last_half_hour, last_24_hours)
+             * remain implemented and unoffered. They need bound pruning that
+             * works at finer than day granularity before they would be
+             * anything but expensive, and nothing needs them today.
+             */
 
             case "last_thirty_days":
                 $end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);

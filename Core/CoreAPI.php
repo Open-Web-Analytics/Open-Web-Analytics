@@ -603,6 +603,32 @@ class CoreAPI {
             \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
         endif;
 
+        /*
+         * A class that was never called owa_* has no legacy name to bridge, so
+         * the compat map has no entry for it and Lib::factory() would fall
+         * through to looking for a pre-PSR-4 file that does not exist.
+         *
+         * Tried AFTER the map, never before it: owa_reportController maps to
+         * OWA\Core\ReportController, while this convention computes
+         * OWA\Module\Base\Controller\Report -- the report dispatcher, a
+         * different class entirely. Map first means nothing that resolves today
+         * resolves anywhere new; this only catches what currently cannot
+         * resolve at all.
+         */
+        if ( \OWA\Core\Lib::resolveNamespacedClass( $class ) === null ) {
+
+            $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+                  . '\\' . $class_suffix . '\\' . ucfirst( $file );
+
+            if ( $class_suffix && class_exists( $psr4 ) ) {
+
+                $obj = new $psr4( $params );
+                $obj->module = $module;
+
+                return $obj;
+            }
+        }
+
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
 
         //if (isset($obj->module)):
@@ -676,8 +702,19 @@ class CoreAPI {
         // require. The legacy name built below ('owa_base_Update011_update')
         // has not existed since the PSR-4 relocation, so resolving it first is
         // what makes updates loadable at all.
+        // Callers name the update two different ways. Module::getUpdates()
+        // passes the PSR-4 class basename it just read off disk ('Update017'),
+        // while the updatesApply CLI's apply=/rollback= arguments are written
+        // by a human as 'base.17' and arrive here as a bare sequence. Only the
+        // first resolved, so targeted apply and rollback both fell through to
+        // the legacy branch and died looking for owa_base_17_update.php -- a
+        // filename that has not existed since the PSR-4 relocation.
+        $basename = preg_match( '/^\d+$/', (string) $filename )
+            ? sprintf( 'Update%03d', (int) $filename )
+            : $filename;
+
         $namespaced = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
-                    . '\\Update\\' . $filename;
+                    . '\\Update\\' . $basename;
 
         if ( class_exists( $namespaced ) ) {
 
@@ -927,6 +964,51 @@ class CoreAPI {
      * @param string $sortby the array value to sort the navigation array by
      * @return array|false
      */
+    /**
+     * The report registry, built on first use.
+     *
+     * Lazy on purpose, exactly as getNavigation() is: Module::__construct()
+     * runs on every request including every tracker beacon, so registration
+     * must not live there. The guard makes it idempotent -- a request that
+     * renders two reports registers once.
+     *
+     * @return array<string, array> definitions keyed by report id
+     */
+    public static function getReportRegistry() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ( $service->modules as $module ) {
+
+            if ( empty( $module->reports_registered ) ) {
+
+                $module->registerReports();
+                $module->reports_registered = true;
+            }
+        }
+
+        $map = $service->getMap( 'reports' );
+
+        return is_array( $map ) ? $map : array();
+    }
+
+    /**
+     * One report's definition, or false.
+     *
+     * @param  string $id
+     * @return array|false
+     */
+    public static function getReportDefinition( $id ) {
+
+        if ( ! $id ) {
+            return false;
+        }
+
+        $registry = \OWA\Core\CoreAPI::getReportRegistry();
+
+        return $registry[ $id ] ?? false;
+    }
+
     public static function getNavigation($view, $nav_name, $sortby ='order') {
 
         $links = array();

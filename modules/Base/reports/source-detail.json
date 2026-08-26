@@ -1,0 +1,27 @@
+{
+    "title": "Source Detail: ",
+    "titleSuffix": "{source}",
+    "params": {
+        "source": {}
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this source."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "source",
+                "fromParam": "source"
+            }
+        ]
+    }
+}

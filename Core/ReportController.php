@@ -62,6 +62,90 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
+     * An invalid period is refused rather than quietly replaced.
+     *
+     * It used to fall back to the default reporting period and say so only in a
+     * debug line, which is off unless debugging is on. That silence is not
+     * hypothetical harm: the visitor roster linked to `period=all_time` for
+     * years, all_time was never an accepted value, and every one of those links
+     * served seven days while claiming to show a visitor's whole history.
+     * Nobody could see it.
+     *
+     * The picker constrains the choice, so an invalid period means the URL was
+     * edited by hand -- exactly the case where an answer is better than a
+     * guess. This is also what the REST API already does, against the same
+     * list, so the two paths now agree on what a period may be AND on what
+     * happens when it is not one.
+     *
+     * setFromMap() keeps its fallback. It is the backstop for callers that do
+     * not come through a controller, and defence in depth is worth more than
+     * the tidiness of removing it.
+     */
+    function validate() {
+
+        /*
+         * A range is both bounds or neither, and ordered. One bound alone is
+         * not a range: an end date on its own resolved its missing start to
+         * today, so "up to the 10th" ran from today BACKWARDS to the 10th.
+         *
+         * Constructed rather than named, because addValidation() resolves a
+         * name through the legacy owa_*Validation compat map, and this class
+         * has no legacy name to bridge. setValidation() takes the object.
+         */
+        $range = new \OWA\Core\Validation\DateRange();
+
+        $range->setValues( array(
+            'period'    => $this->getParam('period'),
+            'startDate' => $this->getParam('startDate'),
+            'endDate'   => $this->getParam('endDate'),
+        ) );
+
+        $this->setValidation( 'dateRange', $range );
+
+        $period = $this->getParam('period');
+
+        if ( $period ) {
+
+            $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+
+            $this->addValidation(
+                'period',
+                $period,
+                'inArray',
+                array(
+                    'possible_values' => $timePeriod->getValidPeriods(),
+                    'stopOnError'     => true,
+                    'errorMsg'        => sprintf(
+                        '"%s" is not a reporting period. Choose one from the date picker.',
+                        htmlspecialchars( (string) $period, ENT_QUOTES ) ),
+                )
+            );
+        }
+    }
+
+    /**
+     * Where a failed validation lands.
+     *
+     * Core\Controller has no errorAction() of its own -- doAction() calls it
+     * when validations fail, so a controller that validates without defining
+     * one fatals instead of refusing. Defining it here is part of adding the
+     * validation above, not an extra.
+     */
+    function errorAction() {
+
+        if ( ! headers_sent() ) {
+            http_response_code( 400 );
+        }
+
+        $this->set( 'error_msg', 'The report could not be shown: '
+            . implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+
+        $this->setView( 'base.error' );
+
+        return $this->data;
+    }
+
+    /**
      * Pre Action
      * Current user is fully authenticated and loaded by this point
      *
@@ -83,70 +167,56 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setView('base.report');
         $this->setViewMethod('delegate');
 
-        $this->dom_id = str_replace('.', '-', (string) $this->getParam('do'));
+        /*
+         * Derived from the report's identity, not from the action that reached
+         * it.
+         *
+         * Every report used to have its own action, so hyphenating `do` gave
+         * each one a distinct container id -- base-reportPages,
+         * base-reportEntryPages. Reaching them all through base.report collapses
+         * that to the single value "base-report" for every report on the
+         * installation.
+         *
+         * Nothing keys persistence off dom_id today, so nothing is broken by the
+         * collision right now. It is still worth not introducing: the id is what
+         * OWA.report binds to and what anything remembering per-report UI state
+         * would naturally key on, and a collision that costs nothing today is
+         * the kind that costs a confusing afternoon later.
+         *
+         * The direct route is unchanged -- there is no reportId on it -- so this
+         * adds a distinct id for the new route rather than altering the old one.
+         */
+        $reportId = $this->getParam('reportId');
+
+        $this->dom_id = $reportId
+            ? 'report-' . str_replace( array( '.', '_' ), '-', (string) $reportId )
+            : str_replace('.', '-', (string) $this->getParam('do'));
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
         $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
         
-        // setup tabs
+        /*
+         * The metric sets this site offers -- site usage, e-commerce if the
+         * site has it, one per active goal group.
+         *
+         * Derived by Core\MetricSets rather than built here: a report shows one
+         * dimension measured several ways, and which ways exist depends on the
+         * site, not on the report. The interface draws them as tabs today,
+         * which is why this used to be called $tabs; that is a presentation
+         * choice and is expected to change.
+         */
         $siteId = $this->get('siteId');
-        $tabs = array();
 
-        if ( $siteId ) {
-            $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $metricSets = \OWA\Core\MetricSets::forSite( $siteId );
 
-            $site_usage = array(
-                    'tab_label'        => 'Site Usage',
-                    'metrics'        => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-                    'sort'            => 'visits-',
-                    'trendchartmetric'    =>    'visits'
-            );
+        $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
 
-            $tabs['site_usage'] = $site_usage;
+        if ( $siteId && ! \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
 
-            // ecommerce tab
-            if ( \OWA\Core\CoreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
-
-                $ecommerce = array(
-                        'tab_label'        => 'e-commerce',
-                        'metrics'        => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-                        'sort'            => 'transactionRevenue-',
-                        'trendchartmetric'    =>    'transactions'
-                );
-
-                $tabs['ecommerce'] = $ecommerce;
-            }
-            $goal_groups = $gm->getActiveGoalGroups();
-
-            if ( $goal_groups ) {
-                foreach ($goal_groups as $group) {
-                    $goal_metrics = 'visits';
-                    $active_goals = $gm->getActiveGoalsByGroup($group);
-
-                    if ( $active_goals ) {
-
-                        foreach ($active_goals as $goal) {
-                            $goal_metrics .= sprintf(',goal%sCompletions', $goal);
-                        }
-                    }
-
-                    $goal_metrics .= ',goalValueAll';
-                    $goal_group = array(
-                            'tab_label'        =>    $gm->getGoalGroupLabel($group),
-                            'metrics'        =>    $goal_metrics,
-                            'sort'            => 'goalValueAll-',
-                            'trendchartmetric'    =>    'visits'
-                    );
-                    $name = 'goal_group_'.$group;
-                    $tabs[$name] = $goal_group;
-                }
-            }
-
-            if ( ! \OWA\Core\CoreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
-
-                unset($nav['Ecommerce']);
-            }
+            unset( $nav['Ecommerce'] );
         }
+
+        $this->set('metricSets', $metricSets);
 
         $this->set('tabs', $tabs);
         $this->set('tabs_json', json_encode($tabs));

@@ -1,0 +1,29 @@
+{
+    "title": "Ad: ",
+    "titleSuffix": "{ad}",
+    "params": {
+        "ad": {
+            "lowercase": true
+        }
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from this ad."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "ad",
+                "fromParam": "ad"
+            }
+        ]
+    }
+}

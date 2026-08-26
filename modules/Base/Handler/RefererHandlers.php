@@ -75,12 +75,6 @@ class RefererHandlers extends \OWA\Core\Observer {
             // set title. this will be updated later by the crawler.
             $r->set('page_title', '(not set)');
 
-            // Crawl and analyze refering page
-            if ( $medium != 'organic-search' || $medium != 'social-network' ) {
-	            
-                $r->crawlReferer();
-            }
-
             // Persist to database
             $ret = $r->create();
 

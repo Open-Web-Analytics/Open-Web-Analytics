@@ -1,0 +1,28 @@
+{
+    "title": "Attribution History",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all mediums/source."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "latestAttributions",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "formatters": {
+                "latestAttributions": "attributionList"
+            }
+        }
+    ]
+}

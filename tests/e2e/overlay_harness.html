@@ -102,7 +102,11 @@
                             url: String(url),
                             status: this.status,
                             length: (this.responseText || '').length,
-                            body: (this.responseText || '').slice(0, 400)
+                            // Wide enough to see the first rows of a result
+                            // set, not just the envelope preamble: a spec
+                            // checking that the overlay got DATA has to be able
+                            // to look past the metadata.
+                            body: (this.responseText || '').slice(0, 4000)
                         });
                     });
                     return open.apply(this, arguments);

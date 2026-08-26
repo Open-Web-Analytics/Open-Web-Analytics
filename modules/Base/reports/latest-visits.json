@@ -1,0 +1,17 @@
+{
+    "title": "Latest Visits",
+    "metrics": "visits,pagesPerVisit,visitDuration",
+    "widgets": [
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "title": "Latest Visits Profile",
+            "query": {
+                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

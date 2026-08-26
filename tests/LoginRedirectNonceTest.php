@@ -88,6 +88,12 @@ final class LoginRedirectNonceTest extends TestCase
      * The behaviour keys off is_nonce_required, so that flag has to keep meaning
      * "state-changing write". Every controller setting it should be one, and no
      * report or view controller should.
+     *
+     * The list is write VERBS on purpose. `Read` is deliberately absent: it is
+     * the word that signals read-only, and admitting it would blunt the check
+     * this whole test exists to make. A controller that writes a read FLAG has
+     * to say so in its name -- NotificationMarkReadRest, not
+     * NotificationReadRest -- which is what `Mark` covers.
      */
     public function testOnlyWriteControllersRequireANonce()
     {
@@ -103,7 +109,7 @@ final class LoginRedirectNonceTest extends TestCase
 
         foreach ($withNonce as $name) {
             $this->assertMatchesRegularExpression(
-                '/(Add|Edit|Delete|Update|Apply|Activate|Deactivate|Install)/',
+                '/(Add|Edit|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install|Mark)/',
                 $name,
                 sprintf(
                     '%s requires a nonce but does not look like a write. If it is read-only '

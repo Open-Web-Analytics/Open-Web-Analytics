@@ -1,0 +1,34 @@
+{
+    "title": "Host Names",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all hosts."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "hostName",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "hostName",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "host-detail",
+                    "hostName": "%s"
+                },
+                "valueColumns": "hostName"
+            }
+        }
+    ]
+}

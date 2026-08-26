@@ -1,0 +1,32 @@
+{
+    "title": "Transactions Overview",
+    "metrics": "visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "transactions",
+            "headline": "There were {transactions.formatted} {transactions|transaction|transactions} generating {transactionRevenue.formatted}."
+        },
+        {
+            "type": "grid",
+            "id": "transactions",
+            "container": "transactions",
+            "query": {
+                "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
+                "dimensions": "timestamp,transactionId",
+                "sort": "timestamp-",
+                "resultsPerPage": 25
+            },
+            "excludeColumns": [
+                "timestamp"
+            ],
+            "title": "Transaction Roster"
+        }
+    ]
+}

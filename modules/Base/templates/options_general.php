@@ -60,18 +60,6 @@
 
 
 
-    <div class="setting" id="fetch_refering_page_info">
-        <div class="title">Fetch Referring Web Page Info</div>
-        <div class="description">Controls whether OWA should crawl the web pages that refer visitors to your web site and extract descriptive meta-data that will be used in reporting.</div>
-        <div class="field">
-            <select name="<?php echo $view->getNs();?>config[base.fetch_refering_page_info]">
-                <option value="0" <?php if ($view->config['fetch_refering_page_info'] == false):?>SELECTED<?php endif;?>>
-        Off</option>
-                <option value="1" <?php if ($view->config['fetch_refering_page_info'] == true):?>SELECTED<?php endif;?>>
-        On</option>
-            </select>
-        </div>
-    </div>
 
     <div class="setting" id="url_params">
         <div class="title">URL Parameters</div>

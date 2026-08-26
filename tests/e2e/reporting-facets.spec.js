@@ -93,7 +93,15 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
         const res = await request.fetch(url, { method: 'GET' });
         const body = await res.text();
 
-        expect(res.status(), `report request failed: ${body.slice(0, 200)}`).toBe(201);
+        /*
+         * 422 is a legitimate answer, not a transport failure: a request the
+         * engine refuses to run -- an unknown constraint name, a constraint
+         * whose value went missing -- is reported as one rather than answered
+         * with numbers computed without the filter. The tests below assert on
+         * which of the two came back.
+         */
+        expect([201, 422], `report request failed: ${body.slice(0, 200)}`)
+            .toContain(res.status());
 
         const json = JSON.parse(body);
         expect(json.error, `API returned errors: ${JSON.stringify(json.error)}`).toEqual([]);
@@ -160,12 +168,22 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
             owa_constraints: 'source==',
         });
 
-        const value  = Number(data.aggregates.visits.value);
         const errors = JSON.stringify(data.errors || []);
 
-        // Either outcome is defensible -- refuse the query, or answer it and say
-        // the constraint was rejected. What must NOT happen is the unconstrained
-        // total coming back with nothing to distinguish it from a filtered one.
+        /*
+         * The engine now takes the first of the two outcomes this test always
+         * allowed: it REFUSES the query rather than running it unfiltered. So
+         * there is no aggregate to read -- reading one unguarded is what this
+         * assertion used to do, and it threw once the refusal landed.
+         */
+        const value = data.aggregates && data.aggregates.visits
+            ? Number(data.aggregates.visits.value)
+            : null;
+
+        expect(/constraint/i.test(errors),
+            `an empty constraint value produced no error saying so. errors=${errors}`
+        ).toBe(true);
+
         const silent = value === fx.expected.total_visits && !/constraint/i.test(errors);
 
         expect(silent,
@@ -173,6 +191,10 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
             + `error to say so. A lost request parameter must not be indistinguishable from `
             + `"no filter requested". errors=${errors}`
         ).toBe(false);
+
+        expect(value,
+            `a refused query must not answer with numbers -- got ${value}`
+        ).not.toBe(fx.expected.total_visits);
     });
 
     /**

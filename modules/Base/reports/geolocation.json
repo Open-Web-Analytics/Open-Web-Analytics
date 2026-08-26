@@ -1,0 +1,34 @@
+{
+    "title": "Visitor Geolocation",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits from all locations."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "country,countryCode",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "country",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "country-detail",
+                    "country": "%s"
+                },
+                "valueColumns": "country"
+            }
+        }
+    ]
+}

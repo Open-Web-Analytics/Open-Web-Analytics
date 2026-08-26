@@ -32,7 +32,24 @@ const E2E_USER_ID     = 'owa-e2e-reporter@example.test';
 const E2E_USER_PASS   = 'e2e-Reporter-Pass-1!';   // local throwaway fixture creds
 const E2E_USER_ROLE   = 'analyst';                // has view_reports + view_site_list
 const E2E_USER_NAME   = 'OWA E2E Reporter';
-const E2E_PAGEVIEWS   = 8;                         // number of synthetic pageviews
+const E2E_PAGEVIEWS   = 11;                        // number of synthetic pageviews
+
+/*
+ * The referring URLs the four seeded visits arrive from.
+ *
+ * session_referer is the ONE input the attribution chain derives from --
+ * deriveMedium, deriveSource and extractSearchTerm all read it, and the
+ * referer/search-term dimension ids are minted off those. Two search engines
+ * and one ordinary referral give organic-search 2, referral 1, direct 1.
+ *
+ * Held here rather than only inside $visits so teardown can delete exactly the
+ * referer rows this fixture created.
+ */
+const E2E_REFERERS = [
+    'https://www.google.com/search?q=open+web+analytics',
+    'https://news.ycombinator.com/item?id=e2e',
+    'https://www.bing.com/search?q=owa+analytics',
+];
 
 // E-commerce fixture. enableEcommerceReporting is a PER-SITE setting, so the
 // seeder turns it on for the fixture site -- the global base setting of the same
@@ -49,6 +66,44 @@ const E2E_TXNS = [
     ['order_id' => 'e2e-order-1002', 'day_ago' => 2, 'revenue' => 20.40, 'tax' => 1.60, 'shipping' => 4.00, 'items' => [
         ['sku' => 'E2E-SKU-1', 'name' => 'E2E Widget',  'category' => 'Widgets', 'price' => 10.20, 'qty' => 2],
     ]],
+];
+
+// Goal + funnel fixture. Goals are a PER-SITE setting, and until this existed no
+// install on the box had a single funnel step -- so nothing exercised
+// ReportGoalFunnel's step loop, and a rename that broke its final bar shipped
+// unnoticed.
+//
+// The paths are ones the pageview fixture already visits, so every stage has
+// real visitors: '/' and '/pricing' appear in two pageviews each, and '/docs'
+// -- the goal's own destination, which the report appends as the last bar -- in
+// two more. A funnel whose stages are all zero would render and prove nothing.
+// Notifications the bell can show and the specs can dismiss.
+//
+// Seeded rather than leaning on the real GitHub releases, because dismissing is
+// PERMANENT and per user: specs that dismissed real notifications would pass
+// once and then find nothing left to dismiss. These are removed at teardown,
+// dismissals and all.
+const E2E_NOTIFICATION_SOURCE = 'e2e_fixture';
+//
+// One per MUTATING spec, plus spares. Reading and dismissing both persist, so
+// two specs sharing a row means whichever runs second finds it already acted
+// on -- and the failure looks like a bug in the feature rather than in the
+// fixtures.
+const E2E_NOTIFICATIONS = [
+    ['source_key' => 'e2e-n1', 'title' => 'E2E Notification One',   'body' => 'first',  'url' => 'https://example.test/n1'],
+    ['source_key' => 'e2e-n2', 'title' => 'E2E Notification Two',   'body' => 'second', 'url' => 'https://example.test/n2'],
+    ['source_key' => 'e2e-n3', 'title' => 'E2E Notification Three', 'body' => 'third',  'url' => 'https://example.test/n3'],
+    ['source_key' => 'e2e-n4', 'title' => 'E2E Notification Four',  'body' => 'fourth', 'url' => 'https://example.test/n4'],
+    ['source_key' => 'e2e-n5', 'title' => 'E2E Notification Five',  'body' => 'fifth',  'url' => 'https://example.test/n5'],
+];
+
+const E2E_GOAL_NUMBER = 1;
+const E2E_GOAL_NAME   = 'E2E Signup Funnel';
+const E2E_GOAL_GROUP  = '1';
+const E2E_GOAL_URL    = '/docs';
+const E2E_GOAL_STEPS  = [
+    1 => ['name' => 'E2E Step Home',    'path' => '/',        'is_required' => true],
+    2 => ['name' => 'E2E Step Pricing', 'path' => '/pricing', 'is_required' => true],
 ];
 
 // A second fixture user with the ADMIN role, so the admin-actions e2e suite
@@ -202,8 +257,29 @@ function seed(): array
         $pw->update();
     }
 
-    // 3. Pageview data so a report renders a chart + grid. Only seed if this
-    //    site has no requests yet, so re-running doesn't pile up rows.
+    /*
+     * 3. Pageview data so a report renders a chart + grid. Only top up to
+     *    E2E_PAGEVIEWS, so re-running doesn't pile up rows.
+     *
+     *    NOTE THE TRAP: this tops up, it never REWRITES. Once the site has its
+     *    full complement, seeding is a no-op and every existing row survives
+     *    verbatim -- including rows whose shape came from a since-fixed
+     *    derivation. That is not hypothetical: after is_repeat_visitor's NULL
+     *    bug was fixed, re-seeding left the two pre-fix NULL session rows in
+     *    place, and the fixture looked like it was still producing them. It was
+     *    not producing anything at all.
+     *
+     *    So: after changing anything that derives a stored property, run
+     *    `teardown` before `seed`. A seed alone proves nothing about the new
+     *    code. 'pageviews_seeded' => 0 in the output is the tell.
+     *
+     *    A PARTIAL top-up is worse than either: seedPageviews() always walks
+     *    $visits from the start and stops at $n, so topping up 2 of 8 replays
+     *    visit 0 with a fresh session id and leaves the fixture with visits the
+     *    specs don't expect. Hence the flag below -- an incomplete count means
+     *    a previous run died midway, and the fixture should be torn down, not
+     *    patched up.
+     */
     $existing = countSiteRequests(md5(E2E_SITE_DOMAIN));
     $seeded = 0;
     if ($existing < E2E_PAGEVIEWS) {
@@ -212,14 +288,282 @@ function seed(): array
 
     $out['pageviews_seeded']  = $seeded;
     $out['pageviews_total']   = countSiteRequests(md5(E2E_SITE_DOMAIN));
+
+    // Loud enough to notice when a "seed" changed nothing, or resumed a partial
+    // one. Both mean the rows on disk are not what the current code writes.
+    if ($existing > 0) {
+        $out['pageviews_note'] = $existing >= E2E_PAGEVIEWS
+            ? 'kept ' . $existing . ' existing pageview(s); nothing rewritten -- run teardown first '
+              . 'if you changed a derived property'
+            : 'resumed a PARTIAL fixture (' . $existing . ' existing); tear down and re-seed for a '
+              . 'deterministic set';
+    }
     // 4. E-commerce. The setting is per-site; enabling it is what makes the
     //    e-commerce tab appear on the session-based reports and lets the
     //    commerce reports return rows.
     owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting', true);
     $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting');
     $out['transactions_seeded'] = seedTransactions();
+
+    // 5. Notifications for the header bell.
+    $out['notifications_seeded'] = seedNotifications();
+
+    // 6. A goal with a funnel, so the funnel report has stages to draw and the
+    //    goal metric set has a group to appear as.
+    $out['goal_seeded'] = seedGoal();
+
+    // 7. DOM recordings, so the domstreams report has recordings to list --
+    //    including one stored as several chunks, which is the case its
+    //    aggregates exist for.
+    $out['domstreams_seeded'] = seedDomstreams();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * DOM recordings for the domstreams report.
+ *
+ * WHY THE FIRST ONE IS THREE ROWS
+ *
+ * Because that is what a real recording is. The tracker flushes its event queue
+ * on a timer, so one recording is stored as however many rows it took, all
+ * sharing a domstream_guid, and each carrying the CUMULATIVE elapsed seconds at
+ * the moment it was flushed. A fixture of one row per recording would report
+ * the same numbers whether the report grouped and aggregated or not.
+ *
+ * The three chunks carry 12, 40 and 95 seconds and are written out of order, so
+ * "the last one" and "the largest" are different answers and neither is "the
+ * first row". Together they hold 600 bytes of events.
+ *
+ * WHY EACH IS ON A DIFFERENT VISIT
+ *
+ * The segment filter selects VISITS, so the two recordings have to belong to
+ * visits that differ in something the filter can name. They are attached to
+ * sessions with different mediums, and both mediums are reported back in the
+ * fixture info -- a spec that hardcoded "organic-search" would be asserting
+ * against the referer list rather than against what was seeded.
+ *
+ * @return array what was seeded, for the fixture info
+ */
+function seedDomstreams(): array
+{
+    $site_id = md5(E2E_SITE_DOMAIN);
+    $db      = owa_coreAPI::dbSingleton();
+    $db->connect();
+
+    /*
+     * The visits the two recordings are attached to, chosen BY MEDIUM rather
+     * than by whatever the optimiser returns first. The medium is what the
+     * fixture then promises the specs, so it has to be the thing selected on --
+     * picking a session and reading its medium back would make the fixture
+     * describe the query plan.
+     *
+     * Both mediums are derived by the attribution chain from the referring URLs
+     * in E2E_REFERERS, so they are the real pipeline's output.
+     */
+    $recordings = [
+        ['medium' => 'organic-search', 'page' => '/pricing', 'chunks' => [12 => 100, 95 => 350, 40 => 150]],
+        ['medium' => 'referral',       'page' => '/',        'chunks' => [8  => 90]],
+    ];
+
+    $seeded = 0;
+    $out    = [];
+
+    foreach ($recordings as $i => $recording) {
+
+        $found = $db->get_results(
+            "SELECT id, visitor_id, medium, yyyymmdd FROM owa_session"
+            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
+            . " AND medium = '" . $db->prepare($recording['medium']) . "' LIMIT 1"
+        );
+
+        if (!is_array($found) || !$found) {
+            $out[] = ['medium' => $recording['medium'], 'skipped' => 'no visit with this medium'];
+            continue;
+        }
+
+        $session = (array) $found[0];
+        $guid    = numericGuid();
+
+        // Idempotent the way the rest of the seeder is: a recording already
+        // present for this page and visit is left alone rather than doubled.
+        $existing = $db->get_results(
+            "SELECT domstream_guid FROM owa_domstream"
+            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
+            . " AND session_id = " . (int) $session['id']
+            . " AND page_url = '" . $db->prepare(E2E_SITE_DOMAIN . $recording['page']) . "' LIMIT 1"
+        );
+
+        if (is_array($existing) && $existing) {
+            $out[] = [
+                'medium'   => $session['medium'],
+                'page'     => $recording['page'],
+                'duration' => max(array_keys($recording['chunks'])),
+                'segments' => count($recording['chunks']),
+            ];
+            continue;
+        }
+
+        // Midday on the visit's own day, matching seedPageviews() so the
+        // recording lands inside the same reporting window as everything else.
+        $ts = mktime(12, 0, 0,
+            (int) substr((string) $session['yyyymmdd'], 4, 2),
+            (int) substr((string) $session['yyyymmdd'], 6, 2),
+            (int) substr((string) $session['yyyymmdd'], 0, 4));
+
+        $offset = 0;
+
+        foreach ($recording['chunks'] as $duration => $bytes) {
+
+            $ds = owa_coreAPI::entityFactory('base.domstream');
+
+            $ds->set('id', numericGuid());
+            $ds->set('site_id', $site_id);
+            $ds->set('domstream_guid', $guid);
+            $ds->set('session_id', $session['id']);
+            $ds->set('visitor_id', $session['visitor_id']);
+            $ds->set('page_url', E2E_SITE_DOMAIN . $recording['page']);
+            $ds->set('page_width', 1280);
+            $ds->set('page_height', 800);
+            $ds->set('duration', $duration);
+            $ds->set('events', str_repeat('e', $bytes));
+            $ds->set('timestamp', $ts + $offset);
+            $ds->set('yyyymmdd', (int) $session['yyyymmdd']);
+            $ds->set('year', (int) substr((string) $session['yyyymmdd'], 0, 4));
+            $ds->set('month', (int) substr((string) $session['yyyymmdd'], 4, 2));
+            $ds->set('day', (int) substr((string) $session['yyyymmdd'], 6, 2));
+            $ds->create();
+
+            $offset += 30;
+            $seeded++;
+        }
+
+        $out[] = [
+            'medium'   => $session['medium'],
+            'page'     => $recording['page'],
+            'duration' => max(array_keys($recording['chunks'])),
+            'segments' => count($recording['chunks']),
+            'bytes'    => array_sum($recording['chunks']),
+        ];
+    }
+
+    return ['seeded' => $seeded, 'recordings' => $out];
+}
+
+/**
+ * One active url_destination goal with a two-step funnel.
+ *
+ * Shaped the way GoalManager reads it: keyed by goal number, `goal_status`
+ * active so it reaches activeGoals, and `goal_group` set so the group becomes a
+ * metric set. Steps carry `path` -- the key every consumer reads since the
+ * rename -- and `is_required` as a real boolean, because the funnel report
+ * tests it with ===.
+ */
+/**
+ * Global notifications with a fixture source of their own.
+ *
+ * Written straight through NotificationManager so the seeder exercises the same
+ * path the fetch job does -- including the watermark, which is why they carry
+ * ascending timestamps rather than all sharing one.
+ */
+function seedNotifications(): array
+{
+    $items = [];
+    $i     = 0;
+
+    foreach (E2E_NOTIFICATIONS as $n) {
+        $items[] = $n + ['published_at' => time() - (86400 * (count(E2E_NOTIFICATIONS) - $i))];
+        $i++;
+    }
+
+    // The watermark refuses anything older than what a source already holds, so
+    // a re-seed after a partial teardown would silently store nothing. Clear
+    // first and the seeder is idempotent.
+    unseedNotifications();
+
+    /*
+     * One at a time, oldest first.
+     *
+     * record() caps a source's FIRST write at INITIAL_LIMIT and then refuses
+     * anything older than what it already holds -- correct for a feed, and it
+     * would silently give the specs 3 of these 5. Adding them one by one, each
+     * newer than the last, means every one clears the watermark and the seeder
+     * still goes through exactly the path the fetch job uses.
+     */
+    $created = 0;
+
+    foreach ($items as $item) {
+        $created += \OWA\Module\Base\Classes\NotificationManager::record(
+            [$item], E2E_NOTIFICATION_SOURCE, '',
+            \OWA\Module\Base\Classes\NotificationManager::TYPE_RELEASE);
+    }
+
+    return ['created' => $created, 'source' => E2E_NOTIFICATION_SOURCE];
+}
+
+/** Remove the fixture notifications and every per-user state row pointing at them. */
+function unseedNotifications(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_notification');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['source'] ?? '') !== E2E_NOTIFICATION_SOURCE) {
+            continue;
+        }
+
+        owa_coreAPI::entityFactory('base.notification')->delete($row['id']);
+
+        $d = owa_coreAPI::dbSingleton();
+        $d->deleteFrom('owa_notification_state');
+        $d->where('notification_id', $row['id']);
+        $d->executeQuery();
+
+        $removed++;
+    }
+
+    return $removed;
+}
+
+function seedGoal(): array
+{
+    $steps = [];
+
+    foreach (E2E_GOAL_STEPS as $n => $step) {
+        $steps[$n] = $step + ['step_number' => $n];
+    }
+
+    $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+
+    $goals[E2E_GOAL_NUMBER] = [
+        'goal_number' => E2E_GOAL_NUMBER,
+        'goal_name'   => E2E_GOAL_NAME,
+        'goal_status' => 'active',
+        'goal_group'  => E2E_GOAL_GROUP,
+        'goal_type'   => 'url_destination',
+        'details'     => [
+            'match_type'   => 'exact',
+            'goal_url'     => E2E_GOAL_URL,
+            'funnel_steps' => $steps,
+        ],
+    ];
+
+    owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+
+    $stored = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+    $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
+
+    return [
+        'goal_number' => E2E_GOAL_NUMBER,
+        'steps'       => count($back),
+        'paths'       => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
+        'goal_url'    => E2E_GOAL_URL,
+    ];
 }
 
 function teardown(): array
@@ -231,7 +575,7 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact',
+    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
@@ -242,6 +586,52 @@ function teardown(): array
         } catch (\Throwable $e) {
             $removed[$table] = 'skip: ' . $e->getMessage();
         }
+    }
+
+    /*
+     * The referer rows this fixture mints, which the loop above does not reach.
+     *
+     * Dimension rows are content-hashed and shared, so as a rule they are left
+     * alone. These are the exception: a referer row carries a page_title, the
+     * seeded referer URLs are unique to this fixture, and RefererHandlers
+     * REUSES an existing row rather than rewriting it. So a title written by an
+     * earlier run -- a real one, if that box had crawling on -- survives into
+     * the next and the fixture stops being deterministic. Deleting only the
+     * fixture's own URLs cannot touch anyone else's data.
+     */
+    foreach (E2E_REFERERS as $url) {
+        try {
+            $db = owa_coreAPI::dbSingleton();
+            $db->deleteFrom('owa_referer');
+            $db->where('id', \OWA\Core\Lib::setStringGuid($url));
+            $db->executeQuery();
+        } catch (\Throwable $e) {}
+    }
+    $removed['owa_referer'] = 'fixture rows cleared';
+
+    $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
+
+    /*
+     * The fixture goal. Goals are a per-site SETTING, not rows, so the table
+     * loop above cannot reach it -- and a goal left behind keeps converting
+     * against real traffic and keeps its group showing as a metric-set tab on
+     * every tabbed report.
+     *
+     * Only this goal number is removed: an install may have its own goals in
+     * other slots, and clearing the setting wholesale would take them too.
+     */
+    try {
+        $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+
+        if (array_key_exists(E2E_GOAL_NUMBER, $goals)) {
+            unset($goals[E2E_GOAL_NUMBER]);
+            owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+            $removed['goal'] = 'fixture goal removed';
+        } else {
+            $removed['goal'] = 'none';
+        }
+    } catch (\Throwable $e) {
+        $removed['goal'] = 'skip: ' . $e->getMessage();
     }
 
     // Remove the site_user grant (keyed by internal ids), then the user & site.
@@ -453,14 +843,53 @@ function seedPageviews(int $n): int
     // session (one day) of two pageviews; the two visits per visitor land on
     // different days so the trend line has multiple non-zero points. Every page
     // ('/', '/pricing', '/docs', '/about') appears in exactly two pageviews.
+    /*
+     * Attribution, so the Traffic reports have rows to draw.
+     *
+     * Without it every session was medium='direct' and Traffic's pie and three
+     * grids all returned nothing.
+     *
+     * Only the referring URL is seeded. `session_referer` is the single input
+     * the whole chain derives from: deriveMedium() reads it for the medium,
+     * deriveSource() for the source, extractSearchTerm() for the terms, and
+     * generateDimensionId() mints referer_id and referring_search_term_id off
+     * those. Setting medium or source here instead would state the answers and
+     * skip the code that produces them.
+     *
+     * NOT the same as the HTTP_REFERER below, which nothing derives from.
+     *
+     * Sent on EVERY request of the visit, as the tracker does: the session
+     * handler's new-session branch does not copy medium onto the session, so
+     * attribution reaches it through the update branch a later request takes.
+     * A single-request visit would stay medium='direct'.
+     *
+     * Spread so each medium has a distinct count: organic-search 2,
+     * referral 1, direct 1.
+     */
     $visits = [
-        ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing']],
-        ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about']],
+        ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing'],
+         'referer' => E2E_REFERERS[0]],
+        ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about'],
+         'referer' => E2E_REFERERS[1]],
         ['day_ago' => 9,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing']],
-        ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about']],
+        /*
+         * One visit that goes THROUGH the funnel, in order.
+         *
+         * The goal funnel counts people who reached each step after the one
+         * before it, so a fixture where nobody walks '/' -> '/pricing' ->
+         * '/docs' in that order has a funnel that can only ever end in zero --
+         * and a spec written against it can only assert that the report renders,
+         * never that it counts. Visitor 0 already does the first two steps; this
+         * visit carries them to the goal.
+         */
+        ['day_ago' => 4,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing', '/docs']],
+
+        ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about'],
+         'referer' => E2E_REFERERS[2]],
     ];
 
     $count = 0;
+
     foreach ($visits as $visit) {
         $session_id = numericGuid();
         $visitor_id = $visitors[$visit['visitor']];
@@ -487,6 +916,17 @@ function seedPageviews(int $n): int
                 'visitor_id'       => $visitor_id,
                 'is_new_session'   => $isFirst,
                 'is_new_visitor'   => $isFirst && $visit['new_visitor'],
+                /*
+                 * is_repeat_visitor is deliberately NOT set here.
+                 *
+                 * The seeder fires real events through logEvent, so the value
+                 * is DERIVED from is_new_visitor like any tracked hit. Passing
+                 * it explicitly made it worse, not better -- the tracker
+                 * property pipeline processes a supplied value differently
+                 * from an absent one, and the rows came out NULL where leaving
+                 * it alone gives 0. A fixture that sets it would also stop
+                 * exercising the derivation this suite exists to cover.
+                 */
                 'page_url'         => $url,
                 'page_title'       => 'E2E ' . ($page === '/' ? 'Home' : trim($page, '/')),
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'],
@@ -494,6 +934,10 @@ function seedPageviews(int $n): int
                 'ip_address'       => '203.0.113.' . (10 + $visit['visitor']),
                 'guid'             => numericGuid(),
             ];
+
+            if (!empty($visit['referer'])) {
+                $props['session_referer'] = $visit['referer'];
+            }
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
             $event->setEventType('base.page_request');
@@ -509,6 +953,9 @@ function seedPageviews(int $n): int
     $rc->timestamp = time();
     return $count;
 }
+
+
+
 
 /** Numeric GUID in the tracker's format (BIGINT-safe): <time><6rand><3rand>. */
 function numericGuid(): string

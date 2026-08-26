@@ -1,0 +1,34 @@
+{
+    "title": "Browser Types",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits for all browser types."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "browserType",
+                "sort": "visits-",
+                "resultsPerPage": 25
+            },
+            "link": {
+                "linkColumn": "browserType",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "browser-detail",
+                    "browserType": "%s"
+                },
+                "valueColumns": "browserType"
+            }
+        }
+    ]
+}

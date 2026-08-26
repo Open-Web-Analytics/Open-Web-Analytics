@@ -1,0 +1,27 @@
+{
+    "title": "Operating System: ",
+    "titleSuffix": "{osType}",
+    "params": {
+        "osType": {}
+    },
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits for this operating system."
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "osType",
+                "fromParam": "osType"
+            }
+        ]
+    }
+}

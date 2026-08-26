@@ -44,6 +44,12 @@ const SCRATCH_DB_SENTINEL = 'owa_e2e_selfhost';
 const FIXTURE_TAG         = 'e2e-overlay';
 const OVERLAY_DOMAIN      = 'http://localhost';
 
+// The page the heatmap is drawn over, and the constraint that selects its
+// clicks. Held as constants so the fixture, the token and the spec cannot
+// disagree about which page is being asked for.
+const OVERLAY_PAGE_PATH  = '/overlay-e2e-page';
+const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH;
+
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
@@ -106,6 +112,25 @@ function provision(): array
     $document_id    = (string) sprintf('%d', crc32(FIXTURE_TAG . '-doc') + 4000000000);
     $domstream_guid = (string) sprintf('%d', crc32(FIXTURE_TAG . '-ds') + 4000000000);
 
+    /*
+     * A real document row, which this fixture did not need before.
+     *
+     * The heatmap is an ordinary dimensional query now -- domClicks grouped by
+     * clickX and clickY, constrained on pagePath -- and pagePath resolves
+     * through document_id, so the clicks are reached BY JOINING to the document.
+     * Seeding clicks against an invented id used to be enough because the old
+     * clicks report selected on document_id directly; now it would join to
+     * nothing and the overlay would fetch an empty result set that still
+     * answered 201, which is the shape of a test that passes for the wrong
+     * reason.
+     */
+    $doc = owa_coreAPI::entityFactory('base.document');
+    $doc->set('id', $document_id);
+    $doc->set('url', OVERLAY_DOMAIN . OVERLAY_PAGE_PATH);
+    $doc->set('uri', OVERLAY_PAGE_PATH);
+    $doc->set('page_type', 'page');
+    $doc->create();
+
     seedClicks($site_id, $document_id);
     seedDomstream($site_id, $domstream_guid);
 
@@ -132,8 +157,17 @@ function provision(): array
         'domstream_module_activated' => !$domstream_was_active,
         // Scoped tokens: one action, one resource, minutes. Minted here because
         // only the server can sign them.
+        'page_path'      => OVERLAY_PAGE_PATH,
+        'constraints'    => OVERLAY_CONSTRAINTS,
+        /*
+         * Bound to `constraints` rather than to a bespoke document_id, because
+         * that is the parameter the dimensional query actually carries the page
+         * in. The token machinery is generic -- resource_key names whichever
+         * request parameter is being pinned -- so this is the same guarantee,
+         * on the parameter that now exists.
+         */
         'heatmap_token'  => \OWA\Core\OverlayToken::mint(
-            $user_id, 'reports', 'document_id', $document_id, 600
+            $user_id, 'reports', 'constraints', OVERLAY_CONSTRAINTS, 600
         ),
         'player_token'   => \OWA\Core\OverlayToken::mint(
             $user_id, 'domstreams', 'domstream_guid', $domstream_guid, 600

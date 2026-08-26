@@ -55,3 +55,261 @@
     font-size: 12px;
     text-decoration: none;
 }
+/* ---------------------------------------------------------------------------
+   Notifications
+
+   A bell in the header with a count, and a panel pinned to the RIGHT EDGE of
+   the app -- the arrangement people already know from social apps, so the
+   affordances need no explaining. Each row is an icon, a bold headline, one
+   line of excerpt and a relative time.
+
+   The panel is fixed rather than absolutely positioned under the bell: it
+   should sit against the edge of the window regardless of where the header
+   happens to end, and it must not be clipped by the header's own stacking.
+   --------------------------------------------------------------------------- */
+
+.owa .owa_notificationBell {
+    position: relative;
+    /* Floated right, and it sits BEFORE .user-greating in the markup -- with
+       float:right the first element in source order lands furthest right, so
+       the bell ends up at the far right of the nav bar and the greeting to its
+       left. Ordering the markup the other way would silently swap them. */
+    float: right;
+    display: inline-block;
+    vertical-align: middle;
+    /* Room on the right for the badge, which overhangs the button. Without it
+       the badge is clipped by the edge of the header. */
+    /* Wide enough on the right that the overhanging badge is not clipped. */
+    margin: 0 18px 0 16px;
+}
+
+.owa .owa_notificationToggle {
+    background: #e4e6eb;
+    border: 0;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    cursor: pointer;
+    color: #050505;
+    font-size: 16px;
+    line-height: 40px;
+    text-align: center;
+}
+
+.owa .owa_notificationToggle:hover {
+    background: #d8dadf;
+}
+
+/* Clear of the bell, not on top of it. Anchored to the button's top-right
+   CORNER and pushed outward by half its own size, so it overhangs the circle
+   the way a badge should instead of covering the glyph inside it. */
+.owa .owa_notificationBadge {
+    position: absolute;
+    /* Geometry, not taste: the button is 40px and the glyph is centred, so it
+       ends about 27px from the button's left edge. The badge's LEFT edge must
+       clear that -- 40 + 14 - 24 = 30 -- which is why the offset is -14 and
+       not something rounder. Overlap needs both axes, so clearing x is enough. */
+    top: -6px;
+    right: -14px;
+    min-width: 14px;
+    height: 18px;
+    padding: 0 3px;
+    border: 2px solid #fff;
+    border-radius: 9px;
+    background: #e41e3f;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    /* Above the button so the white ring reads as a cut-out. */
+    z-index: 1;
+}
+
+/* The badge is never hidden -- a control that comes and goes moves the bell
+   under the cursor. At zero it goes quiet instead: grey, not red. */
+.owa .owa_notificationBadge.is-zero {
+    background: #b0b3b8;
+}
+
+.owa .owa_notificationPanel[hidden] {
+    display: none;
+}
+
+.owa .owa_notificationPanel {
+    position: fixed;
+    top: 56px;
+    right: 12px;
+    z-index: 1000;
+    width: 360px;
+    max-width: calc(100vw - 24px);
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+.owa .owa_notificationPanelHeader {
+    position: sticky;
+    top: 0;
+    padding: 12px 16px 6px;
+    background: #fff;
+    border-radius: 8px 8px 0 0;
+    color: #050505;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.owa .owa_notificationItems {
+    padding: 2px 8px 6px;
+}
+
+/* The row: icon | text | dismiss. */
+.owa .owa_notification {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 30px 6px 8px;
+    border-radius: 8px;
+    cursor: default;
+}
+
+.owa .owa_notification {
+    cursor: pointer;
+}
+
+.owa .owa_notification:hover {
+    background: #f2f2f2;
+}
+
+/* UNREAD is the marked state, read is the plain one -- the reverse would mean
+   a list of read notifications was a wall of decoration. The dot is the same
+   affordance the badge uses, at row scale. */
+.owa .owa_notification.is-unread {
+    background: #e7f3ff33;
+}
+
+.owa .owa_notification.is-unread::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 9px;
+    height: 9px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: #0866ff;
+}
+
+/* ...and the dismiss control sits where the dot is, so on hover the dot gives
+   way rather than the two overlapping. */
+.owa .owa_notification.is-unread:hover::after {
+    display: none;
+}
+
+/* Flex-centred, not line-height-centred. A Font Awesome glyph does not fill
+   its em box and the box is not symmetric, so line-height puts the CONTAINER's
+   baseline in the middle and leaves the icon sitting low and slightly left.
+   Centring both axes on the flex box centres what is actually drawn. */
+.owa .owa_notificationIcon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e7f3ff;
+    color: #0866ff;
+    font-size: 15px;
+}
+
+.owa .owa_notificationIcon i {
+    /* The glyph is what gets centred, so it must not carry its own metrics. */
+    line-height: 1;
+    display: block;
+}
+
+.owa .owa_notificationMain {
+    min-width: 0;   /* or a long unbroken word stretches the flex row */
+}
+
+.owa .owa_notificationTitle {
+    color: #050505;
+    font-size: 14px;
+    /* Read is the resting state: normal weight. Bolding is what marks the
+       ones still waiting to be looked at. */
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+.owa .owa_notification.is-unread .owa_notificationTitle {
+    font-weight: 700;
+}
+
+.owa .owa_notificationTitle a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.owa .owa_notificationTitle a:hover {
+    text-decoration: underline;
+}
+
+/* Two lines at most. The excerpt is a hint, not the content -- the headline
+   links to the whole of it. */
+.owa .owa_notificationExcerpt {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 1px;
+    color: #65676b;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.owa .owa_notificationWhen {
+    margin-top: 1px;
+    color: #0866ff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Present for pointer users on hover, and always present for keyboards --
+   :focus-within keeps it reachable by tab. */
+.owa .owa_notificationDismiss {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #65676b;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.owa .owa_notification:hover .owa_notificationDismiss,
+.owa .owa_notificationDismiss:focus {
+    opacity: 1;
+}
+
+.owa .owa_notificationDismiss:hover {
+    background: #e4e6eb;
+    color: #050505;
+}
+
+.owa .owa_notificationItems .info_text {
+    padding: 8px 10px 16px;
+    color: #65676b;
+}

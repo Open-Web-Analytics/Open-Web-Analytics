@@ -165,6 +165,29 @@ class EventDispatch {
      * @param    $event    array
      * @return bool
      */
+    /**
+     * The name of whatever a listener will run.
+     *
+     * A listener may be [$object, 'method'], ['ClassName', 'method'] or a plain
+     * function name. Only the first shape has a class to ask for, so the other
+     * two have to be read rather than reflected on -- which is what notify()
+     * was not doing.
+     *
+     * @param mixed $listener
+     * @return string
+     */
+    private static function listenerName( $listener ) {
+
+        if ( ! is_array( $listener ) ) {
+
+            return is_string( $listener ) ? $listener : '(closure)';
+        }
+
+        $target = $listener[0] ?? '';
+
+        return is_object( $target ) ? get_class( $target ) : (string) $target;
+    }
+
     function notify($event) {
 
         $responses = array();
@@ -176,11 +199,29 @@ class EventDispatch {
             //print_r($list);
             if (!empty($list)) {
                 foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
-                    //print_r($list);
-                    $class = get_class( $this->listeners[$observer_id][0] );
-                    $responses[ $class ] = call_user_func_array($this->listeners[$observer_id], array($event));
-                    //owa_coreAPI::debug(print_r($event, true));
-                    \OWA\Core\CoreAPI::debug(sprintf("%s event handled by %s.",$event->getEventType(), get_class($this->listeners[$observer_id][0])));
+
+                    /*
+                     * A listener is a callable, and the object half of one may
+                     * be a class NAME as well as an instance -- filter() has
+                     * always allowed both and says so. notify() did not: it
+                     * called get_class() on it unconditionally, which is a
+                     * TypeError the moment any handler is registered
+                     * statically, and takes the whole event dispatch down with
+                     * it rather than that one handler.
+                     *
+                     * Surfaced as tests/DimensionIngestionTest failing in the
+                     * isolation sweep, intermittently, because whether such a
+                     * handler is registered depends on which modules and
+                     * settings the run happens to have.
+                     */
+                    $listener = $this->listeners[ $observer_id ];
+
+                    $class = self::listenerName( $listener );
+
+                    $responses[ $class ] = call_user_func_array( $listener, array( $event ) );
+
+                    \OWA\Core\CoreAPI::debug( sprintf( "%s event handled by %s.",
+                        $event->getEventType(), $class ) );
                 }
             }
         } else {
@@ -242,15 +283,7 @@ class EventDispatch {
 
                     if (is_array($this->listeners[$observer_id])) {
 
-                        if ( is_object( $this->listeners[$observer_id][0] ) ) {
-
-                            $class = get_class( $this->listeners[$observer_id][0] );
-
-                        } else {
-                            // class could be passed as a string
-                            $class = $this->listeners[$observer_id][0];
-                        }
-
+                        $class = self::listenerName( $this->listeners[$observer_id] );
 
                         $method = $this->listeners[$observer_id][1];
                         $filter_method = $class . '::' . $method;

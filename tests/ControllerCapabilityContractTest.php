@@ -72,15 +72,30 @@ final class ControllerCapabilityContractTest extends TestCase
         'ApiRequest',
         'CorsPreflight',
 
+        // Report dispatch, and the same shape as ApiRequest above: it resolves
+        // a reportId to a report and hands the request on, delegating at
+        // doAction() -- which is where checkCapabilityAndAuthenticateUser()
+        // lives, so the TARGET report's own requirement is what runs.
+        //
+        // Declaring one here as well would mean a report could be gated by two
+        // different answers, with the stricter winning by accident rather than
+        // by decision. Resolution is not the thing being authorized; the report
+        // is, and each report already says what it needs.
+        //
+        // Pinned by ReportRegistryTest, which fails if delegation ever moves to
+        // action() and skips the target's check.
+        'Report',
+
         // CLI-only. Core\Controller\Cli::__construct() exits unless
         // request_mode === 'cli', so these are not web-reachable.
         'FlushCacheCli',
         'InstallCli',
         'UpdatesApplyCli',
+        // Runs from the scheduler and the shell only, like the others here.
+        'NotificationsFetchCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',
-        'WidgetOwaNews',
 
         // The "your schema is out of date" notice. Core\Controller::updateAction()
         // redirects here as part of that interception, so the page has to be

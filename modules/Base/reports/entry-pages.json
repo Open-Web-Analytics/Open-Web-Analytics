@@ -1,0 +1,34 @@
+{
+    "title": "Entry Pages",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "headline": "There were {visits.formatted} visits to the site through all entry pages."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "entryPagePath,entryPageTitle",
+                "sort": "visits-",
+                "resultsPerPage": 30
+            },
+            "link": {
+                "linkColumn": "entryPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "entryPagePath"
+            }
+        }
+    ]
+}

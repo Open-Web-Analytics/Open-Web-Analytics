@@ -1,0 +1,27 @@
+{
+    "title": "Days To Purchase",
+    "metrics": "transactions",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            },
+            "chartMetric": "transactions",
+            "headline": "There were {transactions.formatted} transactions from all visitors."
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "daysToTransaction",
+                "sort": "daysToTransaction",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}
