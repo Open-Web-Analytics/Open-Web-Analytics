@@ -79,6 +79,58 @@ final class ReportGridTest extends TestCase
         return array( 'zero' => array( 0 ), 'negative' => array( -3 ), 'empty' => array( '' ) );
     }
 
+    /**
+     * A grid-card is a quarter of the row without saying so.
+     *
+     * The width is part of what the type IS -- a card shows one metric against
+     * one dimension and draws none of the explorer controls a full-width table
+     * has room for. Carried by the type rather than written into every card
+     * definition, so a card cannot be authored at a width that would make it a
+     * table with the controls missing.
+     */
+    public function testAGridCardIsAQuarterWideByDefault(): void
+    {
+        $this->assertSame( 3,
+            \OWA\Core\ReportGrid::colspan( array( 'type' => 'grid-card' ) ) );
+
+        $this->assertSame( 3,
+            \OWA\Core\ReportGrid::defaultColspan( array( 'type' => 'grid-card' ) ) );
+    }
+
+    public function testEveryOtherTypeStillDefaultsToFullWidth(): void
+    {
+        foreach ( array( 'grid', 'pie', 'trend', 'metric-boxes', '', 'something-new' ) as $type ) {
+
+            $this->assertSame( \OWA\Core\ReportGrid::COLUMNS,
+                \OWA\Core\ReportGrid::colspan( array( 'type' => $type ) ),
+                "a $type widget that names no span should be full width" );
+        }
+    }
+
+    /**
+     * The fallback for a nonsensical span is the TYPE's default, not 12.
+     *
+     * A card with `colspan: 0` recovering to full width would be the one
+     * outcome the type exists to prevent -- a card's controls are drawn on the
+     * assumption it is narrow.
+     */
+    public function testANonsensicalSpanOnACardFallsBackToTheCardWidth(): void
+    {
+        foreach ( array( 0, -3, '' ) as $value ) {
+
+            $this->assertSame( 3, \OWA\Core\ReportGrid::colspan(
+                array( 'type' => 'grid-card', 'colspan' => $value ) ) );
+        }
+    }
+
+    public function testACardMaySayItIsWiderAndIsBelieved(): void
+    {
+        // The default is what a type MEANS, not a cap. A definition that names
+        // a width still gets it -- clamped like any other.
+        $this->assertSame( 6, \OWA\Core\ReportGrid::colspan(
+            array( 'type' => 'grid-card', 'colspan' => 6 ) ) );
+    }
+
     public function testRowspanDefaultsToOneAndIsBounded(): void
     {
         $this->assertSame( 1, \OWA\Core\ReportGrid::rowspan( array() ) );

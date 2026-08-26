@@ -133,7 +133,7 @@ test.describe('custom reports', () => {
             await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);
         });
 
-        test('the builder offers the four widget types and nothing else', async ({ page }) => {
+        test('the builder offers the buildable widget types and nothing else', async ({ page }) => {
             await openBuilder(page);
 
             await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
@@ -142,7 +142,9 @@ test.describe('custom reports', () => {
             const types = await page.locator('#dlgType option')
                 .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
 
-            expect(types.sort()).toEqual(['grid', 'metric-boxes', 'pie', 'trend']);
+            // Two table types, deliberately: a full-width explorable grid and a
+            // quarter-width card. See CustomReports::FULL_WIDTH_TYPES.
+            expect(types.sort()).toEqual(['grid', 'grid-card', 'metric-boxes', 'pie', 'trend']);
         });
 
         /**
@@ -520,6 +522,102 @@ test.describe('custom reports', () => {
             await expect(block).toHaveClass(/owa_builderSpan-4/);
         });
 
+        /*
+         * ------------------------------------------------------------------
+         * A table's width and its controls are one decision
+         * ------------------------------------------------------------------
+         *
+         * A grid draws a control bar -- a dimension picker and a filter -- and
+         * every control on it adds width. Narrowed to a quarter of the row that
+         * bar stopped fitting, and .owa_reportGridItem carries overflow-x, so
+         * the widget grew a horizontal scrollbar instead.
+         *
+         * So the type decides both: a grid is full width and explorable, a
+         * grid-card is a quarter wide with one metric against one dimension and
+         * no controls at all.
+         */
+        test('a grid has no column span to set, and says why', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await page.selectOption('#dlgType', 'grid');
+
+            await expect(page.locator('#dlgColspanField')).toBeHidden();
+            await expect(page.locator('#dlgWidthNote')).toContainText('always full width');
+
+            // The row span is still the author's -- only the width is decided.
+            await expect(page.locator('#dlgRowspan')).toBeVisible();
+
+            // ...and switching to a card gives the width back.
+            await page.selectOption('#dlgType', 'grid-card');
+
+            await expect(page.locator('#dlgColspanField')).toBeVisible();
+            await expect(page.locator('#dlgWidthNote')).toBeHidden();
+        });
+
+        test('a card takes one metric and one dimension and then offers no more',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await page.selectOption('#dlgType', 'grid-card');
+
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+
+            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
+            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
+
+            /*
+             * At the cap the pickers offer NOTHING further, rather than
+             * offering a second and refusing it on save. Asserted on the
+             * options the select holds, because that is what chosen renders its
+             * list from -- an option left in place but unusable would still
+             * turn up in the search results.
+             */
+            const spare = async (id) => page.locator(`#${id} option`).evaluateAll(
+                (opts) => opts.filter((o) => !o.selected).length);
+
+            expect(await spare('dlgMetrics')).toBe(0);
+            expect(await spare('dlgDimensions')).toBe(0);
+        });
+
+        /**
+         * Changing type to a card keeps the FIRST of what was already picked.
+         *
+         * Trimmed in the dialog rather than at save, so the screen shows what
+         * will be stored -- three metric pills beside a type that allows one is
+         * a screen disagreeing with itself.
+         */
+        test('switching a configured grid to a card trims it to one of each',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await configureWidget(page, 0, {
+                type: 'grid',
+                metrics: ['pageViews', 'uniquePageViews'],
+                dimensions: ['pagePath', 'pageTitle'],
+            });
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(2);
+
+            await page.selectOption('#dlgType', 'grid-card');
+
+            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
+            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
+
+            // The first, not an arbitrary one.
+            await expect(chosenPills(page, 'dlgMetrics').first()).toContainText('pageViews');
+            await expect(chosenPills(page, 'dlgDimensions').first()).toContainText('pagePath');
+        });
+
         /** Cancel leaves the widget as it was. */
         test('cancelling the modal changes nothing', async ({ page }) => {
             await openBuilder(page);
@@ -556,7 +654,11 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
             await page.fill('#customReportName', name);
+            // A pie, because a grid has no width to set -- it is full width by
+            // type. This test is about a span surviving the round trip, so it
+            // uses a type that still has one.
             await configureWidget(page, 0, {
+                type: 'pie',
                 colspan: 3, rowspan: 2,
                 metrics: ['pageViews'], dimensions: ['pagePath'],
             });
@@ -641,6 +743,79 @@ test.describe('custom reports', () => {
             // The grid fetched rows, and the boxes drew.
             await expect(page.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
             await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
+        });
+
+        /**
+         * The rendered outcome of the type split, measured.
+         *
+         * A grid is full width and carries its control bar; a card is a quarter
+         * of the row and carries none. Asserted on the RENDERED widgets rather
+         * than on the definition, because the bug this replaced was entirely a
+         * rendering one -- the definition said colspan 6 and the renderer drew
+         * a full-width bar inside it.
+         */
+        test('a grid renders full width with controls, a card renders narrow with none',
+            async ({ page }) => {
+
+            const name = reportName('TableAndCard');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await configureWidget(page, 0, {
+                title: 'Pages',
+                type: 'grid',
+                metrics: ['pageViews'],
+                dimensions: ['pagePath'],
+            });
+
+            await page.click('#addWidget');
+            await configureWidget(page, 1, {
+                title: 'Top pages',
+                type: 'grid-card',
+                metrics: ['pageViews'],
+                dimensions: ['pagePath'],
+            });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            const grid = page.locator('.owa_reportGridItem.owa_span-12').first();
+            const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+
+            await expect(grid).toHaveCount(1);
+            await expect(card).toHaveCount(1);
+
+            // Both drew a table: a card is a table, just a small one with no
+            // controls -- not a different renderer.
+            await expect(grid.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(card.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+
+            // The bar is on the grid and NOT on the card. This is the whole
+            // point of the split.
+            await expect(grid.locator('.explorerTopControls')).toHaveCount(1);
+            await expect(card.locator('.explorerTopControls')).toHaveCount(0);
+
+            /*
+             * And the card does not scroll sideways, which is the symptom that
+             * started this. Compared against its own client width rather than a
+             * fixed number, so it holds at any viewport.
+             */
+            const overflow = await card.evaluate(
+                (el) => el.scrollWidth - el.clientWidth);
+
+            expect(overflow).toBeLessThanOrEqual(1);
+
+            // ...and it really is narrower than the grid, so span-3 is doing
+            // something rather than merely being in the class list.
+            const gridBox = await grid.boundingBox();
+            const cardBox = await card.boundingBox();
+
+            expect(cardBox.width).toBeLessThan(gridBox.width / 2);
         });
 
         /**

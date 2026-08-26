@@ -455,7 +455,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         </div>
 <?php endif; ?>
 
-<?php elseif ( ( $owa_w['type'] ?? '' ) === 'grid' ): ?>
+<?php elseif ( in_array( ( $owa_w['type'] ?? '' ), array( 'grid', 'grid-card' ), true ) ): ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 
         <script>
@@ -463,6 +463,24 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
+<?php if ( ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
+        <?php
+            /*
+             * A CARD, not an explorer.
+             *
+             * A grid-card is one metric against one dimension at a quarter of
+             * the row's width. The bar above a grid is a dimension picker and a
+             * filter -- both of which add columns, and there is no room for a
+             * second column here. Offering them would be offering the reader a
+             * way to make the widget stop fitting.
+             *
+             * Explore is what the full-width grid is for, which is why a grid
+             * cannot be narrowed and a card cannot be widened: the two ARE the
+             * layouts their controls need.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.grid.showExplorerControls = false;
+<?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
         <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>);

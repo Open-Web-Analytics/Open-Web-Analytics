@@ -171,6 +171,18 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
         $this->set( 'max_metrics',       \OWA\Module\Base\Classes\CustomReports::MAX_METRICS );
         $this->set( 'max_dimensions',    \OWA\Module\Base\Classes\CustomReports::MAX_DIMENSIONS );
+
+        /*
+         * Which types decide their own layout, so the builder can stop
+         * offering the choice rather than offering it and then overruling it on
+         * save. Passed through rather than repeated in the template: the rule
+         * is enforced server-side either way, and two copies of a list is how
+         * they come to disagree.
+         */
+        $this->set( 'full_width_types',   \OWA\Module\Base\Classes\CustomReports::FULL_WIDTH_TYPES );
+        $this->set( 'single_field_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_FIELD_TYPES );
+        $this->set( 'default_colspans',   \OWA\Core\ReportGrid::DEFAULT_COLSPANS );
+        $this->set( 'grid_columns',       \OWA\Core\ReportGrid::COLUMNS );
     }
 
     /**

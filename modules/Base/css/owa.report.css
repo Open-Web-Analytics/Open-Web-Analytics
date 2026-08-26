@@ -1077,6 +1077,19 @@ li.constraintRow {
     color: #808080;
 }
 
+/*
+ * Where a control would be, when the type decided it instead.
+ *
+ * It sits in the field row the column-span picker was taken out of, so the row
+ * keeps its shape rather than collapsing the row-span picker across the dialog.
+ */
+.owa .owa_builderNote {
+    font-size: 12px;
+    color: #808080;
+    align-self: center;
+    line-height: 1.4;
+}
+
 /* Two fields side by side inside the dialog -- span/span, metrics/dimensions. */
 .owa .owa_builderFieldRow {
     display: flex;

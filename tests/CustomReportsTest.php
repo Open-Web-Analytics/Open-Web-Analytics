@@ -344,6 +344,155 @@ final class CustomReportsTest extends TestCase
             CustomReports::validate($definition), 'five dimensions is refused');
     }
 
+    // ------------------------------------------------------------------
+    // A table and its controls are one decision
+    // ------------------------------------------------------------------
+
+    /**
+     * WHY THERE ARE TWO TABLE TYPES.
+     *
+     * There was one, with a colspan, and the colspan was the bug. A grid draws
+     * a control bar above it -- a dimension picker and a filter -- and every
+     * control there adds width. Narrowed to a quarter of the row the bar no
+     * longer fitted, and .owa_reportGridItem carries overflow-x, so the whole
+     * widget grew a horizontal scrollbar.
+     *
+     * The size and the controls cannot be chosen separately, so the TYPE
+     * decides both: a grid is full width and explorable, a grid-card is a
+     * quarter wide, takes one metric against one dimension, and has no
+     * controls to make room for.
+     */
+    public function testTheTwoTableTypesAreBothOffered(): void
+    {
+        $this->assertArrayHasKey('grid', CustomReports::WIDGET_TYPES);
+        $this->assertArrayHasKey('grid-card', CustomReports::WIDGET_TYPES);
+
+        $this->assertSame(array('grid'), CustomReports::FULL_WIDTH_TYPES);
+        $this->assertSame(array('grid-card'), CustomReports::SINGLE_FIELD_TYPES);
+    }
+
+    public function testACardTakesOneMetricAgainstOneDimension(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['type'] = 'grid-card';
+
+        // pageViews by pagePath -- exactly one of each.
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * EXACTLY one, not at most one.
+     *
+     * A card with no dimension is a number that belongs in an info box, and a
+     * card with no metric has nothing to rank its rows by. Both are a
+     * different widget rather than an incomplete one, so both are refused --
+     * and a cap check alone would have been silent about the empty case.
+     *
+     * @dataProvider badCardProvider
+     */
+    public function testACardWithTheWrongNumberOfFieldsIsRefused(array $query, string $says): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['type']  = 'grid-card';
+        $definition['widgets'][1]['query'] = $query;
+
+        $error = CustomReports::validate($definition);
+
+        $this->assertNotSame('', $error, 'this card should not have been storable');
+
+        $this->assertStringContainsString($says, $error);
+
+        // And it says where to put what does not fit, rather than only saying no.
+        $this->assertStringContainsString(CustomReports::WIDGET_TYPES['grid'], $error);
+    }
+
+    public static function badCardProvider(): array
+    {
+        return array(
+            'two metrics' => array(
+                array('metrics' => 'pageViews,uniquePageViews', 'dimensions' => 'pagePath'),
+                '2 metrics',
+            ),
+            'no metric' => array(
+                array('dimensions' => 'pagePath'),
+                '0 metrics',
+            ),
+            'two dimensions' => array(
+                array('metrics' => 'pageViews', 'dimensions' => 'pagePath,pageTitle'),
+                '2 dimensions',
+            ),
+            'no dimension' => array(
+                array('metrics' => 'pageViews'),
+                '0 dimensions',
+            ),
+        );
+    }
+
+    /**
+     * ...and the same query is fine on a grid, so the refusal above is the
+     * TYPE's rule rather than something wrong with the names.
+     */
+    public function testTheSameQueryIsAcceptedOnAFullWidthGrid(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['query'] = array(
+            'metrics'    => 'pageViews,uniquePageViews',
+            'dimensions' => 'pagePath,pageTitle',
+        );
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * A full-width type stores no width.
+     *
+     * Dropped rather than written as 12, so the rule survives a change to what
+     * full width means -- a definition that had baked in the number would keep
+     * the old layout. And dropped rather than REFUSED: a colspan on a grid is a
+     * definition written against an older builder, not a reason to reject
+     * somebody's report.
+     */
+    public function testSavingTakesTheWidthOffAFullWidthWidget(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['colspan'] = 6;
+        $definition['widgets'][0]['colspan'] = 6;   // a trend keeps its own
+
+        $normalized = CustomReports::normalize($definition);
+
+        $this->assertArrayNotHasKey('colspan', $normalized['widgets'][1],
+            'a grid is full width by type, so it records no width');
+
+        $this->assertSame(6, $normalized['widgets'][0]['colspan'],
+            'every other type still chooses its own width');
+    }
+
+    public function testACardKeepsAWidthItWasGiven(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['type']    = 'grid-card';
+        $definition['widgets'][1]['colspan'] = 4;
+
+        $normalized = CustomReports::normalize($definition);
+
+        $this->assertSame(4, $normalized['widgets'][1]['colspan']);
+    }
+
+    /** The normalisation is on the STORED definition, not only in the builder. */
+    public function testAStoredGridComesBackWithNoWidth(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['colspan'] = 6;
+
+        $result = $this->store(array('definition' => $definition));
+
+        $this->assertTrue($result['ok'], $result['error']);
+
+        $stored = CustomReports::load($result['id']);
+
+        $this->assertArrayNotHasKey('colspan', $stored['definition']['widgets'][1]);
+    }
+
     /**
      * The builder is handed the same answer the engine would give.
      *

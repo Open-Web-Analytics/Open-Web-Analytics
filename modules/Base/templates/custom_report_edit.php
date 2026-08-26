@@ -139,11 +139,21 @@ $owa_max        = (int) $view->get('max_widgets');
     </div>
 
     <div class="owa_builderFieldRow">
-        <div class="owa_builderField">
+        <?php
+            /*
+             * Hidden, not disabled, for a type that decides its own width. A
+             * disabled control still says the choice exists and was taken away;
+             * a full-width table has no width to choose, so the sentence next
+             * to it says which types do.
+             */
+        ?>
+        <div class="owa_builderField" id="dlgColspanField">
             <label for="dlgColspan">Column span</label>
             <select id="dlgColspan"></select>
-            <div class="owa_builderHelp">Out of 12. Half the width is 6.</div>
+            <div class="owa_builderHelp">Out of <?php echo (int) $view->get('grid_columns') ?: 12; ?>. Half the width is 6.</div>
         </div>
+
+        <div class="owa_builderField owa_builderNote" id="dlgWidthNote" style="display:none;"></div>
 
         <div class="owa_builderField">
             <label for="dlgRowspan">Row span</label>
@@ -200,12 +210,62 @@ $owa_max        = (int) $view->get('max_widgets');
     var MAX_DIMENSIONS = <?php echo (int) $view->get('max_dimensions'); ?>;
 
     /*
+     * The types whose LAYOUT is part of what they are, so the builder does not
+     * offer a choice it would only overrule. A full-width type gets no column
+     * span control; a single-field type takes one metric and one dimension.
+     *
+     * Read from the server rather than written here -- the same lists validate
+     * the definition on save, and a second copy is how the two come to
+     * disagree about a type added later.
+     */
+    var FULL_WIDTH_TYPES   = <?php echo json_encode( array_values( (array) $view->get('full_width_types') ) ); ?>;
+    var SINGLE_FIELD_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_field_types') ) ); ?>;
+    var DEFAULT_COLSPANS   = <?php echo json_encode( (object) (array) $view->get('default_colspans') ); ?>;
+
+    /*
      * The grid the report is drawn on. These mirror Core\ReportGrid, which
      * clamps to the same numbers server-side -- bounding the PICKER means an
      * author is never offered a span that would be silently reduced.
      */
-    var COLUMNS     = 12;
+    var COLUMNS     = <?php echo (int) $view->get('grid_columns') ?: 12; ?>;
     var MAX_ROWSPAN = 6;
+
+    function isFullWidth( type ) {
+        return FULL_WIDTH_TYPES.indexOf( type ) !== -1;
+    }
+
+    function isSingleField( type ) {
+        return SINGLE_FIELD_TYPES.indexOf( type ) !== -1;
+    }
+
+    /** The width a widget of this type gets when it names none. */
+    function defaultColspan( type ) {
+        return DEFAULT_COLSPANS[ type ] || COLUMNS;
+    }
+
+    /** The width a widget actually draws at. */
+    function colspanOf( widget ) {
+
+        if ( isFullWidth( widget.type ) ) {
+            return COLUMNS;
+        }
+
+        return Number( widget.colspan ) || defaultColspan( widget.type );
+    }
+
+    /*
+     * The caps for the type the dialog is open on.
+     *
+     * A card is one metric against one dimension, so its pickers stop offering
+     * after the first -- rather than offering a second and refusing it on save.
+     */
+    function maxMetrics() {
+        return isSingleField( jQuery( '#dlgType' ).val() ) ? 1 : MAX_METRICS;
+    }
+
+    function maxDimensions() {
+        return isSingleField( jQuery( '#dlgType' ).val() ) ? 1 : MAX_DIMENSIONS;
+    }
 
     var definition = <?php echo json_encode( $owa_definition ) ?: '{}'; ?>;
 
@@ -223,12 +283,30 @@ $owa_max        = (int) $view->get('max_widgets');
 
     var editing = null;   // index of the widget the dialog is open on
 
+    /*
+     * The type the dialog was showing before the last change.
+     *
+     * Kept so a type change can tell an untouched width from a chosen one: the
+     * span picker follows the new type's default only when it was still sitting
+     * on the old type's default. Without it, switching a new grid to a card
+     * left the picker on 12 and the card saved full width -- which is the one
+     * layout the type exists to prevent.
+     */
+    var dialogTypeWas = null;
+
     function newWidget( index ) {
 
+        /*
+         * A table, and no colspan.
+         *
+         * A grid is full width by type, and the width it draws at is
+         * ReportGrid's answer rather than a number copied into every
+         * definition -- so an absent colspan is the honest record of "this is
+         * not the author's to choose".
+         */
         return {
             type: 'grid',
             title: 'Widget ' + ( index + 1 ),
-            colspan: 6,
             rowspan: 1,
             query: {}
         };
@@ -305,7 +383,7 @@ $owa_max        = (int) $view->get('max_widgets');
         var selected = $select.val() || [];
         var metrics  = jQuery( '#dlgMetrics' ).val() || [];
 
-        var full = selected.length >= MAX_DIMENSIONS;
+        var full = selected.length >= maxDimensions();
 
         var allowed = DIMENSIONS.filter( function ( choice ) {
 
@@ -370,7 +448,7 @@ $owa_max        = (int) $view->get('max_widgets');
         var $select  = jQuery( selector );
         var selected = $select.val() || [];
 
-        var full = selected.length >= MAX_METRICS;
+        var full = selected.length >= ( selector === '#dlgMetrics' ? maxMetrics() : MAX_METRICS );
 
         var allowed = METRICS.filter( function ( choice ) {
 
@@ -445,7 +523,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         widgets.forEach( function ( widget, i ) {
 
-            var colspan = Number( widget.colspan ) || COLUMNS;
+            var colspan = colspanOf( widget );
             var rowspan = Number( widget.rowspan ) || 1;
 
             var $block = jQuery( '<div class="owa_builderBlock">' )
@@ -508,7 +586,11 @@ $owa_max        = (int) $view->get('max_widgets');
                 .prop( 'selected', widget.type === key ).text( TYPES[ key ] ) );
         } );
 
-        fillRange( jQuery( '#dlgColspan' ), 1, COLUMNS, widget.colspan || COLUMNS );
+        // No previous type: the width shown is the widget's own, whatever the
+        // dialog happened to be showing for the widget before it.
+        dialogTypeWas = null;
+
+        fillRange( jQuery( '#dlgColspan' ), 1, COLUMNS, colspanOf( widget ) );
         fillRange( jQuery( '#dlgRowspan' ), 1, MAX_ROWSPAN, widget.rowspan || 1 );
 
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, names( query.metrics ) );
@@ -520,8 +602,10 @@ $owa_max        = (int) $view->get('max_widgets');
         chosenSync( '#dlgMetrics' );
         chosenSync( '#dlgDimensions' );
 
-        narrowMetrics( '#dlgMetrics' );
-        narrowDimensions();
+        // After the selections are loaded, not before: applyTypeRules() trims
+        // to the type's cap, and run any earlier it would be trimming the
+        // widget the dialog was open on last time.
+        applyTypeRules();
 
         jQuery( '#dlgSort' ).val( query.sort || '' );
         jQuery( '#dlgConstraints' ).val( widget.constraints || '' );
@@ -532,6 +616,78 @@ $owa_max        = (int) $view->get('max_widgets');
 
         chosenSync( '#dlgMetrics' );
         chosenSync( '#dlgDimensions' );
+    }
+
+    /**
+     * What the chosen TYPE decides, applied to the dialog.
+     *
+     * Run when the dialog opens and on every type change, because both are the
+     * same event as far as the fields are concerned: the type is what says
+     * whether there is a width to choose and how many fields may be picked.
+     *
+     * Nothing here is a substitute for the server's rules -- the definition is
+     * validated on save whatever this does. This is so an author is never
+     * offered something that would then be refused.
+     */
+    function applyTypeRules() {
+
+        var type = jQuery( '#dlgType' ).val();
+
+        /*
+         * The width follows the type, unless the author has moved it.
+         *
+         * Only when the picker is still on what the OLD type defaulted to --
+         * an author who deliberately set a pie to 4 and then switched it to a
+         * trend keeps their 4.
+         */
+        if ( dialogTypeWas !== null && dialogTypeWas !== type ) {
+
+            var $span = jQuery( '#dlgColspan' );
+
+            if ( Number( $span.val() ) === defaultColspan( dialogTypeWas ) ) {
+
+                $span.val( String( defaultColspan( type ) ) );
+            }
+        }
+
+        dialogTypeWas = type;
+
+        jQuery( '#dlgColspanField' ).toggle( ! isFullWidth( type ) );
+
+        jQuery( '#dlgWidthNote' )
+            .toggle( isFullWidth( type ) )
+            .text( ( TYPES[ type ] || type ) + ' is always full width, so it has room for '
+                 + 'its own filter and dimension controls.' );
+
+        /*
+         * A type that takes one field keeps the FIRST of whatever was already
+         * picked. Trimmed here rather than at save, so the dialog shows what
+         * will be stored -- a picker still displaying three metrics beside a
+         * type that allows one is a screen disagreeing with itself.
+         */
+        if ( isSingleField( type ) ) {
+
+            trimTo( '#dlgMetrics', 1 );
+            trimTo( '#dlgDimensions', 1 );
+        }
+
+        narrowMetrics( '#dlgMetrics' );
+        narrowDimensions();
+    }
+
+    /** Keep at most `limit` of a multi-select's values, in the order shown. */
+    function trimTo( selector, limit ) {
+
+        var $select = jQuery( selector );
+        var values  = $select.val() || [];
+
+        if ( values.length <= limit ) {
+            return;
+        }
+
+        $select.val( values.slice( 0, limit ) );
+
+        chosenSync( selector );
     }
 
     /** Read the dialog back into the widget it was opened on. */
@@ -546,7 +702,19 @@ $owa_max        = (int) $view->get('max_widgets');
 
         widget.title   = jQuery( '#dlgTitle' ).val() || ( 'Widget ' + ( editing + 1 ) );
         widget.type    = jQuery( '#dlgType' ).val();
-        widget.colspan = Number( jQuery( '#dlgColspan' ).val() ) || COLUMNS;
+        if ( isFullWidth( widget.type ) ) {
+
+            // Not the author's to choose, so nothing is recorded -- see
+            // newWidget(). Deleted rather than left behind, because a widget
+            // whose type was CHANGED to a full-width one would otherwise keep
+            // the width it had as a card.
+            delete widget.colspan;
+
+        } else {
+
+            widget.colspan = Number( jQuery( '#dlgColspan' ).val() ) || defaultColspan( widget.type );
+        }
+
         widget.rowspan = Number( jQuery( '#dlgRowspan' ).val() ) || 1;
 
         var metrics    = jQuery( '#dlgMetrics' ).val() || [];
@@ -597,6 +765,10 @@ $owa_max        = (int) $view->get('max_widgets');
         narrowDimensions();
     } );
     jQuery( '#dlgDimensions' ).on( 'change', narrowDimensions );
+
+    // The type decides the width control and the field caps, so changing it
+    // has to redraw both.
+    jQuery( '#dlgType' ).on( 'change', applyTypeRules );
     jQuery( '#reportMetricSet' ).on( 'change', function () { narrowMetrics( '#reportMetricSet' ); } );
 
     jQuery( '#widgetDialog' ).dialog( {

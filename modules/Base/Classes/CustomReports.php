@@ -98,10 +98,53 @@ class CustomReports {
      */
     const WIDGET_TYPES = array(
         'grid'          => 'Table',
+        'grid-card'     => 'Table card',
         'pie'           => 'Pie chart',
         'trend'         => 'Trend chart',
         'metric-boxes'  => 'Info boxes',
     );
+
+    /**
+     * The two table widgets, and why there are two of them.
+     *
+     * A table and its controls are one decision, not two. A full-width `grid`
+     * is an EXPLORER: it can carry several metrics and dimensions, and it draws
+     * the bar that lets a reader regroup and filter it -- which needs room,
+     * because every control adds a column. A `grid-card` is a READING: one
+     * metric against one dimension, a quarter of the row wide, no controls.
+     *
+     * They were one type with a colspan, and that is what went wrong. An
+     * explorer narrowed to a quarter of the page still drew its full bar, so
+     * the controls overflowed the widget and it grew a horizontal scrollbar.
+     * The size and the controls have to be decided together, so the type
+     * decides both: a grid cannot be narrowed and a card cannot be widened.
+     */
+    const FULL_WIDTH_TYPES = array( 'grid' );
+
+    /**
+     * Widget types that take exactly one metric and exactly one dimension.
+     *
+     * EXACTLY, not at most. A card with no dimension is a number that belongs
+     * in an info box, and a card with no metric has nothing to rank by -- both
+     * are a different widget rather than an incomplete one.
+     */
+    const SINGLE_FIELD_TYPES = array( 'grid-card' );
+
+    /** How many metrics a widget of this type may ask for. */
+    public static function maxMetricsFor( $type ) {
+
+        return in_array( (string) $type, self::SINGLE_FIELD_TYPES, true )
+            ? 1
+            : self::MAX_METRICS;
+    }
+
+    /** How many dimensions a widget of this type may group by. */
+    public static function maxDimensionsFor( $type ) {
+
+        return in_array( (string) $type, self::SINGLE_FIELD_TYPES, true )
+            ? 1
+            : self::MAX_DIMENSIONS;
+    }
 
     /** Roster ordering: most recently changed first. */
     const ROSTER_LIMIT = 500;
@@ -227,6 +270,8 @@ class CustomReports {
 
         $query = isset( $widget['query'] ) ? (array) $widget['query'] : array();
 
+        $type = isset( $widget['type'] ) ? (string) $widget['type'] : '';
+
         foreach ( array(
             array( 'metrics',    'metric' ),
             array( 'dimensions', 'dimension' ),
@@ -242,9 +287,25 @@ class CustomReports {
             }
         }
 
+        /*
+         * A single-field type is checked for EXACTLY one of each before the
+         * ordinary caps, so a card with none reports the thing that is actually
+         * wrong. The cap message ("asks for 2; 1 is the most") would be right
+         * about too many and silent about too few.
+         */
+        if ( in_array( $type, self::SINGLE_FIELD_TYPES, true ) ) {
+
+            $error = self::validateSingleFields( $query, $type, $where );
+
+            if ( $error !== '' ) {
+
+                return $error;
+            }
+        }
+
         $error = self::validateFieldCount(
             isset( $query['metrics'] ) ? $query['metrics'] : '',
-            self::MAX_METRICS, 'metrics', $where,
+            self::maxMetricsFor( $type ), 'metrics', $where,
             'the boxes stop fitting a row and the numbers stop being readable' );
 
         if ( $error !== '' ) {
@@ -254,7 +315,7 @@ class CustomReports {
 
         $error = self::validateFieldCount(
             isset( $query['dimensions'] ) ? $query['dimensions'] : '',
-            self::MAX_DIMENSIONS, 'dimensions', $where,
+            self::maxDimensionsFor( $type ), 'dimensions', $where,
             'every dimension multiplies the rows, and a grid grouped that many ways '
           . 'is a list of near-unique rows' );
 
@@ -442,6 +503,37 @@ class CustomReports {
             '%s asks for %d %s; %d is the most one widget can carry. Beyond that %s -- '
           . 'split them across widgets instead.',
             $where, count( $names ), $kind, $max, $why );
+    }
+
+    /**
+     * A single-field widget has one metric and one dimension. Both, and one of
+     * each.
+     *
+     * @param array  $query
+     * @param string $type
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateSingleFields( array $query, $type, $where ) {
+
+        $label = isset( self::WIDGET_TYPES[ $type ] ) ? self::WIDGET_TYPES[ $type ] : $type;
+
+        foreach ( array( 'metrics', 'dimensions' ) as $key ) {
+
+            $count = count( self::asNames( isset( $query[ $key ] ) ? $query[ $key ] : '' ) );
+
+            if ( $count === 1 ) {
+
+                continue;
+            }
+
+            return sprintf(
+                '%s is a %s, which shows one metric against one dimension. '
+              . 'This one names %d %s. Use a %s if you need more than one.',
+                $where, $label, $count, $key, self::WIDGET_TYPES['grid'] );
+        }
+
+        return '';
     }
 
     /** A comma string or list, as trimmed non-empty names. */
@@ -652,6 +744,8 @@ class CustomReports {
          */
         $definition['title'] = $name;
 
+        $definition = self::normalize( $definition );
+
         $error = self::validate( $definition );
 
         if ( $error !== '' ) {
@@ -696,6 +790,47 @@ class CustomReports {
         }
 
         return array( 'ok' => true, 'id' => $id, 'error' => '' );
+    }
+
+    /**
+     * Settle the things the TYPE decides, before the definition is stored.
+     *
+     * Only one so far: a full-width type carries no colspan. Dropping the key
+     * rather than writing 12 is what makes the rule survive a change to what
+     * full width means -- ReportGrid answers that question, and a definition
+     * that had baked in the old number would keep the old layout.
+     *
+     * Here rather than in validate(), because this is not a reason to refuse a
+     * report. A definition arriving with a colspan on a grid is one written
+     * against an older builder, or by hand; the width simply is not the
+     * author's to choose, so it is taken off rather than argued about.
+     *
+     * @param array $definition
+     * @return array
+     */
+    public static function normalize( array $definition ) {
+
+        if ( empty( $definition['widgets'] ) || ! is_array( $definition['widgets'] ) ) {
+
+            return $definition;
+        }
+
+        foreach ( $definition['widgets'] as $i => $widget ) {
+
+            if ( ! is_array( $widget ) ) {
+
+                continue;
+            }
+
+            $type = isset( $widget['type'] ) ? (string) $widget['type'] : '';
+
+            if ( in_array( $type, self::FULL_WIDTH_TYPES, true ) ) {
+
+                unset( $definition['widgets'][ $i ]['colspan'] );
+            }
+        }
+
+        return $definition;
     }
 
     /**

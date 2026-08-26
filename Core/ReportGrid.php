@@ -54,10 +54,45 @@ class ReportGrid {
     const MAX_ROWSPAN = 6;
 
     /**
+     * The width a widget gets when its definition names none, by type.
+     *
+     * Full width unless a type says otherwise, because most report widgets are
+     * full width and a format where the common case needs no ceremony is one
+     * people get right.
+     *
+     * A grid-card is the exception and the reason this map exists: it draws one
+     * metric against one dimension, so it is a card rather than a table, and a
+     * quarter of the row is its natural size. Expressed here rather than
+     * written into every card definition -- the default IS the type's meaning,
+     * and a card that had to declare its own width could be authored at full
+     * width, which is the layout it exists to avoid.
+     */
+    const DEFAULT_COLSPANS = array(
+        'grid-card' => 3,
+    );
+
+    /**
+     * The width a widget of this type gets when it names none.
+     *
+     * @param array $widget
+     * @return int
+     */
+    public static function defaultColspan( $widget ) {
+
+        $widget = (array) $widget;
+
+        $type = isset( $widget['type'] ) ? (string) $widget['type'] : '';
+
+        return isset( self::DEFAULT_COLSPANS[ $type ] )
+            ? self::DEFAULT_COLSPANS[ $type ]
+            : self::COLUMNS;
+    }
+
+    /**
      * The column span a widget actually gets.
      *
-     * Absent means full width: most report widgets are full width, and a format
-     * where the common case needs no ceremony is one people get right.
+     * Absent means whatever the TYPE defaults to -- full width for most, a
+     * quarter for a grid-card. See DEFAULT_COLSPANS.
      *
      * @param array $widget
      * @return int between 1 and COLUMNS
@@ -66,9 +101,11 @@ class ReportGrid {
 
         $widget = (array) $widget;
 
+        $default = self::defaultColspan( $widget );
+
         if ( ! isset( $widget['colspan'] ) || $widget['colspan'] === '' ) {
 
-            return self::COLUMNS;
+            return $default;
         }
 
         $span = (int) $widget['colspan'];
@@ -78,7 +115,7 @@ class ReportGrid {
             // Zero or negative would make grid-column: span 0, which the
             // browser treats as span 1 -- a widget silently one cell wide
             // rather than an error anyone would notice.
-            return self::COLUMNS;
+            return $default;
         }
 
         return $span > self::COLUMNS ? self::COLUMNS : $span;

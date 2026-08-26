@@ -34,5 +34,9 @@ class CustomReportEdit extends \OWA\Core\View {
         $this->body->set( 'max_widgets', $this->get( 'max_widgets' ) );
         $this->body->set( 'max_metrics', $this->get( 'max_metrics' ) );
         $this->body->set( 'max_dimensions', $this->get( 'max_dimensions' ) );
+        $this->body->set( 'full_width_types', $this->get( 'full_width_types' ) );
+        $this->body->set( 'single_field_types', $this->get( 'single_field_types' ) );
+        $this->body->set( 'default_colspans', $this->get( 'default_colspans' ) );
+        $this->body->set( 'grid_columns', $this->get( 'grid_columns' ) );
     }
 }
