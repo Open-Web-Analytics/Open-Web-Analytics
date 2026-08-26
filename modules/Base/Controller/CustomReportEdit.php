@@ -352,7 +352,16 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * because the site is a real input here: it decides which site the View
          * link and the saved report's URL name.
          */
-        $this->hideReportingNavigation();
+        /*
+         * The reporting navigation STAYS on this screen.
+         *
+         * It was hidden because the builder is a form rather than a report, and
+         * a form with a report's chrome around it looked like a mistake. It is
+         * the wrong call: the builder is reached from the roster and left for
+         * the report it just made, and both of those are in that nav -- so
+         * hiding it made the one screen in the reporting section with no way
+         * back into it.
+         */
         $this->hideTimeControls();
     }
 }

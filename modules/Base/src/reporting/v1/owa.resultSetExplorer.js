@@ -1530,11 +1530,38 @@ OWA.dataGrid.prototype = {
          * option an array index for a value, so choosing "Date" asked the grid
          * to group by "7".
          */
+        /*
+         * A dimension the grid queries but does not SHOW is not part of this
+         * control.
+         *
+         * Six shipped grids group by a label and its url or id together and
+         * exclude the second from the columns -- top content is grouped by
+         * pageTitle AND pagePath, and pagePath is there only so the rows can
+         * link somewhere. The bar drew a picker for it all the same, so a grid
+         * showing one column offered two pickers, the second naming a column
+         * the reader cannot see.
+         *
+         * Split rather than dropped: the hidden ones still have to travel with
+         * every refetch, or the first regroup would take pagePath out of the
+         * query and the row links would quietly stop being links.
+         */
+        var allDimensions = this.getDimensions( resultSet ).filter( Boolean );
+        var excluded      = this.options.excludeColumns || [];
+
+        var hiddenDimensions = allDimensions.filter( function ( name ) {
+            return excluded.indexOf( name ) !== -1;
+        } );
+
+        var shownDimensions = allDimensions.filter( function ( name ) {
+            return excluded.indexOf( name ) === -1;
+        } );
+
         var dimensionControls = new OWA.dimensionSelectors(
             '#' + this.dom_id + '_grid_secondDimensionChooser',
             {
                 choices: resultSet.relatedDimensions || {},
-                selected: this.getDimensions( resultSet ).filter( Boolean ),
+                selected: shownDimensions,
+                hidden: hiddenDimensions,
                 onChange: function ( dims ) {
                     jQuery( '#' + that.dom_id ).trigger( 'dimension_list_change', [ dims ] );
                 }
@@ -1833,6 +1860,15 @@ OWA.dimensionSelectors = function ( target_dom_selector, options ) {
         // Names currently grouped by, in column order.
         selected: [],
         /*
+         * Grouped by, but not shown -- and not this control's to offer.
+         *
+         * They are added back to every emitted list, because they are part of
+         * the query even though they are not part of the choice: a grid whose
+         * rows link somewhere needs the column the link is built from, and
+         * dropping it on the first regroup would take the links with it.
+         */
+        hidden: [],
+        /*
          * Two.
          *
          * Not a data limit -- the grid will group by more, and some shipped
@@ -2009,9 +2045,13 @@ OWA.dimensionSelectors.prototype = {
 
         if ( typeof this.options.onChange === 'function' ) {
 
-            // Empty slots are a control state, not a grouping. The grid is
-            // asked for the dimensions that were actually chosen.
-            this.options.onChange( this.selected.filter( Boolean ) );
+            /*
+             * Empty slots are a control state, not a grouping, so they are
+             * dropped -- and the hidden ones are added back, because they are
+             * part of the query the grid has to reissue.
+             */
+            this.options.onChange(
+                this.selected.filter( Boolean ).concat( this.options.hidden || [] ) );
         }
     }
 };

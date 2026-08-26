@@ -17,6 +17,21 @@
         },
         {
             "type": "grid",
+            "id": "latestVisits",
+            "container": "latest-visits",
+            "title": "Latest Visits",
+            "query": {
+                "metrics": "visits,pagesPerVisit,visitDuration",
+                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "more": {
+                "reportId": "latest-visits"
+            }
+        },
+        {
+            "type": "grid",
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
@@ -97,22 +112,6 @@
                 "metrics": "visits",
                 "dimensions": "medium",
                 "sort": "visits-"
-            }
-        },
-        {
-            "type": "grid",
-            "id": "latestVisits",
-            "container": "latest-visits",
-            "title": "Latest Visits",
-            "colspan": 6,
-            "query": {
-                "metrics": "visits,pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
-                "resultsPerPage": 10
-            },
-            "more": {
-                "reportId": "latest-visits"
             }
         },
         {

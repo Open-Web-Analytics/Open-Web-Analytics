@@ -1078,6 +1078,112 @@ li.constraintRow {
 }
 
 /*
+ * Choosing what kind of widget to add.
+ *
+ * A list of choices rather than a select, because the name alone does not say
+ * which to reach for -- "Table" beside "Table card" is a distinction you can
+ * only make from the sentence under it.
+ */
+.owa .owa_typeChoices {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa .owa_typeChoices li {
+    /* The generic horizontal-list rules float list items; these stack. */
+    float: none;
+    margin: 0 0 8px 0;
+    padding: 0;
+}
+
+.owa .owa_typeChoice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+/*
+ * A drawing of the thing, at a size you can actually read as one -- the two
+ * table types are a word apart, and the shapes are what separate them at a
+ * glance. Fixed width so every name starts at the same place: icons differ in
+ * their natural width, and ragged labels read as a broken list.
+ */
+.owa .owa_typeChoiceIcon {
+    flex: 0 0 auto;
+    width: 32px;
+    font-size: 26px;
+    line-height: 1;
+    text-align: center;
+    color: #6a8fb5;
+}
+
+.owa .owa_typeChoiceText {
+    min-width: 0;
+}
+
+.owa .owa_typeChoice:hover,
+.owa .owa_typeChoice:focus {
+    border-color: #9ec2e6;
+    background: #f5faff;
+}
+
+.owa .owa_typeChoiceName {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.owa .owa_typeChoiceHint {
+    display: block;
+    font-size: 11px;
+    color: #808080;
+    line-height: 1.4;
+}
+
+/*
+ * What kind of widget is being edited, beside its name.
+ *
+ * The type is settled at the plus and is not a control here, so it is a label
+ * rather than a disabled select -- but it has to be SOMEWHERE, because half the
+ * modal's fields are missing or singular because of it.
+ */
+.owa .owa_builderNameRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.owa .owa_builderNameRow input {
+    /* The name takes the room; the pill is as wide as its words. */
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.owa .owa_typePill {
+    flex: 0 0 auto;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background-color: #e8e8e8;
+    color: #505050;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.owa .owa_typePill i {
+    margin-right: 4px;
+    color: #6a8fb5;
+}
+
+/*
  * Where a control would be, when the type decided it instead.
  *
  * It sits in the field row the column-span picker was taken out of, so the row

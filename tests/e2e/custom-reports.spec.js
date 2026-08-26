@@ -106,13 +106,50 @@ function chosenPills(page, selectId) {
     return page.locator(`#${selectId}_chosen .search-choice`);
 }
 
+/**
+ * Add a widget of a given type, through the plus.
+ *
+ * The type is chosen BEFORE the widget modal opens -- the modal is built for a
+ * type, so there has to be one first. That is also why configureWidget() below
+ * takes no type: by the time a block exists, its type is settled.
+ */
+async function addWidget(page, type, opts = {}) {
+    await page.click('#addWidget');
+
+    await expect(page.locator('#typeDialog')).toBeVisible();
+    await page.locator(`.owa_typeChoice[data-type="${type}"]`).click();
+
+    // Choosing lands straight in the widget modal, on the block just added.
+    await expect(page.locator('#widgetDialog')).toBeVisible();
+
+    await fillWidget(page, opts);
+}
+
+/**
+ * One widget of a given type, and nothing else.
+ *
+ * A new report starts with one grid block so the canvas is never empty. A test
+ * that wants a single widget of some OTHER type adds one and drops that
+ * default, rather than asserting past it.
+ */
+async function onlyWidget(page, type, opts = {}) {
+    await addWidget(page, type, opts);
+
+    await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
+    await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+}
+
 /** Open a block's modal, set some fields, and close it with Done. */
 async function configureWidget(page, index, opts) {
     await page.locator('.owa_builderBlock').nth(index).locator('.owa_builderEdit').click();
     await expect(page.locator('#widgetDialog')).toBeVisible();
 
+    await fillWidget(page, opts);
+}
+
+/** Fill the widget modal that is already open, and close it with Done. */
+async function fillWidget(page, opts) {
     if (opts.title !== undefined) { await page.fill('#dlgTitle', opts.title); }
-    if (opts.type)                { await page.selectOption('#dlgType', opts.type); }
     if (opts.colspan)             { await page.selectOption('#dlgColspan', String(opts.colspan)); }
     if (opts.rowspan)             { await page.selectOption('#dlgRowspan', String(opts.rowspan)); }
 
@@ -142,15 +179,40 @@ test.describe('custom reports', () => {
         test('the builder offers the buildable widget types and nothing else', async ({ page }) => {
             await openBuilder(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            // Asked at the plus, before the widget modal: the modal is built
+            // FOR a type, so there has to be one before it can open.
+            await page.click('#addWidget');
+            await expect(page.locator('#typeDialog')).toBeVisible();
 
-            const types = await page.locator('#dlgType option')
-                .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
+            const types = await page.locator('.owa_typeChoice')
+                .evaluateAll((els) => els.map((e) => e.getAttribute('data-type')));
 
             // Two table types, deliberately: a full-width explorable grid and a
             // quarter-width card. See CustomReports::FULL_WIDTH_TYPES.
-            expect(types.sort()).toEqual(['grid', 'grid-card', 'metric-boxes', 'pie', 'trend']);
+            expect(types.slice().sort()).toEqual(['grid', 'grid-card', 'metric-boxes', 'pie', 'trend']);
+
+            // Each says what it is for -- "Table" beside "Table card" is a
+            // distinction nobody can make from the names alone.
+            for (const hint of await page.locator('.owa_typeChoiceHint').allInnerTexts()) {
+                expect(hint.trim().length).toBeGreaterThan(10);
+            }
+        });
+
+        /**
+         * ...and the type is settled once the block exists.
+         *
+         * It used to be a select inside the widget modal, which made that one
+         * form have to be every form at once -- and every answer already given
+         * had to be re-examined whenever the type changed. A trend has no
+         * dimension to pick; a card takes one metric where a table takes four.
+         */
+        test('the widget modal does not offer the type again', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await expect(page.locator('#dlgType')).toHaveCount(0);
         });
 
         /**
@@ -509,9 +571,8 @@ test.describe('custom reports', () => {
         test('the span set in the modal is shown on the block', async ({ page }) => {
             await openBuilder(page);
 
-            await configureWidget(page, 0, {
+            await onlyWidget(page, 'trend', {
                 title: 'Revenue by day',
-                type: 'trend',
                 colspan: 4,
                 rowspan: 2,
                 metrics: ['pageViews'],
@@ -545,10 +606,9 @@ test.describe('custom reports', () => {
         test('a grid has no column span to set, and says why', async ({ page }) => {
             await openBuilder(page);
 
+            // The block a new report starts with is a grid.
             await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
             await expect(page.locator('#widgetDialog')).toBeVisible();
-
-            await page.selectOption('#dlgType', 'grid');
 
             await expect(page.locator('#dlgColspanField')).toBeHidden();
             await expect(page.locator('#dlgWidthNote')).toContainText('always full width');
@@ -556,11 +616,91 @@ test.describe('custom reports', () => {
             // The row span is still the author's -- only the width is decided.
             await expect(page.locator('#dlgRowspan')).toBeVisible();
 
-            // ...and switching to a card gives the width back.
-            await page.selectOption('#dlgType', 'grid-card');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            // ...and a card has a width to choose.
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
 
             await expect(page.locator('#dlgColspanField')).toBeVisible();
             await expect(page.locator('#dlgWidthNote')).toBeHidden();
+        });
+
+        /**
+         * A trend is a metric OVER TIME. That is what makes it a trend, so
+         * there is no dimension to pick and no order to choose -- and offering
+         * a picker with one legal value is worse than offering none.
+         */
+        test('a trend asks for no dimension and says it is by date', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="trend"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await expect(page.locator('#dlgDimensionsField')).toBeHidden();
+            await expect(page.locator('#dlgSortField')).toBeHidden();
+            await expect(page.locator('#dlgDimensionNote')).toContainText('always by date');
+
+            // A metric SET, though: a trend draws a box per metric under its
+            // chart, so it is one of the types a set is for.
+            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
+
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            // ...and it is stored grouped by date all the same, because that is
+            // the query a trend issues.
+            const stored = await page.evaluate(() => {
+                document.querySelector('#customReportForm')
+                    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                return document.querySelector('#customReportDefinition').value;
+            });
+
+            const trend = JSON.parse(stored).widgets.find((w) => w.type === 'trend');
+
+            expect(trend.query.dimensions).toBe('date');
+            expect(trend.query.sort).toBe('date');
+            expect(trend.chartMetric).toBe('pageViews');
+        });
+
+        /**
+         * A row of totals has nothing to group by either, but for a different
+         * reason -- and the sentence says which.
+         */
+        test('metric boxes ask for no dimension, because they are totals', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="metric-boxes"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await expect(page.locator('#dlgDimensionsField')).toBeHidden();
+            await expect(page.locator('#dlgDimensionNote')).toContainText('totals for the period');
+        });
+
+        /**
+         * A card draws one metric, so it is offered a METRIC, not a metric set.
+         *
+         * The report metric set is several metrics, and a card ranks its rows
+         * by one -- so calling the field "Metrics" there would be offering a
+         * set the widget has no way to draw.
+         */
+        test('a card asks for one metric, a table for a set', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('report metric set');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+
+            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metric');
+            await expect(page.locator('#dlgDimensionsLabel')).toHaveText('Dimension');
+            await expect(page.locator('#dlgMetricsHelp')).not.toContainText('report metric set');
         });
 
         test('a card takes one metric and one dimension and then offers no more',
@@ -568,8 +708,9 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await page.selectOption('#dlgType', 'grid-card');
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
 
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
             await chooseInChosen(page, 'dlgDimensions', 'pagePath');
@@ -591,38 +732,14 @@ test.describe('custom reports', () => {
             expect(await spare('dlgDimensions')).toBe(0);
         });
 
-        /**
-         * Changing type to a card keeps the FIRST of what was already picked.
-         *
-         * Trimmed in the dialog rather than at save, so the screen shows what
-         * will be stored -- three metric pills beside a type that allows one is
-         * a screen disagreeing with itself.
+        /*
+         * The test that used to sit here checked that switching a grid to a
+         * card trimmed its metrics to one. A widget's type is settled when it
+         * is added now, so there is no switch to trim after -- the pickers are
+         * capped for the type from the moment the modal opens, which is what
+         * 'a card takes one metric and one dimension and then offers no more'
+         * covers.
          */
-        test('switching a configured grid to a card trims it to one of each',
-            async ({ page }) => {
-
-            await openBuilder(page);
-
-            await configureWidget(page, 0, {
-                type: 'grid',
-                metrics: ['pageViews', 'uniquePageViews'],
-                dimensions: ['pagePath', 'pageTitle'],
-            });
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
-
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(2);
-
-            await page.selectOption('#dlgType', 'grid-card');
-
-            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
-            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
-
-            // The first, not an arbitrary one.
-            await expect(chosenPills(page, 'dlgMetrics').first()).toContainText('pageViews');
-            await expect(chosenPills(page, 'dlgDimensions').first()).toContainText('pagePath');
-        });
 
         /*
          * ------------------------------------------------------------------
@@ -641,8 +758,9 @@ test.describe('custom reports', () => {
         test('a card is offered only the reports its dimension can reach', async ({ page }) => {
             await openBuilder(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await page.selectOption('#dlgType', 'grid-card');
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
 
             // Nothing to link from yet.
             await expect(page.locator('#dlgLinkField')).toBeHidden();
@@ -670,8 +788,9 @@ test.describe('custom reports', () => {
         test('the full-report link is scoped to the dimension too', async ({ page }) => {
             await openBuilder(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await page.selectOption('#dlgType', 'grid-card');
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
 
             // Nothing shown yet, so there is no "more of the same thing".
             await expect(page.locator('#dlgMoreField')).toBeHidden();
@@ -702,9 +821,8 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            await configureWidget(page, 0, {
+            await onlyWidget(page, 'grid-card', {
                 title: 'Top pages',
-                type: 'grid-card',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
                 link: 'document',
@@ -758,9 +876,8 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            await configureWidget(page, 0, {
+            await onlyWidget(page, 'pie', {
                 title: 'Pages',
-                type: 'pie',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
             });
@@ -824,8 +941,7 @@ test.describe('custom reports', () => {
             // A pie, because a grid has no width to set -- it is full width by
             // type. This test is about a span surviving the round trip, so it
             // uses a type that still has one.
-            await configureWidget(page, 0, {
-                type: 'pie',
+            await onlyWidget(page, 'pie', {
                 colspan: 3, rowspan: 2,
                 metrics: ['pageViews'], dimensions: ['pagePath'],
             });
@@ -871,19 +987,16 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            // A grid...
+            // A grid -- the block a new report starts with...
             await configureWidget(page, 0, {
                 title: 'Pages',
-                type: 'grid',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
             });
 
             // ...and a metric-boxes widget, which was the first one noticed.
-            await page.click('#addWidget');
-            await configureWidget(page, 1, {
+            await addWidget(page, 'metric-boxes', {
                 title: 'Totals',
-                type: 'metric-boxes',
                 metrics: ['visits'],
             });
 
@@ -931,15 +1044,12 @@ test.describe('custom reports', () => {
 
             await configureWidget(page, 0, {
                 title: 'Pages',
-                type: 'grid',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
             });
 
-            await page.click('#addWidget');
-            await configureWidget(page, 1, {
+            await addWidget(page, 'grid-card', {
                 title: 'Top pages',
-                type: 'grid-card',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
             });
@@ -1000,9 +1110,8 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            await configureWidget(page, 0, {
+            await onlyWidget(page, 'metric-boxes', {
                 title: 'Totals',
-                type: 'metric-boxes',
                 metrics: ['visits', 'uniqueVisitors', 'pageViews'],
             });
 

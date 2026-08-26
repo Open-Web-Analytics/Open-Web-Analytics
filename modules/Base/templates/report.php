@@ -98,14 +98,30 @@ jQuery(document).ready(function(){
                     </div>
                     <?php endif; ?>
 
-                    <div class="owa_reportTitle"><?php echo $view->title;?><?php
+                    <?php
                         /*
                          * A count beside the title, as a quiet pill. It says how
                          * much is on the page, which a heading alone does not,
                          * without competing with the heading for attention.
+                         *
+                         * ABSENT IS `false`, NOT NULL. View::get() answers false
+                         * for a key nobody set, so `!== null` is not an absence
+                         * check here -- it was true on every report, and out()
+                         * prints false as nothing, so every report in the
+                         * install grew an empty grey pill beside its heading.
+                         *
+                         * Zero still draws: a roster with nothing on it says so,
+                         * and 0 !== false, so the two stay distinguishable.
                          */
-                        ?><?php if ( $view->get( 'title_count' ) !== null && $view->get( 'title_count' ) !== '' ): ?><span
-                            class="owa_titleCount"><?php $view->out( $view->get( 'title_count' ) ); ?></span><?php
+                        $owa_titleCount = $view->get( 'title_count' );
+
+                        $owa_hasCount = $owa_titleCount !== false
+                            && $owa_titleCount !== null
+                            && $owa_titleCount !== '';
+                    ?>
+                    <div class="owa_reportTitle"><?php echo $view->title;
+                        ?><?php if ( $owa_hasCount ): ?><span
+                            class="owa_titleCount"><?php $view->out( $owa_titleCount ); ?></span><?php
                         endif; ?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span></div>
 
                     <div class="clear"></div>

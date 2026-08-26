@@ -101,10 +101,93 @@ final class ReportRenderCharacterizationTest extends TestCase
         $this->assertArrayHasKey( $key, self::$golden,
             "$id has no recorded render; regenerate deliberately and say why in the commit" );
 
-        $this->assertSame( self::$golden[ $key ], Render::snapshot( $id, $extra, $metricSets ),
+        $expected = self::$golden[ $key ];
+        $actual   = Render::snapshot( $id, $extra, $metricSets );
+
+        /*
+         * A report whose LAYOUT was deliberately redone emits the same queries
+         * in a different order, because the order here is the order its widgets
+         * are drawn in. Compared by widget rather than by position for those,
+         * so a moved widget reads as moved and a CHANGED query still fails.
+         *
+         * See Harness::RELAID_OUT for which reports, and why each one.
+         */
+        if ( $this->isRelaidOut( $id ) ) {
+
+            $expected = $this->byVar( $expected );
+            $actual   = $this->byVar( $actual );
+        }
+
+        $this->assertSame( $expected, $actual,
             "$id renders different queries or commands than it did. If this is the widget "
             . 'conversion, it is a regression; the point of the conversion is that this '
             . 'does not change.' );
+    }
+
+    /**
+     * Whether this report is one whose widgets were deliberately relaid out.
+     *
+     * The allowance is recorded against the CONTROLLER the golden file was
+     * taken from, so the report id is mapped through the same map the
+     * equivalence test's provider reads.
+     */
+    private function isRelaidOut( string $id ): bool
+    {
+        $class = \OWA\Tests\ReportCharacterizationHarness::CONVERTED[ $id ] ?? '';
+
+        return $class !== ''
+            && array_key_exists( $class, \OWA\Tests\ReportCharacterizationHarness::RELAID_OUT );
+    }
+
+    /**
+     * The emitted lists keyed by what each entry NAMES rather than by where it
+     * sits, so position stops being part of the comparison.
+     *
+     * Both sections are per widget: a query entry names the variable it builds
+     * ("topContenturl") and a command names the widget and method it calls
+     * ("topContent.refreshGrid"). Keying by those and sorting means moving a
+     * widget reads as moved, while adding, dropping or CHANGING any query or
+     * command still fails.
+     *
+     * A repeated key would silently merge two entries into one, so occurrences
+     * after the first keep a counter -- a duplicate stays a duplicate.
+     */
+    private function byVar( array $snapshot ): array
+    {
+        foreach ( $snapshot as $section => $entries ) {
+
+            if ( ! is_array( $entries ) ) {
+                continue;
+            }
+
+            $keyed = array();
+
+            foreach ( $entries as $i => $entry ) {
+
+                if ( is_array( $entry ) && isset( $entry['var'] ) ) {
+                    $key = (string) $entry['var'];
+                } elseif ( is_string( $entry ) ) {
+                    $key = $entry;
+                } else {
+                    $key = "#$i";
+                }
+
+                $n = 1;
+                $unique = $key;
+
+                while ( array_key_exists( $unique, $keyed ) ) {
+                    $unique = $key . ' (' . ( ++$n ) . ')';
+                }
+
+                $keyed[ $unique ] = $entry;
+            }
+
+            ksort( $keyed );
+
+            $snapshot[ $section ] = $keyed;
+        }
+
+        return $snapshot;
     }
 
     /**

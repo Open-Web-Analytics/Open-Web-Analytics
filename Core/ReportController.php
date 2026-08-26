@@ -220,6 +220,9 @@ class ReportController extends \OWA\Core\AdminController {
 
         $this->set('tabs', $tabs);
         $this->set('tabs_json', json_encode($tabs));
+
+        $nav = $this->withCustomReports( $nav );
+
         $this->set('top_level_report_nav', $nav);
     }
 
@@ -259,6 +262,86 @@ class ReportController extends \OWA\Core\AdminController {
         $ret = $db->getOneRow();
 
         return $ret['site_id'];
+    }
+
+    /**
+     * The reader's own custom reports, as a nav group.
+     *
+     * Added here rather than through registerNavigation() because these are
+     * ROWS, not registrations: they differ per reader, they change while the
+     * install is running, and half of them are invisible to anyone but their
+     * author. A module registering navigation is answering "what does this
+     * install have"; this is answering "what does this person have".
+     *
+     * The list ends with "See more..." rather than relying on the group heading
+     * -- the heading is a toggle as much as a link, so a reader with more than
+     * ten needs a line that plainly says where the rest are.
+     *
+     * One small indexed query per report render. Worth it for the thing being
+     * bought -- a custom report that is not in the nav is a custom report
+     * nobody finds twice -- but it is the reason this reads ten rows and not
+     * five hundred.
+     *
+     * @param array $nav
+     * @return array
+     */
+    private function withCustomReports( array $nav ) {
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        // The roster's own capability: an entry that leads to a screen the
+        // reader cannot open is worse than no entry.
+        if ( ! $user->isCapable( 'view_site_list' ) ) {
+
+            return $nav;
+        }
+
+        $reports = \OWA\Module\Base\Classes\CustomReports::recent(
+            (string) $user->getUserData( 'user_id' ),
+            (bool) $user->isCapable( 'edit_users' )
+        );
+
+        $links = array();
+
+        foreach ( $reports as $i => $report ) {
+
+            $links[] = array(
+                'ref' => array(
+                    'do'       => 'base.report',
+                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $report['id'],
+                ),
+                'anchortext' => $report['name'],
+                'order'      => $i,
+                'priviledge' => 'view_reports',
+                'icon_class' => '',
+            );
+        }
+
+        /*
+         * ...and the way to all of them, last.
+         *
+         * Always present, including when there are none: the roster is where a
+         * report gets built, so an empty group still has somewhere to send a
+         * reader.
+         */
+        $links[] = array(
+            'ref'        => array( 'do' => 'base.customReports' ),
+            'anchortext' => 'See more...',
+            'order'      => count( $links ),
+            'priviledge' => 'view_site_list',
+            'icon_class' => '',
+        );
+
+        $nav['Custom Reports'] = array(
+            'ref'        => array( 'do' => 'base.customReports' ),
+            'anchortext' => 'Custom Reports',
+            'order'      => 999,
+            'priviledge' => 'view_site_list',
+            'icon_class' => 'fa fa-th-list',
+            'subgroup'   => $links,
+        );
+
+        return $nav;
     }
 
     protected function hideReportingNavigation() {

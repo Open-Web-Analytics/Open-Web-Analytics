@@ -125,17 +125,68 @@ $owa_max        = (int) $view->get('max_widgets');
     </div>
 </form>
 
+<?php
+    /*
+     * What kind of widget, asked FIRST.
+     *
+     * The type decides what the rest of the questions are -- a trend is always
+     * by date and has no dimension to pick, a card takes one metric where a
+     * table takes four, only a card's rows can be links. Asking it inside the
+     * widget modal meant one form that had to be every form at once, and every
+     * answer already given had to be re-examined each time the type changed.
+     *
+     * Asked here, the modal is built for a type that is already known. The
+     * consequence is that a widget's type is fixed once it is added: to change
+     * it, remove the block and add the kind you meant. That is the honest
+     * trade -- a card and a trend share a name and almost nothing else.
+     */
+?>
+<div id="typeDialog" class="owa_typeDialog" style="display:none;">
+    <ul class="owa_typeChoices">
+    <?php foreach ( (array) $view->get('widget_types') as $owa_key => $owa_label ): ?>
+        <li>
+            <button type="button" class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>">
+                <?php
+                    /*
+                     * Decorative: the name beside it says the same thing, so
+                     * the icon is hidden from assistive technology rather than
+                     * read out as a second, worse label.
+                     */
+                ?>
+                <i class="owa_typeChoiceIcon <?php $view->out(
+                    \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"
+                   aria-hidden="true"></i>
+                <span class="owa_typeChoiceText">
+                    <span class="owa_typeChoiceName"><?php $view->out( $owa_label ); ?></span>
+                    <span class="owa_typeChoiceHint"><?php
+                        $view->out( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_HINTS[ $owa_key ] ?? '' ); ?></span>
+                </span>
+            </button>
+        </li>
+    <?php endforeach; ?>
+    </ul>
+</div>
+
 <?php /* The modal body. Hidden here; jQuery UI lifts it into a dialog. */ ?>
 <div id="widgetDialog" class="owa_widgetDialog" style="display:none;">
 
     <div class="owa_builderField">
         <label for="dlgTitle">Widget name</label>
-        <input type="text" id="dlgTitle" />
-    </div>
-
-    <div class="owa_builderField">
-        <label for="dlgType">Type</label>
-        <select id="dlgType"></select>
+        <?php
+            /*
+             * The name, and what KIND of thing is being named.
+             *
+             * The type is chosen at the plus and cannot be changed here, so
+             * without this the modal never says which of the five you are
+             * editing -- and half its fields are missing or singular BECAUSE of
+             * the type. A pill rather than a disabled control: there is no
+             * choice being withheld, it is a label.
+             */
+        ?>
+        <div class="owa_builderNameRow">
+            <input type="text" id="dlgTitle" />
+            <span class="owa_typePill" id="dlgTypePill"></span>
+        </div>
     </div>
 
     <div class="owa_builderFieldRow">
@@ -163,15 +214,30 @@ $owa_max        = (int) $view->get('max_widgets');
     </div>
 
     <div class="owa_builderFieldRow">
-        <div class="owa_builderField">
-            <label for="dlgMetrics">Metrics</label>
+        <?php
+            /*
+             * The label is singular or plural depending on the type, because
+             * the two are different things. A table or a set of boxes takes a
+             * METRIC SET -- several, and the report's own set if it names none.
+             * A card or a pie draws one metric and cannot use a set at all, so
+             * calling that field "Metrics" would be offering a set that the
+             * widget has no way to draw.
+             */
+        ?>
+        <div class="owa_builderField" id="dlgMetricsField">
+            <label for="dlgMetrics" id="dlgMetricsLabel">Metrics</label>
             <select id="dlgMetrics" class="owa_builderChosen" multiple="multiple"></select>
+            <div class="owa_builderHelp" id="dlgMetricsHelp"></div>
         </div>
 
-        <div class="owa_builderField">
-            <label for="dlgDimensions">Dimensions</label>
+        <div class="owa_builderField" id="dlgDimensionsField">
+            <label for="dlgDimensions" id="dlgDimensionsLabel">Dimensions</label>
             <select id="dlgDimensions" class="owa_builderChosen" multiple="multiple"></select>
+            <div class="owa_builderHelp" id="dlgDimensionsHelp"></div>
         </div>
+
+        <?php /* ...or the sentence saying the type has already decided. */ ?>
+        <div class="owa_builderField owa_builderNote" id="dlgDimensionNote" style="display:none;"></div>
     </div>
 
     <?php
@@ -218,7 +284,7 @@ $owa_max        = (int) $view->get('max_widgets');
         </div>
     </div>
 
-    <div class="owa_builderField">
+    <div class="owa_builderField" id="dlgSortField">
         <label for="dlgSort">Sort</label>
         <input type="text" id="dlgSort" placeholder="visits-" />
         <div class="owa_builderHelp">
@@ -286,6 +352,9 @@ $owa_max        = (int) $view->get('max_widgets');
 
     var MORE_LABEL = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>;
 
+    /* The same icons the type chooser shows, for the pill in the modal. */
+    var TYPE_ICONS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS ); ?>;
+
     /*
      * The types whose link column is unambiguous.
      *
@@ -294,6 +363,36 @@ $owa_max        = (int) $view->get('max_widgets');
      * separately; a pie has slices rather than rows.
      */
     var LINKABLE_TYPES = [ 'grid-card' ];
+
+    /*
+     * dimension -> the value it is fixed to, for the types that do not choose.
+     * A trend is a metric over time; that is what makes it a trend.
+     */
+    var FIXED_DIMENSIONS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSIONS ); ?>;
+
+    /*
+     * Types that show totals rather than a breakdown, so there is nothing to
+     * group by. Unlike FIXED_DIMENSIONS this is only about the FORM: a
+     * hand-written metric-boxes widget with dimensions is not refused, it is
+     * simply not something this screen asks for.
+     */
+    var UNGROUPED_TYPES = [ 'metric-boxes' ];
+
+    function fixedDimension( type ) {
+        return Object.prototype.hasOwnProperty.call( FIXED_DIMENSIONS, type )
+            ? FIXED_DIMENSIONS[ type ]
+            : null;
+    }
+
+    /** Whether the author picks the dimensions for this type at all. */
+    function picksDimensions( type ) {
+        return fixedDimension( type ) === null && UNGROUPED_TYPES.indexOf( type ) === -1;
+    }
+
+    /** The type the dialog is open on. It cannot change while it is open. */
+    function editingType() {
+        return editing === null ? '' : widgets[ editing ].type;
+    }
 
     /* Types that draw one metric as a chart and need to be told which. */
     var CHART_TYPES = [ 'trend', 'pie' ];
@@ -336,11 +435,11 @@ $owa_max        = (int) $view->get('max_widgets');
      * after the first -- rather than offering a second and refusing it on save.
      */
     function maxMetrics() {
-        return isSingleField( jQuery( '#dlgType' ).val() ) ? 1 : MAX_METRICS;
+        return isSingleField( editingType() ) ? 1 : MAX_METRICS;
     }
 
     function maxDimensions() {
-        return isSingleField( jQuery( '#dlgType' ).val() ) ? 1 : MAX_DIMENSIONS;
+        return isSingleField( editingType() ) ? 1 : MAX_DIMENSIONS;
     }
 
     var definition = <?php echo json_encode( $owa_definition ) ?: '{}'; ?>;
@@ -354,21 +453,10 @@ $owa_max        = (int) $view->get('max_widgets');
     // A new report starts from one block. A report with no widgets cannot be
     // saved, and an empty canvas gives the author nothing to press.
     if ( ! widgets.length ) {
-        widgets = [ newWidget( 0 ) ];
+        widgets = [ newWidget( 0, 'grid' ) ];
     }
 
     var editing = null;   // index of the widget the dialog is open on
-
-    /*
-     * The type the dialog was showing before the last change.
-     *
-     * Kept so a type change can tell an untouched width from a chosen one: the
-     * span picker follows the new type's default only when it was still sitting
-     * on the old type's default. Without it, switching a new grid to a card
-     * left the picker on 12 and the card saved full width -- which is the one
-     * layout the type exists to prevent.
-     */
-    var dialogTypeWas = null;
 
     /*
      * The report the widget's rows link to, as the dialog was opened.
@@ -382,22 +470,34 @@ $owa_max        = (int) $view->get('max_widgets');
     /** ...and the same for the link below the widget, for the same reason. */
     var dialogMore = '';
 
-    function newWidget( index ) {
+    function newWidget( index, type ) {
 
-        /*
-         * A table, and no colspan.
-         *
-         * A grid is full width by type, and the width it draws at is
-         * ReportGrid's answer rather than a number copied into every
-         * definition -- so an absent colspan is the honest record of "this is
-         * not the author's to choose".
-         */
-        return {
-            type: 'grid',
+        type = type || 'grid';
+
+        var widget = {
+            type: type,
             title: 'Widget ' + ( index + 1 ),
             rowspan: 1,
             query: {}
         };
+
+        /*
+         * A colspan only where the author has one to choose. A full-width type
+         * records none, so the width it draws at stays ReportGrid's answer
+         * rather than a number copied into every definition.
+         */
+        if ( ! isFullWidth( type ) ) {
+            widget.colspan = defaultColspan( type );
+        }
+
+        var fixed = fixedDimension( type );
+
+        if ( fixed !== null ) {
+            widget.query.dimensions = fixed;
+            widget.query.sort       = fixed;
+        }
+
+        return widget;
     }
 
     /** A comma string from the definition, as an array of names. */
@@ -667,16 +767,11 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( '#dlgTitle' ).val( widget.title || ( 'Widget ' + ( index + 1 ) ) );
 
-        var $type = jQuery( '#dlgType' ).empty();
-
-        Object.keys( TYPES ).forEach( function ( key ) {
-            $type.append( jQuery( '<option>' ).attr( 'value', key )
-                .prop( 'selected', widget.type === key ).text( TYPES[ key ] ) );
-        } );
-
-        // No previous type: the width shown is the widget's own, whatever the
-        // dialog happened to be showing for the widget before it.
-        dialogTypeWas = null;
+        jQuery( '#dlgTypePill' )
+            .empty()
+            .append( jQuery( '<i aria-hidden="true">' )
+                .attr( 'class', TYPE_ICONS[ widget.type ] || '' ) )
+            .append( document.createTextNode( ' ' + ( TYPES[ widget.type ] || widget.type ) ) );
 
         dialogLink = String( ( ( widget.link || {} ).template || {} ).reportId || '' );
         dialogMore = String( ( widget.more || {} ).reportId || '' );
@@ -729,48 +824,55 @@ $owa_max        = (int) $view->get('max_widgets');
      */
     function applyTypeRules() {
 
-        var type = jQuery( '#dlgType' ).val();
-
-        /*
-         * The width follows the type, unless the author has moved it.
-         *
-         * Only when the picker is still on what the OLD type defaulted to --
-         * an author who deliberately set a pie to 4 and then switched it to a
-         * trend keeps their 4.
-         */
-        if ( dialogTypeWas !== null && dialogTypeWas !== type ) {
-
-            var $span = jQuery( '#dlgColspan' );
-
-            if ( Number( $span.val() ) === defaultColspan( dialogTypeWas ) ) {
-
-                $span.val( String( defaultColspan( type ) ) );
-            }
-        }
-
-        dialogTypeWas = type;
+        var type   = editingType();
+        var single = isSingleField( type );
+        var name   = TYPES[ type ] || type;
 
         jQuery( '#dlgColspanField' ).toggle( ! isFullWidth( type ) );
 
         jQuery( '#dlgWidthNote' )
             .toggle( isFullWidth( type ) )
-            .text( ( TYPES[ type ] || type ) + ' is always full width, so it has room for '
+            .text( name + ' is always full width, so it has room for '
                  + 'its own filter and dimension controls.' );
 
         /*
-         * A type that takes one field keeps the FIRST of whatever was already
-         * picked. Trimmed here rather than at save, so the dialog shows what
-         * will be stored -- a picker still displaying three metrics beside a
-         * type that allows one is a screen disagreeing with itself.
+         * A metric SET, or one metric.
+         *
+         * A table or a row of boxes draws every metric it is given, and takes
+         * the report's own set when it names none. A card ranks its rows by one
+         * and a pie is a share of one, so neither can use a set at all -- which
+         * is why the field is singular for them and says so.
          */
-        if ( isSingleField( type ) ) {
+        jQuery( '#dlgMetricsLabel' ).text( single ? 'Metric' : 'Metrics' );
 
-            trimTo( '#dlgMetrics', 1 );
-            trimTo( '#dlgDimensions', 1 );
-        }
+        jQuery( '#dlgMetricsHelp' ).text( single
+            ? 'The one metric this ' + name.toLowerCase() + ' draws.'
+            : 'Up to ' + MAX_METRICS + '. Leave empty to use the report metric set.' );
+
+        var fixed = fixedDimension( type );
+
+        jQuery( '#dlgDimensionsField' ).toggle( picksDimensions( type ) );
+
+        jQuery( '#dlgDimensionsLabel' ).text( single ? 'Dimension' : 'Dimensions' );
+
+        jQuery( '#dlgDimensionsHelp' ).text( single
+            ? 'The one dimension its rows are grouped by.'
+            : 'Up to ' + MAX_DIMENSIONS + '. Each one is another column.' );
+
+        jQuery( '#dlgDimensionNote' )
+            .toggle( ! picksDimensions( type ) )
+            .text( fixed !== null
+                ? name + ' is always by ' + fixed + '.'
+                : name + ' shows totals for the period, so there is nothing to group by.' );
+
+        // A sort orders rows, and these types have none to order.
+        jQuery( '#dlgSortField' ).toggle( picksDimensions( type ) );
 
         narrowMetrics( '#dlgMetrics' );
-        narrowDimensions();
+
+        if ( picksDimensions( type ) ) {
+            narrowDimensions();
+        }
 
         refreshLinkControl();
         refreshMoreControl();
@@ -786,7 +888,7 @@ $owa_max        = (int) $view->get('max_widgets');
      */
     function refreshLinkControl() {
 
-        var type       = jQuery( '#dlgType' ).val();
+        var type       = editingType();
         var dimensions = jQuery( '#dlgDimensions' ).val() || [];
         var dimension  = dimensions.length === 1 ? dimensions[ 0 ] : '';
         var targets    = ( dimension && LINK_TARGETS[ dimension ] ) || [];
@@ -867,21 +969,6 @@ $owa_max        = (int) $view->get('max_widgets');
         } );
     }
 
-    /** Keep at most `limit` of a multi-select's values, in the order shown. */
-    function trimTo( selector, limit ) {
-
-        var $select = jQuery( selector );
-        var values  = $select.val() || [];
-
-        if ( values.length <= limit ) {
-            return;
-        }
-
-        $select.val( values.slice( 0, limit ) );
-
-        chosenSync( selector );
-    }
-
     /** Read the dialog back into the widget it was opened on. */
     function applyDialog() {
 
@@ -892,14 +979,14 @@ $owa_max        = (int) $view->get('max_widgets');
         var widget = widgets[ editing ];
         var query  = {};
 
-        widget.title   = jQuery( '#dlgTitle' ).val() || ( 'Widget ' + ( editing + 1 ) );
-        widget.type    = jQuery( '#dlgType' ).val();
+        // The type is not read back: it was chosen when the widget was added
+        // and the dialog was built for it.
+        widget.title = jQuery( '#dlgTitle' ).val() || ( 'Widget ' + ( editing + 1 ) );
+
         if ( isFullWidth( widget.type ) ) {
 
             // Not the author's to choose, so nothing is recorded -- see
-            // newWidget(). Deleted rather than left behind, because a widget
-            // whose type was CHANGED to a full-width one would otherwise keep
-            // the width it had as a card.
+            // newWidget(). The width it draws at stays ReportGrid's answer.
             delete widget.colspan;
 
         } else {
@@ -909,10 +996,29 @@ $owa_max        = (int) $view->get('max_widgets');
 
         widget.rowspan = Number( jQuery( '#dlgRowspan' ).val() ) || 1;
 
-        var metrics    = jQuery( '#dlgMetrics' ).val() || [];
-        var dimensions = jQuery( '#dlgDimensions' ).val() || [];
-        var sort       = jQuery.trim( jQuery( '#dlgSort' ).val() || '' );
-        var cons       = jQuery.trim( jQuery( '#dlgConstraints' ).val() || '' );
+        var metrics = jQuery( '#dlgMetrics' ).val() || [];
+        var cons    = jQuery.trim( jQuery( '#dlgConstraints' ).val() || '' );
+
+        /*
+         * The dimensions, from whichever of the three this type is.
+         *
+         * Fixed: written from the type, not from a control -- a trend is always
+         * by date, and its picker is a sentence saying so.
+         * Ungrouped: none at all; a row of totals has nothing to group by.
+         * Otherwise: what the author picked.
+         */
+        var fixed      = fixedDimension( widget.type );
+        var dimensions = fixed !== null
+            ? [ fixed ]
+            : ( picksDimensions( widget.type ) ? ( jQuery( '#dlgDimensions' ).val() || [] ) : [] );
+
+        // A sort orders rows. A fixed-dimension type orders by that dimension;
+        // an ungrouped one has no rows to order.
+        var sort = fixed !== null
+            ? fixed
+            : ( picksDimensions( widget.type )
+                ? jQuery.trim( jQuery( '#dlgSort' ).val() || '' )
+                : '' );
 
         if ( metrics.length ) {
             query.metrics = metrics.join( ',' );
@@ -1025,10 +1131,15 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogMore = jQuery( this ).val() || '';
     } );
 
-    // The type decides the width control and the field caps, so changing it
-    // has to redraw both.
-    jQuery( '#dlgType' ).on( 'change', applyTypeRules );
     jQuery( '#reportMetricSet' ).on( 'change', function () { narrowMetrics( '#reportMetricSet' ); } );
+
+    jQuery( '#typeDialog' ).dialog( {
+        autoOpen: false,
+        modal: true,
+        width: Math.min( 520, jQuery( window ).width() - 40 ),
+        title: 'Add a widget',
+        dialogClass: 'owa_widgetDialogFrame'
+    } );
 
     jQuery( '#widgetDialog' ).dialog( {
         autoOpen: false,
@@ -1075,9 +1186,29 @@ $owa_max        = (int) $view->get('max_widgets');
                 return;
             }
 
-            widgets.push( newWidget( widgets.length ) );
-            draw();
+            // What kind, first. The widget modal is built for a type, so there
+            // has to be one before it can be opened.
+            jQuery( '#typeDialog' ).dialog( 'open' );
         } );
+
+    jQuery( '#typeDialog' ).on( 'click', '.owa_typeChoice', function ( e ) {
+
+        e.preventDefault();
+
+        if ( widgets.length >= MAX ) {
+            return;
+        }
+
+        widgets.push( newWidget( widgets.length, jQuery( this ).attr( 'data-type' ) ) );
+
+        draw();
+
+        jQuery( '#typeDialog' ).dialog( 'close' );
+
+        // Straight into configuring it: the type was a question about what to
+        // build, not a step of its own.
+        openDialog( widgets.length - 1 );
+    } );
 
     fillChoices( jQuery( '#reportMetricSet' ), METRICS, names( definition.metrics ) );
 

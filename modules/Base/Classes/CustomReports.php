@@ -105,6 +105,55 @@ class CustomReports {
     );
 
     /**
+     * One line about each type, shown where the type is chosen.
+     *
+     * The type is picked before anything else about a widget is, so this is
+     * where an author decides what they are building -- and "Table" beside
+     * "Table card" says nothing about which to reach for. Kept beside
+     * WIDGET_TYPES rather than in the template so the two cannot drift.
+     */
+    const WIDGET_TYPE_HINTS = array(
+        'grid'          => 'A full-width table. Several metrics and dimensions, and the reader can regroup and filter it.',
+        'grid-card'     => 'A narrow table of one metric by one dimension. No controls; its rows can link to the report that details them.',
+        'pie'           => 'Share of one metric across the values of one dimension.',
+        'trend'         => 'One metric over time, as a chart. Always by date.',
+        'metric-boxes'  => 'Totals for the period, one box per metric.',
+    );
+
+    /**
+     * A picture of each type, for the screen where one is chosen.
+     *
+     * Font Awesome 5 names -- the icon set the reporting chrome already loads
+     * (see Base\View\Report). A drawing of the thing says which is which
+     * faster than either the name or the sentence does, which matters most on
+     * the two that are nearly the same word: a full table and a card.
+     */
+    const WIDGET_TYPE_ICONS = array(
+        'grid'          => 'fas fa-table',
+        'grid-card'     => 'fas fa-list-alt',
+        'pie'           => 'fas fa-chart-pie',
+        'trend'         => 'fas fa-chart-area',
+        'metric-boxes'  => 'fas fa-th-large',
+    );
+
+    /**
+     * Types whose dimensions are not the author's to choose, and what they are.
+     *
+     * A trend is a metric OVER TIME -- that is what makes it a trend rather
+     * than a chart of something else -- and all sixty-one shipped trends group
+     * by date because there is no other answer. Offering a dimension picker
+     * there offers a choice with one legal value.
+     *
+     * Presence in this map is what removes the picker; the value is what gets
+     * written. metric-boxes is deliberately NOT here: its boxes are totals, so
+     * it needs no grouping, but a hand-written one that has some is not wrong
+     * and is not refused.
+     */
+    const FIXED_DIMENSIONS = array(
+        'trend' => 'date',
+    );
+
+    /**
      * The two table widgets, and why there are two of them.
      *
      * A table and its controls are one decision, not two. A full-width `grid`
@@ -169,6 +218,12 @@ class CustomReports {
 
     /** How many dimensions a widget of this type may group by. */
     public static function maxDimensionsFor( $type ) {
+
+        if ( array_key_exists( (string) $type, self::FIXED_DIMENSIONS ) ) {
+
+            // Not a cap: there is nothing to choose. The value is fixed.
+            return 0;
+        }
 
         return in_array( (string) $type, self::SINGLE_FIELD_TYPES, true )
             ? 1
@@ -317,6 +372,26 @@ class CustomReports {
         }
 
         /*
+         * A type whose dimension is fixed has to be grouped by it. Checked
+         * first, because every other message about dimensions would be
+         * describing a choice this type does not have.
+         */
+        if ( array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
+
+            $fixed = self::FIXED_DIMENSIONS[ $type ];
+
+            if ( (string) ( $query['dimensions'] ?? '' ) !== $fixed ) {
+
+                return sprintf(
+                    '%s is a %s, which is always by %s; this one is by "%s".',
+                    $where,
+                    self::WIDGET_TYPES[ $type ] ?? $type,
+                    $fixed,
+                    (string) ( $query['dimensions'] ?? '' ) ?: 'nothing' );
+            }
+        }
+
+        /*
          * A single-field type is checked for EXACTLY one of each before the
          * ordinary caps, so a card with none reports the thing that is actually
          * wrong. The cap message ("asks for 2; 1 is the most") would be right
@@ -342,15 +417,25 @@ class CustomReports {
             return $error;
         }
 
-        $error = self::validateFieldCount(
-            isset( $query['dimensions'] ) ? $query['dimensions'] : '',
-            self::maxDimensionsFor( $type ), 'dimensions', $where,
-            'every dimension multiplies the rows, and a grid grouped that many ways '
-          . 'is a list of near-unique rows' );
+        /*
+         * Counted only where there is a choice. maxDimensionsFor() answers 0
+         * for a fixed-dimension type -- meaning "nothing to choose", which is
+         * what the picker needs to hear -- and running a CAP check against that
+         * would refuse a trend for being grouped by the one thing it must be
+         * grouped by. The fixed check above is that type's rule.
+         */
+        if ( ! array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
 
-        if ( $error !== '' ) {
+            $error = self::validateFieldCount(
+                isset( $query['dimensions'] ) ? $query['dimensions'] : '',
+                self::maxDimensionsFor( $type ), 'dimensions', $where,
+                'every dimension multiplies the rows, and a grid grouped that many ways '
+              . 'is a list of near-unique rows' );
 
-            return $error;
+            if ( $error !== '' ) {
+
+                return $error;
+            }
         }
 
         /*
@@ -1119,7 +1204,7 @@ class CustomReports {
      * @param bool   $all     true for a user who may see everyone's
      * @return array
      */
-    public static function roster( $user_id, $all = false, $sort = '', $descending = null ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -1152,9 +1237,11 @@ class CustomReports {
 
         // A literal, not a parameter: ASC and DESC are the only two values this
         // can ever be, chosen here rather than passed through.
+        $rows_wanted = ( $limit === null ) ? self::ROSTER_LIMIT : max( 0, (int) $limit );
+
         $sql .= ' ORDER BY ' . self::ROSTER_SORTS[ $key ]
               . ( $descending ? ' DESC' : ' ASC' )
-              . ' LIMIT ' . (int) self::ROSTER_LIMIT;
+              . ' LIMIT ' . (int) $rows_wanted;
 
         // get_results(), not query()->fetchAll(): query() returns the DRIVER's
         // own result and only PDO's has fetchAll(). Null for both no rows and a
@@ -1315,6 +1402,33 @@ class CustomReports {
         }
 
         return $definition;
+    }
+
+    /**
+     * How many custom reports the left-hand nav lists.
+     *
+     * The nav is a way IN, not an index -- the roster is the index, and the
+     * group's own heading links to it. Ten is enough that somebody's current
+     * work is nearly always there and few enough that the group can be read
+     * without scrolling.
+     */
+    const NAV_LIMIT = 10;
+
+    /**
+     * The most recently changed reports a user may see, for the nav.
+     *
+     * Same visibility rule as the roster, because it is the same list: an admin
+     * sees everyone's, everyone else sees their own. Ordered by when they
+     * changed, which is the order that puts what somebody is working on at the
+     * top.
+     *
+     * @param string $user_id
+     * @param bool   $all
+     * @return array
+     */
+    public static function recent( $user_id, $all = false ) {
+
+        return self::roster( $user_id, $all, 'updated', true, self::NAV_LIMIT );
     }
 
     /**

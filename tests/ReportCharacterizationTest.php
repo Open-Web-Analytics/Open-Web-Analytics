@@ -101,8 +101,23 @@ final class ReportCharacterizationTest extends TestCase
 
         $actual['config'] = $retyped['config'];
 
+        /*
+         * ...and the same for a report deliberately relaid out: position and
+         * span are reconciled with the record, everything else still compared.
+         */
+        $expected = self::$golden[ $name ];
+
+        $layout = Harness::normaliseLayout( $name, $expected['config'], $actual['config'] );
+
+        $this->assertSame( array(), $layout['problems'],
+            "the relayout allowance for $name does not match the definition:\n  "
+            . implode( "\n  ", $layout['problems'] ) );
+
+        $expected['config'] = $layout['expected'];
+        $actual['config']   = $layout['actual'];
+
         $this->assertSame(
-            self::$golden[ $name ],
+            $expected,
             $actual,
             "$name declares something different from its recorded baseline. If that is "
             . 'intended, regenerate; if this is a conversion, it is a regression.'

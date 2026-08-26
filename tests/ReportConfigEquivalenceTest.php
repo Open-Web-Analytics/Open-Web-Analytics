@@ -76,6 +76,20 @@ final class ReportConfigEquivalenceTest extends TestCase
 
         $actual = $this->undoRetyping( $class, $actual );
 
+        /*
+         * ...and a report that has been deliberately relaid out is reconciled
+         * with the record on position and span alone, so everything else about
+         * every widget is still compared. See Harness::RELAID_OUT.
+         */
+        $layout = Harness::normaliseLayout( $class, $expected, $actual );
+
+        $this->assertSame( array(), $layout['problems'],
+            "the relayout allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $layout['problems'] ) );
+
+        $expected = $layout['expected'];
+        $actual   = $layout['actual'];
+
         // Whole-bag comparison, not key-by-key: a conversion that DROPPED a key
         // would pass every per-key assertion that only looks at keys present in
         // both.

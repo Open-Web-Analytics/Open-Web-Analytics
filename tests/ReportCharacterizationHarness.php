@@ -258,6 +258,172 @@ final class ReportCharacterizationHarness
         return array( 'config' => $config, 'problems' => $problems );
     }
 
+    /**
+     * Widgets deliberately MOVED or RESIZED since the conversion, and why.
+     *
+     * The golden fixture records the layout a controller declared. A report
+     * being redesigned no longer has that layout on purpose -- the dashboard's
+     * Latest Visits grid now sits directly under the site trend at full width,
+     * because it groups by seven dimensions and half a row was never enough
+     * room for them.
+     *
+     * NAMED, and narrow. Only the widgets listed here may differ in position or
+     * span; every other widget must still be in its recorded place with its
+     * recorded size, the widget id set must still match exactly, and every
+     * other key of every widget -- query, sort, title, link -- is still
+     * compared. Relaying a report out is not a licence to change what it asks
+     * for.
+     *
+     * class => [ widget ids whose position and span are no longer the record's ]
+     */
+    public const RELAID_OUT = array(
+        'ReportDashboard' => array( 'latestVisits' ),
+    );
+
+    /**
+     * Reconcile a deliberately relaid-out report with the record.
+     *
+     * Takes both sides because a move is a difference between them, not
+     * something one side can be normalised into on its own.
+     *
+     * What it allows: a listed widget in a different position, with a different
+     * colspan/rowspan. What it still catches: a widget added or removed, a
+     * listed widget that did not actually move, an UNLISTED widget that moved,
+     * and any other difference in any widget.
+     *
+     * @return array{expected: array, actual: array, problems: array<int, string>}
+     */
+    public static function normaliseLayout( string $class, array $expected, array $actual ): array
+    {
+        $moved = self::RELAID_OUT[ $class ] ?? array();
+
+        if ( ! $moved ) {
+
+            return array( 'expected' => $expected, 'actual' => $actual, 'problems' => array() );
+        }
+
+        $problems = array();
+
+        $index = static function ( array $config ) {
+
+            $byId = array();
+
+            foreach ( (array) ( $config['widgets'] ?? array() ) as $widget ) {
+
+                $byId[ (string) ( ( (array) $widget )['id'] ?? '' ) ] = (array) $widget;
+            }
+
+            return $byId;
+        };
+
+        $expectedById = $index( $expected );
+        $actualById   = $index( $actual );
+
+        $ids = static function ( array $config ) {
+
+            return array_map( static function ( $widget ) {
+
+                return (string) ( ( (array) $widget )['id'] ?? '' );
+
+            }, (array) ( $config['widgets'] ?? array() ) );
+        };
+
+        $expectedIds = $ids( $expected );
+        $actualIds   = $ids( $actual );
+
+        if ( array_diff( $expectedIds, $actualIds ) || array_diff( $actualIds, $expectedIds ) ) {
+
+            $problems[] = sprintf( '%s adds or removes widgets; a relayout moves them, it does '
+                . 'not change which ones there are (recorded: %s; now: %s)',
+                $class, implode( ', ', $expectedIds ), implode( ', ', $actualIds ) );
+
+            return array( 'expected' => $expected, 'actual' => $actual, 'problems' => $problems );
+        }
+
+        /*
+         * Everything NOT listed must still be in its recorded order relative to
+         * the others -- otherwise "one widget moved" would excuse the whole
+         * report being shuffled.
+         */
+        $without = static function ( array $list ) use ( $moved ) {
+
+            return array_values( array_diff( $list, $moved ) );
+        };
+
+        if ( $without( $expectedIds ) !== $without( $actualIds ) ) {
+
+            $problems[] = sprintf( '%s reorders widgets that are not listed as moved '
+                . '(recorded: %s; now: %s)', $class,
+                implode( ', ', $without( $expectedIds ) ), implode( ', ', $without( $actualIds ) ) );
+        }
+
+        foreach ( $moved as $id ) {
+
+            if ( ! isset( $expectedById[ $id ], $actualById[ $id ] ) ) {
+
+                $problems[] = sprintf( '%s lists "%s" as relaid out, but it is not in both '
+                    . 'the record and the definition', $class, $id );
+
+                continue;
+            }
+
+            $samePlace = array_search( $id, $expectedIds, true ) === array_search( $id, $actualIds, true );
+            $sameSpan  = ( $expectedById[ $id ]['colspan'] ?? null ) === ( $actualById[ $id ]['colspan'] ?? null )
+                      && ( $expectedById[ $id ]['rowspan'] ?? null ) === ( $actualById[ $id ]['rowspan'] ?? null );
+
+            if ( $samePlace && $sameSpan ) {
+
+                $problems[] = sprintf( '%s lists "%s" as relaid out, but it is exactly where '
+                    . 'and how the record has it -- the allowance is stale', $class, $id );
+            }
+        }
+
+        /*
+         * Now make the two comparable: the listed widgets take the record's
+         * position and span, so the assertion that follows is about everything
+         * else they say.
+         */
+        foreach ( array_keys( $actualById ) as $id ) {
+
+            if ( ! in_array( $id, $moved, true ) ) {
+
+                continue;
+            }
+
+            foreach ( array( 'colspan', 'rowspan' ) as $key ) {
+
+                if ( array_key_exists( $key, $expectedById[ $id ] ) ) {
+
+                    $actualById[ $id ][ $key ] = $expectedById[ $id ][ $key ];
+
+                } else {
+
+                    unset( $actualById[ $id ][ $key ] );
+                }
+            }
+
+            /*
+             * ...in the record's key order. assertSame() compares arrays key
+             * for key IN ORDER, and putting a key back puts it at the end --
+             * which fails on ordering alone while every value matches. The
+             * snapshot writes each widget's keys sorted, so sorting is what
+             * restores the order rather than an arbitrary reshuffle.
+             */
+            ksort( $actualById[ $id ] );
+        }
+
+        $reordered = array();
+
+        foreach ( $expectedIds as $id ) {
+
+            $reordered[] = $actualById[ $id ];
+        }
+
+        $actual['widgets'] = $reordered;
+
+        return array( 'expected' => $expected, 'actual' => $actual, 'problems' => $problems );
+    }
+
     public static function reportNames(): array
     {
         $names = array();

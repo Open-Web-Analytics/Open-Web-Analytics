@@ -221,6 +221,28 @@ OWA.pieChart.prototype = {
             series: {
                 pie: {
                     show: true,
+
+                    /*
+                     * A FIXED radius, so two pies the same width draw the same
+                     * size.
+                     *
+                     * flot's pie radius defaults to 'auto', which means "as
+                     * large as fits once the labels are placed" -- so the pie
+                     * shrinks as its labels get longer or more numerous. The
+                     * dashboard shows that plainly: Visitor Types has two short
+                     * slices and Traffic Sources up to five plus an "others",
+                     * so two widgets of identical width drew visibly different
+                     * pies. Nothing about the DATA justifies that; it is the
+                     * label text deciding the geometry.
+                     *
+                     * Under 1 so the labels flot draws around the edge have
+                     * somewhere to sit.
+                     */
+                    radius: 0.72,
+
+                    // NOT a flot option -- the pie plugin reads label.show,
+                    // which defaults to true. Kept only because removing it
+                    // would suggest labels were being turned off here.
                     showLabel: true
 /*
                     label: {
