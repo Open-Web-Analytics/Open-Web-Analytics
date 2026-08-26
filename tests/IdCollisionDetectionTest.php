@@ -107,6 +107,67 @@ final class IdCollisionDetectionTest extends TestCase
         $this->assertFalse($row->detectIdCollision('ua', null));
     }
 
+    /**
+     * Capture what OWA logs while $fn runs.
+     *
+     * WHY NOT READ THE LOG FILE
+     *
+     * This test used to glob OWA_DATA_DIR/logs/errors_*.txt, take the first
+     * match, and diff its length before and after. That made it depend on three
+     * things that are properties of an INSTALLATION rather than of the code:
+     *
+     *   1. a log file already existing -- and when none did, the test SKIPPED
+     *      rather than failed. A fresh checkout ships owa-data/logs/index.php
+     *      and nothing else, and the file logger creates the log lazily on its
+     *      first write, so whether this test RAN AT ALL on CI depended on
+     *      whether something unrelated had logged first. A test whose execution
+     *      is conditional on ambient state reports success for a claim it may
+     *      never have checked.
+     *   2. glob()[0] being the ACTIVE log. Two installs sharing owa-data/logs
+     *      put two files in that directory and the first is not necessarily the
+     *      one being written.
+     *   3. the configured log level including notice, and setHandler() having
+     *      been called -- before that, log() buffers instead of emitting.
+     *
+     * A test that silently skips is worse than one that fails: it reports
+     * success for a claim it never checked.
+     *
+     * So the notice is captured at the logger instead, with Monolog's own
+     * TestHandler at DEBUG level so nothing is filtered out. That is closer to
+     * the code under test than the file was -- the line format is Monolog's
+     * business, not this test's -- and it works on any install.
+     *
+     * @return array<int,array<string,mixed>> Monolog records
+     */
+    private function captureLog(callable $fn): array
+    {
+        $e = \OWA\Core\CoreAPI::errorSingleton();
+
+        $handler = new \Monolog\Handler\TestHandler(\Monolog\Logger::DEBUG);
+        $e->logger->pushHandler($handler);
+
+        // Before setHandler() runs, log() BUFFERS rather than emitting, and
+        // nothing would reach the handler above. The test bootstrap leaves this
+        // true; forcing it means the test does not depend on that staying so.
+        $was_init = $e->init;
+        $e->init  = true;
+
+        try {
+            $fn();
+        } finally {
+            $e->init = $was_init;
+            $e->logger->popHandler();
+        }
+
+        return $handler->getRecords();
+    }
+
+    /** The messages captured, as plain strings. */
+    private function messages(array $records): string
+    {
+        return implode("\n", array_column($records, 'message'));
+    }
+
     /** The report has to say enough to act on: which table, which id, both values. */
     public function testTheReportNamesTheTableTheIdAndBothValues(): void
     {
@@ -115,25 +176,97 @@ final class IdCollisionDetectionTest extends TestCase
         $other = 'Mozilla/5.0 (second agent)';
         $row   = $this->seed($id, $first);
 
-        // CoreAPI::notice() goes through OWA's error handler to OWA's OWN log
-        // file, not PHP's error_log, so capture is a matter of reading what got
-        // appended to it.
-        $logs = glob(OWA_DATA_DIR . 'logs/errors_*.txt');
+        $records = $this->captureLog(function () use ($row, $other) {
+            $row->detectIdCollision('ua', $other);
+        });
 
-        if (!$logs) {
-            $this->markTestSkipped('no OWA error log on this installation to read the notice back from');
-        }
+        $written = $this->messages($records);
 
-        $log    = $logs[0];
-        $before = (int) filesize($log);
-
-        $row->detectIdCollision('ua', $other);
-
-        clearstatcache(true, $log);
-        $written = (string) file_get_contents($log, false, null, $before);
+        $this->assertNotSame('', $written, 'a collision must be reported somewhere');
 
         $this->assertStringContainsString($id, $written, 'the id is what you would search the table for');
         $this->assertStringContainsString($first, $written, 'the stored value must be named');
         $this->assertStringContainsString($other, $written, 'the colliding value must be named');
+        $this->assertStringContainsString($row->getTableName(), $written,
+            'the table is which one to go and look in');
+    }
+
+    /**
+     * At notice level, not debug.
+     *
+     * A collision is silent and permanent, so the one chance of noticing it is
+     * the log -- and debug is off on a production install, which is exactly
+     * where this matters. The old test read a file and could not see the level
+     * at all.
+     */
+    public function testTheCollisionIsReportedAtNoticeLevel(): void
+    {
+        $id  = (string) random_int(1000000000, 9999999999);
+        $row = $this->seed($id, 'Mozilla/5.0 (first agent)');
+
+        $records = $this->captureLog(function () use ($row) {
+            $row->detectIdCollision('ua', 'Mozilla/5.0 (second agent)');
+        });
+
+        $this->assertNotEmpty($records);
+
+        $levels = array_unique(array_column($records, 'level'));
+
+        $this->assertSame(array(\Monolog\Logger::NOTICE), array_values($levels),
+            'a collision is reported at notice, so it survives a production log level');
+    }
+
+    /**
+     * The ordinary path stays SILENT.
+     *
+     * Reuse of a dimension row is the common case -- it happens for almost
+     * every event -- so a detector that logged there would bury the collisions
+     * it exists to surface. Only assertable now that the log can be captured;
+     * the return value alone says nothing about what was written.
+     */
+    public function testTheOrdinaryCaseLogsNothing(): void
+    {
+        $content = 'Mozilla/5.0 (the one and only agent)';
+        $id      = (string) random_int(1000000000, 9999999999);
+        $row     = $this->seed($id, $content);
+
+        $records = $this->captureLog(function () use ($row, $content) {
+            $row->detectIdCollision('ua', $content);
+        });
+
+        $this->assertSame(array(), $records,
+            'reusing a row that holds its own content must not say anything');
+    }
+
+    /**
+     * A long value is truncated, but the id never is.
+     *
+     * A user-agent can be arbitrarily long and it arrives from a request
+     * header, so an untruncated pair would let a caller decide how many
+     * kilobytes go into the log. The id is what makes the entry actionable, so
+     * it has to survive whatever the values do.
+     */
+    public function testLongValuesAreTruncatedButTheIdSurvives(): void
+    {
+        $id    = (string) random_int(1000000000, 9999999999);
+        $long  = 'Mozilla/5.0 ' . str_repeat('x', 500);
+        $other = 'Mozilla/5.0 ' . str_repeat('y', 500);
+        $row   = $this->seed($id, $long);
+
+        $records = $this->captureLog(function () use ($row, $other) {
+            $row->detectIdCollision('ua', $other);
+        });
+
+        $written = $this->messages($records);
+
+        $this->assertStringContainsString($id, $written);
+        $this->assertStringNotContainsString(str_repeat('x', 200), $written,
+            'the stored value is truncated');
+        $this->assertStringNotContainsString(str_repeat('y', 200), $written,
+            'the colliding value is truncated');
+
+        // ...and enough of each is kept to recognise them.
+        $this->assertStringContainsString(str_repeat('x', 100), $written);
+        $this->assertStringContainsString(str_repeat('y', 100), $written);
     }
 }
