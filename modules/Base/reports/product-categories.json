@@ -1,5 +1,5 @@
 {
-    "title": "Product SKUs",
+    "title": "Product Categories",
     "metrics": "lineItemQuantity,lineItemRevenue",
     "widgets": [
         {

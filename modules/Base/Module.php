@@ -2501,11 +2501,39 @@ class Module extends \OWA\Core\Module {
             'Custom Reports', 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
 
         //Ecommerce
+        /*
+         * Every e-commerce report is in the NAV, not behind a links widget on
+         * the overview.
+         *
+         * The overview used to carry a report-links widget listing eight of
+         * them, which meant a reader had to know to open the overview first and
+         * then read a list -- while the nav, the thing built for moving between
+         * reports, showed four of the eight. Reports belong in the menu.
+         *
+         * The five that were only in the widget -- products, product-skus,
+         * product-categories, avg-order-value, ecommerce-conversion-rate -- are
+         * added here. `transactions` was already in the nav and not in the
+         * widget, so it stays.
+         *
+         * Ordered by what a reader is answering: money first, then what sold,
+         * then how long buying took.
+         *
+         * Every child declares view_reports_ecommerce like the group. The
+         * default is the weaker view_reports, which was masked -- a child is
+         * only reachable once its group's capability passed -- but a link
+         * claiming a weaker requirement than the group holding it is a
+         * disagreement waiting to be read the wrong way.
+         */
         $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 4);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 5);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), 'Conversion Rate', 5, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'products' ), 'Products', 6, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-skus' ), 'Product SKUs', 7, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-categories' ), 'Product Categories', 8, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 9, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 10, 'view_reports_ecommerce');
 
         //Content
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');

@@ -1,5 +1,5 @@
 {
-    "title": "Total Revenue",
+    "title": "Conversion Rate",
     "metrics": "visits,ecommerceConversionRate",
     "widgets": [
         {

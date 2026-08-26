@@ -1299,45 +1299,6 @@
                     },
                     "title": "Revenue by Source",
                     "type": "grid"
-                },
-                {
-                    "colspan": 12,
-                    "links": [
-                        {
-                            "label": "Product Name",
-                            "reportId": "products"
-                        },
-                        {
-                            "label": "SKU",
-                            "reportId": "product-skus"
-                        },
-                        {
-                            "label": "Categories",
-                            "reportId": "product-categories"
-                        },
-                        {
-                            "label": "Visits to Purchase",
-                            "reportId": "visits-to-purchase"
-                        },
-                        {
-                            "label": "Days to Purchase",
-                            "reportId": "days-to-purchase"
-                        },
-                        {
-                            "label": "Average Order Value",
-                            "reportId": "avg-order-value"
-                        },
-                        {
-                            "label": "Total Revenue",
-                            "reportId": "revenue"
-                        },
-                        {
-                            "label": "Conversion Rate",
-                            "reportId": "ecommerce-conversion-rate"
-                        }
-                    ],
-                    "title": "E-commerce Reports",
-                    "type": "report-links"
                 }
             ]
         }
@@ -1348,7 +1309,7 @@
         "config": {
             "metrics": "visits,ecommerceConversionRate",
             "subview": "base.reportWidgets",
-            "title": "Total Revenue",
+            "title": "Conversion Rate",
             "titleSuffix": "",
             "view_method": "delegate",
             "widgets": [
@@ -1888,7 +1849,7 @@
         "config": {
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
-            "title": "Product SKUs",
+            "title": "Product Categories",
             "titleSuffix": "",
             "view_method": "delegate",
             "widgets": [
