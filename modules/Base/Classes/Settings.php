@@ -1241,7 +1241,14 @@ namespace OWA\Module\Base\Classes;
                                 'edit_settings',
                                 'edit_sites',
                                 'edit_users',
-                                'edit_modules'
+                                'edit_modules',
+                                // Authoring a custom report. Admin-only by
+                                // default; grant it to another role in the
+                                // config file to let analysts build their own.
+                                // NOT in capabilitiesThatRequireSiteAccess: a
+                                // custom report is site-agnostic, so there is
+                                // no one site to check access against.
+                                'edit_reports'
                         ),
                         'analyst' => array('install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce'),
                         'viewer' => array('install_schema', 'view_site_list', 'view_reports'),

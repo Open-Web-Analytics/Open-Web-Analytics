@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 18;
+        $this->required_schema_version = 19;
         return parent::__construct();
     }
 
@@ -635,6 +635,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
         $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
+        $this->registerAction( 'base.customReportEdit',              'OWA\\Module\\Base\\Controller\\CustomReportEdit',             'Controller/CustomReportEdit.php' );
+        $this->registerAction( 'base.customReportSave',              'OWA\\Module\\Base\\Controller\\CustomReportSave',             'Controller/CustomReportSave.php' );
+        $this->registerAction( 'base.customReportDelete',            'OWA\\Module\\Base\\Controller\\CustomReportDelete',           'Controller/CustomReportDelete.php' );
         $this->registerAction( 'base.sitesAdd',                      'OWA\\Module\\Base\\Controller\\SitesAdd',                     'Controller/SitesAdd.php' );
         $this->registerAction( 'base.sitesAddCli',                   'OWA\\Module\\Base\\Controller\\SitesAddCli',                  'Controller/SitesAddCli.php' );
         $this->registerAction( 'base.sitesDelete',                   'OWA\\Module\\Base\\Controller\\SitesDelete',                  'Controller/SitesDelete.php' );
@@ -2488,6 +2492,14 @@ class Module extends \OWA\Core\Module {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
+        /*
+         * The custom report roster. Gated on view_reports rather than on
+         * edit_reports, because a reader who cannot author one can still be
+         * sent one -- the roster is where they find what they have been given.
+         */
+        $this->addNavigationSubGroup('Custom Reports', array( 'do' => 'base.customReports' ),
+            'Custom Reports', 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
+
         //Ecommerce
         $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2);
@@ -2693,6 +2705,7 @@ class Module extends \OWA\Core\Module {
                 'scheduled_job',
                 'notification',
                 'notification_state',
+                'custom_report',
                 'job_lock',
                 'site_user')
             );

@@ -16,6 +16,15 @@ namespace OWA\Module\Base\Controller;
  */
 class Report extends \OWA\Core\Controller {
 
+    /**
+     * The reserved id space for user-authored reports: `custom-<row id>`.
+     *
+     * Sharing one id space with the shipped reports is what makes a custom
+     * report an ordinary report everywhere else -- the same URL shape, the same
+     * nav links, the same inter-report links, the same chrome.
+     */
+    const CUSTOM_PREFIX = 'custom-';
+
     function __construct( $params ) {
 
         parent::__construct( $params );
@@ -49,6 +58,21 @@ class Report extends \OWA\Core\Controller {
 
             return $this->reportNotResolved(
                 '(none)', 'no reportId was given', 400 );
+        }
+
+        /*
+         * A custom report is addressed by the same reportId as any other, under
+         * a reserved prefix: `custom-<row id>`. One id space, so every link,
+         * bookmark and nav entry keeps working the same way, and a custom
+         * report is shareable by URL for exactly the reason a shipped one is --
+         * the URL is the whole address.
+         *
+         * Checked BEFORE the registry, so a module cannot register an id in the
+         * reserved space and shadow somebody's saved report.
+         */
+        if ( strpos( $id, self::CUSTOM_PREFIX ) === 0 ) {
+
+            return $this->renderCustom( $id );
         }
 
         $definition = \OWA\Core\CoreAPI::getReportDefinition( $id );
@@ -120,6 +144,72 @@ class Report extends \OWA\Core\Controller {
          * refused rather than rendered, because both silent outcomes are worse
          * than an error -- see ConfiguredReport::constraintParams().
          */
+        $missing = array();
+
+        foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {
+
+            if ( (string) $this->getParam( $name ) === '' ) {
+
+                $missing[] = $name;
+            }
+        }
+
+        if ( $missing ) {
+
+            return $this->reportNotResolved( $id,
+                sprintf( 'is constrained on %s, which the request did not supply',
+                    implode( ', ', $missing ) ),
+                400 );
+        }
+
+        $target = new \OWA\Core\ConfiguredReport( $this->params );
+
+        $target->setDefinition( $definition );
+
+        return $target->doAction();
+    }
+
+    /**
+     * Render a user-authored report.
+     *
+     * VIEWING IS NOT GATED ON AUTHORSHIP, deliberately. Ownership decides what
+     * the roster LISTS and who may edit; a report reached by its URL renders
+     * for anyone who may view reports, which is what "shareable by url" has to
+     * mean to be true. It is safe because a custom report is a saved QUERY, not
+     * saved data: every figure in it is one the reader could already have asked
+     * for through the ordinary reporting UI, against a site the site filter
+     * would already let them choose.
+     *
+     * The definition is re-validated on the way OUT, not trusted because it was
+     * validated on the way in. Two reasons, and neither is hypothetical: the
+     * registry changes -- a module deactivated since the report was saved takes
+     * its metrics with it -- and a row can be edited by something that is not
+     * the builder.
+     */
+    private function renderCustom( $id ) {
+
+        $report = \OWA\Module\Base\Classes\CustomReports::load(
+            substr( $id, strlen( self::CUSTOM_PREFIX ) ) );
+
+        if ( ! $report ) {
+
+            return $this->reportNotResolved( $id, 'not found', 404 );
+        }
+
+        $definition = (array) $report['definition'];
+
+        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition );
+
+        if ( $error !== '' ) {
+
+            /*
+             * 500, and named. A saved report that no longer validates is not
+             * the reader's mistake, and rendering it with the bad part dropped
+             * would show a report that is quietly missing a widget.
+             */
+            return $this->reportNotResolved( $id, $error, 500 );
+        }
+
         $missing = array();
 
         foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {

@@ -19,6 +19,17 @@ use PHPUnit\Framework\TestCase;
  */
 final class LoginRedirectNonceTest extends TestCase
 {
+    /**
+     * What a controller NAME has to carry to be a write.
+     *
+     * Shared by both checks below, which need the same answer for opposite
+     * reasons: one requires a nonce-guarded controller to look like a write,
+     * the other requires a report SCREEN not to be nonce-guarded -- and a
+     * controller that writes to a report is not a report screen.
+     */
+    private const WRITE_VERBS =
+        '/(Add|Edit|Save|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install|Mark)/';
+
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap_owa.php';
@@ -94,6 +105,10 @@ final class LoginRedirectNonceTest extends TestCase
      * this whole test exists to make. A controller that writes a read FLAG has
      * to say so in its name -- NotificationMarkReadRest, not
      * NotificationReadRest -- which is what `Mark` covers.
+     *
+     * `Save` was added with the custom report builder. It is a write verb in
+     * the same sense as the rest -- nothing named Save is read-only -- so it
+     * does not blunt anything.
      */
     public function testOnlyWriteControllersRequireANonce()
     {
@@ -109,7 +124,7 @@ final class LoginRedirectNonceTest extends TestCase
 
         foreach ($withNonce as $name) {
             $this->assertMatchesRegularExpression(
-                '/(Add|Edit|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install|Mark)/',
+                self::WRITE_VERBS,
                 $name,
                 sprintf(
                     '%s requires a nonce but does not look like a write. If it is read-only '
@@ -176,6 +191,17 @@ final class LoginRedirectNonceTest extends TestCase
             $name = basename($file, '.php');
 
             if (!preg_match('/(Report|Dashboard|View)/', $name)) {
+                continue;
+            }
+
+            /*
+             * ...unless it is a WRITE that acts on one. CustomReportSave and
+             * CustomReportDelete carry "Report" because that is what they write
+             * to, not because they display anything; the check above is about
+             * screens that SHOW a report, and those have no business requiring
+             * a nonce.
+             */
+            if (preg_match(self::WRITE_VERBS, $name)) {
                 continue;
             }
 

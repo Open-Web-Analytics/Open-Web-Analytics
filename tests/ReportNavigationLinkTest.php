@@ -16,6 +16,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportNavigationLinkTest extends TestCase
 {
+    /** Base nav entries that are not reports, and so route to their own action. */
+    private const NOT_REPORTS = array( 'base.customReports' );
+
     private function template(): object
     {
         return \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' );
@@ -208,6 +211,23 @@ final class ReportNavigationLinkTest extends TestCase
             // Other modules register their own reports and are not this
             // change's business; only Base's were converted.
             if ( strpos( $do, 'base.' ) !== 0 ) {
+                continue;
+            }
+
+            /*
+             * Nav entries that are not REPORTS.
+             *
+             * The contract is that every report is reached as
+             * base.report&reportId=..., so that a link says which report it
+             * means rather than which controller. base.customReports is not a
+             * report -- it is the roster LISTING them, the way base.sites lists
+             * sites -- so it has no reportId to route through and never will.
+             *
+             * Named individually rather than pattern-matched: an exemption that
+             * matched a prefix would quietly excuse a real report that happened
+             * to be named like one of these.
+             */
+            if ( in_array( $do, self::NOT_REPORTS, true ) ) {
                 continue;
             }
 
