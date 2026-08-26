@@ -494,10 +494,40 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     margin-right: 25px;
 }
 
-.owa .owa_funnelControl > label {
+/* Every control in the bar is labelled the same way and sits on the same line:
+   a label on the left, then the control. The scope switch borrows the Live View
+   markup and the filter borrows the grid's constraint builder, so both bring
+   their own label classes -- they are pulled onto the same footing here rather
+   than each being styled where it came from. */
+.owa .owa_funnelControl > label,
+.owa .owa_funnelControl > .label,
+.owa .owa_funnelControls .autoRefreshControl .label {
+    display: inline-block;
     font-size: 12px;
     color: #707070;
     margin-right: 6px;
+    padding: 0;
+    vertical-align: middle;
+}
+
+/* The builder's own container is a block by default, which would drop the
+   toggle onto its own line and break the row. */
+.owa .owa_funnelControl .constraintPicker,
+.owa .owa_funnelControl .constraintPickerContainer {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+}
+
+/* The panel hangs BELOW the bar rather than growing it, so opening the filter
+   does not move the controls beside it. */
+.owa .owa_funnelControl .constraintPickerContainer .builder {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    margin: 6px 0 0 0;
+    min-width: 760px;
 }
 
 /* The scope switch sits inline in the bar; the Live View control it borrows
@@ -507,12 +537,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     display: inline-block;
 }
 
-.owa .owa_funnelControls .autoRefreshControl .label {
-    font-size: 12px;
-    color: #707070;
-    margin-right: 6px;
-    vertical-align: middle;
-}
 
 .owa .owa_funnelControls .autoRefreshControl .buttons {
     display: inline-block;

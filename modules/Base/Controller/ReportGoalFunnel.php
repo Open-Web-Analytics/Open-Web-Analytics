@@ -52,6 +52,21 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
      */
     const SEGMENT_LIMIT = 10000;
 
+    /**
+     * Dimension groups the segment filter does not offer.
+     *
+     * `site`: the report is already scoped to one site, and the site filter in
+     * the report chrome is where that is chosen. Offering siteId here is either
+     * redundant or a way to ask for a contradiction.
+     *
+     * `time`: the reporting period already bounds the funnel, and a date inside
+     * the SEGMENT means something almost nobody intends -- the segment selects
+     * PEOPLE, so `date==20260825` would pick everyone active that day and then
+     * count their steps across the whole period. It reads like "the funnel on
+     * that day" and is not.
+     */
+    const EXCLUDED_FILTER_GROUPS = array( 'site', 'time' );
+
     const SCOPES = array(
         'visitor' => 'visitor_id',
         'session' => 'session_id',
@@ -442,8 +457,15 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
             return $empty;
         }
 
+        $dimensions = (array) ( $rs->relatedDimensions ?? array() );
+
+        foreach ( self::EXCLUDED_FILTER_GROUPS as $group ) {
+
+            unset( $dimensions[ $group ] );
+        }
+
         return array(
-            'dimensions' => (array) ( $rs->relatedDimensions ?? array() ),
+            'dimensions' => $dimensions,
             'metrics'    => (array) ( $rs->relatedMetrics ?? array() ),
         );
     }

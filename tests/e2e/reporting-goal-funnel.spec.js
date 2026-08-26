@@ -178,6 +178,86 @@ test.describe('reporting: goal funnel', () => {
     });
 
     /**
+     * The controls sit on one line.
+     *
+     * Measured, not asserted from the markup: the scope switch borrows the Live
+     * View control's markup and the filter borrows the grid's constraint
+     * builder, so each arrives with its own styling and its own idea of whether
+     * it is inline. Checking the classes are present would pass while they sat
+     * on three different lines.
+     */
+    test('the control bar keeps its controls on one line', async ({ page }) => {
+        await openFunnel(page);
+
+        const boxes = {};
+
+        for (const [name, selector] of Object.entries({
+            goal:   '.owa_funnelControls #goalChooser',
+            scope:  '#funnelScopeSwitch .buttons',
+            filter: '#funnelFilter .toggle-button',
+            edit:   '.owa_funnelControls a[href*="optionsGoalEntry"]',
+        })) {
+            const box = await page.locator(selector).first().boundingBox();
+            expect(box, `${name} control has no box`).not.toBeNull();
+            boxes[name] = box.y + box.height / 2;
+        }
+
+        const centres = Object.values(boxes);
+        const spread = Math.max(...centres) - Math.min(...centres);
+
+        // One line, allowing for controls of slightly different heights.
+        expect(spread, `controls are on different lines: ${JSON.stringify(boxes)}`)
+            .toBeLessThan(20);
+    });
+
+    /**
+     * Opening the filter must not move the controls beside it -- the panel hangs
+     * below the bar rather than growing it.
+     */
+    test('opening the filter does not move the rest of the bar', async ({ page }) => {
+        await openFunnel(page);
+
+        const before = await page.locator('.owa_funnelControls a[href*="optionsGoalEntry"]').boundingBox();
+
+        await page.locator('#funnelFilter .toggle-button').click();
+        await expect(page.locator('#funnelFilter .builder')).toBeVisible();
+
+        const after = await page.locator('.owa_funnelControls a[href*="optionsGoalEntry"]').boundingBox();
+
+        expect(Math.abs(after.y - before.y)).toBeLessThan(3);
+    });
+
+    /**
+     * The segment picks PEOPLE, so two groups are deliberately not offered.
+     *
+     * site: the report is already scoped to one, and the site filter in the
+     * report chrome is where that is chosen.
+     *
+     * time: the period already bounds the funnel, and a date in the SEGMENT
+     * reads like "the funnel on that day" while actually meaning "everyone
+     * active that day, counted across the whole period".
+     */
+    test('the filter does not offer site or time dimensions', async ({ page }) => {
+        await openFunnel(page);
+
+        await page.locator('#funnelFilter .toggle-button').click();
+
+        const picker = '#funnelFilter .constraintDimensionPicker';
+
+        // The groups themselves are gone, not just individual names.
+        await expect(page.locator(`${picker} optgroup[label="site"]`)).toHaveCount(0);
+        await expect(page.locator(`${picker} optgroup[label="time"]`)).toHaveCount(0);
+
+        for (const name of ['siteId', 'siteDomain', 'siteName', 'date', 'day', 'month', 'year']) {
+            await expect(page.locator(`${picker} option[value="${name}"]`)).toHaveCount(0);
+        }
+
+        // The groups that remain are still there -- this must not empty the picker.
+        expect(await page.locator(`${picker} option[value="medium"]`).count()).toBeGreaterThan(0);
+        expect(await page.locator(`${picker} option`).count()).toBeGreaterThan(10);
+    });
+
+    /**
      * A segment selects the PEOPLE and the funnel is then counted over all of
      * their pages, so a segment matching nobody empties the funnel rather than
      * leaving it unsegmented.
