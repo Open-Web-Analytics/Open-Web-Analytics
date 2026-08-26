@@ -2037,6 +2037,192 @@ final class ReportDefinitionFormatTest extends TestCase
             'this widget type dropped its "more" link' );
     }
 
+    // ------------------------------------------------------------------
+    // The two table types, across the shipped definitions
+    // ------------------------------------------------------------------
+
+    /** Every shipped definition, as file => decoded. */
+    private function shippedDefinitions(): array
+    {
+        $definitions = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $decoded = json_decode( (string) file_get_contents( $file ), true );
+
+            if ( is_array( $decoded ) ) {
+
+                $definitions[ basename( $file ) ] = $decoded;
+            }
+        }
+
+        $this->assertNotEmpty( $definitions, 'no shipped report definitions were found to check' );
+
+        return $definitions;
+    }
+
+    /** [file, widget] for every widget of these types. */
+    private function shippedWidgets( array $types ): array
+    {
+        $found = array();
+
+        foreach ( $this->shippedDefinitions() as $file => $definition ) {
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+                if ( is_array( $widget ) && in_array( $widget['type'] ?? '', $types, true ) ) {
+
+                    $found[] = array( $file, $widget );
+                }
+            }
+        }
+
+        return $found;
+    }
+
+    /** A comma string as trimmed, non-empty names. */
+    private function fieldNames( $value ): array
+    {
+        return array_values( array_filter( array_map( 'trim',
+            explode( ',', (string) $value ) ) ) );
+    }
+
+    /**
+     * A shipped card obeys the rule a user-built one does.
+     *
+     * The builder enforces it through CustomReports, which shipped definitions
+     * never pass through -- so without this, a hand-written card could carry
+     * three metrics and render as a cramped table with no controls, which is
+     * the shape the type exists to prevent.
+     */
+    public function testEveryShippedCardShowsOneMetricAgainstOneDimension(): void
+    {
+        $wrong = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $query = (array) ( $widget['query'] ?? array() );
+
+            $metrics    = $this->fieldNames( $query['metrics'] ?? '' );
+            $dimensions = $this->fieldNames( $query['dimensions'] ?? '' );
+
+            if ( count( $metrics ) !== 1 || count( $dimensions ) !== 1 ) {
+
+                $wrong[] = sprintf( '%s:%s has %d metric(s) and %d dimension(s)',
+                    $file, $widget['id'] ?? '?', count( $metrics ), count( $dimensions ) );
+            }
+        }
+
+        $this->assertSame( array(), $wrong,
+            "A grid-card shows one metric against one dimension and draws no controls.
+"
+          . "These ship as cards but ask for something else:
+  "
+          . implode( "
+  ", $wrong ) );
+    }
+
+    /**
+     * A narrow grid that COULD be a card is one.
+     *
+     * The ratchet, not just a tidy-up. A grid draws a dimension picker and a
+     * filter above it, and every control there costs width -- at half the row
+     * the bar stopped fitting and the widget grew a horizontal scrollbar. So a
+     * grid narrower than full width is only defensible when it needs the
+     * columns a card cannot give it.
+     *
+     * Widgets with NO metrics of their own are excluded on purpose: they
+     * inherit the report's metric set, which is several metrics, so they are
+     * not single-field widgets. traffic.json's three are the case.
+     */
+    public function testNoNarrowGridIsLeftThatCouldBeACard(): void
+    {
+        $convertible = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $span = \OWA\Core\ReportGrid::colspan( $widget );
+
+            if ( $span >= \OWA\Core\ReportGrid::COLUMNS ) {
+
+                continue;   // full width: it has room for its controls
+            }
+
+            $query = (array) ( $widget['query'] ?? array() );
+
+            if ( count( $this->fieldNames( $query['metrics'] ?? '' ) ) === 1
+              && count( $this->fieldNames( $query['dimensions'] ?? '' ) ) === 1 ) {
+
+                $convertible[] = sprintf( '%s:%s (colspan %d)',
+                    $file, $widget['id'] ?? '?', $span );
+            }
+        }
+
+        $this->assertSame( array(), $convertible,
+            "These ship as narrow grids but ask for one metric against one dimension,
+"
+          . "so they should be grid-cards -- a narrow grid draws a control bar it has
+"
+          . "no room for:
+  " . implode( "
+  ", $convertible ) );
+    }
+
+    /**
+     * ...and the four that were converted really are cards now, named.
+     *
+     * Named rather than counted, because a count would stay green if one were
+     * converted and another quietly turned back.
+     */
+    public function testTheConvertedWidgetsAreCards(): void
+    {
+        $expected = array(
+            'action-tracking.json' => 'actionsByGroup',
+            'content.json'         => 'toppagetypes',
+            'ecommerce.json'       => 'productName',
+            'visitors.json'        => 'browserTypes',
+        );
+
+        $cards = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $cards[ $file ][] = $widget['id'] ?? '?';
+        }
+
+        foreach ( $expected as $file => $id ) {
+
+            $this->assertContains( $id, $cards[ $file ] ?? array(),
+                "$file:$id should be a grid-card" );
+        }
+    }
+
+    /**
+     * The converted ones kept the width they had.
+     *
+     * Each sits beside a grid that is still half the row. Letting them fall
+     * back to the card default of three would leave a quarter of the row empty
+     * next to every one of them -- the conversion is about the controls, not
+     * about relaying the reports out.
+     */
+    public function testTheConvertedCardsKeptTheirHalfWidth(): void
+    {
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $this->assertSame( 6, \OWA\Core\ReportGrid::colspan( $widget ),
+                sprintf( '%s:%s sits beside a half-width grid and must match it',
+                    $file, $widget['id'] ?? '?' ) );
+        }
+    }
+
     public static function widgetTypeProvider(): array
     {
         return array(

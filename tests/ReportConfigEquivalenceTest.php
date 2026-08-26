@@ -74,11 +74,31 @@ final class ReportConfigEquivalenceTest extends TestCase
          */
         unset( $actual['deprecated'] );
 
+        $actual = $this->undoRetyping( $class, $actual );
+
         // Whole-bag comparison, not key-by-key: a conversion that DROPPED a key
         // would pass every per-key assertion that only looks at keys present in
         // both.
         $this->assertSame( $expected, $actual,
             "report '$id' does not declare what $class declared" );
+    }
+
+    /**
+     * Put a deliberately re-typed widget back to what the controller declared,
+     * so everything ELSE about it is still compared.
+     *
+     * The list lives in the harness because the characterization test reads the
+     * same fixture and needs the same allowance -- see Harness::RETYPED.
+     */
+    private function undoRetyping( string $class, array $config ): array
+    {
+        $result = Harness::undoRetyping( $class, $config );
+
+        $this->assertSame( array(), $result['problems'],
+            "the re-typing allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $result['problems'] ) );
+
+        return $result['config'];
     }
 
     /**

@@ -157,6 +157,21 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         'format'      => 'json',
         'constraints' => $view->constraints,
     );
+
+    /*
+     * The metric a chart draws: the widget's own, or the metric set's.
+     *
+     * Computed once for both chart types rather than once each. There is
+     * deliberately NO fallback to the first metric of the query: half the
+     * shipped trends name no chartMetric and draw no area chart on purpose --
+     * they are a headline and a row of boxes -- so a fallback would start
+     * drawing charts on thirty-two reports that have never had one.
+     *
+     * A widget that DOES need a chart therefore has to name its metric, which
+     * is why a pie may not inherit a report metric set. See
+     * CustomReports::SINGLE_FIELD_TYPES.
+     */
+    $owa_chartMetric = (string) ( $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' ) );
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
 <?php
@@ -236,8 +251,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php echo $owa_id; ?>.asyncQueue.push(['renderHeadline', <?php echo json_encode( $owa_w['headline'] ); ?>, '<?php $view->out( $owa_id, false ); ?>-title']);
 <?php endif; ?>
 <?php
-    // The set's chart metric, unless the widget pinned its own.
-    $owa_chartMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_chartMetric, false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
@@ -295,7 +308,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * The dimension is NOT configured separately -- it is the one the widget
      * already queries, and naming it twice is a way for the two to disagree.
      */
-    $owa_pieMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
 ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 
@@ -304,7 +316,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_pieMetric, false ); ?>';
+        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_chartMetric, false ); ?>';
         <?php echo $owa_id; ?>.options.pieChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
 <?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
         <?php // Raw value -> label, so a boolean pie can read New/Repeat rather than No/Yes. ?>

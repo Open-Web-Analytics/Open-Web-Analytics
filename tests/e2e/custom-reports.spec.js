@@ -119,6 +119,12 @@ async function configureWidget(page, index, opts) {
     for (const metric of opts.metrics || [])       { await chooseInChosen(page, 'dlgMetrics', metric); }
     for (const dim of opts.dimensions || [])       { await chooseInChosen(page, 'dlgDimensions', dim); }
 
+    // AFTER the dimensions: the row-link destinations are per dimension, so
+    // the select is rebuilt every time one changes.
+    if (opts.link !== undefined)      { await page.selectOption('#dlgLinkReport', opts.link); }
+    if (opts.more !== undefined)      { await page.selectOption('#dlgMoreReport', opts.more); }
+    if (opts.moreLabel !== undefined) { await page.fill('#dlgMoreLabel', opts.moreLabel); }
+
     if (opts.sort !== undefined)  { await page.fill('#dlgSort', opts.sort); }
 
     await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
@@ -616,6 +622,167 @@ test.describe('custom reports', () => {
             // The first, not an arbitrary one.
             await expect(chosenPills(page, 'dlgMetrics').first()).toContainText('pageViews');
             await expect(chosenPills(page, 'dlgDimensions').first()).toContainText('pagePath');
+        });
+
+        /*
+         * ------------------------------------------------------------------
+         * Where a widget can lead
+         * ------------------------------------------------------------------
+         */
+
+        /**
+         * The row-link destinations are per dimension, and derived.
+         *
+         * A detail report declares the constraint it is read under, so a card
+         * grouped by pagePath is offered the reports that read a pagePath and
+         * nothing else -- offering "Browser Detail" would build a link to a
+         * report that answers 400 for a parameter it never gets.
+         */
+        test('a card is offered only the reports its dimension can reach', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await page.selectOption('#dlgType', 'grid-card');
+
+            // Nothing to link from yet.
+            await expect(page.locator('#dlgLinkField')).toBeHidden();
+
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+
+            await expect(page.locator('#dlgLinkField')).toBeVisible();
+
+            const offered = await page.locator('#dlgLinkReport option')
+                .evaluateAll((opts) => opts.map((o) => o.value).filter(Boolean));
+
+            // Both reports that declare they are read under a pagePath.
+            expect(offered.sort()).toEqual(['document', 'dom-clicks']);
+        });
+
+        /**
+         * The link BELOW the widget follows the same rule, minus the constraint.
+         *
+         * Scoped to the dimension the same way -- a card of top pages leads to
+         * the full Top Pages report -- but the destination must read no value,
+         * because this link carries none. So the detail reports the row link
+         * exists for are exactly the ones this must not offer.
+         */
+        test('the full-report link is scoped to the dimension too', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await page.selectOption('#dlgType', 'grid-card');
+
+            // Nothing shown yet, so there is no "more of the same thing".
+            await expect(page.locator('#dlgMoreField')).toBeHidden();
+
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+
+            await expect(page.locator('#dlgMoreField')).toBeVisible();
+
+            const offered = await page.locator('#dlgMoreReport option')
+                .evaluateAll((opts) => opts.map((o) => o.value).filter(Boolean));
+
+            expect(offered).toContain('pages');
+
+            // Reads a pagePath: that is the ROW link's business.
+            expect(offered).not.toContain('document');
+
+            // ...and a report about something else is not a fuller version.
+            expect(offered).not.toContain('browsers');
+        });
+
+        /**
+         * Both links, end to end: configured in the modal, stored, and rendered.
+         */
+        test('a card can link its rows and carry a full-report link', async ({ page }) => {
+            const name = reportName('Linked');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await configureWidget(page, 0, {
+                title: 'Top pages',
+                type: 'grid-card',
+                metrics: ['pageViews'],
+                dimensions: ['pagePath'],
+                link: 'document',
+                more: 'pages',
+            });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+
+            await expect(card.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+
+            // The rows are links into the report that details a page, carrying
+            // the row's own value.
+            const rowLink = card.locator('tr.jqgrow a').first();
+
+            await expect(rowLink).toBeVisible();
+
+            const href = await rowLink.getAttribute('href');
+
+            expect(href).toContain('reportId=document');
+            expect(href).toMatch(/pagePath=/);
+
+            // ...and the value is the row's, not the literal %s.
+            expect(href).not.toContain('%s');
+
+            // And the link below the widget, with the wording the shipped
+            // summary widgets use.
+            const more = card.locator('.owa_moreLinks a');
+
+            await expect(more).toHaveCount(1);
+            await expect(more).toContainText('View Full Report');
+            expect(await more.getAttribute('href')).toContain('reportId=pages');
+        });
+
+        /**
+         * A pie draws ONE metric and has to be told which.
+         *
+         * It was not: the builder wrote chartMetric for a trend and not for a
+         * pie, so a pie built here came out with options.pieChart.metric empty
+         * and drew nothing at all -- which looks like a site with no data.
+         */
+        test('a pie built here charts the metric it was given', async ({ page }) => {
+            const name = reportName('Pie');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await configureWidget(page, 0, {
+                title: 'Pages',
+                type: 'pie',
+                metrics: ['pageViews'],
+                dimensions: ['pagePath'],
+            });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            // The definition names the metric...
+            const charted = await page.evaluate(() => {
+                const key = Object.keys(window).find((k) => /^w1$/.test(k));
+                return key ? window[key].options.pieChart.metric : null;
+            });
+
+            expect(charted).toBe('pageViews');
+
+            // ...and a chart actually drew, which an empty metric would not.
+            await expect(page.locator('.owa_reportGridItem canvas').first())
+                .toBeVisible({ timeout: 20_000 });
         });
 
         /** Cancel leaves the widget as it was. */

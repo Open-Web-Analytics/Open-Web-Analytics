@@ -167,6 +167,97 @@ final class ReportCharacterizationHarness
      *
      * @return array<int, string> sorted
      */
+    /**
+     * Widgets deliberately re-typed since the conversion, and what they were.
+     *
+     * The golden fixture records what a CONTROLLER declared, and these widgets
+     * no longer declare it -- on purpose. A half-width `grid` drew a dimension
+     * picker and a filter above it, and at half the row that bar did not fit,
+     * so the widget grew a horizontal scrollbar. Each of these asks for one
+     * metric against one dimension, which is exactly what a `grid-card` is: the
+     * same table at the same width, without the controls it had no room for.
+     *
+     * Named one by one rather than allowed as a class, and here rather than in
+     * either test, because BOTH read this fixture -- one keyed by report id and
+     * one by class name -- and two copies of the list is how they come to
+     * disagree about what is excused.
+     *
+     * Everything else about these widgets is still held to the record: the
+     * query, the sort, the link, the colspan. A fifth widget converted later
+     * fails until somebody writes down which one and why.
+     *
+     * class => [ widget id => [ what the controller declared, what it is now ] ]
+     */
+    public const RETYPED = array(
+        'ReportActionTracking' => array( 'actionsByGroup' => array( 'grid', 'grid-card' ) ),
+        'ReportContent'        => array( 'toppagetypes'   => array( 'grid', 'grid-card' ) ),
+        'ReportEcommerce'      => array( 'productName'    => array( 'grid', 'grid-card' ) ),
+        'ReportVisitors'       => array( 'browserTypes'   => array( 'grid', 'grid-card' ) ),
+    );
+
+    /**
+     * Put a deliberately re-typed widget back to what the controller declared,
+     * so everything ELSE about it is still compared.
+     *
+     * The allowance is checked as it is applied, and the problems come back for
+     * the caller to assert on: a listed widget that is not there, or that is
+     * not carrying the new type, is reported rather than quietly excusing
+     * nothing. Otherwise a stale entry would be an allowance for a widget that
+     * no longer exists -- which reads as coverage and is not.
+     *
+     * @param string $class the controller the fixture recorded
+     * @param array  $config the declared bag, as it is now
+     * @return array{config: array, problems: array<int, string>}
+     */
+    public static function undoRetyping( string $class, array $config ): array
+    {
+        $expected = self::RETYPED[ $class ] ?? array();
+
+        if ( ! $expected ) {
+
+            return array( 'config' => $config, 'problems' => array() );
+        }
+
+        $problems = array();
+        $seen     = array();
+
+        foreach ( (array) ( $config['widgets'] ?? array() ) as $i => $widget ) {
+
+            $widgetId = (string) ( ( (array) $widget )['id'] ?? '' );
+
+            if ( ! isset( $expected[ $widgetId ] ) ) {
+
+                continue;
+            }
+
+            list( $was, $now ) = $expected[ $widgetId ];
+
+            $is = ( (array) $widget )['type'] ?? null;
+
+            if ( $is !== $now ) {
+
+                $problems[] = sprintf(
+                    '%s:%s is listed as re-typed to "%s" but is "%s" -- either it '
+                  . 'changed again or the allowance is stale',
+                    $class, $widgetId, $now, is_string( $is ) ? $is : gettype( $is ) );
+
+                continue;
+            }
+
+            $config['widgets'][ $i ]['type'] = $was;
+
+            $seen[] = $widgetId;
+        }
+
+        foreach ( array_diff( array_keys( $expected ), $seen ) as $missing ) {
+
+            $problems[] = sprintf( '%s lists re-typed widget "%s", which its definition '
+                . 'does not contain', $class, $missing );
+        }
+
+        return array( 'config' => $config, 'problems' => $problems );
+    }
+
     public static function reportNames(): array
     {
         $names = array();

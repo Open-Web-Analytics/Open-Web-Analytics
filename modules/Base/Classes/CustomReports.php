@@ -124,11 +124,40 @@ class CustomReports {
     /**
      * Widget types that take exactly one metric and exactly one dimension.
      *
-     * EXACTLY, not at most. A card with no dimension is a number that belongs
-     * in an info box, and a card with no metric has nothing to rank by -- both
-     * are a different widget rather than an incomplete one.
+     * EXACTLY, not at most, and the "at least" half is the part that matters.
+     * A report METRIC SET is several metrics, and a widget that draws one of
+     * them has no way to pick which -- a card ranks its rows by one metric, a
+     * pie is a share of one metric. Left to inherit the set, a pie got an empty
+     * chartMetric and drew nothing at all. So these have to say which one
+     * themselves, and the report metric set is not an answer for them.
+     *
+     * The "at most" half is the same sentence read the other way: a second
+     * metric on a pie is drawn by nothing, and a second dimension makes its
+     * slices a pair of values.
+     *
+     * Every other type either draws all the metrics it is given (info boxes, a
+     * trend's boxes) or ranks by whatever it has, so a set works for them.
      */
-    const SINGLE_FIELD_TYPES = array( 'grid-card' );
+    const SINGLE_FIELD_TYPES = array( 'grid-card', 'pie' );
+
+    /**
+     * The link template a widget's rows may carry, in full.
+     *
+     * A `link` becomes makeLink() output in the rendered page, so an author who
+     * could write arbitrary parameters into it would be choosing URLs the
+     * report shows. The builder only ever produces this shape -- another
+     * report, addressed the way every report is addressed -- so this is what a
+     * stored definition may say.
+     */
+    const LINK_ACTION = 'base.report';
+
+    /**
+     * What a "View Full Report" link says when nobody names it.
+     *
+     * The words the shipped summary widgets use, so a report built here reads
+     * like the ones that came with the install.
+     */
+    const MORE_LABEL = 'View Full Report »';
 
     /** How many metrics a widget of this type may ask for. */
     public static function maxMetricsFor( $type ) {
@@ -344,6 +373,20 @@ class CustomReports {
             return $error;
         }
 
+        $error = self::validateLink( $widget, $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
+        $error = self::validateMore( $widget, $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
         /*
          * Sorts carry a direction as a trailing '-', which is not part of the
          * name. Stripping it here rather than validating the whole token is
@@ -531,6 +574,447 @@ class CustomReports {
                 '%s is a %s, which shows one metric against one dimension. '
               . 'This one names %d %s. Use a %s if you need more than one.',
                 $where, $label, $count, $key, self::WIDGET_TYPES['grid'] );
+        }
+
+        return '';
+    }
+
+    // ------------------------------------------------------------------
+    // Linking a card's rows to the report that details them
+    // ------------------------------------------------------------------
+
+    /**
+     * The reports a row of this dimension can lead to, keyed by dimension.
+     *
+     * DERIVED, not listed. A detail report declares the constraint it is read
+     * under -- browser-detail says `{dimension: browserType, fromParam:
+     * browserType}` -- so the report itself already knows which dimension a
+     * link into it has to supply. Reading that means the builder offers a card
+     * grouped by browserType exactly one destination, and cannot offer it
+     * "Product Detail", which would render a link to a report that refuses the
+     * request for a parameter it never gets.
+     *
+     * ONE parameter, distinct. A report wanting two cannot be reached from a
+     * single column, and one wanting none is not a detail of anything.
+     * document.json names three constraints and one parameter, which is why
+     * the count is of distinct parameters rather than of constraints.
+     *
+     * @return array dimension => list of {id, label, param}
+     */
+    public static function linkTargetsByDimension() {
+
+        $targets = array();
+
+        foreach ( \OWA\Core\CoreAPI::getReportRegistry() as $id => $registration ) {
+
+            $path = isset( $registration['json'] ) ? (string) $registration['json'] : '';
+
+            /*
+             * JSON-defined reports only. A report that resolves to a controller
+             * declares its constraints in code, where this cannot read them --
+             * so it is not offered rather than offered on a guess.
+             */
+            if ( $path === '' || ! is_readable( $path ) ) {
+
+                continue;
+            }
+
+            $definition = json_decode( (string) file_get_contents( $path ), true );
+
+            if ( ! is_array( $definition ) ) {
+
+                continue;
+            }
+
+            $params = array_values( array_unique(
+                \OWA\Core\ConfiguredReport::constraintParams( $definition ) ) );
+
+            if ( count( $params ) !== 1 ) {
+
+                continue;
+            }
+
+            $dimension = self::constrainedDimension( $definition, $params[0] );
+
+            if ( $dimension === '' ) {
+
+                continue;
+            }
+
+            $targets[ $dimension ][] = array(
+                'id'    => (string) $id,
+                'label' => self::reportLabel( $definition, $id ),
+                'param' => $params[0],
+            );
+        }
+
+        foreach ( $targets as $dimension => $list ) {
+
+            usort( $list, static function ( $a, $b ) {
+
+                return strnatcasecmp( $a['label'], $b['label'] );
+            } );
+
+            $targets[ $dimension ] = $list;
+        }
+
+        ksort( $targets );
+
+        return $targets;
+    }
+
+    /**
+     * The reports a widget can offer a "View Full Report" link to, per dimension.
+     *
+     * SCOPED TO THE DIMENSION, like the row link, and for the same reason: a
+     * card of top pages leads to the full Top Pages report, not to a list of
+     * every report on the install. What makes a report "the full one" is that
+     * it shows the same thing -- so a report qualifies for a dimension when one
+     * of its own widgets queries that dimension.
+     *
+     * Two conditions, and the second is what separates this list from
+     * linkTargetsByDimension(): the destination must read NO parameter. This
+     * link carries no value from the widget, so a detail report followed from
+     * here would answer 400. The row link is the one that can reach those.
+     *
+     * Derived rather than listed, and it reproduces all twelve of the shipped
+     * summary widgets' links exactly -- top products to Products, top page
+     * types to Page Types, latest visits to Latest Visits.
+     *
+     * @return array dimension => list of {id, label}
+     */
+    public static function moreTargetsByDimension() {
+
+        $targets = array();
+
+        foreach ( \OWA\Core\CoreAPI::getReportRegistry() as $id => $registration ) {
+
+            $path = isset( $registration['json'] ) ? (string) $registration['json'] : '';
+
+            /*
+             * JSON-defined reports only. A controller-backed report declares
+             * neither its parameters nor its dimensions anywhere this can read,
+             * so there is no way to tell what it is the full report OF.
+             */
+            if ( $path === '' || ! is_readable( $path ) ) {
+
+                continue;
+            }
+
+            $definition = json_decode( (string) file_get_contents( $path ), true );
+
+            if ( ! is_array( $definition ) ) {
+
+                continue;
+            }
+
+            if ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) ) {
+
+                continue;
+            }
+
+            $label = self::reportLabel( $definition, $id );
+
+            foreach ( self::definitionDimensions( $definition ) as $dimension ) {
+
+                $targets[ $dimension ][] = array( 'id' => (string) $id, 'label' => $label );
+            }
+        }
+
+        foreach ( $targets as $dimension => $list ) {
+
+            usort( $list, static function ( $a, $b ) {
+
+                return strnatcasecmp( $a['label'], $b['label'] );
+            } );
+
+            $targets[ $dimension ] = $list;
+        }
+
+        ksort( $targets );
+
+        return $targets;
+    }
+
+    /**
+     * Every dimension a definition's widgets group by.
+     *
+     * What the report is ABOUT, as far as anything readable can tell.
+     *
+     * @param array $definition
+     * @return array
+     */
+    private static function definitionDimensions( array $definition ) {
+
+        $dimensions = array();
+
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+            $query = (array) ( ( (array) $widget )['query'] ?? array() );
+
+            $dimensions = array_merge( $dimensions,
+                self::asNames( $query['dimensions'] ?? '' ) );
+        }
+
+        return array_values( array_unique( $dimensions ) );
+    }
+
+    /**
+     * A widget's "View Full Report" link.
+     *
+     * The same shape the shipped summary widgets use -- a report id and the
+     * words to show. The same rule as the in-row link, minus the constraint:
+     * the destination has to be about a dimension this widget shows, and has to
+     * need no value -- moreTargetsByDimension() offers only those, and this
+     * refuses the rest rather than letting the builder be the only check.
+     *
+     * @param array  $widget
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateMore( array $widget, $where ) {
+
+        if ( empty( $widget['more'] ) ) {
+
+            return '';
+        }
+
+        if ( ! is_array( $widget['more'] ) ) {
+
+            return $where . ' has a "more" link that is not an object';
+        }
+
+        $reportId = (string) ( $widget['more']['reportId'] ?? '' );
+
+        $definition = $reportId === ''
+            ? false
+            : \OWA\Core\CoreAPI::getReportDefinition( $reportId );
+
+        if ( ! $definition ) {
+
+            return sprintf( '%s has a full-report link to "%s", which is not a registered report',
+                $where, $reportId );
+        }
+
+        $unknown = array_diff( array_keys( $widget['more'] ), array( 'reportId', 'label' ) );
+
+        if ( $unknown ) {
+
+            return sprintf( '%s has a full-report link with unknown key(s): %s',
+                $where, implode( ', ', $unknown ) );
+        }
+
+        if ( isset( $widget['more']['label'] ) && ! is_string( $widget['more']['label'] ) ) {
+
+            return $where . ' has a full-report link whose label is not text';
+        }
+
+        /*
+         * ...and the destination has to be one this widget can actually lead
+         * to. Two ways it might not be:
+         *
+         * It reads a parameter. This link carries no value, so a detail report
+         * followed from here answers 400 -- the row link is what reaches those.
+         *
+         * It is about something else. "View Full Report" under a table of top
+         * pages means the full Top Pages report; a link to an unrelated one is
+         * not a fuller version of anything, and there is no reading of the
+         * words under which it is right.
+         */
+        $path = isset( $definition['json'] ) ? (string) $definition['json'] : '';
+
+        $decoded = ( $path !== '' && is_readable( $path ) )
+            ? json_decode( (string) file_get_contents( $path ), true )
+            : null;
+
+        if ( ! is_array( $decoded ) ) {
+
+            return '';   // nothing readable to check it against
+        }
+
+        $needs = \OWA\Core\ConfiguredReport::constraintParams( $decoded );
+
+        if ( $needs ) {
+
+            return sprintf(
+                '%s has a full-report link to "%s", which is read under %s -- a link '
+              . 'below a widget carries no value, so that report cannot be reached '
+              . 'from one. Link the rows instead.',
+                $where, $reportId, implode( ', ', array_unique( $needs ) ) );
+        }
+
+        $mine  = self::asNames( ( (array) ( $widget['query'] ?? array() ) )['dimensions'] ?? '' );
+        $shown = self::definitionDimensions( $decoded );
+
+        if ( ! array_intersect( $mine, $shown ) ) {
+
+            return sprintf(
+                '%s has a full-report link to "%s", which does not show %s. A full '
+              . 'report link goes to the report that shows more of the same thing.',
+                $where, $reportId,
+                $mine ? implode( ' or ', $mine ) : 'anything this widget shows' );
+        }
+
+        return '';
+    }
+
+    /**
+     * The dimension a report is constrained on, for the parameter it takes.
+     *
+     * Usually the same name as the parameter, and that is preferred when the
+     * report constrains several dimensions from one value: document.json
+     * constrains pagePath AND priorPagePath from `pagePath`, and a link into it
+     * is a link from a pagePath column.
+     *
+     * @param array  $definition
+     * @param string $param
+     * @return string '' when it cannot be told
+     */
+    private static function constrainedDimension( array $definition, $param ) {
+
+        $dimensions = array();
+
+        $collect = static function ( $constraints ) use ( &$dimensions, $param ) {
+
+            if ( ! is_array( $constraints ) ) {
+
+                return;
+            }
+
+            foreach ( $constraints as $part ) {
+
+                $part = (array) $part;
+
+                if ( ( $part['fromParam'] ?? '' ) === $param && ! empty( $part['dimension'] ) ) {
+
+                    $dimensions[] = (string) $part['dimension'];
+                }
+            }
+        };
+
+        $collect( $definition['settings']['constraints'] ?? null );
+
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+            $collect( ( (array) $widget )['constraints'] ?? null );
+        }
+
+        $dimensions = array_values( array_unique( $dimensions ) );
+
+        if ( in_array( $param, $dimensions, true ) ) {
+
+            return $param;
+        }
+
+        return count( $dimensions ) === 1 ? $dimensions[0] : '';
+    }
+
+    /**
+     * A report's name, without the value it is about.
+     *
+     * A detail report's title is "Browser Detail: {browserType}" -- the
+     * placeholder is filled per request, so in a list of destinations it is the
+     * part that is not the name. Falls back to the id, which is at least
+     * addressable.
+     *
+     * @param array  $definition
+     * @param string $id
+     * @return string
+     */
+    private static function reportLabel( array $definition, $id ) {
+
+        $title = trim( (string) ( $definition['title'] ?? '' ) );
+
+        $title = trim( (string) preg_replace( '/\{[^}]*\}/', '', $title ) );
+
+        // "Browser Detail:" once the placeholder is gone.
+        $title = trim( $title, " \t:-\xE2\x80\x93\xE2\x80\x94" );
+
+        return $title !== '' ? $title : (string) $id;
+    }
+
+    /**
+     * A widget's row link: where it goes, and what it carries.
+     *
+     * A link becomes makeLink() output on the rendered page, so the whole shape
+     * is pinned rather than the report id alone -- otherwise a stored
+     * definition could address any action with any parameters, and the builder
+     * would be the only thing stopping it.
+     *
+     * @param array  $widget
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateLink( array $widget, $where ) {
+
+        if ( empty( $widget['link'] ) ) {
+
+            return '';
+        }
+
+        if ( ! is_array( $widget['link'] ) ) {
+
+            return $where . ' has a link that is not an object';
+        }
+
+        $link       = $widget['link'];
+        $dimensions = self::asNames( ( (array) ( $widget['query'] ?? array() ) )['dimensions'] ?? '' );
+
+        foreach ( array( 'linkColumn', 'valueColumns' ) as $key ) {
+
+            $column = (string) ( $link[ $key ] ?? '' );
+
+            if ( $column === '' ) {
+
+                return sprintf( '%s has a link with no %s', $where, $key );
+            }
+
+            if ( ! in_array( $column, $dimensions, true ) ) {
+
+                return sprintf(
+                    '%s links from "%s", which is not a column it shows. A link has to '
+                  . 'come from one of this widget\'s dimensions: %s',
+                    $where, $column, implode( ', ', $dimensions ) ?: '(none)' );
+            }
+        }
+
+        $template = (array) ( $link['template'] ?? array() );
+
+        if ( ( $template['do'] ?? '' ) !== self::LINK_ACTION ) {
+
+            return sprintf( '%s has a link to something other than a report', $where );
+        }
+
+        $reportId = (string) ( $template['reportId'] ?? '' );
+
+        if ( $reportId === '' || ! \OWA\Core\CoreAPI::getReportDefinition( $reportId ) ) {
+
+            return sprintf( '%s links to report "%s", which is not registered',
+                $where, $reportId );
+        }
+
+        /*
+         * `do`, `reportId` and the one parameter the destination reads. Any
+         * other key would be a parameter this report chose to put in a URL, and
+         * nothing the builder can produce needs one.
+         */
+        $extra = array_diff( array_keys( $template ), array( 'do', 'reportId' ) );
+
+        if ( count( $extra ) !== 1 ) {
+
+            return sprintf(
+                '%s has a link carrying %d parameters; it carries the one the '
+              . 'destination is read under, and nothing else.',
+                $where, count( $extra ) );
+        }
+
+        $value = (string) $template[ reset( $extra ) ];
+
+        if ( $value !== '%s' ) {
+
+            return sprintf(
+                '%s has a link whose parameter is "%s"; it is filled from the row, so '
+              . 'it has to be %%s', $where, $value );
         }
 
         return '';

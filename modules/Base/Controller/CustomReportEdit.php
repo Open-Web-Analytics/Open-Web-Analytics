@@ -183,6 +183,21 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'single_field_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_FIELD_TYPES );
         $this->set( 'default_colspans',   \OWA\Core\ReportGrid::DEFAULT_COLSPANS );
         $this->set( 'grid_columns',       \OWA\Core\ReportGrid::COLUMNS );
+
+        /*
+         * Where a card's rows can lead, per dimension. Derived from what each
+         * detail report says it is constrained on, so the builder offers a card
+         * grouped by browserType only the report that reads a browserType.
+         */
+        $this->set( 'link_targets', \OWA\Module\Base\Classes\CustomReports::linkTargetsByDimension() );
+
+        /*
+         * ...and where a "View Full Report" link under a widget can go. The
+         * same rule, minus the constraint: scoped to the widget's dimension the
+         * same way, but the destination must need no value, because this link
+         * carries none.
+         */
+        $this->set( 'more_targets', \OWA\Module\Base\Classes\CustomReports::moreTargetsByDimension() );
     }
 
     /**

@@ -174,6 +174,50 @@ $owa_max        = (int) $view->get('max_widgets');
         </div>
     </div>
 
+    <?php
+        /*
+         * Where a row leads.
+         *
+         * Offered only for the widget types whose link column is unambiguous --
+         * a card shows one dimension, so the column a link comes from is the
+         * one it has. A full-width grid can show several, and which of them is
+         * the link would be another choice; it is not offered rather than
+         * guessed.
+         *
+         * The destinations are per dimension and come from the reports
+         * themselves, so this list changes as the dimension does.
+         */
+    ?>
+    <div class="owa_builderField" id="dlgLinkField" style="display:none;">
+        <label for="dlgLinkReport">Rows link to</label>
+        <select id="dlgLinkReport"></select>
+        <div class="owa_builderHelp" id="dlgLinkHelp"></div>
+    </div>
+
+    <?php
+        /*
+         * "View Full Report" -- a link BELOW the widget, to the report that
+         * shows the whole thing. The dashboard's summary grids all carry one.
+         *
+         * Different from the row link above it, and offered for every type: it
+         * carries no value from the widget, so it needs no column to come from
+         * -- and for the same reason it can only reach reports that read no
+         * parameter, which is the list it is given.
+         */
+    ?>
+    <div class="owa_builderFieldRow" id="dlgMoreField" style="display:none;">
+        <div class="owa_builderField">
+            <label for="dlgMoreReport">Full report link</label>
+            <select id="dlgMoreReport"></select>
+            <div class="owa_builderHelp">Shown below the widget.</div>
+        </div>
+
+        <div class="owa_builderField">
+            <label for="dlgMoreLabel">Link text</label>
+            <input type="text" id="dlgMoreLabel" placeholder="<?php $view->out( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>" />
+        </div>
+    </div>
+
     <div class="owa_builderField">
         <label for="dlgSort">Sort</label>
         <input type="text" id="dlgSort" placeholder="visits-" />
@@ -221,6 +265,38 @@ $owa_max        = (int) $view->get('max_widgets');
     var FULL_WIDTH_TYPES   = <?php echo json_encode( array_values( (array) $view->get('full_width_types') ) ); ?>;
     var SINGLE_FIELD_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_field_types') ) ); ?>;
     var DEFAULT_COLSPANS   = <?php echo json_encode( (object) (array) $view->get('default_colspans') ); ?>;
+
+    /*
+     * dimension -> the reports a row of it can lead to.
+     *
+     * Derived server-side from what each detail report declares it is
+     * constrained on, so every destination offered here is one that will
+     * actually read the value the link carries.
+     */
+    var LINK_TARGETS = <?php echo json_encode( (object) (array) $view->get('link_targets') ); ?>;
+
+    /*
+     * Where a "View Full Report" link can go, per dimension.
+     *
+     * The same rule as LINK_TARGETS minus the constraint: scoped to the
+     * widget's dimension, but the destination must read no parameter, because
+     * this link carries no value from the row.
+     */
+    var MORE_TARGETS = <?php echo json_encode( (object) (array) $view->get('more_targets') ); ?>;
+
+    var MORE_LABEL = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>;
+
+    /*
+     * The types whose link column is unambiguous.
+     *
+     * A card shows one dimension, so the column a link comes from is the one it
+     * has. A full-width grid can show several and would need that choice asked
+     * separately; a pie has slices rather than rows.
+     */
+    var LINKABLE_TYPES = [ 'grid-card' ];
+
+    /* Types that draw one metric as a chart and need to be told which. */
+    var CHART_TYPES = [ 'trend', 'pie' ];
 
     /*
      * The grid the report is drawn on. These mirror Core\ReportGrid, which
@@ -293,6 +369,18 @@ $owa_max        = (int) $view->get('max_widgets');
      * layout the type exists to prevent.
      */
     var dialogTypeWas = null;
+
+    /*
+     * The report the widget's rows link to, as the dialog was opened.
+     *
+     * Held apart from the select because the select is rebuilt whenever the
+     * dimension changes -- without this, changing the dimension and changing it
+     * back would silently drop a link the author had set.
+     */
+    var dialogLink = '';
+
+    /** ...and the same for the link below the widget, for the same reason. */
+    var dialogMore = '';
 
     function newWidget( index ) {
 
@@ -590,6 +678,9 @@ $owa_max        = (int) $view->get('max_widgets');
         // dialog happened to be showing for the widget before it.
         dialogTypeWas = null;
 
+        dialogLink = String( ( ( widget.link || {} ).template || {} ).reportId || '' );
+        dialogMore = String( ( widget.more || {} ).reportId || '' );
+
         fillRange( jQuery( '#dlgColspan' ), 1, COLUMNS, colspanOf( widget ) );
         fillRange( jQuery( '#dlgRowspan' ), 1, MAX_ROWSPAN, widget.rowspan || 1 );
 
@@ -606,6 +697,13 @@ $owa_max        = (int) $view->get('max_widgets');
         // to the type's cap, and run any earlier it would be trimming the
         // widget the dialog was open on last time.
         applyTypeRules();
+
+        var more = widget.more || {};
+
+        // Blank when it is the default, so the placeholder shows what the link
+        // will say rather than the field repeating it back.
+        jQuery( '#dlgMoreLabel' ).val(
+            more.label && more.label !== MORE_LABEL ? more.label : '' );
 
         jQuery( '#dlgSort' ).val( query.sort || '' );
         jQuery( '#dlgConstraints' ).val( widget.constraints || '' );
@@ -673,6 +771,100 @@ $owa_max        = (int) $view->get('max_widgets');
 
         narrowMetrics( '#dlgMetrics' );
         narrowDimensions();
+
+        refreshLinkControl();
+        refreshMoreControl();
+    }
+
+    /**
+     * The destinations for whatever dimension the widget is grouped by now.
+     *
+     * Rebuilt on every type and dimension change, because the list IS per
+     * dimension: a card grouped by browserType can lead to the report that
+     * reads a browserType and to nothing else. A dimension with no detail
+     * report leaves the control hidden rather than showing an empty select.
+     */
+    function refreshLinkControl() {
+
+        var type       = jQuery( '#dlgType' ).val();
+        var dimensions = jQuery( '#dlgDimensions' ).val() || [];
+        var dimension  = dimensions.length === 1 ? dimensions[ 0 ] : '';
+        var targets    = ( dimension && LINK_TARGETS[ dimension ] ) || [];
+
+        var linkable = LINKABLE_TYPES.indexOf( type ) !== -1 && targets.length > 0;
+
+        jQuery( '#dlgLinkField' ).toggle( linkable );
+
+        if ( ! linkable ) {
+
+            // Emptied, not just hidden: applyDialog reads this select, and a
+            // stale value would attach a link to a widget that cannot carry it.
+            jQuery( '#dlgLinkReport' ).empty();
+
+            return;
+        }
+
+        var $select = jQuery( '#dlgLinkReport' ).empty();
+
+        // No link is the default, and has to stay reachable -- it is how one
+        // already set is taken off again.
+        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( 'Nothing — rows are not links' ) );
+
+        targets.forEach( function ( target ) {
+
+            $select.append( jQuery( '<option>' ).attr( 'value', target.id )
+                .prop( 'selected', target.id === dialogLink )
+                .text( target.label ) );
+        } );
+
+        jQuery( '#dlgLinkHelp' ).text(
+            'Each ' + dimension + ' becomes a link to the report that details it.' );
+    }
+
+    /**
+     * The "View Full Report" destinations for what this widget shows.
+     *
+     * Per dimension like the row link, and rebuilt on the same events. A widget
+     * grouped by more than one offers the union: content's top pages is grouped
+     * by pageTitle AND pagePath and leads to the one Pages report.
+     */
+    function refreshMoreControl() {
+
+        var dimensions = jQuery( '#dlgDimensions' ).val() || [];
+
+        var targets = [];
+        var seen    = {};
+
+        dimensions.forEach( function ( dimension ) {
+
+            ( MORE_TARGETS[ dimension ] || [] ).forEach( function ( target ) {
+
+                if ( ! seen[ target.id ] ) {
+                    seen[ target.id ] = true;
+                    targets.push( target );
+                }
+            } );
+        } );
+
+        jQuery( '#dlgMoreField' ).toggle( targets.length > 0 );
+
+        var $select = jQuery( '#dlgMoreReport' ).empty();
+
+        if ( ! targets.length ) {
+
+            // Emptied as well as hidden: applyDialog reads this select, and a
+            // stale value would attach a link the widget can no longer justify.
+            return;
+        }
+
+        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( 'No link' ) );
+
+        targets.forEach( function ( target ) {
+
+            $select.append( jQuery( '<option>' ).attr( 'value', target.id )
+                .prop( 'selected', target.id === dialogMore )
+                .text( target.label ) );
+        } );
     }
 
     /** Keep at most `limit` of a multi-select's values, in the order shown. */
@@ -742,12 +934,62 @@ $owa_max        = (int) $view->get('max_widgets');
             delete widget.constraints;
         }
 
-        // A trend chart draws ONE metric, and the renderer reads which from
-        // chartMetric rather than guessing at the first in the list.
-        if ( widget.type === 'trend' && metrics.length ) {
+        /*
+         * A chart draws ONE metric, and the renderer reads which from
+         * chartMetric rather than guessing at the first in the list.
+         *
+         * A pie needs this as much as a trend does, and did not have it: a pie
+         * built here carried no chartMetric, so options.pieChart.metric came
+         * out empty and the chart drew nothing at all.
+         */
+        if ( CHART_TYPES.indexOf( widget.type ) !== -1 && metrics.length ) {
             widget.chartMetric = metrics[0];
         } else {
             delete widget.chartMetric;
+        }
+
+        /*
+         * Where a row leads.
+         *
+         * Everything except the destination is derived: a card shows one
+         * dimension, so that is the column the link comes from and the value it
+         * carries, and the parameter name is the one the destination declared
+         * it is read under.
+         */
+        var linkTo    = jQuery( '#dlgLinkReport' ).val() || '';
+        var linkable  = LINKABLE_TYPES.indexOf( widget.type ) !== -1 && dimensions.length === 1;
+        var target    = linkable && ( LINK_TARGETS[ dimensions[0] ] || [] ).filter(
+            function ( t ) { return t.id === linkTo; } )[0];
+
+        if ( target ) {
+
+            var template = { 'do': 'base.report', reportId: target.id };
+
+            template[ target.param ] = '%s';
+
+            widget.link = {
+                linkColumn:   dimensions[0],
+                template:     template,
+                valueColumns: dimensions[0]
+            };
+
+        } else {
+
+            // Including the case where the type or the dimension changed out
+            // from under a link that was set -- it cannot be carried over.
+            delete widget.link;
+        }
+
+        var moreTo    = jQuery( '#dlgMoreReport' ).val() || '';
+        var moreLabel = jQuery.trim( jQuery( '#dlgMoreLabel' ).val() || '' );
+
+        if ( moreTo ) {
+
+            widget.more = { reportId: moreTo, label: moreLabel || MORE_LABEL };
+
+        } else {
+
+            delete widget.more;
         }
 
         editing = null;
@@ -763,8 +1005,25 @@ $owa_max        = (int) $view->get('max_widgets');
         narrowMetrics( '#dlgMetrics' );
         // Choosing a metric can rule dimensions out, so both are redrawn.
         narrowDimensions();
+        refreshLinkControl();
+        refreshMoreControl();
     } );
-    jQuery( '#dlgDimensions' ).on( 'change', narrowDimensions );
+    jQuery( '#dlgDimensions' ).on( 'change', function () {
+        narrowDimensions();
+        // Both link lists are per dimension, so they change with it.
+        refreshLinkControl();
+        refreshMoreControl();
+    } );
+
+    // Remembered, so rebuilding the select on a dimension change does not lose
+    // a choice the author has already made.
+    jQuery( '#dlgLinkReport' ).on( 'change', function () {
+        dialogLink = jQuery( this ).val() || '';
+    } );
+
+    jQuery( '#dlgMoreReport' ).on( 'change', function () {
+        dialogMore = jQuery( this ).val() || '';
+    } );
 
     // The type decides the width control and the field caps, so changing it
     // has to redraw both.

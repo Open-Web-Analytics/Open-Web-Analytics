@@ -368,7 +368,11 @@ final class CustomReportsTest extends TestCase
         $this->assertArrayHasKey('grid-card', CustomReports::WIDGET_TYPES);
 
         $this->assertSame(array('grid'), CustomReports::FULL_WIDTH_TYPES);
-        $this->assertSame(array('grid-card'), CustomReports::SINGLE_FIELD_TYPES);
+
+        // A pie is here for the other half of the same rule: it draws one
+        // metric and has to be told which, so it cannot inherit a metric set
+        // either. See testAPieMustNameItsOwnMetric.
+        $this->assertSame(array('grid-card', 'pie'), CustomReports::SINGLE_FIELD_TYPES);
     }
 
     public function testACardTakesOneMetricAgainstOneDimension(): void
@@ -491,6 +495,302 @@ final class CustomReportsTest extends TestCase
         $stored = CustomReports::load($result['id']);
 
         $this->assertArrayNotHasKey('colspan', $stored['definition']['widgets'][1]);
+    }
+
+    // ------------------------------------------------------------------
+    // Where a widget can lead
+    // ------------------------------------------------------------------
+
+    /**
+     * A card's rows lead to the report that details that dimension.
+     *
+     * DERIVED from what the destination declares, not from a list kept here. A
+     * detail report says it is read under a constraint -- browser-detail names
+     * `{dimension: browserType, fromParam: browserType}` -- so the report
+     * itself already knows what a link into it has to carry.
+     */
+    public function testLinkTargetsComeFromWhatTheDestinationDeclares(): void
+    {
+        $targets = CustomReports::linkTargetsByDimension();
+
+        $this->assertArrayHasKey('browserType', $targets);
+
+        $ids = array_column($targets['browserType'], 'id');
+
+        $this->assertContains('browser-detail', $ids);
+
+        $target = $targets['browserType'][array_search('browser-detail', $ids, true)];
+
+        $this->assertSame('browserType', $target['param'],
+            'the link carries the parameter the destination is read under');
+
+        // The name without the value it is about: the title is
+        // "Browser Detail: {browserType}" and the placeholder is per request.
+        $this->assertSame('Browser Detail', $target['label']);
+    }
+
+    /**
+     * A report reading no parameter is not a link target, and one reading two
+     * is not either.
+     *
+     * The first is not a detail of anything; the second cannot be reached from
+     * a single column.
+     */
+    public function testOnlyReportsReadUnderOneParameterAreTargets(): void
+    {
+        $targets = CustomReports::linkTargetsByDimension();
+
+        $flat = array();
+
+        foreach ($targets as $list) {
+            $flat = array_merge($flat, array_column($list, 'id'));
+        }
+
+        $this->assertNotContains('browsers', $flat,
+            'the browsers report reads no parameter, so nothing links INTO it this way');
+
+        $this->assertNotContains('dashboard', $flat);
+    }
+
+    /**
+     * document.json names three constraints and ONE parameter.
+     *
+     * It constrains pagePath and priorPagePath, both from `pagePath`. Counting
+     * constraints would have excluded it; counting distinct parameters is what
+     * makes it reachable, and the dimension it is offered under is the one
+     * matching the parameter.
+     */
+    public function testAReportConstrainingSeveralDimensionsFromOneValueIsATarget(): void
+    {
+        $targets = CustomReports::linkTargetsByDimension();
+
+        $this->assertArrayHasKey('pagePath', $targets);
+
+        $this->assertContains('document', array_column($targets['pagePath'], 'id'));
+
+        $this->assertArrayNotHasKey('priorPagePath', $targets,
+            'the link comes from the column the destination is named after');
+    }
+
+    /**
+     * A stored link is pinned in full, not just by its report id.
+     *
+     * It becomes makeLink() output on the rendered page, so a definition able
+     * to name any action with any parameters would be choosing the URLs the
+     * report shows -- with the builder as the only thing stopping it.
+     *
+     * @dataProvider badLinkProvider
+     */
+    public function testALinkIsRefusedUnlessItIsALinkToAReport(array $link, string $says): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['type']  = 'grid-card';
+        $definition['widgets'][1]['query'] = array('metrics' => 'pageViews', 'dimensions' => 'pagePath');
+        $definition['widgets'][1]['link']  = $link;
+
+        $this->assertStringContainsString($says, CustomReports::validate($definition));
+    }
+
+    public static function badLinkProvider(): array
+    {
+        $good = array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s');
+
+        return array(
+            'another action' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => array('do' => 'base.optionsGeneral', 'reportId' => 'document', 'pagePath' => '%s')),
+                'something other than a report',
+            ),
+            'a report that is not registered' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => array('do' => 'base.report', 'reportId' => 'no-such-report', 'pagePath' => '%s')),
+                'not registered',
+            ),
+            'a column the widget does not show' => array(
+                array('linkColumn' => 'browserType', 'valueColumns' => 'pagePath', 'template' => $good),
+                'not a column it shows',
+            ),
+            'extra parameters' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => $good + array('siteId' => 'somebody-elses-site')),
+                'carrying 2 parameters',
+            ),
+            'a literal value rather than the row' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '/admin')),
+                'filled from the row',
+            ),
+        );
+    }
+
+    public function testAWellFormedLinkIsAccepted(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['type']  = 'grid-card';
+        $definition['widgets'][1]['query'] = array('metrics' => 'pageViews', 'dimensions' => 'pagePath');
+        $definition['widgets'][1]['link']  = array(
+            'linkColumn'   => 'pagePath',
+            'valueColumns' => 'pagePath',
+            'template'     => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'),
+        );
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    // ------------------------------------------------------------------
+    // "View Full Report", below the widget
+    // ------------------------------------------------------------------
+
+    /**
+     * The same rule as the row link, minus the constraint.
+     *
+     * Scoped to the dimension the same way -- a card of top pages leads to the
+     * full Top Pages report, not to a list of every report on the install --
+     * but the destination must read NO parameter, because this link carries no
+     * value. That is the whole difference between the two lists: a detail
+     * report followed from here would answer "is constrained on pagePath,
+     * which the request did not supply".
+     */
+    public function testTheFullReportTargetsAreScopedToTheDimension(): void
+    {
+        $targets = CustomReports::moreTargetsByDimension();
+
+        $this->assertArrayHasKey('pagePath', $targets);
+
+        $ids = array_column($targets['pagePath'], 'id');
+
+        $this->assertContains('pages', $ids, 'the full report about a page path is Pages');
+
+        // Reads a pagePath, so it belongs to the ROW link, not this one.
+        $this->assertNotContains('document', $ids);
+
+        // ...and a report about something else is not a fuller version of this.
+        $this->assertNotContains('browsers', $ids);
+        $this->assertNotContains('keywords', $ids);
+    }
+
+    /**
+     * The derivation reproduces every link the shipped summary widgets already
+     * make.
+     *
+     * The real check on it. These twelve were written by hand over years -- top
+     * products to Products, top page types to Page Types, latest visits to
+     * Latest Visits -- so if the rule offered something different from what a
+     * person chose, the rule would be the thing that is wrong.
+     */
+    public function testTheDerivationReproducesTheShippedFullReportLinks(): void
+    {
+        $targets = CustomReports::moreTargetsByDimension();
+        $missed  = array();
+
+        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+
+            $definition = json_decode((string) file_get_contents($file), true);
+
+            foreach ((array) ($definition['widgets'] ?? array()) as $widget) {
+
+                if (empty($widget['more']['reportId'])) {
+                    continue;
+                }
+
+                $offered = array();
+
+                foreach (explode(',', (string) (($widget['query'] ?? array())['dimensions'] ?? '')) as $dimension) {
+
+                    $dimension = trim($dimension);
+
+                    $offered = array_merge($offered,
+                        array_column($targets[$dimension] ?? array(), 'id'));
+                }
+
+                if (!in_array($widget['more']['reportId'], $offered, true)) {
+
+                    $missed[] = sprintf('%s:%s -> %s', basename($file),
+                        $widget['id'] ?? '?', $widget['more']['reportId']);
+                }
+            }
+        }
+
+        $this->assertSame(array(), $missed,
+            "The builder would not offer these links, which shipped reports already make:\n  "
+            . implode("\n  ", $missed));
+    }
+
+    public function testAFullReportLinkIsStoredAndItsDestinationChecked(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['more'] = array(
+            'reportId' => 'pages',
+            'label'    => 'View Full Report »',
+        );
+
+        $this->assertSame('', CustomReports::validate($definition));
+
+        $definition['widgets'][1]['more']['reportId'] = 'no-such-report';
+
+        $this->assertStringContainsString('not a registered report',
+            CustomReports::validate($definition));
+    }
+
+    /**
+     * ...including one that IS a report but cannot be reached without a value.
+     *
+     * Refused with the reason and with what to do instead, because the author
+     * probably wanted the row link.
+     */
+    public function testAFullReportLinkToADetailReportIsRefused(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['more'] = array( 'reportId' => 'browser-detail' );
+
+        $error = CustomReports::validate($definition);
+
+        $this->assertStringContainsString('browserType', $error);
+        $this->assertStringContainsString('Link the rows instead', $error);
+    }
+
+    public function testAFullReportLinkCannotCarryAnythingElse(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['more'] = array(
+            'reportId' => 'pages',
+            'do'       => 'base.optionsGeneral',
+        );
+
+        $this->assertStringContainsString('unknown key', CustomReports::validate($definition));
+    }
+
+    // ------------------------------------------------------------------
+    // A widget that draws one metric must name it
+    // ------------------------------------------------------------------
+
+    /**
+     * A pie cannot inherit a report metric set.
+     *
+     * The set is several metrics and a pie draws one, so nothing says which --
+     * and the renderer's answer was an empty chartMetric, which draws nothing
+     * at all. An empty chart looks like a site with no data, which is why this
+     * went unnoticed rather than reported.
+     *
+     * There is deliberately no fallback to "the first metric of the query":
+     * half the shipped trends name no chartMetric and draw no chart on purpose.
+     */
+    public function testAPieMustNameItsOwnMetric(): void
+    {
+        $this->assertContains('pie', CustomReports::SINGLE_FIELD_TYPES);
+
+        $definition = $this->definition();
+        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['widgets'][1] = array(
+            'type' => 'pie', 'id' => 'p', 'container' => 'p',
+            'query' => array('dimensions' => 'medium'),
+        );
+
+        $this->assertStringContainsString('0 metrics', CustomReports::validate($definition));
+
+        $definition['widgets'][1]['query']['metrics'] = 'visits';
+
+        $this->assertSame('', CustomReports::validate($definition));
     }
 
     /**

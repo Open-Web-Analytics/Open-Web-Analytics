@@ -14,7 +14,7 @@
             "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed."
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "productName",
             "container": "productNameExplorer",
             "title": "Top Products",

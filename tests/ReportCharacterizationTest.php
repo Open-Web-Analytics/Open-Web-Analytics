@@ -87,6 +87,20 @@ final class ReportCharacterizationTest extends TestCase
          */
         unset( $actual['config']['deprecated'] );
 
+        /*
+         * ...and the widgets deliberately re-typed since the conversion are put
+         * back to what the controller declared, so everything else about them
+         * is still compared. Same allowance the equivalence test applies, from
+         * the same list -- see Harness::RETYPED.
+         */
+        $retyped = Harness::undoRetyping( $name, $actual['config'] );
+
+        $this->assertSame( array(), $retyped['problems'],
+            "the re-typing allowance for $name does not match the definition:\n  "
+            . implode( "\n  ", $retyped['problems'] ) );
+
+        $actual['config'] = $retyped['config'];
+
         $this->assertSame(
             self::$golden[ $name ],
             $actual,

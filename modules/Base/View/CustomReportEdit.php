@@ -38,5 +38,7 @@ class CustomReportEdit extends \OWA\Core\View {
         $this->body->set( 'single_field_types', $this->get( 'single_field_types' ) );
         $this->body->set( 'default_colspans', $this->get( 'default_colspans' ) );
         $this->body->set( 'grid_columns', $this->get( 'grid_columns' ) );
+        $this->body->set( 'link_targets', $this->get( 'link_targets' ) );
+        $this->body->set( 'more_targets', $this->get( 'more_targets' ) );
     }
 }

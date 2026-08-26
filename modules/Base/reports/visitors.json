@@ -54,7 +54,7 @@
             ]
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "browserTypes",
             "container": "top-browsers",
             "title": "Browser Types",
