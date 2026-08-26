@@ -60,6 +60,13 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        // RETIRED 2026-08-26: transaction-detail, removed rather than converted.
+        // It was the per-transaction drill-down off the Transaction Roster --
+        // one record as label/value rows plus its line items. Nothing else
+        // linked to it. The REST report it read (report_transaction) is a
+        // public endpoint and stays.
+        'owa_reportTransactionDetailController',
+        'owa_reportTransactionDetailView',
         // RETIRED 2026-08-25: the visitor-detail family. visitors became a
         // report definition; visit, visits, visitors-roster and visitor were
         // dropped -- nothing linked to them and none was in the navigation.

@@ -631,7 +631,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
-        $this->registerAction( 'base.reportTransactionDetail',       'OWA\\Module\\Base\\Controller\\ReportTransactionDetail',      'Controller/ReportTransactionDetail.php' );
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
@@ -2477,7 +2476,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'sources', 'reports/sources.json' );
         $this->registerReport( 'state-detail', 'reports/state-detail.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
-        $this->registerReport( 'transaction-detail', array( 'controller' => 'base.reportTransactionDetail' ) );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );
         $this->registerReport( 'visitors-age', 'reports/visitors-age.json' );

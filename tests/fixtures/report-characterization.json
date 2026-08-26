@@ -2620,15 +2620,6 @@
                         "timestamp"
                     ],
                     "id": "transactions",
-                    "link": {
-                        "linkColumn": "transactionId",
-                        "template": {
-                            "do": "base.report",
-                            "reportId": "transaction-detail",
-                            "transactionId": "%s"
-                        },
-                        "valueColumns": "transactionId"
-                    },
                     "query": {
                         "dimensions": "timestamp,transactionId",
                         "metrics": "transactionRevenue,shippingRevenue,taxRevenue",

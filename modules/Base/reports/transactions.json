@@ -23,15 +23,6 @@
                 "sort": "timestamp-",
                 "resultsPerPage": 25
             },
-            "link": {
-                "linkColumn": "transactionId",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "transaction-detail",
-                    "transactionId": "%s"
-                },
-                "valueColumns": "transactionId"
-            },
             "excludeColumns": [
                 "timestamp"
             ],

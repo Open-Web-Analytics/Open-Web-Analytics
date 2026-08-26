@@ -29,13 +29,6 @@ final class ReportCharacterizationHarness
     private const PREFETCHING = array(
         'ReportDomstreams',
         'ReportGoalFunnel',
-
-        /*
-         * Also found by running it rather than reading it: it fetches a
-         * transaction through the REST endpoint, so without a database it reads
-         * a property on null. Invisible on a machine that has one.
-         */
-        'ReportTransactionDetail',
     );
 
     /**

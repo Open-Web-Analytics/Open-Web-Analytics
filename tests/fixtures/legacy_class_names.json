@@ -211,8 +211,6 @@
     "owa_reportDomstreamsView",
     "owa_reportGoalFunnelController",
     "owa_reportGoalFunnelView",
-    "owa_reportTransactionDetailController",
-    "owa_reportTransactionDetailView",
     "owa_reportView",
     "owa_reportsRestController",
     "owa_reportsRestView",

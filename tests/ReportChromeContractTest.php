@@ -45,29 +45,37 @@ final class ReportChromeContractTest extends TestCase
         $user->setAuthStatus( true );
     }
 
-    /** @return array<string, array{0:string}> */
+    /**
+     * The bespoke reports, with parameters chosen for each.
+     *
+     * This provider builds the controller DIRECTLY, so only a controller-backed
+     * report belongs here; the converted ones reach the same chrome through the
+     * registry, which testTheChromeSurvivesTheRegistryRoute covers by id.
+     *
+     * It used to fill every parameter a report reads with one sentinel, and
+     * named the single report that tolerated it. Neither of the two now left
+     * does. ReportGoalFunnel reads `period`, `startDate` and `endDate`, so a
+     * sentinel in those overwrites the very date picker under test; and
+     * ReportDomstreams pages its results, so a sentinel in `page` reaches
+     * arithmetic and raises a TypeError before doAction() returns.
+     *
+     * Hence real parameters, one report at a time. Each is the smallest set
+     * that lets the report run -- nothing here is a period or a site, because
+     * those are exactly what pre() is supposed to supply and the test would
+     * otherwise be checking its own input.
+     *
+     * @return array<string, array{0:string, 1:array<string,mixed>}>
+     */
     public static function reportProvider(): array
     {
-        $cases = array();
+        return array(
+            // Resolves an id: which goal's funnel to draw.
+            'ReportGoalFunnel' => array( 'ReportGoalFunnel', array( 'goalNumber' => 1 ) ),
 
-        // A spread rather than all of them: this is shared behaviour, so the
-        // useful question is whether it holds across the KINDS of report.
-        //
-        // Controller-backed reports only, because this provider builds the
-        // controller directly. The converted reports get the same chrome
-        // through the registry route, which testTheChromeSurvivesTheRegistryRoute
-        // covers by id -- and campaigns moved there when it became a definition.
-        //
-        // The remaining bespoke reports are not interchangeable here. This
-        // provider supplies a SENTINEL for every parameter a report reads, so
-        // one that reads `period`/`startDate`/`endDate` (ReportDashboard) loses the very chrome under test, and one that reads
-        // an id it must resolve (ReportGoalFunnel's goalNumber) throws. Four
-        // kinds, chosen because they survive a sentinel.
-        foreach ( array( 'ReportTransactionDetail' ) as $name ) {
-            $cases[ $name ] = array( $name );
-        }
-
-        return $cases;
+            // Paged, and reached without a document -- its "latest domstreams"
+            // mode, which is the one that needs no fixture.
+            'ReportDomstreams' => array( 'ReportDomstreams', array( 'page' => 1 ) ),
+        );
     }
 
     private function assertHasChrome( array $data, string $context ): void
@@ -112,10 +120,9 @@ final class ReportChromeContractTest extends TestCase
     /**
      * @dataProvider reportProvider
      */
-    public function testAReportComesWithItsSiteFilterAndDatePicker( string $name ): void
+    public function testAReportComesWithItsSiteFilterAndDatePicker( string $name, array $params ): void
     {
-        $class  = '\OWA\Module\Base\Controller\\' . $name;
-        $params = array_fill_keys( Harness::paramsFor( $name ), Harness::SENTINEL );
+        $class = '\OWA\Module\Base\Controller\\' . $name;
 
         $data = (array) ( new $class( $params ) )->doAction();
 
@@ -194,9 +201,16 @@ final class ReportChromeContractTest extends TestCase
     {
         // A bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportTransactionDetail( array() ) )->doAction();
+        //
+        // goalNumber goes to BOTH sides, because the question is whether the
+        // extra hop preserves what the direct route provides. Giving the routes
+        // different inputs would make them differ for a reason that has nothing
+        // to do with the dispatcher.
+        $params = array( 'goalNumber' => 1 );
+
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportGoalFunnel( $params ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'transaction-detail' ) ) )->doAction();
+            array( 'reportId' => 'goal-funnel' ) + $params ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -258,15 +272,16 @@ final class ReportChromeContractTest extends TestCase
      *
      * Was ReportPages, then ReportHostDetail, then ReportCampaigns, then
      * ReportGoals; all four are configuration now and have no action left.
-     * document still prefetches -- it loads a document entity for its header --
-     * so it keeps its own.
+     * Then ReportTransactionDetail, until that report was removed outright.
+     * domstreams still prefetches -- it fetches recordings from its own
+     * module's API -- so it keeps its own action.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportTransactionDetail(
-            array( 'do' => 'base.reportTransactionDetail' ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportDomstreams(
+            array( 'do' => 'base.reportDomstreams', 'page' => 1 ) ) )->doAction();
 
-        $this->assertSame( 'base-reportTransactionDetail', $data['dom_id'] );
+        $this->assertSame( 'base-reportDomstreams', $data['dom_id'] );
     }
 
     /**

@@ -143,7 +143,6 @@ final class ReportRegistryTest extends TestCase
         return array(
             'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
             'prefetching'    => array( 'goal-funnel', '\OWA\Module\Base\Controller\ReportGoalFunnel' ),
-            'entity detail'  => array( 'transaction-detail', '\OWA\Module\Base\Controller\ReportTransactionDetail' ),
         );
     }
 
