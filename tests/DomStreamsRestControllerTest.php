@@ -27,13 +27,19 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
         return OWA_MODULES_DIR . 'Domstream/Controller/DomstreamsRestController.php';
     }
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        if (!owa_coreAPI::getSetting('domstream', 'is_active')) {
-            $this->markTestSkipped('domstream module not active; skipping domstreams REST test.');
-        }
-    }
+    /*
+     * No is_active guard.
+     *
+     * There used to be one, and it meant these five tests never ran on a fresh
+     * install -- which is what CI provisions, so they had been reporting green
+     * without executing. The reasoning behind it was that the ROUTE is only
+     * registered when the module is active. True, and irrelevant here: every
+     * test below reaches the controller through callEndpoint(), which loads the
+     * class from its own file path. Route registration is never involved.
+     *
+     * Verified by removing the guard on a scratch install with the module
+     * inactive: all five pass.
+     */
 
     /**
      * Persist one domstream row for $site directly through the entity layer
