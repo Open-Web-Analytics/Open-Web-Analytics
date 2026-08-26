@@ -1078,6 +1078,63 @@ li.constraintRow {
 }
 
 /*
+ * A trend's legend, under the chart.
+ *
+ * flot draws its own legend floating over the plot area, on top of the data it
+ * is labelling -- survivable for one entry, useless for five. It renders into
+ * this instead, which sits after the plot and so below the x-axis labels.
+ */
+.owa .owa_chartLegend {
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.owa .owa_chartLegend table {
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+.owa .owa_chartLegend td {
+    padding: 2px 10px 2px 3px;
+    vertical-align: middle;
+    border: 0;
+}
+
+.owa .owa_chartLegend .legendColorBox div {
+    /* flot draws the swatch as nested divs; round it so it reads as a key
+       rather than as a fragment of the grid. */
+    border-radius: 2px;
+}
+
+/*
+ * Clickable only when there is more than one line to choose between -- the
+ * class is put on by bindLegend(), not by the markup.
+ */
+.owa .owa_chartLegendInteractive td {
+    cursor: pointer;
+}
+
+.owa .owa_chartLegendInteractive tr:hover .legendLabel {
+    text-decoration: underline;
+}
+
+/*
+ * Per CELL, not per row: the legend is one column per series so it reads left
+ * to right, which puts every entry in the same single <tr>.
+ */
+.owa .owa_chartLegend .legendLabel.owa_seriesSelected {
+    font-weight: bold;
+}
+
+/*
+ * The lines themselves are redrawn faded; this fades their labels to match, so
+ * the legend says the same thing the chart does.
+ */
+.owa .owa_chartLegend .owa_seriesDimmed {
+    opacity: 0.5;
+}
+
+/*
  * Choosing what kind of widget to add.
  *
  * A list of choices rather than a select, because the name alone does not say

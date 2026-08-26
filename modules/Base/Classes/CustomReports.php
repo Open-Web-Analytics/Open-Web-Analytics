@@ -458,6 +458,13 @@ class CustomReports {
             return $error;
         }
 
+        $error = self::validateChartMetrics( $widget, $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
         $error = self::validateLink( $widget, $where );
 
         if ( $error !== '' ) {
@@ -842,6 +849,61 @@ class CustomReports {
         }
 
         return array_values( array_unique( $dimensions ) );
+    }
+
+    /**
+     * What a chart plots has to be something the widget asked the database for.
+     *
+     * chartMetric names the metric -- or, for a trend, the metrics -- drawn as
+     * lines. A name that is not in the query resolves to nothing in the result
+     * set, and flot plots an empty series: a chart with a legend entry and no
+     * line, which reads as "no data for this metric" rather than as a mistake.
+     *
+     * Checked against the widget's OWN metrics only when it has some. A widget
+     * that declares none inherits the report metric set, and this is the wrong
+     * place to re-derive that -- the names still have to resolve through the
+     * registry, which validateNames() has already established.
+     *
+     * @param array  $widget
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateChartMetrics( array $widget, $where ) {
+
+        if ( empty( $widget['chartMetric'] ) ) {
+
+            return '';
+        }
+
+        $charted = self::asNames( $widget['chartMetric'] );
+
+        $error = self::validateNames(
+            array( 'metrics' => $charted ), 'metrics', 'metric', $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
+        }
+
+        $query = (array) ( $widget['query'] ?? array() );
+        $own   = self::asNames( $query['metrics'] ?? '' );
+
+        if ( ! $own ) {
+
+            return '';
+        }
+
+        $missing = array_values( array_diff( $charted, $own ) );
+
+        if ( $missing ) {
+
+            return sprintf(
+                '%s charts %s, which it does not measure. A chart draws lines from '
+              . 'the metrics the widget asks for: %s.',
+                $where, implode( ', ', $missing ), implode( ', ', $own ) );
+        }
+
+        return '';
     }
 
     /**

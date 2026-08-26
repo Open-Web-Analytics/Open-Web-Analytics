@@ -1049,7 +1049,17 @@ $owa_max        = (int) $view->get('max_widgets');
          * out empty and the chart drew nothing at all.
          */
         if ( CHART_TYPES.indexOf( widget.type ) !== -1 && metrics.length ) {
-            widget.chartMetric = metrics[0];
+
+            /*
+             * A trend charts EVERY metric it was given, one line each; a pie is
+             * a share of one, so it charts the one it has. Both read the same
+             * key, because both answer the same question -- which metric or
+             * metrics does this chart draw.
+             */
+            widget.chartMetric = widget.type === 'trend'
+                ? metrics.join( ',' )
+                : metrics[0];
+
         } else {
             delete widget.chartMetric;
         }

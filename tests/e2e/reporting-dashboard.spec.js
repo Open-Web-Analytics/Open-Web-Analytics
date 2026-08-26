@@ -129,6 +129,161 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.owa_titleCount')).toHaveCount(0);
     });
 
+    /*
+     * ------------------------------------------------------------------
+     * A trend can chart a metric SET
+     * ------------------------------------------------------------------
+     *
+     * It could not before, and not only because nothing asked it to: the data
+     * array was declared once OUTSIDE the per-series loop, so every series
+     * pushed into the same array and every entry in the series list referenced
+     * that one object. Two metrics drew two identical lines, each holding both
+     * metrics' points end to end. Every shipped trend charts one metric, so
+     * nothing ever exercised it.
+     */
+    test('a trend charts one line per metric, with a total in front', async ({ page }) => {
+        // Re-plot the dashboard's trend with three metrics, through the same
+        // call the template makes.
+        await page.evaluate(() => window.siteTrend.makeAreaChart([
+            { x: 'date', y: 'visits' },
+            { x: 'date', y: 'pageViews' },
+            { x: 'date', y: 'uniqueVisitors' },
+        ], 'trend-chart'));
+
+        const labels = page.locator('#trend-chart > .owa_chartLegend .legendLabel');
+
+        await expect(labels).toHaveCount(4);
+
+        // The synthetic total is FIRST, so it reads before the parts it sums.
+        await expect(labels.nth(0)).toHaveText('Total');
+        await expect(labels.nth(1)).toHaveText('Visits');
+
+        const state = await page.evaluate(() => {
+            const ac = window.siteTrend.areaChart;
+            return {
+                colors: ac.plotted.map((s) => s.color),
+                lengths: ac.plotted.map((s) => s.data.length),
+                firstPoints: ac.plotted.map((s) => s.data[0][1]),
+            };
+        });
+
+        // A colour each, all different -- the point of one line per metric.
+        expect(new Set(state.colors).size).toBe(4);
+
+        // Every series is the same length, and none is the concatenation of
+        // the others: that is exactly what the shared-array bug produced.
+        expect(new Set(state.lengths).size).toBe(1);
+
+        // The total really is the sum of the three at each point -- and every
+        // point is a NUMBER. A result set carries metric values as strings, so
+        // this used to add up to "121" rather than to 4.
+        const [total, a, b, c] = state.firstPoints;
+
+        for (const v of state.firstPoints) { expect(typeof v).toBe('number'); }
+
+        expect(total).toBe(a + b + c);
+    });
+
+    /**
+     * Clicking a legend entry brings that line forward.
+     *
+     * Asserted on what was handed to flot rather than on pixels: the dimming IS
+     * the colour, since flot has no per-series opacity to set after the fact.
+     */
+    test('selecting a series in the legend dims the others', async ({ page }) => {
+        await page.evaluate(() => window.siteTrend.makeAreaChart([
+            { x: 'date', y: 'visits' },
+            { x: 'date', y: 'pageViews' },
+        ], 'trend-chart'));
+
+        const labels = page.locator('#trend-chart > .owa_chartLegend .legendLabel');
+
+        await expect(labels).toHaveCount(3);
+
+        // Nothing selected to begin with: every line at full strength.
+        expect(await page.evaluate(() => window.siteTrend.areaChart.plotted
+            .every((s) => s.color.indexOf('rgba') === -1))).toBe(true);
+
+        await labels.nth(1).click();
+
+        const after = await page.evaluate(() => ({
+            selected: window.siteTrend.areaChart.selected,
+            colors: window.siteTrend.areaChart.plotted.map((s) => s.color),
+        }));
+
+        // The one clicked, by its own index -- not by its row. The legend is
+        // one column per series so it reads left to right, which puts every
+        // entry in a single <tr>; reading the row gave 0 for all of them.
+        expect(after.selected).toBe(1);
+
+        expect(after.colors[1].indexOf('rgba')).toBe(-1);
+        expect(after.colors[0]).toContain('rgba');
+        expect(after.colors[2]).toContain('rgba');
+        expect(after.colors[0]).toContain('0.5');
+
+        // The labels say the same thing the lines do.
+        await expect(labels.nth(1)).toHaveClass(/owa_seriesSelected/);
+        await expect(labels.nth(0)).toHaveClass(/owa_seriesDimmed/);
+
+        // Clicking it again puts everything back, so there is always a way out.
+        await labels.nth(1).click();
+
+        expect(await page.evaluate(() => window.siteTrend.areaChart.selected)).toBeNull();
+    });
+
+    /**
+     * The legend sits UNDER the chart, not floating on top of it.
+     *
+     * flot draws its own legend inside the plot area, over the data it is
+     * labelling -- survivable for one entry, useless for five.
+     */
+    test('the trend legend is below the plot', async ({ page }) => {
+        await page.evaluate(() => window.siteTrend.makeAreaChart([
+            { x: 'date', y: 'visits' },
+            { x: 'date', y: 'pageViews' },
+        ], 'trend-chart'));
+
+        const box = await page.evaluate(() => {
+            const legend = document.querySelector('#trend-chart > .owa_chartLegend');
+            const plot = document.querySelector('#trend-chart > .owa_areaChart');
+            return {
+                legendTop: legend.getBoundingClientRect().top,
+                plotBottom: plot.getBoundingClientRect().bottom,
+                insidePlot: !!plot.querySelector('.legend'),
+            };
+        });
+
+        expect(box.legendTop).toBeGreaterThanOrEqual(box.plotBottom);
+        expect(box.insidePlot).toBe(false);
+    });
+
+    /**
+     * A single-metric trend is untouched.
+     *
+     * Sixty-one shipped trends chart one metric and are drawn as a filled area;
+     * that fill is what makes it read as an area chart. Several translucent
+     * fills stacked on each other muddy every colour underneath, so the fill is
+     * dropped when there is more than one line -- and must not be dropped when
+     * there is one.
+     */
+    test('a single-metric trend is still a filled area chart', async ({ page }) => {
+        await page.evaluate(() => window.siteTrend.makeAreaChart(
+            [{ x: 'date', y: 'visits' }], 'trend-chart'));
+
+        const state = await page.evaluate(() => ({
+            series: window.siteTrend.areaChart.plotted.length,
+            fill: window.siteTrend.areaChart.flotOptions.series.lines.fill,
+            interactive: !!document.querySelector('#trend-chart > .owa_chartLegendInteractive'),
+        }));
+
+        expect(state.series).toBe(1);
+        expect(state.fill).toBe(true);
+
+        // ...and no legend interaction: one line is always the selected one, so
+        // a control that can only turn itself off is worse than none.
+        expect(state.interactive).toBe(false);
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);

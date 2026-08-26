@@ -711,6 +711,16 @@ OWA.resultSetExplorer.prototype = {
         // generate area chart
         ac.generate(this.resultSet, series, dom_id);
 
+        /*
+         * Kept, not discarded.
+         *
+         * The chart owns state now -- which series the reader has brought
+         * forward from the legend -- and a chart that state cannot be read from
+         * can only be checked by looking at it. It is also what a later caller
+         * would need to redraw one without rebuilding it.
+         */
+        this.areaChart = ac;
+
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
     },

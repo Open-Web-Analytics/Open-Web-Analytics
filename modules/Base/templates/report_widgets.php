@@ -253,7 +253,32 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_chartMetric, false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
+        <?php
+            /*
+             * ONE SERIES PER METRIC.
+             *
+             * chartMetric is a LIST, comma separated -- which is the same thing
+             * as a single name when there is one, so every shipped trend is
+             * unaffected. A trend that names several plots each as its own
+             * line, with a synthetic Total in front; see OWA.areaChart.
+             *
+             * Encoded as JSON rather than interpolated: the names come from a
+             * definition that is meant to be user-authorable, and they are on
+             * their way into a script tag.
+             */
+            $owa_chartSeries = array();
+
+            foreach ( explode( ',', $owa_chartMetric ) as $owa_seriesMetric ) {
+
+                $owa_seriesMetric = trim( $owa_seriesMetric );
+
+                if ( $owa_seriesMetric !== '' ) {
+
+                    $owa_chartSeries[] = array( 'x' => 'date', 'y' => $owa_seriesMetric );
+                }
+            }
+        ?>
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
 <?php if ( $owa_showMetricBoxes ): ?>
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
