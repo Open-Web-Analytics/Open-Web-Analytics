@@ -85,11 +85,27 @@ class Sanitize {
             $quotes = ENT_QUOTES;
         }
         
-        if ( $string ) {
-            // revert special chars, some values are saved encoded in the database eg. page title
-            $string = html_entity_decode($string, $quotes);
-            return htmlentities($string, $quotes, $encoding);
+        /*
+         * A ZERO is a value, not an absence.
+         *
+         * This guarded on truthiness, so 0, '0' and 0.0 all fell through and
+         * returned null -- and out() echoes whatever it gets. Every zero
+         * rendered through a template therefore vanished: a funnel step nobody
+         * reached printed "visitors" with no number in front of it, and any
+         * count, total or metric that happened to be zero printed as blank
+         * rather than as none.
+         *
+         * Only genuinely absent values are skipped now.
+         */
+        if ( $string === null || $string === '' ) {
+
+            return '';
         }
+
+        // revert special chars, some values are saved encoded in the database eg. page title
+        $string = html_entity_decode( (string) $string, $quotes );
+
+        return htmlentities($string, $quotes, $encoding);
     }
 
     

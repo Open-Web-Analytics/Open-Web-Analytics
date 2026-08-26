@@ -482,13 +482,14 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
     test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {
         // FUNCTIONAL test (not just "a column appeared"): the Browser Types report
-        // has ONE row for the fixture data -- all 8 pageviews are Chrome (seeded
-        // UA), so the grid is a single "Chrome" row. The seeder spreads those views
-        // across FOUR distinct days (day_ago 23/16/9/2, see
-        // seed_reporting_fixtures.php), so adding "Date" as the secondary dimension
+        // has ONE row for the fixture data -- every seeded pageview is Chrome
+        // (seeded UA), so the grid is a single "Chrome" row. The seeder spreads
+        // those views across FIVE distinct days (day_ago 23/16/9/4/2, see
+        // seed_reporting_fixtures.php -- the day_ago 4 visit is the one that walks
+        // the goal funnel in order), so adding "Date" as the secondary dimension
         // must requery (owa.resultSetExplorer.changeDimension -> getNewResultSet
         // with owa_dimensions=browserType,date) and split the one Chrome row into
-        // exactly FOUR rows (Chrome x each day), each carrying a rendered Date value.
+        // exactly FIVE rows (Chrome x each day), each carrying a rendered Date value.
         // This pins the real outcome: the right dimension is added AND the server
         // returns the correctly grouped result set -- catching a break anywhere in
         // pick -> event -> URL rewrite -> requery -> re-render, not just DOM width.
@@ -508,15 +509,15 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
             .poll(async () => (await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()),
                 { timeout: 15_000 })
             .toContain('Date');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(4);
+        await expect(page.locator('tr.jqgrow')).toHaveCount(5);
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
-        // and the four dates are DISTINCT -- i.e. the grid really grouped by date.
+        // and the dates are DISTINCT -- i.e. the grid really grouped by date.
         const rowText = await page.locator('tr.jqgrow').allInnerTexts();
         expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
         const dates = rowText.map((t) => (t.match(/\b(20\d{6})\b/) || [])[1]).filter(Boolean);
-        expect(dates).toHaveLength(4);
-        expect(new Set(dates).size).toBe(4);
+        expect(dates).toHaveLength(5);
+        expect(new Set(dates).size).toBe(5);
     });
 
     test('applying a filter constraint requeries and filters the grid result set', async ({ page }) => {

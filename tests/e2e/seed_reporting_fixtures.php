@@ -32,7 +32,7 @@ const E2E_USER_ID     = 'owa-e2e-reporter@example.test';
 const E2E_USER_PASS   = 'e2e-Reporter-Pass-1!';   // local throwaway fixture creds
 const E2E_USER_ROLE   = 'analyst';                // has view_reports + view_site_list
 const E2E_USER_NAME   = 'OWA E2E Reporter';
-const E2E_PAGEVIEWS   = 8;                         // number of synthetic pageviews
+const E2E_PAGEVIEWS   = 11;                        // number of synthetic pageviews
 
 /*
  * The referring URLs the four seeded visits arrive from.
@@ -737,6 +737,18 @@ function seedPageviews(int $n): int
         ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about'],
          'referer' => E2E_REFERERS[1]],
         ['day_ago' => 9,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing']],
+        /*
+         * One visit that goes THROUGH the funnel, in order.
+         *
+         * The goal funnel counts people who reached each step after the one
+         * before it, so a fixture where nobody walks '/' -> '/pricing' ->
+         * '/docs' in that order has a funnel that can only ever end in zero --
+         * and a spec written against it can only assert that the report renders,
+         * never that it counts. Visitor 0 already does the first two steps; this
+         * visit carries them to the goal.
+         */
+        ['day_ago' => 4,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing', '/docs']],
+
         ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about'],
          'referer' => E2E_REFERERS[2]],
     ];

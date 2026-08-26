@@ -1355,7 +1355,9 @@ OWA.dataGrid.prototype = {
 
         // A grid whose data was computed rather than queried has nothing to
         // explore FROM -- see options.grid.showExplorerControls.
-        var showControls = this.options.grid.showExplorerControls !== false;
+        // NOT this.options.grid: createGrid() hands the explorer's grid options
+        // straight in as `options`, so inside a dataGrid they ARE this.options.
+        var showControls = this.options.showExplorerControls !== false;
 
         var p = '';
         if ( showControls ) {

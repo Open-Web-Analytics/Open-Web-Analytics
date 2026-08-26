@@ -60,6 +60,22 @@ foreach ( $owa_steps as $owa_s ) {
         </div>
     </span>
 
+    <?php
+        /*
+         * The segment: WHICH people the funnel is drawn for.
+         *
+         * The same constraint builder the report grids use, so the funnel
+         * accepts exactly the constraints every other report does -- and offers
+         * exactly the same choices, because the options come from the reporting
+         * stack rather than a list written here. It keeps itself behind its own
+         * toggle, which is why this is a bare container.
+         */
+    ?>
+    <span class="owa_funnelControl">
+        <span class="label">Filter:</span>
+        <span id="funnelFilter" class="constraintPicker"></span>
+    </span>
+
     <span class="owa_funnelControl owa_funnelControlRight">
         <a href="<?php echo $view->makeLink( array(
             'do'          => 'base.optionsGoalEntry',
@@ -180,6 +196,23 @@ foreach ( $owa_steps as $owa_s ) {
         OWA.items.funnelSteps.options.grid.showRowNumbers = false;
         OWA.items.funnelSteps.setResultSet( funnelTable );
         OWA.items.funnelSteps.refreshGrid();
+    }
+
+    // The segment filter. Applying one reloads the report, because the segment
+    // is resolved server-side -- it selects the people, and the funnel is then
+    // counted over all of their pages.
+    var funnelFilter = <?php echo $view->get('funnel_filter_json') ?: 'null'; ?>;
+
+    if ( funnelFilter ) {
+
+        OWA.items.funnelConstraints = new OWA.constraintBuilder( '#funnelFilter', {} );
+        OWA.items.funnelConstraints.setRelatedDimensions( funnelFilter.dimensions, [] );
+        OWA.items.funnelConstraints.setRelatedMetrics( funnelFilter.metrics, [] );
+        OWA.items.funnelConstraints.display( funnelFilter.constraints || '' );
+
+        jQuery( '#funnelFilter' ).bind( 'constraint_change', function ( event, constraints ) {
+            goTo( { 'owa_constraints': constraints } );
+        } );
     }
 
     jQuery( '#goalChooser' ).change( function () {

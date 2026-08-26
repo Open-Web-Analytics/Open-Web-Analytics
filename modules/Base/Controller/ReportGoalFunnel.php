@@ -73,6 +73,17 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
         $scope = $this->scope();
 
         $this->set( 'funnel_scope', $scope );
+
+        /*
+         * The filter control: what it may offer, and what is currently applied.
+         * The constraint itself lives on the URL like the scope does -- it is a
+         * way of looking at the report, not a property of the site.
+         */
+        $filter = $this->filterOptions();
+
+        $this->set( 'funnel_filter_dimensions', $filter['dimensions'] );
+        $this->set( 'funnel_filter_metrics',    $filter['metrics'] );
+        $this->set( 'funnel_constraints',       (string) $this->getParam( 'constraints' ) );
         // What the counts are counting, so the template does not have to say
         // "visitors" when it is counting visits.
         $this->set( 'funnel_scope_label', $scope === 'session' ? 'visits' : 'visitors' );
@@ -376,6 +387,65 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
         }
 
         return $counts;
+    }
+
+    /**
+     * What the filter control may constrain on.
+     *
+     * The funnel's segment accepts the same constraints every other report does,
+     * so the picker has to offer the same choices -- and the authority on those
+     * is the reporting stack, not a list written out here. A list of our own
+     * would offer names the segment then refuses.
+     *
+     * Taken from an AGGREGATE-ONLY query: asking for a metric with no dimensions
+     * still comes back carrying the full related-dimension and related-metric
+     * lists (measured: 10 groups, 70 dimensions), and costs one aggregate rather
+     * than a group-by over every visitor in the period.
+     *
+     * @return array {dimensions, metrics} in the shape the picker reads
+     */
+    private function filterOptions() {
+
+        $empty = array( 'dimensions' => array(), 'metrics' => array() );
+
+        /*
+         * No period, no query. The report normally always has one, but this
+         * controller is also constructed directly -- by the registry contract
+         * test, and by anything checking a route -- and a picker is decoration:
+         * it must never be the reason a report cannot render.
+         */
+        if ( ! $this->getParam( 'period' )
+             && ! ( $this->getParam( 'startDate' ) && $this->getParam( 'endDate' ) ) ) {
+
+            return $empty;
+        }
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->setSiteId( $this->getParam( 'siteId' ) );
+        $rsm->setTimePeriod(
+            $this->getParam( 'period' ),
+            $this->getParam( 'startDate' ),
+            $this->getParam( 'endDate' )
+        );
+        $rsm->setLimit( 1 );
+
+        try {
+
+            $rs = $rsm->getResults();
+
+        } catch ( \Throwable $e ) {
+
+            \OWA\Core\CoreAPI::notice( 'Goal funnel could not build its filter options: ' . $e->getMessage() );
+
+            return $empty;
+        }
+
+        return array(
+            'dimensions' => (array) ( $rs->relatedDimensions ?? array() ),
+            'metrics'    => (array) ( $rs->relatedMetrics ?? array() ),
+        );
     }
 
     /**

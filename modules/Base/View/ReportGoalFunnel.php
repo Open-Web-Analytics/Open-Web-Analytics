@@ -52,5 +52,10 @@ class ReportGoalFunnel extends \OWA\Core\View {
         $this->body->set('funnel_scope_label',   $this->get('funnel_scope_label') );
         $this->body->set('funnel_segment_error', $this->get('funnel_segment_error') );
         $this->body->set('funnel_table_json', json_encode( $this->get('funnel_table') ) );
+        $this->body->set('funnel_filter_json', json_encode( array(
+            'dimensions'  => $this->get('funnel_filter_dimensions'),
+            'metrics'     => $this->get('funnel_filter_metrics'),
+            'constraints' => $this->get('funnel_constraints'),
+        ) ) );
     }
 }
