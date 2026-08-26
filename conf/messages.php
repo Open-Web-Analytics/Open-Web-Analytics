@@ -64,7 +64,7 @@ $_owa_messages = [
     //User managment
     3000 => ['headline' => 'Success', 'message' => 'User Added.',],
     3001 => ['headline' => 'Error', 'message' => 'That user name is already taken.'],
-    3002 => ['headline' => 'Error', 'message' => 'The form data that you entered contained one or more errors. Please check the data and submit the from again.'],
+    3002 => ['headline' => 'Error', 'message' => 'The form data that you entered contained one or more errors. Please check the data and submit the form again.'],
     3003 => ['headline' => 'Success', 'message' => 'User profile saved.'],
     3004 => ['headline' => 'Success', 'message' => 'User acount deleted.'],
     3005 => ['message' => 'Enter Your New Password',],

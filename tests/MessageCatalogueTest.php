@@ -131,6 +131,79 @@ final class MessageCatalogueTest extends TestCase
     }
 
     /**
+     * Every code a controller sets actually exists.
+     *
+     * A code with no entry renders as a blank message -- the screen says an
+     * error happened and then says nothing about it. Cheap to check and
+     * impossible to notice by reading, since the two live in different files.
+     */
+    public function testEveryCodeAControllerSetsIsDefined(): void
+    {
+        $messages = $this->catalogue();
+        $missing  = array();
+
+        foreach (glob(__DIR__ . '/../modules/*/Controller/*.php') as $file) {
+
+            $source = (string) file_get_contents($file);
+
+            if (!preg_match_all(
+                "/(?:setStatusCode\(\s*|set\(\s*'(?:error_code|status_code)'\s*,\s*)(\d{3,5})/",
+                $source, $matches)) {
+                continue;
+            }
+
+            foreach ($matches[1] as $code) {
+
+                if (!isset($messages[(int) $code])) {
+                    $missing[] = basename($file) . ' sets ' . $code;
+                }
+            }
+        }
+
+        $this->assertSame(array(), $missing,
+            "These controllers set a status code the catalogue does not define, so the\n"
+            . "screen reports an error and then shows no message:\n  "
+            . implode("\n  ", $missing));
+    }
+
+    /**
+     * The form screens report a FORM error, not the CLI-updates message.
+     *
+     * SitesAdd has set 3311 since 2009; 3311 became "these updates must be
+     * applied using the command line interface" in 2010, when that commit took
+     * a code three form screens were already using. It stayed latent because
+     * Controller::doAction() sets validation_errors before calling
+     * errorAction(), and msgs.php shows error_msg only when there are none --
+     * so the wrong text was suppressed on the ordinary path and would have
+     * appeared the moment that branch changed.
+     *
+     * Pinned by MEANING rather than by number: the message these screens show
+     * has to be about the form, and must not be the updates one.
+     */
+    public function testFormScreensDoNotReportTheUpdatesMessage(): void
+    {
+        $messages = $this->catalogue();
+
+        foreach (array('SitesAdd', 'SitesEditSettings', 'UsersEdit') as $name) {
+
+            $source = (string) file_get_contents(
+                __DIR__ . '/../modules/Base/Controller/' . $name . '.php');
+
+            $this->assertTrue(
+                (bool) preg_match("/set\(\s*'error_code'\s*,\s*(\d+)/", $source, $m),
+                "$name sets no error code at all");
+
+            $message = $messages[(int) $m[1]]['message'] ?? '';
+
+            $this->assertStringNotContainsStringIgnoringCase('command line', $message,
+                "$name reports the CLI-updates message on a form error");
+
+            $this->assertStringContainsStringIgnoringCase('form', $message,
+                "$name should tell the reader their form had a problem");
+        }
+    }
+
+    /**
      * The codes the custom report screens set exist and say what they mean.
      *
      * Named individually rather than checked as a range: the point is that
