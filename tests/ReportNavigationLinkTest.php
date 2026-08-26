@@ -278,6 +278,20 @@ final class ReportNavigationLinkTest extends TestCase
     }
 
     /** Every nav link in the Reports group, subgroup entries included. */
+    /** Any registered site: the nav only renders for one. */
+    private function anySiteId(): string
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $row = $db->get_row( 'SELECT site_id FROM owa_site LIMIT 1' );
+
+        if ( ! $row ) {
+            $this->markTestSkipped( 'the nav renders only for a site, and none is registered' );
+        }
+
+        return (string) ( (array) $row )['site_id'];
+    }
+
     private function flattenNav(): array
     {
         $flat = array();
@@ -299,5 +313,110 @@ final class ReportNavigationLinkTest extends TestCase
         }
 
         return $flat;
+    }
+
+    // ------------------------------------------------------------------
+    // What the nav is actually GIVEN to compare against
+    // ------------------------------------------------------------------
+
+    /**
+     * The nav menu is handed the whole request, not just its action.
+     *
+     * THE BUG THIS EXISTS FOR
+     *
+     * navLinkIsCurrent() compares every key of a link's ref, and a report link
+     * is {do: base.report, reportId: pages}. makeNavigationMenu() was building
+     * the params it compares against as array('do' => $current_action) -- one
+     * key -- so `reportId` was never present and NO report link was ever
+     * current.
+     *
+     * That read as two unrelated-looking bugs. Nothing highlighted, because
+     * nothing matched; and the left nav collapsed on every page load, because
+     * .owa_admin_nav_subgroup is display:none in CSS and the only thing that
+     * opens a group is the script looking for .owa_current -- which was never
+     * there.
+     *
+     * It worked before the conversion for the reason it broke after: a link was
+     * a single action name, so comparing the action alone was comparing the
+     * whole ref.
+     */
+    public function testTheNavIsGivenTheWholeRequestNotJustTheAction(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $siteId = $this->anySiteId();
+        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
+
+        if ( ! $nav ) {
+            $this->markTestSkipped( 'no reporting navigation is registered' );
+        }
+
+        $html = $this->template()->makeNavigationMenu(
+            $nav, $siteId, array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+
+        $this->assertNotFalse( $html, 'the nav did not render' );
+
+        $this->assertStringContainsString( 'owa_current', (string) $html,
+            'no nav link was marked current, so the menu renders collapsed and unhighlighted' );
+    }
+
+    /**
+     * ...and the action ALONE marks nothing, which is the state that shipped.
+     *
+     * The same call with the pre-conversion argument -- just the action -- must
+     * NOT find a current link. Without this the test above would pass against
+     * an implementation that marked everything.
+     */
+    public function testTheActionAloneCannotIdentifyAReport(): void
+    {
+        $template = $this->template();
+
+        $link = array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+
+        $this->assertFalse(
+            $template->navLinkIsCurrent( $link, array( 'do' => 'base.report' ) ),
+            'the action alone must not make a report link current -- every report shares it' );
+
+        $this->assertTrue(
+            $template->navLinkIsCurrent( $link,
+                array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
+            'the full request must' );
+
+        $this->assertFalse(
+            $template->navLinkIsCurrent( $link,
+                array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
+            'a different report must not' );
+    }
+
+    /**
+     * A string is still accepted, because that is what this took for fifteen
+     * years and a third-party template may still pass one.
+     */
+    public function testAStringIsStillAcceptedAsTheCurrentRequest(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $siteId = $this->anySiteId();
+        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
+
+        if ( ! $nav ) {
+            $this->markTestSkipped( 'no reporting navigation is registered' );
+        }
+
+        $this->assertNotFalse(
+            $this->template()->makeNavigationMenu( $nav, $siteId, 'base.report' ),
+            'passing an action string must still render a menu' );
     }
 }

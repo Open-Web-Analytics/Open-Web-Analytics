@@ -989,14 +989,36 @@ class Template extends TemplateEngine {
         }
     }
 
-    function makeNavigationMenu($links, $currentSiteId, $current_action = '') {
+    /**
+     * @param array        $links
+     * @param string       $currentSiteId
+     * @param array|string $current  the request's params, or just its action
+     */
+    function makeNavigationMenu($links, $currentSiteId, $current = '') {
 
         if (!empty($links) && !empty($currentSiteId)) {
+
+            /*
+             * The WHOLE request, not just its action.
+             *
+             * Every report answers to do=base.report now, so the action alone no
+             * longer says which report is being looked at -- navLinkIsCurrent
+             * compares a link's full ref, and a report link carries a reportId
+             * the action cannot supply. Passing only the action meant no report
+             * link was ever current, which read as two separate bugs: nothing
+             * highlighted, and the left nav collapsing on every page load
+             * (.owa_admin_nav_subgroup is display:none until the script opens
+             * the group holding .owa_current, and there was never one).
+             *
+             * A string is still accepted, because that is what this took for
+             * fifteen years and a third-party template may still pass one.
+             */
+            $params = is_array( $current ) ? $current : array( 'do' => $current );
 
             $t = new \OWA\Core\Template;
             $t->set('links', $links);
             $t->set('currentSiteId', $currentSiteId);
-			$t->set('params', array('do' => $current_action ));
+			$t->set('params', $params);
             $t->caller_params['link_state'] = $this->caller_params['link_state'];
             $t->set_template('report_nav.php');
             return $t->fetch();

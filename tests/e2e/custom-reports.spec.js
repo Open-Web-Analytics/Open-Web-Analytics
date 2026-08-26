@@ -49,18 +49,31 @@ async function buildOne(page, label) {
     await openBuilder(page);
     await page.fill('#customReportName', name);
 
-    // The first widget row is drawn for a new report, so there is always
-    // something to configure without pressing Add first.
-    const widget = page.locator('.owa_customWidget').first();
-
-    await widget.locator('.widgetType').selectOption('grid');
-    await widget.locator('.widgetMetrics').selectOption(['pageViews']);
-    await widget.locator('.widgetDimensions').selectOption(['pagePath']);
+    // One block is drawn for a new report, so there is always something to
+    // configure without pressing the plus first.
+    await configureWidget(page, 0, { metrics: ['pageViews'], dimensions: ['pagePath'] });
 
     await page.click('input[type=submit]');
     await page.waitForLoadState('networkidle');
 
     return name;
+}
+
+/** Open a block's modal, set some fields, and close it with Done. */
+async function configureWidget(page, index, opts) {
+    await page.locator('.owa_builderBlock').nth(index).locator('.owa_builderEdit').click();
+    await expect(page.locator('#widgetDialog')).toBeVisible();
+
+    if (opts.title !== undefined)      { await page.fill('#dlgTitle', opts.title); }
+    if (opts.type)                     { await page.selectOption('#dlgType', opts.type); }
+    if (opts.colspan)                  { await page.selectOption('#dlgColspan', String(opts.colspan)); }
+    if (opts.rowspan)                  { await page.selectOption('#dlgRowspan', String(opts.rowspan)); }
+    if (opts.metrics)                  { await page.selectOption('#dlgMetrics', opts.metrics); }
+    if (opts.dimensions)               { await page.selectOption('#dlgDimensions', opts.dimensions); }
+    if (opts.sort !== undefined)       { await page.fill('#dlgSort', opts.sort); }
+
+    await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+    await expect(page.locator('#widgetDialog')).toBeHidden();
 }
 
 test.describe('custom reports', () => {
@@ -74,7 +87,10 @@ test.describe('custom reports', () => {
         test('the builder offers the four widget types and nothing else', async ({ page }) => {
             await openBuilder(page);
 
-            const types = await page.locator('.owa_customWidget .widgetType option')
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            const types = await page.locator('#dlgType option')
                 .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
 
             expect(types.sort()).toEqual(['grid', 'metric-boxes', 'pie', 'trend']);
@@ -89,15 +105,16 @@ test.describe('custom reports', () => {
         test('the pickers are populated from the registry', async ({ page }) => {
             await openBuilder(page);
 
-            const widget = page.locator('.owa_customWidget').first();
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
 
-            expect(await widget.locator('.widgetMetrics option').count()).toBeGreaterThan(10);
-            expect(await widget.locator('.widgetDimensions option').count()).toBeGreaterThan(10);
+            expect(await page.locator('#dlgMetrics option').count()).toBeGreaterThan(10);
+            expect(await page.locator('#dlgDimensions option').count()).toBeGreaterThan(10);
 
             // Named options, not just a count: the value is what reaches the
             // definition, so it has to be the registry NAME.
-            await expect(widget.locator('.widgetMetrics option[value="pageViews"]')).toHaveCount(1);
-            await expect(widget.locator('.widgetDimensions option[value="pagePath"]')).toHaveCount(1);
+            await expect(page.locator('#dlgMetrics option[value="pageViews"]')).toHaveCount(1);
+            await expect(page.locator('#dlgDimensions option[value="pagePath"]')).toHaveCount(1);
         });
 
         test('a report can be built, saved, and opens showing its own name', async ({ page }) => {
@@ -149,15 +166,114 @@ test.describe('custom reports', () => {
          * The cap is enforced in the browser too, so an author is stopped at
          * ten rather than told at save time that the eleventh was too many.
          */
-        test('the builder stops at ten widgets', async ({ page }) => {
+        test('the plus adds blocks, and stops at ten', async ({ page }) => {
             await openBuilder(page);
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 
             for (let i = 1; i < 10; i++) {
                 await page.click('#addWidget');
             }
 
-            await expect(page.locator('.owa_customWidget')).toHaveCount(10);
-            await expect(page.locator('#addWidget')).toBeDisabled();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(10);
+
+            // The plus is GONE at the cap, not merely disabled: a control that
+            // is present and does nothing reads as broken.
+            await expect(page.locator('#addWidget')).toHaveCount(0);
+        });
+
+        /**
+         * A block carries a default name, so a new report is never a row of
+         * unlabelled boxes.
+         */
+        test('a new block has a default name and a type', async ({ page }) => {
+            await openBuilder(page);
+
+            const block = page.locator('.owa_builderBlock').first();
+
+            await expect(block.locator('.owa_builderBlockName')).toHaveText('Widget 1');
+            await expect(block.locator('.owa_builderBlockType')).toHaveText('Table');
+        });
+
+        /**
+         * The modal's spans reach the block, which is the point of showing them
+         * there: the canvas is the layout, so a span the author sets has to be
+         * visible on it before they save.
+         */
+        test('the span set in the modal is shown on the block', async ({ page }) => {
+            await openBuilder(page);
+
+            await configureWidget(page, 0, {
+                title: 'Revenue by day',
+                type: 'trend',
+                colspan: 4,
+                rowspan: 2,
+                metrics: ['pageViews'],
+            });
+
+            const block = page.locator('.owa_builderBlock').first();
+
+            await expect(block.locator('.owa_builderBlockName')).toHaveText('Revenue by day');
+            await expect(block.locator('.owa_builderBlockType')).toHaveText('Trend chart');
+            await expect(block.locator('.owa_builderBlockSpan')).toHaveText('4 × 2');
+
+            // ...and the block is physically narrower than a full-width one,
+            // which is the claim the canvas is making.
+            await expect(block).toHaveClass(/owa_builderSpan-4/);
+        });
+
+        /** Cancel leaves the widget as it was. */
+        test('cancelling the modal changes nothing', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await page.fill('#dlgTitle', 'Should not stick');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            await expect(page.locator('.owa_builderBlockName').first()).toHaveText('Widget 1');
+        });
+
+        /** A block can be removed, and the last one leaves a fresh block. */
+        test('removing blocks never empties the canvas', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(2);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+
+            // Removing the last leaves a fresh one: a report with no widgets
+            // cannot be saved, so an empty canvas is a dead end.
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+        });
+
+        /**
+         * The span survives the round trip through the definition -- it is
+         * stored, and the report is actually drawn with it.
+         */
+        test('a span is saved and comes back on reopening the builder', async ({ page }) => {
+            const name = reportName('Spanned');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+            await configureWidget(page, 0, {
+                colspan: 3, rowspan: 2,
+                metrics: ['pageViews'], dimensions: ['pagePath'],
+            });
+            await page.click('input[type=submit]');
+            await page.waitForLoadState('networkidle');
+
+            // The rendered report honours it.
+            await expect(page.locator('.owa_reportGridItem.owa_span-3').first()).toHaveCount(1);
+
+            await openRoster(page);
+            await page.locator('table.management tr').filter({ hasText: name })
+                .locator('a', { hasText: 'Edit' }).click();
+            await page.waitForSelector('#customReportCanvas');
+
+            await expect(page.locator('.owa_builderBlockSpan').first()).toHaveText('3 × 2');
         });
 
         /**
@@ -173,9 +289,10 @@ test.describe('custom reports', () => {
 
             // Reach past the pickers: a sort is free text, which is the field
             // an author can put an unresolvable name into.
-            const widget = page.locator('.owa_customWidget').first();
-            await widget.locator('.widgetMetrics').selectOption(['pageViews']);
-            await widget.locator('.widgetSort').fill('notARealMetric-');
+            await configureWidget(page, 0, {
+                metrics: ['pageViews'],
+                sort: 'notARealMetric-',
+            });
 
             await page.click('input[type=submit]');
             await page.waitForLoadState('networkidle');

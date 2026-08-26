@@ -12,10 +12,27 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
 jQuery(document).ready(function(){   
 	
 	
-	if (  jQuery('.owa_current').next('.owa_admin_nav_subgroup').length ) {
-		
-		jQuery('.owa_current').next('.owa_admin_nav_subgroup').toggle();
-		 jQuery('.owa_current').children('.owa_admin_nav_topmenu_toggle').toggleClass('fa-caret-right fa-caret-down');
+	/*
+	 * Open the group holding the current report.
+	 *
+	 * .owa_admin_nav_subgroup is display:none in CSS, so this is the only thing
+	 * that opens one -- if no link is marked current the whole nav renders
+	 * collapsed on every page load, which is exactly what it did while the
+	 * current-link check could not see a reportId.
+	 *
+	 * Scoped to the TOP MENU item: the current report's own line carries
+	 * .owa_current too now, and a bare '.owa_current' would match both.
+	 *
+	 * show(), not toggle(): the intent is "open the group I am in", and a toggle
+	 * would close it in any state where it had already been opened.
+	 */
+	var owaCurrentGroup = jQuery('.owa_admin_nav_topmenu_item.owa_current');
+
+	if ( owaCurrentGroup.next('.owa_admin_nav_subgroup').length ) {
+
+		owaCurrentGroup.next('.owa_admin_nav_subgroup').show();
+		owaCurrentGroup.children('.owa_admin_nav_topmenu_toggle')
+			.removeClass('fa-caret-right').addClass('fa-caret-down');
 	}
 	
     // report side navigaion panels - toggle
@@ -41,7 +58,7 @@ jQuery(document).ready(function(){
             <TD valign="top" class="owa_reportLeftNavColumn">
                 <div>
                     <div id="owa_reportNavPanel">
-                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params['do'] ?? '');?>
+                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params ?? array());?>
                     </div>
                 </div>
             </TD>

@@ -959,3 +959,240 @@ li.constraintRow {
     .owa_rowspan-2, .owa_rowspan-3, .owa_rowspan-4,
     .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
 }
+/* ---------------------------------------------------------------------------
+ * Custom report builder
+ *
+ * The canvas shows the report as blocks, left to right, each as wide as the
+ * column span it claims. That is the whole idea: the arrangement here is the
+ * arrangement on the report, so an author sets a span and SEES what it means
+ * rather than saving and finding out.
+ *
+ * It shares the report grid's twelve columns deliberately -- the block widths
+ * and the rendered widget widths are the same fractions of the same grid, so
+ * they cannot drift apart.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_builderHeader {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    padding: 0 0 20px 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.owa .owa_builderField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1 1 260px;
+    margin-bottom: 14px;
+}
+
+.owa .owa_builderField > label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa .owa_builderField input[type=text],
+.owa .owa_builderField select {
+    padding: 6px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 100%;
+}
+
+.owa .owa_builderHelp {
+    font-size: 11px;
+    color: #808080;
+}
+
+/* Two fields side by side inside the dialog -- span/span, metrics/dimensions. */
+.owa .owa_builderFieldRow {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.owa .owa_builderSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.owa .owa_builderBudget {
+    font-size: 12px;
+    font-weight: normal;
+    color: #808080;
+}
+
+/* The canvas: the same twelve columns the report is drawn on. */
+.owa .owa_builderCanvas {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.owa .owa_builderSpan-1  { grid-column: span 1; }
+.owa .owa_builderSpan-2  { grid-column: span 2; }
+.owa .owa_builderSpan-3  { grid-column: span 3; }
+.owa .owa_builderSpan-4  { grid-column: span 4; }
+.owa .owa_builderSpan-5  { grid-column: span 5; }
+.owa .owa_builderSpan-6  { grid-column: span 6; }
+.owa .owa_builderSpan-7  { grid-column: span 7; }
+.owa .owa_builderSpan-8  { grid-column: span 8; }
+.owa .owa_builderSpan-9  { grid-column: span 9; }
+.owa .owa_builderSpan-10 { grid-column: span 10; }
+.owa .owa_builderSpan-11 { grid-column: span 11; }
+.owa .owa_builderSpan-12 { grid-column: span 12; }
+
+.owa .owa_builderBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    min-height: 120px;
+    padding: 12px;
+    background-color: #fafafa;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+}
+
+.owa .owa_builderBlock:hover {
+    border-color: #b0b0b0;
+}
+
+.owa .owa_builderBlockHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.owa .owa_builderBlockName {
+    font-weight: bold;
+    font-size: 13px;
+    /* A long name wraps rather than pushing the remove control out of reach. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderRemove {
+    color: #999999;
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex: 0 0 auto;
+}
+
+.owa .owa_builderRemove:hover {
+    color: #c0392b;
+}
+
+.owa .owa_builderBlockMeta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 11px;
+}
+
+.owa .owa_builderBlockType,
+.owa .owa_builderBlockSpan {
+    padding: 2px 6px;
+    border-radius: 10px;
+    background-color: #e8e8e8;
+    color: #505050;
+}
+
+.owa .owa_builderBlockSummary {
+    font-size: 11px;
+    color: #808080;
+    /* Grows to fill, so Edit sits on the bottom edge of every block whatever
+       the summary length -- a row of blocks with the link at a different height
+       in each reads as broken. */
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderEdit {
+    font-size: 12px;
+    align-self: flex-start;
+}
+
+/* The plus. Sits in the flow as the last cell, so "add" is where the next
+   widget will appear rather than somewhere else on the page. */
+.owa .owa_builderAdd {
+    grid-column: span 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 120px;
+    padding: 12px;
+    background-color: transparent;
+    border: 2px dashed #cccccc;
+    border-radius: 4px;
+    color: #808080;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.owa .owa_builderAdd:hover {
+    border-color: #999999;
+    color: #505050;
+    background-color: #fafafa;
+}
+
+.owa .owa_builderAddPlus {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.owa .owa_builderActions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.owa .owa_builderDelete {
+    color: #c0392b;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.owa .owa_widgetDialog .owa_builderField {
+    flex: 1 1 220px;
+}
+
+.owa .owa_widgetDialog select[multiple] {
+    width: 100%;
+}
+
+/* Narrow: the canvas halves like the report grid does, and the plus goes with
+   it rather than being left as a sliver beside a full-width block. */
+@media (max-width: 900px) {
+
+    .owa .owa_builderCanvas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+    .owa .owa_builderSpan-7, .owa .owa_builderSpan-8, .owa .owa_builderSpan-9,
+    .owa .owa_builderSpan-10, .owa .owa_builderSpan-11,
+    .owa .owa_builderSpan-12 { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+
+    .owa .owa_builderCanvas { grid-template-columns: 1fr; }
+
+    .owa .owa_builderBlock, .owa .owa_builderAdd { grid-column: 1 / -1; }
+}

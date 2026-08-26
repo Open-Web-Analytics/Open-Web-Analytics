@@ -45,7 +45,21 @@
                         <?php foreach ($l['subgroup'] as $sgl): ?>
                         <?php if (!$view->getCurrentUser()->isCapable($sgl['priviledge'], $view->currentSiteId)) continue; ?>
                         <LI>
-                            <div class="owa_admin_nav_subgroup_item ">
+                            <?php
+                                /*
+                                 * The report itself is marked, not only the
+                                 * group holding it. The group tells a reader
+                                 * roughly where they are; this is the line that
+                                 * says which report they are actually looking
+                                 * at, and it is what a group of eight entries
+                                 * needs to be readable.
+                                 */
+                            ?>
+                            <div class="owa_admin_nav_subgroup_item<?php
+                                if ( $view->navLinkIsCurrent( $sgl, $view->params ) ) {
+                                    echo ' owa_current';
+                                }
+                            ?>">
                                 <a href="<?php echo $view->makeLink($view->navLinkParams($sgl), true);?>"><?php echo $sgl['anchortext'];?></a>
                             </div>
 
