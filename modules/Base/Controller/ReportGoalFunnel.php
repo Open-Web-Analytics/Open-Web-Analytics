@@ -356,18 +356,27 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
              . ' WHERE ' . implode( ' AND ', $where )
              . ' GROUP BY r.' . $subject;
 
-        $stmt = $db->query( $sql, $params );
+        /*
+         * get_results(), NOT query()->fetchAll().
+         *
+         * query() hands back the DRIVER's own result -- a PDOStatement under
+         * pdo, a mysqli_result under mysqli -- and only one of those has
+         * fetchAll(). get_results() is the pair's common contract: assoc rows,
+         * or NULL for both "no rows" and "the query failed".
+         */
+        $rows = $db->get_results( $sql, $params );
 
-        if ( ! $stmt ) {
+        if ( $rows === null ) {
 
-            \OWA\Core\CoreAPI::notice( 'Goal funnel query failed.' );
-
-            return array();
+            // Null covers a failed query AND an empty result, so this is not
+            // an error worth a notice -- a funnel nobody entered is a real
+            // answer, and it is the same zeroes either way.
+            return array_fill( 0, count( $steps ), 0 );
         }
 
         $counts = array_fill( 0, count( $steps ), 0 );
 
-        foreach ( $stmt->fetchAll( \PDO::FETCH_ASSOC ) as $row ) {
+        foreach ( $rows as $row ) {
 
             $previous = null;
 

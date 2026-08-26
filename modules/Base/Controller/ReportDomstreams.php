@@ -279,16 +279,17 @@ class ReportDomstreams extends \OWA\Core\ReportController {
              . ' ORDER BY started DESC'
              . ' LIMIT ' . (int) self::PER_PAGE . ' OFFSET ' . (int) $offset;
 
-        $stmt = \OWA\Core\CoreAPI::dbSingleton()->query( $sql, $scope['params'] );
+        /*
+         * get_results(), NOT query()->fetchAll().
+         *
+         * query() hands back the DRIVER's own result -- a PDOStatement under
+         * pdo, a mysqli_result under mysqli -- and only one of those has
+         * fetchAll(). get_results() is the pair's common contract: assoc rows,
+         * or NULL for both "no rows" and "the query failed".
+         */
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $scope['params'] );
 
-        if ( ! $stmt ) {
-
-            \OWA\Core\CoreAPI::notice( 'Domstream list query failed.' );
-
-            return array();
-        }
-
-        return $stmt->fetchAll( \PDO::FETCH_ASSOC );
+        return $rows === null ? array() : $rows;
     }
 
     /**
@@ -308,14 +309,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         $sql = 'SELECT COUNT(DISTINCT domstream_guid) AS total'
              . ' FROM owa_domstream WHERE ' . $scope['sql'];
 
-        $stmt = \OWA\Core\CoreAPI::dbSingleton()->query( $sql, $scope['params'] );
-
-        if ( ! $stmt ) {
-
-            return 0;
-        }
-
-        $row = $stmt->fetch( \PDO::FETCH_ASSOC );
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( $sql, $scope['params'] );
 
         return $row ? (int) $row['total'] : 0;
     }
