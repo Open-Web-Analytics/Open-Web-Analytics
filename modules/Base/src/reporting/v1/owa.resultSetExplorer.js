@@ -267,6 +267,29 @@ OWA.resultSetExplorer.prototype = {
         }
     },
 
+    /**
+     * Group the grid by exactly these dimensions.
+     *
+     * The list-based sibling of changeDimension(), which swaps ONE name for
+     * another. The grid has always grouped by a LIST -- changeDimension reads
+     * `dimensions` off the result set's own URL, replaces an entry if it finds
+     * the old name and APPENDS if it does not -- so the list is the real model
+     * and the single "secondary dimension" select was a one-slot view of it.
+     *
+     * changeDimension stays, because secondary_dimension_change is a public
+     * event and something outside this file may still fire it.
+     *
+     * @param array dims dimension names, in the order the grid should group by
+     */
+    setDimensionList : function ( dims ) {
+
+        var url = new OWA.uri( this.resultSet.self );
+
+        url.setQueryParam( OWA.util.appNs( 'dimensions' ), dims.join( ',' ) );
+
+        this.getNewResultSet( url.getSource() );
+    },
+
     changeConstraints : function (constraints) {
 
         var url = new OWA.uri( this.resultSet.self );
@@ -367,6 +390,12 @@ OWA.resultSetExplorer.prototype = {
         // subscribe to grid secondary dimension change event
         jQuery( "#" + dom_id ).bind( 'secondary_dimension_change', function(event, oldname, newname) {
             that.changeDimension(oldname, newname);
+        });
+
+        // The pills speak in whole lists; the event above stays for anything
+        // outside this file still firing the one-at-a-time version.
+        jQuery( "#" + dom_id ).bind( 'dimension_list_change', function(event, dims) {
+            that.setDimensionList(dims);
         });
 
         // subscribe to grid sort column change event
@@ -901,6 +930,8 @@ OWA.resultSetExplorer.prototype = {
  */
 OWA.dimensionPicker = function(target_dom_selector, options) {
 
+    this.options = options || {};
+
     this.dim_list = {};
     this.alternate_field_selector = '';
     this.dom_id = target_dom_selector;
@@ -955,7 +986,18 @@ OWA.dimensionPicker.prototype = {
     generateDimList : function(selector, selected) {
 
         var container_selector = selector;
-        var c = '<select data-placeholder="Select..." name="dim-list" class="dim-list" style="width:150px;"><option value=""></option>';
+        /*
+         * The placeholder IS the label.
+         *
+         * Each control in the grid's bar used to be a text label plus a
+         * control, and two of those wrap onto separate lines as soon as the
+         * widget is narrow -- which is most of them, since a widget is often
+         * half a report wide. Naming the control inside itself keeps it to one
+         * element, so the bar stays a row.
+         */
+        var placeholder = this.options.placeholder || 'Select...';
+
+        var c = '<select data-placeholder="' + placeholder + '" name="dim-list" class="dim-list"><option value=""></option>';
         var that = this;
 
         if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
@@ -1012,7 +1054,16 @@ OWA.dimensionPicker.prototype = {
         // the dimension list was unusable. options.width bypasses the runtime
         // measurement (chosen 0.9.x read the CSS width, so this wasn't needed
         // before the 0.9.6 -> 1.8.7 upgrade).
-        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found.", width: '150px'});
+        jQuery( container_selector + ' > .dim-list' ).chosen( {
+            no_results_text: "Name not found.",
+            placeholder_text_single: placeholder,
+            // Still explicit -- chosen-js 1.x measures the select at enhancement
+            // time and reads 0 inside a display:none parent (the constraint
+            // builder enhances while its .builder is hidden). '100%' lets the
+            // CSS decide, so the control can shrink with the bar instead of
+            // holding it at 150px and forcing a wrap.
+            width: '100%'
+        } );
 
 
 jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
@@ -1428,39 +1479,60 @@ OWA.dataGrid.prototype = {
         // secondard dimension picker
         jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
             OWA.util.sprintf(
-                '<li class="controlItem"><span class="label">%s:</span> <span id="%s"></span></li>',
-                OWA.l('Secondary Dimension'),
+                '<li class="controlItem"><span id="%s"></span></li>',
                 this.dom_id + '_grid_secondDimensionChooser'
             )
         );
 
-        // create secondary dimension picker
-        var sdc = new OWA.dimensionPicker('#' + this.dom_id + '_grid_secondDimensionChooser');
-        sdc.setExclusions( this.getDimensions( resultSet ) );
-        //sdc.setExclusions( this.gridColumnOrder );
-        sdc.setDimensions( resultSet.relatedDimensions );
-        sdc.display();
+        /*
+         * What the grid is grouped by, as pills.
+         *
+         * The dimensions the grid ALREADY has come from its own URL, so the
+         * control shows the real state rather than an empty slot beside it.
+         * Adding or removing one rewrites the list and refetches -- which is
+         * what the single select did too, one dimension at a time.
+         */
+        /*
+         * relatedDimensions is {family: [ {name, label}, ... ]} -- a LIST per
+         * family. Passed through as it is: the family grouping is what makes
+         * seventy dimensions findable, and reading the key as a NAME gave every
+         * option an array index for a value, so choosing "Date" asked the grid
+         * to group by "7".
+         */
+        var pills = new OWA.dimensionPills(
+            '#' + this.dom_id + '_grid_secondDimensionChooser',
+            {
+                choices: resultSet.relatedDimensions || {},
+                selected: this.getDimensions( resultSet ).filter( Boolean ),
+                onChange: function ( dims ) {
+                    jQuery( '#' + that.dom_id ).trigger( 'dimension_list_change', [ dims ] );
+                }
+            }
+        );
 
-        // listen for the change to secondary dimension
-        jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser')
-            .bind('dimension_change', function(event, oldname, newname) {
+        pills.display();
 
-            // lookup current secondary dimension as displayed in the grid
-            /*if ( that.gridColumnOrder.length >= 1 ) {
-                oldname = that.gridColumnOrder[1];
-            } else {
-                oldname = '';
-            }*/
+        /*
+         * Built ONCE, and deliberately not refreshed on refetch.
+         *
+         * The widget's metrics are locked -- there is no control to change them
+         * -- so the metric reduction has already pinned the fact table before
+         * this control exists. relatedDimensions IS the set of dimensions
+         * related to that table, so every option offered here is one the table
+         * can answer, and choosing one cannot invalidate it.
+         *
+         * Measured rather than assumed: the browsers widget resolves to
+         * base.session on the site_usage metric set, because pagesPerVisit,
+         * visitDuration and bounceRate exist only there. Adding a request-only
+         * dimension like pagePath does not move the table to the request -- it
+         * makes the query illegal, which is why pagePath is not in the 70
+         * dimensions this control offers in the first place.
+         */
 
-            // propigate the event up one level where result set explorer is listening
-            jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [that.previousDimensionName, newname]);
-
-            that.previousDimensionName = newname;
-        });
 
         // inject constraint builder
         // secondard dimension picker
-        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="label">Filter:</span> <span class="constraintPicker"></span></li>');
+        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="constraintPicker"></span></li>');
         // constraint builder selector
         var cb_button_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPickerButton';
         var cb_cont_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPicker';
@@ -1661,6 +1733,201 @@ OWA.dataGrid.prototype = {
 
 };
 
+/**
+ * TWO CONTEXTS, TWO SETS OF RULES
+ *
+ * These pickers look the same in the grid's explore bar and in the custom
+ * report builder's widget modal, and their obligations are opposite.
+ *
+ * REFINING a rendered widget: the metrics are locked -- there is no control to
+ * change them -- so the metric reduction has already pinned the fact table
+ * before the control exists. relatedDimensions, which the server computes
+ * against that table, IS the legal list. The control reasons about nothing; it
+ * renders what it was handed, and cannot offer an illegal combination.
+ *
+ * EDITING a widget: the metrics are being chosen, so no table is resolved yet.
+ * Every pick narrows what else is possible, in both directions -- metrics
+ * constrain the dimensions and dimensions constrain the metrics -- so that
+ * control must actively reduce, which is why the builder carries entity maps
+ * and re-narrows on each change.
+ *
+ * The rule: a control takes its choices FROM ITS CALLER and does no legality
+ * reasoning of its own. Refining passes relatedDimensions; editing passes the
+ * list it narrowed. Confusing the two is what produces a refresh that is not
+ * needed here, or a missing one over there.
+ */
+
+/**
+ * The dimensions a grid is grouped by, as pills with a plus.
+ *
+ * WHAT IT REPLACES
+ *
+ * A single "Secondary Dimension" select. The grid groups by a LIST -- the
+ * dimensions travel in one URL parameter and changeDimension() has always
+ * appended to them -- so the select showed one slot of something that was
+ * already plural, and what the grid was actually grouped by was legible only
+ * from its columns.
+ *
+ * It also made the control behave differently on its first use than after:
+ * the swap-or-append branch keys off previousDimensionName, which starts empty,
+ * so the first pick added a dimension and every pick after replaced one, with
+ * nothing on screen to explain the difference. Pills make the state the thing
+ * you edit.
+ *
+ * THE FIRST ONE HAS NO REMOVE
+ *
+ * It is what the report is about -- "Top Pages" without pagePath is not that
+ * report -- so it is shown and not removable. Everything after it can go.
+ *
+ * @param string target_dom_selector
+ * @param object options {dimensions, max, onChange}
+ */
+OWA.dimensionPills = function ( target_dom_selector, options ) {
+
+    this.dom_selector = target_dom_selector;
+
+    this.options = jQuery.extend( {
+        /*
+         * {family: [{name, label}, ...]} -- the shape relatedDimensions already
+         * has, kept rather than flattened. Seventy dimensions in one flat list
+         * is a scroll; grouped by family (Visitor, Visit, System, Geo ...) it is
+         * a menu, and chosen renders each family as a heading.
+         */
+        choices: {},
+        // Names currently grouped by, primary first.
+        selected: [],
+        // Each one is another GROUP BY and another join, and rows multiply.
+        max: 4,
+        onChange: null
+    }, options || {} );
+
+    this.selected = ( this.options.selected || [] ).slice();
+};
+
+OWA.dimensionPills.prototype = {
+
+    value : function () {
+
+        return this.selected.slice();
+    },
+
+    labelFor : function ( name ) {
+
+        var found = name;
+
+        jQuery.each( this.options.choices || {}, function ( family, dims ) {
+
+            jQuery.each( dims || [], function ( i, dim ) {
+
+                if ( dim && dim.name === name ) {
+                    found = dim.label || name;
+                    return false;
+                }
+            } );
+        } );
+
+        return found;
+    },
+
+    display : function () {
+
+        var that = this;
+        var $root = jQuery( this.dom_selector );
+
+        $root.addClass( 'owa_dimensionPills' ).empty();
+
+        this.selected.forEach( function ( name, i ) {
+
+            var $pill = jQuery( '<span class="owa_dimPill">' )
+                .attr( 'data-name', name )
+                .append( jQuery( '<span class="owa_dimPillLabel">' ).text( that.labelFor( name ) ) );
+
+            // The primary keeps no remove: emptying it would leave the grid
+            // grouped by nothing, which is not a state the report has.
+            if ( i > 0 ) {
+                $pill.append( jQuery( '<a href="#" class="owa_dimPillRemove" title="Remove">' ).text( '\u00d7' ) );
+            } else {
+                $pill.addClass( 'owa_dimPillPrimary' ).attr( 'title', 'The dimension this report is about' );
+            }
+
+            $root.append( $pill );
+        } );
+
+        if ( this.selected.length < this.options.max ) {
+
+            $root.append( jQuery( '<span class="owa_dimPillAdd">' )
+                .append( jQuery( '<select class="owa_dimPillSelect" data-placeholder="Add dimension"><option value=""></option></select>' ) ) );
+
+            var $select = $root.find( '.owa_dimPillSelect' );
+
+            // An optgroup per family, which chosen renders as a heading. The
+            // family a dimension belongs to is how a reader finds it among
+            // seventy.
+            jQuery.each( this.options.choices || {}, function ( family, dims ) {
+
+                var $group = jQuery( '<optgroup>' ).attr( 'label', family );
+                var added  = 0;
+
+                jQuery.each( dims || [], function ( i, dim ) {
+
+                    if ( ! dim || ! dim.name ) {
+                        return;
+                    }
+
+                    if ( that.selected.indexOf( dim.name ) !== -1 ) {
+                        return;   // already grouped by: offering it again does nothing
+                    }
+
+                    $group.append( jQuery( '<option>' ).attr( 'value', dim.name )
+                        .text( dim.label || dim.name ) );
+
+                    added++;
+                } );
+
+                // A family whose every dimension is already in use would render
+                // as a heading with nothing under it.
+                if ( added ) {
+                    $select.append( $group );
+                }
+            } );
+
+            $select.chosen( { no_results_text: 'Name not found.', width: '100%' } );
+
+            $select.on( 'change', function () {
+
+                var picked = jQuery( this ).val();
+
+                if ( picked ) {
+                    that.selected.push( picked );
+                    that.display();
+                    that.changed();
+                }
+            } );
+        }
+
+        $root.on( 'click', '.owa_dimPillRemove', function ( e ) {
+
+            e.preventDefault();
+
+            var name = jQuery( this ).closest( '.owa_dimPill' ).attr( 'data-name' );
+            var at   = that.selected.indexOf( name );
+
+            if ( at > 0 ) {          // never the primary
+                that.selected.splice( at, 1 );
+                that.display();
+                that.changed();
+            }
+        } );
+    },
+
+    changed : function () {
+
+        if ( typeof this.options.onChange === 'function' ) {
+            this.options.onChange( this.value() );
+        }
+    }
+};
+
 OWA.constraintBuilder = function( target_dom_selector, options ) {
 
     this.dom_selector = target_dom_selector;
@@ -1737,6 +2004,29 @@ OWA.constraintBuilder.prototype = {
 
         var c_array = this.constraintsStringToArray(constraints_str);
         this.createConstraintAssembler(c_array);
+        this.showConstraintCount( c_array.length );
+    },
+
+    /**
+     * How many filters are on, as a badge beside the toggle.
+     *
+     * The toggle says "Filter" whether anything is filtered or not, so a grid
+     * showing a fraction of its rows looks exactly like one showing all of
+     * them -- and a reader draws conclusions from the number of rows. The badge
+     * is the one thing on the bar that says the figures are of a subset.
+     *
+     * Hidden at zero rather than showing "0": an always-present badge is
+     * furniture, and furniture stops being read.
+     */
+    showConstraintCount : function ( count ) {
+
+        var badge = jQuery( this.dom_selector + ' > .constraintPickerContainer > .constraintCount' );
+
+        if ( count > 0 ) {
+            badge.text( count ).show();
+        } else {
+            badge.text( '' ).hide();
+        }
     },
 
     createConstraintAssembler : function( constraints ) {
@@ -1750,7 +2040,8 @@ OWA.constraintBuilder.prototype = {
         var container_selector = that.dom_selector + ' > .constraintPickerContainer';
 
         jQuery(container_selector).append(
-            '<span class="toggle-button"></span><div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
+            '<span class="toggle-button"></span><span class="constraintCount" style="display:none;"></span>'
+          + '<div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
         );
 
         var button_selector = container_selector + ' > .toggle-button';
@@ -1783,7 +2074,9 @@ OWA.constraintBuilder.prototype = {
             .button({
                 icon: 'ui-icon-triangle-1-s',
                 iconPosition: 'end',
-                label: OWA.l('Select...')
+                // 'Filter', not 'Select...': the label that used to sit beside
+                // this button is gone, so the button is what names the control.
+                label: OWA.l('Filter')
             })
             .click(function() {
                 jQuery(builder_selector).toggle();
@@ -1838,6 +2131,12 @@ OWA.constraintBuilder.prototype = {
                     }
 
                   });
+
+                // The badge counts CLAUSES, which is what the string holds --
+                // a row left blank contributes nothing and is not counted,
+                // because it filters nothing.
+                that.showConstraintCount(
+                    constraints ? constraints.split( ',' ).filter( Boolean ).length : 0 );
 
                 var el = jQuery( that.dom_selector ).trigger('constraint_change', [constraints]);
             });
