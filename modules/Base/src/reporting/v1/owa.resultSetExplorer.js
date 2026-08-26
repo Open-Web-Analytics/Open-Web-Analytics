@@ -1832,8 +1832,15 @@ OWA.dimensionSelectors = function ( target_dom_selector, options ) {
         choices: {},
         // Names currently grouped by, in column order.
         selected: [],
-        // Each one is another GROUP BY and another join, and rows multiply.
-        max: 4,
+        /*
+         * Two.
+         *
+         * Not a data limit -- the grid will group by more, and some shipped
+         * widgets do. It is what fits: each slot is a picker, and a widget can
+         * be as narrow as a quarter of the page, where three pickers plus the
+         * filter control no longer sit on a line.
+         */
+        max: 2,
         onChange: null
     }, options || {} );
 
@@ -1897,7 +1904,27 @@ OWA.dimensionSelectors.prototype = {
         var that  = this;
         var $root = jQuery( this.dom_selector );
 
-        $root.addClass( 'owa_dimensionSelectors' ).empty();
+        $root.empty();
+
+        /*
+         * A widget already scoped to more dimensions than this control holds is
+         * left alone.
+         *
+         * Grouping by several is something the report author did on purpose --
+         * Latest Visits groups by seven -- so a two-slot control over it could
+         * only take dimensions away, and would need seven pickers to show what
+         * is there. The grid's own column headings still name every one of
+         * them, so nothing becomes invisible; there is simply nothing here to
+         * change.
+         */
+        if ( this.selected.length > this.options.max ) {
+
+            $root.removeClass( 'owa_dimensionSelectors' );
+
+            return;
+        }
+
+        $root.addClass( 'owa_dimensionSelectors' );
 
         this.selected.forEach( function ( name, index ) {
 

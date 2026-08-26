@@ -793,9 +793,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding: 0;
 
     /* Shrink before wrapping: a picker at 120px is still usable, and a bar on
-       one line is what makes the widget readable. */
+       one line is what makes the widget readable. max-width so an item can
+       never be wider than the bar holding it. */
     flex: 0 1 auto;
     min-width: 0;
+    max-width: 100%;
 }
 
 /* The secondary-dimension picker fills whatever the row leaves it. */
@@ -1602,11 +1604,24 @@ li.constraintRow {
  * ------------------------------------------------------------------------- */
 
 .owa .owa_dimensionSelectors {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
     flex-wrap: wrap;
+
+    /* Shrinkable and bounded by the bar.
+     *
+     * A widget can legitimately group by several dimensions -- the dashboard's
+     * Latest Visits grid queries seven -- and seven pickers at their natural
+     * width is far wider than a half-width widget's bar. Without a max-width
+     * this grew past the widget, and .owa_reportGridItem's overflow-x turned
+     * that into a horizontal scrollbar on the whole widget.
+     *
+     * flex, not inline-flex: an inline-flex is sized shrink-to-fit by its
+     * parent's available width, which inside a flex item resolves to
+     * max-content and defeats the wrapping. */
     min-width: 0;
+    max-width: 100%;
 }
 
 /* Each picker reads as a PILL with a dropdown arrow, and sizes to its own
@@ -1616,8 +1631,12 @@ li.constraintRow {
    drop is absolutely positioned, so it costs no space in the bar. */
 .owa .owa_dimSlot {
     display: inline-block;
+
+    /* Narrow enough that several fit a half-width bar, wide enough to read.
+       The label truncates with an ellipsis rather than widening the slot. */
     min-width: 0;
-    max-width: 220px;
+    max-width: 150px;
+    flex: 0 1 auto;
 }
 
 .owa .owa_dimSlot .chosen-container {
@@ -1643,6 +1662,7 @@ li.constraintRow {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
 
 .owa .owa_dimSlot .chosen-container-active .chosen-single {
