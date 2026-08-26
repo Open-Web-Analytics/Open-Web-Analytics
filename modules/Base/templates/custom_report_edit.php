@@ -1138,7 +1138,10 @@ $owa_max        = (int) $view->get('max_widgets');
         modal: true,
         width: Math.min( 520, jQuery( window ).width() - 40 ),
         title: 'Add a widget',
-        dialogClass: 'owa_widgetDialogFrame'
+        // Its OWN frame class. Sharing the widget modal's would make a locator
+        // for that modal match this one too -- jQuery UI builds both frames at
+        // init, so the chooser's is already in the page, hidden.
+        dialogClass: 'owa_typeDialogFrame'
     } );
 
     jQuery( '#widgetDialog' ).dialog( {

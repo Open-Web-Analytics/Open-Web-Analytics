@@ -44,6 +44,91 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.ui-jqgrid').first()).toBeVisible();
     });
 
+    /**
+     * Two pies the same width draw the same size.
+     *
+     * flot's pie radius defaults to 'auto', which means "as large as fits once
+     * the labels are placed" -- so the pie shrank as its labels got longer.
+     * Visitor Types has two short slices and Traffic Sources five plus an
+     * "others", and the two dashboard widgets are both a quarter of the row,
+     * so identical containers drew visibly different pies.
+     *
+     * Measured from the CANVAS, not the container: the containers were always
+     * the same size, which is exactly why this looked like a styling problem
+     * and was not one.
+     */
+    test('the two dashboard pies draw at the same size', async ({ page }) => {
+        const pies = page.locator('.owa_pieChart canvas');
+
+        await expect.poll(async () => pies.count(), { timeout: 20_000 })
+            .toBeGreaterThanOrEqual(2);
+
+        const drawn = await pies.evaluateAll((els) => els.map((c) => {
+            const ctx = c.getContext('2d');
+            const mid = Math.floor(c.height / 2);
+            const row = ctx.getImageData(0, mid, c.width, 1).data;
+
+            let first = -1, last = -1;
+
+            for (let x = 0; x < c.width; x++) {
+                if (row[x * 4 + 3] > 10) { if (first < 0) first = x; last = x; }
+            }
+
+            return { canvas: c.width, drawn: first < 0 ? 0 : last - first + 1 };
+        }));
+
+        // flot builds a base canvas and an empty overlay per plot; the overlay
+        // has nothing drawn on it, so only the painted ones are pies.
+        const widths = drawn.filter((d) => d.drawn > 10);
+
+        expect(widths.length).toBe(2);
+
+        // The same, and actually drawn -- a pair of zeroes would be "equal" too.
+        expect(widths[0].drawn).toBe(widths[1].drawn);
+        expect(widths[0].drawn).toBeGreaterThan(50);
+
+        // ...and both are comfortably inside their canvas, which is what a
+        // fixed radius under 1 buys: room for the labels flot draws at the edge.
+        for (const w of widths) {
+            expect(w.drawn).toBeLessThan(w.canvas);
+        }
+    });
+
+    /**
+     * A grid does not offer a picker for a column nobody can see.
+     *
+     * Top Content is grouped by pageTitle AND pagePath, with pagePath in
+     * excludeColumns -- it is there only so the rows can link to the page
+     * detail report. The bar drew a picker for it all the same, so a grid
+     * showing one column offered two pickers and the second named a column
+     * that is not in the table.
+     */
+    test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
+        const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
+            title: e.querySelector('.owa_reportSectionHeader')?.textContent?.trim(),
+            slots: e.querySelectorAll('.owa_dimSlot').length,
+            add: e.querySelectorAll('.owa_dimAdd').length,
+        })).filter((r) => r.slots || r.add));
+
+        const topContent = bars.find((b) => b.title === 'Top Content');
+
+        expect(topContent).toBeTruthy();
+        expect(topContent.slots).toBe(1);
+        expect(topContent.add).toBe(1);
+    });
+
+    /**
+     * The empty pill beside every report heading.
+     *
+     * View::get() answers `false` for a key nobody set, so the title-count
+     * guard -- `!== null && !== ''` -- was true on every report in the install,
+     * and out() prints false as nothing. Every report grew an empty grey pill.
+     * The roster, which sets a real count, still has one.
+     */
+    test('a report with no count has no count pill', async ({ page }) => {
+        await expect(page.locator('.owa_titleCount')).toHaveCount(0);
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
@@ -61,7 +146,22 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // drops and the menus fall back to bare <select>s.
         const chosen = page.locator('.chosen-container');
         expect(await chosen.count()).toBeGreaterThanOrEqual(1);
-        await expect(chosen.first()).toBeVisible();
+
+        /*
+         * A VISIBLE one, not the first one.
+         *
+         * Some of these are the constraint builder's dimension picker, which
+         * lives inside a collapsed .builder panel and is hidden until the
+         * Filter control opens it -- so whether .first() happens to be visible
+         * depends on which widget the dashboard draws first. It stopped being
+         * visible when Latest Visits moved to the top: it groups by seven
+         * dimensions, which is past the dimension control's cap, so its only
+         * chosen is the hidden one in its filter.
+         *
+         * What this test is actually about is that chosen ran at all, and one
+         * visible enhanced control says that without depending on the layout.
+         */
+        await expect(chosen.locator('visible=true').first()).toBeVisible();
     });
 
     test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {

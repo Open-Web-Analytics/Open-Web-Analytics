@@ -1491,6 +1491,15 @@ li.constraintRow {
  * match anything else in the reporting UI.
  * ------------------------------------------------------------------------- */
 
+/*
+ * The dialog chrome, shared by the widget modal and the type chooser.
+ *
+ * Two selectors rather than one class on both frames: the widget modal's class
+ * has to identify the widget modal, or a locator for it silently matches the
+ * chooser's frame as well -- which jQuery UI has already built, hidden, by the
+ * time anything looks.
+ */
+.owa_typeDialogFrame.ui-dialog,
 .owa_widgetDialogFrame.ui-dialog {
     padding: 0;
     border: 1px solid #c0c0c0;
@@ -1499,6 +1508,7 @@ li.constraintRow {
     background: #ffffff;
 }
 
+.owa_typeDialogFrame .ui-dialog-titlebar,
 .owa_widgetDialogFrame .ui-dialog-titlebar {
     border: 0;
     border-bottom: 1px solid #e6e6e6;
@@ -1508,11 +1518,13 @@ li.constraintRow {
     font-size: 15px;
 }
 
+.owa_typeDialogFrame .ui-dialog-title,
 .owa_widgetDialogFrame .ui-dialog-title {
     font-weight: bold;
     color: #303030;
 }
 
+.owa_typeDialogFrame .ui-dialog-content,
 .owa_widgetDialogFrame .ui-dialog-content {
     padding: 18px;
 }

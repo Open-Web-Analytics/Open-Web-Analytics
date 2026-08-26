@@ -414,8 +414,11 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 
+            // The plus asks what KIND now, so each one is a choice as well as
+            // a click -- and the chooser is modal, so the next plus is behind
+            // its overlay until it closes.
             for (let i = 1; i < 10; i++) {
-                await page.click('#addWidget');
+                await addWidget(page, 'grid');
             }
 
             await expect(page.locator('.owa_builderBlock')).toHaveCount(10);
@@ -917,7 +920,7 @@ test.describe('custom reports', () => {
         test('removing blocks never empties the canvas', async ({ page }) => {
             await openBuilder(page);
 
-            await page.click('#addWidget');
+            await addWidget(page, 'grid');
             await expect(page.locator('.owa_builderBlock')).toHaveCount(2);
 
             await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
