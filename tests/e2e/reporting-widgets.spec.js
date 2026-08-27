@@ -519,7 +519,18 @@ test.describe('the report grid gives every widget a usable width', () => {
                     if (n > 500) { widest = Math.max(widest, maxX - minX + 1); }
                 }
 
-                return { holder: Math.round(holder.getBoundingClientRect().width), circle: widest };
+                /*
+                 * The WIDGET's width, not the plot's. The plot is a fixed box
+                 * now, so comparing plots would make the "is one of these
+                 * actually wider" guard below compare two equal numbers and
+                 * fail on a report that is set up correctly.
+                 */
+                const item = holder.closest('.owa_reportGridItem');
+
+                return {
+                    widget: Math.round(item.getBoundingClientRect().width),
+                    circle: widest,
+                };
             }));
         };
 
@@ -533,9 +544,9 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         expect(wide.length).toBe(1);
 
-        expect(wide[0].holder,
-            'the wide pie is no longer in a wider container, so this proves nothing')
-            .toBeGreaterThan(narrow[0].holder * 1.5);
+        expect(wide[0].widget,
+            'the wide pie is no longer in a wider widget, so this proves nothing')
+            .toBeGreaterThan(narrow[0].widget * 1.5);
 
         // Same circle in all three, within a pixel of rounding.
         const all = [...narrow, ...wide].map((p) => p.circle);
@@ -544,6 +555,72 @@ test.describe('the report grid gives every widget a usable width', () => {
         expect(Math.max(...all) - Math.min(...all),
             `pie circles differ across reports: ${JSON.stringify(all)}`)
             .toBeLessThanOrEqual(2);
+    });
+
+    /**
+     * The plot area is a FIXED BOX, and the legend fits inside it.
+     *
+     * The slice names sit to the right of the circle, so a plot that tracked
+     * its container would take that room away as the widget narrowed --
+     * squeezing the legend into the pie or off the canvas. A circle and a
+     * legend need what they need; below that the widget scrolls, which is the
+     * answer a table already gets when its columns stop fitting.
+     */
+    test('a pie plot is a fixed box with its legend inside it', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+
+        const boxes = async (reportId, width) => {
+
+            await page.setViewportSize({ width, height: 1500 });
+
+            await page.goto(
+                `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}`
+                + '&owa_period=last_thirty_days',
+                { waitUntil: 'networkidle' }
+            );
+
+            await page.waitForSelector('.owa_pieChart canvas', { timeout: 20_000 });
+            await page.waitForTimeout(1000);
+
+            return page.evaluate(() => [...document.querySelectorAll('.owa_pieChart')].map((h) => {
+
+                const plot = h.getBoundingClientRect();
+                const legend = h.querySelector('.legend');
+                const l = legend ? legend.getBoundingClientRect() : null;
+
+                return {
+                    plot: { w: Math.round(plot.width), h: Math.round(plot.height) },
+                    hasLegend: !!legend,
+                    legendInside: l
+                        ? l.left >= plot.left - 1 && l.right <= plot.right + 1
+                        : null,
+                };
+            }));
+        };
+
+        const seen = [];
+
+        // Two reports, and a widget twice as wide on one of them.
+        for (const [reportId, width] of [['dashboard', 1600], ['dashboard', 1000], ['traffic', 1600]]) {
+            seen.push(...await boxes(reportId, width));
+        }
+
+        expect(seen.length).toBeGreaterThanOrEqual(4);
+
+        for (const p of seen) {
+
+            expect(p.hasLegend, 'a pie drew no legend').toBe(true);
+
+            expect(p.legendInside,
+                'the legend is outside the plot area it is drawn in').toBe(true);
+        }
+
+        // ...and every plot is the SAME box, whatever holds it.
+        const sizes = [...new Set(seen.map((p) => `${p.plot.w}x${p.plot.h}`))];
+
+        expect(sizes, `pie plots differ in size: ${sizes.join(', ')}`).toHaveLength(1);
     });
 
     /**

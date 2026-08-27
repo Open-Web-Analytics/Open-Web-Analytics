@@ -16,6 +16,23 @@ OWA.pieChart = function( options ) {
         height: 240,
 
         /*
+         * ...and how wide. FIXED, like the height, and for a sharper reason:
+         * the slice names are a legend to the RIGHT of the circle, and a plot
+         * area that tracked its container would take that room away as the
+         * widget narrowed -- squeezing the legend into the pie, or off the
+         * canvas entirely.
+         *
+         * A circle and a legend need what they need. Below this the widget
+         * scrolls, which is the same answer a table gets when its columns stop
+         * fitting: the content keeps its size and the panel admits it cannot
+         * show all of it.
+         *
+         * 320 is the circle at 174 plus the widest legend the shipped reports
+         * produce ("organic-search 40%") plus the gap between them.
+         */
+        plotWidth: 320,
+
+        /*
          * How much of the plot box the circle fills, as a fraction of half the
          * SHORTER side. Turned into a pixel radius before it reaches flot --
          * see pixelRadius() -- because a fraction there is a fraction of a
@@ -157,9 +174,15 @@ OWA.pieChart.prototype = {
     setupPieChart : function() {
 
         var that = this;
-        var w = this.getContainerWidth();
 
-        var h = Math.min( w, this.getOption( 'chartHeight' ) || this.getOption( 'height' ) );
+        /*
+         * The plot is a FIXED BOX inside a flexible widget -- see plotWidth and
+         * height. What varies between one pie and the next is the data, not the
+         * geometry, and two pies of different sizes on one report say something
+         * about the data that is not true.
+         */
+        var w = this.getOption( 'plotWidth' );
+        var h = this.getOption( 'chartHeight' ) || this.getOption( 'height' );
 
         jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
         jQuery(that.domSelector).css('width', w);
@@ -387,9 +410,11 @@ OWA.pieChart.prototype = {
 
         if (this.getOption('autoSizeWidth')) {
             return jQuery("#"+that.dom_id).width();
-        } else {
-            return this.option.width;
         }
+
+        // `this.option`, singular, was a typo that would have thrown the moment
+        // anything set autoSizeWidth false. Nothing ever did.
+        return this.getOption('width');
     },
 
     //move when migrating pie chart
