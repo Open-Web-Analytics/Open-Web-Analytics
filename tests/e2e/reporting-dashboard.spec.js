@@ -284,6 +284,63 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(state.interactive).toBe(false);
     });
 
+    /**
+     * Columns get room in proportion to what is in them.
+     *
+     * jqGrid has no content-based sizing: with autowidth and shrinkToFit it
+     * divides the width among the flexible columns in proportion to their
+     * DECLARED widths, and every dimension column declared none -- which jqGrid
+     * reads as its default 150. Identical declarations meant identical shares,
+     * so Latest Visits gave a full entry URL exactly as much room as
+     * priorVisitCount, and truncated it.
+     *
+     * Latest Visits is the case worth pinning: seven dimensions of very
+     * different lengths in one grid.
+     */
+    test('grid columns are sized to their content, not split evenly', async ({ page }) => {
+        const widget = page.locator('.owa_reportGridItem').filter({
+            has: page.locator('.owa_reportSectionHeader', { hasText: 'Latest Visits' }),
+        });
+
+        await expect(widget.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+
+        const cols = await widget.locator('.ui-jqgrid-htable th').evaluateAll(
+            (ths) => ths.map((th) => ({ label: th.textContent.trim(), w: th.offsetWidth })));
+
+        const by = (name) => cols.find((c) => c.label.startsWith(name));
+
+        // A URL needs more room than a city name, and now gets it. Asserted as
+        // a relationship rather than as pixel counts, which depend on the
+        // viewport and on the fixture's own values.
+        expect(by('Entry Page URL').w).toBeGreaterThan(by('City').w);
+        expect(by('Entry Page URL').w).toBeGreaterThan(by('Country').w);
+        expect(by('Source').w).toBeGreaterThan(by('City').w);
+
+        // Not merely different -- meaningfully so. Equal shares was the bug,
+        // and small rounding differences would satisfy a bare inequality.
+        expect(by('Entry Page URL').w).toBeGreaterThan(by('City').w * 1.5);
+
+        // Metric columns are declared fixed and stay out of the distribution,
+        // so they are untouched by any of this.
+        // Named, not pattern-matched: "Prior Visits" is a DIMENSION, and a
+        // regex loose enough to catch the three metrics caught it too.
+        const metricLabels = ['Visits', 'Avg. Visit Duration', 'Pages Per Visit'];
+        const metrics = cols.filter((c) => metricLabels.some((m) => c.label === m || c.label.startsWith(m)));
+        expect(metrics.length).toBeGreaterThanOrEqual(2);
+        for (const m of metrics) { expect(m.w).toBe(100); }
+
+        // ...and the grid still FITS. shrinkToFit has the last word, so this
+        // redistributes the row rather than growing past the widget -- which is
+        // what a horizontal scrollbar on a report widget would mean.
+        const overflow = await widget.evaluate((el) => el.scrollWidth - el.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(1);
+
+        // No visible cell is cut off at the width it was given.
+        const clipped = await widget.locator('tr.jqgrow').first().locator('td').evaluateAll(
+            (tds) => tds.filter((td) => td.scrollWidth > td.offsetWidth + 1).length);
+        expect(clipped).toBe(0);
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);

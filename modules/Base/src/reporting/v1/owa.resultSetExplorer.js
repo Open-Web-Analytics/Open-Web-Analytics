@@ -1662,6 +1662,22 @@ OWA.dataGrid.prototype = {
         }
 
 
+        /*
+         * Give each column room in proportion to what is actually in it.
+         *
+         * jqGrid has no content-based sizing: with autowidth and shrinkToFit it
+         * divides the available width among the flexible columns in proportion
+         * to their DECLARED widths -- and every dimension column declares none,
+         * which jqGrid reads as its default 150. Identical declarations mean
+         * identical shares, so Latest Visits gave a full entry URL exactly as
+         * much room as priorVisitCount and truncated it.
+         *
+         * Measured before the grid is built rather than adjusted after: the
+         * rows are already here, and resizing a rendered grid means a second
+         * layout the reader can see happen.
+         */
+        this.sizeColumnsToContent( resultSet, columns );
+
         jQuery('#' + that.dom_id + '_grid').jqGrid({
             jsonReader: {
                 repeatitems: false,
@@ -1723,6 +1739,131 @@ OWA.dataGrid.prototype = {
     },
 
     // private
+    /**
+     * The widest thing each flexible column has to show, in pixels.
+     *
+     * Sets `width` on the column definitions in place. shrinkToFit still has
+     * the last word -- these are proportions, not promises -- so the grid goes
+     * on fitting its widget instead of growing a horizontal scrollbar, and a
+     * column with long values simply gets a bigger share of the row.
+     *
+     * Only the FLEXIBLE columns. Metric columns are declared fixed at 100 and
+     * right-aligned, and jqGrid leaves fixed columns out of the distribution
+     * entirely, so measuring them would change nothing and widening them would
+     * take the room this is trying to find.
+     */
+    sizeColumnsToContent : function ( resultSet, columns ) {
+
+        var measure = this.textMeasurer();
+
+        if ( ! measure ) {
+
+            // No canvas to measure with. jqGrid's equal shares are the same
+            // behaviour as before, which is a worse layout and not a broken one.
+            return;
+        }
+
+        /*
+         * Cell padding plus a little slack, and bounds.
+         *
+         * The maximum is what stops one long URL from taking the row: past it,
+         * a column has as much as it can usefully be given and the value wraps
+         * or ellipsizes as it did before. The minimum keeps a short column --
+         * a Yes/No, a small count -- from collapsing to nothing.
+         */
+        var PAD = 24;
+        var MIN = 70;
+        var MAX = 320;
+
+        for ( var c = 0; c < columns.length; c++ ) {
+
+            var def = columns[c];
+
+            if ( def.fixed ) {
+
+                continue;
+            }
+
+            // The heading is content too, and it carries a sort indicator.
+            var widest = measure( def.label || def.name ) + PAD + 14;
+
+            for ( var i = 0; i < resultSet.resultsRows.length; i++ ) {
+
+                var cell = resultSet.resultsRows[i][ def.name ];
+
+                if ( ! cell ) {
+
+                    continue;
+                }
+
+                var text = ( cell.formatted_value === null || cell.formatted_value === undefined
+                    || cell.formatted_value === '' ) ? cell.value : cell.formatted_value;
+
+                var width = measure( text ) + PAD;
+
+                if ( width > widest ) {
+
+                    widest = width;
+                }
+            }
+
+            def.width = Math.round( Math.min( MAX, Math.max( MIN, widest ) ) );
+        }
+    },
+
+    /**
+     * A function that measures a string in the grid's own font.
+     *
+     * Canvas measureText rather than a hidden element per value: a grid of ten
+     * rows by ten columns is a hundred measurements, and doing those by
+     * inserting and reading back DOM nodes is a hundred forced layouts.
+     *
+     * Returns null when there is no canvas to measure with, which the caller
+     * treats as "leave the widths alone".
+     */
+    textMeasurer : function () {
+
+        var canvas = document.createElement( 'canvas' );
+
+        if ( ! canvas.getContext ) {
+
+            return null;
+        }
+
+        var ctx = canvas.getContext( '2d' );
+
+        if ( ! ctx || typeof ctx.measureText !== 'function' ) {
+
+            return null;
+        }
+
+        // The grid's own font, so the measurement is of what will be drawn.
+        // Falls back to the theme's size rather than to the canvas default,
+        // which is smaller than anything the grid uses.
+        var probe = document.getElementById( this.dom_id );
+        var style = probe && window.getComputedStyle ? window.getComputedStyle( probe ) : null;
+
+        ctx.font = style
+            ? ( style.fontStyle + ' ' + style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily )
+            : '12px Arial, sans-serif';
+
+        return function ( value ) {
+
+            if ( value === null || value === undefined ) {
+
+                return 0;
+            }
+
+            /*
+             * The TEXT, not the markup. A linked column's formatted value is an
+             * anchor, and measuring the tags would size the column to the href.
+             */
+            var text = String( value ).replace( /<[^>]*>/g, '' );
+
+            return ctx.measureText( text ).width;
+        };
+    },
+
     makeGridColumnDef : function(column) {
 
         var _sort_type = '';
