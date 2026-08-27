@@ -721,6 +721,18 @@ OWA.resultSetExplorer.prototype = {
          */
         this.areaChart = ac;
 
+        /*
+         * ...and the chart knows who to ask for data.
+         *
+         * The granularity control rewrites the result-set URL and refetches,
+         * and fetching belongs to the explorer. Without this the chart would
+         * have to own a second copy of that, or the control could not exist.
+         */
+        ac.explorer = this;
+
+        // Now that it can, draw it -- generate() ran before this was set.
+        ac.drawGranularityControl( dom_id );
+
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
     },

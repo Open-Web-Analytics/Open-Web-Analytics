@@ -255,27 +255,28 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php if ( $owa_chartMetric !== '' ): ?>
         <?php
             /*
-             * ONE SERIES PER METRIC.
+             * ONE METRIC, over time, optionally BROKEN OUT by one dimension.
              *
-             * chartMetric is a LIST, comma separated -- which is the same thing
-             * as a single name when there is one, so every shipped trend is
-             * unaffected. A trend that names several plots each as its own
-             * line, with a synthetic Total in front; see OWA.areaChart.
+             * A trend's dimensions are the x axis first and the breakdown
+             * second, so the query's own list is what says which is which --
+             * `date` alone is the filled area a trend has always been, and
+             * `date,medium` is a line per medium over that same area.
              *
              * Encoded as JSON rather than interpolated: the names come from a
              * definition that is meant to be user-authorable, and they are on
              * their way into a script tag.
              */
-            $owa_chartSeries = array();
+            $owa_trendDims = array_values( array_filter( array_map( 'trim',
+                explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
 
-            foreach ( explode( ',', $owa_chartMetric ) as $owa_seriesMetric ) {
+            $owa_chartSeries = array( array(
+                'x' => $owa_trendDims[0] ?? 'date',
+                'y' => $owa_chartMetric,
+            ) );
 
-                $owa_seriesMetric = trim( $owa_seriesMetric );
+            if ( isset( $owa_trendDims[1] ) ) {
 
-                if ( $owa_seriesMetric !== '' ) {
-
-                    $owa_chartSeries[] = array( 'x' => 'date', 'y' => $owa_seriesMetric );
-                }
+                $owa_chartSeries[0]['series'] = $owa_trendDims[1];
             }
         ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);

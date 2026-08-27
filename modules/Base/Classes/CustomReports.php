@@ -137,20 +137,44 @@ class CustomReports {
     );
 
     /**
-     * Types whose dimensions are not the author's to choose, and what they are.
+     * Types whose first dimension is not the author's to choose, and what it is.
      *
      * A trend is a metric OVER TIME -- that is what makes it a trend rather
-     * than a chart of something else -- and all sixty-one shipped trends group
-     * by date because there is no other answer. Offering a dimension picker
-     * there offers a choice with one legal value.
+     * than a chart of something else -- so it is always grouped by a date to
+     * begin with. What a reader sees is day or month, chosen at the chart; the
+     * definition stores the default.
      *
-     * Presence in this map is what removes the picker; the value is what gets
-     * written. metric-boxes is deliberately NOT here: its boxes are totals, so
-     * it needs no grouping, but a hand-written one that has some is not wrong
-     * and is not refused.
+     * It may carry ONE more dimension, and that one IS the author's: its values
+     * become the lines, so `visits` by `medium` is a line per medium over the
+     * filled total. See TIME_DIMENSIONS for what may not be that second one.
+     *
+     * metric-boxes is deliberately NOT here: its boxes are totals, so it needs
+     * no grouping, but a hand-written one that has some is not wrong and is not
+     * refused.
      */
     const FIXED_DIMENSIONS = array(
         'trend' => 'date',
+    );
+
+    /**
+     * The dimensions that measure TIME.
+     *
+     * A trend's x axis is one of these, so none of them can also be the thing
+     * it is broken down by -- a trend of visits by month, over months, is not a
+     * chart anybody meant to ask for.
+     *
+     * Named rather than derived from the registry's `time` family, because the
+     * family is a grouping in the interface and this is a rule about what a
+     * chart can plot. They are the same list today and may diverge.
+     */
+    const TIME_DIMENSIONS = array(
+        'date', 'day', 'month', 'year', 'dayofweek', 'dayofyear', 'weekofyear',
+    );
+
+    /** How many dimensions a widget of this type may group by, in total. */
+    const FIXED_DIMENSION_EXTRA = array(
+        // One breakdown beyond the date: its values are the lines.
+        'trend' => 1,
     );
 
     /**
@@ -190,6 +214,18 @@ class CustomReports {
     const SINGLE_FIELD_TYPES = array( 'grid-card', 'pie' );
 
     /**
+     * Widget types that draw exactly one metric AND may not inherit a set.
+     *
+     * A trend is deliberately NOT here, and the distinction is the point: its
+     * CHART draws one metric, but the widget also draws a box per metric under
+     * that chart, and those boxes are exactly what a report metric set is for.
+     * So a trend carries the set and names which one of it to plot --
+     * chartMetric -- while a card or a pie has nowhere to put a second metric
+     * and no way to choose between them.
+     */
+    const SINGLE_METRIC_TYPES = array( 'grid-card', 'pie' );
+
+    /**
      * The link template a widget's rows may carry, in full.
      *
      * A `link` becomes makeLink() output in the rendered page, so an author who
@@ -211,21 +247,28 @@ class CustomReports {
     /** How many metrics a widget of this type may ask for. */
     public static function maxMetricsFor( $type ) {
 
-        return in_array( (string) $type, self::SINGLE_FIELD_TYPES, true )
+        return in_array( (string) $type, self::SINGLE_METRIC_TYPES, true )
             ? 1
             : self::MAX_METRICS;
     }
 
-    /** How many dimensions a widget of this type may group by. */
+    /**
+     * How many dimensions of its OWN a widget of this type may choose.
+     *
+     * A fixed-dimension type does not choose its first one, so this answers
+     * what it may add beyond it -- a trend chooses the one whose values become
+     * its lines, and nothing else.
+     */
     public static function maxDimensionsFor( $type ) {
 
-        if ( array_key_exists( (string) $type, self::FIXED_DIMENSIONS ) ) {
+        $type = (string) $type;
 
-            // Not a cap: there is nothing to choose. The value is fixed.
-            return 0;
+        if ( array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
+
+            return self::FIXED_DIMENSION_EXTRA[ $type ] ?? 0;
         }
 
-        return in_array( (string) $type, self::SINGLE_FIELD_TYPES, true )
+        return in_array( $type, self::SINGLE_FIELD_TYPES, true )
             ? 1
             : self::MAX_DIMENSIONS;
     }
@@ -378,16 +421,46 @@ class CustomReports {
          */
         if ( array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
 
-            $fixed = self::FIXED_DIMENSIONS[ $type ];
+            $fixed  = self::FIXED_DIMENSIONS[ $type ];
+            $listed = self::asNames( $query['dimensions'] ?? '' );
+            $label  = self::WIDGET_TYPES[ $type ] ?? $type;
 
-            if ( (string) ( $query['dimensions'] ?? '' ) !== $fixed ) {
+            /*
+             * The FIRST one, because it is the x axis. Order is not
+             * decoration here: the chart reads the first as what it plots
+             * against and the second as what it breaks out into lines.
+             */
+            if ( ( $listed[0] ?? '' ) !== $fixed ) {
 
                 return sprintf(
-                    '%s is a %s, which is always by %s; this one is by "%s".',
-                    $where,
-                    self::WIDGET_TYPES[ $type ] ?? $type,
-                    $fixed,
-                    (string) ( $query['dimensions'] ?? '' ) ?: 'nothing' );
+                    '%s is a %s, which is always over %s; this one starts with "%s".',
+                    $where, $label, $fixed, $listed ? $listed[0] : 'nothing' );
+            }
+
+            $extra = array_slice( $listed, 1 );
+
+            if ( count( $extra ) > ( self::FIXED_DIMENSION_EXTRA[ $type ] ?? 0 ) ) {
+
+                return sprintf(
+                    '%s is a %s: one metric over %s, optionally broken out by one '
+                  . 'dimension. This one names %d beyond the %s.',
+                    $where, $label, $fixed, count( $extra ), $fixed );
+            }
+
+            /*
+             * ...and the breakdown cannot itself be time. A trend of visits by
+             * month, over months, is not a chart anybody meant to ask for.
+             */
+            foreach ( $extra as $name ) {
+
+                if ( in_array( $name, self::TIME_DIMENSIONS, true ) ) {
+
+                    return sprintf(
+                        '%s is broken out by "%s", which measures time -- and time is '
+                      . 'already the axis it is drawn against. Break it out by '
+                      . 'something else, or by nothing.',
+                        $where, $name );
+                }
             }
         }
 
@@ -397,9 +470,19 @@ class CustomReports {
          * wrong. The cap message ("asks for 2; 1 is the most") would be right
          * about too many and silent about too few.
          */
+        if ( in_array( $type, self::SINGLE_METRIC_TYPES, true ) ) {
+
+            $error = self::validateSingleField( $query, $type, 'metrics', $where );
+
+            if ( $error !== '' ) {
+
+                return $error;
+            }
+        }
+
         if ( in_array( $type, self::SINGLE_FIELD_TYPES, true ) ) {
 
-            $error = self::validateSingleFields( $query, $type, $where );
+            $error = self::validateSingleField( $query, $type, 'dimensions', $where );
 
             if ( $error !== '' ) {
 
@@ -418,11 +501,11 @@ class CustomReports {
         }
 
         /*
-         * Counted only where there is a choice. maxDimensionsFor() answers 0
-         * for a fixed-dimension type -- meaning "nothing to choose", which is
-         * what the picker needs to hear -- and running a CAP check against that
-         * would refuse a trend for being grouped by the one thing it must be
-         * grouped by. The fixed check above is that type's rule.
+         * Counted only where the whole list is the author's. A fixed-dimension
+         * type does not choose its first one, and its own rule above has
+         * already counted what it added beyond it -- running a cap check over
+         * the full list here would refuse a trend for being grouped by the one
+         * thing it must be grouped by.
          */
         if ( ! array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
 
@@ -649,26 +732,24 @@ class CustomReports {
      * @param string $where human-readable position, for the message
      * @return string
      */
-    private static function validateSingleFields( array $query, $type, $where ) {
+    private static function validateSingleField( array $query, $type, $key, $where ) {
 
         $label = isset( self::WIDGET_TYPES[ $type ] ) ? self::WIDGET_TYPES[ $type ] : $type;
 
-        foreach ( array( 'metrics', 'dimensions' ) as $key ) {
+        $count = count( self::asNames( isset( $query[ $key ] ) ? $query[ $key ] : '' ) );
 
-            $count = count( self::asNames( isset( $query[ $key ] ) ? $query[ $key ] : '' ) );
+        if ( $count === 1 ) {
 
-            if ( $count === 1 ) {
-
-                continue;
-            }
-
-            return sprintf(
-                '%s is a %s, which shows one metric against one dimension. '
-              . 'This one names %d %s. Use a %s if you need more than one.',
-                $where, $label, $count, $key, self::WIDGET_TYPES['grid'] );
+            return '';
         }
 
-        return '';
+        return sprintf(
+            '%s is a %s, which draws one %s. This one names %d %s. %s',
+            $where, $label, rtrim( $key, 's' ), $count, $key,
+            $key === 'metrics'
+                ? 'A report metric set is several metrics, and there is nothing to say '
+                  . 'which of them this would draw.'
+                : sprintf( 'Use a %s if you need more than one.', self::WIDGET_TYPES['grid'] ) );
     }
 
     // ------------------------------------------------------------------
@@ -876,6 +957,19 @@ class CustomReports {
         }
 
         $charted = self::asNames( $widget['chartMetric'] );
+
+        /*
+         * ONE. A chart plots a single metric over time; what varies is the
+         * dimension it is broken out by, not the measure. A list here would
+         * reach the chart as one unresolvable name.
+         */
+        if ( count( $charted ) !== 1 ) {
+
+            return sprintf(
+                '%s charts %d metrics; a chart draws one. The rest of a widget\'s '
+              . 'metrics are drawn as boxes beneath it.',
+                $where, count( $charted ) );
+        }
 
         $error = self::validateNames(
             array( 'metrics' => $charted ), 'metrics', 'metric', $where );

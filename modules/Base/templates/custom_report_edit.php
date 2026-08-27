@@ -368,7 +368,23 @@ $owa_max        = (int) $view->get('max_widgets');
      * dimension -> the value it is fixed to, for the types that do not choose.
      * A trend is a metric over time; that is what makes it a trend.
      */
-    var FIXED_DIMENSIONS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSIONS ); ?>;
+    var FIXED_DIMENSIONS = <?php echo json_encode( (object) (array) $view->get('fixed_dimensions') ); ?>;
+
+    /*
+     * How many dimensions a fixed-dimension type may add beyond its first.
+     *
+     * A trend is always over a date -- that is what makes it a trend -- and may
+     * be broken out by ONE other dimension, whose values become its lines.
+     */
+    var FIXED_DIMENSION_EXTRA = <?php echo json_encode( (object) (array) $view->get('fixed_dimension_extra') ); ?>;
+
+    /*
+     * The dimensions that measure time. A trend's axis is one of these, so none
+     * of them can also be what it is broken out BY.
+     */
+    var TIME_DIMENSIONS = <?php echo json_encode( array_values( (array) $view->get('time_dimensions') ) ); ?>;
+
+    var SINGLE_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_metric_types') ) ); ?>;
 
     /*
      * Types that show totals rather than a breakdown, so there is nothing to
@@ -384,9 +400,21 @@ $owa_max        = (int) $view->get('max_widgets');
             : null;
     }
 
-    /** Whether the author picks the dimensions for this type at all. */
+    /**
+     * Whether the author picks any dimensions for this type at all.
+     *
+     * A trend does: its first is fixed to a date, but the one after it -- the
+     * dimension whose values become its lines -- is the author's. Only a type
+     * with nothing to group by has no picker.
+     */
     function picksDimensions( type ) {
-        return fixedDimension( type ) === null && UNGROUPED_TYPES.indexOf( type ) === -1;
+
+        if ( UNGROUPED_TYPES.indexOf( type ) !== -1 ) {
+
+            return false;
+        }
+
+        return fixedDimension( type ) === null || ( FIXED_DIMENSION_EXTRA[ type ] || 0 ) > 0;
     }
 
     /** The type the dialog is open on. It cannot change while it is open. */
@@ -413,6 +441,11 @@ $owa_max        = (int) $view->get('max_widgets');
         return SINGLE_FIELD_TYPES.indexOf( type ) !== -1;
     }
 
+    /* Draws one metric, and cannot fall back to the report metric set for it. */
+    function isSingleMetric( type ) {
+        return SINGLE_METRIC_TYPES.indexOf( type ) !== -1;
+    }
+
     /** The width a widget of this type gets when it names none. */
     function defaultColspan( type ) {
         return DEFAULT_COLSPANS[ type ] || COLUMNS;
@@ -435,11 +468,26 @@ $owa_max        = (int) $view->get('max_widgets');
      * after the first -- rather than offering a second and refusing it on save.
      */
     function maxMetrics() {
-        return isSingleField( editingType() ) ? 1 : MAX_METRICS;
+        return isSingleMetric( editingType() ) ? 1 : MAX_METRICS;
     }
 
+    /**
+     * How many dimensions the AUTHOR picks.
+     *
+     * A fixed-dimension type does not pick its first one, so this is what it
+     * may add beyond it: a trend picks the one whose values become its lines,
+     * and nothing else.
+     */
     function maxDimensions() {
-        return isSingleField( editingType() ) ? 1 : MAX_DIMENSIONS;
+
+        var type = editingType();
+
+        if ( fixedDimension( type ) !== null ) {
+
+            return FIXED_DIMENSION_EXTRA[ type ] || 0;
+        }
+
+        return isSingleField( type ) ? 1 : MAX_DIMENSIONS;
     }
 
     var definition = <?php echo json_encode( $owa_definition ) ?: '{}'; ?>;
@@ -573,6 +621,14 @@ $owa_max        = (int) $view->get('max_widgets');
 
         var full = selected.length >= maxDimensions();
 
+        /*
+         * A trend is drawn AGAINST time, so time cannot also be what it is
+         * broken out by -- visits by month, over months, is not a chart anybody
+         * meant to ask for. Only for a type whose axis is a fixed date; every
+         * other widget may group by a date like any other dimension.
+         */
+        var axisIsTime = fixedDimension( editingType() ) !== null;
+
         var allowed = DIMENSIONS.filter( function ( choice ) {
 
             if ( selected.indexOf( choice.name ) !== -1 ) {
@@ -580,6 +636,10 @@ $owa_max        = (int) $view->get('max_widgets');
             }
 
             if ( full ) {
+                return false;
+            }
+
+            if ( axisIsTime && TIME_DIMENSIONS.indexOf( choice.name ) !== -1 ) {
                 return false;
             }
 
@@ -780,7 +840,21 @@ $owa_max        = (int) $view->get('max_widgets');
         fillRange( jQuery( '#dlgRowspan' ), 1, MAX_ROWSPAN, widget.rowspan || 1 );
 
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, names( query.metrics ) );
-        fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, names( query.dimensions ) );
+        /*
+         * The dimensions the AUTHOR chose.
+         *
+         * A trend stores its axis first and its breakdown after it, and the
+         * axis is not a choice -- showing it in the picker would offer to
+         * remove the thing that makes a trend a trend.
+         */
+        var chosenDimensions = names( query.dimensions );
+
+        if ( fixedDimension( widget.type ) !== null ) {
+
+            chosenDimensions = chosenDimensions.slice( 1 );
+        }
+
+        fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, chosenDimensions );
 
         // The options were just replaced, so chosen has to be told before it
         // will show them -- and again after the dialog is open, because that is
@@ -828,6 +902,7 @@ $owa_max        = (int) $view->get('max_widgets');
         var single = isSingleField( type );
         var name   = TYPES[ type ] || type;
 
+
         jQuery( '#dlgColspanField' ).toggle( ! isFullWidth( type ) );
 
         jQuery( '#dlgWidthNote' )
@@ -843,27 +918,44 @@ $owa_max        = (int) $view->get('max_widgets');
          * and a pie is a share of one, so neither can use a set at all -- which
          * is why the field is singular for them and says so.
          */
-        jQuery( '#dlgMetricsLabel' ).text( single ? 'Metric' : 'Metrics' );
+        var oneMetric = isSingleMetric( type );
 
-        jQuery( '#dlgMetricsHelp' ).text( single
+        jQuery( '#dlgMetricsLabel' ).text( oneMetric ? 'Metric' : 'Metrics' );
+
+        jQuery( '#dlgMetricsHelp' ).text( oneMetric
             ? 'The one metric this ' + name.toLowerCase() + ' draws.'
-            : 'Up to ' + MAX_METRICS + '. Leave empty to use the report metric set.' );
+            : ( type === 'trend'
+                ? 'Up to ' + MAX_METRICS + '. The first is charted; all of them are '
+                  + 'drawn as boxes under it. Leave empty to use the report metric set.'
+                : 'Up to ' + MAX_METRICS + '. Leave empty to use the report metric set.' ) );
 
         var fixed = fixedDimension( type );
 
         jQuery( '#dlgDimensionsField' ).toggle( picksDimensions( type ) );
 
-        jQuery( '#dlgDimensionsLabel' ).text( single ? 'Dimension' : 'Dimensions' );
+        if ( fixed !== null ) {
 
-        jQuery( '#dlgDimensionsHelp' ).text( single
-            ? 'The one dimension its rows are grouped by.'
-            : 'Up to ' + MAX_DIMENSIONS + '. Each one is another column.' );
+            // A trend: the axis is settled, and what is offered is the
+            // breakdown whose values become the lines.
+            jQuery( '#dlgDimensionsLabel' ).text( 'Break out by' );
+
+            jQuery( '#dlgDimensionsHelp' ).text(
+                'Optional. Each value becomes its own line over the total; the '
+              + 'largest six are drawn and the rest are summed into "Other". '
+              + name + ' is always over ' + fixed + '.' );
+
+        } else {
+
+            jQuery( '#dlgDimensionsLabel' ).text( single ? 'Dimension' : 'Dimensions' );
+
+            jQuery( '#dlgDimensionsHelp' ).text( single
+                ? 'The one dimension its rows are grouped by.'
+                : 'Up to ' + MAX_DIMENSIONS + '. Each one is another column.' );
+        }
 
         jQuery( '#dlgDimensionNote' )
             .toggle( ! picksDimensions( type ) )
-            .text( fixed !== null
-                ? name + ' is always by ' + fixed + '.'
-                : name + ' shows totals for the period, so there is nothing to group by.' );
+            .text( name + ' shows totals for the period, so there is nothing to group by.' );
 
         // A sort orders rows, and these types have none to order.
         jQuery( '#dlgSortField' ).toggle( picksDimensions( type ) );
@@ -1007,10 +1099,15 @@ $owa_max        = (int) $view->get('max_widgets');
          * Ungrouped: none at all; a row of totals has nothing to group by.
          * Otherwise: what the author picked.
          */
-        var fixed      = fixedDimension( widget.type );
-        var dimensions = fixed !== null
-            ? [ fixed ]
-            : ( picksDimensions( widget.type ) ? ( jQuery( '#dlgDimensions' ).val() || [] ) : [] );
+        var fixed  = fixedDimension( widget.type );
+        var picked = picksDimensions( widget.type ) ? ( jQuery( '#dlgDimensions' ).val() || [] ) : [];
+
+        /*
+         * The axis first, then the breakdown. Order is not decoration: the
+         * chart reads the first dimension as what it plots against and the
+         * second as what it breaks out into lines.
+         */
+        var dimensions = fixed !== null ? [ fixed ].concat( picked ) : picked;
 
         // A sort orders rows. A fixed-dimension type orders by that dimension;
         // an ungrouped one has no rows to order.
@@ -1051,14 +1148,10 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( CHART_TYPES.indexOf( widget.type ) !== -1 && metrics.length ) {
 
             /*
-             * A trend charts EVERY metric it was given, one line each; a pie is
-             * a share of one, so it charts the one it has. Both read the same
-             * key, because both answer the same question -- which metric or
-             * metrics does this chart draw.
+             * ONE metric. A trend charts a single metric over time -- what
+             * varies is the dimension it is broken out by, not the measure.
              */
-            widget.chartMetric = widget.type === 'trend'
-                ? metrics.join( ',' )
-                : metrics[0];
+            widget.chartMetric = metrics[0];
 
         } else {
             delete widget.chartMetric;

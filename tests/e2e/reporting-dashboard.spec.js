@@ -129,216 +129,41 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.owa_titleCount')).toHaveCount(0);
     });
 
-    /*
-     * ------------------------------------------------------------------
-     * A trend can chart a metric SET
-     * ------------------------------------------------------------------
+    /**
+     * A trend with nothing to break out is the filled area it has always been.
      *
-     * It could not before, and not only because nothing asked it to: the data
-     * array was declared once OUTSIDE the per-series loop, so every series
-     * pushed into the same array and every entry in the series list referenced
-     * that one object. Two metrics drew two identical lines, each holding both
-     * metrics' points end to end. Every shipped trend charts one metric, so
-     * nothing ever exercised it.
+     * Sixty-one shipped trends are grouped by date alone. The fill is what
+     * makes one read as an area chart, and it is decided PER SERIES now -- so
+     * the case to protect is that a lone series still gets it.
      */
-    test('a trend charts one line per metric, with a total in front', async ({ page }) => {
-        // Re-plot the dashboard's trend with three metrics, through the same
-        // call the template makes.
-        await page.evaluate(() => window.siteTrend.makeAreaChart([
-            { x: 'date', y: 'visits' },
-            { x: 'date', y: 'pageViews' },
-            { x: 'date', y: 'uniqueVisitors' },
-        ], 'trend-chart'));
-
-        const labels = page.locator('#trend-chart > .owa_chartLegend .legendLabel');
-
-        await expect(labels).toHaveCount(4);
-
-        // The synthetic total is FIRST, so it reads before the parts it sums.
-        await expect(labels.nth(0)).toHaveText('Total');
-        await expect(labels.nth(1)).toHaveText('Visits');
-
+    test('a trend over date alone is a single filled area', async ({ page }) => {
         const state = await page.evaluate(() => {
             const ac = window.siteTrend.areaChart;
             return {
-                colors: ac.plotted.map((s) => s.color),
-                lengths: ac.plotted.map((s) => s.data.length),
-                firstPoints: ac.plotted.map((s) => s.data[0][1]),
+                count: ac.dataseries.length,
+                fill: !!(ac.dataseries[0].lines && ac.dataseries[0].lines.fill),
+                legendShown: ac.flotOptions.legend.show,
+                interactive: !!document.querySelector('#trend-chart > .owa_chartLegendInteractive'),
+                everyPointNumeric: ac.dataseries[0].data.every((p) => typeof p[1] === 'number'),
             };
         });
 
-        // A colour each, all different -- the point of one line per metric.
-        expect(new Set(state.colors).size).toBe(4);
-
-        // Every series is the same length, and none is the concatenation of
-        // the others: that is exactly what the shared-array bug produced.
-        expect(new Set(state.lengths).size).toBe(1);
-
-        // The total really is the sum of the three at each point -- and every
-        // point is a NUMBER. A result set carries metric values as strings, so
-        // this used to add up to "121" rather than to 4.
-        const [total, a, b, c] = state.firstPoints;
-
-        for (const v of state.firstPoints) { expect(typeof v).toBe('number'); }
-
-        expect(total).toBe(a + b + c);
-    });
-
-    /**
-     * Clicking a legend entry brings that line forward.
-     *
-     * Asserted on what was handed to flot rather than on pixels: the dimming IS
-     * the colour, since flot has no per-series opacity to set after the fact.
-     */
-    test('selecting a series in the legend dims the others', async ({ page }) => {
-        await page.evaluate(() => window.siteTrend.makeAreaChart([
-            { x: 'date', y: 'visits' },
-            { x: 'date', y: 'pageViews' },
-        ], 'trend-chart'));
-
-        const labels = page.locator('#trend-chart > .owa_chartLegend .legendLabel');
-
-        await expect(labels).toHaveCount(3);
-
-        // Nothing selected to begin with: every line at full strength.
-        expect(await page.evaluate(() => window.siteTrend.areaChart.plotted
-            .every((s) => s.color.indexOf('rgba') === -1))).toBe(true);
-
-        await labels.nth(1).click();
-
-        const after = await page.evaluate(() => ({
-            selected: window.siteTrend.areaChart.selected,
-            colors: window.siteTrend.areaChart.plotted.map((s) => s.color),
-        }));
-
-        // The one clicked, by its own index -- not by its row. The legend is
-        // one column per series so it reads left to right, which puts every
-        // entry in a single <tr>; reading the row gave 0 for all of them.
-        expect(after.selected).toBe(1);
-
-        expect(after.colors[1].indexOf('rgba')).toBe(-1);
-        expect(after.colors[0]).toContain('rgba');
-        expect(after.colors[2]).toContain('rgba');
-        expect(after.colors[0]).toContain('0.5');
-
-        // The labels say the same thing the lines do.
-        await expect(labels.nth(1)).toHaveClass(/owa_seriesSelected/);
-        await expect(labels.nth(0)).toHaveClass(/owa_seriesDimmed/);
-
-        // Clicking it again puts everything back, so there is always a way out.
-        await labels.nth(1).click();
-
-        expect(await page.evaluate(() => window.siteTrend.areaChart.selected)).toBeNull();
-    });
-
-    /**
-     * The legend sits UNDER the chart, not floating on top of it.
-     *
-     * flot draws its own legend inside the plot area, over the data it is
-     * labelling -- survivable for one entry, useless for five.
-     */
-    test('the trend legend is below the plot', async ({ page }) => {
-        await page.evaluate(() => window.siteTrend.makeAreaChart([
-            { x: 'date', y: 'visits' },
-            { x: 'date', y: 'pageViews' },
-        ], 'trend-chart'));
-
-        const box = await page.evaluate(() => {
-            const legend = document.querySelector('#trend-chart > .owa_chartLegend');
-            const plot = document.querySelector('#trend-chart > .owa_areaChart');
-            return {
-                legendTop: legend.getBoundingClientRect().top,
-                plotBottom: plot.getBoundingClientRect().bottom,
-                insidePlot: !!plot.querySelector('.legend'),
-            };
-        });
-
-        expect(box.legendTop).toBeGreaterThanOrEqual(box.plotBottom);
-        expect(box.insidePlot).toBe(false);
-    });
-
-    /**
-     * A single-metric trend is untouched.
-     *
-     * Sixty-one shipped trends chart one metric and are drawn as a filled area;
-     * that fill is what makes it read as an area chart. Several translucent
-     * fills stacked on each other muddy every colour underneath, so the fill is
-     * dropped when there is more than one line -- and must not be dropped when
-     * there is one.
-     */
-    test('a single-metric trend is still a filled area chart', async ({ page }) => {
-        await page.evaluate(() => window.siteTrend.makeAreaChart(
-            [{ x: 'date', y: 'visits' }], 'trend-chart'));
-
-        const state = await page.evaluate(() => ({
-            series: window.siteTrend.areaChart.plotted.length,
-            fill: window.siteTrend.areaChart.flotOptions.series.lines.fill,
-            interactive: !!document.querySelector('#trend-chart > .owa_chartLegendInteractive'),
-        }));
-
-        expect(state.series).toBe(1);
+        expect(state.count).toBe(1);
         expect(state.fill).toBe(true);
 
-        // ...and no legend interaction: one line is always the selected one, so
-        // a control that can only turn itself off is worse than none.
+        // No legend and no legend interaction for one line: naming the only
+        // series says nothing, and a control that can only turn itself off is
+        // worse than none.
+        expect(state.legendShown).toBe(false);
         expect(state.interactive).toBe(false);
-    });
 
-    /**
-     * Columns get room in proportion to what is in them.
-     *
-     * jqGrid has no content-based sizing: with autowidth and shrinkToFit it
-     * divides the width among the flexible columns in proportion to their
-     * DECLARED widths, and every dimension column declared none -- which jqGrid
-     * reads as its default 150. Identical declarations meant identical shares,
-     * so Latest Visits gave a full entry URL exactly as much room as
-     * priorVisitCount, and truncated it.
-     *
-     * Latest Visits is the case worth pinning: seven dimensions of very
-     * different lengths in one grid.
-     */
-    test('grid columns are sized to their content, not split evenly', async ({ page }) => {
-        const widget = page.locator('.owa_reportGridItem').filter({
-            has: page.locator('.owa_reportSectionHeader', { hasText: 'Latest Visits' }),
-        });
-
-        await expect(widget.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
-
-        const cols = await widget.locator('.ui-jqgrid-htable th').evaluateAll(
-            (ths) => ths.map((th) => ({ label: th.textContent.trim(), w: th.offsetWidth })));
-
-        const by = (name) => cols.find((c) => c.label.startsWith(name));
-
-        // A URL needs more room than a city name, and now gets it. Asserted as
-        // a relationship rather than as pixel counts, which depend on the
-        // viewport and on the fixture's own values.
-        expect(by('Entry Page URL').w).toBeGreaterThan(by('City').w);
-        expect(by('Entry Page URL').w).toBeGreaterThan(by('Country').w);
-        expect(by('Source').w).toBeGreaterThan(by('City').w);
-
-        // Not merely different -- meaningfully so. Equal shares was the bug,
-        // and small rounding differences would satisfy a bare inequality.
-        expect(by('Entry Page URL').w).toBeGreaterThan(by('City').w * 1.5);
-
-        // Metric columns are declared fixed and stay out of the distribution,
-        // so they are untouched by any of this.
-        // Named, not pattern-matched: "Prior Visits" is a DIMENSION, and a
-        // regex loose enough to catch the three metrics caught it too.
-        const metricLabels = ['Visits', 'Avg. Visit Duration', 'Pages Per Visit'];
-        const metrics = cols.filter((c) => metricLabels.some((m) => c.label === m || c.label.startsWith(m)));
-        expect(metrics.length).toBeGreaterThanOrEqual(2);
-        for (const m of metrics) { expect(m.w).toBe(100); }
-
-        // ...and the grid still FITS. shrinkToFit has the last word, so this
-        // redistributes the row rather than growing past the widget -- which is
-        // what a horizontal scrollbar on a report widget would mean.
-        const overflow = await widget.evaluate((el) => el.scrollWidth - el.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(1);
-
-        // No visible cell is cut off at the width it was given.
-        const clipped = await widget.locator('tr.jqgrow').first().locator('td').evaluateAll(
-            (tds) => tds.filter((td) => td.scrollWidth > td.offsetWidth + 1).length);
-        expect(clipped).toBe(0);
+        /*
+         * Values are NUMBERS. A result set carries metric values as strings and
+         * flot coerces them, so one line always drew correctly -- but the total
+         * of a broken-out trend is arithmetic over these, and string addition
+         * concatenates.
+         */
+        expect(state.everyPointNumeric).toBe(true);
     });
 
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {

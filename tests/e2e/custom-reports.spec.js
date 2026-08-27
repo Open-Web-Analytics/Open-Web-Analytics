@@ -630,43 +630,14 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgWidthNote')).toBeHidden();
         });
 
-        /**
-         * A trend is a metric OVER TIME. That is what makes it a trend, so
-         * there is no dimension to pick and no order to choose -- and offering
-         * a picker with one legal value is worse than offering none.
+        /*
+         * The test that used to sit here asserted a trend had NO dimension
+         * picker at all. It does now: its axis is fixed to a date, but the
+         * dimension whose values become its lines is the author's. What
+         * remains of that assertion -- that the axis is not a choice, and that
+         * time cannot be the breakdown -- is covered by 'a trend offers a
+         * breakdown, and refuses time as the thing to break out by'.
          */
-        test('a trend asks for no dimension and says it is by date', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="trend"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
-
-            await expect(page.locator('#dlgDimensionsField')).toBeHidden();
-            await expect(page.locator('#dlgSortField')).toBeHidden();
-            await expect(page.locator('#dlgDimensionNote')).toContainText('always by date');
-
-            // A metric SET, though: a trend draws a box per metric under its
-            // chart, so it is one of the types a set is for.
-            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
-
-            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
-
-            // ...and it is stored grouped by date all the same, because that is
-            // the query a trend issues.
-            const stored = await page.evaluate(() => {
-                document.querySelector('#customReportForm')
-                    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                return document.querySelector('#customReportDefinition').value;
-            });
-
-            const trend = JSON.parse(stored).widgets.find((w) => w.type === 'trend');
-
-            expect(trend.query.dimensions).toBe('date');
-            expect(trend.query.sort).toBe('date');
-            expect(trend.chartMetric).toBe('pageViews');
-        });
 
         /**
          * A row of totals has nothing to group by either, but for a different
@@ -903,6 +874,184 @@ test.describe('custom reports', () => {
             // ...and a chart actually drew, which an empty metric would not.
             await expect(page.locator('.owa_reportGridItem canvas').first())
                 .toBeVisible({ timeout: 20_000 });
+        });
+
+        /*
+         * ------------------------------------------------------------------
+         * A trend broken out by a dimension
+         * ------------------------------------------------------------------
+         *
+         * A trend charts ONE metric. What varies is the dimension: given one,
+         * each of its values becomes a line, and the filled area behind them is
+         * their total. Given none, the metric itself is that filled area, which
+         * is what every shipped trend still is.
+         *
+         * The metric list is NOT the series list -- a trend also draws a box
+         * per metric under its chart, which is what a report metric set is for,
+         * so it carries the set and names which one of it to plot.
+         */
+        test('a trend offers a breakdown, and refuses time as the thing to break out by',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="trend"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            // The axis is settled; what is offered is the breakdown.
+            await expect(page.locator('#dlgDimensionsField')).toBeVisible();
+            await expect(page.locator('#dlgDimensionsLabel')).toHaveText('Break out by');
+            await expect(page.locator('#dlgDimensionsHelp')).toContainText('always over date');
+
+            // Metrics stay PLURAL: the chart draws one, the boxes under it
+            // draw all of them.
+            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
+
+            /*
+             * A trend is drawn against time, so time cannot also be what it is
+             * broken out by -- visits by month, over months, is not a chart
+             * anybody meant to ask for.
+             */
+            const offered = await page.locator('#dlgDimensions option')
+                .evaluateAll((o) => o.map((e) => e.value));
+
+            for (const t of ['date', 'day', 'month', 'year', 'weekofyear']) {
+                expect(offered).not.toContain(t);
+            }
+
+            // ...and it does offer ordinary ones.
+            expect(offered).toContain('medium');
+        });
+
+        test('a broken-out trend draws a line per value over a filled total',
+            async ({ page }) => {
+
+            const name = reportName('Broken');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await onlyWidget(page, 'trend', {
+                title: 'Visits by medium',
+                metrics: ['visits'],
+                dimensions: ['medium'],
+            });
+
+            // Stored as the axis first, then the breakdown: the chart reads the
+            // first as what it plots against and the second as its lines.
+            const stored = await page.evaluate(() => {
+                document.querySelector('#customReportForm')
+                    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                return JSON.parse(document.querySelector('#customReportDefinition').value);
+            });
+
+            expect(stored.widgets[0].query.dimensions).toBe('date,medium');
+            expect(stored.widgets[0].chartMetric).toBe('visits');
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            await expect.poll(async () => page.evaluate(
+                () => (window.w1 && window.w1.areaChart) ? window.w1.areaChart.dataseries.length : 0),
+                { timeout: 20_000 }).toBeGreaterThan(1);
+
+            const chart = await page.evaluate(() => {
+                const ac = window.w1.areaChart;
+                return {
+                    labels: ac.dataseries.map((s) => s.label),
+                    fills: ac.dataseries.map((s) => !!(s.lines && s.lines.fill)),
+                    colors: ac.dataseries.map((s) => s.color),
+                    firstPoints: ac.dataseries.map((s) => s.data[0][1]),
+                    lengths: ac.dataseries.map((s) => s.data.length),
+                };
+            });
+
+            // The total comes first, and it is the only filled one: it is the
+            // shape of the whole thing, and the lines are what it is made of.
+            expect(chart.labels[0]).toBe('Total');
+            expect(chart.fills[0]).toBe(true);
+            expect(chart.fills.slice(1).every((f) => f === false)).toBe(true);
+
+            // The seeded mediums each got a line.
+            expect(chart.labels).toContain('direct');
+            expect(chart.labels).toContain('organic-search');
+
+            // A colour each.
+            expect(new Set(chart.colors).size).toBe(chart.colors.length);
+
+            /*
+             * The total is the sum of the lines at each point, and every series
+             * covers every x -- a value with no rows on a day is a ZERO, not a
+             * gap. A gap would make flot join the days either side of it,
+             * drawing a line straight over an absence.
+             */
+            const [total, ...parts] = chart.firstPoints;
+            expect(total).toBe(parts.reduce((a, b) => a + b, 0));
+            expect(new Set(chart.lengths).size).toBe(1);
+        });
+
+        /**
+         * Day or month is a question about how you want to READ a trend, not
+         * about what the report is -- so it is a reader's control, and the
+         * stored query is untouched by it.
+         *
+         * The regrouping happens in SQL. A month's value is not the sum of the
+         * days that came back, it is the sum of the days that exist, so this
+         * refetches rather than recomputing.
+         */
+        test('a trend can be switched between day and month', async ({ page }) => {
+            const name = reportName('Grain');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+            await onlyWidget(page, 'trend', { metrics: ['visits'], dimensions: ['medium'] });
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            const control = page.locator('.owa_chartGranularity');
+
+            await expect(control).toBeVisible({ timeout: 20_000 });
+            await expect(control.locator('option')).toHaveCount(2);
+            await expect(control).toHaveValue('date');
+
+            await control.selectOption('month');
+
+            await expect.poll(async () => page.evaluate(
+                () => window.w1.areaChart.xDimension), { timeout: 20_000 }).toBe('month');
+
+            const after = await page.evaluate(() => ({
+                url: window.w1.resultSet.self,
+                timeformat: window.w1.areaChart.flotOptions.xaxis.timeformat,
+                firstX: window.w1.areaChart.dataseries[0].data[0][0],
+                total: window.w1.areaChart.dataseries[0].data[0][1],
+                parts: window.w1.areaChart.dataseries.slice(1).map((s) => s.data[0][1]),
+            }));
+
+            // The QUERY changed, and the sort with it -- a sort naming a
+            // dimension the query no longer has is one the server cannot
+            // resolve.
+            expect(decodeURIComponent(after.url)).toContain('dimensions=month,medium');
+            expect(decodeURIComponent(after.url)).toContain('sort=month');
+
+            // A month axis labelled with days would repeat the same day number
+            // every tick.
+            expect(after.timeformat).toBe('%b %Y');
+
+            // The month column stores yyyymm, so a month point is the first of
+            // that month rather than the number 1 to 12.
+            expect(new Date(after.firstX).getUTCDate()).toBe(1);
+
+            // ...and it is still a real total of its parts.
+            expect(after.total).toBe(after.parts.reduce((a, b) => a + b, 0));
         });
 
         /** Cancel leaves the widget as it was. */

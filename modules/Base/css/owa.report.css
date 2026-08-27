@@ -1078,6 +1078,30 @@ li.constraintRow {
 }
 
 /*
+ * The day/month control, top right of a trend.
+ *
+ * Floated over the plot's own top-right corner rather than given a row: the
+ * chart's upper right is empty by construction -- a trend that filled it would
+ * be off the top of its own axis -- and a row of its own would push the chart
+ * down on every report that has one.
+ */
+.owa .owa_chartControls {
+    float: right;
+    position: relative;
+    z-index: 2;
+    margin: 0 4px -4px 0;
+}
+
+.owa .owa_chartGranularity {
+    font-size: 11px;
+    padding: 1px 4px;
+    border: 1px solid #dcdcdc;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #505050;
+}
+
+/*
  * A trend's legend, under the chart.
  *
  * flot draws its own legend floating over the plot area, on top of the data it

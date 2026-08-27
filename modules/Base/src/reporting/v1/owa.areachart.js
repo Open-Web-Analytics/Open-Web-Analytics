@@ -24,27 +24,45 @@ OWA.areaChart = function( options ) {
         fillColor: "rgba(202,225,255, 0.6)",
 
         /*
-         * One colour per metric, and enough of them.
+         * One colour per line, and enough of them.
          *
-         * A trend used to plot one metric, so three colours was three more than
-         * it needed. Now that a trend can carry a metric set, every metric is
-         * its own line and the palette has to separate them -- these are picked
-         * to stay distinguishable rather than to sit on a colour wheel.
-         *
-         * The first is the one a single-metric trend has always drawn in, so
-         * the sixty-one shipped trends look exactly as they did.
+         * A trend used to draw one line, so three colours was two more than it
+         * needed. Now a dimension's values each get one -- visits by medium is
+         * a line per medium -- and the palette has to keep them apart.
          */
-        colors: ["#1874CD", "#dba255", "#919733", "#c0504d", "#7a5195", "#2e8b57"],
+        colors: ["#dba255", "#919733", "#c0504d", "#7a5195", "#2e8b57", "#b5651d", "#4f81bd", "#8064a2"],
 
         /*
-         * The colour of the synthetic Total. Deliberately not from the palette
-         * above: it is not one of the metrics, and a reader should be able to
-         * tell that without reading the label.
+         * The total keeps the colour a trend has always been drawn in, because
+         * it IS the trend: the same filled area, with the lines it is made of
+         * drawn over it.
          */
-        totalColor: "#4d4d4d",
+        totalColor: "#1874CD",
+
+        /*
+         * How many of a dimension's values get their own line.
+         *
+         * A breakdown by page path has as many values as there are pages, and
+         * a hundred lines is not a chart. The six largest get a line each and
+         * everything else is summed into one -- so the drawn lines still
+         * account for every row, and Other plus the six is the total behind
+         * them rather than a number with a silent gap in it.
+         */
+        maxSeries: 6,
+
+        /* What the values past the cap are called once they are added up. */
+        otherLabel: 'Other',
 
         /* What the other lines fade to when one is selected in the legend. */
-        dimmedOpacity: 0.5
+        dimmedOpacity: 0.5,
+
+        /* The x axis a reader can choose between, and what each queries. */
+        granularities: [
+            { dimension: 'date',  label: 'Day' },
+            { dimension: 'month', label: 'Month' }
+        ],
+
+        monthFormat: "%b %Y"
     };
     
     // merge passed options with defaults.
@@ -116,6 +134,17 @@ OWA.areaChart.prototype = {
                 OWA.debug('year: %s, month: %s, day: %s, timestamp: %s',year,month,day,d);
                 break;
                 
+            // 202608 -> the first of that month. The `month` COLUMN stores
+            // yyyymm despite its name, which is why a month axis orders
+            // correctly across a year boundary.
+            case 'yyyymm':
+
+                var m_year  = String( value ).substring( 0, 4 ) * 1;
+                var m_month = ( String( value ).substring( 4, 6 ) * 1 ) - 1;
+
+                value = Date.UTC( m_year, m_month, 1, 0, 0, 0, 0 );
+                break;
+
             case 'currency':
                 value = value/100;
         }
@@ -165,90 +194,38 @@ OWA.areaChart.prototype = {
         // if there is data, plot it.
         if ( resultSet.resultsRows.length > 0 ) {
 
-            // create data array for flot.
-            var dataseries = [];
-
             series = this.options.series;
 
-            var data_type_x = '';
-
-            for( var ii = 0; ii <= series.length -1; ii++ ) {
-
-                var x_series_name = series[ii].x;
-                var y_series_name = series[ii].y;
-
-                /*
-                 * A NEW array per series.
-                 *
-                 * This used to be declared once, outside the loop, so every
-                 * series pushed into the same array AND every entry in
-                 * dataseries referenced that one object -- so a chart of two
-                 * metrics drew two identical lines, each holding both metrics'
-                 * points end to end. A trend charted one metric everywhere it
-                 * shipped, so nothing ever exercised it.
-                 */
-                var data = [];
-
-                for( var i=0; i <= resultSet.resultsRows.length -1; i++ ) {
-
-                    data_type_x = resultSet.resultsRows[i][x_series_name].data_type;
-
-                    var data_type_y = resultSet.resultsRows[i][y_series_name].data_type;
-
-                    /*
-                     * The y value as a NUMBER.
-                     *
-                     * A result set carries metric values as strings, and flot
-                     * coerces them when it plots -- so a single line has always
-                     * drawn correctly and nothing needed this. It matters now:
-                     * the Total series is arithmetic over these, and a chart
-                     * mixing string series with a numeric one is one type
-                     * confusion away from an axis scaled lexically.
-                     */
-                    var item = [
-                        this.formatValue( data_type_x, resultSet.resultsRows[i][x_series_name].value ),
-                        this.formatValue( data_type_y, resultSet.resultsRows[i][y_series_name].value ) * 1
-                    ];
-
-                    data.push( item );
-                }
-
-                dataseries.push( {
-                    label: resultSet.getMetricLabel( y_series_name ),
-                    metric: y_series_name,
-                    data: data
-                } );
-            }
-
             /*
-             * The sum of everything plotted, drawn first.
+             * A trend charts ONE metric.
              *
-             * Only when there is more than one metric: a "total" of one line is
-             * that line, and drawing it twice would say nothing.
+             * What varies is the DIMENSION: given one, each of its values
+             * becomes a line -- visits by medium is a line per medium -- and
+             * the filled area behind them is their total. Given none, the
+             * metric itself is the single filled area, which is what a trend
+             * has always been and what all sixty-one shipped ones still are.
              *
-             * The sum is only meaningful when the metrics are of a kind -- four
-             * counts add up, a count and a rate do not. That is the report
-             * author's judgement, not this function's: it charts the metric set
-             * it was given.
+             * The call shape is unchanged: an array of {x, y}, now with an
+             * optional `series` naming the dimension to break down by. Four
+             * older templates still call it the old way and go on working.
              */
-            if ( dataseries.length > 1 ) {
+            var spec = series[0] || {};
 
-                dataseries.unshift( this.totalSeries( dataseries ) );
-            }
+            var x_name    = spec.x;
+            var y_name    = spec.y;
+            var breakdown = spec.series || null;
 
-            // A colour each, fixed here rather than left to flot's rotation, so
-            // the legend, the lines and the dimming below all agree about which
-            // colour belongs to which metric.
-            for ( var c = 0; c < dataseries.length; c++ ) {
+            this.xDimension = x_name;
 
-                dataseries[c].color = dataseries[c].isTotal
-                    ? this.options.totalColor
-                    : this.options.colors[ ( c - ( dataseries[0].isTotal ? 1 : 0 ) ) % this.options.colors.length ];
-            }
+            var built = breakdown
+                ? this.seriesByDimension( resultSet, x_name, y_name, breakdown )
+                : this.singleSeries( resultSet, x_name, y_name );
+
+            var dataseries = built.series;
 
             this.setupAreaChart( series, dom_id );
 
-            var num_ticks = resultSet.resultsRows.length;
+            var num_ticks = built.points;
 
             // reduce number of x axis ticks if data set has too many points.
             if ( num_ticks > 10 ) {
@@ -269,30 +246,28 @@ OWA.areaChart.prototype = {
                     points: { show: this.options.showDots, fill: this.options.showDots },
 
                     /*
-                     * FILLED only when there is one line.
+                     * Fill is decided PER SERIES, on the series itself.
                      *
-                     * The fill is what makes a single trend read as an area
-                     * chart, and it is why one has always been drawn that way.
-                     * Several translucent fills stacked on each other muddy
-                     * every colour underneath, which defeats the point of
-                     * giving each metric its own.
+                     * The total is an area, the way a trend has always looked;
+                     * the lines broken out of it are lines. Several translucent
+                     * fills stacked on each other muddy every colour underneath,
+                     * which is the whole reason the breakdown is not filled.
                      */
                     lines: {
                         show: true,
-                        fill: dataseries.length === 1,
-                        fillColor: this.options.fillColor,
+                        fill: false,
                         lineWidth: this.options.lineWidth
                     }
                 },
                 legend: {
-                    show: this.options.showLegend,
+                    show: this.options.showLegend && dataseries.length > 1,
 
                     /*
                      * BELOW the chart, not floating inside it.
                      *
                      * flot draws its own legend over the plot area, where it
                      * covers the very data it is labelling -- tolerable for one
-                     * entry, useless for five. Given a container it renders
+                     * entry, useless for eight. Given a container it renders
                      * there instead, and the container sits after the plot in
                      * the widget, which puts it under the x-axis labels.
                      */
@@ -301,13 +276,30 @@ OWA.areaChart.prototype = {
                 }
             };
 
-            if (data_type_x === 'yyyymmdd') {
+            if ( built.x_type === 'yyyymmdd' || built.x_type === 'yyyymm' ) {
 
                 this.flotOptions.xaxis.mode = "time";
-                this.flotOptions.xaxis.timeformat = this.options.timeformat;
+
+                // A month axis labelled with days would repeat the same day
+                // number every tick.
+                this.flotOptions.xaxis.timeformat = built.x_type === 'yyyymm'
+                    ? this.options.monthFormat
+                    : this.options.timeformat;
             }
 
             OWA.debug('Plotting area graph in ' + selector);
+
+            /*
+             * A colour each, fixed here rather than left to flot's rotation, so
+             * the legend, the lines and the dimming all agree about which
+             * colour belongs to which line. The total is always first.
+             */
+            for ( var c = 0; c < dataseries.length; c++ ) {
+
+                dataseries[c].color = dataseries[c].isTotal
+                    ? this.options.totalColor
+                    : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
+            }
 
             this.dataseries = dataseries;
             this.selected   = null;
@@ -315,6 +307,8 @@ OWA.areaChart.prototype = {
             this.draw();
 
             this.bindLegend();
+
+            this.drawGranularityControl( dom_id );
 
             this.init = true;
 
@@ -325,36 +319,290 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * The sum of every plotted metric, point by point.
+     * One metric over time: the filled area a trend has always been.
      *
-     * By POSITION, not by x value: every series here comes from the same result
-     * set rows, so row i is the same moment in all of them. Matching on x would
-     * be the same answer with a lookup in front of it.
+     * @return {series, points, x_type}
      */
-    totalSeries : function ( dataseries ) {
+    singleSeries : function ( resultSet, x_name, y_name ) {
 
-        var points = [];
+        var data   = [];
+        var x_type = '';
 
-        for ( var i = 0; i < dataseries[0].data.length; i++ ) {
+        for ( var i = 0; i < resultSet.resultsRows.length; i++ ) {
 
-            var sum = 0;
+            var row = resultSet.resultsRows[i];
 
-            for ( var s = 0; s < dataseries.length; s++ ) {
+            x_type = row[ x_name ].data_type;
 
-                var point = dataseries[s].data[i];
-
-                // A series shorter than the first contributes nothing at this
-                // point rather than making the total NaN from there on.
-                if ( point ) {
-
-                    sum += point[1];
-                }
-            }
-
-            points.push( [ dataseries[0].data[i][0], sum ] );
+            data.push( [
+                this.formatValue( x_type, row[ x_name ].value ),
+                row[ y_name ].value * 1
+            ] );
         }
 
-        return { label: 'Total', metric: '__total', isTotal: true, data: points };
+        return {
+            series: [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ],
+            points: data.length,
+            x_type: x_type
+        };
+    },
+
+    /**
+     * One metric, broken out by the values of one dimension.
+     *
+     * The rows arrive as (x, dimension value) pairs, so they are pivoted here:
+     * a line per value, and the total across ALL of them as the area behind.
+     *
+     * The total is the sum of every row, not of the lines that get drawn. Only
+     * the largest few values are drawn -- a breakdown by page path would
+     * otherwise be a hundred lines and no chart -- and a total that quietly
+     * left the rest out would be a different number from the one the report's
+     * metric boxes show.
+     *
+     * @return {series, points, x_type}
+     */
+    seriesByDimension : function ( resultSet, x_name, y_name, breakdown ) {
+
+        var x_type  = '';
+        var xs      = [];      // every x value, in the order first seen
+        var seen_x  = {};
+        var totals  = {};      // x -> the sum across every dimension value
+        var byValue = {};      // dimension value -> { label, points: {x: y} , total }
+
+        for ( var i = 0; i < resultSet.resultsRows.length; i++ ) {
+
+            var row = resultSet.resultsRows[i];
+
+            if ( ! row[ x_name ] || ! row[ y_name ] || ! row[ breakdown ] ) {
+
+                continue;
+            }
+
+            x_type = row[ x_name ].data_type;
+
+            var x = this.formatValue( x_type, row[ x_name ].value );
+            var y = row[ y_name ].value * 1;
+
+            if ( ! seen_x[ x ] ) {
+
+                seen_x[ x ] = true;
+                xs.push( x );
+            }
+
+            totals[ x ] = ( totals[ x ] || 0 ) + y;
+
+            var cell = row[ breakdown ];
+
+            var key = ( cell.value === null || cell.value === undefined ) ? '' : String( cell.value );
+
+            if ( ! byValue[ key ] ) {
+
+                byValue[ key ] = {
+                    label: ( cell.formatted_value === null || cell.formatted_value === undefined
+                        || cell.formatted_value === '' ) ? key : cell.formatted_value,
+                    points: {},
+                    total: 0
+                };
+            }
+
+            byValue[ key ].points[ x ] = ( byValue[ key ].points[ x ] || 0 ) + y;
+            byValue[ key ].total += y;
+        }
+
+        xs.sort( function ( a, b ) { return a - b; } );
+
+        // The biggest first, by the metric being charted, so the cap keeps
+        // what matters rather than whatever the sort happened to return first.
+        var ranked = Object.keys( byValue ).sort( function ( a, b ) {
+
+            return byValue[b].total - byValue[a].total;
+        } );
+
+        var values = ranked.slice( 0, this.options.maxSeries );
+        var rest   = ranked.slice( this.options.maxSeries );
+
+        var built = [];
+
+        // The total, first and filled -- it is the shape of the whole thing,
+        // and the lines are what it is made of.
+        built.push( this.areaSeries( 'Total', xs.map( function ( x ) {
+
+            return [ x, totals[ x ] ];
+
+        } ) ) );
+
+        for ( var v = 0; v < values.length; v++ ) {
+
+            var entry = byValue[ values[v] ];
+
+            built.push( {
+                label: entry.label,
+                dimensionValue: values[v],
+
+                /*
+                 * A missing x is a ZERO, not a gap.
+                 *
+                 * A dimension value with no rows on a given day had none of
+                 * that metric that day. Leaving the point out would make flot
+                 * join the days either side of it, drawing a line straight over
+                 * an absence and reading as "steady" where the answer is
+                 * "nothing".
+                 */
+                data: xs.map( function ( x ) {
+
+                    return [ x, entry.points[ x ] || 0 ];
+                } ),
+
+                lines: { fill: false }
+            } );
+        }
+
+        /*
+         * Everything past the sixth, as one line.
+         *
+         * Summed rather than dropped: a reader comparing the lines against the
+         * area behind them should be able to account for all of it, and six
+         * lines under a total they visibly do not add up to is a chart that
+         * raises a question it cannot answer.
+         */
+        if ( rest.length ) {
+
+            built.push( {
+                label: this.options.otherLabel,
+                isOther: true,
+                data: xs.map( function ( x ) {
+
+                    var sum = 0;
+
+                    for ( var r = 0; r < rest.length; r++ ) {
+
+                        sum += byValue[ rest[r] ].points[ x ] || 0;
+                    }
+
+                    return [ x, sum ];
+                } ),
+
+                lines: { fill: false }
+            } );
+        }
+
+        return { series: built, points: xs.length, x_type: x_type };
+    },
+
+    /** The filled series -- the one that makes this an AREA chart. */
+    areaSeries : function ( label, data ) {
+
+        return {
+            label: label,
+            isTotal: true,
+            data: data,
+            lines: { fill: true, fillColor: this.options.fillColor }
+        };
+    },
+
+    /**
+     * The day/month control, top right of the chart.
+     *
+     * A trend is a shape over time, and which time -- days or months -- is a
+     * question about how you want to read it rather than about what the report
+     * is. So it is a reader's control, not something baked into the definition:
+     * the stored query says `date`, and this rewrites it on the way out.
+     *
+     * Drawn only when the chart knows who to ask for new data. The explorer
+     * owns fetching; a select that could not refetch would be a control that
+     * does nothing, which is worse than no control.
+     */
+    drawGranularityControl : function ( dom_id ) {
+
+        var that = this;
+        var $box = jQuery( '#' + dom_id + ' > .owa_chartControls' );
+
+        $box.empty();
+
+        if ( ! this.explorer || ! this.explorer.resultSet ) {
+
+            return;
+        }
+
+        var current = this.xDimension;
+
+        var known = this.options.granularities.filter( function ( g ) {
+
+            return g.dimension === current;
+        } );
+
+        if ( ! known.length ) {
+
+            // The chart is over something this control does not know how to
+            // switch between. Leaving it off is the honest answer.
+            return;
+        }
+
+        var $select = jQuery( '<select class="owa_chartGranularity">' )
+            .attr( 'title', 'Show this trend by day or by month' );
+
+        this.options.granularities.forEach( function ( g ) {
+
+            $select.append( jQuery( '<option>' ).attr( 'value', g.dimension )
+                .prop( 'selected', g.dimension === current ).text( g.label ) );
+        } );
+
+        $select.on( 'change', function () {
+
+            that.changeGranularity( jQuery( this ).val() );
+        } );
+
+        $box.append( $select );
+    },
+
+    /**
+     * Ask for the same trend at a different grain.
+     *
+     * The x dimension is swapped in the result-set URL and the whole thing is
+     * refetched -- the grouping happens in SQL, so there is nothing to
+     * recompute here and nothing that could be recomputed correctly: a month's
+     * value is not the sum of the days that were returned, it is the sum of the
+     * days that exist.
+     *
+     * The sort travels with it. It orders by the x dimension, and a sort naming
+     * a dimension the query no longer has is a sort the server cannot resolve.
+     */
+    changeGranularity : function ( dimension ) {
+
+        if ( ! dimension || dimension === this.xDimension || ! this.explorer ) {
+
+            return;
+        }
+
+        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var key  = OWA.util.appNs( 'dimensions' );
+        var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' ).split( ',' );
+
+        var was = this.xDimension;
+
+        var swapped = dims.map( function ( name ) {
+
+            return name.trim() === was ? dimension : name.trim();
+
+        } ).filter( Boolean );
+
+        url.setQueryParam( key, swapped.join( ',' ) );
+        url.setQueryParam( OWA.util.appNs( 'sort' ), dimension );
+
+        // A different grain is a different number of points, so the page the
+        // reader was on no longer means anything.
+        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+
+        this.xDimension = dimension;
+
+        // The series spec is what generate() reads on the way back in, and the
+        // refetch arrives as a new_result_set event carrying no spec of its own.
+        if ( this.options.series[0] ) {
+
+            this.options.series[0].x = dimension;
+        }
+
+        this.explorer.getNewResultSet( url.getSource() );
     },
 
     /**
@@ -526,7 +774,10 @@ OWA.areaChart.prototype = {
          * labels -- flot draws those inside the plot's own area, so anything
          * that follows the plot element is below them.
          */
-        jQuery("#"+dom_id).html('<div class="owa_areaChart"></div><div class="owa_chartLegend"></div>');
+        jQuery("#"+dom_id).html(
+            '<div class="owa_chartControls"></div>'
+          + '<div class="owa_areaChart"></div>'
+          + '<div class="owa_chartLegend"></div>' );
 
         jQuery(that.domSelector).css('width', this.getOption('width'));
         jQuery(that.domSelector).css('height', h);

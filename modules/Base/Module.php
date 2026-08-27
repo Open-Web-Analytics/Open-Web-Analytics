@@ -1315,7 +1315,11 @@ class Module extends \OWA\Core\Module {
             'month',
             'Month',
             'time',
-            'The month of the year (1-12).',
+            // yyyymm -- 202608, not 8. The COLUMN is called month and the
+            // description said 1-12 for fifteen years, which is the reason to
+            // avoid it as a chart axis and is not true: it orders correctly
+            // across a year boundary, which is what a trend by month needs.
+            'The month, as yyyymm.',
             '',
             true,
             'yyyymm'
