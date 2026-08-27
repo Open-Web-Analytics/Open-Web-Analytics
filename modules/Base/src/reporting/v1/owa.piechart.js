@@ -50,6 +50,23 @@ OWA.pieChart = function( options ) {
          * what leaves room for both inside 280.
          */
         radiusFraction: 0.60,
+
+        /*
+         * The column reserved for the legend, at the right of the plot.
+         *
+         * RESERVED RATHER THAN MEASURED. flot centres the pie by reading the
+         * width of a background div it prepends to the legend -- and only
+         * prepends when backgroundOpacity is non-zero -- then shifting the
+         * centre by half of it. That measurement is taken before the legend has
+         * settled and came back as 40px for a legend 119px wide, so the circle
+         * moved 20px where it needed to move 60 and the names landed on top of
+         * it.
+         *
+         * A number here instead, and the circle offset derived from it, so the
+         * two cannot disagree. The label cap in owa.report.css is what keeps a
+         * long name inside it.
+         */
+        legendWidth: 120,
         width:    200,
         metric: '',
         dimension: '',
@@ -346,6 +363,16 @@ OWA.pieChart.prototype = {
                      * smaller.
                      */
                     radius: this.pixelRadius(),
+
+                    /*
+                     * Centred in what is LEFT once the legend has its column.
+                     *
+                     * A number rather than 'auto': auto is the branch that asks
+                     * flot to measure the legend, which is the measurement that
+                     * was wrong. Half the reserved width, because moving the
+                     * centre by half moves the whole circle clear of it.
+                     */
+                    offset: { top: 0, left: -( this.getOption( 'legendWidth' ) / 2 ) },
 
                     /*
                      * NO LABELS AROUND THE EDGE. They are a legend now -- see

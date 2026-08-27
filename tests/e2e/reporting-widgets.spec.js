@@ -757,14 +757,53 @@ test.describe('the report grid gives every widget a usable width', () => {
             return page.evaluate(() => [...document.querySelectorAll('.owa_pieChart')].map((h) => {
 
                 const plot = h.getBoundingClientRect();
+
+                /*
+                 * The CIRCLE, from the painted canvas -- not the plot element,
+                 * which is the box the circle sits in and says nothing about
+                 * where it actually is.
+                 */
+                let circle = null;
+
+                for (const c of h.querySelectorAll('canvas')) {
+
+                    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+
+                    let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, n = 0;
+
+                    for (let y = 0; y < c.height; y++) {
+                        for (let x = 0; x < c.width; x++) {
+                            if (d[(y * c.width + x) * 4 + 3] > 20) {
+                                n++;
+                                if (x < x0) { x0 = x; }
+                                if (x > x1) { x1 = x; }
+                                if (y < y0) { y0 = y; }
+                                if (y > y1) { y1 = y; }
+                            }
+                        }
+                    }
+
+                    if (n > 500) {
+                        const r = c.getBoundingClientRect();
+                        circle = { l: r.left + x0, r: r.left + x1, t: r.top + y0, b: r.top + y1 };
+                    }
+                }
+
+                // flot's .legend is a full-width positioned block; the TABLE is
+                // the part with the names in it.
                 const legend = h.querySelector('.legend');
-                const l = legend ? legend.getBoundingClientRect() : null;
+                const table = legend ? legend.querySelector('table') : null;
+                const t = table ? table.getBoundingClientRect() : null;
 
                 return {
                     plot: { w: Math.round(plot.width), h: Math.round(plot.height) },
-                    hasLegend: !!legend,
-                    legendInside: l
-                        ? l.left >= plot.left - 1 && l.right <= plot.right + 1
+                    hasLegend: !!table,
+                    legendInside: t
+                        ? t.left >= plot.left - 1 && t.right <= plot.right + 1
+                        : null,
+                    overlapsCircle: (circle && t)
+                        ? !(t.left >= circle.r || t.right <= circle.l
+                            || t.top >= circle.b || t.bottom <= circle.t)
                         : null,
                 };
             }));
@@ -785,6 +824,24 @@ test.describe('the report grid gives every widget a usable width', () => {
 
             expect(p.legendInside,
                 'the legend is outside the plot area it is drawn in').toBe(true);
+
+            /*
+             * THE ASSERTION THAT MATTERS, and the one this test did not make
+             * at first: inside the plot is not the same as clear of the pie.
+             *
+             * flot positions the circle by MEASURING the legend -- the width of
+             * a background div it prepends, and only prepends when
+             * backgroundOpacity is non-zero -- then shifting the centre by half
+             * of it. That measurement came back as 40px for a legend 119px
+             * wide, so Traffic Sources drew its names across its own pie while
+             * "the legend is inside the plot" stayed true throughout.
+             *
+             * The legend has a reserved column now and the offset is derived
+             * from it, so nothing is measured and nothing can be measured
+             * wrong.
+             */
+            expect(p.overlapsCircle,
+                'the legend is drawn over the pie').toBe(false);
         }
 
         // ...and every plot is the SAME box, whatever holds it.

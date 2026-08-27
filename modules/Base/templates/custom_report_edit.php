@@ -141,25 +141,69 @@ $owa_max        = (int) $view->get('max_widgets');
      * trade -- a card and a trend share a name and almost nothing else.
      */
 ?>
+<?php
+    /*
+     * HOW MUCH OF A ROW EACH KIND TAKES, in the words an author thinks in.
+     *
+     * The number is real -- Core\ReportGrid decides it, and it is the width the
+     * widget will actually be added at -- but "3 of 12 columns" is a fact about
+     * the grid rather than about the report. A reader choosing between a table
+     * and a table card is asking "how much room does this take", and the answer
+     * is a fraction of a row.
+     */
+    $owa_widthWords = array(
+        12 => 'Full width',
+        8  => 'Two thirds',
+        6  => 'Half width',
+        4  => 'One third',
+        3  => 'One quarter',
+    );
+?>
 <div id="typeDialog" class="owa_typeDialog" style="display:none;">
     <ul class="owa_typeChoices">
     <?php foreach ( (array) $view->get('widget_types') as $owa_key => $owa_label ): ?>
+    <?php
+        $owa_span = \OWA\Core\ReportGrid::defaultColspan( array( 'type' => $owa_key ) );
+        $owa_pct  = round( $owa_span / \OWA\Core\ReportGrid::COLUMNS * 100 );
+    ?>
         <li>
-            <button type="button" class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>">
+            <button type="button" class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>"
+                    data-colspan="<?php $view->out( (string) $owa_span ); ?>">
                 <?php
                     /*
-                     * Decorative: the name beside it says the same thing, so
-                     * the icon is hidden from assistive technology rather than
-                     * read out as a second, worse label.
+                     * The drawing, at the full height of the tile.
+                     *
+                     * Decorative: the name beside it says the same thing, so it
+                     * is hidden from assistive technology rather than read out
+                     * as a second, worse label. It earns its size anyway --
+                     * "Table" and "Table card" are a word apart, and the shape
+                     * is what separates them at a glance.
                      */
                 ?>
-                <i class="owa_typeChoiceIcon <?php $view->out(
-                    \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"
-                   aria-hidden="true"></i>
+                <span class="owa_typeChoiceArt" aria-hidden="true">
+                    <i class="owa_typeChoiceIcon <?php $view->out(
+                        \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"></i>
+                </span>
                 <span class="owa_typeChoiceText">
                     <span class="owa_typeChoiceName"><?php $view->out( $owa_label ); ?></span>
                     <span class="owa_typeChoiceHint"><?php
                         $view->out( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_HINTS[ $owa_key ] ?? '' ); ?></span>
+                    <?php
+                        /*
+                         * A bar showing the share of a row this kind takes, at
+                         * the proportion it really takes. The words are the
+                         * label; the bar is what makes two kinds comparable
+                         * without reading either.
+                         */
+                    ?>
+                    <span class="owa_typeChoiceWidth">
+                        <span class="owa_typeChoiceWidthBar">
+                            <span class="owa_typeChoiceWidthFill"
+                                  style="width:<?php $view->out( (string) $owa_pct, false ); ?>%"></span>
+                        </span>
+                        <span class="owa_typeChoiceWidthLabel"><?php
+                            $view->out( $owa_widthWords[ $owa_span ] ?? ( $owa_span . ' of 12' ) ); ?></span>
+                    </span>
                 </span>
             </button>
         </li>
@@ -1316,8 +1360,30 @@ $owa_max        = (int) $view->get('max_widgets');
     jQuery( '#typeDialog' ).dialog( {
         autoOpen: false,
         modal: true,
-        width: Math.min( 520, jQuery( window ).width() - 40 ),
+        /*
+         * Wide enough for three tiles across. The choices are a gallery now --
+         * see .owa_typeChoices -- and the point of a gallery is comparing
+         * things side by side, which a 520px column could not do.
+         */
+        width: Math.min( 820, jQuery( window ).width() - 40 ),
         title: 'Add a widget',
+
+        /*
+         * KEPT INSIDE .owa, and this is not cosmetic.
+         *
+         * jQuery UI lifts a dialog to <body> by default. Every rule styling
+         * what is inside these two modals is written `.owa .owa_...`, the way
+         * the rest of the reporting stylesheet is -- so the moment the dialog
+         * was lifted out of that wrapper, none of them matched. Both modals
+         * have been rendering with browser defaults: the type chooser's grid
+         * was a block, its tiles were bare buttons, and the widget form's rows
+         * had no layout at all.
+         *
+         * appendTo keeps them where their stylesheet expects them. `.owa` is a
+         * plain div with no transform, so it creates no containing block and
+         * the dialog still positions against the window.
+         */
+        appendTo: '.owa',
         // Its OWN frame class. Sharing the widget modal's would make a locator
         // for that modal match this one too -- jQuery UI builds both frames at
         // init, so the chooser's is already in the page, hidden.
@@ -1327,6 +1393,8 @@ $owa_max        = (int) $view->get('max_widgets');
     jQuery( '#widgetDialog' ).dialog( {
         autoOpen: false,
         modal: true,
+        // Inside .owa, for the reason given on the chooser above.
+        appendTo: '.owa',
         width: Math.min( 760, jQuery( window ).width() - 40 ),
         // A class on the FRAME, which jQuery UI builds outside this element --
         // the frame is what carries the titlebar and the button pane, so the

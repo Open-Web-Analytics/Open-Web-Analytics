@@ -1343,50 +1343,81 @@ li.constraintRow {
  * which to reach for -- "Table" beside "Table card" is a distinction you can
  * only make from the sentence under it.
  */
+/*
+ * A GALLERY, not a list.
+ *
+ * Six kinds down a single column made the reader scroll a modal to compare two
+ * things that differ by a word -- "Table" and "Table card" -- and gave each one
+ * a 26px glyph to tell them apart with. Laid out as tiles that flow left to
+ * right and wrap, they can be compared at a glance, which is the whole job of
+ * this screen.
+ *
+ * auto-fill rather than a fixed column count: the modal is capped against the
+ * window, so on a narrow one the same tiles become two across and then one,
+ * without a breakpoint saying so.
+ */
 .owa .owa_typeChoices {
     list-style: none;
     margin: 0;
     padding: 0;
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
 }
 
 .owa .owa_typeChoices li {
-    /* The generic horizontal-list rules float list items; these stack. */
+    /* The generic horizontal-list rules float list items; the grid places
+       these. */
     float: none;
-    margin: 0 0 8px 0;
+    margin: 0;
     padding: 0;
+    display: flex;
 }
 
 .owa .owa_typeChoice {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: stretch;
+    gap: 0;
     width: 100%;
     text-align: left;
-    padding: 10px 12px;
+    padding: 0;
+    overflow: hidden;
     border: 1px solid #dcdcdc;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #fff;
     cursor: pointer;
     font: inherit;
 }
 
 /*
- * A drawing of the thing, at a size you can actually read as one -- the two
- * table types are a word apart, and the shapes are what separate them at a
- * glance. Fixed width so every name starts at the same place: icons differ in
- * their natural width, and ragged labels read as a broken list.
+ * The drawing, at the FULL HEIGHT of the tile.
+ *
+ * A band down the left rather than a glyph floating in the padding: it gives
+ * the icon room to be read as a picture of the thing, and it makes the tiles
+ * scannable as shapes before any of the words are.
  */
-.owa .owa_typeChoiceIcon {
-    flex: 0 0 auto;
-    width: 32px;
-    font-size: 26px;
-    line-height: 1;
-    text-align: center;
+.owa .owa_typeChoiceArt {
+    flex: 0 0 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f8fc;
+    border-right: 1px solid #e6eef6;
     color: #6a8fb5;
+}
+
+.owa .owa_typeChoiceIcon {
+    font-size: 28px;
+    line-height: 1;
 }
 
 .owa .owa_typeChoiceText {
     min-width: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .owa .owa_typeChoice:hover,
@@ -1395,10 +1426,15 @@ li.constraintRow {
     background: #f5faff;
 }
 
+.owa .owa_typeChoice:hover .owa_typeChoiceArt,
+.owa .owa_typeChoice:focus .owa_typeChoiceArt {
+    background: #e8f2fc;
+    color: #1874CD;
+}
+
 .owa .owa_typeChoiceName {
     display: block;
     font-weight: bold;
-    margin-bottom: 2px;
 }
 
 .owa .owa_typeChoiceHint {
@@ -1406,6 +1442,50 @@ li.constraintRow {
     font-size: 11px;
     color: #808080;
     line-height: 1.4;
+
+    /* Takes the slack, so the width bar below sits on the tile's floor and the
+       bars line up across a row however long the sentences are. */
+    flex: 1 1 auto;
+}
+
+/*
+ * HOW MUCH OF A ROW IT TAKES, drawn at the proportion it takes.
+ *
+ * The width is the other half of choosing between a table and a table card,
+ * and it is the half the names do not carry at all. A bar makes two kinds
+ * comparable without reading either.
+ */
+.owa .owa_typeChoiceWidth {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.owa .owa_typeChoiceWidthBar {
+    flex: 1 1 auto;
+    height: 5px;
+    border-radius: 3px;
+    background: #e6e6e6;
+    overflow: hidden;
+}
+
+.owa .owa_typeChoiceWidthFill {
+    display: block;
+    height: 100%;
+    background: #9ec2e6;
+}
+
+.owa .owa_typeChoice:hover .owa_typeChoiceWidthFill,
+.owa .owa_typeChoice:focus .owa_typeChoiceWidthFill {
+    background: #1874CD;
+}
+
+.owa .owa_typeChoiceWidthLabel {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: #9f9f9f;
+    white-space: nowrap;
 }
 
 /*
@@ -2106,6 +2186,26 @@ li.constraintRow {
  * diameter.
  * ------------------------------------------------------------------------- */
 
+/* The plot is a FIXED box in a panel that is usually bigger, so it is CENTRED
+   in both directions rather than sitting in the top-left corner.
+ *
+ * Left-aligned it reads as content that ran out rather than as a chart that is
+ * the size it means to be -- most visible on Traffic, where the panel is half a
+ * row and 280 of it is the plot. Top-aligned it left the panel's floor as a
+ * band of empty white under the circle.
+ *
+ * The pie already sits left of centre INSIDE the plot, because the legend has
+ * the right-hand column; centring the plot is what puts the pair of them
+ * together in the middle of the widget. */
+.owa .owa_pieBody {
+    align-items: center;
+    justify-content: center;
+}
+
+.owa .owa_pieChart {
+    flex: 0 0 auto;
+}
+
 .owa .owa_pieChart .legend table {
     font-size: 11px;
     border-spacing: 0;
@@ -2120,7 +2220,9 @@ li.constraintRow {
     padding: 1px 0 1px 5px;
     color: #505050;
     white-space: nowrap;
-    max-width: 105px;
+    /* Inside the column the pie reserves for it -- see
+       OWA.pieChart's legendWidth. The swatch cell takes the rest. */
+    max-width: 92px;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2132,9 +2234,14 @@ li.constraintRow {
 }
 
 /* flot paints a translucent panel behind the legend. On a white widget that
-   only adds an edge. */
-.owa .owa_pieChart .legend .legendBackground {
-    display: none;
+   only adds an edge.
+ *
+ * Hidden by OPACITY, not display: the element is what flot measures to decide
+ * where to put the circle. Taking it out of the layout is how the pie ended up
+ * centred under its own legend. (The offset is a reserved number now rather
+ * than that measurement -- see OWA.pieChart -- so this is belt and braces.) */
+.owa .owa_pieChart .legend > div:first-child {
+    opacity: 0;
 }
 
 /* ---------------------------------------------------------------------------

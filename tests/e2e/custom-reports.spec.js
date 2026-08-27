@@ -200,6 +200,66 @@ test.describe('custom reports', () => {
         });
 
         /**
+         * THE CHOOSER IS STYLED, which it had not been.
+         *
+         * jQuery UI lifts a dialog to <body> by default, and every rule for
+         * what is inside these modals is written `.owa .owa_...`, the way the
+         * rest of the reporting stylesheet is. So the moment the dialog was
+         * built, none of them matched: the chooser rendered with browser
+         * defaults -- a block list of bare buttons -- and so did the widget
+         * form. Both dialogs are appended into .owa now.
+         *
+         * Asserted through COMPUTED STYLE rather than by looking for the class,
+         * because the class was always there. What was missing was any rule
+         * that matched it.
+         */
+        test('the type chooser is laid out as a gallery, not a bare list', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await expect(page.locator('#typeDialog')).toBeVisible();
+
+            const state = await page.evaluate(() => {
+
+                const list = document.querySelector('.owa_typeChoices');
+                const tiles = [...document.querySelectorAll('.owa_typeChoice')];
+                const tops = tiles.map((t) => Math.round(t.getBoundingClientRect().top));
+
+                return {
+                    // The reason the rules apply at all.
+                    insideOwa: !!list.closest('.owa'),
+                    display: getComputedStyle(list).display,
+                    tiles: tiles.length,
+                    rows: new Set(tops).size,
+                    perRow: tops.filter((t) => t === tops[0]).length,
+                    // The icon band runs the full height of its tile.
+                    artFills: tiles.every((t) => {
+                        const art = t.querySelector('.owa_typeChoiceArt');
+                        return art
+                            && art.getBoundingClientRect().height
+                                >= t.getBoundingClientRect().height - 4;
+                    }),
+                    // ...and each says how much of a row it takes.
+                    labelled: tiles.every((t) =>
+                        (t.querySelector('.owa_typeChoiceWidthLabel') || {}).textContent),
+                };
+            });
+
+            expect(state.insideOwa,
+                'the dialog is outside .owa, so none of its styling applies').toBe(true);
+
+            expect(state.display, 'the choices are not laid out as a grid').toBe('grid');
+
+            // Cascading left to right across more than one row.
+            expect(state.tiles).toBe(6);
+            expect(state.perRow, 'the tiles are in a single column').toBeGreaterThan(1);
+            expect(state.rows, 'the tiles are all on one row').toBeGreaterThan(1);
+
+            expect(state.artFills, 'an icon does not fill its tile').toBe(true);
+            expect(state.labelled, 'a tile does not say how wide the widget is').toBeTruthy();
+        });
+
+        /**
          * ...and the type is settled once the block exists.
          *
          * It used to be a select inside the widget modal, which made that one

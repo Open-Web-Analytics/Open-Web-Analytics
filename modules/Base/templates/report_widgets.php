@@ -536,7 +536,13 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * already queries, and naming it twice is a way for the two to disagree.
      */
 ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+        <?php
+            /*
+             * The pie's plot is a fixed box in a panel that is usually bigger,
+             * so the body it sits in centres it -- see owa.report.css.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_pieBody"></div>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
