@@ -1223,8 +1223,16 @@ li.constraintRow {
  * The one being charted. A left edge in the chart's own colour, so the box and
  * the filled area it describes are visibly the same thing.
  */
+/*
+ * The one being charted. A strip along the TOP in the chart's own colour, so
+ * the box and the line it describes are visibly the same thing -- and so the
+ * mark reads as a tab over the number rather than as an edge beside it.
+ *
+ * The colour only. The strip itself is reserved on every box above, which is
+ * what keeps the row from stepping when the reader picks a different metric.
+ */
 .owa .owa_metricInfobox.owa_metricInfoboxCharted {
-    border-left: 3px solid #1874CD;
+    border-top-color: #1874CD;
     background-color: #f5faff;
 }
 
@@ -1941,6 +1949,14 @@ li.constraintRow {
     width: auto;
     margin: 0;
 
+    /* THE INDICATOR STRIP, reserved on every box.
+     *
+     * Which metric the chart is drawing is marked along the TOP edge. Every
+     * box carries the strip and only the charted one colours it -- if the
+     * charted box alone had a thicker border it would stand 2px taller than
+     * its neighbours and the row of numbers would step. */
+    border-top: 3px solid transparent;
+
     /* Share the row evenly, wrapping once they would go under ~135px. A widget
        showing two metrics gets two half-width boxes rather than two narrow ones
        against a wide gap. */
@@ -1952,6 +1968,42 @@ li.constraintRow {
    width means "this wide", not "share the row". */
 .owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
     flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pie chart legend
+ *
+ * The slice names sit in a column to the RIGHT of the circle rather than round
+ * its edge. flot inserts this table itself and the pie plugin measures it to
+ * decide where the circle's centre goes, so its width is load-bearing -- these
+ * rules set the type and spacing and leave the box alone.
+ *
+ * Round-the-edge labels were what made two pies draw at different sizes: flot
+ * fits them by shrinking the pie, so the width of the longest word set the
+ * diameter.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_pieChart .legend table {
+    font-size: 11px;
+    border-spacing: 0;
+}
+
+.owa .owa_pieChart .legend .legendLabel {
+    padding: 1px 0 1px 5px;
+    color: #505050;
+    white-space: nowrap;
+}
+
+/* The swatch is a table cell holding a bordered div; size it there so the row
+   height follows the text rather than the box. */
+.owa .owa_pieChart .legend .legendColorBox div {
+    border-radius: 2px;
+}
+
+/* flot paints a translucent panel behind the legend. On a white widget that
+   only adds an edge. */
+.owa .owa_pieChart .legend .legendBackground {
+    display: none;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1968,7 +2020,10 @@ li.constraintRow {
  * ------------------------------------------------------------------------- */
 
 .owa .owa_trendCardMetrics .owa_metricInfobox {
+    /* Borderless, except for the indicator strip along the top -- reserved
+       here too, transparent until this box is the one being charted. */
     border: 0;
+    border-top: 3px solid transparent;
     background-color: transparent;
 }
 
@@ -1978,12 +2033,12 @@ li.constraintRow {
     background-color: transparent;
 }
 
-/* ...except this one edge, which is not a border in the decorative sense: it
-   is the only thing saying WHICH metric the plot underneath is drawing, and a
-   card whose boxes cannot say that has boxes that are decoration. Kept at the
-   chart's own colour, so the box and the line are visibly the same thing. */
+/* ...except this one edge, which is not decoration: it is the only thing
+   saying WHICH metric the plot underneath is drawing, and a card whose boxes
+   cannot say that has boxes that say nothing. Along the top, at the chart's own
+   colour, so the box and the line are visibly the same thing. */
 .owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
-    border-left: 3px solid #1874CD;
+    border-top-color: #1874CD;
 }
 
 /* Room between the numbers and the plot they describe -- without the box

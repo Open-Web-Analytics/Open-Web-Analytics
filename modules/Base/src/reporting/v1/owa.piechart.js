@@ -14,6 +14,16 @@ OWA.pieChart = function( options ) {
          * with its labels around it at the widths a card is drawn at.
          */
         height: 240,
+
+        /*
+         * How much of the plot box the circle fills, as a fraction of half the
+         * SHORTER side. Turned into a pixel radius before it reaches flot --
+         * see pixelRadius() -- because a fraction there is a fraction of a
+         * number the label-fitting loop shrinks.
+         *
+         * Under 1 so the labels drawn around the edge have somewhere to sit.
+         */
+        radiusFraction: 0.72,
         width:    200,
         metric: '',
         dimension: '',
@@ -104,6 +114,31 @@ OWA.pieChart.prototype = {
         }
 
         return value;
+    },
+
+    /**
+     * The circle's radius in PIXELS, from the plot box.
+     *
+     * flot reads a radius above 1 as a pixel length and below 1 as a fraction
+     * of maxRadius -- and maxRadius is what its label-fitting loop shrinks, so
+     * a fraction hands the geometry to the label text. Resolving it here keeps
+     * the size proportional to the widget while making it immune to that.
+     *
+     * The SHORTER side, so the circle fits a wide, short plot box -- which is
+     * every pie now that the height no longer follows the width.
+     *
+     * Floored at 2 because flot's own test is `radius > 1`: a radius that came
+     * out at 1 or less would be read back as a fraction, which is the exact
+     * behaviour this exists to avoid.
+     */
+    pixelRadius : function () {
+
+        var box = Math.min(
+            jQuery( this.domSelector ).width() || this.getOption( 'width' ),
+            jQuery( this.domSelector ).height() || this.getOption( 'height' )
+        );
+
+        return Math.max( 2, Math.round( box / 2 * this.getOption( 'radiusFraction' ) ) );
     },
 
     /**
@@ -249,27 +284,53 @@ OWA.pieChart.prototype = {
                     show: true,
 
                     /*
-                     * A FIXED radius, so two pies the same width draw the same
-                     * size.
+                     * A radius in PIXELS, so the label text cannot decide the
+                     * geometry.
                      *
-                     * flot's pie radius defaults to 'auto', which means "as
-                     * large as fits once the labels are placed" -- so the pie
-                     * shrinks as its labels get longer or more numerous. The
-                     * dashboard shows that plainly: Visitor Types has two short
-                     * slices and Traffic Sources up to five plus an "others",
-                     * so two widgets of identical width drew visibly different
-                     * pies. Nothing about the DATA justifies that; it is the
-                     * label text deciding the geometry.
+                     * flot's pie plugin fits its labels by SHRINKING: drawPie()
+                     * returns false when a label div lands outside the canvas,
+                     * and the caller multiplies maxRadius by 0.95 and tries
+                     * again, up to ten times. So a pie labelled
+                     * "organic-search" draws smaller than one labelled "New",
+                     * on identical canvases, with nothing in the data to
+                     * justify it.
                      *
-                     * Under 1 so the labels flot draws around the edge have
-                     * somewhere to sit.
+                     * This was already diagnosed here and fixed the wrong way.
+                     * `radius: 0.72` pins the FRACTION -- and the fraction was
+                     * never the problem, because flot computes
+                     * `maxRadius * radius` and maxRadius is the thing that
+                     * shrinks. Pinning it changed nothing.
+                     *
+                     * A value ABOVE 1 is read as a pixel length and used
+                     * verbatim (see the plugin's `radius > 1 ? radius :
+                     * maxRadius * radius`), which the shrink loop cannot reach.
+                     * The loop still runs while the labels overflow, and still
+                     * pulls maxRadius in -- but maxRadius now positions only
+                     * the LABELS, so what moves is the text, and the pie stays
+                     * the size it was asked for.
+                     *
+                     * Computed per pie from the plot box rather than written
+                     * down, so it still tracks a widget that is genuinely
+                     * smaller.
                      */
-                    radius: 0.72,
+                    radius: this.pixelRadius(),
 
-                    // NOT a flot option -- the pie plugin reads label.show,
-                    // which defaults to true. Kept only because removing it
-                    // would suggest labels were being turned off here.
-                    showLabel: true
+                    /*
+                     * NO LABELS AROUND THE EDGE. They are a legend now -- see
+                     * the `legend` block below.
+                     *
+                     * Round-the-edge labels are what made two pies different
+                     * sizes: flot fits them by SHRINKING the pie, so the width
+                     * of the words "organic-search" decided the geometry. They
+                     * also collide with each other on a narrow slice and push
+                     * the circle off centre.
+                     *
+                     * A legend to the right says the same thing in a column,
+                     * reads in one place instead of five, and cannot overflow
+                     * the canvas -- which is the condition the shrink loop
+                     * exists to resolve.
+                     */
+                    label: { show: false }
 /*
                     label: {
                         show: true,
@@ -288,10 +349,27 @@ OWA.pieChart.prototype = {
                 }
             },
 
+            /*
+             * The slice names, in a column to the right of the pie.
+             *
+             * flot's pie plugin measures the legend and shifts the circle's
+             * centre left by half its width, so the two sit side by side rather
+             * than overlapping -- this is the plugin's own arrangement, not
+             * something positioned on top of it.
+             *
+             * The percentage travels with the name, because that is what the
+             * round-the-edge labels carried and it is the number a pie is read
+             * for. `series.percent` is set by the plugin before the legend is
+             * built.
+             */
             legend: {
-                show: false,
+                show: this.getOption( 'showLegend' ),
                 position: "ne",
-                margin: [-160,50]
+                margin: [ 0, 0 ],
+                labelFormatter: function ( label, series ) {
+
+                    return label + ' ' + Math.round( series.percent ) + '%';
+                }
             },
             colors: this.options.colors
         };

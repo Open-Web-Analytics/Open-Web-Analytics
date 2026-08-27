@@ -22,8 +22,7 @@
             "query": {
                 "metrics": "lineItemRevenue",
                 "dimensions": "productName",
-                "sort": "lineItemRevenue-",
-                "resultsPerPage": 5
+                "sort": "lineItemRevenue-"
             },
             "link": {
                 "linkColumn": "productName",

@@ -720,11 +720,27 @@ test.describe('custom reports', () => {
             expect(chartBox).not.toBeNull();
             expect(boxBox.y).toBeLessThan(chartBox.y);
 
-            // Borderless, which is the type's whole visual difference.
-            const border = await boxes.locator('.owa_metricInfobox').first()
-                .evaluate(el => getComputedStyle(el).borderTopWidth);
+            /*
+             * Borderless, which is the type's whole visual difference -- except
+             * along the TOP, where every box reserves the strip that marks the
+             * one being charted. Reserved on all of them so the row does not
+             * step when the reader picks a different metric.
+             */
+            const edges = await boxes.locator('.owa_metricInfobox').first()
+                .evaluate((el) => {
+                    const cs = getComputedStyle(el);
+                    return { left: cs.borderLeftWidth, right: cs.borderRightWidth,
+                             bottom: cs.borderBottomWidth, top: cs.borderTopWidth,
+                             topColor: cs.borderTopColor };
+                });
 
-            expect(border).toBe('0px');
+            expect(edges.left).toBe('0px');
+            expect(edges.right).toBe('0px');
+            expect(edges.bottom).toBe('0px');
+            expect(edges.top).toBe('3px');
+
+            // The first metric is the charted one, so its strip is coloured.
+            expect(edges.topColor).toBe('rgb(24, 116, 205)');
 
             // Half a row by default, without the author choosing a width.
             await expect(page.locator('.owa_reportGridItem.owa_span-6')).toHaveCount(1);

@@ -282,6 +282,20 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     }
 
     /*
+     * A CARD SHOWS TEN ROWS unless it says otherwise.
+     *
+     * The reporting API defaults to twenty-five, which is a full-width table's
+     * number. A card is a quarter or half of a row and its height IS its row
+     * count, so cards sitting beside each other need the same one or the row
+     * comes out ragged -- which is the same reason they share a width.
+     */
+    if ( ( $owa_w['type'] ?? '' ) === 'grid-card'
+         && ! isset( $owa_query['resultsPerPage'] ) ) {
+
+        $owa_query['resultsPerPage'] = \OWA\Core\ConfiguredReport::DEFAULT_CARD_ROWS;
+    }
+
+    /*
      * A trend can decline the grid. Nothing shipped does today -- it is here
      * because `content` will want it: its trend is broken out by pagePath and
      * it already carries a Top Pages card showing those same rows.

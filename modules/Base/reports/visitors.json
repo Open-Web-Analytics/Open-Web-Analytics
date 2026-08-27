@@ -62,8 +62,7 @@
             "query": {
                 "metrics": "visits",
                 "dimensions": "browserType",
-                "sort": "visits-",
-                "resultsPerPage": 10
+                "sort": "visits-"
             },
             "link": {
                 "linkColumn": "browserType",

@@ -48,8 +48,7 @@
             "query": {
                 "metrics": "actions",
                 "dimensions": "actionGroup",
-                "sort": "actions-",
-                "resultsPerPage": 5
+                "sort": "actions-"
             },
             "link": {
                 "linkColumn": "actionGroup",

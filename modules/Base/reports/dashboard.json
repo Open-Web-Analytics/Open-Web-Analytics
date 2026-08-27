@@ -24,8 +24,7 @@
             "query": {
                 "metrics": "pageViews",
                 "dimensions": "pagePath",
-                "sort": "pageViews-",
-                "resultsPerPage": 10
+                "sort": "pageViews-"
             },
             "link": {
                 "linkColumn": "pagePath",

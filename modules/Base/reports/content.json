@@ -23,8 +23,7 @@
             "query": {
                 "metrics": "visits",
                 "dimensions": "pagePath",
-                "sort": "visits-",
-                "resultsPerPage": 25
+                "sort": "visits-"
             },
             "link": {
                 "linkColumn": "pageTitle",
@@ -37,7 +36,7 @@
             },
             "more": {
                 "reportId": "pages",
-                "label": "View Full Report »"
+                "label": "View Full Report \u00bb"
             }
         },
         {
@@ -49,8 +48,7 @@
             "query": {
                 "metrics": "visits",
                 "dimensions": "pageType",
-                "sort": "visits-",
-                "resultsPerPage": 25
+                "sort": "visits-"
             },
             "link": {
                 "linkColumn": "pageType",
@@ -63,7 +61,7 @@
             },
             "more": {
                 "reportId": "page-types",
-                "label": "View Full Report »"
+                "label": "View Full Report \u00bb"
             }
         },
         {

@@ -47,11 +47,18 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     /**
      * Two pies the same width draw the same size.
      *
-     * flot's pie radius defaults to 'auto', which means "as large as fits once
-     * the labels are placed" -- so the pie shrank as its labels got longer.
-     * Visitor Types has two short slices and Traffic Sources five plus an
-     * "others", and the two dashboard widgets are both a quarter of the row,
-     * so identical containers drew visibly different pies.
+     * flot fits its round-the-edge labels by SHRINKING: drawPie() returns false
+     * when a label div lands outside the canvas and the caller multiplies
+     * maxRadius by 0.95 and tries again. So the width of the word
+     * "organic-search" set the diameter, and Traffic Sources drew smaller than
+     * Visitor Types on an identical canvas.
+     *
+     * Fixed twice, and the first attempt is worth remembering: pinning
+     * `radius: 0.72` pinned the FRACTION, and flot computes
+     * `maxRadius * radius` -- the fraction was never what moved. It is a pixel
+     * length now, which the loop cannot reach, and the labels are a legend
+     * beside the pie rather than text around it, so there is nothing left to
+     * overflow.
      *
      * Measured from the CANVAS, not the container: the containers were always
      * the same size, which is exactly why this looked like a styling problem
@@ -87,11 +94,23 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(widths[0].drawn).toBe(widths[1].drawn);
         expect(widths[0].drawn).toBeGreaterThan(50);
 
-        // ...and both are comfortably inside their canvas, which is what a
-        // fixed radius under 1 buys: room for the labels flot draws at the edge.
+        // ...and both are comfortably inside their canvas, leaving room for the
+        // legend flot places beside them.
         for (const w of widths) {
             expect(w.drawn).toBeLessThan(w.canvas);
         }
+
+        /*
+         * The labels are a LEGEND, not text around the circle. That is what
+         * removes the shrink loop's cause rather than working around it.
+         */
+        const legends = page.locator('.owa_pieChart .legend');
+
+        await expect(legends).toHaveCount(2);
+
+        // ...carrying the slice name and its share, which is what the
+        // round-the-edge labels said.
+        await expect(legends.first()).toContainText('%');
     });
 
     /**

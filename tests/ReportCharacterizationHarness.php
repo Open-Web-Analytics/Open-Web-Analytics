@@ -338,6 +338,16 @@ final class ReportCharacterizationHarness
      */
     public const RESTATED = array(
 
+        /*
+         * EVERY table card dropped its own resultsPerPage.
+         *
+         * A card's height is its row count, so cards sitting beside each other
+         * need the same one or the row comes out ragged -- the same reason they
+         * share a width. The six shipped cards had chosen 5, 10 and 25 between
+         * them. They take ConfiguredReport::DEFAULT_CARD_ROWS now, so there is
+         * one number and one place to change it.
+         */
+
         'ReportDashboard' => array(
             // A full URL in a column narrow enough for a path.
             'latestVisits' => array(
@@ -368,9 +378,10 @@ final class ReportCharacterizationHarness
              * only to hide it goes too.
              */
             'topContent' => array(
-                'query.dimensions' => array( 'pageTitle,pagePath', 'pagePath' ),
-                'link.linkColumn'  => array( 'pageTitle', 'pagePath' ),
-                'excludeColumns'   => array( array( 'pagePath' ), null ),
+                'query.dimensions'     => array( 'pageTitle,pagePath', 'pagePath' ),
+                'link.linkColumn'      => array( 'pageTitle', 'pagePath' ),
+                'excludeColumns'       => array( array( 'pagePath' ), null ),
+                'query.resultsPerPage' => array( 10, null ),
             ),
         ),
 
@@ -410,9 +421,25 @@ final class ReportCharacterizationHarness
              * excludeColumns that hid pagePath goes with it.
              */
             'toppages' => array(
-                'query.dimensions' => array( 'pageTitle,pagePath', 'pagePath' ),
-                'excludeColumns'   => array( array( 'pagePath' ), null ),
+                'query.dimensions'     => array( 'pageTitle,pagePath', 'pagePath' ),
+                'excludeColumns'       => array( array( 'pagePath' ), null ),
+                'query.resultsPerPage' => array( 25, null ),
             ),
+            'toppagetypes' => array(
+                'query.resultsPerPage' => array( 25, null ),
+            ),
+        ),
+
+        'ReportActionTracking' => array(
+            'actionsByGroup' => array( 'query.resultsPerPage' => array( 5, null ) ),
+        ),
+
+        'ReportVisitors' => array(
+            'browserTypes' => array( 'query.resultsPerPage' => array( 10, null ) ),
+        ),
+
+        'ReportEcommerce' => array(
+            'productName' => array( 'query.resultsPerPage' => array( 5, null ) ),
         ),
     );
 

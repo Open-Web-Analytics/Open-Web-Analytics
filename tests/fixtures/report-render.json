@@ -230,7 +230,7 @@
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
-                    "resultsPerPage": "5",
+                    "resultsPerPage": "10",
                     "siteId": "1",
                     "sort": "actions-",
                     "version": "v1"
@@ -1033,7 +1033,7 @@
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
-                    "resultsPerPage": "25",
+                    "resultsPerPage": "10",
                     "siteId": "1",
                     "sort": "visits-",
                     "version": "v1"
@@ -1049,7 +1049,7 @@
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
-                    "resultsPerPage": "25",
+                    "resultsPerPage": "10",
                     "siteId": "1",
                     "sort": "visits-",
                     "version": "v1"
@@ -1687,7 +1687,7 @@
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
-                    "resultsPerPage": "5",
+                    "resultsPerPage": "10",
                     "siteId": "1",
                     "sort": "lineItemRevenue-",
                     "version": "v1"
