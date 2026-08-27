@@ -2049,11 +2049,23 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->resultSet->errors = $this->errors;
         $this->resultSet->request_errors = $this->request_errors;
 		
-		// set related dimensions
-        $this->resultSet->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
-        
-        // set related metrics
-        $this->resultSet->setRelatedMetrics( $this->getAllRelatedMetrics( $bm ) );
+		/*
+		 * Related dimensions and metrics, WHEN there is a base entity.
+		 *
+		 * There is not when the combination asked for is impossible: nothing
+		 * serves clicks and visits at once, so the reduction produces no
+		 * entity and $bm is null. The request error saying so has just been
+		 * put on the result set two lines up -- and then this dereferenced the
+		 * null and the whole request died as a 500 with an empty body, which
+		 * is how an answerable "these cannot be asked for together" became an
+		 * unexplained failure.
+		 *
+		 * Empty is the honest answer: with no table chosen, nothing is related
+		 * to it. The reader gets the request error instead.
+		 */
+        $this->resultSet->setRelatedDimensions( $bm ? $this->getAllRelatedDimensions( $bm ) : array() );
+
+        $this->resultSet->setRelatedMetrics( $bm ? $this->getAllRelatedMetrics( $bm ) : array() );
 
         return $this->resultSet;
     }
@@ -2294,6 +2306,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function getAllRelatedDimensions($entity) {
 
+        // No entity, nothing related to it. See the caller: this is reached
+        // with null when the metric/dimension combination has no base table.
+        if ( ! $entity ) {
+
+            return array();
+        }
+
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $dims = array();
         $denormalized_dims = $s->denormalizedDimensions;
@@ -2332,6 +2351,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     function getAllRelatedMetrics( $entity ) {
+
+        // No entity, nothing related to it -- same reason as
+        // getAllRelatedDimensions().
+        if ( ! $entity ) {
+
+            return array();
+        }
 
         $related_metrics = array();
         $s = \OWA\Core\CoreAPI::serviceSingleton();

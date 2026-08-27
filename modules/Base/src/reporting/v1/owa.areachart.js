@@ -24,13 +24,13 @@ OWA.areaChart = function( options ) {
         fillColor: "rgba(202,225,255, 0.6)",
 
         /*
-         * One colour per line, and enough of them.
+         * One colour per line, and the SAME ones the pie uses.
          *
-         * A trend used to draw one line, so three colours was two more than it
-         * needed. Now a dimension's values each get one -- visits by medium is
-         * a line per medium -- and the palette has to keep them apart.
+         * A report shows traffic sources as a pie and the same sources as lines
+         * over time; giving them different colours in each makes the reader do
+         * work the colour was supposed to save. See OWA.chartColors.
          */
-        colors: ["#dba255", "#919733", "#c0504d", "#7a5195", "#2e8b57", "#b5651d", "#4f81bd", "#8064a2"],
+        colors: OWA.chartColors,
 
         /*
          * The total keeps the colour a trend has always been drawn in, because
@@ -44,14 +44,13 @@ OWA.areaChart = function( options ) {
          *
          * A breakdown by page path has as many values as there are pages, and
          * a hundred lines is not a chart. The six largest get a line each and
-         * everything else is summed into one -- so the drawn lines still
-         * account for every row, and Other plus the six is the total behind
-         * them rather than a number with a silent gap in it.
+         * the rest are not drawn.
+         *
+         * The total behind them is still the sum of EVERY row, not of the six
+         * -- it is the shape of the whole thing, which is the one line that
+         * would be wrong to leave anything out of.
          */
         maxSeries: 6,
-
-        /* What the values past the cap are called once they are added up. */
-        otherLabel: 'Other',
 
         /* What the other lines fade to when one is selected in the legend. */
         dimmedOpacity: 0.5,
@@ -235,8 +234,7 @@ OWA.areaChart.prototype = {
 
             this.flotOptions = {
 
-                yaxis: {
-                    tickDecimals:0 },
+                yaxis: this.yAxis( resultSet, y_name, dataseries ),
                 xaxis:{
                     ticks: num_ticks,
                     tickDecimals: null
@@ -334,9 +332,18 @@ OWA.areaChart.prototype = {
 
             x_type = row[ x_name ].data_type;
 
+            /*
+             * The y value goes through formatValue too.
+             *
+             * Currency is stored in minor units and formatValue is what divides
+             * it by a hundred -- so without this a revenue trend plotted 6300
+             * and the axis, which labels in major units, read $6,300.00 for
+             * $63.00. Every other type passes through unchanged, which is why
+             * dropping this went unnoticed until an axis put a unit on it.
+             */
             data.push( [
                 this.formatValue( x_type, row[ x_name ].value ),
-                row[ y_name ].value * 1
+                this.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1
             ] );
         }
 
@@ -381,7 +388,9 @@ OWA.areaChart.prototype = {
             x_type = row[ x_name ].data_type;
 
             var x = this.formatValue( x_type, row[ x_name ].value );
-            var y = row[ y_name ].value * 1;
+            // Through formatValue, so currency is in major units -- see
+            // singleSeries().
+            var y = this.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
 
             if ( ! seen_x[ x ] ) {
 
@@ -419,7 +428,6 @@ OWA.areaChart.prototype = {
         } );
 
         var values = ranked.slice( 0, this.options.maxSeries );
-        var rest   = ranked.slice( this.options.maxSeries );
 
         var built = [];
 
@@ -457,36 +465,154 @@ OWA.areaChart.prototype = {
             } );
         }
 
-        /*
-         * Everything past the sixth, as one line.
-         *
-         * Summed rather than dropped: a reader comparing the lines against the
-         * area behind them should be able to account for all of it, and six
-         * lines under a total they visibly do not add up to is a chart that
-         * raises a question it cannot answer.
-         */
-        if ( rest.length ) {
-
-            built.push( {
-                label: this.options.otherLabel,
-                isOther: true,
-                data: xs.map( function ( x ) {
-
-                    var sum = 0;
-
-                    for ( var r = 0; r < rest.length; r++ ) {
-
-                        sum += byValue[ rest[r] ].points[ x ] || 0;
-                    }
-
-                    return [ x, sum ];
-                } ),
-
-                lines: { fill: false }
-            } );
-        }
-
         return { series: built, points: xs.length, x_type: x_type };
+    },
+
+    /**
+     * The y axis, labelled in the units of the metric being charted.
+     *
+     * A bounce rate is stored 0 to 1 and a revenue figure in minor units, so an
+     * axis of bare numbers was labelling a rate "0, 0, 0, 1" and money in a
+     * currency nobody named. The metric already says what it is -- its
+     * data_type is what the server formats its values with -- so the axis is
+     * read from the same answer the numbers are.
+     *
+     * tickDecimals was hard-coded to 0, which is right for counts and is what
+     * flattened a rate's axis to zeroes. flot decides it now, and each
+     * formatter is told what it decided.
+     *
+     * @param object resultSet
+     * @param string metric the metric being plotted
+     */
+    yAxis : function ( resultSet, metric, dataseries ) {
+
+        var aggregate = ( resultSet.aggregates || {} )[ metric ] || {};
+        var type      = aggregate.data_type || '';
+        var that      = this;
+
+        /*
+         * The axis starts at zero unless something plotted is below it.
+         *
+         * flot scales to the data, which is right until the data is flat: a
+         * bounce rate of zero all month gave an axis running -100% to 100%,
+         * because a series with no range has no range to scale to. Nothing OWA
+         * measures is negative in the ordinary case, and a count or a duration
+         * cannot be -- but revenue can, once a refund is recorded, so this is
+         * checked rather than assumed.
+         */
+        var floor = ( dataseries || [] ).some( function ( s ) {
+
+            return s.data.some( function ( point ) { return point[1] < 0; } );
+
+        } ) ? null : 0;
+
+        switch ( type ) {
+
+            case 'percentage':
+
+                return {
+                    min: floor,
+                    /*
+                     * The value is a FRACTION -- the server formats it by
+                     * multiplying by a hundred -- so the label needs two fewer
+                     * decimals than the axis was scaled to. Without that, an
+                     * axis stepping by 0.05 labels every tick "5%".
+                     */
+                    tickFormatter: function ( value, axis ) {
+
+                        return ( value * 100 ).toFixed( Math.max( 0, axis.tickDecimals - 2 ) ) + '%';
+                    }
+                };
+
+            case 'currency':
+
+                /*
+                 * The SYMBOL comes from the server's own formatting of this
+                 * metric, not from a guess here. Currency is a per-install
+                 * setting -- locale and ISO code -- and the browser has neither;
+                 * taking the non-numeric parts off a value the server already
+                 * formatted gets the right symbol on the right side without
+                 * reimplementing any of that.
+                 */
+                var money = this.affixesOf( aggregate.formatted_value );
+
+                return {
+                    min: floor,
+                    tickDecimals: 2,
+                    tickFormatter: function ( value, axis ) {
+
+                        return money.prefix
+                            + that.groupDigits( value.toFixed( axis.tickDecimals ) )
+                            + money.suffix;
+                    }
+                };
+
+            case 'timestamp':
+
+                // Seconds. An axis of "630" is a number; "10:30" is a duration.
+                return {
+                    min: floor,
+                    tickDecimals: 0,
+                    tickFormatter: function ( value ) {
+
+                        return that.formatDuration( value );
+                    }
+                };
+
+            default:
+
+                // Counts. Thousands separated, the way the server writes them.
+                return {
+                    min: floor,
+                    tickDecimals: 0,
+                    tickFormatter: function ( value, axis ) {
+
+                        return that.groupDigits( value.toFixed( axis.tickDecimals ) );
+                    }
+                };
+        }
+    },
+
+    /**
+     * What sits either side of the number in an already-formatted value.
+     *
+     * "$1,234.56" gives a prefix; "1.234,56 kr" gives a suffix. Which one a
+     * currency uses is a property of the locale, and this reads it off the
+     * answer rather than deciding it.
+     */
+    affixesOf : function ( formatted ) {
+
+        var text = ( formatted === null || formatted === undefined ) ? '' : String( formatted );
+
+        var match = text.match( /^([^0-9-]*)[0-9., -]*([^0-9]*)$/ );
+
+        return match
+            ? { prefix: match[1] || '', suffix: match[2] || '' }
+            : { prefix: '', suffix: '' };
+    },
+
+    /** 1234567.5 -> "1,234,567.5", the way the server's number_format writes it. */
+    groupDigits : function ( value ) {
+
+        var parts = String( value ).split( '.' );
+
+        parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, ',' );
+
+        return parts.join( '.' );
+    },
+
+    /** Seconds as a duration: 90 -> "1:30", 3900 -> "1:05:00". */
+    formatDuration : function ( seconds ) {
+
+        seconds = Math.max( 0, Math.round( seconds ) );
+
+        var h = Math.floor( seconds / 3600 );
+        var m = Math.floor( ( seconds % 3600 ) / 60 );
+        var s = seconds % 60;
+
+        var pad = function ( n ) { return n < 10 ? '0' + n : String( n ); };
+
+        return h ? h + ':' + pad( m ) + ':' + pad( s ) : m + ':' + pad( s );
     },
 
     /** The filled series -- the one that makes this an AREA chart. */

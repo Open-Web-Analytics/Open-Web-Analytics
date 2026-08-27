@@ -941,7 +941,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
             jQuery( '#dlgDimensionsHelp' ).text(
                 'Optional. Each value becomes its own line over the total; the '
-              + 'largest six are drawn and the rest are summed into "Other". '
+              + 'six largest are drawn. '
               + name + ' is always over ' + fixed + '.' );
 
         } else {

@@ -2204,23 +2204,36 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * The converted ones kept the width they had.
+     * A card is a NARROW table, wherever it ships.
      *
-     * Each sits beside a grid that is still half the row. Letting them fall
-     * back to the card default of three would leave a quarter of the row empty
-     * next to every one of them -- the conversion is about the controls, not
-     * about relaying the reports out.
+     * The rule this replaces was "the converted ones kept their half width",
+     * which was true of the four converted in one go and stopped being true the
+     * moment a report was laid out deliberately: Content's two are a quarter
+     * each now, beside each other.
+     *
+     * What holds regardless is the type's own meaning. A card shows one metric
+     * against one dimension and draws no controls; at full width it would be a
+     * table with its controls missing, which is the thing `grid` is for.
      */
-    public function testTheConvertedCardsKeptTheirHalfWidth(): void
+    public function testEveryShippedCardIsNarrowerThanTheRow(): void
     {
+        $wide = array();
+
         foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
 
             list( $file, $widget ) = $entry;
 
-            $this->assertSame( 6, \OWA\Core\ReportGrid::colspan( $widget ),
-                sprintf( '%s:%s sits beside a half-width grid and must match it',
-                    $file, $widget['id'] ?? '?' ) );
+            $span = \OWA\Core\ReportGrid::colspan( $widget );
+
+            if ( $span > \OWA\Core\ReportGrid::COLUMNS / 2 ) {
+
+                $wide[] = sprintf( '%s:%s (colspan %d)', $file, $widget['id'] ?? '?', $span );
+            }
         }
+
+        $this->assertSame( array(), $wide,
+            "A grid-card draws no controls, so at more than half a row it is a table with\n"
+          . "its controls missing -- which is what `grid` is for:\n  " . implode( "\n  ", $wide ) );
     }
 
     public static function widgetTypeProvider(): array

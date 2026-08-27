@@ -101,6 +101,14 @@ final class ReportCharacterizationTest extends TestCase
 
         $actual['config'] = $retyped['config'];
 
+        $restated = Harness::undoRestating( $name, $actual['config'] );
+
+        $this->assertSame( array(), $restated['problems'],
+            "the restatement allowance for $name does not match the definition:\n  "
+            . implode( "\n  ", $restated['problems'] ) );
+
+        $actual['config'] = $restated['config'];
+
         /*
          * ...and the same for a report deliberately relaid out: position and
          * span are reconciled with the record, everything else still compared.

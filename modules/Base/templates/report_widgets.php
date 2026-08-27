@@ -80,8 +80,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * edited that widget.
      *
      * Only for a user-authored report: a shipped one has no row behind it, so
-     * there is nothing to edit, duplicate or delete. More will live here
-     * (duplicate, share), which is why it is a bar rather than a link.
+     * there is nothing to edit, duplicate or delete.
      */
 ?>
 <div class="owa_reportCommands">
@@ -172,6 +171,46 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * CustomReports::SINGLE_FIELD_TYPES.
      */
     $owa_chartMetric = (string) ( $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' ) );
+
+    /*
+     * ONE METRIC, over time, optionally BROKEN OUT by one dimension.
+     *
+     * A trend's dimensions are the x axis first and the breakdown second, so
+     * the query's own list is what says which is which -- `date` alone is the
+     * filled area a trend has always been, and `date,medium` is a line per
+     * medium over that same area.
+     *
+     * Built HERE, while $owa_query is still being assembled, because a
+     * broken-out trend has to change it -- see resultsPerPage below.
+     */
+    $owa_trendDims = array_values( array_filter( array_map( 'trim',
+        explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
+
+    $owa_chartSeries = array( array(
+        'x' => $owa_trendDims[0] ?? 'date',
+        'y' => $owa_chartMetric,
+    ) );
+
+    if ( ( $owa_w['type'] ?? '' ) === 'trend' && isset( $owa_trendDims[1] ) ) {
+
+        $owa_chartSeries[0]['series'] = $owa_trendDims[1];
+
+        /*
+         * ENOUGH ROWS TO BE RIGHT.
+         *
+         * A broken-out trend is one row per (date, value) pair, and the chart
+         * sums those rows to draw its total and ranks them to pick its six
+         * lines. Both are wrong if the result set was paginated -- and
+         * makeApiLink carries the report's state, so this query would otherwise
+         * inherit whatever page size the reader last used on a grid.
+         *
+         * A date-only trend never noticed: one row per day is inside any page
+         * size. This is a bound, not a guarantee -- a dimension with thousands
+         * of values over a long period still exceeds it, and the honest answer
+         * there is a top-N in SQL rather than a bigger number here.
+         */
+        $owa_query['resultsPerPage'] = 1000;
+    }
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
 <?php
@@ -253,32 +292,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
-        <?php
-            /*
-             * ONE METRIC, over time, optionally BROKEN OUT by one dimension.
-             *
-             * A trend's dimensions are the x axis first and the breakdown
-             * second, so the query's own list is what says which is which --
-             * `date` alone is the filled area a trend has always been, and
-             * `date,medium` is a line per medium over that same area.
-             *
-             * Encoded as JSON rather than interpolated: the names come from a
-             * definition that is meant to be user-authorable, and they are on
-             * their way into a script tag.
-             */
-            $owa_trendDims = array_values( array_filter( array_map( 'trim',
-                explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
-
-            $owa_chartSeries = array( array(
-                'x' => $owa_trendDims[0] ?? 'date',
-                'y' => $owa_chartMetric,
-            ) );
-
-            if ( isset( $owa_trendDims[1] ) ) {
-
-                $owa_chartSeries[0]['series'] = $owa_trendDims[1];
-            }
-        ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
 <?php if ( $owa_showMetricBoxes ): ?>

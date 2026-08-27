@@ -22,7 +22,7 @@
             "title": "Latest Visits",
             "query": {
                 "metrics": "visits,pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
+                "dimensions": "ipAddress,entryPagePath,medium,source,city,country,priorVisitCount",
                 "sort": "visits-",
                 "resultsPerPage": 10
             },
@@ -35,7 +35,7 @@
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
-            "colspan": 6,
+            "colspan": 3,
             "query": {
                 "metrics": "pageViews",
                 "dimensions": "pageTitle,pagePath",
@@ -63,7 +63,7 @@
             "id": "actions",
             "container": "actions-trend",
             "title": "Actions",
-            "colspan": 6,
+            "colspan": 3,
             "query": {
                 "metrics": "actions",
                 "dimensions": "actionGroup,actionName",
@@ -119,7 +119,7 @@
             "id": "topReferrers",
             "container": "top-referers",
             "title": "Top Referrers",
-            "colspan": 6,
+            "colspan": 3,
             "constraints": [
                 {
                     "dimension": "medium",

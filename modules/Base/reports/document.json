@@ -48,7 +48,8 @@
                     "pagePath": "%s"
                 },
                 "valueColumns": "priorPagePath"
-            }
+            },
+            "colspan": 3
         },
         {
             "type": "grid",
@@ -75,7 +76,8 @@
                     "pagePath": "%s"
                 },
                 "valueColumns": "pagePath"
-            }
+            },
+            "colspan": 3
         },
         {
             "type": "heatmap-link",
@@ -83,7 +85,8 @@
             "container": "heatmap-link",
             "title": "More analytics for this Page:",
             "showTitle": true,
-            "pagePath": "{pagePath}"
+            "pagePath": "{pagePath}",
+            "colspan": 3
         },
         {
             "type": "report-links",
@@ -106,7 +109,8 @@
                         "pagePath": "{pagePath}"
                     }
                 }
-            ]
+            ],
+            "colspan": 3
         }
     ]
 }

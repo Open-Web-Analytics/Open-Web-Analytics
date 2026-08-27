@@ -7,21 +7,22 @@
             "id": "trend",
             "container": "trend-chart",
             "query": {
-                "dimensions": "date",
-                "sort": "date"
+                "dimensions": "date,pagePath",
+                "sort": "date",
+                "metrics": "visits,pageViews"
             },
             "chartMetric": "pageViews",
             "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages."
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "toppages",
             "container": "top-pages",
             "title": "Top Pages",
-            "colspan": 6,
+            "colspan": 3,
             "query": {
                 "metrics": "visits",
-                "dimensions": "pageTitle,pagePath",
+                "dimensions": "pagePath",
                 "sort": "visits-",
                 "resultsPerPage": 25
             },
@@ -34,12 +35,9 @@
                 },
                 "valueColumns": "pagePath"
             },
-            "excludeColumns": [
-                "pagePath"
-            ],
             "more": {
                 "reportId": "pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -47,7 +45,7 @@
             "id": "toppagetypes",
             "container": "top-pagetypes",
             "title": "Top Page Types",
-            "colspan": 6,
+            "colspan": 3,
             "query": {
                 "metrics": "visits",
                 "dimensions": "pageType",
@@ -65,13 +63,13 @@
             },
             "more": {
                 "reportId": "page-types",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
             "type": "report-links",
             "title": "Content Reports",
-            "colspan": 6,
+            "colspan": 3,
             "links": [
                 {
                     "reportId": "domstreams",

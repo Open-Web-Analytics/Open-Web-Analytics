@@ -149,4 +149,63 @@ test.describe('e-commerce reporting', () => {
 
         expect(errors).toEqual([]);
     });
+
+    /**
+     * A money axis is labelled in money, in the install's own currency.
+     *
+     * Two things this pins, and the second is why the first was wrong for a
+     * while. Revenue is stored in MINOR units and the chart's formatValue is
+     * what divides it by a hundred -- dropping that call plotted 6300 for
+     * $63.00, which nothing noticed until an axis put a unit on it. And the
+     * symbol comes from the server's own formatting of the metric: which
+     * currency an install uses is a setting the browser cannot see.
+     */
+    test('a currency trend is labelled in currency', async ({ page }) => {
+        await login(page);
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=ecommerce&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
+        // The trend on this report, whichever variable it was built into.
+        await expect.poll(async () => page.evaluate(() => !!Object.keys(window).find(
+            (k) => window[k] && window[k].areaChart
+                && typeof window[k].areaChart.chartedMetric === 'function')),
+            { timeout: 20_000 }).toBe(true);
+
+        const money = await page.evaluate(() => {
+
+            const key = Object.keys(window).find(
+                (k) => window[k] && window[k].areaChart
+                    && typeof window[k].areaChart.chartedMetric === 'function');
+
+            const rse = window[key];
+
+            const currency = Object.keys(rse.resultSet.aggregates).find(
+                (m) => rse.resultSet.aggregates[m].data_type === 'currency');
+
+            rse.areaChart.changeMetric(currency);
+
+            return {
+                metric: currency,
+                aggregate: rse.resultSet.aggregates[currency].formatted_value,
+                ticks: [...document.querySelectorAll('.flot-y-axis .flot-tick-label')]
+                    .map((e) => e.textContent.trim()),
+                plotted: rse.areaChart.dataseries[0].data.map((p) => p[1]),
+            };
+        });
+
+        expect(money.metric).toBeTruthy();
+        expect(money.ticks.length).toBeGreaterThan(1);
+
+        // The symbol the server used, on the side it used it.
+        const symbol = money.aggregate.replace(/[0-9., -]/g, '');
+        expect(symbol.length).toBeGreaterThan(0);
+        expect(money.ticks.every((t) => t.includes(symbol))).toBe(true);
+
+        // ...and in MAJOR units: nothing plotted may exceed the period total,
+        // which is the check that catches an off-by-one-hundred.
+        const total = parseFloat(money.aggregate.replace(/[^0-9.]/g, ''));
+        expect(Math.max(...money.plotted)).toBeLessThanOrEqual(total + 0.001);
+    });
 });

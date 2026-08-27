@@ -17,7 +17,15 @@ OWA.pieChart = function( options ) {
         showGrid: true,
         showDots: true,
         showLegend: true,
-        autoSizeWidth: true
+        autoSizeWidth: true,
+
+        /*
+         * Shared with the trend chart, so a value has one colour wherever it is
+         * drawn. An OPTION rather than a literal in generate(), the way the
+         * area chart carries it: a widget can override it, and what a chart is
+         * drawing with can be read without rendering one.
+         */
+        colors: OWA.chartColors
     };
 
     // merge passed options with defaults.
@@ -267,7 +275,7 @@ OWA.pieChart.prototype = {
                 position: "ne",
                 margin: [-160,50]
             },
-            colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
+            colors: this.options.colors
         };
 
         //GRAPH

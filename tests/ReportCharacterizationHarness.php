@@ -190,7 +190,8 @@ final class ReportCharacterizationHarness
      */
     public const RETYPED = array(
         'ReportActionTracking' => array( 'actionsByGroup' => array( 'grid', 'grid-card' ) ),
-        'ReportContent'        => array( 'toppagetypes'   => array( 'grid', 'grid-card' ) ),
+        'ReportContent'        => array( 'toppagetypes'   => array( 'grid', 'grid-card' ),
+                                         'toppages'       => array( 'grid', 'grid-card' ) ),
         'ReportEcommerce'      => array( 'productName'    => array( 'grid', 'grid-card' ) ),
         'ReportVisitors'       => array( 'browserTypes'   => array( 'grid', 'grid-card' ) ),
     );
@@ -277,8 +278,198 @@ final class ReportCharacterizationHarness
      * class => [ widget ids whose position and span are no longer the record's ]
      */
     public const RELAID_OUT = array(
-        'ReportDashboard' => array( 'latestVisits' ),
+        // Latest Visits moved under the site trend at full width -- it groups
+        // by seven dimensions and half a row was never enough. The other three
+        // went to a quarter each, which is a row of four across.
+        'ReportDashboard' => array( 'latestVisits', 'topContent', 'actions', 'topReferrers' ),
+
+        /*
+         * Top Pages and Top Page Types became quarter-width cards, and the
+         * report-links block beside them matches.
+         *
+         * The empty string is that report-links widget: it declares no id,
+         * which is legal -- only the widgets something addresses need one --
+         * and the index below keys an id-less widget as ''. Naming it that way
+         * rather than giving it an id keeps this a layout allowance instead of
+         * also adding a key the record does not have.
+         */
+        'ReportContent'  => array( 'toppages', 'toppagetypes', '' ),
+
+        // Prior/Next pages, the heatmap link and the related reports are a row
+        // of four quarters.
+        'ReportDocument' => array( 'priorpages', 'nextpages', 'heatmap', 'moreAnalytics' ),
     );
+
+    /**
+     * Values deliberately RESTATED since the conversion, and what they were.
+     *
+     * The golden fixture is the pre-conversion record and cannot be
+     * regenerated into agreement: the controllers it was taken from are
+     * deleted, so a regeneration would capture the definitions' own output and
+     * the equivalence proof would become a comparison with itself. So a
+     * deliberate change is named here instead.
+     *
+     * Each entry is one value, by path, with what the controller declared and
+     * what the definition says now. `null` on the right means the key is gone.
+     * The allowance is checked as it is applied -- a value that is not what the
+     * entry says it is now fails, so an entry cannot outlive the change it
+     * describes.
+     *
+     * class => [ widget id => [ path => [ was, is ] ] ]
+     */
+    public const RESTATED = array(
+
+        'ReportDashboard' => array(
+            // A full URL in a column narrow enough for a path.
+            'latestVisits' => array(
+                'query.dimensions' => array(
+                    'ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount',
+                    'ipAddress,entryPagePath,medium,source,city,country,priorVisitCount',
+                ),
+            ),
+        ),
+
+        'ReportContent' => array(
+            // The trend breaks out by page path: a line per page over the total.
+            /*
+             * The trend breaks out by page path: a line per page over the
+             * total. It has to name its own metrics to do it -- the report's
+             * set includes bounceRate, which is measured on the SESSION, and
+             * pagePath is on the request. One query is answered from one fact
+             * table, so asking for both is not a query at all; before the
+             * guard in getAllRelatedDimensions() it was a 500 with an empty
+             * body.
+             */
+            'trend' => array(
+                'query.dimensions' => array( 'date', 'date,pagePath' ),
+                'query.metrics'    => array( null, 'visits,pageViews' ),
+            ),
+            /*
+             * Top Pages became a card, and a card shows ONE dimension. It has
+             * to be the one the link is built from -- the row link carries a
+             * pagePath into the page detail report -- so pageTitle goes and the
+             * excludeColumns that hid pagePath goes with it.
+             */
+            'toppages' => array(
+                'query.dimensions' => array( 'pageTitle,pagePath', 'pagePath' ),
+                'excludeColumns'   => array( array( 'pagePath' ), null ),
+            ),
+        ),
+    );
+
+    /**
+     * Put a deliberately restated value back to what the record has.
+     *
+     * @return array{config: array, problems: array<int, string>}
+     */
+    public static function undoRestating( string $class, array $config ): array
+    {
+        $expected = self::RESTATED[ $class ] ?? array();
+
+        if ( ! $expected ) {
+
+            return array( 'config' => $config, 'problems' => array() );
+        }
+
+        $problems = array();
+        $seen     = array();
+
+        foreach ( (array) ( $config['widgets'] ?? array() ) as $i => $widget ) {
+
+            $id = (string) ( ( (array) $widget )['id'] ?? '' );
+
+            if ( ! isset( $expected[ $id ] ) ) {
+
+                continue;
+            }
+
+            foreach ( $expected[ $id ] as $path => $pair ) {
+
+                list( $was, $is ) = $pair;
+
+                $now = self::atPath( $config['widgets'][ $i ], $path );
+
+                if ( $now !== $is ) {
+
+                    $problems[] = sprintf(
+                        '%s:%s is listed as restating "%s" to %s, but it is %s -- either it '
+                      . 'changed again or the allowance is stale',
+                        $class, $id, $path, json_encode( $is ), json_encode( $now ) );
+
+                    continue;
+                }
+
+                self::setAtPath( $config['widgets'][ $i ], $path, $was );
+
+                $seen[] = $id . '.' . $path;
+            }
+        }
+
+        foreach ( $expected as $id => $paths ) {
+
+            foreach ( array_keys( $paths ) as $path ) {
+
+                if ( ! in_array( $id . '.' . $path, $seen, true ) ) {
+
+                    $problems[] = sprintf( '%s lists a restatement of "%s" on widget "%s", '
+                        . 'which its definition does not contain', $class, $path, $id );
+                }
+            }
+        }
+
+        return array( 'config' => $config, 'problems' => $problems );
+    }
+
+    /** The value at a dotted path, or null when nothing is there. */
+    private static function atPath( array $widget, string $path )
+    {
+        $node = $widget;
+
+        foreach ( explode( '.', $path ) as $step ) {
+
+            if ( ! is_array( $node ) || ! array_key_exists( $step, $node ) ) {
+
+                return null;
+            }
+
+            $node = $node[ $step ];
+        }
+
+        return $node;
+    }
+
+    /**
+     * Set the value at a dotted path; a null value REMOVES the key, which is
+     * how a record that has a key and a definition that does not are made
+     * comparable in both directions.
+     */
+    private static function setAtPath( array &$widget, string $path, $value ): void
+    {
+        $steps = explode( '.', $path );
+        $last  = array_pop( $steps );
+        $node  = &$widget;
+
+        foreach ( $steps as $step ) {
+
+            if ( ! isset( $node[ $step ] ) || ! is_array( $node[ $step ] ) ) {
+
+                $node[ $step ] = array();
+            }
+
+            $node = &$node[ $step ];
+        }
+
+        if ( $value === null ) {
+
+            unset( $node[ $last ] );
+
+        } else {
+
+            $node[ $last ] = $value;
+
+            ksort( $node );
+        }
+    }
 
     /**
      * Reconcile a deliberately relaid-out report with the record.

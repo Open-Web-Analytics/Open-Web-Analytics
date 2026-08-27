@@ -981,8 +981,37 @@ test.describe('custom reports', () => {
             expect(chart.labels).toContain('direct');
             expect(chart.labels).toContain('organic-search');
 
-            // A colour each.
+            /*
+             * A colour each, and the PIE's colours.
+             *
+             * A report shows traffic sources as a pie and the same sources as
+             * lines over time; giving them different palettes makes the reader
+             * do work the colour was supposed to save. One shared list, in
+             * order, with the total keeping the blue a trend has always been.
+             */
             expect(new Set(chart.colors).size).toBe(chart.colors.length);
+
+            const palette = await page.evaluate(() => window.OWA.chartColors);
+
+            expect(chart.colors.slice(1)).toEqual(palette.slice(0, chart.colors.length - 1));
+
+            /*
+             * The legend sits at the left edge, with the chart's y-axis labels.
+             * Centred, it moved sideways whenever a series was added or a label
+             * changed length, so there was no stable place for the eye to
+             * return to.
+             */
+            const legend = await page.evaluate(() => {
+                const box = document.querySelector('#w1 > .owa_chartLegend');
+                const table = box.querySelector('table');
+                return {
+                    gap: Math.round(table.getBoundingClientRect().left - box.getBoundingClientRect().left),
+                    align: getComputedStyle(box.querySelector('.legendLabel')).textAlign,
+                };
+            });
+
+            expect(legend.gap).toBeLessThanOrEqual(1);
+            expect(legend.align).toBe('left');
 
             /*
              * The total is the sum of the lines at each point, and every series
@@ -991,6 +1020,14 @@ test.describe('custom reports', () => {
              * drawing a line straight over an absence.
              */
             const [total, ...parts] = chart.firstPoints;
+
+            /*
+             * The total is the sum of EVERY row, not of the drawn lines. Only
+             * the six largest values get a line, so the two agree exactly here
+             * -- the fixture seeds three mediums -- and the total would be the
+             * larger of them on a dimension with more values than that.
+             */
+            expect(chart.labels.length - 1).toBeLessThanOrEqual(6);
             expect(total).toBe(parts.reduce((a, b) => a + b, 0));
             expect(new Set(chart.lengths).size).toBe(1);
         });

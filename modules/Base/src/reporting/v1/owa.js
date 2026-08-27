@@ -20,6 +20,30 @@ var OWA = {
     },
     loadedJsLibs: {},
     overlay: '',
+
+    /*
+     * The series colours, shared by every chart that draws more than one thing.
+     *
+     * ONE list, because the charts are read together: a report shows traffic
+     * sources as a pie and the same sources as lines over time, and organic
+     * search being orange in one and olive in the other makes the reader do
+     * work that the colour was supposed to save them.
+     *
+     * The first four are the pie's own, in its own order, so every pie already
+     * on a screen keeps the colours it had. The rest are what the pie never
+     * had: it draws up to numSlices plus an "others" -- six -- from a list of
+     * four, so its fifth and sixth slices repeated the first and second.
+     *
+     * Ten, which is one more than a trend can need: six broken-out lines plus
+     * an "Other" is seven, and the total is coloured separately. Past ten a
+     * chart is repeating colours because it is drawing too much, and the answer
+     * is the cap rather than an eleventh shade nobody can tell from the third.
+     */
+    chartColors: [
+        '#6BAED6', '#FD8D3C', '#dba255', '#919733', '#c0504d',
+        '#7a5195', '#2e8b57', '#b5651d', '#bc5090', '#5f9ea0'
+    ],
+
     config: {
         // Wire namespace: cookie names, and anything shared with the
         // tracker. NOT for building OWA's own links -- that is app_ns.

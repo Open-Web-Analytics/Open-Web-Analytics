@@ -1144,8 +1144,15 @@ li.constraintRow {
 }
 
 .owa .owa_chartLegend table {
-    margin: 0 auto;
+    /* Left, with the chart's y-axis labels, rather than centred under it: a
+       centred legend moves sideways every time a series is added or its label
+       changes length, so there is no stable place for the eye to return to. */
+    margin: 0;
     border-collapse: collapse;
+}
+
+.owa .owa_chartLegend .legendLabel {
+    text-align: left;
 }
 
 .owa .owa_chartLegend td {

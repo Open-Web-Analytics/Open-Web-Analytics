@@ -312,6 +312,76 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         }
     });
 
+    /**
+     * Every chart that draws more than one thing draws it in the same colours.
+     *
+     * A report shows traffic sources as a pie and the same sources as lines
+     * over time. Two palettes make the reader work out twice which colour is
+     * which, when the colour existed to save them that.
+     *
+     * Ten, because the pie draws up to six slices from what used to be a list
+     * of four -- so its fifth and sixth repeated its first and second -- and a
+     * trend needs seven.
+     */
+    test('the pie and the trend draw from one palette', async ({ page }) => {
+        const shared = await page.evaluate(() => ({
+            palette: window.OWA.chartColors,
+            trend: window.siteTrend.areaChart.options.colors,
+        }));
+
+        expect(shared.palette.length).toBeGreaterThanOrEqual(10);
+        expect(new Set(shared.palette).size).toBe(shared.palette.length);
+        expect(shared.trend).toEqual(shared.palette);
+
+        // The pie reads the same list. Asserted on a fresh instance rather than
+        // on a rendered chart, because a pie's own options are merged down onto
+        // whatever the widget passed it.
+        const pie = await page.evaluate(() => new window.OWA.pieChart().options.colors);
+
+        expect(pie).toEqual(shared.palette);
+    });
+
+    /**
+     * The y axis is labelled in the units of the metric being charted.
+     *
+     * A bounce rate is stored 0 to 1 and money in minor units, so an axis of
+     * bare numbers labelled a rate "0, 0, 0, 1" and a revenue figure in a
+     * currency nobody named. The metric's data_type is what the server formats
+     * its values with, so the axis is read from the same answer.
+     */
+    test('the y axis is labelled in the metric\'s own units', async ({ page }) => {
+        const ticks = async (metric) => page.evaluate((m) => {
+
+            window.siteTrend.areaChart.changeMetric(m);
+
+            return [...document.querySelectorAll('#trend-chart .flot-y-axis .flot-tick-label')]
+                .map((e) => e.textContent.trim());
+
+        }, metric);
+
+        // A count: thousands separated, no decimals.
+        const counts = await ticks('visits');
+        expect(counts.length).toBeGreaterThan(1);
+        expect(counts.every((t) => /^[\d,]+$/.test(t))).toBe(true);
+
+        // A rate: stored as a fraction, labelled as a percentage.
+        const rates = await ticks('bounceRate');
+        expect(rates.every((t) => t.endsWith('%'))).toBe(true);
+
+        /*
+         * ...and starting at zero. flot scales to the data, which is right
+         * until the data is flat: a bounce rate of zero all month gave an axis
+         * running -100% to 100%, because a series with no range has none to
+         * scale to.
+         */
+        expect(rates[0]).toBe('0%');
+        expect(rates.some((t) => t.startsWith('-'))).toBe(false);
+
+        // A duration: seconds read as a duration, not as a number.
+        const durations = await ticks('visitDuration');
+        expect(durations.every((t) => /^\d+:\d{2}(:\d{2})?$/.test(t))).toBe(true);
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);

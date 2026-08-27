@@ -994,13 +994,14 @@
             {
                 "var": "trendurl",
                 "query": {
-                    "dimensions": "date",
+                    "dimensions": "date,pagePath",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "visits,pageViews,bounceRate",
+                    "metrics": "visits,pageViews",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
+                    "resultsPerPage": "1000",
                     "siteId": "1",
                     "sort": "date",
                     "version": "v1"
@@ -1009,7 +1010,7 @@
             {
                 "var": "toppagesurl",
                 "query": {
-                    "dimensions": "pageTitle,pagePath",
+                    "dimensions": "pagePath",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",
@@ -1217,6 +1218,22 @@
                 }
             },
             {
+                "var": "latestVisitsurl",
+                "query": {
+                    "dimensions": "ipAddress,entryPagePath,medium,source,city,country,priorVisitCount",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pagesPerVisit,visitDuration",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "10",
+                    "siteId": "1",
+                    "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
                 "var": "topContenturl",
                 "query": {
                     "dimensions": "pageTitle,pagePath",
@@ -1279,22 +1296,6 @@
                 }
             },
             {
-                "var": "latestVisitsurl",
-                "query": {
-                    "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits,pagesPerVisit,visitDuration",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "resultsPerPage": "10",
-                    "siteId": "1",
-                    "sort": "visits-",
-                    "version": "v1"
-                }
-            },
-            {
                 "var": "topReferrersurl",
                 "query": {
                     "constraints": "medium==referral",
@@ -1327,6 +1328,10 @@
                 "container": "trend-chart"
             },
             {
+                "var": "latestVisits",
+                "container": "latest-visits"
+            },
+            {
                 "var": "topContent",
                 "container": "top-pages"
             },
@@ -1343,10 +1348,6 @@
                 "container": "visitor-mediums"
             },
             {
-                "var": "latestVisits",
-                "container": "latest-visits"
-            },
-            {
                 "var": "topReferrers",
                 "container": "top-referers"
             }
@@ -1354,11 +1355,11 @@
         "commands": [
             "siteTrend.makeAreaChart -> trend-chart",
             "siteTrend.makeMetricBoxes -> siteTrend-metrics",
+            "latestVisits.refreshGrid",
             "topContent.refreshGrid",
             "actions.refreshGrid",
             "visitorTypes.makePieChart",
             "visitorMediums.makePieChart",
-            "latestVisits.refreshGrid",
             "topReferrers.refreshGrid"
         ]
     },

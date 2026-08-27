@@ -76,6 +76,14 @@ final class ReportConfigEquivalenceTest extends TestCase
 
         $actual = $this->undoRetyping( $class, $actual );
 
+        $restated = Harness::undoRestating( $class, $actual );
+
+        $this->assertSame( array(), $restated['problems'],
+            "the restatement allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $restated['problems'] ) );
+
+        $actual = $restated['config'];
+
         /*
          * ...and a report that has been deliberately relaid out is reconciled
          * with the record on position and span alone, so everything else about
