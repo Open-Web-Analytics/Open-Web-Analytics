@@ -177,7 +177,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
              * or a new constraint. Drawing the controls anyway offers the reader
              * choices that cannot do anything.
              */
-            showExplorerControls: true
+            showExplorerControls: true,
+
+            /*
+             * How narrow the grid may be refitted to before it stops shrinking
+             * and the widget scrolls instead.
+             *
+             * Six columns need six columns' worth of pixels; past that,
+             * squeezing does not make the table readable. Matched to the
+             * widget width floor in owa.report.css so the two agree about when
+             * a widget has run out of room.
+             */
+            minGridWidth: 280
         },
         template: {
             template: '',
@@ -435,6 +446,63 @@ OWA.resultSetExplorer.prototype = {
             that.changeConstraints(constraints);
         });
 
+        this.watchGridWidth( dom_id );
+    },
+
+    /**
+     * Refit the grid when the layout changes its widget's width.
+     *
+     * `autowidth: true` fits the grid to its container ONCE, when it is built,
+     * and jqGrid never looks again. So a grid built at 1285px stayed 1285px
+     * inside a widget that had since become 712px -- it did not overflow the
+     * page, because the widget scrolls; it just quietly became a table you had
+     * to scroll sideways to read. That is the "widgets collapse when the window
+     * is resized" symptom -- the widget shrank and the grid did not.
+     *
+     * setGridWidth re-runs the same shrinkToFit distribution the initial build
+     * used, so the columns keep the proportions sizeColumnsToContent worked out.
+     * This changes the total, not the shares.
+     *
+     * A FLOOR, unlike the chart. A chart has no irreducible width and should
+     * simply be as wide as the room it is given; a table of six columns needs
+     * six columns' worth of pixels, and past that the honest answer is to stop
+     * shrinking and let the widget scroll. Squeezing further does not make a
+     * table readable, it makes every column too narrow to read at once.
+     *
+     * ON THE EXPLORER, not on the dataGrid, because the explorer is the object
+     * that survives. createGrid() builds a NEW dataGrid on every refresh, so an
+     * observer owned by one of those is never disconnected -- it goes on firing
+     * against a table that has since been replaced, and calls setGridWidth on
+     * an element jqGrid has not initialised yet. That threw
+     * "Cannot read properties of undefined" on every resize.
+     */
+    watchGridWidth : function ( dom_id ) {
+
+        if ( this.unwatchGridWidth ) {
+
+            this.unwatchGridWidth();
+        }
+
+        var that = this;
+
+        this.unwatchGridWidth = OWA.onWidthChange( dom_id, function ( width ) {
+
+            var grid = jQuery( '#' + dom_id + '_grid' );
+
+            /*
+             * jqGrid hangs `grid` off the table element once it has built it,
+             * and this can fire in the window between the table being appended
+             * and that happening. Asking an uninitialised table to resize is
+             * the error above, not a no-op.
+             */
+            if ( ! grid.length || ! grid[0].grid ) {
+
+                return;
+            }
+
+            grid.jqGrid( 'setGridWidth',
+                Math.max( width, that.options.grid.minGridWidth || 0 ), true );
+        } );
     },
 
     /**

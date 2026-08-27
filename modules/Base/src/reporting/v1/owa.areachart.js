@@ -318,6 +318,8 @@ OWA.areaChart.prototype = {
 
             this.drawGranularityControl( dom_id );
 
+            this.watchWidth( dom_id );
+
             this.init = true;
 
         } else {
@@ -862,6 +864,41 @@ OWA.areaChart.prototype = {
         this.explorer.getNewResultSet( url.getSource() );
 
         return true;
+    },
+
+    /**
+     * Redraw at the widget's width whenever the layout changes it.
+     *
+     * A chart has no irreducible width the way a table does -- it should simply
+     * be as wide as the room it is given -- so this never scrolls and never
+     * refetches. Everything it needs is already here: draw() re-plots
+     * this.dataseries, and flot sizes its canvas from the placeholder, so
+     * plotting again at a new width IS the resize.
+     *
+     * Bound to the widget CONTAINER, not to the plot element. setupAreaChart()
+     * replaces the plot element on every redraw, which is exactly what made
+     * flot's own resize plugin stop working -- see OWA.onWidthChange.
+     *
+     * Rebound rather than accumulated: generate() runs again on every metric
+     * change, granularity change and refetch, and a second observer would mean
+     * two full re-plots per resize.
+     */
+    watchWidth : function ( dom_id ) {
+
+        if ( this.unwatchWidth ) {
+
+            this.unwatchWidth();
+        }
+
+        var that = this;
+
+        this.unwatchWidth = OWA.onWidthChange( dom_id, function () {
+
+            if ( that.dataseries && that.dataseries.length ) {
+
+                that.draw();
+            }
+        } );
     },
 
     /**

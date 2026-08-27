@@ -1684,26 +1684,40 @@ li.constraintRow {
  *
  * Sized against the heading rather than in pixels: the mark is a thing you can
  * do to the words beside it, and at a fixed size it would stop looking that way
- * the moment the heading changed. Dimmed like the navigation's icons -- the
- * title is what the reader came for, and the pencil is not competing with it.
+ * the moment the heading changed.
+ *
+ * IT HAS TO BE FINDABLE. The first version borrowed the left-hand navigation's
+ * treatment -- 0.55em at 0.60 opacity -- which resolved to a 14px grey pencil
+ * beside a 26px bold black title, and read as decoration rather than as a
+ * control. It was reported as missing twice by someone looking straight at it,
+ * which is the only test of "visible" that counts.
+ *
+ * So: two thirds of the heading rather than half, and only slightly dimmed.
+ * Still quieter than the title -- the report's name is what the reader came
+ * for -- but unmistakably a thing you can press.
  *
  * A left margin only, so the icon hangs off the end of the title instead of
  * being centred in a gap that reads as a separator. */
 .owa .owa_titleActionMark {
     display: inline-block;
-    margin-left: 12px;
-    font-size: 0.55em;
+    margin-left: 14px;
+    padding: 4px;
+    font-size: 0.68em;
     line-height: 1;
     color: #505050;
-    opacity: 0.60;
+    opacity: 0.85;
+    border-radius: 3px;
     text-decoration: none;
     vertical-align: middle;
 }
 
+/* A hover target that is a shape, not just a colour change: a 17px glyph is a
+   small thing to aim at, and the tinted square says it was hit. */
 .owa .owa_titleActionMark:hover,
 .owa .owa_titleActionMark:focus {
     opacity: 1;
     color: #1874CD;
+    background-color: #eaf2fb;
 }
 
 /* ---------------------------------------------------------------------------

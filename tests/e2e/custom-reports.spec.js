@@ -790,6 +790,52 @@ test.describe('custom reports', () => {
         });
 
         /**
+         * SAVING MUST NOT STRAND THE AUTHOR.
+         *
+         * The left-hand navigation is how you leave a report, and it vanished
+         * after every save: makeNavigationMenu() returns false without a
+         * currentSiteId, and the save redirect carried none, because the
+         * builder had been opened without one and its hidden siteId was empty.
+         *
+         * The report drew its title and all its chrome, so nothing looked
+         * broken. There was simply no way off the page except the back button.
+         *
+         * ReportController::pre() resolves a default site now, which fixes the
+         * whole chain in one place -- the builder is a ReportController too, so
+         * its hidden field is filled, the save carries it, and the report it
+         * redirects to has one.
+         */
+        test('the navigation survives saving a report', async ({ page }) => {
+            // Opened with NO siteId, which is how the nav's own link reaches it
+            // and the state the bug needed.
+            await page.goto('?owa_do=base.customReportEdit', { waitUntil: 'networkidle' });
+
+            const navLinks = page.locator('#owa_reportNavPanel a');
+
+            // The builder itself is a reporting screen and needs its nav too.
+            expect(await navLinks.count(),
+                'the builder opened without a navigation').toBeGreaterThan(10);
+
+            // The site it resolved travels with the form, which is what carries
+            // it through the save.
+            await expect(page.locator('input[name="siteId"]')).not.toHaveValue('');
+
+            await page.fill('#customReportName', reportName('Navigated'));
+            await onlyWidget(page, 'trend-card', { title: 'N', metrics: ['visits'] });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            // Landed on the report...
+            expect(page.url()).toContain('custom-');
+            await expect(page.locator('.owa_reportTitle')).toBeVisible();
+
+            // ...and can still get anywhere from it.
+            expect(await navLinks.count(),
+                'the navigation vanished after saving').toBeGreaterThan(10);
+        });
+
+        /**
          * A card draws one metric, so it is offered a METRIC, not a metric set.
          *
          * The report metric set is several metrics, and a card ranks its rows

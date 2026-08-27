@@ -51,14 +51,16 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setRequiredCapability('view_reports');
         parent::__construct($params);
 
-        // set a siteId is none is set on the request params
-        $siteId = $this->getCurrentSiteId();
-
-        if ( ! $siteId ) {
-            //$siteId = $this->getDefaultSiteId();
-        }
-
-        $this->setParam( 'siteId', $siteId );
+        /*
+         * Normalise the two spellings the request may use -- `siteId` and
+         * `site_id` -- onto the one everything downstream asks for.
+         *
+         * Resolving a DEFAULT when there is neither happens in pre(), not
+         * here: it needs the sites this user may see, and the current user's
+         * grants are not loaded until checkCapabilityAndAuthenticateUser()
+         * runs, which is after this.
+         */
+        $this->setParam( 'siteId', $this->getCurrentSiteId() );
     }
 
     /**
@@ -155,7 +157,59 @@ class ReportController extends \OWA\Core\AdminController {
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('sites', $sites);
 
-        $this->set( 'currentSiteId', $this->getParam('siteId') );
+        /*
+         * A REPORT IS ALWAYS OF A SITE, so one is resolved when the request
+         * names none.
+         *
+         * Reporting is per site: the nav's links carry a siteId, view_reports
+         * is satisfied against a particular site, and every query is scoped to
+         * one. A report page with no site is not a neutral state -- it is a
+         * page that cannot answer anything.
+         *
+         * What it DID was worse than empty. makeNavigationMenu() returns false
+         * without a currentSiteId, so the entire left-hand navigation vanished
+         * -- and the nav is how you leave the page. The report drew its title
+         * and its chrome, so nothing looked broken; there was simply no way out
+         * of it except the browser's back button.
+         *
+         * The way in was ordinary: save a custom report from a builder that was
+         * itself opened without a site, and the redirect lands here with none.
+         * The builder is a ReportController too, so resolving it HERE fixes the
+         * whole chain at once -- the builder's hidden siteId is filled, the
+         * save carries it, and the report it redirects to has one.
+         *
+         * The constructor scaffolded this and never did it:
+         *
+         *     if ( ! $siteId ) {
+         *         //$siteId = $this->getDefaultSiteId();
+         *     }
+         *
+         * It belongs here rather than there. The constructor runs before
+         * checkCapabilityAndAuthenticateUser(), so the current user's site
+         * grants are not loaded yet and "the sites this user may see" has no
+         * answer; pre() is documented as running once the user is loaded, and
+         * $sites above is that answer.
+         *
+         * The FIRST allowed site, which is the one the site filter already
+         * shows selected -- so the page agrees with its own control. Chosen
+         * from the allowed list rather than from the sites table, so this can
+         * only ever land on a site the reader could have picked themselves.
+         *
+         * A user with no sites at all still gets none. There is nothing to
+         * default to, and inventing one would be inventing access.
+         */
+        $siteId = $this->getParam('siteId');
+
+        if ( ! $siteId && $sites ) {
+
+            $siteId = (string) array_key_first( $sites );
+
+            // The PARAM, not just the view value: pre() reads it again below
+            // for the metric sets, and everything downstream asks getParam().
+            $this->setParam( 'siteId', $siteId );
+        }
+
+        $this->set( 'currentSiteId', $siteId );
 
         // pass full set of params to view
         $this->data['params'] = $this->params;

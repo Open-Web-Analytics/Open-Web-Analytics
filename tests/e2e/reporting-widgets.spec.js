@@ -364,6 +364,168 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * A CHART GROWS BACK.
+     *
+     * It shrank and never recovered: 1600 -> 1000 redrew the canvas at 678px,
+     * and going back to 1600 left it at 678 inside a 1272px placeholder -- a
+     * chart occupying half its widget with white space beside it.
+     *
+     * flot's own resize plugin was supposed to do this and could not. It polls
+     * elements it was told about, and setupAreaChart() REPLACES the chart
+     * element on every redraw, so the node it registered was detached and a
+     * detached node reads as invisible. OWA.onWidthChange watches the widget
+     * CONTAINER instead, which is the one element never replaced.
+     *
+     * BOTH directions and TWICE, because shrinking always worked -- a one-way
+     * test would have passed throughout the bug.
+     */
+    test('a trend chart is redrawn at the width it is given, both ways', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+
+        const canvasWidth = () => page.evaluate(() => {
+            const c = document.querySelector('.owa_areaChart canvas');
+            const h = document.querySelector('.owa_areaChart');
+            return c && h ? {
+                canvas: Math.round(c.getBoundingClientRect().width),
+                holder: Math.round(h.getBoundingClientRect().width),
+            } : null;
+        });
+
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('.owa_areaChart canvas', { timeout: 20_000 });
+
+        const wide = await canvasWidth();
+        expect(wide.canvas).toBe(wide.holder);
+
+        // Narrow: the canvas follows the placeholder down.
+        await page.setViewportSize({ width: 1000, height: 1000 });
+
+        await expect.poll(async () => (await canvasWidth()).canvas, { timeout: 10_000 })
+            .toBeLessThan(wide.canvas);
+
+        // ...and back up, which is the half that was broken.
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await expect.poll(async () => {
+            const m = await canvasWidth();
+            return m.canvas === m.holder;
+        }, { timeout: 10_000 }).toBe(true);
+
+        expect((await canvasWidth()).canvas).toBe(wide.canvas);
+
+        // Twice, so a single lucky redraw cannot pass this.
+        await page.setViewportSize({ width: 800, height: 1000 });
+
+        await expect.poll(async () => (await canvasWidth()).canvas, { timeout: 10_000 })
+            .toBeLessThan(wide.canvas);
+
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await expect.poll(async () => (await canvasWidth()).canvas, { timeout: 10_000 })
+            .toBe(wide.canvas);
+    });
+
+    /**
+     * ...and so does the GRID, which never resized at all.
+     *
+     * jqGrid's `autowidth` fits the container once, at build time, and never
+     * looks again. A grid built at 1285px stayed 1285px inside a widget that
+     * had become 685px -- it did not overflow the page, because the widget
+     * scrolls, so it simply became a table you had to scroll sideways to read.
+     * That is the "widgets collapse when the window is resized" report.
+     */
+    test('a grid is refitted to its widget when the window changes', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+
+        const measure = () => page.evaluate(() => {
+            const w = document.querySelector('#trend-breakdown');
+            const g = document.querySelector('#trend-breakdown .ui-jqgrid');
+            return w && g ? {
+                widget: Math.round(w.getBoundingClientRect().width),
+                grid:   Math.round(g.getBoundingClientRect().width),
+            } : null;
+        });
+
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('#trend-breakdown tr.jqgrow', { timeout: 20_000 });
+
+        const wide = await measure();
+
+        // Within a couple of pixels of its widget: jqGrid rounds.
+        expect(Math.abs(wide.grid - wide.widget)).toBeLessThan(6);
+
+        await page.setViewportSize({ width: 1000, height: 1000 });
+
+        await expect.poll(async () => {
+            const m = await measure();
+            return Math.abs(m.grid - m.widget) < 6;
+        }, { timeout: 10_000 }).toBe(true);
+
+        const narrow = await measure();
+        expect(narrow.grid).toBeLessThan(wide.grid);
+
+        // ...and back, so this is a refit rather than a one-way shrink.
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await expect.poll(async () => {
+            const m = await measure();
+            return Math.abs(m.grid - m.widget) < 6;
+        }, { timeout: 10_000 }).toBe(true);
+
+        expect((await measure()).grid).toBeGreaterThan(narrow.grid);
+    });
+
+    /**
+     * Resizing must not throw.
+     *
+     * flot's resize plugin threw two uncaught TypeErrors on every window
+     * resize, in a bundle where nothing was watching the console. It is gone
+     * now; this is what notices if it -- or anything like it -- comes back.
+     */
+    test('resizing a report raises no console error', async ({ page }) => {
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(e.message));
+
+        await login(page);
+
+        await page.setViewportSize({ width: 1600, height: 1000 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('#trend-breakdown tr.jqgrow', { timeout: 20_000 });
+
+        for (const width of [1000, 1600, 800, 1600]) {
+
+            await page.setViewportSize({ width, height: 1000 });
+            await page.waitForTimeout(700);
+        }
+
+        expect(errors).toEqual([]);
+    });
+
+    /**
      * ...and the promotion is what does it, not luck.
      *
      * A widget declaring a quarter must actually be resolving to more than
