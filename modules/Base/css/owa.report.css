@@ -1967,6 +1967,21 @@ li.constraintRow {
     margin-bottom: 12px;
 }
 
+/* Four metrics across half a row is about 110px a box, and 28px digits do not
+   fit that -- "0:02:24" alone is wider. Sized down so the row a card can
+   actually hold is a row a reader can actually read; still the largest thing in
+   the widget, which is what makes it the headline. */
+.owa .owa_trendCardMetrics .owa_metricInfoboxLargeNumber {
+    font-size: 22px;
+}
+
+/* The boxes share what the row has rather than each taking a fixed slice: the
+   number of metrics belongs to the author, so the width has to follow it. The
+   basis is the inline min-width kpiBox writes -- see metricBoxes.minWidth. */
+.owa .owa_trendCardMetrics .owa_metricInfobox {
+    flex: 1 1 auto;
+}
+
 /* ---------------------------------------------------------------------------
  * The rows behind a trend
  *

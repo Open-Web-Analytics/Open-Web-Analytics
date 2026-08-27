@@ -406,7 +406,27 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
 <?php if ( $owa_showMetricBoxes ): ?>
+<?php if ( $owa_isTrendCard ): ?>
+        <?php
+            /*
+             * A CARD'S BOXES SHARE THE ROW; they are not pinned to a width.
+             *
+             * A full-width trend fixes each box at 150px because its row is
+             * wide enough that a fixed size reads as deliberate. A card has
+             * half a row, and the number of metrics is the AUTHOR'S -- so a
+             * fixed width decides for them how many fit, and four became two
+             * rows of two.
+             *
+             * Flexing from a lower floor instead: four fit a half-width row,
+             * five wrap. That is a bound rather than a cap -- it is the point
+             * at which a box stops being readable, not a limit on what may be
+             * asked for.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.metricBoxes.minWidth = '100px';
+<?php else: ?>
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
+<?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
 <?php endif; ?>
 

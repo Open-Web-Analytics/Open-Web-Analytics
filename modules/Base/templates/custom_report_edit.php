@@ -579,13 +579,54 @@ $owa_max        = (int) $view->get('max_widgets');
             .filter( Boolean );
     }
 
+    /**
+     * ...with the ones already CHOSEN first, in the order they were chosen.
+     *
+     * ORDER IS MEANING HERE, not presentation. The first metric is the one a
+     * trend charts; the first dimension is what a grid is grouped by and what
+     * a report is about. So the list has to come back in the author's order.
+     *
+     * It did not. The options were rebuilt in registry order on every change --
+     * narrowMetrics() refills the select each time one is picked -- and
+     * `$select.val()` answers in OPTION order, so choosing visits, then unique
+     * visitors, then page views stored `pageViews,uniqueVisitors,visits` and
+     * charted pageViews. The author's first choice became the last box, and
+     * the one they picked last was drawn.
+     *
+     * Putting the selected block first fixes both halves at once: `.val()`
+     * answers in that order, and chosen renders its pills from the options, so
+     * the pills read in the author's order too. It costs nothing in the drop --
+     * chosen hides an already-selected option from the list.
+     */
     function fillChoices( $select, choices, selected ) {
 
         selected = selected || [];
 
         $select.empty();
 
+        var byName = {};
+
+        choices.forEach( function ( choice ) { byName[ choice.name ] = choice; } );
+
+        var ordered = [];
+
+        selected.forEach( function ( name ) {
+
+            if ( byName[ name ] ) {
+
+                ordered.push( byName[ name ] );
+            }
+        } );
+
         choices.forEach( function ( choice ) {
+
+            if ( selected.indexOf( choice.name ) === -1 ) {
+
+                ordered.push( choice );
+            }
+        } );
+
+        ordered.forEach( function ( choice ) {
             $select.append( jQuery( '<option>' )
                 .attr( 'value', choice.name )
                 .prop( 'selected', selected.indexOf( choice.name ) !== -1 )

@@ -11,6 +11,17 @@ OWA.kpiBox = function( options ) {
         width: '',
 
         /*
+         * How narrow a box may get before the row wraps.
+         *
+         * Inline rather than in the stylesheet because it is the ONE piece of a
+         * box's sizing a caller varies: the boxes share their row by flexing,
+         * and this is the basis they flex from. A trend card lowers it so four
+         * metrics fit a half-width row; everything else keeps the 135 that a
+         * full-width row was tuned for.
+         */
+        minWidth: '135px',
+
+        /*
          * A sparkline inside every box.
          *
          * Off when the boxes sit under a trend: the chart above them already
@@ -123,8 +134,8 @@ OWA.kpiBox.prototype = {
                  * metric a box shows reads this.
                  */
                 var html = OWA.util.sprintf(
-                    '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:135px;width:%s">',
-                    item.dom_id, item.name, width );
+                    '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:%s;width:%s">',
+                    item.dom_id, item.name, this.options.minWidth, width );
                 html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
                 html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>', item.formatted_value);
                 html += '</div>';

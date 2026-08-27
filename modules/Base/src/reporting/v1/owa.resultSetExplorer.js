@@ -187,6 +187,19 @@ OWA.resultSetExplorer = function(dom_id, options) {
         },
         metricBoxes: {
             width: '',
+
+            /*
+             * How narrow a box may get before the row wraps.
+             *
+             * Separate from `width`, which pins a box AT a size and takes it
+             * out of the sharing entirely. This one says "share the row, but
+             * wrap rather than go under this" -- which is what a card wants,
+             * where the number of metrics is the author's and the width is not.
+             *
+             * Empty leaves kpiBox's own default.
+             */
+            minWidth: '',
+
             // null: decide from whether there is a chart above them. See
             // makeMetricBoxes().
             sparklines: null
@@ -939,6 +952,10 @@ OWA.resultSetExplorer.prototype = {
 
         if ( this.options.metricBoxes.width ) {
             options.width = this.options.metricBoxes.width;
+        }
+
+        if ( this.options.metricBoxes.minWidth ) {
+            options.minWidth = this.options.metricBoxes.minWidth;
         }
 
         /*

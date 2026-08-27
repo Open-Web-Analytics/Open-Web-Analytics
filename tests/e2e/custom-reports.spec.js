@@ -731,6 +731,65 @@ test.describe('custom reports', () => {
         });
 
         /**
+         * The order an author picks fields in is the order they mean.
+         *
+         * ORDER IS MEANING in a definition: the first metric is what a trend
+         * charts, and the first dimension is what a grid is grouped by. The
+         * builder was throwing it away -- narrowMetrics() rebuilds the option
+         * list on every change, `$select.val()` answers in OPTION order, and
+         * the options were in registry order. So picking visits, then unique
+         * visitors, then page views stored `pageViews,uniqueVisitors,visits`:
+         * the author's first choice became the last box, and the chart drew the
+         * one they picked last.
+         *
+         * Asserted at three points, because the bug was silent at the first
+         * two: the pills the author is looking at, the order the boxes render
+         * in, and which one the chart draws.
+         *
+         * ...and four metrics fit ONE row on a card, which is the other half of
+         * why this test builds four. A card is half a row and the metric count
+         * is the author's, so the boxes share the width rather than each taking
+         * a fixed 150px slice -- at which four became two rows of two.
+         */
+        test('a card keeps the order its metrics were chosen in, four to a row', async ({ page }) => {
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('Ordered'));
+
+            // Deliberately NOT alphabetical: registry order is
+            // pageViews < uniqueVisitors < visits, so an alphabetised list is
+            // the exact reverse of this and the assertions can tell them apart.
+            const CHOSEN = ['visits', 'uniqueVisitors', 'pageViews', 'bounceRate'];
+
+            await onlyWidget(page, 'trend-card', { title: 'Ordered', metrics: CHOSEN });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            expect(page.url()).toContain('custom-');
+
+            const boxes = page.locator('.owa_trendCardMetrics .owa_metricInfobox');
+            await expect(boxes).toHaveCount(4);
+
+            // The boxes read in the order they were chosen.
+            expect(await boxes.evaluateAll(els => els.map(e => e.getAttribute('data-metric'))))
+                .toEqual(CHOSEN);
+
+            // ...and the chart draws the FIRST of them, not the last.
+            const charted = await boxes.evaluateAll(els => els
+                .filter(e => e.classList.contains('owa_metricInfoboxCharted'))
+                .map(e => e.getAttribute('data-metric')));
+
+            expect(charted).toEqual(['visits']);
+
+            // One row: every box shares a top edge.
+            const tops = await boxes.evaluateAll(els =>
+                els.map(e => Math.round(e.getBoundingClientRect().top)));
+
+            expect(new Set(tops).size,
+                `four boxes wrapped onto ${new Set(tops).size} rows`).toBe(1);
+        });
+
+        /**
          * A card draws one metric, so it is offered a METRIC, not a metric set.
          *
          * The report metric set is several metrics, and a card ranks its rows
