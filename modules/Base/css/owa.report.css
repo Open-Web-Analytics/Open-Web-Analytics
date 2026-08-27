@@ -1054,21 +1054,70 @@ li.constraintRow {
 .owa_rowspan-5 { grid-row: span 5; }
 .owa_rowspan-6 { grid-row: span 6; }
 
-/* Narrower than about a tablet: halve the grid, and let anything that asked for
-   more than half go full width rather than leaving a ragged column. */
-@container owa-report (max-width: 900px) {
+/* ---------------------------------------------------------------------------
+   A WIDGET HAS A FLOOR
 
-    .owa_reportGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+   A quarter-width card is 213px on a 1280px laptop -- twelve tracks and eleven
+   20px gaps leave 64px a track -- and a table of two columns and a heading does
+   not fit in 213px. It does not overflow either: min-width:0 above lets the
+   widget shrink and the content scrolls inside it, so the report looks intact
+   and is unreadable. That is what these rules are for.
 
-    .owa_span-7, .owa_span-8, .owa_span-9,
-    .owa_span-10, .owa_span-11, .owa_span-12 { grid-column: 1 / -1; }
+   The floor is 300px of GRID AREA, and it is enforced by giving a widget MORE
+   COLUMNS rather than a min-width. A min-width on a grid item cannot work here:
+   the tracks are minmax(0, 1fr), whose minimum is a literal 0, so an item wider
+   than its track overflows into its NEIGHBOUR instead of widening the track.
+   Promoting the span is the thing that actually reflows.
+
+   The breakpoints are not chosen, they are SOLVED from that one number. A
+   widget spanning N of the 12 columns in a container W wide has a grid area of
+
+       N * (W - 11*20) / 12  +  (N-1) * 20
+
+   so the width at which each fraction reaches 300px is:
+
+       a quarter  (3 of 12)   W = 1260
+       a third    (4 of 12)   W =  940
+       a half     (6 of 12)   W =  620
+
+   The widget's own box is 20px narrower than that -- .owa_reportSectionContent
+   carries 10px of side margin -- so the floor in usable pixels is nearer 280.
+   That is deliberate rather than an oversight: solving for 300 of USABLE width
+   puts the first breakpoint at 1340 and the second at 1000, which makes a
+   1280-wide laptop show two widgets per row where three fit comfortably at
+   297px. Measured, not assumed.
+
+   Change the floor and the three numbers follow from it. Below 620 nothing more
+   can be done -- one column IS the whole container -- and the content scrolls
+   inside the widget, which is the honest end of the ladder.
+
+   The grid keeps its twelve tracks the whole way down. An earlier version
+   halved the track count at 900px, which meant every span class silently meant
+   something different below that width: .owa_span-4 was a third above it and
+   two thirds below.
+   --------------------------------------------------------------------------- */
+
+/* Under 1260px a quarter is below the floor: nothing narrower than a third. */
+@container owa-report (max-width: 1259px) {
+
+    .owa_span-1, .owa_span-2, .owa_span-3 { grid-column: span 4; }
 }
 
-/* Phone width: one column. Every widget is full width, and nothing spans rows,
-   because a two-row widget in a single column is just a tall gap. */
-@container owa-report (max-width: 600px) {
+/* Under 940px a third is below the floor: nothing narrower than a half. And
+   anything that asked for more than half goes full width rather than leaving a
+   ragged column beside it. */
+@container owa-report (max-width: 939px) {
 
-    .owa_reportGrid { grid-template-columns: 1fr; }
+    .owa_span-1, .owa_span-2, .owa_span-3,
+    .owa_span-4, .owa_span-5 { grid-column: span 6; }
+
+    .owa_span-7, .owa_span-8, .owa_span-9,
+    .owa_span-10, .owa_span-11 { grid-column: 1 / -1; }
+}
+
+/* Under 620px a half is below the floor: one widget per row. Nothing spans
+   rows either, because a two-row widget in a single column is just a tall gap. */
+@container owa-report (max-width: 619px) {
 
     .owa_reportGridItem { grid-column: 1 / -1; }
 

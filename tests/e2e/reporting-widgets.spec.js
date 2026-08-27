@@ -231,3 +231,119 @@ test.describe('every configured report renders in a browser', () => {
         });
     });
 });
+
+/**
+ * A widget has a floor.
+ *
+ * The report grid is twelve tracks of minmax(0, 1fr), and a quarter-width card
+ * on a 1280-wide laptop was 213px: twelve tracks and eleven 20px gaps leave
+ * 64px a track. It did not overflow -- .owa_reportGridItem sets min-width:0, so
+ * the widget shrank and its table scrolled inside it -- which is the worst
+ * shape for a layout bug to take. The report looks intact and is unreadable,
+ * and nothing in the console says a word.
+ *
+ * The floor is held by container queries that promote a widget's SPAN as the
+ * container narrows, because a min-width on a grid item cannot hold it: a
+ * minmax(0, 1fr) track has a literal 0 minimum, so an item wider than its track
+ * overflows into its neighbour rather than widening the track.
+ *
+ * Which makes this a test only a browser can run. The span classes are static
+ * and a PHP test can read them; what they RESOLVE to at a given width is the
+ * thing that was broken.
+ */
+test.describe('the report grid gives every widget a usable width', () => {
+
+    /*
+     * Content Overview is the case: a full-width trend and three quarter-width
+     * cards, which is the layout the floor exists for. Widths chosen around the
+     * breakpoints (1260 / 940 / 620 of GRID width, not viewport) rather than at
+     * them, so the test is not asserting a rounding.
+     */
+    const VIEWPORTS = [1600, 1440, 1280, 1150, 1024, 900, 760];
+
+    /*
+     * 260, not 300. The rules are solved for 300px of GRID AREA and a widget's
+     * own box is 20px narrower -- .owa_reportSectionContent carries 10px of side
+     * margin -- so the usable floor is around 280. The assertion sits under
+     * that with room for a scrollbar, because what it is guarding against is
+     * 213px, not a ten-pixel drift.
+     */
+    const FLOOR = 260;
+
+    test('no widget collapses below a readable width at any window size', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+
+        const tooNarrow = [];
+
+        for (const width of VIEWPORTS) {
+
+            await page.setViewportSize({ width, height: 1000 });
+
+            await page.goto(
+                `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+                + '&owa_period=last_thirty_days',
+                { waitUntil: 'networkidle' }
+            );
+
+            await page.waitForSelector('.owa_reportGridItem', { timeout: 20_000 });
+
+            const measured = await page.evaluate(() => {
+
+                const grid = document.querySelector('.owa_reportGrid');
+
+                return {
+                    grid: Math.round(grid.getBoundingClientRect().width),
+                    items: Array.from(document.querySelectorAll('.owa_reportGridItem'))
+                        .map(el => Math.round(el.getBoundingClientRect().width)),
+                };
+            });
+
+            for (const w of measured.items) {
+
+                /*
+                 * Except when the grid ITSELF is under the floor. Below about
+                 * 620px of grid the ladder has run out -- one column is the
+                 * whole container -- and a widget cannot be wider than what
+                 * holds it.
+                 */
+                if (w < FLOOR && measured.grid >= FLOOR) {
+
+                    tooNarrow.push(`viewport ${width}: grid ${measured.grid}, widget ${w}`);
+                }
+            }
+        }
+
+        expect(tooNarrow, 'widgets collapsed below the floor').toEqual([]);
+    });
+
+    /**
+     * ...and the promotion is what does it, not luck.
+     *
+     * A widget declaring a quarter must actually be resolving to more than
+     * three columns once the container is under 1260 -- otherwise the test
+     * above could pass on a report whose widgets happen to be wide.
+     */
+    test('a quarter-width widget is promoted once a quarter stops fitting', async ({ page }) => {
+        await login(page);
+
+        await page.setViewportSize({ width: 1280, height: 1000 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+        await expect(card).toBeAttached();
+
+        // Declared a quarter...
+        await expect(card).toHaveClass(/owa_span-3/);
+
+        // ...and resolving to more than a quarter at this width.
+        const span = await card.evaluate(el => getComputedStyle(el).gridColumnStart);
+        expect(span).toBe('span 4');
+    });
+});
