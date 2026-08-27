@@ -1078,6 +1078,36 @@ li.constraintRow {
 }
 
 /*
+ * The metric boxes under a trend are how you choose what it charts.
+ *
+ * They are already the list of metrics the widget measures, so a separate
+ * picker beside them would be a second copy of the same list. Clickable only
+ * when there is more than one -- the class is put on by markChartedMetric(),
+ * not by the markup, because one box that can only re-select itself is a
+ * control that does nothing.
+ */
+.owa .owa_metricBoxesSelectable .owa_metricInfobox {
+    cursor: pointer;
+}
+
+.owa .owa_metricBoxesSelectable .owa_metricInfobox:hover {
+    background-color: #f5faff;
+}
+
+/*
+ * The one being charted. A left edge in the chart's own colour, so the box and
+ * the filled area it describes are visibly the same thing.
+ */
+.owa .owa_metricInfobox.owa_metricInfoboxCharted {
+    border-left: 3px solid #1874CD;
+    background-color: #f5faff;
+}
+
+.owa .owa_metricInfobox.owa_metricInfoboxCharted .owa_metricInfoboxLabel {
+    font-weight: bold;
+}
+
+/*
  * The day/month control, top right of a trend.
  *
  * Floated over the plot's own top-right corner rather than given a row: the

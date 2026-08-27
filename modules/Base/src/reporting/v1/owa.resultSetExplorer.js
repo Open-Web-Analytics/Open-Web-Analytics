@@ -186,7 +186,10 @@ OWA.resultSetExplorer = function(dom_id, options) {
             dom_id: ''
         },
         metricBoxes: {
-            width: ''
+            width: '',
+            // null: decide from whether there is a chart above them. See
+            // makeMetricBoxes().
+            sparklines: null
         },
         chart: {showGrid: true},
         chartHeight: 125,
@@ -575,6 +578,16 @@ OWA.resultSetExplorer.prototype = {
             OWA.debug('about to trigger data updates.');
             jQuery('#' + that.subscriber_dom_ids[i]).trigger('new_result_set', [that.resultSet]);
         }
+
+        /*
+         * ...and once they have all rebuilt, say again which metric is charted.
+         *
+         * The chart and the metric boxes are separate subscribers that each
+         * rebuild themselves from this event, so whichever of them goes second
+         * would otherwise wipe out what the first marked. Doing it after the
+         * loop means it does not depend on the order they were registered in.
+         */
+        this.markChartedMetric();
     },
 
     /**
@@ -928,11 +941,96 @@ OWA.resultSetExplorer.prototype = {
             options.width = this.options.metricBoxes.width;
         }
 
+        /*
+         * No sparkline in a box that sits under a chart.
+         *
+         * The chart above already draws the shape over time, so a thumbnail of
+         * it inside every box says the same thing again -- and these boxes are
+         * the control for choosing which metric that chart draws, which reads
+         * better as a row of numbers than as a row of small graphs.
+         *
+         * INFERRED from whether this explorer has a chart, rather than declared
+         * by each caller: makeAreaChart is queued before makeMetricBoxes in all
+         * five places that draw both, so by now the answer is knowable and no
+         * template has to repeat it. `sparklines` overrides, either way.
+         */
+        options.showSparklines = ( this.options.metricBoxes.sparklines === null
+            || this.options.metricBoxes.sparklines === undefined )
+            ? ! this.areaChart
+            : !! this.options.metricBoxes.sparklines;
+
         kpi.generate(this.resultSet, dom_id, options);
 
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
 
+        // The boxes are a way to choose what the chart above them draws.
+        this.bindMetricBoxes( dom_id );
+    },
+
+    /**
+     * Clicking a metric box charts that metric.
+     *
+     * The boxes under a trend ARE the metrics the widget measures, and the
+     * chart draws one of them -- so they are already the list of what it could
+     * draw instead, and a separate picker beside them would be a second copy of
+     * the same list.
+     *
+     * DELEGATED, and bound once. Both the boxes and the chart rebuild
+     * themselves whenever a new result set arrives -- a granularity change is
+     * one -- so a handler on the boxes would be thrown away with them.
+     *
+     * @param string dom_id the element the boxes were rendered into
+     */
+    bindMetricBoxes : function ( dom_id ) {
+
+        var that = this;
+
+        this.metricBoxesDomId = dom_id;
+
+        jQuery( '#' + dom_id )
+            .off( 'click.owaChartMetric' )
+            .on( 'click.owaChartMetric', '.owa_metricInfobox', function () {
+
+                if ( ! that.areaChart ) {
+
+                    return;
+                }
+
+                if ( that.areaChart.changeMetric( jQuery( this ).attr( 'data-metric' ) ) ) {
+
+                    that.markChartedMetric();
+                }
+            } );
+
+        this.markChartedMetric();
+    },
+
+    /**
+     * Say on the boxes which metric the chart is drawing.
+     *
+     * Interactive only when there is more than one to choose between: one box
+     * that can only re-select itself is a control that does nothing, and
+     * styling it as clickable would promise otherwise.
+     */
+    markChartedMetric : function () {
+
+        if ( ! this.metricBoxesDomId || ! this.areaChart ) {
+
+            return;
+        }
+
+        var $boxes = jQuery( '#' + this.metricBoxesDomId + ' .owa_metricInfobox' );
+        var charted = this.areaChart.chartedMetric();
+
+        $boxes.each( function () {
+
+            jQuery( this ).toggleClass( 'owa_metricInfoboxCharted',
+                jQuery( this ).attr( 'data-metric' ) === charted );
+        } );
+
+        jQuery( '#' + this.metricBoxesDomId )
+            .toggleClass( 'owa_metricBoxesSelectable', $boxes.length > 1 );
     },
     
     makeSparkLine : function(dom_id, options) {

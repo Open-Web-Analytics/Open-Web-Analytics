@@ -501,6 +501,45 @@ OWA.areaChart.prototype = {
     },
 
     /**
+     * Chart a different metric.
+     *
+     * NO REFETCH. The widget already queried every metric it draws -- the boxes
+     * under the chart are those same metrics -- so which one is plotted is a
+     * choice about what to draw from data already here. Going back to the
+     * server would be asking for something it has.
+     *
+     * The breakdown survives: a trend of visits by medium becomes a trend of
+     * page views by medium, which is the same question about a different
+     * measure.
+     *
+     * @return bool whether anything changed
+     */
+    changeMetric : function ( name ) {
+
+        if ( ! name || ! this.options.series[0] || name === this.options.series[0].y ) {
+
+            return false;
+        }
+
+        if ( ! this.explorer || ! this.explorer.resultSet ) {
+
+            return false;
+        }
+
+        this.options.series[0].y = name;
+
+        this.generate( this.explorer.resultSet, this.options.series, this.dom_id );
+
+        return true;
+    },
+
+    /** The metric currently drawn, or '' before anything has been. */
+    chartedMetric : function () {
+
+        return ( this.options.series[0] && this.options.series[0].y ) || '';
+    },
+
+    /**
      * The day/month control, top right of the chart.
      *
      * A trend is a shape over time, and which time -- days or months -- is a

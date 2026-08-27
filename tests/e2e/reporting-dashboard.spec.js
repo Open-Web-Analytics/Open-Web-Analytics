@@ -166,6 +166,152 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(state.everyPointNumeric).toBe(true);
     });
 
+    /**
+     * The metric boxes under a trend are how you choose what it charts.
+     *
+     * They already ARE the metrics the widget measures, and the chart draws one
+     * of them -- so they are the list of what it could draw instead, and a
+     * separate picker beside them would be a second copy of the same list.
+     *
+     * No refetch: the widget queried every one of these, so which is plotted is
+     * a choice about data already on the page.
+     */
+    test('clicking a metric box charts that metric', async ({ page }) => {
+        const boxes = page.locator('#siteTrend-metrics .owa_metricInfobox');
+
+        await expect(boxes.first()).toBeVisible({ timeout: 20_000 });
+        expect(await boxes.count()).toBeGreaterThan(1);
+
+        const charted = await page.evaluate(() => window.siteTrend.areaChart.chartedMetric());
+
+        // The one being drawn is marked, and only it.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+        await expect(page.locator(
+            `#siteTrend-metrics .owa_metricInfobox[data-metric="${charted}"]`))
+            .toHaveClass(/owa_metricInfoboxCharted/);
+
+        // Clickable, because there is more than one to choose between.
+        await expect(page.locator('#siteTrend-metrics.owa_metricBoxesSelectable')).toHaveCount(1);
+
+        const others = (await boxes.evaluateAll((els) => els.map((e) => e.getAttribute('data-metric'))))
+            .filter((m) => m !== charted);
+
+        const target = others[0];
+        const urlBefore = await page.evaluate(() => window.siteTrend.resultSet.self);
+
+        await page.locator(`#siteTrend-metrics .owa_metricInfobox[data-metric="${target}"]`).click();
+
+        await expect.poll(async () => page.evaluate(
+            () => window.siteTrend.areaChart.chartedMetric()), { timeout: 10_000 }).toBe(target);
+
+        // The chart is drawing it, by its own label.
+        const label = await page.evaluate(() => window.siteTrend.areaChart.dataseries[0].label);
+        expect(label.length).toBeGreaterThan(0);
+        expect(label).not.toBe('Total');
+
+        // The marking moved with it, and did not multiply.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+        await expect(page.locator(
+            `#siteTrend-metrics .owa_metricInfobox[data-metric="${target}"]`))
+            .toHaveClass(/owa_metricInfoboxCharted/);
+
+        // ...and nothing was fetched to do it.
+        expect(await page.evaluate(() => window.siteTrend.resultSet.self)).toBe(urlBefore);
+    });
+
+    /**
+     * The chosen metric survives a refetch, and the boxes do not multiply.
+     *
+     * THE BUG THIS EXISTS FOR
+     *
+     * kpiBox built its container selector as `dom_id + ' > .metricInfobox...'`
+     * with no leading '#', which is a valid CSS TYPE selector -- an element
+     * called <siteTrend-metrics> -- so it matched nothing. The remove() before
+     * each rebuild was a silent no-op and every new result set appended ANOTHER
+     * full set of boxes beneath the old ones. Every granularity change, page
+     * change and site change doubled them.
+     *
+     * It went unnoticed because nothing read the boxes; marking one of them is
+     * what made two of them visible.
+     */
+    test('the metric boxes rebuild rather than accumulate', async ({ page }) => {
+        const boxes = page.locator('#siteTrend-metrics .owa_metricInfobox');
+
+        await expect(boxes.first()).toBeVisible({ timeout: 20_000 });
+
+        const before = await boxes.count();
+
+        await page.locator('.owa_chartGranularity').selectOption('month');
+
+        await expect.poll(async () => page.evaluate(
+            () => window.siteTrend.areaChart.xDimension), { timeout: 20_000 }).toBe('month');
+
+        // The same boxes, rebuilt -- not a second set under the first.
+        await expect(boxes).toHaveCount(before);
+        await expect(page.locator('#siteTrend-metrics .metricInfoboxesContainer')).toHaveCount(1);
+
+        // ...and the chart is still drawing the metric it was drawing.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+    });
+
+    /**
+     * No sparkline in a box that sits under a chart.
+     *
+     * The chart above already draws the shape over time, at a size you can read
+     * -- a thumbnail of it inside every box is the same information again, and
+     * these boxes are the control for choosing which metric that chart draws,
+     * which scans better as numbers than as a row of small graphs.
+     *
+     * Both sides, because "suppressed" only means something against somewhere
+     * they are still drawn: a metric-boxes widget with no chart above it keeps
+     * its sparklines, and that is what the inference has to get right.
+     */
+    test('metric boxes under a trend have no sparklines, standalone ones do',
+        async ({ page }) => {
+
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfobox').first())
+            .toBeVisible({ timeout: 20_000 });
+
+        const underTrend = await page.evaluate(() => ({
+            boxes: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox').length,
+            sparklines: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox canvas').length,
+        }));
+
+        expect(underTrend.boxes).toBeGreaterThan(1);
+        expect(underTrend.sparklines).toBe(0);
+
+        // ...and a widget of boxes with no chart above them is untouched.
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=traffic&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
+        await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
+
+        const standalone = await page.evaluate(() => {
+            const rows = [];
+
+            document.querySelectorAll('.owa_reportGridItem').forEach((item) => {
+
+                const boxes = item.querySelectorAll('.owa_metricInfobox');
+
+                if (boxes.length && !item.querySelector('.owa_areaChart')) {
+                    rows.push({
+                        boxes: boxes.length,
+                        sparklines: item.querySelectorAll('.owa_metricInfobox canvas').length,
+                    });
+                }
+            });
+
+            return rows;
+        });
+
+        expect(standalone.length).toBeGreaterThan(0);
+
+        for (const row of standalone) {
+            expect(row.sparklines).toBe(row.boxes);
+        }
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
@@ -406,7 +552,19 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // OWA renders each sparkline into <p class="sparkline">; jquery-sparkline
         // 2.4.0 (the jQuery-3.x-clean replacement for the vendored 1.2.1) draws a
         // <canvas> inside it. Assert at least one sparkline painted a canvas.
+        //
+        // NOT on the dashboard any more. Its only boxes are the ones under the
+        // trend, and those deliberately draw no sparkline -- the chart above
+        // them already shows the shape over time. `traffic` has metric-boxes
+        // widgets with no chart above them, which is where sparklines still
+        // belong and so where the library can still be pinned.
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=traffic&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
         const sparkCanvases = page.locator('p.sparkline canvas');
+
+        await expect(sparkCanvases.first()).toBeAttached({ timeout: 20_000 });
         expect(await sparkCanvases.count()).toBeGreaterThanOrEqual(1);
 
         const dims = await page.evaluate(() => {

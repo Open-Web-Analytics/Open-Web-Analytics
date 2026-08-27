@@ -1025,16 +1025,27 @@ test.describe('custom reports', () => {
 
             await control.selectOption('month');
 
+            /*
+             * Waited on the RESULT SET, not on the chart's idea of its axis.
+             *
+             * changeGranularity() sets xDimension before it fetches, so polling
+             * that is polling something already true -- the assertions below
+             * would then read the URL of the request still in flight.
+             */
             await expect.poll(async () => page.evaluate(
-                () => window.w1.areaChart.xDimension), { timeout: 20_000 }).toBe('month');
+                () => decodeURIComponent(window.w1.resultSet.self)), { timeout: 20_000 })
+                .toContain('dimensions=month');
 
             const after = await page.evaluate(() => ({
                 url: window.w1.resultSet.self,
+                x: window.w1.areaChart.xDimension,
                 timeformat: window.w1.areaChart.flotOptions.xaxis.timeformat,
                 firstX: window.w1.areaChart.dataseries[0].data[0][0],
                 total: window.w1.areaChart.dataseries[0].data[0][1],
                 parts: window.w1.areaChart.dataseries.slice(1).map((s) => s.data[0][1]),
             }));
+
+            expect(after.x).toBe('month');
 
             // The QUERY changed, and the sort with it -- a sort naming a
             // dimension the query no longer has is one the server cannot
