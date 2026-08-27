@@ -1008,6 +1008,22 @@
                 }
             },
             {
+                "var": "trendBreakdownurl",
+                "query": {
+                    "dimensions": "pagePath",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "visits,pageViews",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "25",
+                    "siteId": "1",
+                    "sort": "pageViews-",
+                    "version": "v1"
+                }
+            },
+            {
                 "var": "toppagesurl",
                 "query": {
                     "dimensions": "pagePath",
@@ -1045,14 +1061,18 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 3,
+            "loads": 4,
             "loadsWithUrl": 0,
-            "urls": 3
+            "urls": 4
         },
         "explorers": [
             {
                 "var": "trend",
                 "container": "trend-chart"
+            },
+            {
+                "var": "trendBreakdown",
+                "container": "trend-breakdown"
             },
             {
                 "var": "toppages",
@@ -1067,6 +1087,7 @@
             "trend.renderHeadline -> trend-title",
             "trend.makeAreaChart -> trend-chart",
             "trend.makeMetricBoxes -> trend-metrics",
+            "trendBreakdown.refreshGrid",
             "toppages.refreshGrid",
             "toppagetypes.refreshGrid"
         ]

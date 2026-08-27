@@ -186,9 +186,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         'y' => $owa_chartMetric,
     ) );
 
+    $owa_breakdown     = '';
+    $owa_breakdownQuery = array();
+
     if ( ( $owa_w['type'] ?? '' ) === 'trend' && isset( $owa_trendDims[1] ) ) {
 
-        $owa_chartSeries[0]['series'] = $owa_trendDims[1];
+        $owa_breakdown = $owa_trendDims[1];
+
+        $owa_chartSeries[0]['series'] = $owa_breakdown;
 
         /*
          * ENOUGH ROWS TO BE RIGHT.
@@ -205,6 +210,56 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
          * there is a top-N in SQL rather than a bigger number here.
          */
         $owa_query['resultsPerPage'] = 1000;
+
+        /*
+         * THE ROWS BEHIND THE LINES.
+         *
+         * A trend broken out by a dimension draws a line per value, and the
+         * question a reader asks next is always the same one: which values, and
+         * how much each. That is a grid, so a broken-out trend grows one under
+         * its boxes -- the same question at two levels of detail.
+         *
+         * A SECOND query, not a second view of the first. They need different
+         * rows: the trend needs one per (date, value) to have a shape over
+         * time, the grid needs one per value to be a ranking. Deriving the
+         * ranking from the trend's rows would mean summing them in the browser,
+         * which is wrong the moment the 1000-row bound above is reached -- and
+         * silently wrong, because the sum still looks like a number.
+         *
+         * The x dimension is dropped and everything else travels: same metrics,
+         * same constraints, so the two are measuring the same thing.
+         */
+        $owa_breakdownQuery = $owa_query;
+
+        $owa_breakdownQuery['dimensions'] = $owa_breakdown;
+
+        /*
+         * Ordered by what the chart draws, descending, so the rows at the top
+         * of the grid are the lines at the top of the chart. `-` suffixed is
+         * how the reporting API spells descending; see the shipped grids.
+         *
+         * Falls back to the first metric when a trend names no chart metric --
+         * a grid still has to be ordered by something, and the first metric is
+         * the one its first numeric column shows.
+         */
+        $owa_breakdownSort = $owa_chartMetric !== ''
+            ? $owa_chartMetric
+            : trim( (string) strtok( (string) $owa_breakdownQuery['metrics'], ',' ) );
+
+        $owa_breakdownQuery['sort'] = $owa_breakdownSort . '-';
+
+        // A page of rows, not the thousand the chart needs. The grid pages.
+        $owa_breakdownQuery['resultsPerPage'] = (int) ( $owa_w['breakdownRows'] ?? 25 );
+    }
+
+    /*
+     * A trend can decline the grid. Nothing shipped does today -- it is here
+     * because `content` will want it: its trend is broken out by pagePath and
+     * it already carries a Top Pages card showing those same rows.
+     */
+    if ( array_key_exists( 'showBreakdownGrid', $owa_w ) && ! $owa_w['showBreakdownGrid'] ) {
+
+        $owa_breakdownQuery = array();
     }
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
@@ -263,6 +318,17 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div id="<?php $view->out( $owa_id ); ?>-metrics" style="height:auto;width:auto;"></div>
 <?php endif; ?>
         <div style="clear:both;"></div>
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php
+            /*
+             * UNDER the boxes, because it is the detail behind them: the chart
+             * is the shape, the boxes are the totals, the grid is the rows they
+             * are made of. Reading down the widget goes from least to most
+             * detailed.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_id ); ?>-breakdown" class="owa_trendBreakdown"></div>
+<?php endif; ?>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
@@ -294,11 +360,47 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
 <?php endif; ?>
 
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php
+            /*
+             * The grid of the values the chart is broken out by, and the wiring
+             * that makes the two one control surface.
+             *
+             * Declared after the trend so the trend variable exists when it is
+             * handed over. The link is one call rather than a block of event
+             * handlers here, because which control drives what is a decision
+             * about the two objects and not about this report -- see
+             * OWA.linkTrendToBreakdownGrid for what each control means.
+             */
+        ?>
+        var <?php echo $owa_id; ?>Breakdownurl = '<?php echo $view->makeApiLink( $owa_breakdownQuery, true ); ?>';
+
+        var <?php echo $owa_id; ?>Breakdown = new OWA.resultSetExplorer('<?php $view->out( $owa_id, false ); ?>-breakdown');
+        <?php echo $owa_id; ?>Breakdown.setDataLoadUrl(<?php echo $owa_id; ?>Breakdownurl);
+        <?php echo $owa_id; ?>Breakdown.asyncQueue.push(['refreshGrid']);
+
+        OWA.linkTrendToBreakdownGrid(<?php echo $owa_id; ?>, <?php echo $owa_id; ?>Breakdown);
+<?php endif; ?>
+
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php echo $owa_id; ?>Breakdown.load();
+<?php endif; ?>
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+<?php if ( $owa_breakdownQuery ): ?>
+<?php
+    /*
+     * Registered as a result set of the tab in its own right, so a metric set
+     * that is not being looked at does not query for its grid either. A widget
+     * contributing two result sets is why these are keyed by name rather than
+     * counted.
+     */
+?>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) . '_breakdown' ] = $owa_id . 'Breakdown'; ?>
+<?php endif; ?>
 
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'metric-boxes' ): ?>
 <?php

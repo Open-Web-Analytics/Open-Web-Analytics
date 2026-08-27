@@ -1915,6 +1915,20 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
+ * The rows behind a trend
+ *
+ * A trend broken out by a dimension draws a line per value; this is the grid of
+ * those values, under the metric boxes. Reading down the widget goes from least
+ * to most detailed -- the shape, then the totals, then the rows they are made
+ * of -- so the grid needs air above it or it reads as part of the boxes.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_trendBreakdown {
+    margin-top: 18px;
+    clear: both;
+}
+
+/* ---------------------------------------------------------------------------
  * The filter toggle
  *
  * An icon, sized and dimmed like the left-hand navigation's icons so the two

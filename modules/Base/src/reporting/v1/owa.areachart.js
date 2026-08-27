@@ -87,12 +87,22 @@ OWA.areaChart.prototype = {
         this.dom_id = dom_id;
         this.domSelector = "#" + dom_id + ' > .owa_areaChart';
         
-        // listen for data change events
+        /*
+         * ONE subscription, however many times this is called.
+         *
+         * setDomId runs from makeAreaChart AND from every generate() that is
+         * handed a dom_id -- which is every changeMetric and every changeGranularity
+         * -- so a plain bind() added a handler per interaction, and each one
+         * redraws the whole chart on the next result set. Namespaced and
+         * unbound first, so the count stays at one no matter how much the
+         * reader has been clicking.
+         */
         var that = this;
-        jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
-            //jQuery( that.domSelector ).remove();
-            that.generate( resultSet );
-        });
+        jQuery( '#' + that.dom_id )
+            .off( 'new_result_set.owaAreaChart' )
+            .on( 'new_result_set.owaAreaChart', function( event, resultSet ) {
+                that.generate( resultSet );
+            });
         
     },
     
@@ -768,6 +778,90 @@ OWA.areaChart.prototype = {
         }
 
         this.explorer.getNewResultSet( url.getSource() );
+    },
+
+    /**
+     * Break the same trend out by a different dimension.
+     *
+     * The sibling of changeGranularity: that one swaps the X dimension, this
+     * swaps the SERIES one -- the second entry in the query's dimension list,
+     * which is what turns one filled area into a line per value.
+     *
+     * A REFETCH, not a redraw, and for the same reason changeGranularity is
+     * one: the grouping happens in SQL. Rows grouped by (date, medium) cannot
+     * be regrouped by browser in the browser -- the numbers for a value that
+     * was never asked for do not exist in what came back.
+     *
+     * That is the difference from changeMetric, which redraws without asking:
+     * every metric the boxes show was already queried, so which one is plotted
+     * is a choice about data that is already here.
+     *
+     * An empty name removes the breakdown and leaves the filled total, which
+     * is what a trend is with no dimension to break out by.
+     *
+     * @param string dimension the dimension to break out by, or '' for none
+     * @return bool whether anything changed
+     */
+    changeBreakdown : function ( dimension ) {
+
+        if ( ! this.explorer || ! this.explorer.resultSet ) {
+
+            return false;
+        }
+
+        dimension = dimension || '';
+
+        var spec = this.options.series[0];
+
+        if ( ! spec ) {
+
+            return false;
+        }
+
+        if ( ( spec.series || '' ) === dimension ) {
+
+            return false;
+        }
+
+        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var key  = OWA.util.appNs( 'dimensions' );
+
+        var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' )
+            .split( ',' )
+            .map( function ( n ) { return n.trim(); } )
+            .filter( Boolean );
+
+        /*
+         * The x dimension is whatever the chart is CURRENTLY over, not the
+         * first name in the URL. A reader who switched to months and then
+         * changed the breakdown would otherwise be put back onto days.
+         */
+        var x = this.xDimension || dims[0] || 'date';
+
+        url.setQueryParam( key, dimension ? x + ',' + dimension : x );
+
+        // A different breakdown is a different number of rows, so the page the
+        // reader was on no longer means anything.
+        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+
+        /*
+         * A broken-out trend is one row per (x, value) pair, and the chart sums
+         * those rows for its total and ranks them to pick its lines. Both are
+         * wrong if the result set was paginated -- the same bound the renderer
+         * puts on the first query, restated here because this rewrites it.
+         */
+        if ( dimension ) {
+
+            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
+        }
+
+        // What generate() reads on the way back in: the refetch arrives as a
+        // new_result_set event carrying no spec of its own.
+        spec.series = dimension || null;
+
+        this.explorer.getNewResultSet( url.getSource() );
+
+        return true;
     },
 
     /**

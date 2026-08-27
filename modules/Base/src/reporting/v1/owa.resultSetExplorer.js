@@ -2688,3 +2688,66 @@ OWA.constraintBuilder.prototype = {
     }
 
 };
+
+
+/**
+ * A trend, and the grid of the rows behind it.
+ *
+ * A trend broken out by a dimension already draws a line per value, and the
+ * question a reader asks next is always the same one -- which values, and how
+ * much each. That is a grid, so a broken-out trend grows one under its boxes
+ * and the two are the same question at two levels of detail.
+ *
+ * They are two result-set explorers rather than one, because they ask for
+ * different rows: the trend needs one row per (date, value) to have a shape
+ * over time, and the grid needs one row per value to be a ranking. Sharing a
+ * result set would mean one of them summing the other's rows in the browser,
+ * which is the thing that is wrong the moment a page boundary is involved.
+ *
+ * WHICH CONTROL DRIVES WHAT is the whole design, and it follows from what each
+ * control means:
+ *
+ *   - the grid's FIRST dimension is what the report is about, so changing it
+ *     changes the trend too -- the chart is that dimension over time.
+ *   - a SECOND dimension refines the ROWS. It is a way of reading the table,
+ *     not a different subject, and a trend cannot draw it anyway: a line per
+ *     (medium, browser) pair is not a trend of anything.
+ *   - a FILTER narrows the POPULATION, which is a statement about who is being
+ *     counted. A chart and a table disagreeing about that would be two answers
+ *     to one question, so the filter travels to both.
+ *
+ * Bound on the grid's own element, which is where its controls publish. The
+ * grid's explorer is already listening there and keeps handling its own
+ * refetch -- this adds a second listener rather than intercepting the first,
+ * so the grid behaves identically whether or not it has a trend above it.
+ *
+ * @param object trend the trend's result-set explorer
+ * @param object grid  the companion grid's result-set explorer
+ */
+OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
+
+    var selector = '#' + grid.dom_id;
+
+    jQuery( selector ).bind( 'dimension_list_change', function ( event, dims ) {
+
+        /*
+         * The chart is built by the trend's FIRST load, so it does not exist
+         * while that is still in flight. Nothing is lost by ignoring the event
+         * then: the trend is about to draw itself from its own query.
+         */
+        if ( ! trend.areaChart ) {
+
+            return;
+        }
+
+        // Only the primary. changeBreakdown() answers false when it is the
+        // dimension already charted, which is what makes adding a SECOND
+        // dimension leave the trend alone.
+        trend.areaChart.changeBreakdown( ( dims && dims[0] ) || '' );
+    } );
+
+    jQuery( selector ).bind( 'constraint_change', function ( event, constraints ) {
+
+        trend.changeConstraints( constraints );
+    } );
+};
