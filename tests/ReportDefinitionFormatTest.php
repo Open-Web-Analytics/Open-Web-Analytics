@@ -849,6 +849,184 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertArrayNotHasKey( 'definitely-not-a-report', $registry );
     }
 
+    // ------------------------------------------------------------------
+    // The trend card
+    // ------------------------------------------------------------------
+
+    /** A trend card, with two metrics of its own. */
+    private static function trendCard(): array
+    {
+        return array(
+            'title'   => 'Cards',
+            'widgets' => array( array(
+                'type'        => 'trend-card',
+                'id'          => 'card',
+                'container'   => 'card-chart',
+                'title'       => 'Visits',
+                'chartMetric' => 'visits',
+                'query'       => array(
+                    'metrics'    => 'visits,uniqueVisitors',
+                    'dimensions' => 'date',
+                    'sort'       => 'date',
+                ),
+            ) ),
+        );
+    }
+
+    /**
+     * A card's boxes are ABOVE its chart, which is the type's whole shape.
+     *
+     * A full-width trend leads with the chart, because there the chart IS the
+     * thing and the totals under it are detail. Half a row is not enough chart
+     * for that to be true: what a reader takes from a card is the figure, and
+     * the plot is the shape behind it.
+     *
+     * Asserted on the ORDER the two containers appear in the markup, because
+     * that is the whole of what "above" means here -- both are block elements
+     * in one column.
+     */
+    public function testATrendCardDrawsItsBoxesAboveItsChart(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), array() );
+
+        $boxes = strpos( $html, 'id="card-metrics"' );
+        $chart = strpos( $html, 'id="card-chart"' );
+
+        $this->assertNotFalse( $boxes, 'the card drew no metric boxes' );
+        $this->assertNotFalse( $chart, 'the card drew no chart container' );
+
+        $this->assertLessThan( $chart, $boxes,
+            'a trend card reads top down from the number: boxes, then the shape behind them' );
+
+        // ...and a full-width trend is still the other way round.
+        $definition = self::trendCard();
+        $definition['widgets'][0]['type'] = 'trend';
+
+        $plain = $this->renderedWith( $definition, array() );
+
+        $this->assertGreaterThan( strpos( $plain, 'id="card-chart"' ),
+            strpos( $plain, 'id="card-metrics"' ),
+            'a full-width trend leads with its chart' );
+    }
+
+    /**
+     * The boxes carry the class the borders are removed by.
+     *
+     * The zero borders ARE the type's visual difference -- two bordered boxes
+     * stacked above a plot read as three separate panels -- and CSS cannot
+     * reach them without something to select on.
+     */
+    public function testATrendCardsBoxesAreMarkedAsACards(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), array() );
+
+        $this->assertStringContainsString( 'class="owa_trendCardMetrics"', $html );
+
+        $plain = self::trendCard();
+        $plain['widgets'][0]['type'] = 'trend';
+
+        $this->assertStringNotContainsString( 'owa_trendCardMetrics',
+            $this->renderedWith( $plain, array() ) );
+    }
+
+    /**
+     * A card never inherits a metric set, even where every other widget does.
+     *
+     * Rendered against three sets, which is the case that would otherwise
+     * replace its metrics three times over -- and a card measuring "however the
+     * report is being measured" is a card measuring something its author did
+     * not choose.
+     */
+    public function testATrendCardKeepsItsOwnMetricsAcrossEverySet(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), self::threeSets() );
+
+        $metrics = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
+            $metrics[] = $q['query']['metrics'];
+        }
+
+        $this->assertNotEmpty( $metrics );
+
+        foreach ( $metrics as $m ) {
+            $this->assertSame( 'visits,uniqueVisitors', $m,
+                'a metric set replaced a trend card\'s own metrics' );
+        }
+    }
+
+    /**
+     * ...and a card with none of its own asks for none, rather than silently
+     * borrowing the set.
+     *
+     * This is the state CustomReports::OWN_METRIC_TYPES refuses on save. A
+     * hand-written definition can still reach the renderer, and what it must
+     * NOT do there is quietly become a different widget.
+     */
+    public function testATrendCardWithNoMetricsBorrowsNone(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = self::trendCard();
+
+        unset( $definition['widgets'][0]['query']['metrics'] );
+        unset( $definition['widgets'][0]['chartMetric'] );
+
+        $html = $this->renderedWith( $definition, self::threeSets() );
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
+            $this->assertSame( '', (string) $q['query']['metrics'] );
+        }
+    }
+
+    /**
+     * A card charts its first metric when it names no chartMetric.
+     *
+     * The blanket rule is the opposite -- a trend that names none draws no
+     * chart, because half the shipped trends rely on that and a fallback would
+     * start drawing charts on thirty-two reports. No trend card predates the
+     * type, so there is nothing a fallback could change, and a widget whose
+     * whole shape is a chart should not render as an empty box because its
+     * author left one field alone.
+     */
+    public function testATrendCardChartsItsFirstMetricByDefault(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = self::trendCard();
+
+        unset( $definition['widgets'][0]['chartMetric'] );
+
+        $html = $this->renderedWith( $definition, array() );
+
+        $charted = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::commandsIn( $html ) as $c ) {
+            $charted[] = $c;
+        }
+
+        $this->assertNotEmpty(
+            array_filter( $charted, function ( $c ) { return strpos( $c, 'makeAreaChart' ) !== false; } ),
+            'a trend card with no chartMetric drew no chart' );
+
+        // ...and a full-width trend still does not.
+        $plain = $definition;
+        $plain['widgets'][0]['type'] = 'trend';
+
+        $plainCommands = \OWA\Tests\ReportRenderHarness::commandsIn( $this->renderedWith( $plain, array() ) );
+
+        $this->assertSame( array(),
+            array_values( array_filter( $plainCommands,
+                function ( $c ) { return strpos( $c, 'makeAreaChart' ) !== false; } ) ),
+            'a trend that names no chartMetric must still draw no chart' );
+    }
+
     /** Render a definition against a given set of metric sets. */
     private function renderedWith( array $definition, array $metricSets, array $params = array() ): string
     {

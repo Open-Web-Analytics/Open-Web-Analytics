@@ -101,6 +101,7 @@ class CustomReports {
         'grid-card'     => 'Table card',
         'pie'           => 'Pie chart',
         'trend'         => 'Trend chart',
+        'trend-card'    => 'Trend card',
         'metric-boxes'  => 'Info boxes',
     );
 
@@ -117,6 +118,7 @@ class CustomReports {
         'grid-card'     => 'A narrow table of one metric by one dimension. No controls; its rows can link to the report that details them.',
         'pie'           => 'Share of one metric across the values of one dimension.',
         'trend'         => 'One metric over time, as a chart. Always by date.',
+        'trend-card'    => 'A half-width version: its totals sit above the chart, it cannot be broken out by a dimension, and it names its own metrics.',
         'metric-boxes'  => 'Totals for the period, one box per metric.',
     );
 
@@ -133,6 +135,7 @@ class CustomReports {
         'grid-card'     => 'fas fa-list-alt',
         'pie'           => 'fas fa-chart-pie',
         'trend'         => 'fas fa-chart-area',
+        'trend-card'    => 'fas fa-chart-line',
         'metric-boxes'  => 'fas fa-th-large',
     );
 
@@ -153,7 +156,8 @@ class CustomReports {
      * refused.
      */
     const FIXED_DIMENSIONS = array(
-        'trend' => 'date',
+        'trend'      => 'date',
+        'trend-card' => 'date',
     );
 
     /**
@@ -175,6 +179,14 @@ class CustomReports {
     const FIXED_DIMENSION_EXTRA = array(
         // One breakdown beyond the date: its values are the lines.
         'trend' => 1,
+
+        /*
+         * NONE. A trend card is a headline figure with the shape behind it, at
+         * half a row -- there is no room for a legend of six lines and no grid
+         * under it to say what they are. A card that could be broken out would
+         * be a trend that had been made too small to read.
+         */
+        'trend-card' => 0,
     );
 
     /**
@@ -224,6 +236,36 @@ class CustomReports {
      * and no way to choose between them.
      */
     const SINGLE_METRIC_TYPES = array( 'grid-card', 'pie' );
+
+    /**
+     * Types that must name their own metrics, because a set is not an answer.
+     *
+     * A report METRIC SET is a property of the SITE -- site usage, e-commerce,
+     * a group of goals -- and a widget that inherits one is saying "however
+     * this report is being measured". That is right for a trend, whose boxes
+     * are the set made visible.
+     *
+     * It is wrong for a trend CARD. A card is a chosen figure at half a row:
+     * its author picked what it shows, and a set would silently replace that
+     * with three to six metrics whose boxes do not fit the width the type
+     * exists to be. So it declares, and a card with nothing declared is
+     * refused rather than quietly filled in.
+     *
+     * The other two are here because they already say the same thing a
+     * stronger way: a card and a pie draw EXACTLY one metric, which no set can
+     * supply. Named together so the reason is in one place.
+     */
+    const OWN_METRIC_TYPES = array( 'grid-card', 'pie', 'trend-card' );
+
+    /**
+     * Types that draw one metric as a chart and must be told which.
+     *
+     * Read by the builder, so the form asks for a chart metric on exactly the
+     * types that plot one. It was a list written into the builder's own
+     * JavaScript, which is the copy that does not get updated when a type is
+     * added -- and the symptom is a chart with no line rather than an error.
+     */
+    const CHART_TYPES = array( 'trend', 'trend-card', 'pie' );
 
     /**
      * The link template a widget's rows may carry, in full.
@@ -488,6 +530,25 @@ class CustomReports {
 
                 return $error;
             }
+        }
+
+        /*
+         * A type that may not inherit a set has to have named some.
+         *
+         * AFTER the single-field check, which says the same thing more
+         * precisely for a card or a pie: "draws one metric, this one names 0"
+         * names the count as well as the rule. What is left for this to catch
+         * is the type that takes SEVERAL of its own -- a trend card -- where
+         * nothing else would notice an empty list, because an empty list is
+         * legal on every type that CAN inherit.
+         */
+        if ( in_array( $type, self::OWN_METRIC_TYPES, true )
+             && ! self::asNames( $query['metrics'] ?? '' ) ) {
+
+            return sprintf(
+                '%s is a %s, which names its own metrics -- it does not take the '
+              . 'report metric set. This one names none.',
+                $where, self::WIDGET_TYPES[ $type ] ?? $type );
         }
 
         $error = self::validateFieldCount(

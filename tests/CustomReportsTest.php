@@ -793,6 +793,173 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('', CustomReports::validate($definition));
     }
 
+    // ------------------------------------------------------------------
+    // The trend card
+    // ------------------------------------------------------------------
+
+    /**
+     * A card names its own metrics, and is refused if it names none.
+     *
+     * Every other multi-metric widget may leave them out and inherit the
+     * report metric set -- which is a property of the SITE, and is how one
+     * report shows its dimension measured three ways. A card is the other kind
+     * of thing: half a row, showing the figures its author chose, and a set
+     * would replace those with three to six whose boxes do not fit that width.
+     *
+     * So it cannot inherit, and the interesting half is that an empty list has
+     * to be REFUSED rather than left empty. Nothing else would notice: an empty
+     * metrics list is legal on every type that can inherit, so a card with none
+     * would render an empty widget and say nothing.
+     */
+    public function testATrendCardMustNameItsOwnMetrics(): void
+    {
+        $this->assertContains('trend-card', CustomReports::OWN_METRIC_TYPES);
+
+        $definition = $this->definition();
+        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['widgets'][1] = array(
+            'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
+            'query' => array('dimensions' => 'date'),
+        );
+
+        $says = CustomReports::validate($definition);
+
+        $this->assertStringContainsString('Trend card', $says);
+        $this->assertStringContainsString('does not take the report metric set', $says);
+
+        $definition['widgets'][1]['query']['metrics'] = 'visits';
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * ...and SEVERAL of them, which is what separates it from a card or a pie.
+     *
+     * Those draw exactly one metric and are refused a second. A trend card
+     * draws a box per metric above its chart, so a list is the normal case --
+     * the rule it carries is "your own", not "only one".
+     */
+    public function testATrendCardTakesSeveralMetricsOfItsOwn(): void
+    {
+        $this->assertNotContains('trend-card', CustomReports::SINGLE_METRIC_TYPES);
+
+        $definition = $this->definition();
+        $definition['widgets'][1] = array(
+            'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
+            'chartMetric' => 'visits',
+            'query' => array('metrics' => 'visits,uniqueVisitors', 'dimensions' => 'date'),
+        );
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * A card cannot be broken out by a dimension.
+     *
+     * A trend can: its second dimension becomes a line per value, with a legend
+     * under the chart and a grid of those values under that. None of it fits
+     * half a row, so a card that could be broken out would be a trend that had
+     * been made too small to read.
+     */
+    public function testATrendCardCannotBeBrokenOut(): void
+    {
+        $this->assertSame(0, CustomReports::FIXED_DIMENSION_EXTRA['trend-card']);
+        $this->assertSame(1, CustomReports::FIXED_DIMENSION_EXTRA['trend']);
+
+        $definition = $this->definition();
+        $definition['widgets'][1] = array(
+            'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
+            'chartMetric' => 'visits',
+            'query' => array('metrics' => 'visits', 'dimensions' => 'date,medium'),
+        );
+
+        $this->assertStringContainsString('Trend card',
+            CustomReports::validate($definition));
+
+        // ...and the same query IS accepted on a full-width trend, so the
+        // refusal is about the type rather than about the dimension.
+        $definition['widgets'][1]['type'] = 'trend';
+
+        $this->assertSame('', CustomReports::validate($definition));
+    }
+
+    /**
+     * The chart-metric question is asked on exactly the types that plot one.
+     *
+     * The builder used to carry its own copy of this list in JavaScript, which
+     * is the copy that does not get updated when a type is added -- and the
+     * symptom is a chart with no line rather than an error anybody notices.
+     */
+    public function testTheChartTypesAreOfferedAChartMetric(): void
+    {
+        $this->assertSame(
+            array('trend', 'trend-card', 'pie'),
+            CustomReports::CHART_TYPES);
+
+        foreach (CustomReports::CHART_TYPES as $type) {
+            $this->assertArrayHasKey($type, CustomReports::WIDGET_TYPES,
+                "$type is offered a chart metric but is not a type anyone can build");
+        }
+    }
+
+    /**
+     * Everything the builder's controller sets reaches its template.
+     *
+     * The builder's body is a template with its OWN scope, so a value the
+     * controller set and View\CustomReportEdit does not name is simply absent
+     * -- and View::get() answers FALSE for an absent key rather than null or an
+     * error. So a forgotten line here does not fail: `(array) false` is
+     * `array(false)`, the JavaScript gets `[false]`, and an indexOf against it
+     * quietly says no.
+     *
+     * That is not hypothetical. Adding CHART_TYPES and OWN_METRIC_TYPES to the
+     * controller without adding them here left the builder deciding that NO
+     * type draws a chart -- so the chart-metric field would have disappeared
+     * from a trend and a pie, with nothing anywhere saying why.
+     *
+     * Read from the source rather than by rendering, because the failure is a
+     * MISSING line and the only place a missing line exists is the file.
+     */
+    public function testTheBuilderViewForwardsEverythingItsControllerSets(): void
+    {
+        $controller = file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/CustomReportEdit.php' );
+        $view = file_get_contents(
+            OWA_DIR . 'modules/Base/View/CustomReportEdit.php' );
+
+        /*
+         * SINGLE-quoted, and it matters. In a double-quoted PHP string
+         * `$this->set` interpolates away to nothing, and the pattern would then
+         * match something else entirely -- confidently.
+         */
+        preg_match_all( '~\$this->set\(\s*.([a-z_0-9]+).~', $controller, $set );
+        preg_match_all( '~\$this->body->set\(\s*.([a-z_0-9]+).~', $view, $forwarded );
+
+        // The check has to be capable of failing: both sides must have found
+        // something to compare.
+        $this->assertGreaterThan( 15, count( $set[1] ) );
+        $this->assertGreaterThan( 15, count( $forwarded[1] ) );
+
+        /*
+         * Two are deliberately not forwarded, and neither is read by the body:
+         *
+         *   custom_report -- the whole row, set so the controller's own later
+         *   steps can read it. The template gets the name and the definition,
+         *   which is what it draws.
+         *
+         *   title -- the PAGE title, read by the outer report view rather than
+         *   by the body.
+         */
+        $exempt = array( 'custom_report', 'title' );
+
+        $missing = array_values( array_diff(
+            array_unique( $set[1] ), array_unique( $forwarded[1] ), $exempt ) );
+
+        $this->assertSame( array(), $missing,
+            'the builder controller sets these and the view does not forward them, so the '
+          . 'template reads false for each: ' . implode( ', ', $missing ) );
+    }
+
     /**
      * The builder is handed the same answer the engine would give.
      *

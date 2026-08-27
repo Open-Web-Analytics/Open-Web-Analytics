@@ -143,8 +143,22 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     $owa_url       = $owa_id . 'url';
     // A widget's own query wins, so a widget CAN ask for different metrics --
     // none does today, and the report-wide value is what a metric set replaces.
+    /*
+     * A TREND CARD NEVER INHERITS A METRIC SET.
+     *
+     * Every other widget falls back to the set being viewed, which is what
+     * makes one report show its dimension measured three ways. A card is the
+     * other kind of thing: half a row, with the metrics its author chose above
+     * the chart, and a set would replace those with three to six whose boxes do
+     * not fit the width the type exists to be.
+     *
+     * It cannot fail silently, either -- CustomReports::OWN_METRIC_TYPES
+     * refuses a card that names none, rather than letting it inherit.
+     */
+    $owa_ownMetrics = ( $owa_w['type'] ?? '' ) === 'trend-card';
+
     $owa_query     = (array) ( $owa_w['query'] ?? array() ) + array(
-        'metrics'     => $owa_set['metrics'] ?? $view->metrics,
+        'metrics'     => $owa_ownMetrics ? '' : ( $owa_set['metrics'] ?? $view->metrics ),
         'do'          => 'reports',
         'module'      => 'base',
         'version'     => 'v1',
@@ -165,7 +179,22 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * is why a pie may not inherit a report metric set. See
      * CustomReports::SINGLE_FIELD_TYPES.
      */
-    $owa_chartMetric = (string) ( $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' ) );
+    $owa_chartMetric = (string) ( $owa_w['chartMetric'] ?? ( $owa_ownMetrics ? '' : ( $owa_set['chartMetric'] ?? '' ) ) );
+
+    /*
+     * ...except a trend CARD, which falls back to its first metric.
+     *
+     * The rule above exists because half the shipped trends name no chart
+     * metric and draw no chart on purpose -- a fallback would start drawing
+     * charts on thirty-two reports that have never had one. No trend card
+     * predates this type, so there is nothing that could be changed by it, and
+     * a card whose whole shape is a chart should not render as an empty box
+     * because its author left one field alone.
+     */
+    if ( $owa_chartMetric === '' && $owa_ownMetrics ) {
+
+        $owa_chartMetric = trim( (string) strtok( (string) $owa_query['metrics'], ',' ) );
+    }
 
     /*
      * ONE METRIC, over time, optionally BROKEN OUT by one dimension.
@@ -300,10 +329,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
 <?php endif; ?>
 
-<?php if ( ( $owa_w['type'] ?? '' ) === 'trend' ): ?>
+<?php if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ): ?>
 <?php
     /*
-     * The boxes under the chart, one per metric in the set.
+     * The boxes, one per metric in the query.
      *
      * On by default -- a dimensional report's trend has always drawn them, and
      * they are how a metric set makes itself visible. `traffic` turns them off:
@@ -311,10 +340,28 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * the chart, so a fourth repeating the total is noise.
      */
     $owa_showMetricBoxes = ! array_key_exists( 'showMetricBoxes', $owa_w ) || $owa_w['showMetricBoxes'];
+
+    /*
+     * A CARD READS TOP DOWN FROM THE NUMBER.
+     *
+     * A full-width trend leads with its chart because the chart is the thing --
+     * a shape across a whole row, with the totals underneath as detail. Half a
+     * row is not enough chart for that to be true: what a reader takes from a
+     * card is the figure, and the plot is the shape behind it. So the boxes go
+     * first and the chart sits under them.
+     *
+     * Which is also why the boxes lose their borders here. Two bordered boxes
+     * above a plot read as three stacked panels; without them the figure and
+     * its shape read as one thing, which is what a card is.
+     */
+    $owa_isTrendCard = ( $owa_w['type'] ?? '' ) === 'trend-card';
 ?>
+<?php if ( $owa_isTrendCard && $owa_showMetricBoxes ): ?>
+        <div id="<?php $view->out( $owa_id ); ?>-metrics" class="owa_trendCardMetrics" style="height:auto;width:auto;"></div>
+<?php endif; ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
         <div id="<?php $view->out( $owa_id ); ?>-title" class="owa_reportHeadline"></div>
-<?php if ( $owa_showMetricBoxes ): ?>
+<?php if ( ! $owa_isTrendCard && $owa_showMetricBoxes ): ?>
         <div id="<?php $view->out( $owa_id ); ?>-metrics" style="height:auto;width:auto;"></div>
 <?php endif; ?>
         <div style="clear:both;"></div>
@@ -325,6 +372,9 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              * is the shape, the boxes are the totals, the grid is the rows they
              * are made of. Reading down the widget goes from least to most
              * detailed.
+             *
+             * A card never has one: it cannot be broken out, so there are no
+             * values to list. See CustomReports::FIXED_DIMENSION_EXTRA.
              */
         ?>
         <div id="<?php $view->out( $owa_id ); ?>-breakdown" class="owa_trendBreakdown"></div>

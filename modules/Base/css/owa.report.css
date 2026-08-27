@@ -1019,6 +1019,21 @@ li.constraintRow {
     align-items: start;
 }
 
+/* ...and it stays a grid inside a tab.
+ *
+ * On a report rendered per metric set, the tab PANEL is the grid -- one panel
+ * per set, each holding that set's widgets. jQuery-UI's `.ui-tabs
+ * .ui-tabs-panel { display: block }` is two classes to this rule's one, so it
+ * won every tabbed report: the tracks were never created, every widget was a
+ * full-width block, and a half-width card sat alone on its own row.
+ *
+ * Invisible until now, which is why it lasted: every widget on every tabbed
+ * report was full width anyway, so a grid of one column per row looked exactly
+ * like the grid doing its job. */
+.owa .ui-tabs .ui-tabs-panel.owa_reportGrid {
+    display: grid;
+}
+
 .owa_reportGridItem {
     /* Wide content scrolls inside its own widget rather than widening the page. */
     min-width: 0;
@@ -1912,6 +1927,44 @@ li.constraintRow {
    width means "this wide", not "share the row". */
 .owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
     flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Trend card
+ *
+ * A trend at half a row, reading top down from the number: the totals first,
+ * the shape behind them second. A full-width trend is the other way round
+ * because there the chart IS the thing; half a row is not enough chart for that
+ * to be true.
+ *
+ * The boxes lose their borders, which is the whole visual difference. Two
+ * bordered boxes stacked above a plot read as three separate panels; without
+ * them the figure and its shape read as one thing, which is what a card is.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_trendCardMetrics .owa_metricInfobox {
+    border: 0;
+    background-color: transparent;
+}
+
+/* The tint goes with the border. What marks the charted box is the accent
+   below, not a panel behind it. */
+.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
+    background-color: transparent;
+}
+
+/* ...except this one edge, which is not a border in the decorative sense: it
+   is the only thing saying WHICH metric the plot underneath is drawing, and a
+   card whose boxes cannot say that has boxes that are decoration. Kept at the
+   chart's own colour, so the box and the line are visibly the same thing. */
+.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
+    border-left: 3px solid #1874CD;
+}
+
+/* Room between the numbers and the plot they describe -- without the box
+   borders there is no edge to separate them. */
+.owa .owa_trendCardMetrics {
+    margin-bottom: 12px;
 }
 
 /* ---------------------------------------------------------------------------

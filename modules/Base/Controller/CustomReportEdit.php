@@ -182,6 +182,8 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'full_width_types',   \OWA\Module\Base\Classes\CustomReports::FULL_WIDTH_TYPES );
         $this->set( 'single_field_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_FIELD_TYPES );
         $this->set( 'single_metric_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_METRIC_TYPES );
+        $this->set( 'own_metric_types',   \OWA\Module\Base\Classes\CustomReports::OWN_METRIC_TYPES );
+        $this->set( 'chart_types',        \OWA\Module\Base\Classes\CustomReports::CHART_TYPES );
         $this->set( 'fixed_dimensions', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSIONS );
         $this->set( 'fixed_dimension_extra', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSION_EXTRA );
         $this->set( 'time_dimensions', \OWA\Module\Base\Classes\CustomReports::TIME_DIMENSIONS );

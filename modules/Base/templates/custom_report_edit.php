@@ -422,8 +422,27 @@ $owa_max        = (int) $view->get('max_widgets');
         return editing === null ? '' : widgets[ editing ].type;
     }
 
-    /* Types that draw one metric as a chart and need to be told which. */
-    var CHART_TYPES = [ 'trend', 'pie' ];
+    /*
+     * Types that draw one metric as a chart and need to be told which.
+     *
+     * Read from the server, like the lists above and for the same reason: a
+     * hard-coded copy here is the one that does not get updated when a type is
+     * added, and the symptom of that is a chart with no line rather than an
+     * error anybody would notice.
+     */
+    var CHART_TYPES = <?php echo json_encode( array_values( (array) $view->get('chart_types') ) ); ?>;
+
+    /*
+     * Types that name their own metrics and cannot fall back to the report
+     * metric set. Used to say so on the form -- an author who leaves the
+     * metrics of a card empty is not going to inherit anything, they are going
+     * to be refused on save.
+     */
+    var OWN_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('own_metric_types') ) ); ?>;
+
+    function needsOwnMetrics( type ) {
+        return OWN_METRIC_TYPES.indexOf( type ) !== -1;
+    }
 
     /*
      * The grid the report is drawn on. These mirror Core\ReportGrid, which
@@ -922,12 +941,23 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( '#dlgMetricsLabel' ).text( oneMetric ? 'Metric' : 'Metrics' );
 
+        /*
+         * "Leave empty to use the report metric set" is only true where it IS
+         * an option. A type that names its own metrics has no fallback -- an
+         * author who left the field empty on the strength of that sentence
+         * would be refused on save, by the rule the sentence contradicted.
+         */
+        var setFallback = needsOwnMetrics( type )
+            ? ' A ' + name.toLowerCase() + ' names its own; it does not take the report metric set.'
+            : ' Leave empty to use the report metric set.';
+
         jQuery( '#dlgMetricsHelp' ).text( oneMetric
             ? 'The one metric this ' + name.toLowerCase() + ' draws.'
-            : ( type === 'trend'
+            : ( type === 'trend' || type === 'trend-card'
                 ? 'Up to ' + MAX_METRICS + '. The first is charted; all of them are '
-                  + 'drawn as boxes under it. Leave empty to use the report metric set.'
-                : 'Up to ' + MAX_METRICS + '. Leave empty to use the report metric set.' ) );
+                  + 'drawn as boxes ' + ( type === 'trend-card' ? 'above' : 'under' ) + ' it.'
+                  + setFallback
+                : 'Up to ' + MAX_METRICS + '.' + setFallback ) );
 
         var fixed = fixedDimension( type );
 
@@ -943,6 +973,12 @@ $owa_max        = (int) $view->get('max_widgets');
                 'Optional. Each value becomes its own line over the total; the '
               + 'six largest are drawn. '
               + name + ' is always over ' + fixed + '.' );
+
+            /*
+             * ...unless it may add none, in which case the field is hidden by
+             * picksDimensions() above and this text is never read. Left alone
+             * rather than branched: a card has nothing to say here.
+             */
 
         } else {
 

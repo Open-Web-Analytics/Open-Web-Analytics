@@ -69,6 +69,15 @@ class ReportGrid {
      */
     const DEFAULT_COLSPANS = array(
         'grid-card' => 3,
+
+        /*
+         * Half a row. A trend card is a chart with its totals above it, and a
+         * chart needs width to be a shape at all -- a quarter-row trend is a
+         * sparkline with axis labels. Half is the narrowest a plot with dated
+         * ticks stays readable at, and two of them side by side is the layout
+         * the type exists for.
+         */
+        'trend-card' => 6,
     );
 
     /**

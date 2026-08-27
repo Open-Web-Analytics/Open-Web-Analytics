@@ -189,7 +189,8 @@ test.describe('custom reports', () => {
 
             // Two table types, deliberately: a full-width explorable grid and a
             // quarter-width card. See CustomReports::FULL_WIDTH_TYPES.
-            expect(types.slice().sort()).toEqual(['grid', 'grid-card', 'metric-boxes', 'pie', 'trend']);
+            expect(types.slice().sort()).toEqual(
+                ['grid', 'grid-card', 'metric-boxes', 'pie', 'trend', 'trend-card']);
 
             // Each says what it is for -- "Table" beside "Table card" is a
             // distinction nobody can make from the names alone.
@@ -652,6 +653,81 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('#dlgDimensionsField')).toBeHidden();
             await expect(page.locator('#dlgDimensionNote')).toContainText('totals for the period');
+        });
+
+        /**
+         * A trend card names its own metrics and has nothing to group by.
+         *
+         * Both follow from the width. Half a row has no room for a legend of
+         * six lines, so it cannot be broken out -- and a report metric set
+         * would replace the figures its author chose with three to six whose
+         * boxes do not fit that width, so it does not take one.
+         *
+         * The form has to SAY the second one. "Leave empty to use the report
+         * metric set" is the sentence every other multi-metric type carries,
+         * and an author who acted on it here would be refused on save by the
+         * rule that sentence contradicted.
+         */
+        test('a trend card names its own metrics and is not broken out', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.click('#addWidget');
+            await page.locator('.owa_typeChoice[data-type="trend-card"]').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            // Several metrics, so the field is plural -- unlike a card or a pie.
+            await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
+
+            // ...and it says the set is not on offer, rather than offering it.
+            await expect(page.locator('#dlgMetricsHelp'))
+                .toContainText('does not take the report metric set');
+            await expect(page.locator('#dlgMetricsHelp')).not.toContainText('Leave empty');
+
+            // The boxes are above the chart, and the form says which.
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('above');
+
+            // Nothing to group by: its axis is fixed and it adds none.
+            await expect(page.locator('#dlgDimensionsField')).toBeHidden();
+        });
+
+        /**
+         * ...and it saves and renders, with its boxes above its chart.
+         *
+         * The end-to-end shape of the type: chosen in the builder, stored,
+         * and drawn by the renderer the other side of a round trip.
+         */
+        test('a trend card renders with its boxes above its chart', async ({ page }) => {
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('Carded'));
+
+            // A new report starts with a grid block; this report is one card.
+            await onlyWidget(page, 'trend-card', { title: 'Visits', metrics: ['visits'] });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            expect(page.url()).toContain('custom-');
+
+            const boxes = page.locator('[id$="-metrics"].owa_trendCardMetrics');
+            await expect(boxes).toHaveCount(1);
+
+            // ABOVE: both are blocks in one column, so the order in the
+            // document is the whole of what "above" means.
+            const boxBox   = await boxes.boundingBox();
+            const chartBox = await page.locator('.owa_reportGridItem .owa_areaChart').first().boundingBox();
+
+            expect(boxBox).not.toBeNull();
+            expect(chartBox).not.toBeNull();
+            expect(boxBox.y).toBeLessThan(chartBox.y);
+
+            // Borderless, which is the type's whole visual difference.
+            const border = await boxes.locator('.owa_metricInfobox').first()
+                .evaluate(el => getComputedStyle(el).borderTopWidth);
+
+            expect(border).toBe('0px');
+
+            // Half a row by default, without the author choosing a width.
+            await expect(page.locator('.owa_reportGridItem.owa_span-6')).toHaveCount(1);
         });
 
         /**

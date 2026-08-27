@@ -319,6 +319,51 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * The grid has to still BE a grid inside a tab.
+     *
+     * On a report rendered per metric set the tab PANEL is the grid -- one
+     * panel per set, each holding that set's widgets -- and jQuery-UI's
+     * `.ui-tabs .ui-tabs-panel { display: block }` is two classes to
+     * `.owa_reportGrid`'s one. It won on every tabbed report: the tracks were
+     * never created and every widget was a full-width block.
+     *
+     * It stayed invisible because every widget on every tabbed report was full
+     * width anyway, so a grid of one column per row looked exactly like the
+     * grid working. The first half-width widget on a tabbed report is what
+     * would have found it, which is a long time to wait for a stylesheet to be
+     * checked.
+     */
+    test('a tabbed report lays its widgets out on the grid', async ({ page }) => {
+        await login(page);
+
+        await page.setViewportSize({ width: 1400, height: 1000 });
+
+        // Browser Types renders per metric set, so its panels ARE the grids.
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=browsers&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
+
+        const panel = page.locator('#report-tabs > div.owa_reportGrid').first();
+        await expect(panel).toBeAttached();
+
+        // It is a tab panel...
+        await expect(panel).toHaveClass(/ui-tabs-panel/);
+
+        // ...and a grid of twelve tracks, which is the part that was lost.
+        const layout = await panel.evaluate(el => ({
+            display: getComputedStyle(el).display,
+            tracks:  getComputedStyle(el).gridTemplateColumns.split(' ').length,
+        }));
+
+        expect(layout.display).toBe('grid');
+        expect(layout.tracks).toBe(12);
+    });
+
+    /**
      * ...and the promotion is what does it, not luck.
      *
      * A widget declaring a quarter must actually be resolving to more than
