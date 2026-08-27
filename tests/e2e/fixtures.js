@@ -23,6 +23,15 @@ const FIXTURE = {
     // admin-actions suite logs in as this user instead.
     adminUserId: 'owa-e2e-admin@example.test',
     adminPassword: 'e2e-Admin-Pass-1!', // throwaway LOCAL fixture creds, never production
+    // A custom report belonging to SOMEBODY ELSE (E2E_OTHERS_REPORT_* in the
+    // seeder). Its owner never signs in, which is the point: editing another
+    // author's report is decided by a capability rather than by ownership, and
+    // a test that builds a report and then opens it is always looking at its
+    // own -- where ownership alone is enough and the capability is never
+    // exercised. That blind spot hid a real bug.
+    othersReportName: 'E2E Owned By Someone Else',
+    othersReportOwner: 'owa-e2e-someone-else@example.test',
+
     // The password-CHANGE fixture user (E2E_PWUSER_* in the seeder). OWA has no
     // logged-in "change my password" form, only the emailed-passkey reset flow,
     // so the seeder plants a KNOWN temp_passkey the test submits to the real

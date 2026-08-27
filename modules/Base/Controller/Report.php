@@ -239,32 +239,61 @@ class Report extends \OWA\Core\Controller {
          */
         $target->set( 'custom_report_id', $report['id'] );
 
+        $data = (array) $target->doAction();
+
         /*
          * "Edit report", beside the title.
          *
          * It acts on the WHOLE report, which is what the title's line is for --
-         * the same place the roster puts "New Custom Report". It used to be a
-         * command bar of its own between the title and the first widget, which
-         * is a second header saying one thing.
+         * the same place the roster puts "New Custom Report".
          *
          * Offered only to someone who may actually edit. Viewing a custom
          * report is deliberately wider than editing one -- that is what
-         * "shareable by url" means -- so the bar was showing a reader a link
-         * that leads to a refusal. Asked of mayEdit() against the ROW, the same
-         * question CustomReportEdit asks when the link is followed, so the two
-         * cannot answer differently.
+         * "shareable by url" means -- so an ungated control would be offering a
+         * reader a link that leads to a refusal. Asked of mayEdit() against the
+         * ROW, which is the same question CustomReportEdit asks when the link
+         * is followed, so the two cannot answer differently.
+         *
+         * ASKED AFTER doAction(), AND THAT ORDER IS THE WHOLE POINT.
+         *
+         * This controller overrides doAction() and deliberately performs no
+         * capability check of its own: it delegates so the TARGET's check
+         * governs, which is what lets each report be gated by its own
+         * requirement rather than by this one's. Authentication therefore
+         * happens INSIDE the call above -- and until it has, the current user
+         * is the default one. It carries the right user_id, and role
+         * 'everyone'.
+         *
+         * Asked before it, isCapable('edit_users') was therefore always false,
+         * so mayEdit could only ever succeed through the OWNERSHIP branch. An
+         * admin opening somebody else's report got no edit control at all.
+         *
+         * Every test missed it for one reason: a test that builds a report and
+         * then opens it is always looking at its own, where ownership alone is
+         * enough. It took an admin opening a report created by someone else --
+         * which is the ordinary case on any install with more than one author.
          */
-        $user = \OWA\Core\CoreAPI::getCurrentUser();
-
-        $may_edit = \OWA\Module\Base\Classes\CustomReports::mayEdit(
-            $report,
-            (string) $user->getUserData( 'user_id' ),
-            (bool) $user->isCapable( 'edit_users' )
-        );
+        /*
+         * Nothing to decorate unless a report was actually rendered. A refused
+         * request comes back as the controller's bare data, and an edit control
+         * on a refusal would be the second thing wrong with it.
+         *
+         * CoreAPI::isCurrentUserCapable() rather than reaching through
+         * getCurrentUser() for isCapable(): it is the house way to ask this,
+         * it always answers a bool, and it debug-logs the role and the
+         * authentication state -- which is the exact pair that made this
+         * ordering bug visible in the end.
+         */
+        $may_edit = ! empty( $data['view'] )
+            && \OWA\Module\Base\Classes\CustomReports::mayEdit(
+                $report,
+                (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ),
+                (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' )
+            );
 
         if ( $may_edit ) {
 
-            $target->set( 'title_actions', array(
+            $data['title_actions'] = array(
                 array(
                     'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
                                    ->makeLink( array(
@@ -277,10 +306,10 @@ class Report extends \OWA\Core\Controller {
                     // report's own title, which is right beside it.
                     'iconOnly' => true,
                 ),
-            ) );
+            );
         }
 
-        return $target->doAction();
+        return $data;
     }
 
     /**

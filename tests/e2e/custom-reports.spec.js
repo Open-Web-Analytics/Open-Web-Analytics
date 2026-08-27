@@ -836,6 +836,52 @@ test.describe('custom reports', () => {
         });
 
         /**
+         * AN ADMIN MAY EDIT SOMEBODY ELSE'S REPORT, AND IS OFFERED IT.
+         *
+         * This is the case every other test in this file misses, and it hid a
+         * real bug for a whole session. A test that builds a report and then
+         * opens it is always looking at its OWN -- where mayEdit() succeeds
+         * through the ownership branch and the capability branch is never
+         * exercised at all.
+         *
+         * The capability branch was broken. Report::doAction() is overridden
+         * and deliberately runs no capability check of its own, delegating so
+         * the target's check governs -- which means authentication happens
+         * INSIDE $target->doAction(). The edit control was decided BEFORE that
+         * call, when the current user still carried the default role
+         * 'everyone', so isCapable('edit_users') was always false. Every admin
+         * on every install saw no edit control on any report but their own, and
+         * the suite was green throughout.
+         *
+         * So the fixture seeds a report owned by a user nobody signs in as.
+         */
+        test("an admin is offered the edit control on another author's report", async ({ page }) => {
+            await openRoster(page);
+
+            const link = page.locator(
+                `table.owa_customReportRoster a:text-is("${FIXTURE.othersReportName}")`);
+
+            await expect(link,
+                'the third-party fixture report is missing -- re-run the seeder').toHaveCount(1);
+
+            await link.click();
+            await page.waitForLoadState('networkidle');
+
+            // Confirm the premise: this really is somebody else's report.
+            await expect(page.locator('.owa_reportTitle')).toContainText(FIXTURE.othersReportName);
+
+            const edit = page.locator('.owa_reportTitle a[href*="customReportEdit"]');
+
+            await expect(edit,
+                'an admin was not offered the edit control on a report they did not create')
+                .toHaveCount(1);
+
+            // ...and it actually opens the builder, rather than a refusal.
+            await edit.click();
+            await page.waitForSelector('#customReportForm', { timeout: 20_000 });
+        });
+
+        /**
          * A card draws one metric, so it is offered a METRIC, not a metric set.
          *
          * The report metric set is several metrics, and a card ranks its rows
@@ -1600,6 +1646,77 @@ test.describe('custom reports', () => {
             await page.goto('?owa_do=base.customReportEdit', { waitUntil: 'networkidle' });
 
             await expect(page.locator('#customReportForm')).toHaveCount(0);
+        });
+
+        /**
+         * ...and the other side of the capability that was broken.
+         *
+         * Editing is deliberately NARROWER than viewing: any signed-in reader
+         * with view_reports can open a custom report by URL -- that is what
+         * makes one shareable, and it is safe because a custom report is a
+         * saved QUERY, not saved data. Changing it takes the creator, or
+         * edit_users.
+         *
+         * The companion to the admin test above. That one proves the capability
+         * branch GRANTS; this proves it still refuses, so a fix for the first
+         * cannot be "offer it to everybody".
+         */
+        test("a reader is not offered the edit control on somebody else's report",
+            async ({ page, browser }) => {
+
+            /*
+             * The roster lists only your OWN reports unless you may see
+             * everything, so an analyst cannot reach this one from it. They
+             * reach it the way anyone reaches a report somebody sent them: by
+             * URL. Which is the case being tested.
+             *
+             * The URL is looked up as the admin, in a context of its own,
+             * rather than assembled from an id this file would have to be told.
+             */
+            const adminContext = await browser.newContext();
+            const adminPage = await adminContext.newPage();
+
+            await loginAs(adminPage, FIXTURE.adminUserId, FIXTURE.adminPassword);
+            await adminPage.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+
+            const href = await adminPage
+                .locator(`table.owa_customReportRoster a:text-is("${FIXTURE.othersReportName}")`)
+                .first().getAttribute('href');
+
+            await adminContext.close();
+
+            expect(href, 'the third-party fixture report is missing -- re-run the seeder')
+                .toBeTruthy();
+
+            /*
+             * The ID from that link, and the ANALYST'S OWN SITE.
+             *
+             * view_reports is satisfied against a particular site, so the
+             * admin's link -- which carries whichever site the admin was on --
+             * is refused for a reader with no grant on it. Following it
+             * verbatim tested site access, not the edit control, and reported
+             * the wrong thing as the failure.
+             */
+            const reportId = (href.match(/reportId=(custom-[0-9]+)/) || [])[1];
+
+            expect(reportId, `no report id in the roster link: ${href}`).toBeTruthy();
+
+            await page.goto(
+                `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}`,
+                { waitUntil: 'networkidle' });
+
+            /*
+             * They really did open it. Without this the assertion below passes
+             * on an error page, a login redirect, or anything else with no
+             * title -- which is the whole family of ways a "nothing is here"
+             * test lies.
+             */
+            await expect(page.locator('.owa_reportTitle'))
+                .toContainText(FIXTURE.othersReportName);
+
+            // ...and are offered no way to change what they can read.
+            await expect(page.locator('.owa_reportTitle a[href*="customReportEdit"]'))
+                .toHaveCount(0);
         });
 
         test('the roster opens, without the authoring controls', async ({ page }) => {
