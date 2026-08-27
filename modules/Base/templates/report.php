@@ -87,9 +87,34 @@ jQuery(document).ready(function(){
                          * puts them on the title's line rather than under it.
                          */
                     ?>
-                    <?php if ( $view->get( 'title_actions' ) ): ?>
+                    <?php
+                        /*
+                         * An action is drawn in one of two places, and which
+                         * one follows from whether it carries a label.
+                         *
+                         * A LABELLED action is a button, and a button says what
+                         * it does, so it can sit on its own at the right of the
+                         * header -- "New Custom Report" on the roster.
+                         *
+                         * An ICON-ONLY action cannot: a pencil floating at the
+                         * far right, past the period picker and Live View, is a
+                         * pencil that edits something unstated. So it goes ON
+                         * the title, where the thing it acts on is the words
+                         * immediately to its left. That is the whole reason
+                         * for the split -- an icon needs a subject and the
+                         * title is it.
+                         */
+                        $owa_titleActions  = (array) ( $view->get( 'title_actions' ) ?: array() );
+
+                        $owa_titleMarks = array_values( array_filter( $owa_titleActions,
+                            function ( $a ) { return ! empty( $a['iconOnly'] ); } ) );
+
+                        $owa_titleButtons = array_values( array_filter( $owa_titleActions,
+                            function ( $a ) { return empty( $a['iconOnly'] ); } ) );
+                    ?>
+                    <?php if ( $owa_titleButtons ): ?>
                     <div class="owa_titleActions">
-                        <?php foreach ( (array) $view->get( 'title_actions' ) as $owa_action ): ?>
+                        <?php foreach ( $owa_titleButtons as $owa_action ): ?>
                         <a class="owa_button" href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
                             if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
                                 $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
@@ -122,7 +147,18 @@ jQuery(document).ready(function(){
                     <div class="owa_reportTitle"><?php echo $view->title;
                         ?><?php if ( $owa_hasCount ): ?><span
                             class="owa_titleCount"><?php $view->out( $owa_titleCount ); ?></span><?php
-                        endif; ?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span></div>
+                        endif; ?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span><?php
+                        /*
+                         * The label is not drawn, so it has to be said twice:
+                         * title for a reader hovering, aria-label for one who
+                         * never sees the glyph.
+                         */
+                        foreach ( $owa_titleMarks as $owa_mark ): ?><a
+                            class="owa_titleActionMark" href="<?php $view->out( $owa_mark['url'], false ); ?>"
+                            title="<?php $view->out( $owa_mark['label'] ); ?>"
+                            aria-label="<?php $view->out( $owa_mark['label'] ); ?>"><i class="fa <?php
+                            $view->out( $owa_mark['icon'] ); ?>"></i></a><?php
+                        endforeach; ?></div>
 
                     <div class="clear"></div>
                     <?php echo $view->subview;?>

@@ -1572,40 +1572,6 @@ li.constraintRow {
     white-space: nowrap;
 }
 
-/* ---------------------------------------------------------------------------
- * Report command bar
- *
- * What you can DO to a report, under its title and above its widgets. Only
- * user-authored reports have one today -- a shipped report has no row behind it
- * to edit -- and it is a bar rather than a link because duplicate and share
- * belong here next.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_reportCommands {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    padding: 0 0 12px 0;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.owa .owa_reportCommand {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-}
-
-.owa .owa_reportCommandIcon {
-    opacity: 0.6;
-}
-
-.owa .owa_reportCommand:hover .owa_reportCommandIcon {
-    opacity: 1;
-}
-
 /* A sortable heading, and the arrow marking the one the order is actually by. */
 .owa table.owa_customReportRoster th a {
     color: inherit;
@@ -1648,6 +1614,32 @@ li.constraintRow {
 .owa .owa_titleActionIcon {
     margin-right: 6px;
     opacity: 0.8;
+}
+
+/* An icon-only action, ON the title rather than in the bar at the right.
+ *
+ * Sized against the heading rather than in pixels: the mark is a thing you can
+ * do to the words beside it, and at a fixed size it would stop looking that way
+ * the moment the heading changed. Dimmed like the navigation's icons -- the
+ * title is what the reader came for, and the pencil is not competing with it.
+ *
+ * A left margin only, so the icon hangs off the end of the title instead of
+ * being centred in a gap that reads as a separator. */
+.owa .owa_titleActionMark {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 0.55em;
+    line-height: 1;
+    color: #505050;
+    opacity: 0.60;
+    text-decoration: none;
+    vertical-align: middle;
+}
+
+.owa .owa_titleActionMark:hover,
+.owa .owa_titleActionMark:focus {
+    opacity: 1;
+    color: #1874CD;
 }
 
 /* ---------------------------------------------------------------------------

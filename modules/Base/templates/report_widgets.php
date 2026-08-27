@@ -70,27 +70,22 @@ if ( ! $owa_sets ) {
 $owa_multiSet = ! $view->metrics && ! $owa_authored
     && count( $owa_sets ) > 0 && $owa_setKeysReal;
 ?>
-<?php if ( $view->get( 'custom_report_id' ) ): ?>
 <?php
     /*
-     * What you can DO to this report, as opposed to what it says.
+     * WHAT YOU CAN DO TO THIS REPORT IS NOT DRAWN HERE.
      *
-     * A line of its own under the title and above the widgets, because these
-     * act on the whole report -- putting Edit beside a widget would suggest it
-     * edited that widget.
+     * There was a command bar between the title and the first widget, holding
+     * one link. Two headers, one above the other, saying one thing -- and the
+     * bar's border read as the top of the first widget rather than the bottom
+     * of the header.
      *
-     * Only for a user-authored report: a shipped one has no row behind it, so
-     * there is nothing to edit, duplicate or delete.
+     * "Edit report" is a title action now: Report::renderCustom() declares it
+     * and report.php draws it as an icon on the title itself. That also gets it
+     * the capability check the bar never had -- viewing a custom report is
+     * deliberately wider than editing one, so this bar was offering a reader a
+     * link to a refusal.
      */
 ?>
-<div class="owa_reportCommands">
-    <a class="owa_reportCommand" href="<?php echo $view->makeLink( array(
-        'do'             => 'base.customReportEdit',
-        'customReportId' => $view->get( 'custom_report_id' ),
-    ), true ); ?>"><i class="fa fa-pencil-alt owa_reportCommandIcon"></i>Edit report</a>
-</div>
-<?php endif; ?>
-
 <?php if ( ! empty( $view->deprecated['message'] ) ): ?>
 <?php
     /*

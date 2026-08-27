@@ -1340,14 +1340,37 @@ test.describe('custom reports', () => {
             expect(Math.abs(third.y - first.y)).toBeLessThan(10);
         });
 
-        /** The command bar, for the things you can do TO the report. */
-        test('a custom report offers an edit link above its widgets', async ({ page }) => {
+        /**
+         * Editing is a thing you do TO the report, so it sits ON the title --
+         * an icon, immediately after the words naming what it edits.
+         *
+         * It was a command bar of its own between the title and the first
+         * widget: a second header, above the first widget, saying one thing.
+         */
+        test('a custom report offers an edit icon on its title', async ({ page }) => {
             await buildOne(page, 'Commanded');
 
-            const edit = page.locator('.owa_reportCommands a[href*="customReportEdit"]');
+            const edit = page.locator('.owa_reportTitle a[href*="customReportEdit"]');
 
             await expect(edit).toHaveCount(1);
-            await expect(edit.locator('i.fa')).toHaveCount(1);
+
+            // An ICON: a glyph, and no text of its own. The label survives for
+            // anyone who cannot see the glyph.
+            await expect(edit.locator('i.fa-pencil-alt')).toHaveCount(1);
+            await expect(edit).toHaveText('');
+            await expect(edit).toHaveAttribute('aria-label', 'Edit report');
+            await expect(edit).toHaveAttribute('title', 'Edit report');
+
+            // On the title's line, not floated off to the right past the period
+            // picker -- an icon with nothing beside it edits something unstated.
+            const title = await page.locator('.owa_reportTitle').boundingBox();
+            const icon  = await edit.boundingBox();
+
+            expect(icon.y).toBeGreaterThanOrEqual(title.y - 2);
+            expect(icon.y + icon.height).toBeLessThanOrEqual(title.y + title.height + 2);
+
+            // And the command bar it replaces is gone.
+            await expect(page.locator('.owa_reportCommands')).toHaveCount(0);
 
             await edit.click();
             await page.waitForSelector('#customReportForm', { timeout: 20_000 });

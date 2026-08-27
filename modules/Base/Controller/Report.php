@@ -239,6 +239,47 @@ class Report extends \OWA\Core\Controller {
          */
         $target->set( 'custom_report_id', $report['id'] );
 
+        /*
+         * "Edit report", beside the title.
+         *
+         * It acts on the WHOLE report, which is what the title's line is for --
+         * the same place the roster puts "New Custom Report". It used to be a
+         * command bar of its own between the title and the first widget, which
+         * is a second header saying one thing.
+         *
+         * Offered only to someone who may actually edit. Viewing a custom
+         * report is deliberately wider than editing one -- that is what
+         * "shareable by url" means -- so the bar was showing a reader a link
+         * that leads to a refusal. Asked of mayEdit() against the ROW, the same
+         * question CustomReportEdit asks when the link is followed, so the two
+         * cannot answer differently.
+         */
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        $may_edit = \OWA\Module\Base\Classes\CustomReports::mayEdit(
+            $report,
+            (string) $user->getUserData( 'user_id' ),
+            (bool) $user->isCapable( 'edit_users' )
+        );
+
+        if ( $may_edit ) {
+
+            $target->set( 'title_actions', array(
+                array(
+                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                                   ->makeLink( array(
+                                       'do'             => 'base.customReportEdit',
+                                       'customReportId' => $report['id'],
+                                   ), true ),
+                    'label' => 'Edit report',
+                    'icon'  => 'fa-pencil-alt',
+                    // An icon, not a labelled button: the label names the
+                    // report's own title, which is right beside it.
+                    'iconOnly' => true,
+                ),
+            ) );
+        }
+
         return $target->doAction();
     }
 
