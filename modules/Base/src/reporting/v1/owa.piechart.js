@@ -27,10 +27,17 @@ OWA.pieChart = function( options ) {
          * fitting: the content keeps its size and the panel admits it cannot
          * show all of it.
          *
-         * 320 is the circle at 174 plus the widest legend the shipped reports
-         * produce ("organic-search 40%") plus the gap between them.
+         * 280 is what a QUARTER-ROW PANEL can hold: the widget floor is 300px
+         * of grid area, a panel takes 34 of that in border and padding, and a
+         * plot wider than what is left is a plot whose legend gets clipped --
+         * which is the failure this is supposed to prevent, arriving from the
+         * other side.
+         *
+         * Sized to the narrowest place a pie is drawn rather than the widest,
+         * because the alternative is a pie that fits three of the four columns
+         * it might land in.
          */
-        plotWidth: 320,
+        plotWidth: 280,
 
         /*
          * How much of the plot box the circle fills, as a fraction of half the
@@ -38,9 +45,11 @@ OWA.pieChart = function( options ) {
          * see pixelRadius() -- because a fraction there is a fraction of a
          * number the label-fitting loop shrinks.
          *
-         * Under 1 so the labels drawn around the edge have somewhere to sit.
+         * Under 1 so the LEGEND has somewhere to sit: the circle and the names
+         * beside it share the plot's width, and 0.60 of the shorter side is
+         * what leaves room for both inside 280.
          */
-        radiusFraction: 0.72,
+        radiusFraction: 0.60,
         width:    200,
         metric: '',
         dimension: '',

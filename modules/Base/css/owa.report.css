@@ -2111,10 +2111,18 @@ li.constraintRow {
     border-spacing: 0;
 }
 
+/* A name too long for the space is TRUNCATED rather than allowed to widen the
+   legend into the pie. The plot is a fixed box, so something has to give, and a
+   clipped name with an ellipsis still reads -- a legend overlapping the circle
+   does not. The full text stays available on hover via the title attribute
+   flot writes. */
 .owa .owa_pieChart .legend .legendLabel {
     padding: 1px 0 1px 5px;
     color: #505050;
     white-space: nowrap;
+    max-width: 105px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* The swatch is a table cell holding a bordered div; size it there so the row
@@ -2127,6 +2135,77 @@ li.constraintRow {
    only adds an edge. */
 .owa .owa_pieChart .legend .legendBackground {
     display: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Metric carousel
+ *
+ * The boxes are a row that SCROLLS, not a row that wraps. A widget shows as
+ * many metrics as its author asked for and is as wide as the layout gives it,
+ * so the two disagree regularly -- and wrapping resolved that by growing the
+ * widget downward, moving the chart and changing the panel's height.
+ *
+ * The arrows are laid out but not shown until there is somewhere to go, so a
+ * row that fits keeps the whole width for its numbers.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_metricCarousel {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.owa .owa_metricCarousel .metricInfoboxesContainer {
+    /* One line. The wrap that the container declares for every other use of
+       these boxes is exactly what this replaces. */
+    flex-wrap: nowrap;
+
+    /* Takes what the arrows leave. min-width:0 because a flex item's automatic
+       minimum is its content, which would push the arrows out of the widget
+       rather than letting the row scroll under them. */
+    flex: 1 1 auto;
+    min-width: 0;
+
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* The boxes stop sharing the row once it scrolls: a box that shrank to fit
+   would be defeating the scrolling. */
+.owa .owa_metricCarousel .metricInfoboxesContainer .owa_metricInfobox {
+    flex-shrink: 0;
+}
+
+.owa .owa_metricCarouselArrow {
+    display: none;
+    flex: 0 0 auto;
+    align-self: center;
+    width: 22px;
+    padding: 2px 0;
+    border: 1px solid #d5d5d5;
+    border-radius: 3px;
+    background-color: #ffffff;
+    color: #505050;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* Shown only when the row has somewhere to go. */
+.owa .owa_metricCarousel.owa_metricCarouselScrolls .owa_metricCarouselArrow {
+    display: block;
+}
+
+.owa .owa_metricCarouselArrow:hover:not(:disabled) {
+    border-color: #999999;
+    background-color: #f2f2f2;
+}
+
+/* At its own end. Kept visible rather than hidden, so the row does not shift
+   sideways as the reader reaches either end of it. */
+.owa .owa_metricCarouselArrow:disabled {
+    opacity: 0.35;
+    cursor: default;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2168,6 +2247,24 @@ li.constraintRow {
    borders there is no edge to separate them. */
 .owa .owa_trendCardMetrics {
     margin-bottom: 12px;
+
+    /* The numbers are their own size; the chart takes the rest. */
+    flex: 0 0 auto;
+}
+
+/* The plot FILLS what the panel has left.
+ *
+ * A trend card is a headline figure with the shape behind it, and the shape was
+ * drawing at its default 125px however tall the panel was -- so a card with a
+ * floor under its height had a small chart floating in the top of a large empty
+ * box. The chart is the only part of a card that can absorb space, so it is the
+ * part that should.
+ *
+ * min-height so it is still a chart in a short panel; the areaChart reads this
+ * element's height when it sizes its plot. */
+.owa .owa_widget-trend-card .owa_trendChart {
+    flex: 1 1 auto;
+    min-height: 130px;
 }
 
 /* Four metrics across half a row is about 110px a box, and 28px digits do not

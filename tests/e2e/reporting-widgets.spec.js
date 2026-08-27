@@ -364,6 +364,134 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * THE METRIC BOXES SCROLL; THEY DO NOT WRAP.
+     *
+     * A widget shows as many metrics as its author asked for and is as wide as
+     * the layout gives it, so the two disagree regularly. Wrapping resolved it
+     * by growing the widget downward -- which moves the chart under it, changes
+     * the panel's height, and leaves the fifth metric alone on a line where it
+     * reads as a different kind of thing from the four above.
+     *
+     * The arrows appear only when there is somewhere to go, which is the part
+     * a fixed-width fixture cannot show on its own: the dashboard's card holds
+     * five metrics and needs them at one width and not at another.
+     */
+    test('the metric boxes stay on one line and scroll when they must', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+
+        const carousel = async (width) => {
+
+            await page.setViewportSize({ width, height: 1500 });
+
+            await page.goto(
+                `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+                + '&owa_period=last_thirty_days',
+                { waitUntil: 'networkidle' }
+            );
+
+            await page.waitForSelector('.owa_metricCarousel .owa_metricInfobox', { timeout: 20_000 });
+            await page.waitForTimeout(1200);
+
+            return page.evaluate(() => {
+
+                const c = document.querySelector('.owa_metricCarousel');
+                const track = c.querySelector('.metricInfoboxesContainer');
+                const boxes = [...track.querySelectorAll('.owa_metricInfobox')];
+                const prev = c.querySelector('.owa_metricCarouselPrev');
+
+                return {
+                    boxes: boxes.length,
+                    rows: new Set(boxes.map((b) => Math.round(b.getBoundingClientRect().top))).size,
+                    overflow: Math.round(track.scrollWidth - track.clientWidth),
+                    arrowsShown: getComputedStyle(prev).display !== 'none',
+                    prevDisabled: prev.disabled,
+                };
+            });
+        };
+
+        // Wide enough for all five.
+        const wide = await carousel(1600);
+
+        expect(wide.boxes).toBeGreaterThanOrEqual(4);
+        expect(wide.rows, 'the boxes wrapped instead of staying on one line').toBe(1);
+        expect(wide.overflow).toBeLessThanOrEqual(1);
+        expect(wide.arrowsShown, 'arrows are shown with nowhere to scroll to').toBe(false);
+
+        // Narrow enough that they do not fit -- same count, still one line.
+        const narrow = await carousel(1100);
+
+        expect(narrow.boxes).toBe(wide.boxes);
+        expect(narrow.rows, 'the boxes wrapped instead of scrolling').toBe(1);
+        expect(narrow.overflow,
+            'this width no longer overflows, so the arrows prove nothing').toBeGreaterThan(10);
+        expect(narrow.arrowsShown, 'there is somewhere to scroll and no arrows').toBe(true);
+
+        // At the start, so back is dead and forward is not.
+        expect(narrow.prevDisabled).toBe(true);
+
+        // ...and pressing forward actually moves the row.
+        const before = await page.evaluate(
+            () => document.querySelector('.owa_metricCarousel .metricInfoboxesContainer').scrollLeft);
+
+        await page.locator('.owa_metricCarouselNext').first().click();
+        await page.waitForTimeout(600);
+
+        const after = await page.evaluate(
+            () => document.querySelector('.owa_metricCarousel .metricInfoboxesContainer').scrollLeft);
+
+        expect(after, 'the forward arrow did not scroll the row').toBeGreaterThan(before);
+
+        // ...and back is live once it has.
+        expect(await page.locator('.owa_metricCarouselPrev').first().isDisabled()).toBe(false);
+    });
+
+    /**
+     * A trend card's chart FILLS what the panel has left.
+     *
+     * The card has a floor under its height, and the chart was drawing at its
+     * default 125px however tall the panel was -- a small plot floating in the
+     * top of a large empty box. The chart is the only part of a card that can
+     * absorb space, so it is the part that should.
+     */
+    test('a trend card\'s chart fills the height the panel has left', async ({ page }) => {
+        await login(page);
+        await page.setViewportSize({ width: 1600, height: 1500 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('.owa_widget-trend-card .owa_areaChart canvas', { timeout: 20_000 });
+        await page.waitForTimeout(1200);
+
+        const m = await page.evaluate(() => {
+
+            const card = document.querySelector('.owa_widget-trend-card');
+            const chart = card.querySelector('.owa_trendChart');
+            const plot = card.querySelector('.owa_areaChart');
+
+            return {
+                card: Math.round(card.getBoundingClientRect().height),
+                chart: Math.round(chart.getBoundingClientRect().height),
+                plot: Math.round(plot.getBoundingClientRect().height),
+            };
+        });
+
+        // Comfortably past the 125px default the chart used to draw at.
+        expect(m.plot, 'the chart is still at its default height').toBeGreaterThan(180);
+
+        // ...and the plot really is filling the space the chart element has.
+        expect(m.chart - m.plot).toBeLessThanOrEqual(12);
+
+        // The chart is the biggest part of the card, which is what "fills" means.
+        expect(m.chart).toBeGreaterThan(m.card / 2);
+    });
+
+    /**
      * A CARD IS A PANEL, and stays one when the data is thin.
      *
      * A card and a pie are bounded things you read at a glance and then follow

@@ -373,7 +373,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php if ( $owa_isTrendCard && $owa_showMetricBoxes ): ?>
         <div id="<?php $view->out( $owa_id ); ?>-metrics" class="owa_trendCardMetrics" style="height:auto;width:auto;"></div>
 <?php endif; ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+        <?php
+            /*
+             * The plot's own element, named so a card can hand it the height
+             * the panel has left. The area chart reads this element's height
+             * when it sizes its plot, so growing it is all it takes.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_trendChart"></div>
         <div id="<?php $view->out( $owa_id ); ?>-title" class="owa_reportHeadline"></div>
 <?php if ( ! $owa_isTrendCard && $owa_showMetricBoxes ): ?>
         <div id="<?php $view->out( $owa_id ); ?>-metrics" style="height:auto;width:auto;"></div>

@@ -68,7 +68,15 @@ OWA.kpiBox.prototype = {
          * The area chart and the pie chart both build this selector with the
          * '#'; this was the one that did not.
          */
-        this.domSelector = '#' + this.dom_id + ' > .metricInfoboxesContainer';
+        /*
+         * The CAROUSEL, which is what wraps the boxes now -- see makeCarousel.
+         * This selector is what generate() removes before rebuilding, so it has
+         * to name the outermost thing generate() creates. Naming the inner
+         * container instead would leave the wrapper behind and stack a fresh
+         * set of boxes under the old ones on every result set, which is the
+         * bug the '#' below was added to fix.
+         */
+        this.domSelector = '#' + this.dom_id + ' > .owa_metricCarousel';
         // listen for data change events
         var that = this;
         jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
@@ -201,7 +209,28 @@ OWA.kpiBox.prototype = {
 
          var html = '';
          var con_id = 'kpiContainer-'+ resultSet.guid;
-        jQuery('#' + dom_id).append(OWA.util.sprintf('<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div><div style="clear:both;"></div>', con_id ) );
+        /*
+         * A ROW THAT SCROLLS, not a row that wraps.
+         *
+         * A widget shows as many metrics as its author asked for, and the
+         * widget is as wide as the layout gives it -- so the two disagree
+         * regularly, and wrapping resolved it by growing the widget downward.
+         * That moves the chart, changes the panel's height, and puts the fifth
+         * metric on a line of its own where it reads as a different kind of
+         * thing from the four above it.
+         *
+         * The boxes stay on one line and the ones that do not fit are scrolled
+         * to. The arrows appear only when there is something to scroll to --
+         * see makeCarousel.
+         */
+        jQuery('#' + dom_id).append( OWA.util.sprintf(
+              '<div class="owa_metricCarousel">'
+            + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselPrev" '
+            + 'aria-label="Show earlier metrics">&lsaquo;</button>'
+            + '<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div>'
+            + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselNext" '
+            + 'aria-label="Show later metrics">&rsaquo;</button>'
+            + '</div><div style="clear:both;"></div>', con_id ) );
         //jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 
         var ordered = this.orderedAggregates( resultSet );
@@ -252,5 +281,83 @@ OWA.kpiBox.prototype = {
                 sl.generate( resultSet, item.dom_id, spark_options );
             }
         }
+
+        this.makeCarousel( dom_id, con_id );
+    },
+
+    /**
+     * The row of boxes scrolls rather than wrapping, with arrows when it must.
+     *
+     * A widget shows as many metrics as its author asked for, and it is as wide
+     * as the layout gives it -- so the two disagree regularly. Wrapping resolved
+     * that by growing the widget downward, which moves the chart under it,
+     * changes the panel's height, and leaves the fifth metric alone on a line
+     * where it reads as a different kind of thing from the four above.
+     *
+     * The arrows are shown only when there is somewhere to go, and each is
+     * disabled at its own end -- a control that cannot do anything should not
+     * look like it can.
+     *
+     * Re-evaluated on WIDTH CHANGE, because that is the whole point: the same
+     * five boxes need arrows in a quarter-row widget and none in a full-width
+     * one, and a widget changes width without the window doing anything (see
+     * OWA.onWidthChange).
+     */
+    makeCarousel : function ( dom_id, con_id ) {
+
+        var track = document.getElementById( con_id );
+
+        if ( ! track || ! track.parentNode ) {
+
+            return;
+        }
+
+        var carousel = track.parentNode;
+        var prev = carousel.querySelector( '.owa_metricCarouselPrev' );
+        var next = carousel.querySelector( '.owa_metricCarouselNext' );
+
+        if ( ! prev || ! next ) {
+
+            return;
+        }
+
+        var update = function () {
+
+            // A pixel of slack: scrollWidth and clientWidth disagree by
+            // sub-pixel amounts on a flex row that fits exactly.
+            var overflowing = track.scrollWidth - track.clientWidth > 1;
+
+            jQuery( carousel ).toggleClass( 'owa_metricCarouselScrolls', overflowing );
+
+            prev.disabled = track.scrollLeft <= 1;
+            next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 1;
+        };
+
+        var step = function ( direction ) {
+
+            var box = track.querySelector( '.owa_metricInfobox' );
+
+            // One box at a time, so a click always lands on a boundary rather
+            // than halfway through a number.
+            var by = box ? box.getBoundingClientRect().width + 8 : 120;
+
+            track.scrollLeft += direction * by;
+
+            // scroll-behavior is smooth, so the ends are not known yet.
+            setTimeout( update, 400 );
+        };
+
+        jQuery( prev ).on( 'click', function () { step( -1 ); } );
+        jQuery( next ).on( 'click', function () { step( 1 ); } );
+        jQuery( track ).on( 'scroll', update );
+
+        if ( this.unwatchWidth ) {
+
+            this.unwatchWidth();
+        }
+
+        this.unwatchWidth = OWA.onWidthChange( dom_id, update );
+
+        update();
     }
 }
