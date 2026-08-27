@@ -2428,8 +2428,29 @@ OWA.constraintBuilder.prototype = {
 
         var container_selector = that.dom_selector + ' > .constraintPickerContainer';
 
+        /*
+         * The toggle is an ICON.
+         *
+         * It sits in a bar whose other controls are the dimensions the grid is
+         * grouped by -- the things a reader changes to ask a different
+         * question. A jQuery-UI button labelled "Filter" with a dropdown
+         * triangle was the widest item there and read as another dimension
+         * slot, on a bar that is often half a report wide. An icon says
+         * "there is a control behind this" and costs the width of a glyph.
+         *
+         * Written as markup rather than enhanced with .button(): the triangle
+         * came from the button widget, so keeping the widget and hiding its
+         * icon would be styling around a thing whose whole contribution is the
+         * label and the arrow.
+         *
+         * The title is what names it now, and aria-label is what names it to a
+         * reader who never sees the glyph.
+         */
         jQuery(container_selector).append(
-            '<span class="toggle-button"></span><span class="constraintCount" style="display:none;"></span>'
+            '<span class="toggle-button owa_filterToggle" role="button" tabindex="0"'
+          + ' title="' + OWA.l('Filter') + '" aria-label="' + OWA.l('Filter') + '"'
+          + ' aria-expanded="false"><i class="fa fa-filter"></i></span>'
+          + '<span class="constraintCount" style="display:none;"></span>'
           + '<div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
         );
 
@@ -2455,21 +2476,26 @@ OWA.constraintBuilder.prototype = {
             this.addNewConstraintRow(builder_selector + ' > ul');
         }
 
-        // setup the toggle button
-        // jQuery-UI 1.12 replaced button()'s icons:{primary,secondary} with a
-        // single icon + iconPosition. The old primary was just ui-icon-blank
-        // (a spacer); keep the secondary dropdown triangle on the right.
+        // Reveal the builder. Keyboard as well as mouse: the icon is not a
+        // <button>, so Enter and Space are not free.
+        var toggle = function () {
+
+            var open = jQuery( builder_selector ).is( ':visible' );
+
+            jQuery( builder_selector ).toggle();
+            jQuery( button_selector ).attr( 'aria-expanded', open ? 'false' : 'true' );
+        };
+
         jQuery( button_selector )
-            .button({
-                icon: 'ui-icon-triangle-1-s',
-                iconPosition: 'end',
-                // 'Filter', not 'Select...': the label that used to sit beside
-                // this button is gone, so the button is what names the control.
-                label: OWA.l('Filter')
-            })
-            .click(function() {
-                jQuery(builder_selector).toggle();
-        });
+            .click( toggle )
+            .keydown( function ( e ) {
+
+                if ( e.which === 13 || e.which === 32 ) {
+
+                    e.preventDefault();
+                    toggle();
+                }
+            } );
 
         // setup add button
         jQuery( builder_selector + ' > .add-button' )

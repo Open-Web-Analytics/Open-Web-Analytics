@@ -60,6 +60,60 @@ test.describe('e-commerce reporting', () => {
         expect(tabIds).toContain('ecommerce');
     });
 
+    /**
+     * The tab labels come from three places -- two literals in MetricSets and
+     * whatever a site owner typed into a goal group's name -- and one of the
+     * literals is lower case. A row of tabs reading "Site Usage | e-commerce"
+     * shows its seams.
+     *
+     * Title-casing is a PRESENTATION rule (text-transform on the anchor), which
+     * is why this reads innerText: innerText is the rendered text and reflects
+     * text-transform, textContent is the source string and does not. Asserting
+     * on textContent here would pass whether the rule existed or not.
+     */
+    test('tab labels are title-cased however the label was written', async ({ page }) => {
+        await openReport(page, { reportId: 'browsers' });
+
+        const labels = await page.locator('#report-tabs > .report-tabs-nav-list li a')
+            .evaluateAll(els => els.map(e => e.innerText.trim()));
+
+        expect(labels).toContain('Site Usage');
+
+        // 'e-commerce' as MetricSets writes it; 'E-Commerce' as it must read.
+        expect(labels).toContain('E-Commerce');
+        expect(labels).not.toContain('e-commerce');
+    });
+
+    /**
+     * The selected tab is painted the same blue the trend beside it draws its
+     * total in. jQuery-UI's base theme paints an active widget #007fff, and two
+     * blues a few pixels apart read as an accident rather than a choice.
+     *
+     * #1874CD is OWA.areaChart's totalColor -- read off the chart rather than
+     * written down here, so the two cannot drift apart without this failing.
+     */
+    test('the active tab carries the trend blue', async ({ page }) => {
+        await openReport(page, { reportId: 'browsers' });
+
+        // Constructed, not read off the prototype: the defaults are assigned
+        // to `this.options` in the constructor body.
+        const trendBlue = await page.evaluate(
+            () => new OWA.areaChart().options.totalColor
+        );
+        expect(trendBlue.toLowerCase()).toBe('#1874cd');
+
+        const active = page.locator('#report-tabs > .report-tabs-nav-list li.ui-tabs-active');
+        await expect(active).toHaveCount(1);
+
+        const bg = await active.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(bg).toBe('rgb(24, 116, 205)');
+
+        // White on that blue -- .ui-state-active sets a colour on the LI and the
+        // anchor inside it carries its own, so both have to be said.
+        const fg = await active.locator('a').evaluate(el => getComputedStyle(el).color);
+        expect(fg).toBe('rgb(255, 255, 255)');
+    });
+
     test('the tabbed and untabbed report families stay as they are', async ({ page }) => {
         // Session-based -> tabs.
         await openReport(page, { reportId: 'browsers' });

@@ -701,8 +701,15 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const toggle = builder.locator('> .toggle-button');
         await expect(toggle).toBeVisible();
 
-        // The toggle button is a jQuery-UI button; clicking it reveals .builder.
-        await expect(toggle).toHaveClass(/ui-button/);
+        // The toggle is an ICON, not a jQuery-UI button -- it carries no label
+        // and no dropdown triangle, because it sits beside the dimension
+        // pickers and a second labelled box there reads as another dimension.
+        // Its font-awesome glyph is what makes it a filter.
+        await expect(toggle).toHaveClass(/owa_filterToggle/);
+        await expect(toggle).not.toHaveClass(/ui-button/);
+        await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
+        await expect(toggle).toHaveText('');
+
         await toggle.click();
         await expect(builder.locator('> .builder')).toBeVisible();
 
@@ -980,6 +987,28 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         // The regression signature: NO checkboxradio radio-dot icon on the labels.
         expect(await control.locator('.ui-checkboxradio-icon').count()).toBe(0);
+    });
+
+    /**
+     * The Live View switch is the same kind of control as the metric-set tabs
+     * -- two segments, one of which is the one you are in -- and it sits on the
+     * same reports. Its selected segment carries the same blue for the same
+     * reason: jQuery-UI's base theme paints an active widget #007fff, which is
+     * a different blue from the one the chart above it draws its total in.
+     *
+     * Asserted on the OFF segment, which is checked at render. Clicking On
+     * would be the same assertion plus a polling timer.
+     */
+    test('the selected Live View segment carries the trend blue', async ({ page }) => {
+        const control = page.locator('.autoRefreshControl').first();
+        await expect(control).toBeVisible();
+
+        const selected = control.locator('label.ui-button.ui-state-active');
+        await expect(selected).toHaveCount(1);
+        await expect(selected).toHaveText('Off');
+
+        const bg = await selected.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(bg).toBe('rgb(24, 116, 205)');
     });
 
     test('turning Live View on polls for fresh data and off stops it', async ({ page }) => {

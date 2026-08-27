@@ -488,6 +488,56 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 /* ---------------------------------------------------------------------------
+ * Metric-set tabs
+ *
+ * The tabs are how a site's metric sets make themselves visible -- Site Usage,
+ * e-commerce, one per goal group. Their labels come from three different
+ * places: two literals in MetricSets and whatever the site owner typed into a
+ * goal group's name. Title-casing them HERE is what makes the row read as one
+ * control rather than three sources, and it is a presentation rule, so it does
+ * not go and rewrite a label the owner chose.
+ * ------------------------------------------------------------------------- */
+
+.owa .ui-tabs-nav .ui-tabs-anchor {
+    text-transform: capitalize;
+}
+
+/* The selected tab, in the trend's blue.
+ *
+ * jQuery-UI's base theme paints an active widget #007fff, which is a different
+ * blue from the one the chart beside it draws its total in. Two blues within a
+ * few pixels of each other read as an accident. #1874CD is OWA.areaChart's
+ * totalColor -- the colour the report already means "this one".
+ *
+ * The anchor is coloured too: .ui-state-active sets a colour on the LI, and
+ * the anchor inside it carries its own. */
+/* border-COLOR, not the border shorthand: the tabs widget zeroes the bottom
+   border width on every li so the active one merges into the panel below it,
+   and a shorthand here would put that edge back. */
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
+    border-color: #1874CD;
+    background: #1874CD;
+}
+
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:link,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:visited {
+    color: #ffffff;
+}
+
+/* The Live View switch is the same kind of thing -- a two-segment control
+   whose ON state is the one being looked at -- and it sits on the same reports.
+   Its segments are checkboxradio labels, not tabs, so they need saying
+   separately. */
+.owa .autoRefreshControl .buttons .ui-button.ui-state-active,
+.owa .autoRefreshControl .buttons .ui-button.ui-state-active:hover {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+}
+
+/* ---------------------------------------------------------------------------
  * Report control bar
  *
  * The row of controls a report puts under its title: what is being counted,
@@ -1821,6 +1871,38 @@ li.constraintRow {
    width means "this wide", not "share the row". */
 .owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
     flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * The filter toggle
+ *
+ * An icon, sized and dimmed like the left-hand navigation's icons so the two
+ * read as the same vocabulary. It was a jQuery-UI button labelled "Filter"
+ * with a dropdown triangle, which made it the widest thing on a bar that is
+ * often half a report wide -- and put a second control-looking box next to the
+ * dimension pickers, which ARE the controls.
+ *
+ * Full opacity on hover and while the builder is open: the dimming says
+ * "available", and a control you are currently using is not merely available.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_filterToggle {
+    display: inline-block;
+    /* Beats .explorerTopControls .controlItem span, which sets 10px for the
+       text controls on the same bar. An icon at 10px is a smudge. */
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px;
+    color: #303030;
+    opacity: 0.60;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.owa .owa_filterToggle:hover,
+.owa .owa_filterToggle:focus,
+.owa .owa_filterToggle[aria-expanded="true"] {
+    opacity: 1;
 }
 
 /* How many filters are on, beside the Filter toggle.
