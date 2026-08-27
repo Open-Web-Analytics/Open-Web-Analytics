@@ -195,6 +195,18 @@ test.describe('every configured report renders in a browser', () => {
 
             await expect(grid, 'top-keywords built no grid').toHaveCount(1, { timeout: 20_000 });
 
+            /*
+             * ...and its ROWS have arrived.
+             *
+             * The grid element exists as soon as the explorer injects it, which
+             * is before its fetch comes back -- so the text assertions below
+             * were racing the query and failed intermittently under load, on a
+             * report that renders correctly. Waiting for a row is waiting for
+             * the thing being asserted about.
+             */
+            await expect(page.locator('#top-keywords tr.jqgrow').first(),
+                'top-keywords drew no rows').toBeVisible({ timeout: 20_000 });
+
             const cell = page.locator('#top-keywords');
 
             for (const term of FIXTURE.traffic.searchTerms) {
@@ -400,51 +412,81 @@ test.describe('the report grid gives every widget a usable width', () => {
                 const track = c.querySelector('.metricInfoboxesContainer');
                 const boxes = [...track.querySelectorAll('.owa_metricInfobox')];
                 const prev = c.querySelector('.owa_metricCarouselPrev');
+                const next = c.querySelector('.owa_metricCarouselNext');
 
                 return {
                     boxes: boxes.length,
                     rows: new Set(boxes.map((b) => Math.round(b.getBoundingClientRect().top))).size,
                     overflow: Math.round(track.scrollWidth - track.clientWidth),
-                    arrowsShown: getComputedStyle(prev).display !== 'none',
-                    prevDisabled: prev.disabled,
+                    scrollLeft: Math.round(track.scrollLeft),
+                    back: getComputedStyle(prev).display !== 'none',
+                    forward: getComputedStyle(next).display !== 'none',
                 };
             });
         };
 
-        // Wide enough for all five.
+        // Wide enough for all five: nothing hidden either way, so no arrows.
         const wide = await carousel(1600);
 
         expect(wide.boxes).toBeGreaterThanOrEqual(4);
         expect(wide.rows, 'the boxes wrapped instead of staying on one line').toBe(1);
         expect(wide.overflow).toBeLessThanOrEqual(1);
-        expect(wide.arrowsShown, 'arrows are shown with nowhere to scroll to').toBe(false);
+        expect(wide.back, 'a back arrow with nothing to the left').toBe(false);
+        expect(wide.forward, 'a forward arrow with nothing to the right').toBe(false);
 
         // Narrow enough that they do not fit -- same count, still one line.
-        const narrow = await carousel(1100);
+        const start = await carousel(1100);
 
-        expect(narrow.boxes).toBe(wide.boxes);
-        expect(narrow.rows, 'the boxes wrapped instead of scrolling').toBe(1);
-        expect(narrow.overflow,
+        expect(start.boxes).toBe(wide.boxes);
+        expect(start.rows, 'the boxes wrapped instead of scrolling').toBe(1);
+        expect(start.overflow,
             'this width no longer overflows, so the arrows prove nothing').toBeGreaterThan(10);
-        expect(narrow.arrowsShown, 'there is somewhere to scroll and no arrows').toBe(true);
 
-        // At the start, so back is dead and forward is not.
-        expect(narrow.prevDisabled).toBe(true);
+        /*
+         * EACH SIDE ANSWERS FOR ITSELF. At the start of the row nothing is
+         * hidden to the left, so there is no back arrow at all -- not a greyed
+         * one. This is the assertion that separates "the row scrolls" from
+         * "something is hidden THIS way".
+         */
+        expect(start.back, 'a back arrow at the start of the row').toBe(false);
+        expect(start.forward, 'no forward arrow with boxes hidden to the right').toBe(true);
 
-        // ...and pressing forward actually moves the row.
-        const before = await page.evaluate(
-            () => document.querySelector('.owa_metricCarousel .metricInfoboxesContainer').scrollLeft);
+        const track = '.owa_metricCarousel .metricInfoboxesContainer';
 
+        const scrollLeft = () => page.evaluate(
+            (sel) => Math.round(document.querySelector(sel).scrollLeft), track);
+
+        const shown = (side) => page.evaluate((s) => {
+            const el = document.querySelector('.owa_metricCarousel' + s);
+            return getComputedStyle(el).display !== 'none';
+        }, side);
+
+        // Forward once: the row moves, and now BOTH sides hide something.
         await page.locator('.owa_metricCarouselNext').first().click();
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(700);
 
-        const after = await page.evaluate(
-            () => document.querySelector('.owa_metricCarousel .metricInfoboxesContainer').scrollLeft);
+        expect(await scrollLeft(),
+            'the forward arrow did not scroll the row').toBeGreaterThan(0);
 
-        expect(after, 'the forward arrow did not scroll the row').toBeGreaterThan(before);
+        expect(await shown('Prev'), 'no back arrow after scrolling away from the start').toBe(true);
 
-        // ...and back is live once it has.
-        expect(await page.locator('.owa_metricCarouselPrev').first().isDisabled()).toBe(false);
+        // Forward to the end: nothing left to the right, so that arrow goes.
+        for (let i = 0; i < 4; i++) {
+
+            if (!await shown('Next')) { break; }
+
+            await page.locator('.owa_metricCarouselNext').first().click();
+            await page.waitForTimeout(700);
+        }
+
+        expect(await shown('Next'), 'a forward arrow at the end of the row').toBe(false);
+        expect(await shown('Prev'), 'no back arrow at the end of the row').toBe(true);
+
+        // ...and back again returns the forward arrow.
+        await page.locator('.owa_metricCarouselPrev').first().click();
+        await page.waitForTimeout(700);
+
+        expect(await shown('Next'), 'no forward arrow after scrolling back').toBe(true);
     });
 
     /**

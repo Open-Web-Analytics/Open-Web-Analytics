@@ -321,16 +321,35 @@ OWA.kpiBox.prototype = {
             return;
         }
 
+        /*
+         * AN ARROW PER SIDE, shown only where something is actually hidden.
+         *
+         * Not one "this scrolls" state with the dead arrow greyed out: at the
+         * start of the row there is nothing to the left, so a back arrow --
+         * however faint -- is a control offered for a direction that does not
+         * exist. The two ends are independent questions and are asked
+         * separately.
+         *
+         * A pixel of slack on each: scrollWidth, clientWidth and scrollLeft
+         * disagree by sub-pixel amounts on a flex row, and a half-pixel is not
+         * a hidden metric.
+         */
         var update = function () {
 
-            // A pixel of slack: scrollWidth and clientWidth disagree by
-            // sub-pixel amounts on a flex row that fits exactly.
-            var overflowing = track.scrollWidth - track.clientWidth > 1;
+            var hiddenLeft  = track.scrollLeft > 1;
+            var hiddenRight = track.scrollLeft < track.scrollWidth - track.clientWidth - 1;
 
-            jQuery( carousel ).toggleClass( 'owa_metricCarouselScrolls', overflowing );
+            jQuery( carousel )
+                .toggleClass( 'owa_canScrollBack', hiddenLeft )
+                .toggleClass( 'owa_canScrollForward', hiddenRight );
 
-            prev.disabled = track.scrollLeft <= 1;
-            next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 1;
+            /*
+             * Hidden from the keyboard too, not just from view. An arrow that
+             * is display:none is already unreachable by tab, but a button that
+             * cannot act should say so however it is reached.
+             */
+            prev.disabled = ! hiddenLeft;
+            next.disabled = ! hiddenRight;
         };
 
         var step = function ( direction ) {

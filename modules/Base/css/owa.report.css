@@ -2150,21 +2150,15 @@ li.constraintRow {
  * ------------------------------------------------------------------------- */
 
 .owa .owa_metricCarousel {
-    display: flex;
-    align-items: stretch;
-    gap: 4px;
+    /* The arrows are positioned against this, not laid out beside the row --
+       see below. */
+    position: relative;
 }
 
 .owa .owa_metricCarousel .metricInfoboxesContainer {
     /* One line. The wrap that the container declares for every other use of
        these boxes is exactly what this replaces. */
     flex-wrap: nowrap;
-
-    /* Takes what the arrows leave. min-width:0 because a flex item's automatic
-       minimum is its content, which would push the arrows out of the widget
-       rather than letting the row scroll under them. */
-    flex: 1 1 auto;
-    min-width: 0;
 
     overflow-x: hidden;
     scroll-behavior: smooth;
@@ -2176,36 +2170,57 @@ li.constraintRow {
     flex-shrink: 0;
 }
 
+/* OVER the row, not beside it.
+ *
+ * Laid out in the flex row, an arrow takes width from the numbers -- and takes
+ * it back as the reader scrolls, so the boxes shift sideways under the pointer.
+ * Floating them over the ends means the row keeps the whole width, nothing
+ * moves when an arrow appears, and there is no gutter left behind when one is
+ * hidden.
+ *
+ * It also removes a feedback loop: an arrow that occupies width changes the
+ * width available, which changes whether the row overflows, which decides
+ * whether the arrow is shown. */
 .owa .owa_metricCarouselArrow {
     display: none;
-    flex: 0 0 auto;
-    align-self: center;
-    width: 22px;
-    padding: 2px 0;
-    border: 1px solid #d5d5d5;
-    border-radius: 3px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+
+    width: 18px;
+    padding: 6px 0;
+    border: 0;
+
+    /* A FADE, not a button on top of the words.
+     *
+     * It floats over the first or last box, so an opaque bordered control
+     * chops a label in half and reads as damage. A white ground with a wide
+     * white glow blanks the few pixels around the chevron instead, so the row
+     * reads as continuing underneath and running out of view -- which is what
+     * is actually happening. */
     background-color: #ffffff;
-    color: #505050;
-    font-size: 16px;
+    box-shadow: 0 0 10px 7px #ffffff;
+
+    color: #707070;
+    font-size: 17px;
     line-height: 1;
     cursor: pointer;
 }
 
-/* Shown only when the row has somewhere to go. */
-.owa .owa_metricCarousel.owa_metricCarouselScrolls .owa_metricCarouselArrow {
+.owa .owa_metricCarouselPrev { left: 0; }
+.owa .owa_metricCarouselNext { right: 0; }
+
+/* EACH SIDE ANSWERS FOR ITSELF. There is nothing to the left at the start of
+   the row, so no back arrow -- not a greyed one. A control offered for a
+   direction that does not exist is still a control offered. */
+.owa .owa_metricCarousel.owa_canScrollBack .owa_metricCarouselPrev,
+.owa .owa_metricCarousel.owa_canScrollForward .owa_metricCarouselNext {
     display: block;
 }
 
-.owa .owa_metricCarouselArrow:hover:not(:disabled) {
-    border-color: #999999;
-    background-color: #f2f2f2;
-}
-
-/* At its own end. Kept visible rather than hidden, so the row does not shift
-   sideways as the reader reaches either end of it. */
-.owa .owa_metricCarouselArrow:disabled {
-    opacity: 0.35;
-    cursor: default;
+.owa .owa_metricCarouselArrow:hover {
+    color: #1874CD;
 }
 
 /* ---------------------------------------------------------------------------
