@@ -3,31 +3,16 @@
     "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "siteTrend",
             "container": "trend-chart",
             "title": "Site Metrics",
             "showTitle": true,
-            "colspan": 12,
-            "chartMetric": "visits",
+            "chartMetric": "uniqueVisitors",
             "query": {
+                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
                 "dimensions": "date",
                 "sort": "date"
-            }
-        },
-        {
-            "type": "grid",
-            "id": "latestVisits",
-            "container": "latest-visits",
-            "title": "Latest Visits",
-            "query": {
-                "metrics": "visits,pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,entryPagePath,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
-                "resultsPerPage": 10
-            },
-            "more": {
-                "reportId": "latest-visits"
             }
         },
         {
@@ -146,6 +131,21 @@
             },
             "more": {
                 "reportId": "referring-sites"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "latestVisits",
+            "container": "latest-visits",
+            "title": "Latest Visits",
+            "query": {
+                "metrics": "visits,pagesPerVisit,visitDuration",
+                "dimensions": "ipAddress,entryPagePath,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 10
+            },
+            "more": {
+                "reportId": "latest-visits"
             }
         }
     ]

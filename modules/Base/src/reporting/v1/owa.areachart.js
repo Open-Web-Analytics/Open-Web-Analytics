@@ -664,6 +664,26 @@ OWA.areaChart.prototype = {
             return false;
         }
 
+        /*
+         * ...and it has to be a metric this result set actually carries.
+         *
+         * NO REFETCH means exactly that: the metric has to be here already.
+         * Asked for one that is not, singleSeries() reads `.data_type` off an
+         * undefined cell and throws out of the redraw -- the chart is left
+         * blank and the only trace is the console.
+         *
+         * Not reachable from the boxes, which offer only what was queried. It
+         * is reachable from anything else holding a metric name: a caller that
+         * remembered a choice from a widget that has since been edited, or a
+         * test.
+         */
+        var rows = this.explorer.resultSet.resultsRows;
+
+        if ( ! rows || ! rows.length || ! rows[0][ name ] ) {
+
+            return false;
+        }
+
         this.options.series[0].y = name;
 
         this.generate( this.explorer.resultSet, this.options.series, this.dom_id );

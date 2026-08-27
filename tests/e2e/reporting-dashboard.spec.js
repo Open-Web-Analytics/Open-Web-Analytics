@@ -360,7 +360,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         }, metric);
 
         // A count: thousands separated, no decimals.
-        const counts = await ticks('visits');
+        //
+        // pageViews, not visits: Site Metrics is a trend CARD now and names its
+        // own metrics, which deliberately exclude visits. A card cannot chart
+        // what it does not measure.
+        const counts = await ticks('pageViews');
         expect(counts.length).toBeGreaterThan(1);
         expect(counts.every((t) => /^[\d,]+$/.test(t))).toBe(true);
 
@@ -380,6 +384,22 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // A duration: seconds read as a duration, not as a number.
         const durations = await ticks('visitDuration');
         expect(durations.every((t) => /^\d+:\d{2}(:\d{2})?$/.test(t))).toBe(true);
+
+        /*
+         * ...and a metric the widget does NOT measure is refused rather than
+         * drawn. changeMetric() redraws from the result set already in hand, so
+         * a name that is not in it read `.data_type` off an undefined cell and
+         * threw out of the redraw -- leaving the chart blank with nothing but a
+         * console line to say why.
+         */
+        const refused = await page.evaluate(
+            () => window.siteTrend.areaChart.changeMetric('visits'));
+
+        expect(refused).toBe(false);
+
+        // ...and the chart is still the one it was drawing.
+        expect(await page.evaluate(() => window.siteTrend.areaChart.chartedMetric()))
+            .toBe('visitDuration');
     });
 
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
