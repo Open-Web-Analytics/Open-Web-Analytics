@@ -700,7 +700,17 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 
 <?php elseif ( in_array( ( $owa_w['type'] ?? '' ), array( 'grid', 'grid-card' ), true ) ): ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+        <?php
+            /*
+             * The BODY of the widget, named so the panel can push its footer
+             * down. The explorer renders its control bar, its table and its
+             * pager into this element, so it is the part that should take up
+             * the slack when the panel is taller than the rows in it -- which
+             * is what puts the pager on the panel's floor instead of floating
+             * under the last row.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody"></div>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';

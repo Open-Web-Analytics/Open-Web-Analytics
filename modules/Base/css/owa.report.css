@@ -365,8 +365,16 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding-bottom: 10px;
 }
 
+/*
+ * The strip under a grid: the row count on one side, the pager on the other.
+ *
+ * NO BACKGROUND. It was a solid #9f9f9f band, which reads as a divider rather
+ * than as a place controls live -- and now that a widget is a panel and this
+ * sits on its floor, an empty one drew a 5px grey bar across the bottom of
+ * every table with nothing in it. It is a container for controls; when it holds
+ * none it should be nothing.
+ */
 .owa_resultsExplorerBottomControls {
-    background-color: #9f9f9f;
     font-size:10px;
 }
 
@@ -1968,6 +1976,121 @@ li.constraintRow {
    width means "this wide", not "share the row". */
 .owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
     flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Card widgets: the panel
+ *
+ * A card and a pie are PANELS -- a bounded thing you read at a glance and then
+ * follow to the full report. A full-width table or trend is not; it is the page
+ * itself, and putting a box round it would be drawing a box round everything.
+ *
+ * So the chrome goes on the types that are cards. `owa_widget-<type>` comes
+ * from Core\ReportGrid::classesFor, which is what lets a stylesheet say
+ * "every card" instead of naming each one's container id.
+ *
+ * THE FLOOR IS THE POINT. align-items:stretch already makes a row uniform, but
+ * a row that happens to hold only short widgets was still short -- and a card
+ * with two rows in it drew a panel barely taller than its own heading. The
+ * min-height is what makes a card the same object whether or not the data
+ * filled it, which is the whole reason it is a card and not a table.
+ *
+ * A floor, not a fixed height: a card given more than it expected grows rather
+ * than clipping, and pagination is what keeps that bounded (see
+ * ConfiguredReport::DEFAULT_CARD_ROWS).
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportGridItem.owa_widget-grid,
+.owa .owa_reportGridItem.owa_widget-grid-card,
+.owa .owa_reportGridItem.owa_widget-trend-card,
+.owa .owa_reportGridItem.owa_widget-pie {
+    min-height: 320px;
+
+    /* Explicit rather than inherited: .owa_reportSectionContent sets a white
+       background already, but a panel that depends on an ancestor's colour is
+       a panel that changes when the page behind it does. */
+    background-color: #ffffff;
+
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+
+    /* Room on every side. .owa_reportSectionContent's own padding is
+       `0 7px 7px 0` -- nothing at the top or the left -- which was invisible
+       without a border and puts the heading against the edge with one. */
+    padding: 16px;
+
+    /* The section content's side margins are the grid's gap here, and 10px of
+       margin plus a border reads as a panel inset from its own column. */
+    margin: 0;
+}
+
+/* The heading sits at the top of the panel, so its own spacing is the panel's
+   padding -- and its 3px rule goes.
+ *
+ * That rule is how a section announces itself on a page with no boxes on it:
+ * a line above the words, separating this section from the last. Inside a
+ * bordered panel there is already a line above the words -- the panel's own top
+ * edge, 16px higher -- so the rule reads as a second, shorter border with a gap
+ * between them. The panel says what the rule was saying. */
+.owa .owa_reportGridItem.owa_widget-grid > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-grid-card > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-trend-card > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-pie > .owa_reportSectionHeader {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * ...and the footer sits on the panel's floor.
+ *
+ * A panel has a floor under its height, so a table with four rows in it leaves
+ * space below them -- and the pager and the "View Full Report" link were
+ * landing in the middle of it, against the last row, with the rest of the
+ * panel empty underneath. They belong at the bottom: they are what you do
+ * NEXT, and next is the end of the thing.
+ *
+ * A column, with the body taking the slack. Every panel is a flex column and
+ * the widget's body grows into whatever the rows do not use, so anything after
+ * it is pushed to the bottom edge -- and the pager, which lives INSIDE the
+ * body, is pushed to the bottom of that.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportGridItem.owa_widget-grid,
+.owa .owa_reportGridItem.owa_widget-grid-card,
+.owa .owa_reportGridItem.owa_widget-trend-card,
+.owa .owa_reportGridItem.owa_widget-pie {
+    display: flex;
+    flex-direction: column;
+}
+
+.owa .owa_widgetBody {
+    display: flex;
+    flex-direction: column;
+
+    /* Takes the slack. min-width/height 0 so a wide table still scrolls inside
+       the panel rather than stretching it -- a flex item's automatic minimum is
+       its content, which would defeat the widget's own overflow. */
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+}
+
+.owa .owa_widgetBody > .owa_resultsExplorerBottomControls {
+    margin-top: auto;
+}
+
+/* The "View Full Report" link is a sibling of the body rather than inside it,
+   so it needs saying separately -- and it goes UNDER the pager, which is the
+   order they read in: page through what is here, then go and see all of it. */
+.owa .owa_reportGridItem .owa_moreLinks {
+    margin-top: auto;
+}
+
+/* ...but not when the body is already taking the slack, or the two would fight
+   over it and the link would sit a row's height off the floor. */
+.owa .owa_reportGridItem .owa_widgetBody ~ .owa_moreLinks {
+    margin-top: 0;
 }
 
 /* ---------------------------------------------------------------------------

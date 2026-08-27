@@ -364,6 +364,102 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * A CARD IS A PANEL, and stays one when the data is thin.
+     *
+     * A card and a pie are bounded things you read at a glance and then follow
+     * to the full report -- so they carry a border, a background and a floor
+     * under their height. A full-width table or trend is not that; it is the
+     * page itself, and a box round it would be a box round everything.
+     *
+     * The FLOOR is the part a fixture cannot fake convincingly, so it is the
+     * part asserted hardest. align-items:stretch already makes a row uniform,
+     * but a row holding only short widgets was still short: the dashboard's
+     * Top Content has four rows in it, and drew a panel barely taller than its
+     * own heading. A card is the same object whether or not the data filled it.
+     */
+    test('a card and a pie are panels with a floor under their height', async ({ page }) => {
+        await login(page);
+        await page.setViewportSize({ width: 1600, height: 1500 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('.owa_widget-pie canvas', { timeout: 20_000 });
+        await page.waitForTimeout(1200);
+
+        const widgets = await page.evaluate(() =>
+            [...document.querySelectorAll('.owa_reportGridItem')].map((el) => {
+
+                const cs = getComputedStyle(el);
+
+                return {
+                    type: (el.className.match(/owa_widget-([a-z-]+)/) || [])[1] || '',
+                    height: Math.round(el.getBoundingClientRect().height),
+                    border: cs.borderTopWidth,
+                    radius: parseInt(cs.borderTopLeftRadius, 10),
+                    padding: parseInt(cs.paddingTop, 10),
+                    background: cs.backgroundColor,
+                };
+            }));
+
+        const cards = widgets.filter((w) =>
+            ['grid-card', 'trend-card', 'pie'].includes(w.type));
+
+        const plain = widgets.filter((w) => w.type === 'grid');
+
+        // The fixture has to contain both kinds or this proves nothing.
+        expect(cards.length).toBeGreaterThanOrEqual(3);
+        expect(plain.length).toBeGreaterThanOrEqual(1);
+
+        for (const c of cards) {
+
+            expect(c.border, `${c.type} has no border`).toBe('1px');
+            expect(c.radius, `${c.type} has square corners`).toBeGreaterThan(0);
+            expect(c.background, `${c.type} is not explicitly white`).toBe('rgb(255, 255, 255)');
+
+            // Content must not abut the edge.
+            expect(c.padding, `${c.type} has no padding inside its border`)
+                .toBeGreaterThanOrEqual(10);
+
+            expect(c.height, `${c.type} is below the floor`).toBeGreaterThanOrEqual(320);
+        }
+
+        // ...and a full-width table is a panel too, so a report reads as a set
+        // of panels rather than two kinds of thing.
+        for (const p of plain) {
+            expect(p.border, 'a grid did not get the panel border').toBe('1px');
+            expect(p.height, 'a grid is below the floor').toBeGreaterThanOrEqual(320);
+        }
+
+        /*
+         * The FOOTER sits on the panel's floor. A panel has a floor under its
+         * height, so a four-row table leaves space below it -- and the pager
+         * and the "View Full Report" link were landing against the last row
+         * with the rest of the panel empty underneath.
+         */
+        const footers = await page.evaluate(() =>
+            [...document.querySelectorAll('.owa_reportGridItem')]
+                .map((el) => {
+                    const more = el.querySelector('.owa_moreLinks');
+                    if (!more) { return null; }
+                    return Math.round(el.getBoundingClientRect().bottom
+                        - more.getBoundingClientRect().bottom);
+                })
+                .filter((g) => g !== null));
+
+        expect(footers.length).toBeGreaterThanOrEqual(2);
+
+        // Within the panel's own padding of the bottom edge.
+        for (const gap of footers) {
+            expect(gap, `a "View Full Report" link is ${gap}px off the floor`)
+                .toBeLessThanOrEqual(20);
+        }
+    });
+
+    /**
      * EVERY PIE DRAWS THE SAME CIRCLE, whatever width its widget is.
      *
      * A pie used to be a SQUARE the size of whatever held it -- the height was

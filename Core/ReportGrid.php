@@ -182,6 +182,32 @@ class ReportGrid {
 
         $classes = array( 'owa_reportGridItem' );
 
+        /*
+         * The widget's TYPE, as a class.
+         *
+         * Some kinds of widget are chrome as well as content: a card and a pie
+         * are panels with a border, a background and a floor under their
+         * height, where a full-width table and a trend are not. That is a fact
+         * about the type, so the stylesheet has to be able to see it -- and
+         * without this the only way to style "every card" was to name each
+         * one's container id.
+         *
+         * Sanitised rather than trusted: the type reaches here from a report
+         * definition, and a definition is user-authorable. Anything outside
+         * a-z, 0-9 and a hyphen is dropped, so this can only ever produce a
+         * class name.
+         *
+         * An untyped widget gets no class rather than `owa_widget-`, which
+         * would be a selector matching everything nobody meant.
+         */
+        $type = preg_replace( '/[^a-z0-9-]/', '',
+            strtolower( (string) ( ( (array) $widget )['type'] ?? '' ) ) );
+
+        if ( $type !== '' ) {
+
+            $classes[] = 'owa_widget-' . $type;
+        }
+
         $classes[] = 'owa_span-' . self::colspan( $widget );
 
         $rowspan = self::rowspan( $widget );
