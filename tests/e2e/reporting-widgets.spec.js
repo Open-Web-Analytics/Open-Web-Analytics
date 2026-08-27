@@ -364,6 +364,93 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * EVERY PIE DRAWS THE SAME CIRCLE, whatever width its widget is.
+     *
+     * A pie used to be a SQUARE the size of whatever held it -- the height was
+     * literally the container's width. At a quarter of a row that is a 286px
+     * box; at half a row it is a 619px one, and flot sizes the circle from
+     * min(width, height), so the same pie drew at 174px on the dashboard and
+     * around 446px on Traffic. Two pies, two and a half times apart, with
+     * nothing in the definitions to say so.
+     *
+     * The height is the pie's own option now and is capped at the width, so
+     * min(w, h) is the same number everywhere and so is the circle. The extra
+     * width on a wide widget becomes margin, which is what it should have been.
+     *
+     * Measured off the CANVAS rather than from the element box: the box was
+     * always the same as its container and told you nothing about what was
+     * drawn in it. flot renders pie labels as HTML, so the canvas holds the
+     * circle alone and its filled extent IS the diameter.
+     */
+    test('a pie draws the same size circle on every report', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        await login(page);
+        await page.setViewportSize({ width: 1600, height: 1400 });
+
+        const circles = async (reportId) => {
+
+            await page.goto(
+                `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}`
+                + '&owa_period=last_thirty_days',
+                { waitUntil: 'networkidle' }
+            );
+
+            await page.waitForSelector('.owa_pieChart canvas', { timeout: 20_000 });
+            await page.waitForTimeout(1200);
+
+            return page.evaluate(() => [...document.querySelectorAll('.owa_pieChart')].map((holder) => {
+
+                let widest = 0;
+
+                for (const c of holder.querySelectorAll('canvas')) {
+
+                    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+
+                    let minX = 1e9, maxX = -1, n = 0;
+
+                    for (let y = 0; y < c.height; y++) {
+                        for (let x = 0; x < c.width; x++) {
+                            if (d[(y * c.width + x) * 4 + 3] > 20) {
+                                n++;
+                                if (x < minX) { minX = x; }
+                                if (x > maxX) { maxX = x; }
+                            }
+                        }
+                    }
+
+                    // The slice layer, not flot's empty base canvas.
+                    if (n > 500) { widest = Math.max(widest, maxX - minX + 1); }
+                }
+
+                return { holder: Math.round(holder.getBoundingClientRect().width), circle: widest };
+            }));
+        };
+
+        // The dashboard's two pies are a quarter of a row...
+        const narrow = await circles('dashboard');
+
+        expect(narrow.length).toBe(2);
+
+        // ...and Traffic's is half of one, in a container twice as wide.
+        const wide = await circles('traffic');
+
+        expect(wide.length).toBe(1);
+
+        expect(wide[0].holder,
+            'the wide pie is no longer in a wider container, so this proves nothing')
+            .toBeGreaterThan(narrow[0].holder * 1.5);
+
+        // Same circle in all three, within a pixel of rounding.
+        const all = [...narrow, ...wide].map((p) => p.circle);
+
+        expect(Math.min(...all)).toBeGreaterThan(0);
+        expect(Math.max(...all) - Math.min(...all),
+            `pie circles differ across reports: ${JSON.stringify(all)}`)
+            .toBeLessThanOrEqual(2);
+    });
+
+    /**
      * A CHART GROWS BACK.
      *
      * It shrank and never recovered: 1600 -> 1000 redrew the canvas at 678px,

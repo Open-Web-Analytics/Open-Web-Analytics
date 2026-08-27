@@ -90,6 +90,100 @@ OWA.kpiBox.prototype = {
         this.options[name] = value;
     },
 
+    /**
+     * The result set's aggregates, in the order the QUERY asked for them.
+     *
+     * ORDER IS MEANING. A widget's first metric is the one its chart draws, and
+     * the boxes are how a reader picks a different one -- so a row that reads in
+     * a different order than the definition says makes "the first metric is
+     * charted" look arbitrary. On the dashboard's Site Metrics card the query
+     * asked for uniqueVisitors, pageViews, bounceRate, pagesPerVisit,
+     * visitDuration and the boxes drew uniqueVisitors, pageViews, visitDuration,
+     * bounceRate, pagesPerVisit.
+     *
+     * `resultSet.aggregates` is keyed by the server and arrives in whatever
+     * order the reduction produced, which is not the request's. The request IS
+     * recoverable, though: resultSet.self is the URL that produced this data and
+     * carries `metrics` verbatim. So the order is read from the answer's own
+     * question rather than passed down separately, and cannot drift from it.
+     *
+     * Anything the result set carries that the query did not name goes last
+     * rather than being dropped -- this orders boxes, it does not decide which
+     * ones exist.
+     *
+     * @return array the aggregate objects, ordered
+     */
+    orderedAggregates : function ( resultSet ) {
+
+        var items = [];
+
+        for ( var i in resultSet.aggregates ) {
+
+            if ( resultSet.aggregates.hasOwnProperty( i ) ) {
+
+                items.push( resultSet.aggregates[ i ] );
+            }
+        }
+
+        var wanted = this.queryMetrics( resultSet );
+
+        if ( ! wanted.length ) {
+
+            return items;
+        }
+
+        var remaining = {};
+
+        items.forEach( function ( item ) { remaining[ item.name ] = item; } );
+
+        var out = [];
+
+        wanted.forEach( function ( name ) {
+
+            if ( remaining[ name ] ) {
+
+                out.push( remaining[ name ] );
+
+                // Deleted as it is taken, so a metric named twice in the query
+                // does not draw two boxes, and the sweep below finds only what
+                // the query never mentioned.
+                delete remaining[ name ];
+            }
+        } );
+
+        items.forEach( function ( item ) {
+
+            if ( remaining[ item.name ] ) {
+
+                out.push( item );
+            }
+        } );
+
+        return out;
+    },
+
+    /**
+     * The metric names this result set was asked for, in order.
+     *
+     * Empty when there is no URL to read -- a result set handed in directly by
+     * loadFromArray() has none -- in which case the caller keeps the server's
+     * order, which is the only order there is.
+     */
+    queryMetrics : function ( resultSet ) {
+
+        if ( ! resultSet || ! resultSet.self ) {
+
+            return [];
+        }
+
+        var raw = OWA.util.urldecode(
+            new OWA.uri( resultSet.self ).getQueryParam( OWA.util.appNs( 'metrics' ) ) || '' );
+
+        return raw.split( ',' )
+            .map( function ( name ) { return name.trim(); } )
+            .filter( Boolean );
+    },
+
     generate : function(resultSet, dom_id, options) {
 
         OWA.debug('Generating KPI box for: ' + dom_id + ' with options: ' + JSON.stringify(options));
@@ -110,52 +204,52 @@ OWA.kpiBox.prototype = {
         jQuery('#' + dom_id).append(OWA.util.sprintf('<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div><div style="clear:both;"></div>', con_id ) );
         //jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 
-        for(var i in resultSet.aggregates) {
+        var ordered = this.orderedAggregates( resultSet );
 
-            if (resultSet.aggregates.hasOwnProperty(i)) {
-                var item = resultSet.aggregates[i];
+        for (var i = 0; i < ordered.length; i++) {
 
-                item.dom_id = dom_id + '-' + resultSet.aggregates[i].name+'-'+ resultSet.guid;
+            var item = ordered[i];
 
-                if (this.options.label) {
-                    item.label = this.options.label;
+            item.dom_id = dom_id + '-' + item.name + '-' + resultSet.guid;
+
+            if (this.options.label) {
+                item.label = this.options.label;
+            }
+
+            if ( this.options.width ) {
+                item.width = this.options.width;
+            }
+            var width = item.width || 'auto';
+            /*
+             * The metric NAME on the box, not only inside its id.
+             *
+             * The id is `<dom_id>-<metric>-<guid>`, so the name was there
+             * but only recoverable by taking the string apart -- and both
+             * ends of it contain hyphens. Anything that wants to know which
+             * metric a box shows reads this.
+             */
+            var html = OWA.util.sprintf(
+                '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:%s;width:%s">',
+                item.dom_id, item.name, this.options.minWidth, width );
+            html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
+            html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>', item.formatted_value);
+            html += '</div>';
+
+            jQuery('#' + con_id ).append( html );
+
+            if ( this.options.showSparklines ) {
+
+                var spark_options = {
+                    metric: item.name,
+                    filter: ''
+                };
+
+                if (this.options.filter) {
+                    spark_options.filter = this.options.filter;
                 }
 
-                if ( this.options.width ) {
-                    item.width = this.options.width;
-                }
-                var width = item.width || 'auto';
-                /*
-                 * The metric NAME on the box, not only inside its id.
-                 *
-                 * The id is `<dom_id>-<metric>-<guid>`, so the name was there
-                 * but only recoverable by taking the string apart -- and both
-                 * ends of it contain hyphens. Anything that wants to know which
-                 * metric a box shows reads this.
-                 */
-                var html = OWA.util.sprintf(
-                    '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:%s;width:%s">',
-                    item.dom_id, item.name, this.options.minWidth, width );
-                html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
-                html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>', item.formatted_value);
-                html += '</div>';
-
-                jQuery('#' + con_id ).append( html );
-
-                if ( this.options.showSparklines ) {
-
-                    var spark_options = {
-                        metric: resultSet.aggregates[i].name,
-                        filter: ''
-                    };
-
-                    if (this.options.filter) {
-                        spark_options.filter = this.options.filter;
-                    }
-
-                    var sl = new OWA.sparkline();
-                    sl.generate( resultSet, item.dom_id, spark_options );
-                }
+                var sl = new OWA.sparkline();
+                sl.generate( resultSet, item.dom_id, spark_options );
             }
         }
     }

@@ -16,19 +16,19 @@
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
-            "colspan": 3,
+            "colspan": 6,
             "query": {
                 "metrics": "pageViews",
-                "dimensions": "pageTitle,pagePath",
+                "dimensions": "pagePath",
                 "sort": "pageViews-",
                 "resultsPerPage": 10
             },
             "link": {
-                "linkColumn": "pageTitle",
+                "linkColumn": "pagePath",
                 "template": {
                     "do": "base.report",
                     "reportId": "document",
@@ -38,34 +38,6 @@
             },
             "more": {
                 "reportId": "pages"
-            },
-            "excludeColumns": [
-                "pagePath"
-            ]
-        },
-        {
-            "type": "grid",
-            "id": "actions",
-            "container": "actions-trend",
-            "title": "Actions",
-            "colspan": 3,
-            "query": {
-                "metrics": "actions",
-                "dimensions": "actionGroup,actionName",
-                "sort": "actions-",
-                "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "actionGroup",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "action-group",
-                    "actionGroup": "%s"
-                },
-                "valueColumns": "actionGroup"
-            },
-            "more": {
-                "reportId": "action-tracking"
             }
         },
         {
@@ -97,6 +69,31 @@
                 "metrics": "visits",
                 "dimensions": "medium",
                 "sort": "visits-"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "actions",
+            "container": "actions-trend",
+            "title": "Actions",
+            "colspan": 3,
+            "query": {
+                "metrics": "actions",
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
+            },
+            "more": {
+                "reportId": "action-tracking"
             }
         },
         {

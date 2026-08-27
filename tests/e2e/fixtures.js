@@ -17,6 +17,9 @@ const FIXTURE = {
     password: 'e2e-Reporter-Pass-1!', // throwaway LOCAL fixture creds, never production
     // The four page titles seeded (each with 2 pageviews).
     pageTitles: ['E2E Home', 'E2E pricing', 'E2E docs', 'E2E about'],
+    // The same four pages by PATH. The dashboard's Top Content card is grouped
+    // by pagePath rather than pageTitle, so it renders these.
+    pagePaths: ['/', '/pricing', '/docs', '/about'],
     expectedGridRows: 4,
     // The admin-role fixture user (E2E_ADMIN_* in the seeder). The reporter
     // above is an analyst and cannot reach any edit_* admin screen; the

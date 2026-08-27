@@ -1241,7 +1241,7 @@
             {
                 "var": "topContenturl",
                 "query": {
-                    "dimensions": "pageTitle,pagePath",
+                    "dimensions": "pagePath",
                     "do": "reports",
                     "format": "json",
                     "metrics": "pageViews",
@@ -1251,22 +1251,6 @@
                     "resultsPerPage": "10",
                     "siteId": "1",
                     "sort": "pageViews-",
-                    "version": "v1"
-                }
-            },
-            {
-                "var": "actionsurl",
-                "query": {
-                    "dimensions": "actionGroup,actionName",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "actions",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "resultsPerPage": "5",
-                    "siteId": "1",
-                    "sort": "actions-",
                     "version": "v1"
                 }
             },
@@ -1297,6 +1281,22 @@
                     "period": "last_thirty_days",
                     "siteId": "1",
                     "sort": "visits-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "actionsurl",
+                "query": {
+                    "dimensions": "actionGroup,actionName",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "actions",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "actions-",
                     "version": "v1"
                 }
             },
@@ -1353,16 +1353,16 @@
                 "container": "top-pages"
             },
             {
-                "var": "actions",
-                "container": "actions-trend"
-            },
-            {
                 "var": "visitorTypes",
                 "container": "visitor-types"
             },
             {
                 "var": "visitorMediums",
                 "container": "visitor-mediums"
+            },
+            {
+                "var": "actions",
+                "container": "actions-trend"
             },
             {
                 "var": "topReferrers",
@@ -1377,9 +1377,9 @@
             "siteTrend.makeAreaChart -> trend-chart",
             "siteTrend.makeMetricBoxes -> siteTrend-metrics",
             "topContent.refreshGrid",
-            "actions.refreshGrid",
             "visitorTypes.makePieChart",
             "visitorMediums.makePieChart",
+            "actions.refreshGrid",
             "topReferrers.refreshGrid",
             "latestVisits.refreshGrid"
         ]

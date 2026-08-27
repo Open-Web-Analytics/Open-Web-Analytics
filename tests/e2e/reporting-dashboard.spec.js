@@ -97,11 +97,15 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     /**
      * A grid does not offer a picker for a column nobody can see.
      *
-     * Top Content is grouped by pageTitle AND pagePath, with pagePath in
-     * excludeColumns -- it is there only so the rows can link to the page
-     * detail report. The bar drew a picker for it all the same, so a grid
-     * showing one column offered two pickers and the second named a column
-     * that is not in the table.
+     * Top Referrers is grouped by referralPageTitle AND referralPageUrl, with
+     * the title in excludeColumns -- it is there only so the rows can carry it.
+     * The bar drew a picker for it all the same, so a grid showing one column
+     * offered two pickers and the second named a column that is not in the
+     * table.
+     *
+     * This used to be asserted against Top Content, which was the same shape
+     * until it became a grid-card grouped by pagePath alone. A card draws no
+     * explorer bar at all, so it can no longer answer this question.
      */
     test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
         const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
@@ -110,11 +114,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
             add: e.querySelectorAll('.owa_dimAdd').length,
         })).filter((r) => r.slots || r.add));
 
-        const topContent = bars.find((b) => b.title === 'Top Content');
+        const hidden = bars.find((b) => b.title === 'Top Referrers');
 
-        expect(topContent).toBeTruthy();
-        expect(topContent.slots).toBe(1);
-        expect(topContent.add).toBe(1);
+        expect(hidden, 'Top Referrers drew no explorer bar to count pickers on').toBeTruthy();
+        expect(hidden.slots).toBe(1);
+        expect(hidden.add).toBe(1);
     });
 
     /**
@@ -342,6 +346,69 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
+     * The metric boxes read in the order the QUERY asked for them.
+     *
+     * ORDER IS MEANING. A widget's first metric is the one its chart draws, and
+     * the boxes are how a reader picks a different one -- so a row that reads
+     * in a different order than the definition says makes "the first metric is
+     * charted" look arbitrary rather than like a rule.
+     *
+     * It did read differently. kpiBox walked `resultSet.aggregates`, which is
+     * keyed by the server and arrives in whatever order the reduction produced.
+     * Site Metrics asked for uniqueVisitors, pageViews, bounceRate,
+     * pagesPerVisit, visitDuration and drew uniqueVisitors, pageViews,
+     * visitDuration, bounceRate, pagesPerVisit.
+     *
+     * The order is recovered from resultSet.self -- the URL that produced this
+     * data carries `metrics` verbatim -- so it comes from the answer's own
+     * question and cannot drift from it.
+     */
+    test('the metric boxes read in the order the query asked for', async ({ page }) => {
+
+        await page.waitForSelector('.owa_trendCardMetrics .owa_metricInfobox', { timeout: 20_000 });
+
+        const state = await page.evaluate(() => {
+
+            const box = document.querySelector('.owa_trendCardMetrics');
+            const rs  = window.siteTrend.resultSet;
+
+            // The server's own ordering, before kpiBox reorders it.
+            const served = [];
+
+            for (const k in rs.aggregates) {
+                if (Object.prototype.hasOwnProperty.call(rs.aggregates, k)) {
+                    served.push(rs.aggregates[k].name);
+                }
+            }
+
+            return {
+                asked: new URL(rs.self).searchParams.get('metrics').split(','),
+                drawn: [...box.querySelectorAll('.owa_metricInfobox')]
+                    .map((b) => b.getAttribute('data-metric')),
+                served,
+                charted: [...box.querySelectorAll('.owa_metricInfoboxCharted')]
+                    .map((b) => b.getAttribute('data-metric')),
+            };
+        });
+
+        expect(state.drawn).toEqual(state.asked);
+
+        /*
+         * ...and this fixture actually EXERCISES the reordering. If the server
+         * happened to answer in the requested order, the assertion above would
+         * pass with kpiBox doing nothing at all -- so the case is only a case
+         * while these two differ.
+         */
+        expect(state.served,
+            'the server now answers in query order, so this test no longer proves anything -- '
+            + 'pick a widget whose metrics it still reorders')
+            .not.toEqual(state.asked);
+
+        // The consequence that matters: the charted metric is the first box.
+        expect(state.charted).toEqual([state.asked[0]]);
+    });
+
+    /**
      * The y axis is labelled in the units of the metric being charted.
      *
      * A bounce rate is stored 0 to 1 and money in minor units, so an axis of
@@ -479,7 +546,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
     });
 
-    test('jqGrid renders the seeded page-title rows', async ({ page }) => {
+    test('jqGrid renders the seeded page rows', async ({ page }) => {
         // At least one grid with exactly the seeded rows. The "top pages" grid
         // has one row per seeded page title.
         const grids = page.locator('.ui-jqgrid');
@@ -497,17 +564,29 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const rows = page.locator('#top-pages tr.jqgrow');
         expect(await rows.count()).toBe(FIXTURE.expectedGridRows);
 
-        // The seeded titles must appear in the rendered grid text.
-        const gridText = await page.evaluate(() =>
-            [...document.querySelectorAll('#top-pages tr.jqgrow')]
-                .map((r) => r.innerText.replace(/\s+/g, ' ').trim())
-                .join('\n')
+        /*
+         * By PATH, not by title. Top Content is a grid-card grouped by pagePath
+         * -- one metric against one dimension, which is what a card is -- where
+         * it used to be a grid grouped by pageTitle with the path carried
+         * alongside it and hidden.
+         */
+        const cells = await page.evaluate(() =>
+            [...document.querySelectorAll('#top-pages tr.jqgrow td:first-child')]
+                .map((c) => c.innerText.trim())
         );
-        for (const title of FIXTURE.pageTitles) {
-            expect(gridText).toContain(title);
+        for (const path of FIXTURE.pagePaths) {
+            expect(cells).toContain(path);
         }
-        // Each seeded page got exactly 2 pageviews; the count must render.
-        expect(gridText).toMatch(/\b2\b/);
+        // ...and the metric column renders a figure beside each of them. The
+        // fixture's /about has exactly 2 page views.
+        const counts = await page.evaluate(() =>
+            [...document.querySelectorAll('#top-pages tr.jqgrow td:last-child')]
+                .map((c) => c.innerText.trim())
+        );
+
+        expect(counts).toHaveLength(FIXTURE.expectedGridRows);
+        expect(counts.every((c) => /^\d+$/.test(c))).toBe(true);
+        expect(counts).toContain('2');
     });
 
     /**

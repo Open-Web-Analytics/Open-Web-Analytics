@@ -8,7 +8,12 @@ OWA.pieChart = function( options ) {
     // config options
     this.options = {
 
-        height: 200,
+        /*
+         * How tall the plot area is. The width comes from the widget; this does
+         * not, deliberately -- see setupPieChart(). Big enough for a circle
+         * with its labels around it at the widths a card is drawn at.
+         */
+        height: 240,
         width:    200,
         metric: '',
         dimension: '',
@@ -101,13 +106,26 @@ OWA.pieChart.prototype = {
         return value;
     },
 
+    /**
+     * The plot area: as wide as the widget, and NOT as tall.
+     *
+     * The height used to be the WIDTH -- a pie was a square the size of
+     * whatever held it. At a quarter of a row that is a 286px circle, which
+     * looks deliberate; at half a row it is a 626px one, and the widget becomes
+     * the tallest thing on the report because it is round.
+     *
+     * A pie does not need height in proportion to width. It needs enough to
+     * draw a circle and put labels round it, and the width beyond that is just
+     * margin. So the height is its own option, capped at the width so a narrow
+     * widget still gets a circle rather than an ellipse's worth of room.
+     */
     setupPieChart : function() {
 
         var that = this;
         var w = this.getContainerWidth();
-        //alert(w);
-        var h = this.getContainerWidth(); //this.getOption('chartHeight');
-        //alert(h);
+
+        var h = Math.min( w, this.getOption( 'chartHeight' ) || this.getOption( 'height' ) );
+
         jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
         jQuery(that.domSelector).css('width', w);
         jQuery(that.domSelector).css('height', h);

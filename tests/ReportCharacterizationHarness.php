@@ -190,6 +190,14 @@ final class ReportCharacterizationHarness
      */
     public const RETYPED = array(
         'ReportActionTracking' => array( 'actionsByGroup' => array( 'grid', 'grid-card' ) ),
+
+        /*
+         * Site Metrics is a trend CARD -- its totals above the chart, its own
+         * metrics rather than the report's -- and Top Content is a table card
+         * beside it, which is the pairing that fills the top row.
+         */
+        'ReportDashboard'      => array( 'siteTrend'      => array( 'trend', 'trend-card' ),
+                                         'topContent'     => array( 'grid', 'grid-card' ) ),
         'ReportContent'        => array( 'toppagetypes'   => array( 'grid', 'grid-card' ),
                                          'toppages'       => array( 'grid', 'grid-card' ) ),
         'ReportEcommerce'      => array( 'productName'    => array( 'grid', 'grid-card' ) ),
@@ -281,7 +289,18 @@ final class ReportCharacterizationHarness
         // Latest Visits moved under the site trend at full width -- it groups
         // by seven dimensions and half a row was never enough. The other three
         // went to a quarter each, which is a row of four across.
-        'ReportDashboard' => array( 'latestVisits', 'topContent', 'actions', 'topReferrers' ),
+        /*
+         * ...and since: Latest Visits went to the END, Actions to just after
+         * Traffic Sources, and Top Referrers to a quarter. Site Metrics states
+         * no span at all now -- half a row is what a trend card IS, so the
+         * width comes from the type.
+         *
+         * topContent is NOT here, and that is worth saying: it became a
+         * half-width card immediately after the trend, which is exactly where
+         * and how the original controller had it. The allowance it used to need
+         * is gone because the layout came back to the record.
+         */
+        'ReportDashboard' => array( 'latestVisits', 'actions', 'topReferrers', 'siteTrend' ),
 
         /*
          * Top Pages and Top Page Types became quarter-width cards, and the
@@ -326,6 +345,46 @@ final class ReportCharacterizationHarness
                     'ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount',
                     'ipAddress,entryPagePath,medium,source,city,country,priorVisitCount',
                 ),
+            ),
+
+            /*
+             * A trend card names its own metrics -- it does not take the report
+             * metric set -- and `visits` is not among them, so the chart draws
+             * the first of the ones it does measure.
+             */
+            'siteTrend' => array(
+                'query.metrics' => array(
+                    null,
+                    'uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration',
+                ),
+                'chartMetric'   => array( 'visits', 'uniqueVisitors' ),
+            ),
+
+            /*
+             * Top Content became a card, and a card shows ONE dimension. It has
+             * to be the one the row link is built from -- the link carries a
+             * pagePath into the page detail report -- so pageTitle goes, the
+             * link column becomes the path, and the excludeColumns that existed
+             * only to hide it goes too.
+             */
+            'topContent' => array(
+                'query.dimensions' => array( 'pageTitle,pagePath', 'pagePath' ),
+                'link.linkColumn'  => array( 'pageTitle', 'pagePath' ),
+                'excludeColumns'   => array( array( 'pagePath' ), null ),
+            ),
+        ),
+
+        /*
+         * chartWidth was DEAD, not merely unused: the template wrote it onto
+         * the explorer's option bag and the pie reads a different one, taking
+         * its width from the DOM. This pie carried '300px' and drew at 619.
+         * Removed rather than wired up -- wiring it would put back the thing it
+         * was reported as, which is pies at different sizes on different
+         * reports.
+         */
+        'ReportTraffic' => array(
+            'medium' => array(
+                'chartWidth' => array( '300px', null ),
             ),
         ),
 

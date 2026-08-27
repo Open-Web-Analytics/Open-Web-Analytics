@@ -528,9 +528,21 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php // Raw value -> label, so a boolean pie can read New/Repeat rather than No/Yes. ?>
         <?php echo $owa_id; ?>.options.pieChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
 <?php endif; ?>
-<?php if ( ! empty( $owa_w['chartWidth'] ) ): ?>
-        <?php echo $owa_id; ?>.options.chartWidth = '<?php $view->out( $owa_w['chartWidth'], false ); ?>';
-<?php endif; ?>
+<?php
+    /*
+     * NO chartWidth. A pie is as wide as the widget holding it and as tall as
+     * its own option -- see OWA.pieChart.setupPieChart -- so a per-widget width
+     * had nothing to set.
+     *
+     * It was not merely unused, it was DEAD: the template wrote it onto the
+     * explorer's option bag, and the pie reads a different one and takes its
+     * width from the DOM regardless. `traffic` carried chartWidth: '300px' and
+     * drew at 619px for years.
+     *
+     * Removed rather than wired up, because wiring it would put back the thing
+     * this was reported as: pies at different sizes on different reports.
+     */
+?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makePieChart']);
 
 <?php if ( ! $owa_multiSet ): ?>

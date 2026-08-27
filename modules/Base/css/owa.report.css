@@ -1016,7 +1016,18 @@ li.constraintRow {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 20px;
-    align-items: start;
+
+    /* EVERY WIDGET IN A ROW IS THE SAME HEIGHT.
+     *
+     * `start` sized each one to its own content, so a row read as a ragged
+     * edge: a pie at 355px beside a four-row table at 242 beside an empty
+     * "Actions" at 137. Nothing was wrong with any of them individually and
+     * the row looked broken.
+     *
+     * stretch is the grid's own default and costs nothing -- the tallest
+     * widget in a row sets the height and the rest fill it. Rows still differ
+     * from each other, which is right: they hold different things. */
+    align-items: stretch;
 }
 
 /* ...and it stays a grid inside a tab.
