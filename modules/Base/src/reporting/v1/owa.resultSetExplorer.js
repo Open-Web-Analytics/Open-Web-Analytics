@@ -153,7 +153,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
             metric: ''
         },
         grid: {
-            showRowNumbers: true,
+            /*
+             * OFF by default.
+             *
+             * The column numbered the rows on screen, which is not a fact about
+             * the data -- it renumbers when the sort changes and starts again
+             * at 1 on page two, so it never identifies anything. It cost a
+             * column of width in every grid on every report, and width is what
+             * a widget three columns wide has least of.
+             *
+             * Still an option: a caller that wants them can ask.
+             */
+            showRowNumbers: false,
             excludeColumns: [],
             columnFormatters: {},
             /*
@@ -166,7 +177,18 @@ OWA.resultSetExplorer = function(dom_id, options) {
              * or a new constraint. Drawing the controls anyway offers the reader
              * choices that cannot do anything.
              */
-            showExplorerControls: true
+            showExplorerControls: true,
+
+            /*
+             * How narrow the grid may be refitted to before it stops shrinking
+             * and the widget scrolls instead.
+             *
+             * Six columns need six columns' worth of pixels; past that,
+             * squeezing does not make the table readable. Matched to the
+             * widget width floor in owa.report.css so the two agree about when
+             * a widget has run out of room.
+             */
+            minGridWidth: 280
         },
         template: {
             template: '',
@@ -175,7 +197,23 @@ OWA.resultSetExplorer = function(dom_id, options) {
             dom_id: ''
         },
         metricBoxes: {
-            width: ''
+            width: '',
+
+            /*
+             * How narrow a box may get before the row wraps.
+             *
+             * Separate from `width`, which pins a box AT a size and takes it
+             * out of the sharing entirely. This one says "share the row, but
+             * wrap rather than go under this" -- which is what a card wants,
+             * where the number of metrics is the author's and the width is not.
+             *
+             * Empty leaves kpiBox's own default.
+             */
+            minWidth: '',
+
+            // null: decide from whether there is a chart above them. See
+            // makeMetricBoxes().
+            sparklines: null
         },
         chart: {showGrid: true},
         chartHeight: 125,
@@ -265,6 +303,29 @@ OWA.resultSetExplorer.prototype = {
             url.setQueryParam(OWA.util.appNs('dimensions'), new_dims);
             this.getNewResultSet( url.getSource() );
         }
+    },
+
+    /**
+     * Group the grid by exactly these dimensions.
+     *
+     * The list-based sibling of changeDimension(), which swaps ONE name for
+     * another. The grid has always grouped by a LIST -- changeDimension reads
+     * `dimensions` off the result set's own URL, replaces an entry if it finds
+     * the old name and APPENDS if it does not -- so the list is the real model
+     * and the single "secondary dimension" select was a one-slot view of it.
+     *
+     * changeDimension stays, because secondary_dimension_change is a public
+     * event and something outside this file may still fire it.
+     *
+     * @param array dims dimension names, in the order the grid should group by
+     */
+    setDimensionList : function ( dims ) {
+
+        var url = new OWA.uri( this.resultSet.self );
+
+        url.setQueryParam( OWA.util.appNs( 'dimensions' ), dims.join( ',' ) );
+
+        this.getNewResultSet( url.getSource() );
     },
 
     changeConstraints : function (constraints) {
@@ -369,6 +430,12 @@ OWA.resultSetExplorer.prototype = {
             that.changeDimension(oldname, newname);
         });
 
+        // The pills speak in whole lists; the event above stays for anything
+        // outside this file still firing the one-at-a-time version.
+        jQuery( "#" + dom_id ).bind( 'dimension_list_change', function(event, dims) {
+            that.setDimensionList(dims);
+        });
+
         // subscribe to grid sort column change event
         jQuery( "#" + dom_id ).bind( 'sort_column_change', function(event, column, direction) {
             that.changeSort(column, direction);
@@ -379,6 +446,63 @@ OWA.resultSetExplorer.prototype = {
             that.changeConstraints(constraints);
         });
 
+        this.watchGridWidth( dom_id );
+    },
+
+    /**
+     * Refit the grid when the layout changes its widget's width.
+     *
+     * `autowidth: true` fits the grid to its container ONCE, when it is built,
+     * and jqGrid never looks again. So a grid built at 1285px stayed 1285px
+     * inside a widget that had since become 712px -- it did not overflow the
+     * page, because the widget scrolls; it just quietly became a table you had
+     * to scroll sideways to read. That is the "widgets collapse when the window
+     * is resized" symptom -- the widget shrank and the grid did not.
+     *
+     * setGridWidth re-runs the same shrinkToFit distribution the initial build
+     * used, so the columns keep the proportions sizeColumnsToContent worked out.
+     * This changes the total, not the shares.
+     *
+     * A FLOOR, unlike the chart. A chart has no irreducible width and should
+     * simply be as wide as the room it is given; a table of six columns needs
+     * six columns' worth of pixels, and past that the honest answer is to stop
+     * shrinking and let the widget scroll. Squeezing further does not make a
+     * table readable, it makes every column too narrow to read at once.
+     *
+     * ON THE EXPLORER, not on the dataGrid, because the explorer is the object
+     * that survives. createGrid() builds a NEW dataGrid on every refresh, so an
+     * observer owned by one of those is never disconnected -- it goes on firing
+     * against a table that has since been replaced, and calls setGridWidth on
+     * an element jqGrid has not initialised yet. That threw
+     * "Cannot read properties of undefined" on every resize.
+     */
+    watchGridWidth : function ( dom_id ) {
+
+        if ( this.unwatchGridWidth ) {
+
+            this.unwatchGridWidth();
+        }
+
+        var that = this;
+
+        this.unwatchGridWidth = OWA.onWidthChange( dom_id, function ( width ) {
+
+            var grid = jQuery( '#' + dom_id + '_grid' );
+
+            /*
+             * jqGrid hangs `grid` off the table element once it has built it,
+             * and this can fire in the window between the table being appended
+             * and that happening. Asking an uninitialised table to resize is
+             * the error above, not a no-op.
+             */
+            if ( ! grid.length || ! grid[0].grid ) {
+
+                return;
+            }
+
+            grid.jqGrid( 'setGridWidth',
+                Math.max( width, that.options.grid.minGridWidth || 0 ), true );
+        } );
     },
 
     /**
@@ -535,6 +659,16 @@ OWA.resultSetExplorer.prototype = {
             OWA.debug('about to trigger data updates.');
             jQuery('#' + that.subscriber_dom_ids[i]).trigger('new_result_set', [that.resultSet]);
         }
+
+        /*
+         * ...and once they have all rebuilt, say again which metric is charted.
+         *
+         * The chart and the metric boxes are separate subscribers that each
+         * rebuild themselves from this event, so whichever of them goes second
+         * would otherwise wipe out what the first marked. Doing it after the
+         * loop means it does not depend on the order they were registered in.
+         */
+        this.markChartedMetric();
     },
 
     /**
@@ -575,6 +709,26 @@ OWA.resultSetExplorer.prototype = {
                         if (this.columnLinks.hasOwnProperty(y)) {
                             //alert(this.dom_id + ' : '+y);
                             var template = this.columnLinks[y].template;
+
+                            /*
+                             * The linked column may not be in this result set.
+                             *
+                             * A link template is registered once, for a column
+                             * the report was built with -- but the reader can
+                             * now change WHICH dimensions the grid groups by,
+                             * and swapping one out takes its column with it. A
+                             * template for a column that is no longer there has
+                             * nothing to apply to.
+                             *
+                             * Latent until the dimension controls could replace
+                             * the FIRST dimension: the old single-slot picker
+                             * only ever changed the secondary one, so the
+                             * linked column could not disappear and this read
+                             * ...[y].name on undefined only in theory.
+                             */
+                            if ( ! this.resultSet.resultsRows[i][y] ) {
+                                continue;
+                            }
 
                             if (this.resultSet.resultsRows[i][y].name.length > 0) {
                                 //if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
@@ -650,6 +804,28 @@ OWA.resultSetExplorer.prototype = {
         ac.setDomId( dom_id );
         // generate area chart
         ac.generate(this.resultSet, series, dom_id);
+
+        /*
+         * Kept, not discarded.
+         *
+         * The chart owns state now -- which series the reader has brought
+         * forward from the legend -- and a chart that state cannot be read from
+         * can only be checked by looking at it. It is also what a later caller
+         * would need to redraw one without rebuilding it.
+         */
+        this.areaChart = ac;
+
+        /*
+         * ...and the chart knows who to ask for data.
+         *
+         * The granularity control rewrites the result-set URL and refetches,
+         * and fetching belongs to the explorer. Without this the chart would
+         * have to own a second copy of that, or the control could not exist.
+         */
+        ac.explorer = this;
+
+        // Now that it can, draw it -- generate() ran before this was set.
+        ac.drawGranularityControl( dom_id );
 
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
@@ -846,11 +1022,100 @@ OWA.resultSetExplorer.prototype = {
             options.width = this.options.metricBoxes.width;
         }
 
+        if ( this.options.metricBoxes.minWidth ) {
+            options.minWidth = this.options.metricBoxes.minWidth;
+        }
+
+        /*
+         * No sparkline in a box that sits under a chart.
+         *
+         * The chart above already draws the shape over time, so a thumbnail of
+         * it inside every box says the same thing again -- and these boxes are
+         * the control for choosing which metric that chart draws, which reads
+         * better as a row of numbers than as a row of small graphs.
+         *
+         * INFERRED from whether this explorer has a chart, rather than declared
+         * by each caller: makeAreaChart is queued before makeMetricBoxes in all
+         * five places that draw both, so by now the answer is knowable and no
+         * template has to repeat it. `sparklines` overrides, either way.
+         */
+        options.showSparklines = ( this.options.metricBoxes.sparklines === null
+            || this.options.metricBoxes.sparklines === undefined )
+            ? ! this.areaChart
+            : !! this.options.metricBoxes.sparklines;
+
         kpi.generate(this.resultSet, dom_id, options);
 
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
 
+        // The boxes are a way to choose what the chart above them draws.
+        this.bindMetricBoxes( dom_id );
+    },
+
+    /**
+     * Clicking a metric box charts that metric.
+     *
+     * The boxes under a trend ARE the metrics the widget measures, and the
+     * chart draws one of them -- so they are already the list of what it could
+     * draw instead, and a separate picker beside them would be a second copy of
+     * the same list.
+     *
+     * DELEGATED, and bound once. Both the boxes and the chart rebuild
+     * themselves whenever a new result set arrives -- a granularity change is
+     * one -- so a handler on the boxes would be thrown away with them.
+     *
+     * @param string dom_id the element the boxes were rendered into
+     */
+    bindMetricBoxes : function ( dom_id ) {
+
+        var that = this;
+
+        this.metricBoxesDomId = dom_id;
+
+        jQuery( '#' + dom_id )
+            .off( 'click.owaChartMetric' )
+            .on( 'click.owaChartMetric', '.owa_metricInfobox', function () {
+
+                if ( ! that.areaChart ) {
+
+                    return;
+                }
+
+                if ( that.areaChart.changeMetric( jQuery( this ).attr( 'data-metric' ) ) ) {
+
+                    that.markChartedMetric();
+                }
+            } );
+
+        this.markChartedMetric();
+    },
+
+    /**
+     * Say on the boxes which metric the chart is drawing.
+     *
+     * Interactive only when there is more than one to choose between: one box
+     * that can only re-select itself is a control that does nothing, and
+     * styling it as clickable would promise otherwise.
+     */
+    markChartedMetric : function () {
+
+        if ( ! this.metricBoxesDomId || ! this.areaChart ) {
+
+            return;
+        }
+
+        var $boxes = jQuery( '#' + this.metricBoxesDomId + ' .owa_metricInfobox' );
+        var charted = this.areaChart.chartedMetric();
+
+        $boxes.each( function () {
+
+            jQuery( this ).toggleClass( 'owa_metricInfoboxCharted',
+                jQuery( this ).attr( 'data-metric' ) === charted );
+        } );
+
+        jQuery( '#' + this.metricBoxesDomId )
+            .toggleClass( 'owa_metricBoxesSelectable', $boxes.length > 1 );
     },
     
     makeSparkLine : function(dom_id, options) {
@@ -900,6 +1165,8 @@ OWA.resultSetExplorer.prototype = {
  * @param     options            obj        config object
  */
 OWA.dimensionPicker = function(target_dom_selector, options) {
+
+    this.options = options || {};
 
     this.dim_list = {};
     this.alternate_field_selector = '';
@@ -955,7 +1222,18 @@ OWA.dimensionPicker.prototype = {
     generateDimList : function(selector, selected) {
 
         var container_selector = selector;
-        var c = '<select data-placeholder="Select..." name="dim-list" class="dim-list" style="width:150px;"><option value=""></option>';
+        /*
+         * The placeholder IS the label.
+         *
+         * Each control in the grid's bar used to be a text label plus a
+         * control, and two of those wrap onto separate lines as soon as the
+         * widget is narrow -- which is most of them, since a widget is often
+         * half a report wide. Naming the control inside itself keeps it to one
+         * element, so the bar stays a row.
+         */
+        var placeholder = this.options.placeholder || 'Select...';
+
+        var c = '<select data-placeholder="' + placeholder + '" name="dim-list" class="dim-list"><option value=""></option>';
         var that = this;
 
         if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
@@ -1012,7 +1290,16 @@ OWA.dimensionPicker.prototype = {
         // the dimension list was unusable. options.width bypasses the runtime
         // measurement (chosen 0.9.x read the CSS width, so this wasn't needed
         // before the 0.9.6 -> 1.8.7 upgrade).
-        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found.", width: '150px'});
+        jQuery( container_selector + ' > .dim-list' ).chosen( {
+            no_results_text: "Name not found.",
+            placeholder_text_single: placeholder,
+            // Still explicit -- chosen-js 1.x measures the select at enhancement
+            // time and reads 0 inside a display:none parent (the constraint
+            // builder enhances while its .builder is hidden). '100%' lets the
+            // CSS decide, so the control can shrink with the bar instead of
+            // holding it at 150px and forcing a wrap.
+            width: '100%'
+        } );
 
 
 jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
@@ -1428,39 +1715,87 @@ OWA.dataGrid.prototype = {
         // secondard dimension picker
         jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
             OWA.util.sprintf(
-                '<li class="controlItem"><span class="label">%s:</span> <span id="%s"></span></li>',
-                OWA.l('Secondary Dimension'),
+                '<li class="controlItem"><span id="%s"></span></li>',
                 this.dom_id + '_grid_secondDimensionChooser'
             )
         );
 
-        // create secondary dimension picker
-        var sdc = new OWA.dimensionPicker('#' + this.dom_id + '_grid_secondDimensionChooser');
-        sdc.setExclusions( this.getDimensions( resultSet ) );
-        //sdc.setExclusions( this.gridColumnOrder );
-        sdc.setDimensions( resultSet.relatedDimensions );
-        sdc.display();
+        /*
+         * What the grid is grouped by, as pills.
+         *
+         * The dimensions the grid ALREADY has come from its own URL, so the
+         * control shows the real state rather than an empty slot beside it.
+         * Adding or removing one rewrites the list and refetches -- which is
+         * what the single select did too, one dimension at a time.
+         */
+        /*
+         * relatedDimensions is {family: [ {name, label}, ... ]} -- a LIST per
+         * family. Passed through as it is: the family grouping is what makes
+         * seventy dimensions findable, and reading the key as a NAME gave every
+         * option an array index for a value, so choosing "Date" asked the grid
+         * to group by "7".
+         */
+        /*
+         * A dimension the grid queries but does not SHOW is not part of this
+         * control.
+         *
+         * Six shipped grids group by a label and its url or id together and
+         * exclude the second from the columns -- top content is grouped by
+         * pageTitle AND pagePath, and pagePath is there only so the rows can
+         * link somewhere. The bar drew a picker for it all the same, so a grid
+         * showing one column offered two pickers, the second naming a column
+         * the reader cannot see.
+         *
+         * Split rather than dropped: the hidden ones still have to travel with
+         * every refetch, or the first regroup would take pagePath out of the
+         * query and the row links would quietly stop being links.
+         */
+        var allDimensions = this.getDimensions( resultSet ).filter( Boolean );
+        var excluded      = this.options.excludeColumns || [];
 
-        // listen for the change to secondary dimension
-        jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser')
-            .bind('dimension_change', function(event, oldname, newname) {
+        var hiddenDimensions = allDimensions.filter( function ( name ) {
+            return excluded.indexOf( name ) !== -1;
+        } );
 
-            // lookup current secondary dimension as displayed in the grid
-            /*if ( that.gridColumnOrder.length >= 1 ) {
-                oldname = that.gridColumnOrder[1];
-            } else {
-                oldname = '';
-            }*/
+        var shownDimensions = allDimensions.filter( function ( name ) {
+            return excluded.indexOf( name ) === -1;
+        } );
 
-            // propigate the event up one level where result set explorer is listening
-            jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [that.previousDimensionName, newname]);
+        var dimensionControls = new OWA.dimensionSelectors(
+            '#' + this.dom_id + '_grid_secondDimensionChooser',
+            {
+                choices: resultSet.relatedDimensions || {},
+                selected: shownDimensions,
+                hidden: hiddenDimensions,
+                onChange: function ( dims ) {
+                    jQuery( '#' + that.dom_id ).trigger( 'dimension_list_change', [ dims ] );
+                }
+            }
+        );
 
-            that.previousDimensionName = newname;
-        });
+        dimensionControls.display();
+
+        /*
+         * Built ONCE, and deliberately not refreshed on refetch.
+         *
+         * The widget's metrics are locked -- there is no control to change them
+         * -- so the metric reduction has already pinned the fact table before
+         * this control exists. relatedDimensions IS the set of dimensions
+         * related to that table, so every option offered here is one the table
+         * can answer, and choosing one cannot invalidate it.
+         *
+         * Measured rather than assumed: the browsers widget resolves to
+         * base.session on the site_usage metric set, because pagesPerVisit,
+         * visitDuration and bounceRate exist only there. Adding a request-only
+         * dimension like pagePath does not move the table to the request -- it
+         * makes the query illegal, which is why pagePath is not in the 70
+         * dimensions this control offers in the first place.
+         */
+
 
         // inject constraint builder
         // secondard dimension picker
-        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="label">Filter:</span> <span class="constraintPicker"></span></li>');
+        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="constraintPicker"></span></li>');
         // constraint builder selector
         var cb_button_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPickerButton';
         var cb_cont_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPicker';
@@ -1521,6 +1856,22 @@ OWA.dataGrid.prototype = {
             }
         }
 
+
+        /*
+         * Give each column room in proportion to what is actually in it.
+         *
+         * jqGrid has no content-based sizing: with autowidth and shrinkToFit it
+         * divides the available width among the flexible columns in proportion
+         * to their DECLARED widths -- and every dimension column declares none,
+         * which jqGrid reads as its default 150. Identical declarations mean
+         * identical shares, so Latest Visits gave a full entry URL exactly as
+         * much room as priorVisitCount and truncated it.
+         *
+         * Measured before the grid is built rather than adjusted after: the
+         * rows are already here, and resizing a rendered grid means a second
+         * layout the reader can see happen.
+         */
+        this.sizeColumnsToContent( resultSet, columns );
 
         jQuery('#' + that.dom_id + '_grid').jqGrid({
             jsonReader: {
@@ -1583,6 +1934,131 @@ OWA.dataGrid.prototype = {
     },
 
     // private
+    /**
+     * The widest thing each flexible column has to show, in pixels.
+     *
+     * Sets `width` on the column definitions in place. shrinkToFit still has
+     * the last word -- these are proportions, not promises -- so the grid goes
+     * on fitting its widget instead of growing a horizontal scrollbar, and a
+     * column with long values simply gets a bigger share of the row.
+     *
+     * Only the FLEXIBLE columns. Metric columns are declared fixed at 100 and
+     * right-aligned, and jqGrid leaves fixed columns out of the distribution
+     * entirely, so measuring them would change nothing and widening them would
+     * take the room this is trying to find.
+     */
+    sizeColumnsToContent : function ( resultSet, columns ) {
+
+        var measure = this.textMeasurer();
+
+        if ( ! measure ) {
+
+            // No canvas to measure with. jqGrid's equal shares are the same
+            // behaviour as before, which is a worse layout and not a broken one.
+            return;
+        }
+
+        /*
+         * Cell padding plus a little slack, and bounds.
+         *
+         * The maximum is what stops one long URL from taking the row: past it,
+         * a column has as much as it can usefully be given and the value wraps
+         * or ellipsizes as it did before. The minimum keeps a short column --
+         * a Yes/No, a small count -- from collapsing to nothing.
+         */
+        var PAD = 24;
+        var MIN = 70;
+        var MAX = 320;
+
+        for ( var c = 0; c < columns.length; c++ ) {
+
+            var def = columns[c];
+
+            if ( def.fixed ) {
+
+                continue;
+            }
+
+            // The heading is content too, and it carries a sort indicator.
+            var widest = measure( def.label || def.name ) + PAD + 14;
+
+            for ( var i = 0; i < resultSet.resultsRows.length; i++ ) {
+
+                var cell = resultSet.resultsRows[i][ def.name ];
+
+                if ( ! cell ) {
+
+                    continue;
+                }
+
+                var text = ( cell.formatted_value === null || cell.formatted_value === undefined
+                    || cell.formatted_value === '' ) ? cell.value : cell.formatted_value;
+
+                var width = measure( text ) + PAD;
+
+                if ( width > widest ) {
+
+                    widest = width;
+                }
+            }
+
+            def.width = Math.round( Math.min( MAX, Math.max( MIN, widest ) ) );
+        }
+    },
+
+    /**
+     * A function that measures a string in the grid's own font.
+     *
+     * Canvas measureText rather than a hidden element per value: a grid of ten
+     * rows by ten columns is a hundred measurements, and doing those by
+     * inserting and reading back DOM nodes is a hundred forced layouts.
+     *
+     * Returns null when there is no canvas to measure with, which the caller
+     * treats as "leave the widths alone".
+     */
+    textMeasurer : function () {
+
+        var canvas = document.createElement( 'canvas' );
+
+        if ( ! canvas.getContext ) {
+
+            return null;
+        }
+
+        var ctx = canvas.getContext( '2d' );
+
+        if ( ! ctx || typeof ctx.measureText !== 'function' ) {
+
+            return null;
+        }
+
+        // The grid's own font, so the measurement is of what will be drawn.
+        // Falls back to the theme's size rather than to the canvas default,
+        // which is smaller than anything the grid uses.
+        var probe = document.getElementById( this.dom_id );
+        var style = probe && window.getComputedStyle ? window.getComputedStyle( probe ) : null;
+
+        ctx.font = style
+            ? ( style.fontStyle + ' ' + style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily )
+            : '12px Arial, sans-serif';
+
+        return function ( value ) {
+
+            if ( value === null || value === undefined ) {
+
+                return 0;
+            }
+
+            /*
+             * The TEXT, not the markup. A linked column's formatted value is an
+             * anchor, and measuring the tags would size the column to the href.
+             */
+            var text = String( value ).replace( /<[^>]*>/g, '' );
+
+            return ctx.measureText( text ).width;
+        };
+    },
+
     makeGridColumnDef : function(column) {
 
         var _sort_type = '';
@@ -1661,6 +2137,271 @@ OWA.dataGrid.prototype = {
 
 };
 
+/**
+ * TWO CONTEXTS, TWO SETS OF RULES
+ *
+ * These pickers look the same in the grid's explore bar and in the custom
+ * report builder's widget modal, and their obligations are opposite.
+ *
+ * REFINING a rendered widget: the metrics are locked -- there is no control to
+ * change them -- so the metric reduction has already pinned the fact table
+ * before the control exists. relatedDimensions, which the server computes
+ * against that table, IS the legal list. The control reasons about nothing; it
+ * renders what it was handed, and cannot offer an illegal combination.
+ *
+ * EDITING a widget: the metrics are being chosen, so no table is resolved yet.
+ * Every pick narrows what else is possible, in both directions -- metrics
+ * constrain the dimensions and dimensions constrain the metrics -- so that
+ * control must actively reduce, which is why the builder carries entity maps
+ * and re-narrows on each change.
+ *
+ * The rule: a control takes its choices FROM ITS CALLER and does no legality
+ * reasoning of its own. Refining passes relatedDimensions; editing passes the
+ * list it narrowed. Confusing the two is what produces a refresh that is not
+ * needed here, or a missing one over there.
+ */
+
+/**
+ * The dimensions a grid is grouped by: one picker each, and a plus for another.
+ *
+ * WHAT IT REPLACES
+ *
+ * A single "Secondary Dimension" select. The grid groups by a LIST -- the
+ * dimensions travel in one URL parameter and changeDimension() has always
+ * appended to them -- so the select showed one slot of something already
+ * plural, and what the grid was grouped by was legible only from its columns.
+ *
+ * It also behaved differently on its first use than after: the swap-or-append
+ * branch keys off previousDimensionName, which starts empty, so the first pick
+ * ADDED a dimension and every pick after REPLACED one, with nothing on screen
+ * to explain the difference.
+ *
+ * A PICKER PER DIMENSION, NOT A PILL EACH
+ *
+ * Deliberately unlike the widget-edit modal, which uses pills. Refining is
+ * about CHANGING what you are looking at -- swap this dimension for that one --
+ * and a select is the control for changing a choice. Pills are for curating a
+ * set, which is what editing a widget's definition is. The two screens look
+ * different because the actions are different.
+ *
+ * The first picker always holds a dimension: a grid grouped by nothing is not a
+ * state the report has, so that one offers no blank. The rest can be cleared,
+ * which is how a dimension is removed.
+ *
+ * @param string target_dom_selector
+ * @param object options {choices, selected, max, onChange}
+ */
+OWA.dimensionSelectors = function ( target_dom_selector, options ) {
+
+    this.dom_selector = target_dom_selector;
+
+    this.options = jQuery.extend( {
+        /*
+         * {family: [{name, label}, ...]} -- the shape relatedDimensions already
+         * has, kept rather than flattened. Seventy dimensions in one flat list
+         * is a scroll; grouped by family (Visitor, Visit, System, Geo ...) it is
+         * a menu, and chosen renders each family as a heading.
+         */
+        choices: {},
+        // Names currently grouped by, in column order.
+        selected: [],
+        /*
+         * Grouped by, but not shown -- and not this control's to offer.
+         *
+         * They are added back to every emitted list, because they are part of
+         * the query even though they are not part of the choice: a grid whose
+         * rows link somewhere needs the column the link is built from, and
+         * dropping it on the first regroup would take the links with it.
+         */
+        hidden: [],
+        /*
+         * Two.
+         *
+         * Not a data limit -- the grid will group by more, and some shipped
+         * widgets do. It is what fits: each slot is a picker, and a widget can
+         * be as narrow as a quarter of the page, where three pickers plus the
+         * filter control no longer sit on a line.
+         */
+        max: 2,
+        onChange: null
+    }, options || {} );
+
+    this.selected = ( this.options.selected || [] ).slice();
+};
+
+OWA.dimensionSelectors.prototype = {
+
+    value : function () {
+
+        return this.selected.slice();
+    },
+
+    /**
+     * One picker's options: everything legal, minus what the OTHER pickers
+     * hold. Its own value stays, or the control would clear itself on render.
+     */
+    optionsFor : function ( $select, index, blankLabel ) {
+
+        var that = this;
+        var mine = this.selected[ index ];
+
+        if ( blankLabel !== null ) {
+            $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( '' ) );
+        }
+
+        jQuery.each( this.options.choices || {}, function ( family, dims ) {
+
+            var $group = jQuery( '<optgroup>' ).attr( 'label', family );
+            var added  = 0;
+
+            jQuery.each( dims || [], function ( i, dim ) {
+
+                if ( ! dim || ! dim.name ) {
+                    return;
+                }
+
+                // Used in another picker: offering it here would let one grid
+                // group by the same dimension twice.
+                if ( dim.name !== mine && that.selected.indexOf( dim.name ) !== -1 ) {
+                    return;
+                }
+
+                $group.append( jQuery( '<option>' ).attr( 'value', dim.name )
+                    .prop( 'selected', dim.name === mine )
+                    .text( dim.label || dim.name ) );
+
+                added++;
+            } );
+
+            // A family with nothing left to offer would render as a heading
+            // with nothing under it.
+            if ( added ) {
+                $select.append( $group );
+            }
+        } );
+    },
+
+    display : function () {
+
+        var that  = this;
+        var $root = jQuery( this.dom_selector );
+
+        $root.empty();
+
+        /*
+         * A widget already scoped to more dimensions than this control holds is
+         * left alone.
+         *
+         * Grouping by several is something the report author did on purpose --
+         * Latest Visits groups by seven -- so a two-slot control over it could
+         * only take dimensions away, and would need seven pickers to show what
+         * is there. The grid's own column headings still name every one of
+         * them, so nothing becomes invisible; there is simply nothing here to
+         * change.
+         */
+        if ( this.selected.length > this.options.max ) {
+
+            $root.removeClass( 'owa_dimensionSelectors' );
+
+            return;
+        }
+
+        $root.addClass( 'owa_dimensionSelectors' );
+
+        this.selected.forEach( function ( name, index ) {
+
+            var $slot = jQuery( '<span class="owa_dimSlot">' ).attr( 'data-index', index );
+
+            var $select = jQuery( '<select class="owa_dimSelect">' )
+                .attr( 'data-placeholder', index === 0 ? 'Dimension' : 'Add dimension' );
+
+            // The first has no blank: the grid must be grouped by something.
+            that.optionsFor( $select, index, index === 0 ? null : '' );
+
+            $slot.append( $select );
+            $root.append( $slot );
+
+            $select.chosen( { no_results_text: 'Name not found.', width: '100%' } );
+
+            /*
+             * Let the list escape the widget while it is open.
+             *
+             * .owa_reportGridItem carries overflow-x:auto so a wide table
+             * scrolls inside its own widget rather than widening the page --
+             * and per CSS, one axis being non-visible computes the OTHER to
+             * auto. So the widget is a scroll box in both directions and the
+             * dropdown is clipped by it: measured at 278px tall with 74px
+             * visible.
+             *
+             * Lifted only while a list is open, so the reason the overflow
+             * exists still holds the rest of the time.
+             */
+            $select.on( 'chosen:showing_dropdown', function () {
+                jQuery( this ).closest( '.owa_reportGridItem' ).addClass( 'owa_dropdownOpen' );
+            } );
+
+            $select.on( 'chosen:hiding_dropdown', function () {
+                jQuery( this ).closest( '.owa_reportGridItem' ).removeClass( 'owa_dropdownOpen' );
+            } );
+
+            $select.on( 'change', function () {
+
+                var picked = jQuery( this ).val();
+
+                if ( picked ) {
+                    that.selected[ index ] = picked;
+                } else {
+                    // Cleared: that is how a dimension is removed. Never the
+                    // first, which offers no blank to begin with.
+                    that.selected.splice( index, 1 );
+                }
+
+                that.display();
+                that.changed();
+            } );
+        } );
+
+        if ( this.selected.length < this.options.max ) {
+
+            var $add = jQuery( '<button type="button" class="owa_dimAdd" title="Group by another dimension">' )
+                .text( '+' );
+
+            $add.on( 'click', function ( e ) {
+
+                e.preventDefault();
+
+                /*
+                 * The new picker is drawn empty and the grid is NOT refetched
+                 * yet -- there is nothing to group by until something is
+                 * chosen, and refetching on an empty slot would reload the
+                 * same data.
+                 */
+                that.selected.push( '' );
+                that.display();
+
+                jQuery( that.dom_selector + ' .owa_dimSlot' ).last()
+                    .find( '.chosen-container' ).trigger( 'mousedown' );
+            } );
+
+            $root.append( $add );
+        }
+    },
+
+    changed : function () {
+
+        if ( typeof this.options.onChange === 'function' ) {
+
+            /*
+             * Empty slots are a control state, not a grouping, so they are
+             * dropped -- and the hidden ones are added back, because they are
+             * part of the query the grid has to reissue.
+             */
+            this.options.onChange(
+                this.selected.filter( Boolean ).concat( this.options.hidden || [] ) );
+        }
+    }
+};
+
 OWA.constraintBuilder = function( target_dom_selector, options ) {
 
     this.dom_selector = target_dom_selector;
@@ -1737,6 +2478,29 @@ OWA.constraintBuilder.prototype = {
 
         var c_array = this.constraintsStringToArray(constraints_str);
         this.createConstraintAssembler(c_array);
+        this.showConstraintCount( c_array.length );
+    },
+
+    /**
+     * How many filters are on, as a badge beside the toggle.
+     *
+     * The toggle says "Filter" whether anything is filtered or not, so a grid
+     * showing a fraction of its rows looks exactly like one showing all of
+     * them -- and a reader draws conclusions from the number of rows. The badge
+     * is the one thing on the bar that says the figures are of a subset.
+     *
+     * Hidden at zero rather than showing "0": an always-present badge is
+     * furniture, and furniture stops being read.
+     */
+    showConstraintCount : function ( count ) {
+
+        var badge = jQuery( this.dom_selector + ' > .constraintPickerContainer > .constraintCount' );
+
+        if ( count > 0 ) {
+            badge.text( count ).show();
+        } else {
+            badge.text( '' ).hide();
+        }
     },
 
     createConstraintAssembler : function( constraints ) {
@@ -1749,13 +2513,66 @@ OWA.constraintBuilder.prototype = {
 
         var container_selector = that.dom_selector + ' > .constraintPickerContainer';
 
+        /*
+         * The builder is addressed by ID from here on, not as a child of the
+         * container it was appended to.
+         *
+         * .dialog() MOVES the element -- it wraps it in .ui-dialog and appends
+         * that to appendTo -- so `... > .constraintPickerContainer > .builder`
+         * stops matching the moment the dialog is created, and every selector
+         * built from it (the row list, the two buttons, the apply handler's
+         * iteration) would silently address nothing. An id survives the move.
+         *
+         * Named after the thing it FILTERS.
+         *
+         * Once the builder is a dialog it is a sibling of every other dialog
+         * under .owa, so the id is the only way anything -- a test, a second
+         * filter on the same report -- can say which one it means. Sanitising
+         * the whole selector gave unique but unreadable ids: a grid's builder
+         * came out `trend-breakdownexplorerTopControlsulcontrolItem...`.
+         *
+         * The leading #id of the selector is the element the filter belongs
+         * to, and it is already unique on the page, so it names the dialog:
+         * `#owa_filterBuilder-trend-breakdown`, `-domstreamFilter`,
+         * `-funnelFilter`. A selector that does not start with an id falls
+         * back to the sanitised whole thing, which is still unique.
+         */
+        var owner = String( that.dom_selector ).match( /^#([A-Za-z0-9_-]+)/ );
+
+        var builder_id = 'owa_filterBuilder-' + ( owner
+            ? owner[1]
+            : String( that.dom_selector ).replace( /[^A-Za-z0-9_-]/g, '' ) );
+
+        /*
+         * The toggle is an ICON.
+         *
+         * It sits in a bar whose other controls are the dimensions the grid is
+         * grouped by -- the things a reader changes to ask a different
+         * question. A jQuery-UI button labelled "Filter" with a dropdown
+         * triangle was the widest item there and read as another dimension
+         * slot, on a bar that is often half a report wide. An icon says
+         * "there is a control behind this" and costs the width of a glyph.
+         *
+         * Written as markup rather than enhanced with .button(): the triangle
+         * came from the button widget, so keeping the widget and hiding its
+         * icon would be styling around a thing whose whole contribution is the
+         * label and the arrow.
+         *
+         * The title is what names it now, and aria-label is what names it to a
+         * reader who never sees the glyph.
+         */
         jQuery(container_selector).append(
-            '<span class="toggle-button"></span><div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
+            '<span class="toggle-button owa_filterToggle" role="button" tabindex="0"'
+          + ' title="' + OWA.l('Filter') + '" aria-label="' + OWA.l('Filter') + '"'
+          + ' aria-expanded="false"><i class="fa fa-filter"></i></span>'
+          + '<span class="constraintCount" style="display:none;"></span>'
+          + '<div class="builder"><ul></ul><div style="clear:both;"></div><div class="apply-button"></div>'
         );
 
         var button_selector = container_selector + ' > .toggle-button';
-        var builder_selector = container_selector + ' > .builder';
-        jQuery(builder_selector).hide();
+        var builder_selector = '#' + builder_id;
+
+        jQuery( container_selector + ' > .builder' ).attr( 'id', builder_id );
 
         // if there are existing constraints
         if (constraints.length > 0) {
@@ -1775,29 +2592,65 @@ OWA.constraintBuilder.prototype = {
             this.addNewConstraintRow(builder_selector + ' > ul');
         }
 
-        // setup the toggle button
-        // jQuery-UI 1.12 replaced button()'s icons:{primary,secondary} with a
-        // single icon + iconPosition. The old primary was just ui-icon-blank
-        // (a spacer); keep the secondary dropdown triangle on the right.
+        /*
+         * A MODAL, not a panel hanging off the bar.
+         *
+         * The builder is as wide as a filter row needs; the widget it belongs
+         * to can be a quarter of a row. Every in-flow arrangement of those two
+         * facts is a choice about which edge to overflow -- anchored to the
+         * funnel's left it hung past the card's right edge, anchored right it
+         * ran off the left and clipped the dimension picker. A dialog has no
+         * parent to overflow.
+         *
+         * appendTo: '.owa' IS LOAD-BEARING. jQuery UI lifts a dialog to <body>
+         * by default, and every rule styling what is inside this thing is
+         * written `.owa .owa_...` like the rest of the reporting stylesheet --
+         * so a lifted dialog matches none of them. That is exactly how both
+         * report-builder modals shipped unstyled for a while.
+         */
+        jQuery( builder_selector ).dialog( {
+            autoOpen: false,
+            modal: true,
+            appendTo: '.owa',
+            width: Math.min( 560, jQuery( window ).width() - 40 ),
+            title: OWA.l( 'Filter' ),
+            dialogClass: 'owa_filterDialogFrame',
+            close: function () {
+
+                jQuery( button_selector ).attr( 'aria-expanded', 'false' );
+            }
+        } );
+
+        // Open it. Keyboard as well as mouse: the icon is not a <button>, so
+        // Enter and Space are not free.
+        var toggle = function () {
+
+            var open = jQuery( builder_selector ).dialog( 'isOpen' );
+
+            jQuery( builder_selector ).dialog( open ? 'close' : 'open' );
+            jQuery( button_selector ).attr( 'aria-expanded', open ? 'false' : 'true' );
+        };
+
         jQuery( button_selector )
-            .button({
-                icon: 'ui-icon-triangle-1-s',
-                iconPosition: 'end',
-                label: OWA.l('Select...')
-            })
-            .click(function() {
-                jQuery(builder_selector).toggle();
-        });
+            .click( toggle )
+            .keydown( function ( e ) {
 
-        // setup add button
-        jQuery( builder_selector + ' > .add-button' )
-            .button({
+                if ( e.which === 13 || e.which === 32 ) {
 
-                label: OWA.l('+ Add Filter ')
-            })
-            .click(function() {
-                that.addNewConstraintRow( builder_selector + ' > ul' );
-        });
+                    e.preventDefault();
+                    toggle();
+                }
+            } );
+
+        /*
+         * NO bottom "Add filter" button.
+         *
+         * Two buttons at the foot of the dialog read as a choice between two
+         * ways of finishing, when only one of them finishes anything: Apply is
+         * the action, and adding a row is part of writing the filter. The plus
+         * sits in the row it grows from -- see addNewConstraintRow -- which
+         * leaves exactly one action button at the bottom.
+         */
 
         // setup apply button
         jQuery( builder_selector + ' > .apply-button' )
@@ -1839,7 +2692,18 @@ OWA.constraintBuilder.prototype = {
 
                   });
 
+                // The badge counts CLAUSES, which is what the string holds --
+                // a row left blank contributes nothing and is not counted,
+                // because it filters nothing.
+                that.showConstraintCount(
+                    constraints ? constraints.split( ',' ).filter( Boolean ).length : 0 );
+
                 var el = jQuery( that.dom_selector ).trigger('constraint_change', [constraints]);
+
+                // Applying is the point of the dialog, so it closes on the way
+                // out -- the reader wants to see the rows it changed, and they
+                // are behind it.
+                jQuery( builder_selector ).dialog( 'close' );
             });
     },
 
@@ -1899,13 +2763,23 @@ OWA.constraintBuilder.prototype = {
         }
     },
 
-    addNewConstraintRow : function(selector, name, operator, value) {
+    addNewConstraintRow : function(selector, name, operator, value, after) {
+
+        var that = this;
 
         // generate container
 
         // generate the dim/metric chooser button
         jQuery( selector ).append(
-            '<LI class="constraintRow"><span class="constraintDimensionPicker"></span> <span class="constraintOperatorPicker"></span><input class="constraintValueField" type="text" size="30"><span class="constraintRemoveButton">X</span></LI>'
+            '<LI class="constraintRow"><span class="constraintDimensionPicker"></span> '
+          + '<span class="constraintOperatorPicker"></span>'
+          + '<input class="constraintValueField" type="text" size="30">'
+          + '<span class="constraintAddButton" role="button" tabindex="0"'
+          + ' title="' + OWA.l( 'Add another filter' ) + '"'
+          + ' aria-label="' + OWA.l( 'Add another filter' ) + '">+</span>'
+          + '<span class="constraintRemoveButton" role="button" tabindex="0"'
+          + ' title="' + OWA.l( 'Remove this filter' ) + '"'
+          + ' aria-label="' + OWA.l( 'Remove this filter' ) + '">X</span></LI>'
         );
 
         // create constraint dimension picker
@@ -1921,15 +2795,53 @@ OWA.constraintBuilder.prototype = {
             jQuery(selector + ' > li:last > .constraintValueField').val(value);
         }
 
-        // setup add button
-        jQuery( selector + '> li:last > .constraintRemoveButton' )
-            .button({
+        var $row = jQuery( selector + ' > li:last' );
 
-                label: OWA.l('X')
-            })
-            .click(function() {
-                jQuery( this ).parent().remove();
-        });
+        /*
+         * The new row goes directly BELOW the one whose plus was pressed,
+         * rather than at the end of the list. The rows are read top to bottom
+         * as one sentence, so "another one after this" is where the reader is
+         * looking.
+         *
+         * It is appended first and moved second: everything above addresses
+         * the row it just built as `li:last`, and inserting in the middle
+         * would leave those selectors pointing at somebody else's row.
+         */
+        if ( after && after.length ) {
+
+            $row.insertAfter( after );
+        }
+
+        var addAfter = function () {
+
+            that.addNewConstraintRow( selector, '', '', '', $row );
+        };
+
+        $row.children( '.constraintAddButton' )
+            .on( 'click', addAfter )
+            .on( 'keydown', function ( e ) {
+
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); addAfter(); }
+            } );
+
+        var remove = function () {
+
+            $row.remove();
+
+            // Never zero rows: with the plus living IN a row, removing the last
+            // one would leave nothing to add from.
+            if ( ! jQuery( selector + ' > li' ).length ) {
+
+                that.addNewConstraintRow( selector );
+            }
+        };
+
+        $row.children( '.constraintRemoveButton' )
+            .on( 'click', remove )
+            .on( 'keydown', function ( e ) {
+
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); remove(); }
+            } );
 
 
 
@@ -1961,16 +2873,100 @@ OWA.constraintBuilder.prototype = {
 
         jQuery(selector).append(c);
 
-        // Core jQuery-UI selectmenu (1.11+) replaces the Nagel fork. It has no
-        // "value" setter method: set the value on the native <select> first, then
-        // enhance / refresh so the widget reflects it. width is now a style, not an
-        // option, so size the menu via width in the widget's classes option.
+        /*
+         * CHOSEN, like the dimension picker beside it.
+         *
+         * This was a jQuery-UI selectmenu, so a filter row put two different
+         * select widgets side by side -- a rounded chosen pill naming the
+         * dimension, then a square selectmenu naming the operator, then a bare
+         * <input> for the value. Three controls that do one job together, in
+         * three different sets of clothes.
+         *
+         * The value is set on the native <select> BEFORE enhancing: chosen
+         * renders from the select's state at enhancement time and has no
+         * "set the value" method of its own -- the same reason the old code
+         * set it before calling selectmenu(). The apply handler still reads
+         * `.operator-list` directly, which keeps working because chosen leaves
+         * the <select> in place and only hides it.
+         *
+         * disable_search because there are six operators; a search box on six
+         * options is furniture.
+         *
+         * The width is EXPLICIT for the same reason the dimension picker's is:
+         * chosen-js 1.x measures the <select> at enhancement time and reads 0
+         * inside a display:none parent, and these rows are built while the
+         * builder is still hidden. Without it the control collapses to a
+         * sliver. See the comment in dimensionPicker.display().
+         */
         var opList = jQuery(selector + ' > .operator-list');
         if ( selected ) {
             opList.val(selected);
         }
-        opList.selectmenu({ width: 200 });
+        opList.chosen( { disable_search: true, width: '150px' } );
 
     }
 
+};
+
+
+/**
+ * A trend, and the grid of the rows behind it.
+ *
+ * A trend broken out by a dimension already draws a line per value, and the
+ * question a reader asks next is always the same one -- which values, and how
+ * much each. That is a grid, so a broken-out trend grows one under its boxes
+ * and the two are the same question at two levels of detail.
+ *
+ * They are two result-set explorers rather than one, because they ask for
+ * different rows: the trend needs one row per (date, value) to have a shape
+ * over time, and the grid needs one row per value to be a ranking. Sharing a
+ * result set would mean one of them summing the other's rows in the browser,
+ * which is the thing that is wrong the moment a page boundary is involved.
+ *
+ * WHICH CONTROL DRIVES WHAT is the whole design, and it follows from what each
+ * control means:
+ *
+ *   - the grid's FIRST dimension is what the report is about, so changing it
+ *     changes the trend too -- the chart is that dimension over time.
+ *   - a SECOND dimension refines the ROWS. It is a way of reading the table,
+ *     not a different subject, and a trend cannot draw it anyway: a line per
+ *     (medium, browser) pair is not a trend of anything.
+ *   - a FILTER narrows the POPULATION, which is a statement about who is being
+ *     counted. A chart and a table disagreeing about that would be two answers
+ *     to one question, so the filter travels to both.
+ *
+ * Bound on the grid's own element, which is where its controls publish. The
+ * grid's explorer is already listening there and keeps handling its own
+ * refetch -- this adds a second listener rather than intercepting the first,
+ * so the grid behaves identically whether or not it has a trend above it.
+ *
+ * @param object trend the trend's result-set explorer
+ * @param object grid  the companion grid's result-set explorer
+ */
+OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
+
+    var selector = '#' + grid.dom_id;
+
+    jQuery( selector ).bind( 'dimension_list_change', function ( event, dims ) {
+
+        /*
+         * The chart is built by the trend's FIRST load, so it does not exist
+         * while that is still in flight. Nothing is lost by ignoring the event
+         * then: the trend is about to draw itself from its own query.
+         */
+        if ( ! trend.areaChart ) {
+
+            return;
+        }
+
+        // Only the primary. changeBreakdown() answers false when it is the
+        // dimension already charted, which is what makes adding a SECOND
+        // dimension leave the trend alone.
+        trend.areaChart.changeBreakdown( ( dims && dims[0] ) || '' );
+    } );
+
+    jQuery( selector ).bind( 'constraint_change', function ( event, constraints ) {
+
+        trend.changeConstraints( constraints );
+    } );
 };

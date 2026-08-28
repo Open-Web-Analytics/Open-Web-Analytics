@@ -58,12 +58,30 @@
     color:#505050; background-color:#cccccc;
 }
 
+/* Grid cells get room on both sides.
+ *
+ * jqGrid's own padding is barely a pixel, which was hidden while every row
+ * started with a row-number column -- that column did the spacing for the one
+ * beside it. With row numbers off, the first value sits against the border, so
+ * the cells space themselves.
+ *
+ * !important because jqGrid writes padding into its own stylesheet at the same
+ * specificity and later in the cascade. */
 .ui-jqgrid tr.jqgrow td {
-    font-size:10px;
+    font-size: 10px;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
 }
 
 .ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
-    font-size:10px;
+    font-size: 10px;
+}
+
+/* The heading has to line up with the values under it, so it takes the same
+   inset. div, because jqGrid puts the label in one inside the th. */
+.ui-jqgrid .ui-jqgrid-htable th.ui-th-column div {
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .clear {
@@ -347,8 +365,16 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding-bottom: 10px;
 }
 
+/*
+ * The strip under a grid: the row count on one side, the pager on the other.
+ *
+ * NO BACKGROUND. It was a solid #9f9f9f band, which reads as a divider rather
+ * than as a place controls live -- and now that a widget is a panel and this
+ * sits on its floor, an empty one drew a 5px grey bar across the bottom of
+ * every table with nothing in it. It is a container for controls; when it holds
+ * none it should be nothing.
+ */
 .owa_resultsExplorerBottomControls {
-    background-color: #9f9f9f;
     font-size:10px;
 }
 
@@ -470,6 +496,56 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 /* ---------------------------------------------------------------------------
+ * Metric-set tabs
+ *
+ * The tabs are how a site's metric sets make themselves visible -- Site Usage,
+ * e-commerce, one per goal group. Their labels come from three different
+ * places: two literals in MetricSets and whatever the site owner typed into a
+ * goal group's name. Title-casing them HERE is what makes the row read as one
+ * control rather than three sources, and it is a presentation rule, so it does
+ * not go and rewrite a label the owner chose.
+ * ------------------------------------------------------------------------- */
+
+.owa .ui-tabs-nav .ui-tabs-anchor {
+    text-transform: capitalize;
+}
+
+/* The selected tab, in the trend's blue.
+ *
+ * jQuery-UI's base theme paints an active widget #007fff, which is a different
+ * blue from the one the chart beside it draws its total in. Two blues within a
+ * few pixels of each other read as an accident. #1874CD is OWA.areaChart's
+ * totalColor -- the colour the report already means "this one".
+ *
+ * The anchor is coloured too: .ui-state-active sets a colour on the LI, and
+ * the anchor inside it carries its own. */
+/* border-COLOR, not the border shorthand: the tabs widget zeroes the bottom
+   border width on every li so the active one merges into the panel below it,
+   and a shorthand here would put that edge back. */
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
+    border-color: #1874CD;
+    background: #1874CD;
+}
+
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:link,
+.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:visited {
+    color: #ffffff;
+}
+
+/* The Live View switch is the same kind of thing -- a two-segment control
+   whose ON state is the one being looked at -- and it sits on the same reports.
+   Its segments are checkboxradio labels, not tabs, so they need saying
+   separately. */
+.owa .autoRefreshControl .buttons .ui-button.ui-state-active,
+.owa .autoRefreshControl .buttons .ui-button.ui-state-active:hover {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+}
+
+/* ---------------------------------------------------------------------------
  * Report control bar
  *
  * The row of controls a report puts under its title: what is being counted,
@@ -522,16 +598,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     position: relative;
 }
 
-/* The panel hangs BELOW the bar rather than growing it, so opening the filter
-   does not move the controls beside it. */
-.owa .owa_reportControl .constraintPickerContainer .builder {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 100;
-    margin: 6px 0 0 0;
-    min-width: 760px;
-}
+/*
+ * NOT positioned any more: the builder is a dialog, and jQuery UI places it.
+ * This rule used to hang the panel below the report-level bar; left in place it
+ * would fight the dialog's own absolute positioning and drag it back under the
+ * control that opened it.
+ */
 
 /* The scope switch sits inline in the bar; the Live View control it borrows
    its markup from floats right in the report header instead. */
@@ -727,15 +799,34 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     margin-top: 10px;
 }
 
+/* The grid's control bar.
+ *
+ * A ROW that stays a row. Each control used to be a text label plus a select,
+ * and two of those wrap onto separate lines as soon as the widget is narrow --
+ * which is most of them, since a widget is often half a report wide. The labels
+ * are gone (each control names itself through its placeholder) and the items
+ * shrink rather than pushing each other down. */
 .explorerTopControls {
 
     font-size: 12px;
-    width:auto;
+    width: auto;
     border: 1px solid #B0B0B0;
-    padding: 0px;
-    margin-bottom:3px;
+    border-radius: 3px;
+    padding: 5px 8px;
+    margin-bottom: 3px;
     background-color: #fafafa;
+}
 
+.explorerTopControls > ul {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    /* The bar's own list, not the generic horizontal one it inherits from --
+       those float, and a float cannot shrink to share a row. */
+    float: none;
 }
 
 .dimensionPicker li, .dimensionPicker ul {
@@ -751,44 +842,217 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     list-style: none;
     text-decoration: none;
-    width:;
+    float: none;
+    margin: 0;
+    padding: 0;
+
+    /* Shrink before wrapping: a picker at 120px is still usable, and a bar on
+       one line is what makes the widget readable. max-width so an item can
+       never be wider than the bar holding it. */
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
 }
 
-.constraintPickerContainer .builder {
-
-    margin:15px;
-    padding:10px;
-    background-color: #ffffff;
-    border: 1px solid #9f9f9f;
+/* The secondary-dimension picker fills whatever the row leaves it. */
+.explorerTopControls .controlItem .chosen-container {
+    min-width: 120px;
+    max-width: 100%;
 }
 
+/*
+ * THE FILTER BUILDER, in the same clothes as the bar it drops out of.
+ *
+ * It used to be a white box with a mid-grey border holding rows that were
+ * themselves 700px-wide bordered boxes with 20px of padding -- a card inside a
+ * card inside a card, wider than the widget it belonged to, so on anything less
+ * than a full-width grid it simply ran off the right-hand edge. The controls
+ * inside were a chosen pill, a jQuery-UI selectmenu and a bare <input>: three
+ * shapes for three parts of one sentence.
+ *
+ * Now: one panel, rows that are flex lines, and every control the same pill the
+ * dimension pickers on the bar already are.
+ */
+/*
+ * On a GRID's bar the panel hangs below rather than growing the bar.
+ *
+ * The report-level control already did this (see .owa_reportControl above);
+ * the grid's did not, so opening a filter pushed the whole table down and the
+ * panel drew inside the card, clipped at its right edge. Same treatment, and
+ * the width is capped by the card rather than a fixed number.
+ */
+/*
+ * The builder is a DIALOG BODY, so it draws no frame of its own -- the dialog
+ * around it has the border, the shadow and the title bar. It kept its own here
+ * while it was a panel hanging off the bar; leaving them would be a box inside
+ * a box.
+ */
+.builder {
+
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border: 0;
+}
+
+/*
+ * No list indent. A <ul>'s 40px of default padding-left pushed every filter
+ * row in from the dialog's edge while the buttons under it started at 0.
+ */
+.owa .builder ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/*
+ * A row is a LINE, and it wraps rather than overflowing.
+ *
+ * The width was 700px flat, which is wider than a half-row widget's whole
+ * panel. A filter row has to fit wherever the grid it filters fits.
+ */
 li.constraintRow {
-    width:700px;
-    padding:20px;
-    border: 1px solid #9f9f9f;
-    background-color: #fafafa;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    margin: 0 0 6px 0;
+    padding: 0;
+    border: 0;
+    background-color: transparent;
 }
 
-.constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
-    float:left;
-    margin-right:10px;
+.constraintRow .constraintOperatorPicker,
+.constraintRow .constraintDimensionPicker {
+    float: none;
+    margin-right: 0;
 }
 
-.constraintRow .constraintRemoveButton {
-    float:right;
-    margin-right:10px;
+/*
+ * The value field: the pill's geometry, but filled white.
+ *
+ * Same height, border and corner as the two menus beside it, because it is the
+ * third part of the same sentence. White rather than grey because it is the one
+ * part a reader TYPES into, and the fill is what says so.
+ */
+.owa .constraintRow .constraintValueField {
+    flex: 1 1 140px;
+    min-width: 120px;
+    height: 22px;
+    box-sizing: border-box;
+    padding: 3px 9px;
+    border: 1px solid #cccccc;
+    border-radius: 12px;
+    background-color: #ffffff;
+    background-image: none;
+    font-family: inherit;
+    font-size: 11px;
+    color: #303030;
 }
 
+.owa .constraintRow .constraintValueField:focus {
+    border-color: #1874CD;
+    outline: none;
+}
+
+/*
+ * The remove control is an X, not a button.
+ *
+ * It was a jQuery-UI button, which put a third kind of chrome on the row for
+ * the smallest thing in it. Marked up as a control for the keyboard, drawn as
+ * a glyph.
+ */
+/*
+ * The plus and the X are a matched pair, sitting at the end of the row they
+ * act on. Glyphs rather than buttons: they are the smallest things in the row,
+ * and a third and fourth kind of chrome there is noise.
+ */
+.owa .constraintRow .constraintAddButton,
+.owa .constraintRow .constraintRemoveButton {
+    float: none;
+    margin-right: 0;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #303030;
+    opacity: 0.45;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.owa .constraintRow .constraintRemoveButton:hover,
+.owa .constraintRow .constraintRemoveButton:focus {
+    opacity: 1;
+    color: #c0392b;
+}
+
+.owa .constraintRow .constraintAddButton {
+    font-size: 15px;
+}
+
+.owa .constraintRow .constraintAddButton:hover,
+.owa .constraintRow .constraintAddButton:focus {
+    opacity: 1;
+    color: #1874CD;
+}
+
+/*
+ * APPLY IS NOT A PILL.
+ *
+ * It was the same shape and height as the three select pills on the row above
+ * it, which made the one control that COMMITS look like another thing to pick
+ * from. A submit button is taller, squarer and heavier than the fields it acts
+ * on, and that difference is the whole point.
+ *
+ * The trend blue, which is the colour this reporting UI already uses for the
+ * thing that is active -- the selected tab, the Live View segment, the charted
+ * metric's marker. White on #1874CD is about 4.6:1, so the label is legible at
+ * button size.
+ *
+ * There is only ONE of these now. Adding a row moved into the row itself (the
+ * plus beside each X), so the foot of the dialog holds the single action that
+ * finishes the job.
+ */
+.owa .builder .apply-button.ui-button,
+.owa .builder .apply-button {
+    display: inline-block;
+    margin: 10px 0 0 0;
+    padding: 8px 20px;
+    border: 1px solid #1462ac;
+    border-radius: 3px;
+    background: #1874CD;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 16px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.owa .builder .apply-button:hover,
+.owa .builder .apply-button:focus {
+    filter: brightness( 0.95 );
+}
+
+/* Still used by the report-level control bar (the funnel's scope switch, the
+   domstreams filter). The GRID's bar no longer has labels at all. */
 .controlItem .label {
-    font-size:10px;
-    padding-top:7px;
-    padding-right:5px
+    font-size: 10px;
+    padding-top: 7px;
+    padding-right: 5px;
 }
 
 .controlItem span {
 
-    float:left;
-
+    /* Was float:left, which is what made these stack instead of sharing a row.
+       The bar is flex now and lays its own children out. */
+    float: none;
 }
 
 .controlItem {
@@ -911,13 +1175,50 @@ li.constraintRow {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 20px;
-    align-items: start;
+
+    /* EVERY WIDGET IN A ROW IS THE SAME HEIGHT.
+     *
+     * `start` sized each one to its own content, so a row read as a ragged
+     * edge: a pie at 355px beside a four-row table at 242 beside an empty
+     * "Actions" at 137. Nothing was wrong with any of them individually and
+     * the row looked broken.
+     *
+     * stretch is the grid's own default and costs nothing -- the tallest
+     * widget in a row sets the height and the rest fill it. Rows still differ
+     * from each other, which is right: they hold different things. */
+    align-items: stretch;
+}
+
+/* ...and it stays a grid inside a tab.
+ *
+ * On a report rendered per metric set, the tab PANEL is the grid -- one panel
+ * per set, each holding that set's widgets. jQuery-UI's `.ui-tabs
+ * .ui-tabs-panel { display: block }` is two classes to this rule's one, so it
+ * won every tabbed report: the tracks were never created, every widget was a
+ * full-width block, and a half-width card sat alone on its own row.
+ *
+ * Invisible until now, which is why it lasted: every widget on every tabbed
+ * report was full width anyway, so a grid of one column per row looked exactly
+ * like the grid doing its job. */
+.owa .ui-tabs .ui-tabs-panel.owa_reportGrid {
+    display: grid;
 }
 
 .owa_reportGridItem {
     /* Wide content scrolls inside its own widget rather than widening the page. */
     min-width: 0;
     overflow-x: auto;
+}
+
+/* ...except while a dropdown is open in it.
+ *
+ * overflow-x:auto computes overflow-y to auto as well, so the widget is a
+ * scroll box in both directions and a chosen drop opening downwards is cut off
+ * by it -- measured at 278px tall with 74px showing. Lifted only for as long as
+ * a list is open, so wide tables still scroll inside their widget the rest of
+ * the time. */
+.owa_reportGridItem.owa_dropdownOpen {
+    overflow: visible;
 }
 .owa_span-1 { grid-column: span 1; }
 .owa_span-2 { grid-column: span 2; }
@@ -938,24 +1239,1657 @@ li.constraintRow {
 .owa_rowspan-5 { grid-row: span 5; }
 .owa_rowspan-6 { grid-row: span 6; }
 
-/* Narrower than about a tablet: halve the grid, and let anything that asked for
-   more than half go full width rather than leaving a ragged column. */
-@container owa-report (max-width: 900px) {
+/* ---------------------------------------------------------------------------
+   A WIDGET HAS A FLOOR
 
-    .owa_reportGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+   A quarter-width card is 213px on a 1280px laptop -- twelve tracks and eleven
+   20px gaps leave 64px a track -- and a table of two columns and a heading does
+   not fit in 213px. It does not overflow either: min-width:0 above lets the
+   widget shrink and the content scrolls inside it, so the report looks intact
+   and is unreadable. That is what these rules are for.
 
-    .owa_span-7, .owa_span-8, .owa_span-9,
-    .owa_span-10, .owa_span-11, .owa_span-12 { grid-column: 1 / -1; }
+   The floor is 300px of GRID AREA, and it is enforced by giving a widget MORE
+   COLUMNS rather than a min-width. A min-width on a grid item cannot work here:
+   the tracks are minmax(0, 1fr), whose minimum is a literal 0, so an item wider
+   than its track overflows into its NEIGHBOUR instead of widening the track.
+   Promoting the span is the thing that actually reflows.
+
+   The breakpoints are not chosen, they are SOLVED from that one number. A
+   widget spanning N of the 12 columns in a container W wide has a grid area of
+
+       N * (W - 11*20) / 12  +  (N-1) * 20
+
+   so the width at which each fraction reaches 300px is:
+
+       a quarter  (3 of 12)   W = 1260
+       a third    (4 of 12)   W =  940
+       a half     (6 of 12)   W =  620
+
+   The widget's own box is 20px narrower than that -- .owa_reportSectionContent
+   carries 10px of side margin -- so the floor in usable pixels is nearer 280.
+   That is deliberate rather than an oversight: solving for 300 of USABLE width
+   puts the first breakpoint at 1340 and the second at 1000, which makes a
+   1280-wide laptop show two widgets per row where three fit comfortably at
+   297px. Measured, not assumed.
+
+   Change the floor and the three numbers follow from it. Below 620 nothing more
+   can be done -- one column IS the whole container -- and the content scrolls
+   inside the widget, which is the honest end of the ladder.
+
+   The grid keeps its twelve tracks the whole way down. An earlier version
+   halved the track count at 900px, which meant every span class silently meant
+   something different below that width: .owa_span-4 was a third above it and
+   two thirds below.
+   --------------------------------------------------------------------------- */
+
+/* Under 1260px a quarter is below the floor: nothing narrower than a third. */
+@container owa-report (max-width: 1259px) {
+
+    .owa_span-1, .owa_span-2, .owa_span-3 { grid-column: span 4; }
 }
 
-/* Phone width: one column. Every widget is full width, and nothing spans rows,
-   because a two-row widget in a single column is just a tall gap. */
-@container owa-report (max-width: 600px) {
+/* Under 940px a third is below the floor: nothing narrower than a half. And
+   anything that asked for more than half goes full width rather than leaving a
+   ragged column beside it. */
+@container owa-report (max-width: 939px) {
 
-    .owa_reportGrid { grid-template-columns: 1fr; }
+    .owa_span-1, .owa_span-2, .owa_span-3,
+    .owa_span-4, .owa_span-5 { grid-column: span 6; }
+
+    .owa_span-7, .owa_span-8, .owa_span-9,
+    .owa_span-10, .owa_span-11 { grid-column: 1 / -1; }
+}
+
+/* Under 620px a half is below the floor: one widget per row. Nothing spans
+   rows either, because a two-row widget in a single column is just a tall gap. */
+@container owa-report (max-width: 619px) {
 
     .owa_reportGridItem { grid-column: 1 / -1; }
 
     .owa_rowspan-2, .owa_rowspan-3, .owa_rowspan-4,
     .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Custom report builder
+ *
+ * The canvas shows the report as blocks, left to right, each as wide as the
+ * column span it claims. That is the whole idea: the arrangement here is the
+ * arrangement on the report, so an author sets a span and SEES what it means
+ * rather than saving and finding out.
+ *
+ * It shares the report grid's twelve columns deliberately -- the block widths
+ * and the rendered widget widths are the same fractions of the same grid, so
+ * they cannot drift apart.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_builderHeader {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    padding: 0 0 20px 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.owa .owa_builderField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1 1 260px;
+    margin-bottom: 14px;
+}
+
+.owa .owa_builderField > label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa .owa_builderField input[type=text],
+.owa .owa_builderField select {
+    padding: 6px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 100%;
+}
+
+.owa .owa_builderHelp {
+    font-size: 11px;
+    color: #808080;
+}
+
+/*
+ * The metric boxes under a trend are how you choose what it charts.
+ *
+ * They are already the list of metrics the widget measures, so a separate
+ * picker beside them would be a second copy of the same list. Clickable only
+ * when there is more than one -- the class is put on by markChartedMetric(),
+ * not by the markup, because one box that can only re-select itself is a
+ * control that does nothing.
+ */
+.owa .owa_metricBoxesSelectable .owa_metricInfobox {
+    cursor: pointer;
+}
+
+.owa .owa_metricBoxesSelectable .owa_metricInfobox:hover {
+    background-color: #f5faff;
+}
+
+/*
+ * The one being charted. A left edge in the chart's own colour, so the box and
+ * the filled area it describes are visibly the same thing.
+ */
+/*
+ * The one being charted. A strip along the TOP in the chart's own colour, so
+ * the box and the line it describes are visibly the same thing -- and so the
+ * mark reads as a tab over the number rather than as an edge beside it.
+ *
+ * The colour only. The strip itself is reserved on every box above, which is
+ * what keeps the row from stepping when the reader picks a different metric.
+ */
+.owa .owa_metricInfobox.owa_metricInfoboxCharted {
+    /*
+     * An INSET BAR, not a thicker border.
+     *
+     * A 3px top border on the charted box alone would stand it 2px taller than
+     * its neighbours and step the row -- and reserving the 3px on every box
+     * took away the 1px grey top the others had, so every box but one read as
+     * open at the top. An inset shadow paints the same bar inside the box's own
+     * edge: no geometry changes and nothing loses a border.
+     */
+    box-shadow: inset 0 3px 0 #1874CD;
+    background-color: #f5faff;
+}
+
+.owa .owa_metricInfobox.owa_metricInfoboxCharted .owa_metricInfoboxLabel {
+    font-weight: bold;
+}
+
+/*
+ * The day/month control, top right of a trend.
+ *
+ * Floated over the plot's own top-right corner rather than given a row: the
+ * chart's upper right is empty by construction -- a trend that filled it would
+ * be off the top of its own axis -- and a row of its own would push the chart
+ * down on every report that has one.
+ */
+.owa .owa_chartControls {
+    float: right;
+    position: relative;
+    z-index: 2;
+    margin: 0 4px -4px 0;
+}
+
+.owa .owa_chartGranularity {
+    font-size: 11px;
+    padding: 1px 4px;
+    border: 1px solid #dcdcdc;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #505050;
+}
+
+/*
+ * A trend's legend, under the chart.
+ *
+ * flot draws its own legend floating over the plot area, on top of the data it
+ * is labelling -- survivable for one entry, useless for five. It renders into
+ * this instead, which sits after the plot and so below the x-axis labels.
+ */
+.owa .owa_chartLegend {
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.owa .owa_chartLegend table {
+    /* Left, with the chart's y-axis labels, rather than centred under it: a
+       centred legend moves sideways every time a series is added or its label
+       changes length, so there is no stable place for the eye to return to. */
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.owa .owa_chartLegend .legendLabel {
+    text-align: left;
+}
+
+.owa .owa_chartLegend td {
+    padding: 2px 10px 2px 3px;
+    vertical-align: middle;
+    border: 0;
+}
+
+.owa .owa_chartLegend .legendColorBox div {
+    /* flot draws the swatch as nested divs; round it so it reads as a key
+       rather than as a fragment of the grid. */
+    border-radius: 2px;
+}
+
+/*
+ * Clickable only when there is more than one line to choose between -- the
+ * class is put on by bindLegend(), not by the markup.
+ */
+.owa .owa_chartLegendInteractive td {
+    cursor: pointer;
+}
+
+.owa .owa_chartLegendInteractive tr:hover .legendLabel {
+    text-decoration: underline;
+}
+
+/*
+ * Per CELL, not per row: the legend is one column per series so it reads left
+ * to right, which puts every entry in the same single <tr>.
+ */
+.owa .owa_chartLegend .legendLabel.owa_seriesSelected {
+    font-weight: bold;
+}
+
+/*
+ * The lines themselves are redrawn faded; this fades their labels to match, so
+ * the legend says the same thing the chart does.
+ */
+.owa .owa_chartLegend .owa_seriesDimmed {
+    opacity: 0.5;
+}
+
+/*
+ * Choosing what kind of widget to add.
+ *
+ * A list of choices rather than a select, because the name alone does not say
+ * which to reach for -- "Table" beside "Table card" is a distinction you can
+ * only make from the sentence under it.
+ */
+/*
+ * A GALLERY, not a list.
+ *
+ * Six kinds down a single column made the reader scroll a modal to compare two
+ * things that differ by a word -- "Table" and "Table card" -- and gave each one
+ * a 26px glyph to tell them apart with. Laid out as tiles that flow left to
+ * right and wrap, they can be compared at a glance, which is the whole job of
+ * this screen.
+ *
+ * auto-fill rather than a fixed column count: the modal is capped against the
+ * window, so on a narrow one the same tiles become two across and then one,
+ * without a breakpoint saying so.
+ */
+.owa .owa_typeChoices {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+}
+
+.owa .owa_typeChoices li {
+    /* The generic horizontal-list rules float list items; the grid places
+       these. */
+    float: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.owa .owa_typeChoice {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    text-align: left;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+/*
+ * The drawing, at the FULL HEIGHT of the tile.
+ *
+ * A band down the left rather than a glyph floating in the padding: it gives
+ * the icon room to be read as a picture of the thing, and it makes the tiles
+ * scannable as shapes before any of the words are.
+ */
+.owa .owa_typeChoiceArt {
+    flex: 0 0 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f8fc;
+    border-right: 1px solid #e6eef6;
+    color: #6a8fb5;
+}
+
+.owa .owa_typeChoiceIcon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.owa .owa_typeChoiceText {
+    min-width: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.owa .owa_typeChoice:hover,
+.owa .owa_typeChoice:focus {
+    border-color: #9ec2e6;
+    background: #f5faff;
+}
+
+.owa .owa_typeChoice:hover .owa_typeChoiceArt,
+.owa .owa_typeChoice:focus .owa_typeChoiceArt {
+    background: #e8f2fc;
+    color: #1874CD;
+}
+
+.owa .owa_typeChoiceName {
+    display: block;
+    font-weight: bold;
+}
+
+.owa .owa_typeChoiceHint {
+    display: block;
+    font-size: 11px;
+    color: #808080;
+    line-height: 1.4;
+
+    /* Takes the slack, so the width bar below sits on the tile's floor and the
+       bars line up across a row however long the sentences are. */
+    flex: 1 1 auto;
+}
+
+/*
+ * HOW MUCH OF A ROW IT TAKES, drawn at the proportion it takes.
+ *
+ * The width is the other half of choosing between a table and a table card,
+ * and it is the half the names do not carry at all. A bar makes two kinds
+ * comparable without reading either.
+ */
+.owa .owa_typeChoiceWidth {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.owa .owa_typeChoiceWidthBar {
+    flex: 1 1 auto;
+    height: 5px;
+    border-radius: 3px;
+    background: #e6e6e6;
+    overflow: hidden;
+}
+
+.owa .owa_typeChoiceWidthFill {
+    display: block;
+    height: 100%;
+    background: #9ec2e6;
+}
+
+.owa .owa_typeChoice:hover .owa_typeChoiceWidthFill,
+.owa .owa_typeChoice:focus .owa_typeChoiceWidthFill {
+    background: #1874CD;
+}
+
+.owa .owa_typeChoiceWidthLabel {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: #9f9f9f;
+    white-space: nowrap;
+}
+
+/*
+ * What kind of widget is being edited, beside its name.
+ *
+ * The type is settled at the plus and is not a control here, so it is a label
+ * rather than a disabled select -- but it has to be SOMEWHERE, because half the
+ * modal's fields are missing or singular because of it.
+ */
+.owa .owa_builderNameRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.owa .owa_builderNameRow input {
+    /* The name takes the room; the pill is as wide as its words. */
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.owa .owa_typePill {
+    flex: 0 0 auto;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background-color: #e8e8e8;
+    color: #505050;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.owa .owa_typePill i {
+    margin-right: 4px;
+    color: #6a8fb5;
+}
+
+/*
+ * Where a control would be, when the type decided it instead.
+ *
+ * It sits in the field row the column-span picker was taken out of, so the row
+ * keeps its shape rather than collapsing the row-span picker across the dialog.
+ */
+.owa .owa_builderNote {
+    font-size: 12px;
+    color: #808080;
+    align-self: center;
+    line-height: 1.4;
+}
+
+/* Two fields side by side inside the dialog -- span/span, metrics/dimensions. */
+.owa .owa_builderFieldRow {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.owa .owa_builderSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.owa .owa_builderBudget {
+    font-size: 12px;
+    font-weight: normal;
+    color: #808080;
+}
+
+/* The canvas: the same twelve columns the report is drawn on. */
+.owa .owa_builderCanvas {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.owa .owa_builderSpan-1  { grid-column: span 1; }
+.owa .owa_builderSpan-2  { grid-column: span 2; }
+.owa .owa_builderSpan-3  { grid-column: span 3; }
+.owa .owa_builderSpan-4  { grid-column: span 4; }
+.owa .owa_builderSpan-5  { grid-column: span 5; }
+.owa .owa_builderSpan-6  { grid-column: span 6; }
+.owa .owa_builderSpan-7  { grid-column: span 7; }
+.owa .owa_builderSpan-8  { grid-column: span 8; }
+.owa .owa_builderSpan-9  { grid-column: span 9; }
+.owa .owa_builderSpan-10 { grid-column: span 10; }
+.owa .owa_builderSpan-11 { grid-column: span 11; }
+.owa .owa_builderSpan-12 { grid-column: span 12; }
+
+.owa .owa_builderBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    min-height: 120px;
+    padding: 12px;
+    background-color: #fafafa;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+}
+
+.owa .owa_builderBlock:hover {
+    border-color: #b0b0b0;
+}
+
+.owa .owa_builderBlockHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.owa .owa_builderBlockName {
+    font-weight: bold;
+    font-size: 13px;
+    /* A long name wraps rather than pushing the remove control out of reach. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderRemove {
+    color: #999999;
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex: 0 0 auto;
+}
+
+.owa .owa_builderRemove:hover {
+    color: #c0392b;
+}
+
+.owa .owa_builderBlockMeta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 11px;
+}
+
+.owa .owa_builderBlockType,
+.owa .owa_builderBlockSpan {
+    padding: 2px 6px;
+    border-radius: 10px;
+    background-color: #e8e8e8;
+    color: #505050;
+}
+
+.owa .owa_builderBlockSummary {
+    font-size: 11px;
+    color: #808080;
+    /* Grows to fill, so Edit sits on the bottom edge of every block whatever
+       the summary length -- a row of blocks with the link at a different height
+       in each reads as broken. */
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderEdit {
+    font-size: 12px;
+    align-self: flex-start;
+}
+
+/* The plus. Sits in the flow as the last cell, so "add" is where the next
+   widget will appear rather than somewhere else on the page. */
+.owa .owa_builderAdd {
+    grid-column: span 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 120px;
+    padding: 12px;
+    background-color: transparent;
+    border: 2px dashed #cccccc;
+    border-radius: 4px;
+    color: #808080;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.owa .owa_builderAdd:hover {
+    border-color: #999999;
+    color: #505050;
+    background-color: #fafafa;
+}
+
+.owa .owa_builderAddPlus {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.owa .owa_builderActions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.owa .owa_builderDelete {
+    color: #c0392b;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.owa .owa_widgetDialog .owa_builderField {
+    flex: 1 1 220px;
+}
+
+.owa .owa_widgetDialog select[multiple] {
+    width: 100%;
+}
+
+/* Narrow: the canvas halves like the report grid does, and the plus goes with
+   it rather than being left as a sliver beside a full-width block. */
+@media (max-width: 900px) {
+
+    .owa .owa_builderCanvas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+    .owa .owa_builderSpan-7, .owa .owa_builderSpan-8, .owa .owa_builderSpan-9,
+    .owa .owa_builderSpan-10, .owa .owa_builderSpan-11,
+    .owa .owa_builderSpan-12 { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+
+    .owa .owa_builderCanvas { grid-template-columns: 1fr; }
+
+    .owa .owa_builderBlock, .owa .owa_builderAdd { grid-column: 1 / -1; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Custom report roster
+ *
+ * Values read left to right, because they are words -- a report name and a user
+ * id are read from their first character, and centring them puts every row's
+ * first character in a different place. Only the action column is centred: it
+ * holds one short control, and centring keeps it away from the table edge.
+ * ------------------------------------------------------------------------- */
+
+.owa table.owa_customReportRoster th,
+.owa table.owa_customReportRoster td {
+    text-align: left;
+    vertical-align: top;
+}
+
+.owa table.owa_customReportRoster td.owa_rosterAction,
+.owa table.owa_customReportRoster th:last-child {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* A sortable heading, and the arrow marking the one the order is actually by. */
+.owa table.owa_customReportRoster th a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.owa table.owa_customReportRoster th a:hover {
+    text-decoration: underline;
+}
+
+.owa table.owa_customReportRoster th.owa_sorted a {
+    font-weight: bold;
+}
+
+.owa .owa_sortIndicator {
+    margin-left: 5px;
+    opacity: 0.7;
+}
+
+/* A count beside a report title, and actions on the title's line. */
+.owa .owa_titleCount {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background-color: #e6e6e6;
+    color: #505050;
+    font-size: 12px;
+    font-weight: normal;
+    vertical-align: middle;
+}
+
+.owa .owa_titleActions {
+    float: right;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.owa .owa_titleActionIcon {
+    margin-right: 6px;
+    opacity: 0.8;
+}
+
+/* An icon-only action, ON the title rather than in the bar at the right.
+ *
+ * Sized against the heading rather than in pixels: the mark is a thing you can
+ * do to the words beside it, and at a fixed size it would stop looking that way
+ * the moment the heading changed.
+ *
+ * IT HAS TO BE FINDABLE. The first version borrowed the left-hand navigation's
+ * treatment -- 0.55em at 0.60 opacity -- which resolved to a 14px grey pencil
+ * beside a 26px bold black title, and read as decoration rather than as a
+ * control. It was reported as missing twice by someone looking straight at it,
+ * which is the only test of "visible" that counts.
+ *
+ * So: two thirds of the heading rather than half, and only slightly dimmed.
+ * Still quieter than the title -- the report's name is what the reader came
+ * for -- but unmistakably a thing you can press.
+ *
+ * A left margin only, so the icon hangs off the end of the title instead of
+ * being centred in a gap that reads as a separator. */
+.owa .owa_titleActionMark {
+    display: inline-block;
+    margin-left: 14px;
+    padding: 4px;
+    font-size: 0.68em;
+    line-height: 1;
+    color: #505050;
+    opacity: 0.85;
+    border-radius: 3px;
+    text-decoration: none;
+    vertical-align: middle;
+}
+
+/* A hover target that is a shape, not just a colour change: a 17px glyph is a
+   small thing to aim at, and the tinted square says it was hit. */
+.owa .owa_titleActionMark:hover,
+.owa .owa_titleActionMark:focus {
+    opacity: 1;
+    color: #1874CD;
+    background-color: #eaf2fb;
+}
+
+/* ---------------------------------------------------------------------------
+ * Widget configuration modal
+ *
+ * jQuery UI supplies the dialog frame and almost no opinion about what goes in
+ * it, so without these the contents are a stack of unstyled labels and boxes.
+ * The frame is restyled too: its default is a rounded grey chrome that does not
+ * match anything else in the reporting UI.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * The dialog chrome, shared by the widget modal and the type chooser.
+ *
+ * Two selectors rather than one class on both frames: the widget modal's class
+ * has to identify the widget modal, or a locator for it silently matches the
+ * chooser's frame as well -- which jQuery UI has already built, hidden, by the
+ * time anything looks.
+ */
+.owa_typeDialogFrame.ui-dialog,
+.owa_widgetDialogFrame.ui-dialog {
+    padding: 0;
+    border: 1px solid #c0c0c0;
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    background: #ffffff;
+}
+
+.owa_typeDialogFrame .ui-dialog-titlebar,
+.owa_widgetDialogFrame .ui-dialog-titlebar {
+    border: 0;
+    border-bottom: 1px solid #e6e6e6;
+    border-radius: 6px 6px 0 0;
+    background: #f7f7f7;
+    padding: 14px 18px;
+    font-size: 15px;
+}
+
+.owa_typeDialogFrame .ui-dialog-title,
+.owa_widgetDialogFrame .ui-dialog-title {
+    font-weight: bold;
+    color: #303030;
+}
+
+.owa_typeDialogFrame .ui-dialog-content,
+.owa_widgetDialogFrame .ui-dialog-content {
+    padding: 18px;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane {
+    margin: 0;
+    border: 0;
+    border-top: 1px solid #e6e6e6;
+    background: #fafafa;
+    border-radius: 0 0 6px 6px;
+    padding: 12px 18px;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane .ui-dialog-buttonset {
+    margin: 0;
+    float: right;
+}
+
+/* The dialog's own buttons, so Done reads as the action and Cancel as the way
+   out -- jQuery UI renders both identically. */
+.owa_widgetDialogFrame .ui-dialog-buttonpane button {
+    margin: 0 0 0 8px;
+    padding: 7px 16px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #404040;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child {
+    border-color: #3c78b4;
+    background: #3c78b4;
+    color: #ffffff;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:hover {
+    border-color: #999999;
+}
+
+.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child:hover {
+    background: #33689e;
+    border-color: #33689e;
+}
+
+/* The fields inside. Grouped rows sit side by side and fall to one column when
+   there is no room, rather than overflowing the dialog. */
+.owa .owa_widgetDialog,
+.owa_widgetDialog {
+    font-size: 13px;
+}
+
+.owa_widgetDialog .owa_builderField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 16px;
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
+.owa_widgetDialog .owa_builderField > label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_widgetDialog .owa_builderFieldRow {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.owa_widgetDialog input[type=text],
+.owa_widgetDialog select {
+    padding: 7px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 100%;
+}
+
+.owa_widgetDialog input[type=text]:focus,
+.owa_widgetDialog select:focus {
+    border-color: #3c78b4;
+    outline: none;
+}
+
+.owa_widgetDialog .owa_builderHelp {
+    font-size: 11px;
+    color: #808080;
+}
+
+.owa_widgetDialog code {
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 11px;
+}
+
+/* Chosen inside the dialog: match the plain inputs beside it. */
+.owa_widgetDialog .chosen-container-multi .chosen-choices,
+.owa_pillFieldHost .chosen-container-multi .chosen-choices {
+    padding: 3px 4px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-image: none;
+    background-color: #ffffff;
+}
+
+.owa_widgetDialog .chosen-container-active .chosen-choices {
+    border-color: #3c78b4;
+    box-shadow: none;
+}
+
+/* The page behind a modal, dimmed.
+ *
+ * jQuery UI draws .ui-widget-overlay for modal:true, and the bundled theme
+ * leaves it so faint that the dialog reads as floating over a live page --
+ * which invites clicking the page underneath and wondering why nothing
+ * responds. Dimming says plainly that the dialog is the only thing to answer.
+ *
+ * Not inside .owa: the overlay is appended to <body>, outside that scope. */
+.ui-widget-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1a1a1a;
+    opacity: 0.45;
+    filter: none;
+    z-index: 1000;
+}
+
+/* ...and the dialog sits above it. */
+.owa_widgetDialogFrame.ui-dialog {
+    z-index: 1001;
+}
+
+/* ---------------------------------------------------------------------------
+ * Metric (KPI) boxes
+ *
+ * They cascade left to right inside their widget and wrap when they run out of
+ * room. They used to STACK: .owa_metricInfobox carries width:100% with
+ * float:left, and a 100%-wide float takes a whole row each, so a four-metric
+ * widget was a column of four boxes down the page.
+ *
+ * The container had no styling at all, which is why the floats had nothing to
+ * arrange them within.
+ * ------------------------------------------------------------------------- */
+
+.owa .metricInfoboxesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.owa .metricInfoboxesContainer .owa_metricInfobox {
+    /* Flex arranges them now, so the float and the full-width sizing that
+       fought it both go. margin is gap's job. */
+    float: none;
+    width: auto;
+    margin: 0;
+
+
+    /* Share the row evenly, wrapping once they would go under ~135px. A widget
+       showing two metrics gets two half-width boxes rather than two narrow ones
+       against a wide gap. */
+    flex: 1 1 135px;
+}
+
+/* A report that asks for a specific box width gets it: goals draws one box per
+   configured goal and sizes them so a row of them stays readable. An explicit
+   width means "this wide", not "share the row". */
+.owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
+    flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Card widgets: the panel
+ *
+ * A card and a pie are PANELS -- a bounded thing you read at a glance and then
+ * follow to the full report. A full-width table or trend is not; it is the page
+ * itself, and putting a box round it would be drawing a box round everything.
+ *
+ * So the chrome goes on the types that are cards. `owa_widget-<type>` comes
+ * from Core\ReportGrid::classesFor, which is what lets a stylesheet say
+ * "every card" instead of naming each one's container id.
+ *
+ * THE FLOOR IS THE POINT. align-items:stretch already makes a row uniform, but
+ * a row that happens to hold only short widgets was still short -- and a card
+ * with two rows in it drew a panel barely taller than its own heading. The
+ * min-height is what makes a card the same object whether or not the data
+ * filled it, which is the whole reason it is a card and not a table.
+ *
+ * A floor, not a fixed height: a card given more than it expected grows rather
+ * than clipping, and pagination is what keeps that bounded (see
+ * ConfiguredReport::DEFAULT_CARD_ROWS).
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportGridItem.owa_widget-grid,
+.owa .owa_reportGridItem.owa_widget-grid-card,
+.owa .owa_reportGridItem.owa_widget-trend-card,
+.owa .owa_reportGridItem.owa_widget-pie {
+    min-height: 320px;
+
+    /* Explicit rather than inherited: .owa_reportSectionContent sets a white
+       background already, but a panel that depends on an ancestor's colour is
+       a panel that changes when the page behind it does. */
+    background-color: #ffffff;
+
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+
+    /* Room on every side. .owa_reportSectionContent's own padding is
+       `0 7px 7px 0` -- nothing at the top or the left -- which was invisible
+       without a border and puts the heading against the edge with one. */
+    padding: 16px;
+
+    /* The section content's side margins are the grid's gap here, and 10px of
+       margin plus a border reads as a panel inset from its own column. */
+    margin: 0;
+}
+
+/* The heading sits at the top of the panel, so its own spacing is the panel's
+   padding -- and its 3px rule goes.
+ *
+ * That rule is how a section announces itself on a page with no boxes on it:
+ * a line above the words, separating this section from the last. Inside a
+ * bordered panel there is already a line above the words -- the panel's own top
+ * edge, 16px higher -- so the rule reads as a second, shorter border with a gap
+ * between them. The panel says what the rule was saying. */
+.owa .owa_reportGridItem.owa_widget-grid > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-grid-card > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-trend-card > .owa_reportSectionHeader,
+.owa .owa_reportGridItem.owa_widget-pie > .owa_reportSectionHeader {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * ...and the footer sits on the panel's floor.
+ *
+ * A panel has a floor under its height, so a table with four rows in it leaves
+ * space below them -- and the pager and the "View Full Report" link were
+ * landing in the middle of it, against the last row, with the rest of the
+ * panel empty underneath. They belong at the bottom: they are what you do
+ * NEXT, and next is the end of the thing.
+ *
+ * A column, with the body taking the slack. Every panel is a flex column and
+ * the widget's body grows into whatever the rows do not use, so anything after
+ * it is pushed to the bottom edge -- and the pager, which lives INSIDE the
+ * body, is pushed to the bottom of that.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_reportGridItem.owa_widget-grid,
+.owa .owa_reportGridItem.owa_widget-grid-card,
+.owa .owa_reportGridItem.owa_widget-trend-card,
+.owa .owa_reportGridItem.owa_widget-pie {
+    display: flex;
+    flex-direction: column;
+}
+
+.owa .owa_widgetBody {
+    display: flex;
+    flex-direction: column;
+
+    /* Takes the slack. min-width/height 0 so a wide table still scrolls inside
+       the panel rather than stretching it -- a flex item's automatic minimum is
+       its content, which would defeat the widget's own overflow. */
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+}
+
+.owa .owa_widgetBody > .owa_resultsExplorerBottomControls {
+    margin-top: auto;
+}
+
+/* The "View Full Report" link is a sibling of the body rather than inside it,
+   so it needs saying separately -- and it goes UNDER the pager, which is the
+   order they read in: page through what is here, then go and see all of it. */
+.owa .owa_reportGridItem .owa_moreLinks {
+    margin-top: auto;
+}
+
+/* ...but not when the body is already taking the slack, or the two would fight
+   over it and the link would sit a row's height off the floor. */
+.owa .owa_reportGridItem .owa_widgetBody ~ .owa_moreLinks {
+    margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pie chart legend
+ *
+ * The slice names sit in a column to the RIGHT of the circle rather than round
+ * its edge. flot inserts this table itself and the pie plugin measures it to
+ * decide where the circle's centre goes, so its width is load-bearing -- these
+ * rules set the type and spacing and leave the box alone.
+ *
+ * Round-the-edge labels were what made two pies draw at different sizes: flot
+ * fits them by shrinking the pie, so the width of the longest word set the
+ * diameter.
+ * ------------------------------------------------------------------------- */
+
+/* The plot is a FIXED box in a panel that is usually bigger, so it is CENTRED
+   in both directions rather than sitting in the top-left corner.
+ *
+ * Left-aligned it reads as content that ran out rather than as a chart that is
+ * the size it means to be -- most visible on Traffic, where the panel is half a
+ * row and 280 of it is the plot. Top-aligned it left the panel's floor as a
+ * band of empty white under the circle.
+ *
+ * The pie already sits left of centre INSIDE the plot, because the legend has
+ * the right-hand column; centring the plot is what puts the pair of them
+ * together in the middle of the widget. */
+.owa .owa_pieBody {
+    align-items: center;
+    justify-content: center;
+}
+
+.owa .owa_pieChart {
+    flex: 0 0 auto;
+}
+
+.owa .owa_pieChart .legend table {
+    font-size: 11px;
+    border-spacing: 0;
+}
+
+/* A name too long for the space is TRUNCATED rather than allowed to widen the
+   legend into the pie. The plot is a fixed box, so something has to give, and a
+   clipped name with an ellipsis still reads -- a legend overlapping the circle
+   does not. The full text stays available on hover via the title attribute
+   flot writes. */
+.owa .owa_pieChart .legend .legendLabel {
+    padding: 1px 0 1px 5px;
+    color: #505050;
+    white-space: nowrap;
+    /* Inside the column the pie reserves for it -- see
+       OWA.pieChart's legendWidth. The swatch cell takes the rest. */
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The swatch is a table cell holding a bordered div; size it there so the row
+   height follows the text rather than the box. */
+.owa .owa_pieChart .legend .legendColorBox div {
+    border-radius: 2px;
+}
+
+/* flot paints a translucent panel behind the legend. On a white widget that
+   only adds an edge.
+ *
+ * Hidden by OPACITY, not display: the element is what flot measures to decide
+ * where to put the circle. Taking it out of the layout is how the pie ended up
+ * centred under its own legend. (The offset is a reserved number now rather
+ * than that measurement -- see OWA.pieChart -- so this is belt and braces.) */
+.owa .owa_pieChart .legend > div:first-child {
+    opacity: 0;
+}
+
+/* An empty period still draws its axes; this says which kind of empty it is.
+ *
+ * Over the plot rather than instead of it: the frame is the shape of the
+ * answer, and a widget that collapses to a line of text when the data runs out
+ * makes the reader work out whether the chart is missing or the data is. */
+.owa .owa_areaChart {
+    position: relative;
+}
+
+.owa .owa_chartEmpty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    color: #9f9f9f;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Metric carousel
+ *
+ * The boxes are a row that SCROLLS, not a row that wraps. A widget shows as
+ * many metrics as its author asked for and is as wide as the layout gives it,
+ * so the two disagree regularly -- and wrapping resolved that by growing the
+ * widget downward, moving the chart and changing the panel's height.
+ *
+ * The arrows are laid out but not shown until there is somewhere to go, so a
+ * row that fits keeps the whole width for its numbers.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_metricCarousel {
+    /* The arrows are positioned against this, not laid out beside the row --
+       see below. */
+    position: relative;
+}
+
+.owa .owa_metricCarousel .metricInfoboxesContainer {
+    /* One line. The wrap that the container declares for every other use of
+       these boxes is exactly what this replaces. */
+    flex-wrap: nowrap;
+
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* The boxes stop sharing the row once it scrolls: a box that shrank to fit
+   would be defeating the scrolling. */
+.owa .owa_metricCarousel .metricInfoboxesContainer .owa_metricInfobox {
+    flex-shrink: 0;
+}
+
+/* OVER the row, not beside it.
+ *
+ * Laid out in the flex row, an arrow takes width from the numbers -- and takes
+ * it back as the reader scrolls, so the boxes shift sideways under the pointer.
+ * Floating them over the ends means the row keeps the whole width, nothing
+ * moves when an arrow appears, and there is no gutter left behind when one is
+ * hidden.
+ *
+ * It also removes a feedback loop: an arrow that occupies width changes the
+ * width available, which changes whether the row overflows, which decides
+ * whether the arrow is shown. */
+.owa .owa_metricCarouselArrow {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+
+    width: 18px;
+    padding: 6px 0;
+    border: 0;
+
+    /* A FADE, not a button on top of the words.
+     *
+     * It floats over the first or last box, so an opaque bordered control
+     * chops a label in half and reads as damage. A white ground with a wide
+     * white glow blanks the few pixels around the chevron instead, so the row
+     * reads as continuing underneath and running out of view -- which is what
+     * is actually happening. */
+    background-color: #ffffff;
+    box-shadow: 0 0 10px 7px #ffffff;
+
+    color: #707070;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.owa .owa_metricCarouselPrev { left: 0; }
+.owa .owa_metricCarouselNext { right: 0; }
+
+/* EACH SIDE ANSWERS FOR ITSELF. There is nothing to the left at the start of
+   the row, so no back arrow -- not a greyed one. A control offered for a
+   direction that does not exist is still a control offered. */
+.owa .owa_metricCarousel.owa_canScrollBack .owa_metricCarouselPrev,
+.owa .owa_metricCarousel.owa_canScrollForward .owa_metricCarouselNext {
+    display: block;
+}
+
+.owa .owa_metricCarouselArrow:hover {
+    color: #1874CD;
+}
+
+/* ---------------------------------------------------------------------------
+ * Trend card
+ *
+ * A trend at half a row, reading top down from the number: the totals first,
+ * the shape behind them second. A full-width trend is the other way round
+ * because there the chart IS the thing; half a row is not enough chart for that
+ * to be true.
+ *
+ * The boxes lose their borders, which is the whole visual difference. Two
+ * bordered boxes stacked above a plot read as three separate panels; without
+ * them the figure and its shape read as one thing, which is what a card is.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_trendCardMetrics .owa_metricInfobox {
+    /* Borderless. The charted marker is painted inside the box rather than on
+       its edge, so there is nothing here for it to depend on. */
+    border: 0;
+    background-color: transparent;
+}
+
+/* The tint goes with the border. What marks the charted box is the accent
+   below, not a panel behind it. */
+.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
+    background-color: transparent;
+}
+
+/* ...except this one bar, which is not decoration: it is the only thing saying
+   WHICH metric the plot underneath is drawing, and a card whose boxes cannot
+   say that has boxes that say nothing. Along the top, at the chart's own
+   colour, so the box and the line are visibly the same thing. Inherited from
+   the rule above -- restated here only because the tint is not wanted. */
+.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
+    box-shadow: inset 0 3px 0 #1874CD;
+}
+
+/* Room between the numbers and the plot they describe -- without the box
+   borders there is no edge to separate them. */
+.owa .owa_trendCardMetrics {
+    margin-bottom: 12px;
+
+    /* The numbers are their own size; the chart takes the rest. */
+    flex: 0 0 auto;
+}
+
+/* The plot FILLS what the panel has left.
+ *
+ * A trend card is a headline figure with the shape behind it, and the shape was
+ * drawing at its default 125px however tall the panel was -- so a card with a
+ * floor under its height had a small chart floating in the top of a large empty
+ * box. The chart is the only part of a card that can absorb space, so it is the
+ * part that should.
+ *
+ * min-height so it is still a chart in a short panel; the areaChart reads this
+ * element's height when it sizes its plot. */
+.owa .owa_widget-trend-card .owa_trendChart {
+    flex: 1 1 auto;
+    min-height: 130px;
+}
+
+/* Four metrics across half a row is about 110px a box, and 28px digits do not
+   fit that -- "0:02:24" alone is wider. Sized down so the row a card can
+   actually hold is a row a reader can actually read; still the largest thing in
+   the widget, which is what makes it the headline. */
+.owa .owa_trendCardMetrics .owa_metricInfoboxLargeNumber {
+    font-size: 22px;
+}
+
+/* The boxes share what the row has rather than each taking a fixed slice: the
+   number of metrics belongs to the author, so the width has to follow it. The
+   basis is the inline min-width kpiBox writes -- see metricBoxes.minWidth. */
+.owa .owa_trendCardMetrics .owa_metricInfobox {
+    flex: 1 1 auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * The rows behind a trend
+ *
+ * A trend broken out by a dimension draws a line per value; this is the grid of
+ * those values, under the metric boxes. Reading down the widget goes from least
+ * to most detailed -- the shape, then the totals, then the rows they are made
+ * of -- so the grid needs air above it or it reads as part of the boxes.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_trendBreakdown {
+    margin-top: 18px;
+    clear: both;
+}
+
+/* NO BOX AROUND IT. The grid of rows behind a trend is part of that widget --
+   the same question at more detail -- and jqGrid's own frame drew it as a
+   second, nested card sitting inside the first. The rows and their headings
+   keep their rules; only the outer frame goes. */
+.owa .owa_trendBreakdown .ui-jqgrid,
+.owa .owa_trendBreakdown .ui-jqgrid-view,
+.owa .owa_trendBreakdown .ui-jqgrid-bdiv,
+.owa .owa_trendBreakdown .ui-jqgrid-hdiv {
+    border: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * The filter toggle
+ *
+ * An icon, sized and dimmed like the left-hand navigation's icons so the two
+ * read as the same vocabulary. It was a jQuery-UI button labelled "Filter"
+ * with a dropdown triangle, which made it the widest thing on a bar that is
+ * often half a report wide -- and put a second control-looking box next to the
+ * dimension pickers, which ARE the controls.
+ *
+ * Full opacity on hover and while the builder is open: the dimming says
+ * "available", and a control you are currently using is not merely available.
+ * ------------------------------------------------------------------------- */
+
+.owa .explorerTopControls .owa_filterToggle,
+.owa .owa_filterToggle {
+    display: inline-block;
+    /*
+     * 16px, which is what every other icon on the page is -- the nav's group
+     * icons and its carets both.
+     *
+     * The selector carries .explorerTopControls for a reason. That bar sets
+     * `.explorerTopControls .controlItem span { font-size: 10px }`, which is
+     * two classes and an element (0,2,1) against this rule's two classes
+     * (0,2,0), so it WON and the funnel rendered at 10px -- a smudge, and half
+     * the size of the icons it sits among. The comment here used to claim the
+     * opposite; it was never measured.
+     */
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px;
+    color: #303030;
+    opacity: 0.60;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.owa .owa_filterToggle:hover,
+.owa .owa_filterToggle:focus,
+.owa .owa_filterToggle[aria-expanded="true"] {
+    opacity: 1;
+}
+
+/* How many filters are on, beside the Filter toggle.
+ *
+ * Red because it changes what the numbers beside it MEAN: a filtered grid and
+ * an unfiltered one look identical, and a reader draws conclusions from the
+ * rows in front of them. Hidden at zero -- an always-present badge is furniture
+ * and stops being read. */
+.owa .constraintPickerContainer .constraintCount {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 5px;
+    padding: 1px 6px;
+    border-radius: 9px;
+    background-color: #c0392b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 16px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dimension pickers, in the grid's control bar
+ *
+ * One picker per dimension the grid is grouped by, and a plus for another.
+ * A select, not a pill, because refining is about CHANGING what you are looking
+ * at -- pills are for curating a set, which is what editing a widget is.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_dimensionSelectors {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+
+    /* Shrinkable and bounded by the bar.
+     *
+     * A widget can legitimately group by several dimensions -- the dashboard's
+     * Latest Visits grid queries seven -- and seven pickers at their natural
+     * width is far wider than a half-width widget's bar. Without a max-width
+     * this grew past the widget, and .owa_reportGridItem's overflow-x turned
+     * that into a horizontal scrollbar on the whole widget.
+     *
+     * flex, not inline-flex: an inline-flex is sized shrink-to-fit by its
+     * parent's available width, which inside a flex item resolves to
+     * max-content and defeats the wrapping. */
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Each picker reads as a PILL with a dropdown arrow, and sizes to its own
+   text rather than to a fixed width -- three dimensions named "Medium",
+   "Browser Type" and "Date" should take the room those words need and no more.
+   The list itself opens over the widget, which is chosen's own behaviour: its
+   drop is absolutely positioned, so it costs no space in the bar. */
+.owa .owa_dimSlot {
+    display: inline-block;
+
+    /* Narrow enough that several fit a half-width bar, wide enough to read.
+       The label truncates with an ellipsis rather than widening the slot. */
+    min-width: 0;
+    max-width: 150px;
+    flex: 0 1 auto;
+}
+
+/*
+ * THE PILL, wherever a dimension is chosen.
+ *
+ * Scoped to .owa_dimSlot at first, because the bar was the only place one
+ * appeared. The filter builder builds dimension pickers too -- and an operator
+ * picker beside them now -- and left to chosen's own defaults those rendered
+ * 25px tall at 13px with a 5px corner, next to 22px/11px/12px pills on the bar
+ * two lines above. Same control, same clothes.
+ */
+.owa .owa_dimSlot .chosen-container,
+.owa .constraintRow .chosen-container {
+    font-size: 11px;
+    max-width: 100%;
+    /* Content width, not the 100% chosen was given at enhancement time. */
+    width: auto !important;
+}
+
+.owa .owa_dimSlot .chosen-container .chosen-single,
+.owa .constraintRow .chosen-container .chosen-single {
+    height: auto;
+    padding: 3px 22px 3px 9px;
+    border: 1px solid #cccccc;
+    border-radius: 12px;
+    background: #e6e6e6;
+    box-shadow: none;
+    color: #303030;
+    line-height: 1.4;
+}
+
+.owa .owa_dimSlot .chosen-container .chosen-single span,
+.owa .constraintRow .chosen-container .chosen-single span {
+    margin-right: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.owa .owa_dimSlot .chosen-container-active .chosen-single,
+.owa .constraintRow .chosen-container-active .chosen-single {
+    border-color: #999999;
+}
+
+/* The drop is wider than the pill that opened it -- a name has to be readable
+   even when the trigger is only as wide as "Date". */
+.owa .owa_dimSlot .chosen-container .chosen-drop,
+.owa .constraintRow .chosen-container .chosen-drop {
+    min-width: 240px;
+    width: auto;
+}
+
+.owa .owa_dimAdd {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    padding: 0;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-color: #f5f5f5;
+    color: #505050;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.owa .owa_dimAdd:hover {
+    border-color: #999999;
+    background-color: #ececec;
+}
+
+/* How many filters are on, beside the Filter toggle.
+ *
+ * Red because it changes what the numbers beside it MEAN: a filtered grid and
+ * an unfiltered one look identical, and a reader draws conclusions from the
+ * rows in front of them. Hidden at zero -- an always-present badge is furniture
+ * and stops being read. */
+.owa .constraintPickerContainer .constraintCount {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 5px;
+    padding: 1px 6px;
+    border-radius: 9px;
+    background-color: #c0392b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 16px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dimension pills, in the grid's control bar
+ *
+ * What the grid is grouped by, shown as the thing you edit. The first is the
+ * dimension the report is about and carries no remove.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_dimensionPills {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.owa .owa_dimPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px 3px 9px;
+    border-radius: 12px;
+    background-color: #e6e6e6;
+    color: #303030;
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+/* The primary reads as fixed rather than merely lacking a control: a pill that
+   looks the same as its neighbours but has no remove looks broken. */
+.owa .owa_dimPillPrimary {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding-right: 9px;
+    color: #505050;
+}
+
+.owa .owa_dimPillRemove {
+    color: #777777;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.owa .owa_dimPillRemove:hover {
+    color: #c0392b;
+}
+
+.owa .owa_dimPillAdd {
+    display: inline-block;
+    min-width: 130px;
+}
+
+.owa .owa_dimPillAdd .chosen-container {
+    font-size: 11px;
+}
+
+
+/*
+ * THE FILTER DIALOG.
+ *
+ * The builder was a panel that hung off the control bar, and a filter row is
+ * wider than a quarter-row widget -- so wherever it was anchored, it overflowed
+ * the widget on one side or the other. A dialog has no parent to overflow.
+ */
+.owa .owa_filterDialogFrame {
+    border-radius: 6px;
+}
+
+.owa .owa_filterDialogFrame .ui-dialog-content {
+    padding: 14px;
+}
+
+/* Room for the dimension menu to drop INTO the dialog rather than be clipped
+   by it -- chosen's drop is absolutely positioned inside the row. */
+.owa .owa_filterDialogFrame .ui-dialog-content {
+    overflow: visible;
+}
+
+
+/*
+ * The widget builder's constraint rows.
+ *
+ * The rows themselves are already styled -- they carry the same classes as the
+ * grid's filter builder, which is the point -- so this only places them in the
+ * form. There is no "Add filter" button here either: the plus lives in each
+ * row, and this form's one action is the dialog's own Done.
+ */
+.owa .owa_builderConstraints ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }

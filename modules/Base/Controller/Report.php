@@ -16,6 +16,15 @@ namespace OWA\Module\Base\Controller;
  */
 class Report extends \OWA\Core\Controller {
 
+    /**
+     * The reserved id space for user-authored reports: `custom-<row id>`.
+     *
+     * Sharing one id space with the shipped reports is what makes a custom
+     * report an ordinary report everywhere else -- the same URL shape, the same
+     * nav links, the same inter-report links, the same chrome.
+     */
+    const CUSTOM_PREFIX = 'custom-';
+
     function __construct( $params ) {
 
         parent::__construct( $params );
@@ -49,6 +58,21 @@ class Report extends \OWA\Core\Controller {
 
             return $this->reportNotResolved(
                 '(none)', 'no reportId was given', 400 );
+        }
+
+        /*
+         * A custom report is addressed by the same reportId as any other, under
+         * a reserved prefix: `custom-<row id>`. One id space, so every link,
+         * bookmark and nav entry keeps working the same way, and a custom
+         * report is shareable by URL for exactly the reason a shipped one is --
+         * the URL is the whole address.
+         *
+         * Checked BEFORE the registry, so a module cannot register an id in the
+         * reserved space and shadow somebody's saved report.
+         */
+        if ( strpos( $id, self::CUSTOM_PREFIX ) === 0 ) {
+
+            return $this->renderCustom( $id );
         }
 
         $definition = \OWA\Core\CoreAPI::getReportDefinition( $id );
@@ -143,6 +167,149 @@ class Report extends \OWA\Core\Controller {
         $target->setDefinition( $definition );
 
         return $target->doAction();
+    }
+
+    /**
+     * Render a user-authored report.
+     *
+     * VIEWING IS NOT GATED ON AUTHORSHIP, deliberately. Ownership decides what
+     * the roster LISTS and who may edit; a report reached by its URL renders
+     * for anyone who may view reports, which is what "shareable by url" has to
+     * mean to be true. It is safe because a custom report is a saved QUERY, not
+     * saved data: every figure in it is one the reader could already have asked
+     * for through the ordinary reporting UI, against a site the site filter
+     * would already let them choose.
+     *
+     * The definition is re-validated on the way OUT, not trusted because it was
+     * validated on the way in. Two reasons, and neither is hypothetical: the
+     * registry changes -- a module deactivated since the report was saved takes
+     * its metrics with it -- and a row can be edited by something that is not
+     * the builder.
+     */
+    private function renderCustom( $id ) {
+
+        $report = \OWA\Module\Base\Classes\CustomReports::load(
+            substr( $id, strlen( self::CUSTOM_PREFIX ) ) );
+
+        if ( ! $report ) {
+
+            return $this->reportNotResolved( $id, 'not found', 404 );
+        }
+
+        $definition = (array) $report['definition'];
+
+        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition );
+
+        if ( $error !== '' ) {
+
+            /*
+             * 500, and named. A saved report that no longer validates is not
+             * the reader's mistake, and rendering it with the bad part dropped
+             * would show a report that is quietly missing a widget.
+             */
+            return $this->reportNotResolved( $id, $error, 500 );
+        }
+
+        $missing = array();
+
+        foreach ( \OWA\Core\ConfiguredReport::constraintParams( $definition ) as $name ) {
+
+            if ( (string) $this->getParam( $name ) === '' ) {
+
+                $missing[] = $name;
+            }
+        }
+
+        if ( $missing ) {
+
+            return $this->reportNotResolved( $id,
+                sprintf( 'is constrained on %s, which the request did not supply',
+                    implode( ', ', $missing ) ),
+                400 );
+        }
+
+        $target = new \OWA\Core\ConfiguredReport( $this->params );
+
+        $target->setDefinition( $definition );
+
+        /*
+         * Which report this is, so the renderer can offer the things you can do
+         * TO it -- editing it, and in time sharing and duplicating it. A shipped
+         * report has no such row and gets no command bar.
+         */
+        $target->set( 'custom_report_id', $report['id'] );
+
+        $data = (array) $target->doAction();
+
+        /*
+         * "Edit report", beside the title.
+         *
+         * It acts on the WHOLE report, which is what the title's line is for --
+         * the same place the roster puts "New Custom Report".
+         *
+         * Offered only to someone who may actually edit. Viewing a custom
+         * report is deliberately wider than editing one -- that is what
+         * "shareable by url" means -- so an ungated control would be offering a
+         * reader a link that leads to a refusal. Asked of mayEdit() against the
+         * ROW, which is the same question CustomReportEdit asks when the link
+         * is followed, so the two cannot answer differently.
+         *
+         * ASKED AFTER doAction(), AND THAT ORDER IS THE WHOLE POINT.
+         *
+         * This controller overrides doAction() and deliberately performs no
+         * capability check of its own: it delegates so the TARGET's check
+         * governs, which is what lets each report be gated by its own
+         * requirement rather than by this one's. Authentication therefore
+         * happens INSIDE the call above -- and until it has, the current user
+         * is the default one. It carries the right user_id, and role
+         * 'everyone'.
+         *
+         * Asked before it, isCapable('edit_users') was therefore always false,
+         * so mayEdit could only ever succeed through the OWNERSHIP branch. An
+         * admin opening somebody else's report got no edit control at all.
+         *
+         * Every test missed it for one reason: a test that builds a report and
+         * then opens it is always looking at its own, where ownership alone is
+         * enough. It took an admin opening a report created by someone else --
+         * which is the ordinary case on any install with more than one author.
+         */
+        /*
+         * Nothing to decorate unless a report was actually rendered. A refused
+         * request comes back as the controller's bare data, and an edit control
+         * on a refusal would be the second thing wrong with it.
+         *
+         * CoreAPI::isCurrentUserCapable() rather than reaching through
+         * getCurrentUser() for isCapable(): it is the house way to ask this,
+         * it always answers a bool, and it debug-logs the role and the
+         * authentication state -- which is the exact pair that made this
+         * ordering bug visible in the end.
+         */
+        $may_edit = ! empty( $data['view'] )
+            && \OWA\Module\Base\Classes\CustomReports::mayEdit(
+                $report,
+                (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ),
+                (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' )
+            );
+
+        if ( $may_edit ) {
+
+            $data['title_actions'] = array(
+                array(
+                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                                   ->makeLink( array(
+                                       'do'             => 'base.customReportEdit',
+                                       'customReportId' => $report['id'],
+                                   ), true ),
+                    'label' => 'Edit report',
+                    'icon'  => 'fa-pencil-alt',
+                    // An icon, not a labelled button: the label names the
+                    // report's own title, which is right beside it.
+                    'iconOnly' => true,
+                ),
+            );
+        }
+
+        return $data;
     }
 
     /**

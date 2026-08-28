@@ -3,32 +3,31 @@
     "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "siteTrend",
             "container": "trend-chart",
             "title": "Site Metrics",
             "showTitle": true,
-            "colspan": 12,
-            "chartMetric": "visits",
+            "chartMetric": "uniqueVisitors",
             "query": {
+                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
                 "dimensions": "date",
                 "sort": "date"
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
             "colspan": 6,
             "query": {
                 "metrics": "pageViews",
-                "dimensions": "pageTitle,pagePath",
-                "sort": "pageViews-",
-                "resultsPerPage": 10
+                "dimensions": "pagePath",
+                "sort": "pageViews-"
             },
             "link": {
-                "linkColumn": "pageTitle",
+                "linkColumn": "pagePath",
                 "template": {
                     "do": "base.report",
                     "reportId": "document",
@@ -38,34 +37,6 @@
             },
             "more": {
                 "reportId": "pages"
-            },
-            "excludeColumns": [
-                "pagePath"
-            ]
-        },
-        {
-            "type": "grid",
-            "id": "actions",
-            "container": "actions-trend",
-            "title": "Actions",
-            "colspan": 6,
-            "query": {
-                "metrics": "actions",
-                "dimensions": "actionGroup,actionName",
-                "sort": "actions-",
-                "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "actionGroup",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "action-group",
-                    "actionGroup": "%s"
-                },
-                "valueColumns": "actionGroup"
-            },
-            "more": {
-                "reportId": "action-tracking"
             }
         },
         {
@@ -101,18 +72,27 @@
         },
         {
             "type": "grid",
-            "id": "latestVisits",
-            "container": "latest-visits",
-            "title": "Latest Visits",
-            "colspan": 6,
+            "id": "actions",
+            "container": "actions-trend",
+            "title": "Actions",
+            "colspan": 3,
             "query": {
-                "metrics": "visits,pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
-                "resultsPerPage": 10
+                "metrics": "actions",
+                "dimensions": "actionGroup,actionName",
+                "sort": "actions-",
+                "resultsPerPage": 5
+            },
+            "link": {
+                "linkColumn": "actionGroup",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "action-group",
+                    "actionGroup": "%s"
+                },
+                "valueColumns": "actionGroup"
             },
             "more": {
-                "reportId": "latest-visits"
+                "reportId": "action-tracking"
             }
         },
         {
@@ -120,7 +100,7 @@
             "id": "topReferrers",
             "container": "top-referers",
             "title": "Top Referrers",
-            "colspan": 6,
+            "colspan": 3,
             "constraints": [
                 {
                     "dimension": "medium",
@@ -144,9 +124,21 @@
                     "referralPageUrl": "%s"
                 },
                 "valueColumns": "referralPageUrl"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "latestVisits",
+            "container": "latest-visits",
+            "title": "Latest Visits",
+            "query": {
+                "metrics": "visits,pagesPerVisit,visitDuration",
+                "dimensions": "ipAddress,entryPagePath,medium,source,city,country,priorVisitCount",
+                "sort": "visits-",
+                "resultsPerPage": 10
             },
             "more": {
-                "reportId": "referring-sites"
+                "reportId": "latest-visits"
             }
         }
     ]

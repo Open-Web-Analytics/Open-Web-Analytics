@@ -26,7 +26,24 @@ $owa_widgets = (array) $view->widgets;
  * conversion found: 21 of the 29 multi-set reports declare metrics that never
  * reach a query, because their sets always overrode them.
  */
-$owa_sets = $view->metrics
+/*
+ * A USER-AUTHORED report renders once, never per metric set.
+ *
+ * The site's metric sets are a property of the site, and a shipped report that
+ * declares no metrics of its own opts into them -- that is how `pages` gets its
+ * Site Usage / e-commerce / goal tabs. A custom report is the other kind by
+ * construction: its author chose every widget and what each one measures, and
+ * a report-level metric set if they wanted one.
+ *
+ * Left to inherit, a custom report grew a tab per site metric set showing the
+ * same widgets in each -- and worse, silently showed NOTHING. In multi-set mode
+ * widgets deliberately do not load themselves; they are registered with the tab
+ * machinery, which loads whichever tab is active. So a custom report rendered
+ * its containers and never fetched a row into any of them.
+ */
+$owa_authored = (bool) $view->get( 'custom_report_id' );
+
+$owa_sets = ( $view->metrics || $owa_authored )
     ? array( '' => array() )
     : (array) $view->metricSets;
 
@@ -50,7 +67,24 @@ if ( ! $owa_sets ) {
  * The control is drawn as tabs today. That is owa.report.js's business; this
  * template's job is to say which widgets belong to which set.
  */
-$owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
+$owa_multiSet = ! $view->metrics && ! $owa_authored
+    && count( $owa_sets ) > 0 && $owa_setKeysReal;
+?>
+<?php
+    /*
+     * WHAT YOU CAN DO TO THIS REPORT IS NOT DRAWN HERE.
+     *
+     * There was a command bar between the title and the first widget, holding
+     * one link. Two headers, one above the other, saying one thing -- and the
+     * bar's border read as the top of the first widget rather than the bottom
+     * of the header.
+     *
+     * "Edit report" is a title action now: Report::renderCustom() declares it
+     * and report.php draws it as an icon on the title itself. That also gets it
+     * the capability check the bar never had -- viewing a custom report is
+     * deliberately wider than editing one, so this bar was offering a reader a
+     * link to a refusal.
+     */
 ?>
 <?php if ( ! empty( $view->deprecated['message'] ) ): ?>
 <?php
@@ -109,14 +143,167 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
     $owa_url       = $owa_id . 'url';
     // A widget's own query wins, so a widget CAN ask for different metrics --
     // none does today, and the report-wide value is what a metric set replaces.
+    /*
+     * A TREND CARD NEVER INHERITS A METRIC SET.
+     *
+     * Every other widget falls back to the set being viewed, which is what
+     * makes one report show its dimension measured three ways. A card is the
+     * other kind of thing: half a row, with the metrics its author chose above
+     * the chart, and a set would replace those with three to six whose boxes do
+     * not fit the width the type exists to be.
+     *
+     * It cannot fail silently, either -- CustomReports::OWN_METRIC_TYPES
+     * refuses a card that names none, rather than letting it inherit.
+     */
+    $owa_ownMetrics = ( $owa_w['type'] ?? '' ) === 'trend-card';
+
     $owa_query     = (array) ( $owa_w['query'] ?? array() ) + array(
-        'metrics'     => $owa_set['metrics'] ?? $view->metrics,
+        'metrics'     => $owa_ownMetrics ? '' : ( $owa_set['metrics'] ?? $view->metrics ),
         'do'          => 'reports',
         'module'      => 'base',
         'version'     => 'v1',
         'format'      => 'json',
         'constraints' => $view->constraints,
     );
+
+    /*
+     * The metric a chart draws: the widget's own, or the metric set's.
+     *
+     * Computed once for both chart types rather than once each. There is
+     * deliberately NO fallback to the first metric of the query: half the
+     * shipped trends name no chartMetric and draw no area chart on purpose --
+     * they are a headline and a row of boxes -- so a fallback would start
+     * drawing charts on thirty-two reports that have never had one.
+     *
+     * A widget that DOES need a chart therefore has to name its metric, which
+     * is why a pie may not inherit a report metric set. See
+     * CustomReports::SINGLE_FIELD_TYPES.
+     */
+    $owa_chartMetric = (string) ( $owa_w['chartMetric'] ?? ( $owa_ownMetrics ? '' : ( $owa_set['chartMetric'] ?? '' ) ) );
+
+    /*
+     * ...except a trend CARD, which falls back to its first metric.
+     *
+     * The rule above exists because half the shipped trends name no chart
+     * metric and draw no chart on purpose -- a fallback would start drawing
+     * charts on thirty-two reports that have never had one. No trend card
+     * predates this type, so there is nothing that could be changed by it, and
+     * a card whose whole shape is a chart should not render as an empty box
+     * because its author left one field alone.
+     */
+    if ( $owa_chartMetric === '' && $owa_ownMetrics ) {
+
+        $owa_chartMetric = trim( (string) strtok( (string) $owa_query['metrics'], ',' ) );
+    }
+
+    /*
+     * ONE METRIC, over time, optionally BROKEN OUT by one dimension.
+     *
+     * A trend's dimensions are the x axis first and the breakdown second, so
+     * the query's own list is what says which is which -- `date` alone is the
+     * filled area a trend has always been, and `date,medium` is a line per
+     * medium over that same area.
+     *
+     * Built HERE, while $owa_query is still being assembled, because a
+     * broken-out trend has to change it -- see resultsPerPage below.
+     */
+    $owa_trendDims = array_values( array_filter( array_map( 'trim',
+        explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
+
+    $owa_chartSeries = array( array(
+        'x' => $owa_trendDims[0] ?? 'date',
+        'y' => $owa_chartMetric,
+    ) );
+
+    $owa_breakdown     = '';
+    $owa_breakdownQuery = array();
+
+    if ( ( $owa_w['type'] ?? '' ) === 'trend' && isset( $owa_trendDims[1] ) ) {
+
+        $owa_breakdown = $owa_trendDims[1];
+
+        $owa_chartSeries[0]['series'] = $owa_breakdown;
+
+        /*
+         * ENOUGH ROWS TO BE RIGHT.
+         *
+         * A broken-out trend is one row per (date, value) pair, and the chart
+         * sums those rows to draw its total and ranks them to pick its six
+         * lines. Both are wrong if the result set was paginated -- and
+         * makeApiLink carries the report's state, so this query would otherwise
+         * inherit whatever page size the reader last used on a grid.
+         *
+         * A date-only trend never noticed: one row per day is inside any page
+         * size. This is a bound, not a guarantee -- a dimension with thousands
+         * of values over a long period still exceeds it, and the honest answer
+         * there is a top-N in SQL rather than a bigger number here.
+         */
+        $owa_query['resultsPerPage'] = 1000;
+
+        /*
+         * THE ROWS BEHIND THE LINES.
+         *
+         * A trend broken out by a dimension draws a line per value, and the
+         * question a reader asks next is always the same one: which values, and
+         * how much each. That is a grid, so a broken-out trend grows one under
+         * its boxes -- the same question at two levels of detail.
+         *
+         * A SECOND query, not a second view of the first. They need different
+         * rows: the trend needs one per (date, value) to have a shape over
+         * time, the grid needs one per value to be a ranking. Deriving the
+         * ranking from the trend's rows would mean summing them in the browser,
+         * which is wrong the moment the 1000-row bound above is reached -- and
+         * silently wrong, because the sum still looks like a number.
+         *
+         * The x dimension is dropped and everything else travels: same metrics,
+         * same constraints, so the two are measuring the same thing.
+         */
+        $owa_breakdownQuery = $owa_query;
+
+        $owa_breakdownQuery['dimensions'] = $owa_breakdown;
+
+        /*
+         * Ordered by what the chart draws, descending, so the rows at the top
+         * of the grid are the lines at the top of the chart. `-` suffixed is
+         * how the reporting API spells descending; see the shipped grids.
+         *
+         * Falls back to the first metric when a trend names no chart metric --
+         * a grid still has to be ordered by something, and the first metric is
+         * the one its first numeric column shows.
+         */
+        $owa_breakdownSort = $owa_chartMetric !== ''
+            ? $owa_chartMetric
+            : trim( (string) strtok( (string) $owa_breakdownQuery['metrics'], ',' ) );
+
+        $owa_breakdownQuery['sort'] = $owa_breakdownSort . '-';
+
+        // A page of rows, not the thousand the chart needs. The grid pages.
+        $owa_breakdownQuery['resultsPerPage'] = (int) ( $owa_w['breakdownRows'] ?? 25 );
+    }
+
+    /*
+     * A CARD SHOWS TEN ROWS unless it says otherwise.
+     *
+     * The reporting API defaults to twenty-five, which is a full-width table's
+     * number. A card is a quarter or half of a row and its height IS its row
+     * count, so cards sitting beside each other need the same one or the row
+     * comes out ragged -- which is the same reason they share a width.
+     */
+    if ( ( $owa_w['type'] ?? '' ) === 'grid-card'
+         && ! isset( $owa_query['resultsPerPage'] ) ) {
+
+        $owa_query['resultsPerPage'] = \OWA\Core\ConfiguredReport::DEFAULT_CARD_ROWS;
+    }
+
+    /*
+     * A trend can decline the grid. Nothing shipped does today -- it is here
+     * because `content` will want it: its trend is broken out by pagePath and
+     * it already carries a Top Pages card showing those same rows.
+     */
+    if ( array_key_exists( 'showBreakdownGrid', $owa_w ) && ! $owa_w['showBreakdownGrid'] ) {
+
+        $owa_breakdownQuery = array();
+    }
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent">
 <?php
@@ -156,10 +343,10 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
 <?php endif; ?>
 
-<?php if ( ( $owa_w['type'] ?? '' ) === 'trend' ): ?>
+<?php if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ): ?>
 <?php
     /*
-     * The boxes under the chart, one per metric in the set.
+     * The boxes, one per metric in the query.
      *
      * On by default -- a dimensional report's trend has always drawn them, and
      * they are how a metric set makes itself visible. `traffic` turns them off:
@@ -167,13 +354,52 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
      * the chart, so a fourth repeating the total is noise.
      */
     $owa_showMetricBoxes = ! array_key_exists( 'showMetricBoxes', $owa_w ) || $owa_w['showMetricBoxes'];
+
+    /*
+     * A CARD READS TOP DOWN FROM THE NUMBER.
+     *
+     * A full-width trend leads with its chart because the chart is the thing --
+     * a shape across a whole row, with the totals underneath as detail. Half a
+     * row is not enough chart for that to be true: what a reader takes from a
+     * card is the figure, and the plot is the shape behind it. So the boxes go
+     * first and the chart sits under them.
+     *
+     * Which is also why the boxes lose their borders here. Two bordered boxes
+     * above a plot read as three stacked panels; without them the figure and
+     * its shape read as one thing, which is what a card is.
+     */
+    $owa_isTrendCard = ( $owa_w['type'] ?? '' ) === 'trend-card';
 ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+<?php if ( $owa_isTrendCard && $owa_showMetricBoxes ): ?>
+        <div id="<?php $view->out( $owa_id ); ?>-metrics" class="owa_trendCardMetrics" style="height:auto;width:auto;"></div>
+<?php endif; ?>
+        <?php
+            /*
+             * The plot's own element, named so a card can hand it the height
+             * the panel has left. The area chart reads this element's height
+             * when it sizes its plot, so growing it is all it takes.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_trendChart"></div>
         <div id="<?php $view->out( $owa_id ); ?>-title" class="owa_reportHeadline"></div>
-<?php if ( $owa_showMetricBoxes ): ?>
+<?php if ( ! $owa_isTrendCard && $owa_showMetricBoxes ): ?>
         <div id="<?php $view->out( $owa_id ); ?>-metrics" style="height:auto;width:auto;"></div>
 <?php endif; ?>
         <div style="clear:both;"></div>
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php
+            /*
+             * UNDER the boxes, because it is the detail behind them: the chart
+             * is the shape, the boxes are the totals, the grid is the rows they
+             * are made of. Reading down the widget goes from least to most
+             * detailed.
+             *
+             * A card never has one: it cannot be broken out, so there are no
+             * values to list. See CustomReports::FIXED_DIMENSION_EXTRA.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_id ); ?>-breakdown" class="owa_trendBreakdown"></div>
+<?php endif; ?>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
@@ -196,22 +422,76 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         <?php echo $owa_id; ?>.asyncQueue.push(['renderHeadline', <?php echo json_encode( $owa_w['headline'] ); ?>, '<?php $view->out( $owa_id, false ); ?>-title']);
 <?php endif; ?>
 <?php
-    // The set's chart metric, unless the widget pinned its own.
-    $owa_chartMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php $view->out( $owa_chartMetric, false ); ?>'}], '<?php $view->out( $owa_container, false ); ?>']);
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
 <?php if ( $owa_showMetricBoxes ): ?>
+<?php if ( $owa_isTrendCard ): ?>
+        <?php
+            /*
+             * A CARD'S BOXES SHARE THE ROW; they are not pinned to a width.
+             *
+             * A full-width trend fixes each box at 150px because its row is
+             * wide enough that a fixed size reads as deliberate. A card has
+             * half a row, and the number of metrics is the AUTHOR'S -- so a
+             * fixed width decides for them how many fit, and four became two
+             * rows of two.
+             *
+             * Flexing from a lower floor instead: four fit a half-width row,
+             * five wrap. That is a bound rather than a cap -- it is the point
+             * at which a box stops being readable, not a limit on what may be
+             * asked for.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.metricBoxes.minWidth = '100px';
+<?php else: ?>
         <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
+<?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
+<?php endif; ?>
+
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php
+            /*
+             * The grid of the values the chart is broken out by, and the wiring
+             * that makes the two one control surface.
+             *
+             * Declared after the trend so the trend variable exists when it is
+             * handed over. The link is one call rather than a block of event
+             * handlers here, because which control drives what is a decision
+             * about the two objects and not about this report -- see
+             * OWA.linkTrendToBreakdownGrid for what each control means.
+             */
+        ?>
+        var <?php echo $owa_id; ?>Breakdownurl = '<?php echo $view->makeApiLink( $owa_breakdownQuery, true ); ?>';
+
+        var <?php echo $owa_id; ?>Breakdown = new OWA.resultSetExplorer('<?php $view->out( $owa_id, false ); ?>-breakdown');
+        <?php echo $owa_id; ?>Breakdown.setDataLoadUrl(<?php echo $owa_id; ?>Breakdownurl);
+        <?php echo $owa_id; ?>Breakdown.asyncQueue.push(['refreshGrid']);
+
+        OWA.linkTrendToBreakdownGrid(<?php echo $owa_id; ?>, <?php echo $owa_id; ?>Breakdown);
 <?php endif; ?>
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
+<?php if ( $owa_breakdownQuery ): ?>
+        <?php echo $owa_id; ?>Breakdown.load();
+<?php endif; ?>
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+<?php if ( $owa_breakdownQuery ): ?>
+<?php
+    /*
+     * Registered as a result set of the tab in its own right, so a metric set
+     * that is not being looked at does not query for its grid either. A widget
+     * contributing two result sets is why these are keyed by name rather than
+     * counted.
+     */
+?>
+<?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) . '_breakdown' ] = $owa_id . 'Breakdown'; ?>
+<?php endif; ?>
 
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'metric-boxes' ): ?>
 <?php
@@ -255,24 +535,41 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
      * The dimension is NOT configured separately -- it is the one the widget
      * already queries, and naming it twice is a way for the two to disagree.
      */
-    $owa_pieMetric = $owa_w['chartMetric'] ?? ( $owa_set['chartMetric'] ?? '' );
 ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+        <?php
+            /*
+             * The pie's plot is a fixed box in a panel that is usually bigger,
+             * so the body it sits in centres it -- see owa.report.css.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_pieBody"></div>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_pieMetric, false ); ?>';
+        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_chartMetric, false ); ?>';
         <?php echo $owa_id; ?>.options.pieChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
 <?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
         <?php // Raw value -> label, so a boolean pie can read New/Repeat rather than No/Yes. ?>
         <?php echo $owa_id; ?>.options.pieChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
 <?php endif; ?>
-<?php if ( ! empty( $owa_w['chartWidth'] ) ): ?>
-        <?php echo $owa_id; ?>.options.chartWidth = '<?php $view->out( $owa_w['chartWidth'], false ); ?>';
-<?php endif; ?>
+<?php
+    /*
+     * NO chartWidth. A pie is as wide as the widget holding it and as tall as
+     * its own option -- see OWA.pieChart.setupPieChart -- so a per-widget width
+     * had nothing to set.
+     *
+     * It was not merely unused, it was DEAD: the template wrote it onto the
+     * explorer's option bag, and the pie reads a different one and takes its
+     * width from the DOM regardless. `traffic` carried chartWidth: '300px' and
+     * drew at 619px for years.
+     *
+     * Removed rather than wired up, because wiring it would put back the thing
+     * this was reported as: pies at different sizes on different reports.
+     */
+?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makePieChart']);
 
 <?php if ( ! $owa_multiSet ): ?>
@@ -415,14 +712,42 @@ $owa_multiSet = ! $view->metrics && count( $owa_sets ) > 0 && $owa_setKeysReal;
         </div>
 <?php endif; ?>
 
-<?php elseif ( ( $owa_w['type'] ?? '' ) === 'grid' ): ?>
-        <div id="<?php $view->out( $owa_container ); ?>"></div>
+<?php elseif ( in_array( ( $owa_w['type'] ?? '' ), array( 'grid', 'grid-card' ), true ) ): ?>
+        <?php
+            /*
+             * The BODY of the widget, named so the panel can push its footer
+             * down. The explorer renders its control bar, its table and its
+             * pager into this element, so it is the part that should take up
+             * the slack when the panel is taller than the rows in it -- which
+             * is what puts the pager on the panel's floor instead of floating
+             * under the last row.
+             */
+        ?>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody"></div>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
+<?php if ( ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
+        <?php
+            /*
+             * A CARD, not an explorer.
+             *
+             * A grid-card is one metric against one dimension at a quarter of
+             * the row's width. The bar above a grid is a dimension picker and a
+             * filter -- both of which add columns, and there is no room for a
+             * second column here. Offering them would be offering the reader a
+             * way to make the widget stop fitting.
+             *
+             * Explore is what the full-width grid is for, which is why a grid
+             * cannot be narrowed and a card cannot be widened: the two ARE the
+             * layouts their controls need.
+             */
+        ?>
+        <?php echo $owa_id; ?>.options.grid.showExplorerControls = false;
+<?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
         <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>);

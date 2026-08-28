@@ -784,54 +784,6 @@
             ]
         }
     },
-    "ReportCountryDetail": {
-        "params": [
-            "country"
-        ],
-        "diagnostics": [],
-        "config": {
-            "constraints": "country==characterization_sentinel",
-            "subview": "base.reportWidgets",
-            "title": "Country: ",
-            "titleSuffix": "characterization_sentinel",
-            "view_method": "delegate",
-            "widgets": [
-                {
-                    "container": "trend-chart",
-                    "headline": "There were {visits.formatted} visits from this country.",
-                    "id": "trend",
-                    "query": {
-                        "dimensions": "date",
-                        "sort": "date"
-                    },
-                    "type": "trend"
-                },
-                {
-                    "container": "dimension-grid",
-                    "id": "dim",
-                    "link": {
-                        "linkColumn": "stateRegion",
-                        "template": {
-                            "country": "%s",
-                            "do": "base.report",
-                            "reportId": "state-detail",
-                            "stateRegion": "%s"
-                        },
-                        "valueColumns": [
-                            "stateRegion",
-                            "country"
-                        ]
-                    },
-                    "query": {
-                        "dimensions": "stateRegion,country",
-                        "resultsPerPage": 30,
-                        "sort": "visits"
-                    },
-                    "type": "grid"
-                }
-            ]
-        }
-    },
     "ReportCreativePerformance": {
         "params": [],
         "diagnostics": [],
@@ -1299,45 +1251,6 @@
                     },
                     "title": "Revenue by Source",
                     "type": "grid"
-                },
-                {
-                    "colspan": 12,
-                    "links": [
-                        {
-                            "label": "Product Name",
-                            "reportId": "products"
-                        },
-                        {
-                            "label": "SKU",
-                            "reportId": "product-skus"
-                        },
-                        {
-                            "label": "Categories",
-                            "reportId": "product-categories"
-                        },
-                        {
-                            "label": "Visits to Purchase",
-                            "reportId": "visits-to-purchase"
-                        },
-                        {
-                            "label": "Days to Purchase",
-                            "reportId": "days-to-purchase"
-                        },
-                        {
-                            "label": "Average Order Value",
-                            "reportId": "avg-order-value"
-                        },
-                        {
-                            "label": "Total Revenue",
-                            "reportId": "revenue"
-                        },
-                        {
-                            "label": "Conversion Rate",
-                            "reportId": "ecommerce-conversion-rate"
-                        }
-                    ],
-                    "title": "E-commerce Reports",
-                    "type": "report-links"
                 }
             ]
         }
@@ -1348,7 +1261,7 @@
         "config": {
             "metrics": "visits,ecommerceConversionRate",
             "subview": "base.reportWidgets",
-            "title": "Total Revenue",
+            "title": "Conversion Rate",
             "titleSuffix": "",
             "view_method": "delegate",
             "widgets": [
@@ -1888,7 +1801,7 @@
         "config": {
             "metrics": "lineItemQuantity,lineItemRevenue",
             "subview": "base.reportWidgets",
-            "title": "Product SKUs",
+            "title": "Product Categories",
             "titleSuffix": "",
             "view_method": "delegate",
             "widgets": [
@@ -2363,42 +2276,6 @@
                     },
                     "query": {
                         "dimensions": "source,medium",
-                        "resultsPerPage": 30,
-                        "sort": "visits"
-                    },
-                    "type": "grid"
-                }
-            ]
-        }
-    },
-    "ReportStateDetail": {
-        "params": [
-            "country",
-            "stateRegion"
-        ],
-        "diagnostics": [],
-        "config": {
-            "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
-            "subview": "base.reportWidgets",
-            "title": "State/Region: ",
-            "titleSuffix": "characterization_sentinel",
-            "view_method": "delegate",
-            "widgets": [
-                {
-                    "container": "trend-chart",
-                    "headline": "There were {visits.formatted} visits from this state/region.",
-                    "id": "trend",
-                    "query": {
-                        "dimensions": "date",
-                        "sort": "date"
-                    },
-                    "type": "trend"
-                },
-                {
-                    "container": "dimension-grid",
-                    "id": "dim",
-                    "query": {
-                        "dimensions": "city,stateRegion",
                         "resultsPerPage": 30,
                         "sort": "visits"
                     },

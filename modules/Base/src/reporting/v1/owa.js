@@ -20,6 +20,30 @@ var OWA = {
     },
     loadedJsLibs: {},
     overlay: '',
+
+    /*
+     * The series colours, shared by every chart that draws more than one thing.
+     *
+     * ONE list, because the charts are read together: a report shows traffic
+     * sources as a pie and the same sources as lines over time, and organic
+     * search being orange in one and olive in the other makes the reader do
+     * work that the colour was supposed to save them.
+     *
+     * The first four are the pie's own, in its own order, so every pie already
+     * on a screen keeps the colours it had. The rest are what the pie never
+     * had: it draws up to numSlices plus an "others" -- six -- from a list of
+     * four, so its fifth and sixth slices repeated the first and second.
+     *
+     * Ten, which is one more than a trend can need: six broken-out lines plus
+     * an "Other" is seven, and the total is coloured separately. Past ten a
+     * chart is repeating colours because it is drawing too much, and the answer
+     * is the cap rather than an eleventh shade nobody can tell from the third.
+     */
+    chartColors: [
+        '#6BAED6', '#FD8D3C', '#dba255', '#919733', '#c0504d',
+        '#7a5195', '#2e8b57', '#b5651d', '#bc5090', '#5f9ea0'
+    ],
+
     config: {
         // Wire namespace: cookie names, and anything shared with the
         // tracker. NOT for building OWA's own links -- that is app_ns.
@@ -2175,6 +2199,107 @@ OWA.util =  {
         return true;
     }
 
+};
+
+/**
+ * Call back when an element's WIDTH changes, once it has settled.
+ *
+ * A report is laid out on a container-query grid, so a widget's width changes
+ * for reasons the window never sees: another widget appearing, a tab becoming
+ * visible, the grid promoting a span at a breakpoint. Everything here that has
+ * to be redrawn at a new size uses this rather than a window resize handler,
+ * which would miss all three.
+ *
+ * WHY NOT flot's own resize plugin, which is already loaded: it polls a list of
+ * elements it was told about, and OWA.areaChart.setupAreaChart() REPLACES the
+ * chart element on every redraw -- a metric change, a granularity change, any
+ * refetch. The node flot registered is then detached, the poller reads a
+ * detached node as invisible and stops watching it, and the chart never grows
+ * again. Measured: shrinking 1600 -> 1000 redrew at 678px, and going back to
+ * 1600 left the canvas at 678 inside a 1272px placeholder.
+ *
+ * Observing the CONTAINER rather than the thing being drawn is what keeps that
+ * from happening again -- the container is the element the layout sizes and the
+ * one thing here that is never replaced.
+ *
+ * INTEGER widths only, and height is deliberately ignored. Sub-pixel churn from
+ * a flex layout would otherwise redraw continuously, and a redraw that changes
+ * the element's own height would then be its own trigger.
+ *
+ * @param string   dom_id   the element to watch
+ * @param function callback called with the new width
+ * @return function to stop watching
+ */
+OWA.onWidthChange = function ( dom_id, callback ) {
+
+    var el = document.getElementById( dom_id );
+
+    if ( ! el ) {
+
+        return function () {};
+    }
+
+    var last = Math.round( el.getBoundingClientRect().width );
+    var timer = null;
+
+    var settled = function () {
+
+        var now = Math.round( el.getBoundingClientRect().width );
+
+        if ( now === last || now === 0 ) {
+
+            // Zero means hidden -- an inactive tab panel, say. Not a size to
+            // draw at, and remembering it would make the next real width look
+            // like no change at all.
+            return;
+        }
+
+        last = now;
+
+        callback( now );
+    };
+
+    /*
+     * Debounced, because a drag delivers a change per frame and each one here
+     * is a full re-plot or a grid re-layout. The delay is long enough to let a
+     * drag finish and short enough that a maximise feels immediate.
+     */
+    var schedule = function () {
+
+        if ( timer ) {
+
+            clearTimeout( timer );
+        }
+
+        timer = setTimeout( settled, 120 );
+    };
+
+    if ( typeof ResizeObserver !== 'undefined' ) {
+
+        var ro = new ResizeObserver( schedule );
+
+        ro.observe( el );
+
+        return function () {
+
+            if ( timer ) { clearTimeout( timer ); }
+            ro.disconnect();
+        };
+    }
+
+    /*
+     * No ResizeObserver: fall back to the window, which catches the common case
+     * -- the reader resizing the window -- and misses a widget that changed
+     * width on its own. Better than nothing, and nothing is what the fallback
+     * has to be, because polling is what this exists to replace.
+     */
+    jQuery( window ).on( 'resize.owaWidth-' + dom_id, schedule );
+
+    return function () {
+
+        if ( timer ) { clearTimeout( timer ); }
+        jQuery( window ).off( 'resize.owaWidth-' + dom_id );
+    };
 };
 
 // owa.js defines the OWA namespace; the six augmenter modules extend it. It is

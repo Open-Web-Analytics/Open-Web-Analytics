@@ -71,6 +71,9 @@ class Report extends \OWA\Core\View {
         $this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
 
         $this->body->set('hideSitesFilter', $this->get('hideSitesFilter') );
+        $this->body->set('hideTimeControls', $this->get('hideTimeControls') );
+        $this->body->set('title_actions', $this->get('title_actions') );
+        $this->body->set('title_count', $this->get('title_count') );
 
         $this->body->set('currentSiteId', $this->get('currentSiteId'));
 

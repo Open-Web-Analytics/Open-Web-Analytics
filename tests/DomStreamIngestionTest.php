@@ -11,17 +11,42 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * of a single dom.stream beacon; the handler stores that under `events` and
  * derives document_id from page_url.
  *
- * The dom.stream handler is only registered when the domstream module is
- * active, so skip cleanly when it is not.
+ * The dom.stream handler is registered by the domstream module at boot, and only
+ * when that module is active. This test used to SKIP when it was not -- which is
+ * the state of a fresh install, so it never ran on CI and reported green without
+ * executing.
+ *
+ * It now attaches the handler itself when the module has not. That is the same
+ * registration the module performs, and it makes the test say what it is
+ * actually about: the dom.stream event reaching owa_domstream, not whether this
+ * particular installation happens to have the feature switched on.
  */
 final class DomStreamIngestionTest extends IngestionTestCase
 {
+    /** The dispatch is a singleton, so the handler is attached at most once. */
+    private static $attached = false;
+
     protected function setUp(): void
     {
         parent::setUp();
-        if (!owa_coreAPI::getSetting('domstream', 'is_active')) {
-            $this->markTestSkipped('domstream module not active; skipping dom.stream test.');
+
+        if (owa_coreAPI::getSetting('domstream', 'is_active')) {
+
+            // The module registered its own handler at boot; attaching a second
+            // would run it twice for one event.
+            return;
         }
+
+        if (self::$attached) {
+            return;
+        }
+
+        \OWA\Core\CoreAPI::getEventDispatch()->attach(
+            'dom.stream',
+            array(new \OWA\Module\Domstream\Handler\DomstreamHandlers, 'notify')
+        );
+
+        self::$attached = true;
     }
 
     public function testDomStreamPersistsRow(): void

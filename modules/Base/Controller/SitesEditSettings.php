@@ -88,7 +88,18 @@ class SitesEditSettings extends \OWA\Core\AdminController {
 
         $this->setView('base.options');
         $this->setSubview('base.sitesProfile');
-        $this->set('error_code', 3311);
+        /*
+         * 3002 -- "the form had errors" -- not 3311.
+         *
+         * 3311 has been the CLI-updates message since 2010, and this screen has
+         * set 3311 since 2009: the later commit took a code three form screens
+         * were already using. Latent rather than visible, because
+         * Controller::doAction() sets validation_errors before calling
+         * errorAction() and msgs.php shows error_msg only when there are none --
+         * so the CLI text was suppressed on the ordinary path and would have
+         * appeared the moment that branch changed.
+         */
+        $this->set('error_code', 3002);
         $site_id = $this->getParam( 'siteId' );
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site->load( $site->generateId( $site_id ) );

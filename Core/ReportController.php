@@ -51,14 +51,16 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setRequiredCapability('view_reports');
         parent::__construct($params);
 
-        // set a siteId is none is set on the request params
-        $siteId = $this->getCurrentSiteId();
-
-        if ( ! $siteId ) {
-            //$siteId = $this->getDefaultSiteId();
-        }
-
-        $this->setParam( 'siteId', $siteId );
+        /*
+         * Normalise the two spellings the request may use -- `siteId` and
+         * `site_id` -- onto the one everything downstream asks for.
+         *
+         * Resolving a DEFAULT when there is neither happens in pre(), not
+         * here: it needs the sites this user may see, and the current user's
+         * grants are not loaded until checkCapabilityAndAuthenticateUser()
+         * runs, which is after this.
+         */
+        $this->setParam( 'siteId', $this->getCurrentSiteId() );
     }
 
     /**
@@ -155,7 +157,59 @@ class ReportController extends \OWA\Core\AdminController {
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('sites', $sites);
 
-        $this->set( 'currentSiteId', $this->getParam('siteId') );
+        /*
+         * A REPORT IS ALWAYS OF A SITE, so one is resolved when the request
+         * names none.
+         *
+         * Reporting is per site: the nav's links carry a siteId, view_reports
+         * is satisfied against a particular site, and every query is scoped to
+         * one. A report page with no site is not a neutral state -- it is a
+         * page that cannot answer anything.
+         *
+         * What it DID was worse than empty. makeNavigationMenu() returns false
+         * without a currentSiteId, so the entire left-hand navigation vanished
+         * -- and the nav is how you leave the page. The report drew its title
+         * and its chrome, so nothing looked broken; there was simply no way out
+         * of it except the browser's back button.
+         *
+         * The way in was ordinary: save a custom report from a builder that was
+         * itself opened without a site, and the redirect lands here with none.
+         * The builder is a ReportController too, so resolving it HERE fixes the
+         * whole chain at once -- the builder's hidden siteId is filled, the
+         * save carries it, and the report it redirects to has one.
+         *
+         * The constructor scaffolded this and never did it:
+         *
+         *     if ( ! $siteId ) {
+         *         //$siteId = $this->getDefaultSiteId();
+         *     }
+         *
+         * It belongs here rather than there. The constructor runs before
+         * checkCapabilityAndAuthenticateUser(), so the current user's site
+         * grants are not loaded yet and "the sites this user may see" has no
+         * answer; pre() is documented as running once the user is loaded, and
+         * $sites above is that answer.
+         *
+         * The FIRST allowed site, which is the one the site filter already
+         * shows selected -- so the page agrees with its own control. Chosen
+         * from the allowed list rather than from the sites table, so this can
+         * only ever land on a site the reader could have picked themselves.
+         *
+         * A user with no sites at all still gets none. There is nothing to
+         * default to, and inventing one would be inventing access.
+         */
+        $siteId = $this->getParam('siteId');
+
+        if ( ! $siteId && $sites ) {
+
+            $siteId = (string) array_key_first( $sites );
+
+            // The PARAM, not just the view value: pre() reads it again below
+            // for the metric sets, and everything downstream asks getParam().
+            $this->setParam( 'siteId', $siteId );
+        }
+
+        $this->set( 'currentSiteId', $siteId );
 
         // pass full set of params to view
         $this->data['params'] = $this->params;
@@ -220,6 +274,9 @@ class ReportController extends \OWA\Core\AdminController {
 
         $this->set('tabs', $tabs);
         $this->set('tabs_json', json_encode($tabs));
+
+        $nav = $this->withCustomReports( $nav );
+
         $this->set('top_level_report_nav', $nav);
     }
 
@@ -261,9 +318,102 @@ class ReportController extends \OWA\Core\AdminController {
         return $ret['site_id'];
     }
 
+    /**
+     * The reader's own custom reports, as a nav group.
+     *
+     * Added here rather than through registerNavigation() because these are
+     * ROWS, not registrations: they differ per reader, they change while the
+     * install is running, and half of them are invisible to anyone but their
+     * author. A module registering navigation is answering "what does this
+     * install have"; this is answering "what does this person have".
+     *
+     * The list ends with "See more..." rather than relying on the group heading
+     * -- the heading is a toggle as much as a link, so a reader with more than
+     * ten needs a line that plainly says where the rest are.
+     *
+     * One small indexed query per report render. Worth it for the thing being
+     * bought -- a custom report that is not in the nav is a custom report
+     * nobody finds twice -- but it is the reason this reads ten rows and not
+     * five hundred.
+     *
+     * @param array $nav
+     * @return array
+     */
+    private function withCustomReports( array $nav ) {
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        // The roster's own capability: an entry that leads to a screen the
+        // reader cannot open is worse than no entry.
+        if ( ! $user->isCapable( 'view_site_list' ) ) {
+
+            return $nav;
+        }
+
+        $reports = \OWA\Module\Base\Classes\CustomReports::recent(
+            (string) $user->getUserData( 'user_id' ),
+            (bool) $user->isCapable( 'edit_users' )
+        );
+
+        $links = array();
+
+        foreach ( $reports as $i => $report ) {
+
+            $links[] = array(
+                'ref' => array(
+                    'do'       => 'base.report',
+                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $report['id'],
+                ),
+                'anchortext' => $report['name'],
+                'order'      => $i,
+                'priviledge' => 'view_reports',
+                'icon_class' => '',
+            );
+        }
+
+        /*
+         * ...and the way to all of them, last.
+         *
+         * Always present, including when there are none: the roster is where a
+         * report gets built, so an empty group still has somewhere to send a
+         * reader.
+         */
+        $links[] = array(
+            'ref'        => array( 'do' => 'base.customReports' ),
+            'anchortext' => 'See more...',
+            'order'      => count( $links ),
+            'priviledge' => 'view_site_list',
+            'icon_class' => '',
+        );
+
+        $nav['Custom Reports'] = array(
+            'ref'        => array( 'do' => 'base.customReports' ),
+            'anchortext' => 'Custom Reports',
+            'order'      => 999,
+            'priviledge' => 'view_site_list',
+            'icon_class' => 'fa fa-th-list',
+            'subgroup'   => $links,
+        );
+
+        return $nav;
+    }
+
     protected function hideReportingNavigation() {
 
         $this->set('hideReportingNavigation', true);
+    }
+
+    /**
+     * Hide the period picker and the Live View switch.
+     *
+     * For a screen that is inside the reporting UI but is not a report of a
+     * time range -- the custom report roster lists reports, and neither a date
+     * range nor a refresh timer means anything to a list of them. Offering
+     * controls that change nothing is worse than offering none.
+     */
+    protected function hideTimeControls() {
+
+        $this->set('hideTimeControls', true);
     }
 
     protected function hideSitesFilter() {

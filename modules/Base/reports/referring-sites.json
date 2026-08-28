@@ -1,5 +1,5 @@
 {
-    "title": "Referrals",
+    "title": "Referring Web Sites",
     "widgets": [
         {
             "type": "trend",
@@ -16,22 +16,10 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referralPageTitle,referralPageUrl",
+                "dimensions": "referralWebSite",
                 "sort": "visits-",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "referralPageUrl",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "referral-detail",
-                    "referralPageUrl": "%s"
-                },
-                "valueColumns": "referralPageUrl"
-            },
-            "excludeColumns": [
-                "referralPageTitle"
-            ]
+            }
         }
     ],
     "settings": {

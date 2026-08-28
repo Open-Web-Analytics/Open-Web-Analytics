@@ -52,6 +52,20 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
 
     /**
+     * How many rows a table CARD shows when it names no page size.
+     *
+     * A card's height is its row count, so this is a layout number as much as a
+     * query one: cards sit beside each other, and a row of them that each chose
+     * their own page size is a row of different heights.
+     *
+     * Ten rather than the reporting API's own default of twenty-five, which is
+     * a full-width table's number. Twenty-five rows in a quarter-row card is a
+     * column of figures taller than everything beside it, and a card exists to
+     * be read at a glance and then followed to the full report.
+     */
+    const DEFAULT_CARD_ROWS = 10;
+
+    /**
      * Column formatters a grid widget may name.
      *
      * A NAME, never a function. Formatters are implemented in the grid widget

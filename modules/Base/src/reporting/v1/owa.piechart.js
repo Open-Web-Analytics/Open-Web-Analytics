@@ -8,7 +8,65 @@ OWA.pieChart = function( options ) {
     // config options
     this.options = {
 
-        height: 200,
+        /*
+         * How tall the plot area is. The width comes from the widget; this does
+         * not, deliberately -- see setupPieChart(). Big enough for a circle
+         * with its labels around it at the widths a card is drawn at.
+         */
+        height: 240,
+
+        /*
+         * ...and how wide. FIXED, like the height, and for a sharper reason:
+         * the slice names are a legend to the RIGHT of the circle, and a plot
+         * area that tracked its container would take that room away as the
+         * widget narrowed -- squeezing the legend into the pie, or off the
+         * canvas entirely.
+         *
+         * A circle and a legend need what they need. Below this the widget
+         * scrolls, which is the same answer a table gets when its columns stop
+         * fitting: the content keeps its size and the panel admits it cannot
+         * show all of it.
+         *
+         * 280 is what a QUARTER-ROW PANEL can hold: the widget floor is 300px
+         * of grid area, a panel takes 34 of that in border and padding, and a
+         * plot wider than what is left is a plot whose legend gets clipped --
+         * which is the failure this is supposed to prevent, arriving from the
+         * other side.
+         *
+         * Sized to the narrowest place a pie is drawn rather than the widest,
+         * because the alternative is a pie that fits three of the four columns
+         * it might land in.
+         */
+        plotWidth: 280,
+
+        /*
+         * How much of the plot box the circle fills, as a fraction of half the
+         * SHORTER side. Turned into a pixel radius before it reaches flot --
+         * see pixelRadius() -- because a fraction there is a fraction of a
+         * number the label-fitting loop shrinks.
+         *
+         * Under 1 so the LEGEND has somewhere to sit: the circle and the names
+         * beside it share the plot's width, and 0.60 of the shorter side is
+         * what leaves room for both inside 280.
+         */
+        radiusFraction: 0.60,
+
+        /*
+         * The column reserved for the legend, at the right of the plot.
+         *
+         * RESERVED RATHER THAN MEASURED. flot centres the pie by reading the
+         * width of a background div it prepends to the legend -- and only
+         * prepends when backgroundOpacity is non-zero -- then shifting the
+         * centre by half of it. That measurement is taken before the legend has
+         * settled and came back as 40px for a legend 119px wide, so the circle
+         * moved 20px where it needed to move 60 and the names landed on top of
+         * it.
+         *
+         * A number here instead, and the circle offset derived from it, so the
+         * two cannot disagree. The label cap in owa.report.css is what keeps a
+         * long name inside it.
+         */
+        legendWidth: 120,
         width:    200,
         metric: '',
         dimension: '',
@@ -17,7 +75,15 @@ OWA.pieChart = function( options ) {
         showGrid: true,
         showDots: true,
         showLegend: true,
-        autoSizeWidth: true
+        autoSizeWidth: true,
+
+        /*
+         * Shared with the trend chart, so a value has one colour wherever it is
+         * drawn. An OPTION rather than a literal in generate(), the way the
+         * area chart carries it: a widget can override it, and what a chart is
+         * drawing with can be read without rendering one.
+         */
+        colors: OWA.chartColors
     };
 
     // merge passed options with defaults.
@@ -93,13 +159,57 @@ OWA.pieChart.prototype = {
         return value;
     },
 
+    /**
+     * The circle's radius in PIXELS, from the plot box.
+     *
+     * flot reads a radius above 1 as a pixel length and below 1 as a fraction
+     * of maxRadius -- and maxRadius is what its label-fitting loop shrinks, so
+     * a fraction hands the geometry to the label text. Resolving it here keeps
+     * the size proportional to the widget while making it immune to that.
+     *
+     * The SHORTER side, so the circle fits a wide, short plot box -- which is
+     * every pie now that the height no longer follows the width.
+     *
+     * Floored at 2 because flot's own test is `radius > 1`: a radius that came
+     * out at 1 or less would be read back as a fraction, which is the exact
+     * behaviour this exists to avoid.
+     */
+    pixelRadius : function () {
+
+        var box = Math.min(
+            jQuery( this.domSelector ).width() || this.getOption( 'width' ),
+            jQuery( this.domSelector ).height() || this.getOption( 'height' )
+        );
+
+        return Math.max( 2, Math.round( box / 2 * this.getOption( 'radiusFraction' ) ) );
+    },
+
+    /**
+     * The plot area: as wide as the widget, and NOT as tall.
+     *
+     * The height used to be the WIDTH -- a pie was a square the size of
+     * whatever held it. At a quarter of a row that is a 286px circle, which
+     * looks deliberate; at half a row it is a 626px one, and the widget becomes
+     * the tallest thing on the report because it is round.
+     *
+     * A pie does not need height in proportion to width. It needs enough to
+     * draw a circle and put labels round it, and the width beyond that is just
+     * margin. So the height is its own option, capped at the width so a narrow
+     * widget still gets a circle rather than an ellipse's worth of room.
+     */
     setupPieChart : function() {
 
         var that = this;
-        var w = this.getContainerWidth();
-        //alert(w);
-        var h = this.getContainerWidth(); //this.getOption('chartHeight');
-        //alert(h);
+
+        /*
+         * The plot is a FIXED BOX inside a flexible widget -- see plotWidth and
+         * height. What varies between one pie and the next is the data, not the
+         * geometry, and two pies of different sizes on one report say something
+         * about the data that is not true.
+         */
+        var w = this.getOption( 'plotWidth' );
+        var h = this.getOption( 'chartHeight' ) || this.getOption( 'height' );
+
         jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
         jQuery(that.domSelector).css('width', w);
         jQuery(that.domSelector).css('height', h);
@@ -137,6 +247,10 @@ OWA.pieChart.prototype = {
                 var metric = this.options.metric;
 
                 //create data array
+                // Null-prototype: a slice legitimately labelled "constructor" or
+                // "toString" would otherwise find a function on Object.prototype
+                // and be merged into a slice that does not exist.
+                var byLabel = Object.create(null);
                 var iterations = 0;
                 if (numSlices > resultSet.resultsRows.length) {
                     iterations = resultSet.resultsRows.length;
@@ -174,8 +288,37 @@ OWA.pieChart.prototype = {
                         slice_label = cell.formatted_value;
                     }
 
-                    var item = {label: slice_label, data: resultSet.resultsRows[i][metric].value * 1};
-                    data.push(item);
+                    /*
+                     * ONE SLICE PER LABEL, not one per row.
+                     *
+                     * Two rows can resolve to the same label, and a pie that
+                     * pushed both drew the same word twice with the total
+                     * split between them -- the dashboard's Visitor Types read
+                     * "New" and "New".
+                     *
+                     * It is valueLabels that makes this happen, and by design:
+                     * a boolean column holds three values, not two. 1, 0 and
+                     * NULL each group separately in SQL, so `isRepeatVisitor`
+                     * comes back as three rows on any site with history, and
+                     * the report folds 0 and NULL together because they mean
+                     * the same thing -- this visitor had not been here before.
+                     * Folding is a statement about MEANING, so the slices have
+                     * to fold too; a label map cannot merge rows on its own.
+                     *
+                     * Kept in first-seen order, which is the query's order, so
+                     * the largest slice is still first.
+                     */
+                    var value = resultSet.resultsRows[i][metric].value * 1;
+                    var existing = byLabel[slice_label];
+
+                    if (existing) {
+                        existing.data = existing.data + value;
+                    } else {
+                        var item = {label: slice_label, data: value};
+                        byLabel[slice_label] = item;
+                        data.push(item);
+                    }
+
                     count = count + resultSet.resultsRows[i][metric].value;
                 }
 
@@ -211,6 +354,25 @@ OWA.pieChart.prototype = {
 
         }
 
+        /*
+         * NOTHING TO DRAW IS NOT A DRAWING.
+         *
+         * Both no-data branches above say so on the page and then fell through
+         * to flot with an empty series, and flot's pie plugin reads
+         * `series[0].series` on the way in -- so an empty pie threw
+         * "Cannot read properties of null (reading 'series')" into the console
+         * and left the message it had just written sitting under a plot that
+         * never appeared.
+         *
+         * Latent until a shipped report had a pie that could come back empty:
+         * the traffic report's campaign pie is empty on any site running no
+         * campaigns, which is most of them.
+         */
+        if ( ! data.length ) {
+
+            return;
+        }
+
         if ( ! this.init ) {
 
             this.setupPieChart();
@@ -221,7 +383,65 @@ OWA.pieChart.prototype = {
             series: {
                 pie: {
                     show: true,
-                    showLabel: true
+
+                    /*
+                     * A radius in PIXELS, so the label text cannot decide the
+                     * geometry.
+                     *
+                     * flot's pie plugin fits its labels by SHRINKING: drawPie()
+                     * returns false when a label div lands outside the canvas,
+                     * and the caller multiplies maxRadius by 0.95 and tries
+                     * again, up to ten times. So a pie labelled
+                     * "organic-search" draws smaller than one labelled "New",
+                     * on identical canvases, with nothing in the data to
+                     * justify it.
+                     *
+                     * This was already diagnosed here and fixed the wrong way.
+                     * `radius: 0.72` pins the FRACTION -- and the fraction was
+                     * never the problem, because flot computes
+                     * `maxRadius * radius` and maxRadius is the thing that
+                     * shrinks. Pinning it changed nothing.
+                     *
+                     * A value ABOVE 1 is read as a pixel length and used
+                     * verbatim (see the plugin's `radius > 1 ? radius :
+                     * maxRadius * radius`), which the shrink loop cannot reach.
+                     * The loop still runs while the labels overflow, and still
+                     * pulls maxRadius in -- but maxRadius now positions only
+                     * the LABELS, so what moves is the text, and the pie stays
+                     * the size it was asked for.
+                     *
+                     * Computed per pie from the plot box rather than written
+                     * down, so it still tracks a widget that is genuinely
+                     * smaller.
+                     */
+                    radius: this.pixelRadius(),
+
+                    /*
+                     * Centred in what is LEFT once the legend has its column.
+                     *
+                     * A number rather than 'auto': auto is the branch that asks
+                     * flot to measure the legend, which is the measurement that
+                     * was wrong. Half the reserved width, because moving the
+                     * centre by half moves the whole circle clear of it.
+                     */
+                    offset: { top: 0, left: -( this.getOption( 'legendWidth' ) / 2 ) },
+
+                    /*
+                     * NO LABELS AROUND THE EDGE. They are a legend now -- see
+                     * the `legend` block below.
+                     *
+                     * Round-the-edge labels are what made two pies different
+                     * sizes: flot fits them by SHRINKING the pie, so the width
+                     * of the words "organic-search" decided the geometry. They
+                     * also collide with each other on a narrow slice and push
+                     * the circle off centre.
+                     *
+                     * A legend to the right says the same thing in a column,
+                     * reads in one place instead of five, and cannot overflow
+                     * the canvas -- which is the condition the shrink loop
+                     * exists to resolve.
+                     */
+                    label: { show: false }
 /*
                     label: {
                         show: true,
@@ -240,12 +460,29 @@ OWA.pieChart.prototype = {
                 }
             },
 
+            /*
+             * The slice names, in a column to the right of the pie.
+             *
+             * flot's pie plugin measures the legend and shifts the circle's
+             * centre left by half its width, so the two sit side by side rather
+             * than overlapping -- this is the plugin's own arrangement, not
+             * something positioned on top of it.
+             *
+             * The percentage travels with the name, because that is what the
+             * round-the-edge labels carried and it is the number a pie is read
+             * for. `series.percent` is set by the plugin before the legend is
+             * built.
+             */
             legend: {
-                show: false,
+                show: this.getOption( 'showLegend' ),
                 position: "ne",
-                margin: [-160,50]
+                margin: [ 0, 0 ],
+                labelFormatter: function ( label, series ) {
+
+                    return label + ' ' + Math.round( series.percent ) + '%';
+                }
             },
-            colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
+            colors: this.options.colors
         };
 
         //GRAPH
@@ -261,9 +498,11 @@ OWA.pieChart.prototype = {
 
         if (this.getOption('autoSizeWidth')) {
             return jQuery("#"+that.dom_id).width();
-        } else {
-            return this.option.width;
         }
+
+        // `this.option`, singular, was a typo that would have thrown the moment
+        // anything set autoSizeWidth false. Nothing ever did.
+        return this.getOption('width');
     },
 
     //move when migrating pie chart

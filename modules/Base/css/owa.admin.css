@@ -1,6 +1,17 @@
 .owa {
     background-color: #fffff;
-    overflow:hidden;
+
+    /* flow-root, NOT overflow:hidden.
+     *
+     * This was the old float-containment hack: overflow:hidden establishes a
+     * block formatting context so the layout's floats are contained. It also
+     * CLIPS, and a dropdown opening near the bottom of the page was cut off by
+     * it -- measured at 278px tall with the container ending 127px short.
+     *
+     * flow-root establishes the same formatting context and clips nothing,
+     * which is what this rule wanted in the first place; it just did not exist
+     * when the rule was written. */
+    display: flow-root;
 }
 
 /* management table */

@@ -14,7 +14,7 @@
             "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed."
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "productName",
             "container": "productNameExplorer",
             "title": "Top Products",
@@ -22,8 +22,7 @@
             "query": {
                 "metrics": "lineItemRevenue",
                 "dimensions": "productName",
-                "sort": "lineItemRevenue-",
-                "resultsPerPage": 5
+                "sort": "lineItemRevenue-"
             },
             "link": {
                 "linkColumn": "productName",
@@ -56,45 +55,6 @@
                 },
                 "valueColumns": "source"
             }
-        },
-        {
-            "type": "report-links",
-            "title": "E-commerce Reports",
-            "colspan": 12,
-            "links": [
-                {
-                    "reportId": "products",
-                    "label": "Product Name"
-                },
-                {
-                    "reportId": "product-skus",
-                    "label": "SKU"
-                },
-                {
-                    "reportId": "product-categories",
-                    "label": "Categories"
-                },
-                {
-                    "reportId": "visits-to-purchase",
-                    "label": "Visits to Purchase"
-                },
-                {
-                    "reportId": "days-to-purchase",
-                    "label": "Days to Purchase"
-                },
-                {
-                    "reportId": "avg-order-value",
-                    "label": "Average Order Value"
-                },
-                {
-                    "reportId": "revenue",
-                    "label": "Total Revenue"
-                },
-                {
-                    "reportId": "ecommerce-conversion-rate",
-                    "label": "Conversion Rate"
-                }
-            ]
         }
     ]
 }

@@ -86,7 +86,7 @@ namespace OWA\Core;
  * @method mixed makeImageLink($path, $absolute = false)
  * @method mixed makeJson($array)
  * @method mixed makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false)
- * @method mixed makeNavigationMenu($links, $currentSiteId, $current_action = '')
+ * @method mixed makeNavigationMenu($links, $currentSiteId, $current = '')
  * @method mixed makePagination($pagination, $map = [], $add_state = true, $template = '')
  * @method mixed makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '')
  * @method mixed makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true)

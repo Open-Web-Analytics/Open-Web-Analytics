@@ -151,11 +151,19 @@ test.describe('reporting: goal funnel', () => {
 
         await expect(page.locator('#funnelFilter .constraintPickerContainer')).toBeVisible();
 
-        // Behind a toggle: the builder itself starts hidden.
-        await expect(page.locator('#funnelFilter .builder')).toBeHidden();
+        /*
+         * The builder is a DIALOG, so it is no longer inside #funnelFilter --
+         * jQuery UI lifts it to `.owa`. It is addressed by the id it takes from
+         * the element it filters; see the builder_id comment in
+         * owa.resultSetExplorer.js.
+         */
+        const builder = page.locator('#owa_filterBuilder-funnelFilter');
+
+        // Behind a toggle: it starts closed.
+        await expect(builder).toBeHidden();
 
         await page.locator('#funnelFilter .toggle-button').click();
-        await expect(page.locator('#funnelFilter .builder')).toBeVisible();
+        await expect(builder).toBeVisible();
     });
 
     test('the filter offers dimensions the segment accepts', async ({ page }) => {
@@ -166,14 +174,16 @@ test.describe('reporting: goal funnel', () => {
         // Opening the builder already offers one empty constraint row, so this
         // does not add another -- clicking "add" would give two pickers and
         // every assertion below would count double.
-        const options = page.locator('#funnelFilter .constraintDimensionPicker option');
+        const options = page.locator(
+            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option');
 
         // A real list, not an empty picker.
         expect(await options.count()).toBeGreaterThan(10);
 
         // medium is what the segment is most obviously useful for, and it is one
         // the funnel's outer query can resolve.
-        expect(await page.locator('#funnelFilter .constraintDimensionPicker option[value="medium"]').count())
+        expect(await page.locator(
+            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option[value="medium"]').count())
             .toBeGreaterThan(0);
     });
 
@@ -211,8 +221,13 @@ test.describe('reporting: goal funnel', () => {
     });
 
     /**
-     * Opening the filter must not move the controls beside it -- the panel hangs
-     * below the bar rather than growing it.
+     * Opening the filter must not move the controls beside it.
+     *
+     * It was a panel that hung below the bar; it is a dialog now, which cannot
+     * move the bar at all. The assertion is kept rather than deleted because
+     * what it protects is unchanged -- opening a filter must not reflow the
+     * report behind it -- and a dialog is one way of being right about that,
+     * not a reason to stop checking.
      */
     test('opening the filter does not move the rest of the bar', async ({ page }) => {
         await openFunnel(page);
@@ -220,7 +235,7 @@ test.describe('reporting: goal funnel', () => {
         const before = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
 
         await page.locator('#funnelFilter .toggle-button').click();
-        await expect(page.locator('#funnelFilter .builder')).toBeVisible();
+        await expect(page.locator('#owa_filterBuilder-funnelFilter')).toBeVisible();
 
         const after = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
 
@@ -242,7 +257,7 @@ test.describe('reporting: goal funnel', () => {
 
         await page.locator('#funnelFilter .toggle-button').click();
 
-        const picker = '#funnelFilter .constraintDimensionPicker';
+        const picker = '#owa_filterBuilder-funnelFilter .constraintDimensionPicker';
 
         // The groups themselves are gone, not just individual names.
         await expect(page.locator(`${picker} optgroup[label="site"]`)).toHaveCount(0);

@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 18;
+        $this->required_schema_version = 19;
         return parent::__construct();
     }
 
@@ -635,6 +635,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
         $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
+        $this->registerAction( 'base.customReportEdit',              'OWA\\Module\\Base\\Controller\\CustomReportEdit',             'Controller/CustomReportEdit.php' );
+        $this->registerAction( 'base.customReportSave',              'OWA\\Module\\Base\\Controller\\CustomReportSave',             'Controller/CustomReportSave.php' );
+        $this->registerAction( 'base.customReportDelete',            'OWA\\Module\\Base\\Controller\\CustomReportDelete',           'Controller/CustomReportDelete.php' );
         $this->registerAction( 'base.sitesAdd',                      'OWA\\Module\\Base\\Controller\\SitesAdd',                     'Controller/SitesAdd.php' );
         $this->registerAction( 'base.sitesAddCli',                   'OWA\\Module\\Base\\Controller\\SitesAddCli',                  'Controller/SitesAddCli.php' );
         $this->registerAction( 'base.sitesDelete',                   'OWA\\Module\\Base\\Controller\\SitesDelete',                  'Controller/SitesDelete.php' );
@@ -1311,7 +1315,11 @@ class Module extends \OWA\Core\Module {
             'month',
             'Month',
             'time',
-            'The month of the year (1-12).',
+            // yyyymm -- 202608, not 8. The COLUMN is called month and the
+            // description said 1-12 for fifteen years, which is the reason to
+            // avoid it as a chart axis and is not true: it orders correctly
+            // across a year boundary, which is what a trend by month needs.
+            'The month, as yyyymm.',
             '',
             true,
             'yyyymm'
@@ -2435,11 +2443,11 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
         $this->registerReport( 'commerce', 'reports/commerce.json' );
         $this->registerReport( 'content', 'reports/content.json' );
-        $this->registerReport( 'country-detail', 'reports/country-detail.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', 'reports/document.json' );
+        $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
@@ -2474,7 +2482,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
         $this->registerReport( 'source-detail', 'reports/source-detail.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );
-        $this->registerReport( 'state-detail', 'reports/state-detail.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );
@@ -2488,20 +2495,57 @@ class Module extends \OWA\Core\Module {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
+        /*
+         * The custom report roster. Gated on view_reports rather than on
+         * edit_reports, because a reader who cannot author one can still be
+         * sent one -- the roster is where they find what they have been given.
+         */
+        $this->addNavigationSubGroup('Custom Reports', array( 'do' => 'base.customReports' ),
+            'Custom Reports', 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
+
         //Ecommerce
+        /*
+         * Every e-commerce report is in the NAV, not behind a links widget on
+         * the overview.
+         *
+         * The overview used to carry a report-links widget listing eight of
+         * them, which meant a reader had to know to open the overview first and
+         * then read a list -- while the nav, the thing built for moving between
+         * reports, showed four of the eight. Reports belong in the menu.
+         *
+         * The five that were only in the widget -- products, product-skus,
+         * product-categories, avg-order-value, ecommerce-conversion-rate -- are
+         * added here. `transactions` was already in the nav and not in the
+         * widget, so it stays.
+         *
+         * Ordered by what a reader is answering: money first, then what sold,
+         * then how long buying took.
+         *
+         * Every child declares view_reports_ecommerce like the group. The
+         * default is the weaker view_reports, which was masked -- a child is
+         * only reachable once its group's capability passed -- but a link
+         * claiming a weaker requirement than the group holding it is a
+         * disagreement waiting to be read the wrong way.
+         */
         $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 4);
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 5);
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), 'Conversion Rate', 5, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'products' ), 'Products', 6, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-skus' ), 'Product SKUs', 7, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-categories' ), 'Product Categories', 8, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 9, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 10, 'view_reports_ecommerce');
 
         //Content
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Top Pages', 1);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
 
 
         //Actions
@@ -2693,6 +2737,7 @@ class Module extends \OWA\Core\Module {
                 'scheduled_job',
                 'notification',
                 'notification_state',
+                'custom_report',
                 'job_lock',
                 'site_user')
             );

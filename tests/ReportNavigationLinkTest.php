@@ -16,6 +16,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportNavigationLinkTest extends TestCase
 {
+    /** Base nav entries that are not reports, and so route to their own action. */
+    private const NOT_REPORTS = array( 'base.customReports' );
+
     private function template(): object
     {
         return \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' );
@@ -211,6 +214,23 @@ final class ReportNavigationLinkTest extends TestCase
                 continue;
             }
 
+            /*
+             * Nav entries that are not REPORTS.
+             *
+             * The contract is that every report is reached as
+             * base.report&reportId=..., so that a link says which report it
+             * means rather than which controller. base.customReports is not a
+             * report -- it is the roster LISTING them, the way base.sites lists
+             * sites -- so it has no reportId to route through and never will.
+             *
+             * Named individually rather than pattern-matched: an exemption that
+             * matched a prefix would quietly excuse a real report that happened
+             * to be named like one of these.
+             */
+            if ( in_array( $do, self::NOT_REPORTS, true ) ) {
+                continue;
+            }
+
             $count++;
 
             if ( $do !== 'base.report' || empty( $params['reportId'] ) ) {
@@ -258,6 +278,20 @@ final class ReportNavigationLinkTest extends TestCase
     }
 
     /** Every nav link in the Reports group, subgroup entries included. */
+    /** Any registered site: the nav only renders for one. */
+    private function anySiteId(): string
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $row = $db->get_row( 'SELECT site_id FROM owa_site LIMIT 1' );
+
+        if ( ! $row ) {
+            $this->markTestSkipped( 'the nav renders only for a site, and none is registered' );
+        }
+
+        return (string) ( (array) $row )['site_id'];
+    }
+
     private function flattenNav(): array
     {
         $flat = array();
@@ -279,5 +313,230 @@ final class ReportNavigationLinkTest extends TestCase
         }
 
         return $flat;
+    }
+
+    // ------------------------------------------------------------------
+    // What the nav is actually GIVEN to compare against
+    // ------------------------------------------------------------------
+
+    /**
+     * The nav menu is handed the whole request, not just its action.
+     *
+     * THE BUG THIS EXISTS FOR
+     *
+     * navLinkIsCurrent() compares every key of a link's ref, and a report link
+     * is {do: base.report, reportId: pages}. makeNavigationMenu() was building
+     * the params it compares against as array('do' => $current_action) -- one
+     * key -- so `reportId` was never present and NO report link was ever
+     * current.
+     *
+     * That read as two unrelated-looking bugs. Nothing highlighted, because
+     * nothing matched; and the left nav collapsed on every page load, because
+     * .owa_admin_nav_subgroup is display:none in CSS and the only thing that
+     * opens a group is the script looking for .owa_current -- which was never
+     * there.
+     *
+     * It worked before the conversion for the reason it broke after: a link was
+     * a single action name, so comparing the action alone was comparing the
+     * whole ref.
+     */
+    public function testTheNavIsGivenTheWholeRequestNotJustTheAction(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $siteId = $this->anySiteId();
+        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
+
+        if ( ! $nav ) {
+            $this->markTestSkipped( 'no reporting navigation is registered' );
+        }
+
+        $html = $this->template()->makeNavigationMenu(
+            $nav, $siteId, array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+
+        $this->assertNotFalse( $html, 'the nav did not render' );
+
+        $this->assertStringContainsString( 'owa_current', (string) $html,
+            'no nav link was marked current, so the menu renders collapsed and unhighlighted' );
+    }
+
+    /**
+     * ...and the action ALONE marks nothing, which is the state that shipped.
+     *
+     * The same call with the pre-conversion argument -- just the action -- must
+     * NOT find a current link. Without this the test above would pass against
+     * an implementation that marked everything.
+     */
+    public function testTheActionAloneCannotIdentifyAReport(): void
+    {
+        $template = $this->template();
+
+        $link = array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+
+        $this->assertFalse(
+            $template->navLinkIsCurrent( $link, array( 'do' => 'base.report' ) ),
+            'the action alone must not make a report link current -- every report shares it' );
+
+        $this->assertTrue(
+            $template->navLinkIsCurrent( $link,
+                array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
+            'the full request must' );
+
+        $this->assertFalse(
+            $template->navLinkIsCurrent( $link,
+                array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
+            'a different report must not' );
+    }
+
+    /**
+     * A string is still accepted, because that is what this took for fifteen
+     * years and a third-party template may still pass one.
+     */
+    public function testAStringIsStillAcceptedAsTheCurrentRequest(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $siteId = $this->anySiteId();
+        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
+
+        if ( ! $nav ) {
+            $this->markTestSkipped( 'no reporting navigation is registered' );
+        }
+
+        $this->assertNotFalse(
+            $this->template()->makeNavigationMenu( $nav, $siteId, 'base.report' ),
+            'passing an action string must still render a menu' );
+    }
+
+    // ------------------------------------------------------------------
+    // E-commerce reports live in the nav, not behind a links widget
+    // ------------------------------------------------------------------
+
+    /**
+     * The eight reports the overview's links widget used to list.
+     *
+     * Written out rather than read back from the widget, because the widget is
+     * GONE -- reading it would make the test pass by finding nothing. This is
+     * the list that has to remain reachable, so this is where it is recorded.
+     */
+    private const ECOMMERCE_REPORTS = array(
+        'products',
+        'product-skus',
+        'product-categories',
+        'visits-to-purchase',
+        'days-to-purchase',
+        'avg-order-value',
+        'revenue',
+        'ecommerce-conversion-rate',
+    );
+
+    /** @return array reportId => anchortext, for the Ecommerce subgroup */
+    private function ecommerceNav(): array
+    {
+        $out = array();
+
+        foreach ( (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' ) as $link ) {
+
+            if ( ( $link['anchortext'] ?? '' ) !== 'Ecommerce' ) {
+                continue;
+            }
+
+            foreach ( (array) ( $link['subgroup'] ?? array() ) as $sub ) {
+
+                $params = $this->template()->navLinkParams( $sub );
+
+                if ( ! empty( $params['reportId'] ) ) {
+                    $out[ $params['reportId'] ] = $sub['anchortext'] ?? '';
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Removing the links widget must not make a report unreachable.
+     *
+     * The overview carried a report-links widget listing eight reports while
+     * the nav -- the thing built for moving between reports -- showed four of
+     * them. The widget is gone and all eight are in the menu.
+     */
+    public function testEveryEcommerceReportIsInTheNav(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $nav = $this->ecommerceNav();
+
+        $this->assertNotEmpty( $nav, 'the Ecommerce nav subgroup is empty' );
+
+        $missing = array_diff( self::ECOMMERCE_REPORTS, array_keys( $nav ) );
+
+        $this->assertSame( array(), $missing,
+            "These e-commerce reports are no longer reachable from the nav:\n  "
+            . implode( "\n  ", $missing ) );
+    }
+
+    /** ...and the overview no longer carries the widget they came from. */
+    public function testTheEcommerceOverviewHasNoReportLinksWidget(): void
+    {
+        $definition = json_decode( (string) file_get_contents(
+            OWA_DIR . 'modules/Base/reports/ecommerce.json' ), true );
+
+        $this->assertIsArray( $definition );
+
+        foreach ( (array) $definition['widgets'] as $widget ) {
+
+            $this->assertNotSame( 'report-links', $widget['type'] ?? '',
+                'the overview lists reports again; the nav is where reports belong' );
+        }
+    }
+
+    /**
+     * A nav entry's label matches the report it opens.
+     *
+     * Two of these reports carried a copy-pasted title -- product-categories
+     * was called "Product SKUs" and ecommerce-conversion-rate was called "Total
+     * Revenue" -- so following the menu landed on a heading naming a different
+     * report. Checked for the ones being added here rather than across the
+     * whole nav, where several labels are deliberately shorter than the title.
+     */
+    public function testTheseNavLabelsMatchTheirReportTitles(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'building the nav loads modules and the current user' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $nav = $this->ecommerceNav();
+
+        foreach ( array( 'product-categories', 'ecommerce-conversion-rate', 'products' ) as $id ) {
+
+            $definition = json_decode( (string) file_get_contents(
+                OWA_DIR . 'modules/Base/reports/' . $id . '.json' ), true );
+
+            $this->assertSame( $nav[ $id ] ?? null, $definition['title'] ?? null,
+                "the nav calls '$id' something other than the report does" );
+        }
     }
 }

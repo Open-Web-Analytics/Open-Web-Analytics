@@ -102,7 +102,6 @@ describe('reporting bundle build integrity', () => {
             'jquery-sparkline',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
-            'jquery.flot/jquery.flot.resize.js',
             'jquery.flot/jquery.flot.pie.js',
             'free-jqgrid/dist/jquery.jqgrid.min.js',
             'jQote2/jquery.jqote2.min.js',
@@ -120,6 +119,33 @@ describe('reporting bundle build integrity', () => {
         // time.js must precede areachart (the whole reason it is imported at all).
         expect(entry.indexOf('jquery.flot.time.js'))
             .toBeLessThan(entry.indexOf('./owa.areachart.js'));
+    });
+
+    test('flot\'s resize plugin is not imported, and stays that way', () => {
+        // It is BROKEN in this bundle and REDUNDANT, and either alone would be
+        // enough to leave it out.
+        //
+        // Broken: it inlines a 2010 "jQuery resize event" shim written as
+        // (function($,e,t){...})(jQuery,this), taking the window from top-level
+        // `this`. Top-level `this` in an ES module is not the window, so its
+        // requestAnimationFrame polyfill called `e.setTimeout` on something with
+        // no setTimeout and threw two uncaught TypeErrors per window resize.
+        //
+        // Redundant: it polls elements it was told about, and
+        // OWA.areaChart.setupAreaChart() replaces the chart element on every
+        // redraw -- so the node it registered ends up detached, reads as
+        // invisible, and stops being watched. OWA.onWidthChange does the job
+        // with a ResizeObserver on the widget container instead.
+        //
+        // Asserted on the IMPORT LINES only: the entry's docblock names the file
+        // to explain why it is absent, and that prose must not read as a hit.
+        const entry = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
+
+        expect(entry).not.toContain('jquery.flot.resize');
+
+        // ...and the reason is written down where the next person will look.
+        expect(fs.readFileSync(entryPath, 'utf8')).toContain('jquery.flot.resize.js is DELIBERATELY NOT IMPORTED');
     });
 
     test('the reporting package is declared in base\'s build manifest', () => {

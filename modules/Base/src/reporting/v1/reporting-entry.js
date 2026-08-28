@@ -44,7 +44,29 @@ import 'chosen-js/chosen.jquery.js';
 import 'jquery-sparkline';
 import 'jquery.flot';                       // core
 import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis.mode:"time")
-import 'jquery.flot/jquery.flot.resize.js';
+/*
+ * jquery.flot.resize.js is DELIBERATELY NOT IMPORTED. Two independent reasons,
+ * and either alone would be enough:
+ *
+ * 1. IT DOES NOT WORK IN THIS BUNDLE. It inlines a 2010 "jQuery resize event"
+ *    shim written as `(function($,e,t){...})(jQuery,this)`, taking the window
+ *    from top-level `this`. Top-level `this` in an ES module is NOT the window,
+ *    so its requestAnimationFrame polyfill called `e.setTimeout` on something
+ *    that has no setTimeout and threw on every resize -- measured, before any
+ *    of this work, as two uncaught TypeErrors per window resize.
+ *
+ * 2. IT COULD NOT HAVE WORKED ANYWAY. It polls a list of elements it was told
+ *    about, and OWA.areaChart.setupAreaChart() REPLACES the chart element on
+ *    every redraw -- every metric change, granularity change and refetch. The
+ *    node it registered is then detached, a detached node reads as invisible,
+ *    and it stops watching. The symptom was a chart that shrank with the window
+ *    and never grew back.
+ *
+ * OWA.onWidthChange replaces it: a ResizeObserver on the widget CONTAINER,
+ * which is the element the layout sizes and the one thing never replaced. It
+ * also covers what this plugin never could -- a widget whose width changed
+ * without the window changing, which is most of them on a container-query grid.
+ */
 import 'jquery.flot/jquery.flot.pie.js';
 import 'free-jqgrid/dist/jquery.jqgrid.min.js';
 // jQote2 has no npm package -> stays vendored, imported as a side-effect module.

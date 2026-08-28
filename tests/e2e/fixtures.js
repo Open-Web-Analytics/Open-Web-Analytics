@@ -17,12 +17,31 @@ const FIXTURE = {
     password: 'e2e-Reporter-Pass-1!', // throwaway LOCAL fixture creds, never production
     // The four page titles seeded (each with 2 pageviews).
     pageTitles: ['E2E Home', 'E2E pricing', 'E2E docs', 'E2E about'],
+    // The same four pages by PATH. The dashboard's Top Content card is grouped
+    // by pagePath rather than pageTitle, so it renders these.
+    pagePaths: ['/', '/pricing', '/docs', '/about'],
     expectedGridRows: 4,
     // The admin-role fixture user (E2E_ADMIN_* in the seeder). The reporter
     // above is an analyst and cannot reach any edit_* admin screen; the
     // admin-actions suite logs in as this user instead.
     adminUserId: 'owa-e2e-admin@example.test',
     adminPassword: 'e2e-Admin-Pass-1!', // throwaway LOCAL fixture creds, never production
+    // A custom report belonging to SOMEBODY ELSE (E2E_OTHERS_REPORT_* in the
+    // seeder). Its owner never signs in, which is the point: editing another
+    // author's report is decided by a capability rather than by ownership, and
+    // a test that builds a report and then opens it is always looking at its
+    // own -- where ownership alone is enough and the capability is never
+    // exercised. That blind spot hid a real bug.
+    othersReportName: 'E2E Owned By Someone Else',
+
+    // A custom report whose trend is BROKEN OUT by page path
+    // (E2E_BREAKDOWN_REPORT_NAME in the seeder). No shipped report has one --
+    // Content's trend is a card now, and a card cannot be broken out -- so the
+    // companion-grid specs drive an authored report instead of a shipped shape
+    // nobody asked for.
+    breakdownReportName: 'E2E Broken Out Trend',
+    othersReportOwner: 'owa-e2e-someone-else@example.test',
+
     // The password-CHANGE fixture user (E2E_PWUSER_* in the seeder). OWA has no
     // logged-in "change my password" form, only the emailed-passkey reset flow,
     // so the seeder plants a KNOWN temp_passkey the test submits to the real

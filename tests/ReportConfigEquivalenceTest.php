@@ -74,11 +74,85 @@ final class ReportConfigEquivalenceTest extends TestCase
          */
         unset( $actual['deprecated'] );
 
+        /*
+         * Widgets ADDED since the conversion come out first, so the allowances
+         * below are only ever asked about widgets the record also has.
+         */
+        $retitled = Harness::undoRetitling( $class, $actual );
+
+        $this->assertSame( array(), $retitled['problems'],
+            "the rename allowance for " . $class . " does not match the definition:\n  "
+            . implode( "\n  ", $retitled['problems'] ) );
+
+        $actual = $retitled['config'];
+
+        $added = Harness::undoAdding( $class, $actual );
+
+        $this->assertSame( array(), $added['problems'],
+            "the addition allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $added['problems'] ) );
+
+        $actual = $added['config'];
+
+        $actual = $this->undoRetyping( $class, $actual );
+
+        $restated = Harness::undoRestating( $class, $actual );
+
+        $this->assertSame( array(), $restated['problems'],
+            "the restatement allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $restated['problems'] ) );
+
+        $actual = $restated['config'];
+
+        /*
+         * ...and a report that has been deliberately relaid out is reconciled
+         * with the record on position and span alone, so everything else about
+         * every widget is still compared. See Harness::RELAID_OUT.
+         */
+        /*
+         * Widgets deliberately REMOVED come out of the RECORD, so what is left
+         * on both sides is the set the report still has.
+         */
+        $dropped = Harness::undoRemoval( $class, $expected, $actual );
+
+        $this->assertSame( array(), $dropped['problems'],
+            "the removal allowance for " . $class . " does not match the definition:\n  "
+            . implode( "\n  ", $dropped['problems'] ) );
+
+        $expected = $dropped['expected'];
+
+        $layout = Harness::normaliseLayout( $class, $expected, $actual );
+
+        $this->assertSame( array(), $layout['problems'],
+            "the relayout allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $layout['problems'] ) );
+
+        $expected = $layout['expected'];
+        $actual   = $layout['actual'];
+
         // Whole-bag comparison, not key-by-key: a conversion that DROPPED a key
         // would pass every per-key assertion that only looks at keys present in
         // both.
         $this->assertSame( $expected, $actual,
             "report '$id' does not declare what $class declared" );
+    }
+
+    /**
+     * Put a deliberately re-typed widget back to what the controller declared,
+     * so everything ELSE about it is still compared.
+     *
+     * The list lives in the harness because the characterization test reads the
+     * same fixture and needs the same allowance -- see Harness::RETYPED.
+     */
+    private function undoRetyping( string $class, array $config ): array
+    {
+        $result = Harness::undoRetyping( $class, $config );
+
+        $this->assertSame( array(), $result['problems'],
+            "the re-typing allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $result['problems'] ) );
+
+        return $result['config'];
     }
 
     /**

@@ -3,58 +3,20 @@
     "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "trend",
             "container": "trend-chart",
             "colspan": 12,
             "chartMetric": "uniqueVisitors",
             "query": {
+                "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visitDuration",
                 "dimensions": "date",
                 "sort": "date"
             },
             "headline": "There were {uniqueVisitors.formatted} {uniqueVisitors|visitor|visitors} to this web site."
         },
         {
-            "type": "grid",
-            "id": "latestVisits",
-            "container": "latest-visits",
-            "title": "Latest Visits",
-            "colspan": 6,
-            "query": {
-                "metrics": "visits,pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
-                "resultsPerPage": 10
-            },
-            "more": {
-                "reportId": "latest-visits"
-            }
-        },
-        {
-            "type": "report-links",
-            "id": "visitorReports",
-            "title": "Visitor Reports",
-            "colspan": 6,
-            "links": [
-                {
-                    "reportId": "visitors-loyalty",
-                    "label": "Visitor Loyalty",
-                    "description": "See how long ago your visitors first came to your web site."
-                },
-                {
-                    "reportId": "geolocation",
-                    "label": "Geo-location",
-                    "description": "See which parts of the world your visitors are coming from."
-                },
-                {
-                    "reportId": "hosts",
-                    "label": "Domains",
-                    "description": "See which Networks or Internet hosts your visitors are coming from."
-                }
-            ]
-        },
-        {
-            "type": "grid",
+            "type": "grid-card",
             "id": "browserTypes",
             "container": "top-browsers",
             "title": "Browser Types",
@@ -62,8 +24,7 @@
             "query": {
                 "metrics": "visits",
                 "dimensions": "browserType",
-                "sort": "visits-",
-                "resultsPerPage": 10
+                "sort": "visits-"
             },
             "link": {
                 "linkColumn": "browserType",
@@ -73,6 +34,66 @@
                     "browserType": "%s"
                 },
                 "valueColumns": "browserType"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "domains",
+            "container": "visitor-domains",
+            "title": "Domains",
+            "query": {
+                "metrics": "uniqueVisitors",
+                "dimensions": "hostName",
+                "sort": "uniqueVisitors-"
+            },
+            "more": {
+                "reportId": "hosts",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "loyalty",
+            "container": "visitor-loyalty",
+            "title": "Visitor Loyalty",
+            "query": {
+                "metrics": "uniqueVisitors",
+                "dimensions": "priorVisitCount",
+                "sort": "priorVisitCount"
+            },
+            "more": {
+                "reportId": "visitors-loyalty",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "recency",
+            "container": "visitor-recency",
+            "title": "Visitor Recency",
+            "query": {
+                "metrics": "uniqueVisitors",
+                "dimensions": "daysSinceLastVisit",
+                "sort": "daysSinceLastVisit"
+            },
+            "more": {
+                "reportId": "visitors-recency",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "age",
+            "container": "visitor-age",
+            "title": "Visitor Age",
+            "query": {
+                "metrics": "uniqueVisitors",
+                "dimensions": "daysSinceFirstVisit",
+                "sort": "daysSinceFirstVisit"
+            },
+            "more": {
+                "reportId": "visitors-age",
+                "label": "View Full Report \u00bb"
             }
         }
     ]

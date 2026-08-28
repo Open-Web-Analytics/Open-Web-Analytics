@@ -44,6 +44,458 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.ui-jqgrid').first()).toBeVisible();
     });
 
+    /**
+     * Two pies the same width draw the same size.
+     *
+     * flot fits its round-the-edge labels by SHRINKING: drawPie() returns false
+     * when a label div lands outside the canvas and the caller multiplies
+     * maxRadius by 0.95 and tries again. So the width of the word
+     * "organic-search" set the diameter, and Traffic Sources drew smaller than
+     * Visitor Types on an identical canvas.
+     *
+     * Fixed twice, and the first attempt is worth remembering: pinning
+     * `radius: 0.72` pinned the FRACTION, and flot computes
+     * `maxRadius * radius` -- the fraction was never what moved. It is a pixel
+     * length now, which the loop cannot reach, and the labels are a legend
+     * beside the pie rather than text around it, so there is nothing left to
+     * overflow.
+     *
+     * Measured from the CANVAS, not the container: the containers were always
+     * the same size, which is exactly why this looked like a styling problem
+     * and was not one.
+     */
+    test('the two dashboard pies draw at the same size', async ({ page }) => {
+        const pies = page.locator('.owa_pieChart canvas');
+
+        await expect.poll(async () => pies.count(), { timeout: 20_000 })
+            .toBeGreaterThanOrEqual(2);
+
+        const drawn = await pies.evaluateAll((els) => els.map((c) => {
+            const ctx = c.getContext('2d');
+            const mid = Math.floor(c.height / 2);
+            const row = ctx.getImageData(0, mid, c.width, 1).data;
+
+            let first = -1, last = -1;
+
+            for (let x = 0; x < c.width; x++) {
+                if (row[x * 4 + 3] > 10) { if (first < 0) first = x; last = x; }
+            }
+
+            return { canvas: c.width, drawn: first < 0 ? 0 : last - first + 1 };
+        }));
+
+        // flot builds a base canvas and an empty overlay per plot; the overlay
+        // has nothing drawn on it, so only the painted ones are pies.
+        const widths = drawn.filter((d) => d.drawn > 10);
+
+        expect(widths.length).toBe(2);
+
+        // The same, and actually drawn -- a pair of zeroes would be "equal" too.
+        expect(widths[0].drawn).toBe(widths[1].drawn);
+        expect(widths[0].drawn).toBeGreaterThan(50);
+
+        // ...and both are comfortably inside their canvas, leaving room for the
+        // legend flot places beside them.
+        for (const w of widths) {
+            expect(w.drawn).toBeLessThan(w.canvas);
+        }
+
+        /*
+         * The labels are a LEGEND, not text around the circle. That is what
+         * removes the shrink loop's cause rather than working around it.
+         */
+        const legends = page.locator('.owa_pieChart .legend');
+
+        await expect(legends).toHaveCount(2);
+
+        // ...carrying the slice name and its share, which is what the
+        // round-the-edge labels said.
+        await expect(legends.first()).toContainText('%');
+    });
+
+    /**
+     * A grid does not offer a picker for a column nobody can see.
+     *
+     * Top Referrers is grouped by referralPageTitle AND referralPageUrl, with
+     * the title in excludeColumns -- it is there only so the rows can carry it.
+     * The bar drew a picker for it all the same, so a grid showing one column
+     * offered two pickers and the second named a column that is not in the
+     * table.
+     *
+     * This used to be asserted against Top Content, which was the same shape
+     * until it became a grid-card grouped by pagePath alone. A card draws no
+     * explorer bar at all, so it can no longer answer this question.
+     */
+    test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
+        const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
+            title: e.querySelector('.owa_reportSectionHeader')?.textContent?.trim(),
+            slots: e.querySelectorAll('.owa_dimSlot').length,
+            add: e.querySelectorAll('.owa_dimAdd').length,
+        })).filter((r) => r.slots || r.add));
+
+        const hidden = bars.find((b) => b.title === 'Top Referrers');
+
+        expect(hidden, 'Top Referrers drew no explorer bar to count pickers on').toBeTruthy();
+        expect(hidden.slots).toBe(1);
+        expect(hidden.add).toBe(1);
+    });
+
+    /**
+     * The empty pill beside every report heading.
+     *
+     * View::get() answers `false` for a key nobody set, so the title-count
+     * guard -- `!== null && !== ''` -- was true on every report in the install,
+     * and out() prints false as nothing. Every report grew an empty grey pill.
+     * The roster, which sets a real count, still has one.
+     */
+    test('a report with no count has no count pill', async ({ page }) => {
+        await expect(page.locator('.owa_titleCount')).toHaveCount(0);
+    });
+
+    /**
+     * A trend with nothing to break out is the filled area it has always been.
+     *
+     * Sixty-one shipped trends are grouped by date alone. The fill is what
+     * makes one read as an area chart, and it is decided PER SERIES now -- so
+     * the case to protect is that a lone series still gets it.
+     */
+    test('a trend over date alone is a single filled area', async ({ page }) => {
+        const state = await page.evaluate(() => {
+            const ac = window.siteTrend.areaChart;
+            return {
+                count: ac.dataseries.length,
+                fill: !!(ac.dataseries[0].lines && ac.dataseries[0].lines.fill),
+                legendShown: ac.flotOptions.legend.show,
+                interactive: !!document.querySelector('#trend-chart > .owa_chartLegendInteractive'),
+                everyPointNumeric: ac.dataseries[0].data.every((p) => typeof p[1] === 'number'),
+            };
+        });
+
+        expect(state.count).toBe(1);
+        expect(state.fill).toBe(true);
+
+        // No legend and no legend interaction for one line: naming the only
+        // series says nothing, and a control that can only turn itself off is
+        // worse than none.
+        expect(state.legendShown).toBe(false);
+        expect(state.interactive).toBe(false);
+
+        /*
+         * Values are NUMBERS. A result set carries metric values as strings and
+         * flot coerces them, so one line always drew correctly -- but the total
+         * of a broken-out trend is arithmetic over these, and string addition
+         * concatenates.
+         */
+        expect(state.everyPointNumeric).toBe(true);
+    });
+
+    /**
+     * The metric boxes under a trend are how you choose what it charts.
+     *
+     * They already ARE the metrics the widget measures, and the chart draws one
+     * of them -- so they are the list of what it could draw instead, and a
+     * separate picker beside them would be a second copy of the same list.
+     *
+     * No refetch: the widget queried every one of these, so which is plotted is
+     * a choice about data already on the page.
+     */
+    test('clicking a metric box charts that metric', async ({ page }) => {
+        const boxes = page.locator('#siteTrend-metrics .owa_metricInfobox');
+
+        await expect(boxes.first()).toBeVisible({ timeout: 20_000 });
+        expect(await boxes.count()).toBeGreaterThan(1);
+
+        const charted = await page.evaluate(() => window.siteTrend.areaChart.chartedMetric());
+
+        // The one being drawn is marked, and only it.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+        await expect(page.locator(
+            `#siteTrend-metrics .owa_metricInfobox[data-metric="${charted}"]`))
+            .toHaveClass(/owa_metricInfoboxCharted/);
+
+        // Clickable, because there is more than one to choose between.
+        await expect(page.locator('#siteTrend-metrics.owa_metricBoxesSelectable')).toHaveCount(1);
+
+        const others = (await boxes.evaluateAll((els) => els.map((e) => e.getAttribute('data-metric'))))
+            .filter((m) => m !== charted);
+
+        const target = others[0];
+        const urlBefore = await page.evaluate(() => window.siteTrend.resultSet.self);
+
+        await page.locator(`#siteTrend-metrics .owa_metricInfobox[data-metric="${target}"]`).click();
+
+        await expect.poll(async () => page.evaluate(
+            () => window.siteTrend.areaChart.chartedMetric()), { timeout: 10_000 }).toBe(target);
+
+        // The chart is drawing it, by its own label.
+        const label = await page.evaluate(() => window.siteTrend.areaChart.dataseries[0].label);
+        expect(label.length).toBeGreaterThan(0);
+        expect(label).not.toBe('Total');
+
+        // The marking moved with it, and did not multiply.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+        await expect(page.locator(
+            `#siteTrend-metrics .owa_metricInfobox[data-metric="${target}"]`))
+            .toHaveClass(/owa_metricInfoboxCharted/);
+
+        // ...and nothing was fetched to do it.
+        expect(await page.evaluate(() => window.siteTrend.resultSet.self)).toBe(urlBefore);
+    });
+
+    /**
+     * The chosen metric survives a refetch, and the boxes do not multiply.
+     *
+     * THE BUG THIS EXISTS FOR
+     *
+     * kpiBox built its container selector as `dom_id + ' > .metricInfobox...'`
+     * with no leading '#', which is a valid CSS TYPE selector -- an element
+     * called <siteTrend-metrics> -- so it matched nothing. The remove() before
+     * each rebuild was a silent no-op and every new result set appended ANOTHER
+     * full set of boxes beneath the old ones. Every granularity change, page
+     * change and site change doubled them.
+     *
+     * It went unnoticed because nothing read the boxes; marking one of them is
+     * what made two of them visible.
+     */
+    test('the metric boxes rebuild rather than accumulate', async ({ page }) => {
+        const boxes = page.locator('#siteTrend-metrics .owa_metricInfobox');
+
+        await expect(boxes.first()).toBeVisible({ timeout: 20_000 });
+
+        const before = await boxes.count();
+
+        await page.locator('.owa_chartGranularity').selectOption('month');
+
+        await expect.poll(async () => page.evaluate(
+            () => window.siteTrend.areaChart.xDimension), { timeout: 20_000 }).toBe('month');
+
+        // The same boxes, rebuilt -- not a second set under the first.
+        await expect(boxes).toHaveCount(before);
+        await expect(page.locator('#siteTrend-metrics .metricInfoboxesContainer')).toHaveCount(1);
+
+        // ...and the chart is still drawing the metric it was drawing.
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfoboxCharted')).toHaveCount(1);
+    });
+
+    /**
+     * No sparkline in a box that sits under a chart.
+     *
+     * The chart above already draws the shape over time, at a size you can read
+     * -- a thumbnail of it inside every box is the same information again, and
+     * these boxes are the control for choosing which metric that chart draws,
+     * which scans better as numbers than as a row of small graphs.
+     *
+     * Both sides, because "suppressed" only means something against somewhere
+     * they are still drawn: a metric-boxes widget with no chart above it keeps
+     * its sparklines, and that is what the inference has to get right.
+     */
+    test('metric boxes under a trend have no sparklines, standalone ones do',
+        async ({ page }) => {
+
+        await expect(page.locator('#siteTrend-metrics .owa_metricInfobox').first())
+            .toBeVisible({ timeout: 20_000 });
+
+        const underTrend = await page.evaluate(() => ({
+            boxes: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox').length,
+            sparklines: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox canvas').length,
+        }));
+
+        expect(underTrend.boxes).toBeGreaterThan(1);
+        expect(underTrend.sparklines).toBe(0);
+
+        /*
+         * ...and a widget of boxes with no chart above them is untouched.
+         *
+         * `goals`, not `traffic`: traffic used to carry three standalone
+         * metric-boxes widgets counting visits per medium, and it has three
+         * PIES of the same splits now -- the number stated beside the shape of
+         * it was the same fact twice. The goals report's Goal Performance
+         * panel is the remaining standalone one.
+         */
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
+        await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
+
+        const standalone = await page.evaluate(() => {
+            const rows = [];
+
+            document.querySelectorAll('.owa_reportGridItem').forEach((item) => {
+
+                const boxes = item.querySelectorAll('.owa_metricInfobox');
+
+                if (boxes.length && !item.querySelector('.owa_areaChart')) {
+                    rows.push({
+                        boxes: boxes.length,
+                        sparklines: item.querySelectorAll('.owa_metricInfobox canvas').length,
+                    });
+                }
+            });
+
+            return rows;
+        });
+
+        expect(standalone.length).toBeGreaterThan(0);
+
+        for (const row of standalone) {
+            expect(row.sparklines).toBe(row.boxes);
+        }
+    });
+
+    /**
+     * Every chart that draws more than one thing draws it in the same colours.
+     *
+     * A report shows traffic sources as a pie and the same sources as lines
+     * over time. Two palettes make the reader work out twice which colour is
+     * which, when the colour existed to save them that.
+     *
+     * Ten, because the pie draws up to six slices from what used to be a list
+     * of four -- so its fifth and sixth repeated its first and second -- and a
+     * trend needs seven.
+     */
+    test('the pie and the trend draw from one palette', async ({ page }) => {
+        const shared = await page.evaluate(() => ({
+            palette: window.OWA.chartColors,
+            trend: window.siteTrend.areaChart.options.colors,
+        }));
+
+        expect(shared.palette.length).toBeGreaterThanOrEqual(10);
+        expect(new Set(shared.palette).size).toBe(shared.palette.length);
+        expect(shared.trend).toEqual(shared.palette);
+
+        // The pie reads the same list. Asserted on a fresh instance rather than
+        // on a rendered chart, because a pie's own options are merged down onto
+        // whatever the widget passed it.
+        const pie = await page.evaluate(() => new window.OWA.pieChart().options.colors);
+
+        expect(pie).toEqual(shared.palette);
+    });
+
+    /**
+     * The metric boxes read in the order the QUERY asked for them.
+     *
+     * ORDER IS MEANING. A widget's first metric is the one its chart draws, and
+     * the boxes are how a reader picks a different one -- so a row that reads
+     * in a different order than the definition says makes "the first metric is
+     * charted" look arbitrary rather than like a rule.
+     *
+     * It did read differently. kpiBox walked `resultSet.aggregates`, which is
+     * keyed by the server and arrives in whatever order the reduction produced.
+     * Site Metrics asked for uniqueVisitors, pageViews, bounceRate,
+     * pagesPerVisit, visitDuration and drew uniqueVisitors, pageViews,
+     * visitDuration, bounceRate, pagesPerVisit.
+     *
+     * The order is recovered from resultSet.self -- the URL that produced this
+     * data carries `metrics` verbatim -- so it comes from the answer's own
+     * question and cannot drift from it.
+     */
+    test('the metric boxes read in the order the query asked for', async ({ page }) => {
+
+        await page.waitForSelector('.owa_trendCardMetrics .owa_metricInfobox', { timeout: 20_000 });
+
+        const state = await page.evaluate(() => {
+
+            const box = document.querySelector('.owa_trendCardMetrics');
+            const rs  = window.siteTrend.resultSet;
+
+            // The server's own ordering, before kpiBox reorders it.
+            const served = [];
+
+            for (const k in rs.aggregates) {
+                if (Object.prototype.hasOwnProperty.call(rs.aggregates, k)) {
+                    served.push(rs.aggregates[k].name);
+                }
+            }
+
+            return {
+                asked: new URL(rs.self).searchParams.get('metrics').split(','),
+                drawn: [...box.querySelectorAll('.owa_metricInfobox')]
+                    .map((b) => b.getAttribute('data-metric')),
+                served,
+                charted: [...box.querySelectorAll('.owa_metricInfoboxCharted')]
+                    .map((b) => b.getAttribute('data-metric')),
+            };
+        });
+
+        expect(state.drawn).toEqual(state.asked);
+
+        /*
+         * ...and this fixture actually EXERCISES the reordering. If the server
+         * happened to answer in the requested order, the assertion above would
+         * pass with kpiBox doing nothing at all -- so the case is only a case
+         * while these two differ.
+         */
+        expect(state.served,
+            'the server now answers in query order, so this test no longer proves anything -- '
+            + 'pick a widget whose metrics it still reorders')
+            .not.toEqual(state.asked);
+
+        // The consequence that matters: the charted metric is the first box.
+        expect(state.charted).toEqual([state.asked[0]]);
+    });
+
+    /**
+     * The y axis is labelled in the units of the metric being charted.
+     *
+     * A bounce rate is stored 0 to 1 and money in minor units, so an axis of
+     * bare numbers labelled a rate "0, 0, 0, 1" and a revenue figure in a
+     * currency nobody named. The metric's data_type is what the server formats
+     * its values with, so the axis is read from the same answer.
+     */
+    test('the y axis is labelled in the metric\'s own units', async ({ page }) => {
+        const ticks = async (metric) => page.evaluate((m) => {
+
+            window.siteTrend.areaChart.changeMetric(m);
+
+            return [...document.querySelectorAll('#trend-chart .flot-y-axis .flot-tick-label')]
+                .map((e) => e.textContent.trim());
+
+        }, metric);
+
+        // A count: thousands separated, no decimals.
+        //
+        // pageViews, not visits: Site Metrics is a trend CARD now and names its
+        // own metrics, which deliberately exclude visits. A card cannot chart
+        // what it does not measure.
+        const counts = await ticks('pageViews');
+        expect(counts.length).toBeGreaterThan(1);
+        expect(counts.every((t) => /^[\d,]+$/.test(t))).toBe(true);
+
+        // A rate: stored as a fraction, labelled as a percentage.
+        const rates = await ticks('bounceRate');
+        expect(rates.every((t) => t.endsWith('%'))).toBe(true);
+
+        /*
+         * ...and starting at zero. flot scales to the data, which is right
+         * until the data is flat: a bounce rate of zero all month gave an axis
+         * running -100% to 100%, because a series with no range has none to
+         * scale to.
+         */
+        expect(rates[0]).toBe('0%');
+        expect(rates.some((t) => t.startsWith('-'))).toBe(false);
+
+        // A duration: seconds read as a duration, not as a number.
+        const durations = await ticks('visitDuration');
+        expect(durations.every((t) => /^\d+:\d{2}(:\d{2})?$/.test(t))).toBe(true);
+
+        /*
+         * ...and a metric the widget does NOT measure is refused rather than
+         * drawn. changeMetric() redraws from the result set already in hand, so
+         * a name that is not in it read `.data_type` off an undefined cell and
+         * threw out of the redraw -- leaving the chart blank with nothing but a
+         * console line to say why.
+         */
+        const refused = await page.evaluate(
+            () => window.siteTrend.areaChart.changeMetric('visits'));
+
+        expect(refused).toBe(false);
+
+        // ...and the chart is still the one it was drawing.
+        expect(await page.evaluate(() => window.siteTrend.areaChart.chartedMetric()))
+            .toBe('visitDuration');
+    });
+
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
@@ -61,7 +513,22 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // drops and the menus fall back to bare <select>s.
         const chosen = page.locator('.chosen-container');
         expect(await chosen.count()).toBeGreaterThanOrEqual(1);
-        await expect(chosen.first()).toBeVisible();
+
+        /*
+         * A VISIBLE one, not the first one.
+         *
+         * Some of these are the constraint builder's dimension picker, which
+         * lives inside a collapsed .builder panel and is hidden until the
+         * Filter control opens it -- so whether .first() happens to be visible
+         * depends on which widget the dashboard draws first. It stopped being
+         * visible when Latest Visits moved to the top: it groups by seven
+         * dimensions, which is past the dimension control's cap, so its only
+         * chosen is the hidden one in its filter.
+         *
+         * What this test is actually about is that chosen ran at all, and one
+         * visible enhanced control says that without depending on the layout.
+         */
+        await expect(chosen.locator('visible=true').first()).toBeVisible();
     });
 
     test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
@@ -106,7 +573,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
     });
 
-    test('jqGrid renders the seeded page-title rows', async ({ page }) => {
+    test('jqGrid renders the seeded page rows', async ({ page }) => {
         // At least one grid with exactly the seeded rows. The "top pages" grid
         // has one row per seeded page title.
         const grids = page.locator('.ui-jqgrid');
@@ -124,17 +591,29 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const rows = page.locator('#top-pages tr.jqgrow');
         expect(await rows.count()).toBe(FIXTURE.expectedGridRows);
 
-        // The seeded titles must appear in the rendered grid text.
-        const gridText = await page.evaluate(() =>
-            [...document.querySelectorAll('#top-pages tr.jqgrow')]
-                .map((r) => r.innerText.replace(/\s+/g, ' ').trim())
-                .join('\n')
+        /*
+         * By PATH, not by title. Top Content is a grid-card grouped by pagePath
+         * -- one metric against one dimension, which is what a card is -- where
+         * it used to be a grid grouped by pageTitle with the path carried
+         * alongside it and hidden.
+         */
+        const cells = await page.evaluate(() =>
+            [...document.querySelectorAll('#top-pages tr.jqgrow td:first-child')]
+                .map((c) => c.innerText.trim())
         );
-        for (const title of FIXTURE.pageTitles) {
-            expect(gridText).toContain(title);
+        for (const path of FIXTURE.pagePaths) {
+            expect(cells).toContain(path);
         }
-        // Each seeded page got exactly 2 pageviews; the count must render.
-        expect(gridText).toMatch(/\b2\b/);
+        // ...and the metric column renders a figure beside each of them. The
+        // fixture's /about has exactly 2 page views.
+        const counts = await page.evaluate(() =>
+            [...document.querySelectorAll('#top-pages tr.jqgrow td:last-child')]
+                .map((c) => c.innerText.trim())
+        );
+
+        expect(counts).toHaveLength(FIXTURE.expectedGridRows);
+        expect(counts.every((c) => /^\d+$/.test(c))).toBe(true);
+        expect(counts).toContain('2');
     });
 
     /**
@@ -269,7 +748,20 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // OWA renders each sparkline into <p class="sparkline">; jquery-sparkline
         // 2.4.0 (the jQuery-3.x-clean replacement for the vendored 1.2.1) draws a
         // <canvas> inside it. Assert at least one sparkline painted a canvas.
+        //
+        // NOT on the dashboard any more. Its only boxes are the ones under the
+        // trend, and those deliberately draw no sparkline -- the chart above
+        // them already shows the shape over time. `goals` has a metric-boxes
+        // widget with no chart above it, which is where sparklines still
+        // belong and so where the library can still be pinned. (It was
+        // `traffic`; that report's standalone boxes became pies.)
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
         const sparkCanvases = page.locator('p.sparkline canvas');
+
+        await expect(sparkCanvases.first()).toBeAttached({ timeout: 20_000 });
         expect(await sparkCanvases.count()).toBeGreaterThanOrEqual(1);
 
         const dims = await page.evaluate(() => {
@@ -322,37 +814,95 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await group.first().locator('.ui-checkboxradio-icon').count()).toBe(0);
     });
 
-    test('the filter/constraint builder opens with button + selectmenu widgets', async ({ page }) => {
-        // Guard for the RISKIEST widgets: the result-set explorer's constraint
-        // builder uses jQuery-UI button() plus selectmenu. The 1.8.12 -> 1.13.3
-        // upgrade replaced the vendored ui.selectmenu (Nagel fork) with CORE
-        // jQuery-UI selectmenu (bundled since 1.11). The builder is built hidden and
-        // revealed by a .toggle-button; open it and assert both widget types
-        // rendered so a selectmenu regression can't slip by.
-        // (The .constraintPickerContainer itself collapses to height 0 -- its
-        // .builder child is display:none until toggled -- so anchor on the visible
-        // toggle-button, not the container.)
-        const builder = page.locator('.constraintPickerContainer').first();
-        const toggle = builder.locator('> .toggle-button');
+    test('the filter builder opens as a modal with pill controls', async ({ page }) => {
+        /*
+         * The builder is a DIALOG now, not a panel inside the bar.
+         *
+         * A filter row is wider than a quarter-row widget, so every in-flow
+         * position for it was a choice about which edge of the card to
+         * overflow. A dialog has no parent to overflow. That move is also why
+         * this test can no longer look for `.constraintPickerContainer >
+         * .builder`: jQuery UI lifts the element out of that container.
+         *
+         * The operator picker is chosen, not jQuery-UI selectmenu. It was the
+         * odd one out -- a square selectmenu between a rounded chosen pill and
+         * a bare input, three shapes for three parts of one sentence.
+         */
+        const toggle = page.locator('.constraintPickerContainer > .toggle-button').first();
         await expect(toggle).toBeVisible();
 
-        // The toggle button is a jQuery-UI button; clicking it reveals .builder.
-        await expect(toggle).toHaveClass(/ui-button/);
+        // The toggle is an ICON, not a jQuery-UI button -- it carries no label
+        // and no dropdown triangle, because it sits beside the dimension
+        // pickers and a second labelled box there reads as another dimension.
+        await expect(toggle).toHaveClass(/owa_filterToggle/);
+        await expect(toggle).not.toHaveClass(/ui-button/);
+        await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
+        await expect(toggle).toHaveText('');
+
+        /*
+         * ...at the size every other icon on the page is. It computed to 10px
+         * for a while: `.explorerTopControls .controlItem span` is (0,2,1) and
+         * the rule meant to set it was (0,2,0), so the bar's text size won and
+         * the funnel rendered at half the size of the nav's icons beside it.
+         */
+        await expect(toggle).toHaveCSS('font-size', '16px');
+
         await toggle.click();
-        await expect(builder.locator('> .builder')).toBeVisible();
 
-        // Add / Apply are jQuery-UI buttons inside the revealed builder.
-        await expect(builder.locator('.add-button.ui-button')).toBeVisible();
-        await expect(builder.locator('.apply-button.ui-button')).toBeVisible();
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(dialog).toBeVisible();
 
-        // Each constraint row's <select.operator-list> is enhanced by CORE
-        // selectmenu, which inserts a span.ui-selectmenu-button as its trigger and
-        // hides the native <select>. At least one row exists by default.
-        expect(await page.locator('span.ui-selectmenu-button').count()).toBeGreaterThanOrEqual(1);
-        // The underlying native select is hidden once selectmenu takes over.
-        const selectDisplay = await page.evaluate(() => {
-            const s = document.querySelector('select.operator-list');
-            return s ? getComputedStyle(s).display : null;
+        /*
+         * INSIDE .owa, which is load-bearing rather than cosmetic. jQuery UI
+         * appends a dialog to <body> by default, and every rule styling what is
+         * in here is written `.owa .owa_...` -- a lifted dialog matches none of
+         * them, which is exactly how both report-builder modals once shipped
+         * with browser defaults.
+         */
+        await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
+            .toHaveCount(1);
+
+        /*
+         * ONE action button at the foot, and a plus per row.
+         *
+         * There used to be "+ Add Filter" beside Apply, which read as a choice
+         * between two ways of finishing when only one of them finishes
+         * anything. Growing the filter is part of writing it, so the plus sits
+         * in the row it grows from.
+         */
+        await expect(dialog.locator('.add-button')).toHaveCount(0);
+        await expect(dialog.locator('.apply-button')).toBeVisible();
+        await expect(dialog.locator('li.constraintRow .constraintAddButton')).toHaveCount(1);
+
+        /*
+         * ...and Apply does not look like the pills it sits under. It was the
+         * same shape and height as the three selects above it, which made the
+         * one control that commits look like a fourth thing to pick from.
+         */
+        const applyBox = await dialog.locator('.apply-button')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+        const pillBox = await dialog.locator('.constraintOperatorPicker .chosen-single')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+        expect(applyBox).toBeGreaterThan(pillBox + 6);
+
+        // The plus grows the list, directly below the row it was pressed on.
+        await dialog.locator('li.constraintRow').first().locator('.constraintAddButton').click();
+        await expect(dialog.locator('li.constraintRow')).toHaveCount(2);
+
+        /*
+         * Both select controls are chosen, and there is no selectmenu left.
+         * A row has two: the dimension and the operator.
+         */
+        await expect(dialog.locator('.constraintRow').first().locator('.chosen-container'))
+            .toHaveCount(2);
+        await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
+
+        // The native <select> is hidden once chosen takes over -- and it stays
+        // in the DOM, which is what the apply handler reads.
+        const selectDisplay = await dialog.evaluate((d) => {
+            const sel = d.querySelector('select.operator-list');
+            return sel ? getComputedStyle(sel).display : null;
         });
         expect(selectDisplay).toBe('none');
     });
@@ -368,15 +918,27 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // Fix: pass an explicit width:'150px' to .chosen(). Unlike the secondary-
         // dimension picker (created visible), THIS one is created hidden -- so it is
         // the specific case that regressed. Assert it opens at a real, usable width.
-        const builder = page.locator('.constraintPickerContainer').first();
-        await builder.locator('> .toggle-button').click();
-        await expect(builder.locator('> .builder')).toBeVisible();
+        await page.locator('.constraintPickerContainer > .toggle-button').first().click();
+
+        // The builder is a dialog, so it is addressed as one -- see the modal
+        // test above.
+        const builder = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(builder).toBeVisible();
 
         const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
         await expect(dimChosen).toBeVisible();
-        // The enhanced container must be a real width, not the collapsed sliver.
+        /*
+         * The enhanced container must be a real width, not the collapsed sliver.
+         *
+         * Not 150 any more: the pill is CONTENT-sized now (the filter rows share
+         * the bar's pill styling, which is `width: auto`), so it is as wide as
+         * "Select..." rather than as wide as the explicit width chosen was given.
+         * That does not bring the sliver back -- the width comes from CSS laying
+         * out the text, not from chosen measuring a hidden <select> -- but it does
+         * mean the number to assert is "wider than a caret", not a fixed size.
+         */
         const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(contWidth).toBeGreaterThanOrEqual(100);
+        expect(contWidth).toBeGreaterThanOrEqual(50);
 
         // Open the dropdown and assert the dimension list is present, grouped, and
         // painted at the same usable width (chosen sizes .chosen-drop off the container).
@@ -389,11 +951,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
     });
 
-    test('selectmenu keeps the native select in sync with the selected operator', async ({ page }) => {
+    test('chosen keeps the native select in sync with the selected operator', async ({ page }) => {
         // Runtime guard (not just render): the constraint-apply path reads the
-        // chosen operator (owa.resultSetExplorer.js ~1638). The old Nagel fork used
-        // .selectmenu('value'); core jQuery-UI selectmenu has no such method and
-        // instead keeps the native <select> in sync, so the code now reads .val().
+        // chosen operator (owa.resultSetExplorer.js ~1638). Neither the old Nagel
+        // selectmenu fork nor chosen offers a "read the widget" method -- both keep
+        // the native <select> in sync, which is what the code reads with .val().
+        // The widget changed from selectmenu to chosen; this contract did not.
         // Pin that contract: the select carries a non-empty value.
         await page.locator('.constraintPickerContainer .toggle-button').first().click();
         const value = await page.evaluate(() => {
@@ -499,8 +1062,21 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const headsBefore = await page.locator('.ui-jqgrid-htable th').allInnerTexts();
         expect(headsBefore.map((h) => h.trim())).not.toContain('Date');
 
-        // Pick "Date" through the real chosen click path (open, click the Date result).
-        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
+        // Grouped by exactly one dimension to begin with, so the split below is
+        // the plus doing something rather than a second picker already present.
+        await expect(page.locator('.owa_dimSlot')).toHaveCount(1);
+
+        /*
+         * ADD a dimension, through the real chosen click path.
+         *
+         * The bar has one picker per dimension now, so the FIRST one holds
+         * browserType and choosing in it would REPLACE rather than add. The
+         * plus is what adds, which is the action this test is about -- it
+         * appends an empty picker, and choosing in that one splits the grid.
+         */
+        await page.locator('.owa_dimAdd').first().click();
+
+        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').last();
         await picker.click();
         await picker.locator('.chosen-results li.active-result', { hasText: /^Date$/ }).first().click();
 
@@ -510,6 +1086,10 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
                 { timeout: 15_000 })
             .toContain('Date');
         await expect(page.locator('tr.jqgrow')).toHaveCount(5);
+
+        // Added, not swapped: Browser Type is still a column.
+        expect((await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()))
+            .toContain('Browser Type');
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
         // and the dates are DISTINCT -- i.e. the grid really grouped by date.
@@ -532,15 +1112,17 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         //   - browserType contains "Chrome"  matches the row  -> grid keeps 1 row
         // Asserting BOTH directions proves the filter genuinely discriminates on the
         // constraint, not merely that Apply clears/reloads the grid.
-        const builder = page.locator('.constraintPickerContainer').first();
-        // Reveal the builder (toggle only when it's currently hidden -- a requery
-        // may leave it open, and a blind toggle would hide it again).
+        /*
+         * The builder is a MODAL, so it is opened and addressed as one. Applying
+         * closes it -- the rows it just changed are behind it -- so each pass
+         * through this test opens it again.
+         */
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
         const openBuilder = async () => {
-            const panel = builder.locator('> .builder');
-            if (!(await panel.isVisible())) {
-                await builder.locator('> .toggle-button').click();
+            if (!(await dialog.isVisible().catch(() => false))) {
+                await page.locator('.constraintPickerContainer > .toggle-button').first().click();
             }
-            await expect(panel).toBeVisible();
+            await expect(dialog).toBeVisible();
         };
         await openBuilder();
         await expect(page.locator('tr.jqgrow')).toHaveCount(1);
@@ -548,15 +1130,19 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // Fill the single default constraint row: browserType =@ <value>.
         const setConstraint = async (value) => {
             await page.evaluate((val) => {
-                const row = document.querySelector('.constraintPickerContainer .builder li.constraintRow');
+                const frame = [ ...document.querySelectorAll('.owa_filterDialogFrame') ]
+                    .find((f) => f.offsetParent !== null);
+                const row = frame.querySelector('li.constraintRow');
                 // dimension picker is a chosen widget -> set the <select> + resync
                 jQuery(row).find('.constraintDimensionPicker select.dim-list')
                     .val('browserType').trigger('chosen:updated');
-                // operator is a jQuery-UI selectmenu kept in sync via the native <select>
-                jQuery(row).find('.constraintOperatorPicker select.operator-list').val('=@');
+                // ...and so is the operator now. Same contract either way: the
+                // native <select> carries the value and the widget follows it.
+                jQuery(row).find('.constraintOperatorPicker select.operator-list')
+                    .val('=@').trigger('chosen:updated');
                 jQuery(row).find('.constraintValueField').val(val);
             }, value);
-            await builder.locator('.apply-button').click();
+            await dialog.locator('.apply-button').click();
         };
 
         // Non-matching value -> the grid must empty out.
@@ -564,7 +1150,8 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
 
         // Matching value -> the Chrome row must come back (proves it filtered on the
-        // constraint, not just wiped the grid). Re-open the builder (rebuilt on reload).
+        // constraint, not just wiped the grid). Re-open the dialog: applying closed
+        // it, and a requery rebuilds it.
         await openBuilder();
         await setConstraint('Chrome');
         await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
@@ -598,6 +1185,28 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         // The regression signature: NO checkboxradio radio-dot icon on the labels.
         expect(await control.locator('.ui-checkboxradio-icon').count()).toBe(0);
+    });
+
+    /**
+     * The Live View switch is the same kind of control as the metric-set tabs
+     * -- two segments, one of which is the one you are in -- and it sits on the
+     * same reports. Its selected segment carries the same blue for the same
+     * reason: jQuery-UI's base theme paints an active widget #007fff, which is
+     * a different blue from the one the chart above it draws its total in.
+     *
+     * Asserted on the OFF segment, which is checked at render. Clicking On
+     * would be the same assertion plus a polling timer.
+     */
+    test('the selected Live View segment carries the trend blue', async ({ page }) => {
+        const control = page.locator('.autoRefreshControl').first();
+        await expect(control).toBeVisible();
+
+        const selected = control.locator('label.ui-button.ui-state-active');
+        await expect(selected).toHaveCount(1);
+        await expect(selected).toHaveText('Off');
+
+        const bg = await selected.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(bg).toBe('rgb(24, 116, 205)');
     });
 
     test('turning Live View on polls for fresh data and off stops it', async ({ page }) => {

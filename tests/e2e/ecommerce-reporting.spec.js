@@ -60,6 +60,60 @@ test.describe('e-commerce reporting', () => {
         expect(tabIds).toContain('ecommerce');
     });
 
+    /**
+     * The tab labels come from three places -- two literals in MetricSets and
+     * whatever a site owner typed into a goal group's name -- and one of the
+     * literals is lower case. A row of tabs reading "Site Usage | e-commerce"
+     * shows its seams.
+     *
+     * Title-casing is a PRESENTATION rule (text-transform on the anchor), which
+     * is why this reads innerText: innerText is the rendered text and reflects
+     * text-transform, textContent is the source string and does not. Asserting
+     * on textContent here would pass whether the rule existed or not.
+     */
+    test('tab labels are title-cased however the label was written', async ({ page }) => {
+        await openReport(page, { reportId: 'browsers' });
+
+        const labels = await page.locator('#report-tabs > .report-tabs-nav-list li a')
+            .evaluateAll(els => els.map(e => e.innerText.trim()));
+
+        expect(labels).toContain('Site Usage');
+
+        // 'e-commerce' as MetricSets writes it; 'E-Commerce' as it must read.
+        expect(labels).toContain('E-Commerce');
+        expect(labels).not.toContain('e-commerce');
+    });
+
+    /**
+     * The selected tab is painted the same blue the trend beside it draws its
+     * total in. jQuery-UI's base theme paints an active widget #007fff, and two
+     * blues a few pixels apart read as an accident rather than a choice.
+     *
+     * #1874CD is OWA.areaChart's totalColor -- read off the chart rather than
+     * written down here, so the two cannot drift apart without this failing.
+     */
+    test('the active tab carries the trend blue', async ({ page }) => {
+        await openReport(page, { reportId: 'browsers' });
+
+        // Constructed, not read off the prototype: the defaults are assigned
+        // to `this.options` in the constructor body.
+        const trendBlue = await page.evaluate(
+            () => new OWA.areaChart().options.totalColor
+        );
+        expect(trendBlue.toLowerCase()).toBe('#1874cd');
+
+        const active = page.locator('#report-tabs > .report-tabs-nav-list li.ui-tabs-active');
+        await expect(active).toHaveCount(1);
+
+        const bg = await active.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(bg).toBe('rgb(24, 116, 205)');
+
+        // White on that blue -- .ui-state-active sets a colour on the LI and the
+        // anchor inside it carries its own, so both have to be said.
+        const fg = await active.locator('a').evaluate(el => getComputedStyle(el).color);
+        expect(fg).toBe('rgb(255, 255, 255)');
+    });
+
     test('the tabbed and untabbed report families stay as they are', async ({ page }) => {
         // Session-based -> tabs.
         await openReport(page, { reportId: 'browsers' });
@@ -148,5 +202,64 @@ test.describe('e-commerce reporting', () => {
         }
 
         expect(errors).toEqual([]);
+    });
+
+    /**
+     * A money axis is labelled in money, in the install's own currency.
+     *
+     * Two things this pins, and the second is why the first was wrong for a
+     * while. Revenue is stored in MINOR units and the chart's formatValue is
+     * what divides it by a hundred -- dropping that call plotted 6300 for
+     * $63.00, which nothing noticed until an axis put a unit on it. And the
+     * symbol comes from the server's own formatting of the metric: which
+     * currency an install uses is a setting the browser cannot see.
+     */
+    test('a currency trend is labelled in currency', async ({ page }) => {
+        await login(page);
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=ecommerce&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            { waitUntil: 'networkidle' });
+
+        // The trend on this report, whichever variable it was built into.
+        await expect.poll(async () => page.evaluate(() => !!Object.keys(window).find(
+            (k) => window[k] && window[k].areaChart
+                && typeof window[k].areaChart.chartedMetric === 'function')),
+            { timeout: 20_000 }).toBe(true);
+
+        const money = await page.evaluate(() => {
+
+            const key = Object.keys(window).find(
+                (k) => window[k] && window[k].areaChart
+                    && typeof window[k].areaChart.chartedMetric === 'function');
+
+            const rse = window[key];
+
+            const currency = Object.keys(rse.resultSet.aggregates).find(
+                (m) => rse.resultSet.aggregates[m].data_type === 'currency');
+
+            rse.areaChart.changeMetric(currency);
+
+            return {
+                metric: currency,
+                aggregate: rse.resultSet.aggregates[currency].formatted_value,
+                ticks: [...document.querySelectorAll('.flot-y-axis .flot-tick-label')]
+                    .map((e) => e.textContent.trim()),
+                plotted: rse.areaChart.dataseries[0].data.map((p) => p[1]),
+            };
+        });
+
+        expect(money.metric).toBeTruthy();
+        expect(money.ticks.length).toBeGreaterThan(1);
+
+        // The symbol the server used, on the side it used it.
+        const symbol = money.aggregate.replace(/[0-9., -]/g, '');
+        expect(symbol.length).toBeGreaterThan(0);
+        expect(money.ticks.every((t) => t.includes(symbol))).toBe(true);
+
+        // ...and in MAJOR units: nothing plotted may exceed the period total,
+        // which is the check that catches an off-by-one-hundred.
+        const total = parseFloat(money.aggregate.replace(/[^0-9.]/g, ''));
+        expect(Math.max(...money.plotted)).toBeLessThanOrEqual(total + 0.001);
     });
 });

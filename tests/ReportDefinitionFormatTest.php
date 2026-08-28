@@ -849,6 +849,184 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertArrayNotHasKey( 'definitely-not-a-report', $registry );
     }
 
+    // ------------------------------------------------------------------
+    // The trend card
+    // ------------------------------------------------------------------
+
+    /** A trend card, with two metrics of its own. */
+    private static function trendCard(): array
+    {
+        return array(
+            'title'   => 'Cards',
+            'widgets' => array( array(
+                'type'        => 'trend-card',
+                'id'          => 'card',
+                'container'   => 'card-chart',
+                'title'       => 'Visits',
+                'chartMetric' => 'visits',
+                'query'       => array(
+                    'metrics'    => 'visits,uniqueVisitors',
+                    'dimensions' => 'date',
+                    'sort'       => 'date',
+                ),
+            ) ),
+        );
+    }
+
+    /**
+     * A card's boxes are ABOVE its chart, which is the type's whole shape.
+     *
+     * A full-width trend leads with the chart, because there the chart IS the
+     * thing and the totals under it are detail. Half a row is not enough chart
+     * for that to be true: what a reader takes from a card is the figure, and
+     * the plot is the shape behind it.
+     *
+     * Asserted on the ORDER the two containers appear in the markup, because
+     * that is the whole of what "above" means here -- both are block elements
+     * in one column.
+     */
+    public function testATrendCardDrawsItsBoxesAboveItsChart(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), array() );
+
+        $boxes = strpos( $html, 'id="card-metrics"' );
+        $chart = strpos( $html, 'id="card-chart"' );
+
+        $this->assertNotFalse( $boxes, 'the card drew no metric boxes' );
+        $this->assertNotFalse( $chart, 'the card drew no chart container' );
+
+        $this->assertLessThan( $chart, $boxes,
+            'a trend card reads top down from the number: boxes, then the shape behind them' );
+
+        // ...and a full-width trend is still the other way round.
+        $definition = self::trendCard();
+        $definition['widgets'][0]['type'] = 'trend';
+
+        $plain = $this->renderedWith( $definition, array() );
+
+        $this->assertGreaterThan( strpos( $plain, 'id="card-chart"' ),
+            strpos( $plain, 'id="card-metrics"' ),
+            'a full-width trend leads with its chart' );
+    }
+
+    /**
+     * The boxes carry the class the borders are removed by.
+     *
+     * The zero borders ARE the type's visual difference -- two bordered boxes
+     * stacked above a plot read as three separate panels -- and CSS cannot
+     * reach them without something to select on.
+     */
+    public function testATrendCardsBoxesAreMarkedAsACards(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), array() );
+
+        $this->assertStringContainsString( 'class="owa_trendCardMetrics"', $html );
+
+        $plain = self::trendCard();
+        $plain['widgets'][0]['type'] = 'trend';
+
+        $this->assertStringNotContainsString( 'owa_trendCardMetrics',
+            $this->renderedWith( $plain, array() ) );
+    }
+
+    /**
+     * A card never inherits a metric set, even where every other widget does.
+     *
+     * Rendered against three sets, which is the case that would otherwise
+     * replace its metrics three times over -- and a card measuring "however the
+     * report is being measured" is a card measuring something its author did
+     * not choose.
+     */
+    public function testATrendCardKeepsItsOwnMetricsAcrossEverySet(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( self::trendCard(), self::threeSets() );
+
+        $metrics = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
+            $metrics[] = $q['query']['metrics'];
+        }
+
+        $this->assertNotEmpty( $metrics );
+
+        foreach ( $metrics as $m ) {
+            $this->assertSame( 'visits,uniqueVisitors', $m,
+                'a metric set replaced a trend card\'s own metrics' );
+        }
+    }
+
+    /**
+     * ...and a card with none of its own asks for none, rather than silently
+     * borrowing the set.
+     *
+     * This is the state CustomReports::OWN_METRIC_TYPES refuses on save. A
+     * hand-written definition can still reach the renderer, and what it must
+     * NOT do there is quietly become a different widget.
+     */
+    public function testATrendCardWithNoMetricsBorrowsNone(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = self::trendCard();
+
+        unset( $definition['widgets'][0]['query']['metrics'] );
+        unset( $definition['widgets'][0]['chartMetric'] );
+
+        $html = $this->renderedWith( $definition, self::threeSets() );
+
+        foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
+            $this->assertSame( '', (string) $q['query']['metrics'] );
+        }
+    }
+
+    /**
+     * A card charts its first metric when it names no chartMetric.
+     *
+     * The blanket rule is the opposite -- a trend that names none draws no
+     * chart, because half the shipped trends rely on that and a fallback would
+     * start drawing charts on thirty-two reports. No trend card predates the
+     * type, so there is nothing a fallback could change, and a widget whose
+     * whole shape is a chart should not render as an empty box because its
+     * author left one field alone.
+     */
+    public function testATrendCardChartsItsFirstMetricByDefault(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = self::trendCard();
+
+        unset( $definition['widgets'][0]['chartMetric'] );
+
+        $html = $this->renderedWith( $definition, array() );
+
+        $charted = array();
+
+        foreach ( \OWA\Tests\ReportRenderHarness::commandsIn( $html ) as $c ) {
+            $charted[] = $c;
+        }
+
+        $this->assertNotEmpty(
+            array_filter( $charted, function ( $c ) { return strpos( $c, 'makeAreaChart' ) !== false; } ),
+            'a trend card with no chartMetric drew no chart' );
+
+        // ...and a full-width trend still does not.
+        $plain = $definition;
+        $plain['widgets'][0]['type'] = 'trend';
+
+        $plainCommands = \OWA\Tests\ReportRenderHarness::commandsIn( $this->renderedWith( $plain, array() ) );
+
+        $this->assertSame( array(),
+            array_values( array_filter( $plainCommands,
+                function ( $c ) { return strpos( $c, 'makeAreaChart' ) !== false; } ) ),
+            'a trend that names no chartMetric must still draw no chart' );
+    }
+
     /** Render a definition against a given set of metric sets. */
     private function renderedWith( array $definition, array $metricSets, array $params = array() ): string
     {
@@ -2035,6 +2213,205 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertStringContainsString( 'owa_moreLinks', $html,
             'this widget type dropped its "more" link' );
+    }
+
+    // ------------------------------------------------------------------
+    // The two table types, across the shipped definitions
+    // ------------------------------------------------------------------
+
+    /** Every shipped definition, as file => decoded. */
+    private function shippedDefinitions(): array
+    {
+        $definitions = array();
+
+        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+
+            $decoded = json_decode( (string) file_get_contents( $file ), true );
+
+            if ( is_array( $decoded ) ) {
+
+                $definitions[ basename( $file ) ] = $decoded;
+            }
+        }
+
+        $this->assertNotEmpty( $definitions, 'no shipped report definitions were found to check' );
+
+        return $definitions;
+    }
+
+    /** [file, widget] for every widget of these types. */
+    private function shippedWidgets( array $types ): array
+    {
+        $found = array();
+
+        foreach ( $this->shippedDefinitions() as $file => $definition ) {
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+                if ( is_array( $widget ) && in_array( $widget['type'] ?? '', $types, true ) ) {
+
+                    $found[] = array( $file, $widget );
+                }
+            }
+        }
+
+        return $found;
+    }
+
+    /** A comma string as trimmed, non-empty names. */
+    private function fieldNames( $value ): array
+    {
+        return array_values( array_filter( array_map( 'trim',
+            explode( ',', (string) $value ) ) ) );
+    }
+
+    /**
+     * A shipped card obeys the rule a user-built one does.
+     *
+     * The builder enforces it through CustomReports, which shipped definitions
+     * never pass through -- so without this, a hand-written card could carry
+     * three metrics and render as a cramped table with no controls, which is
+     * the shape the type exists to prevent.
+     */
+    public function testEveryShippedCardShowsOneMetricAgainstOneDimension(): void
+    {
+        $wrong = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $query = (array) ( $widget['query'] ?? array() );
+
+            $metrics    = $this->fieldNames( $query['metrics'] ?? '' );
+            $dimensions = $this->fieldNames( $query['dimensions'] ?? '' );
+
+            if ( count( $metrics ) !== 1 || count( $dimensions ) !== 1 ) {
+
+                $wrong[] = sprintf( '%s:%s has %d metric(s) and %d dimension(s)',
+                    $file, $widget['id'] ?? '?', count( $metrics ), count( $dimensions ) );
+            }
+        }
+
+        $this->assertSame( array(), $wrong,
+            "A grid-card shows one metric against one dimension and draws no controls.
+"
+          . "These ship as cards but ask for something else:
+  "
+          . implode( "
+  ", $wrong ) );
+    }
+
+    /**
+     * A narrow grid that COULD be a card is one.
+     *
+     * The ratchet, not just a tidy-up. A grid draws a dimension picker and a
+     * filter above it, and every control there costs width -- at half the row
+     * the bar stopped fitting and the widget grew a horizontal scrollbar. So a
+     * grid narrower than full width is only defensible when it needs the
+     * columns a card cannot give it.
+     *
+     * Widgets with NO metrics of their own are excluded on purpose: they
+     * inherit the report's metric set, which is several metrics, so they are
+     * not single-field widgets. traffic.json's three are the case.
+     */
+    public function testNoNarrowGridIsLeftThatCouldBeACard(): void
+    {
+        $convertible = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $span = \OWA\Core\ReportGrid::colspan( $widget );
+
+            if ( $span >= \OWA\Core\ReportGrid::COLUMNS ) {
+
+                continue;   // full width: it has room for its controls
+            }
+
+            $query = (array) ( $widget['query'] ?? array() );
+
+            if ( count( $this->fieldNames( $query['metrics'] ?? '' ) ) === 1
+              && count( $this->fieldNames( $query['dimensions'] ?? '' ) ) === 1 ) {
+
+                $convertible[] = sprintf( '%s:%s (colspan %d)',
+                    $file, $widget['id'] ?? '?', $span );
+            }
+        }
+
+        $this->assertSame( array(), $convertible,
+            "These ship as narrow grids but ask for one metric against one dimension,
+"
+          . "so they should be grid-cards -- a narrow grid draws a control bar it has
+"
+          . "no room for:
+  " . implode( "
+  ", $convertible ) );
+    }
+
+    /**
+     * ...and the four that were converted really are cards now, named.
+     *
+     * Named rather than counted, because a count would stay green if one were
+     * converted and another quietly turned back.
+     */
+    public function testTheConvertedWidgetsAreCards(): void
+    {
+        $expected = array(
+            'action-tracking.json' => 'actionsByGroup',
+            'content.json'         => 'toppagetypes',
+            'ecommerce.json'       => 'productName',
+            'visitors.json'        => 'browserTypes',
+        );
+
+        $cards = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $cards[ $file ][] = $widget['id'] ?? '?';
+        }
+
+        foreach ( $expected as $file => $id ) {
+
+            $this->assertContains( $id, $cards[ $file ] ?? array(),
+                "$file:$id should be a grid-card" );
+        }
+    }
+
+    /**
+     * A card is a NARROW table, wherever it ships.
+     *
+     * The rule this replaces was "the converted ones kept their half width",
+     * which was true of the four converted in one go and stopped being true the
+     * moment a report was laid out deliberately: Content's two are a quarter
+     * each now, beside each other.
+     *
+     * What holds regardless is the type's own meaning. A card shows one metric
+     * against one dimension and draws no controls; at full width it would be a
+     * table with its controls missing, which is the thing `grid` is for.
+     */
+    public function testEveryShippedCardIsNarrowerThanTheRow(): void
+    {
+        $wide = array();
+
+        foreach ( $this->shippedWidgets( array( 'grid-card' ) ) as $entry ) {
+
+            list( $file, $widget ) = $entry;
+
+            $span = \OWA\Core\ReportGrid::colspan( $widget );
+
+            if ( $span > \OWA\Core\ReportGrid::COLUMNS / 2 ) {
+
+                $wide[] = sprintf( '%s:%s (colspan %d)', $file, $widget['id'] ?? '?', $span );
+            }
+        }
+
+        $this->assertSame( array(), $wide,
+            "A grid-card draws no controls, so at more than half a row it is a table with\n"
+          . "its controls missing -- which is what `grid` is for:\n  " . implode( "\n  ", $wide ) );
     }
 
     public static function widgetTypeProvider(): array

@@ -103,7 +103,6 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
         OWA.items.domstreams = new OWA.resultSetExplorer( 'domstreams-grid' );
         OWA.items.domstreams.options.grid.showExplorerControls = false;
-        OWA.items.domstreams.options.grid.showRowNumbers = false;
 
         // The Play cell carries the player's parameters as its value; this is
         // what turns them into a link.

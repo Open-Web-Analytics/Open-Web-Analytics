@@ -110,6 +110,29 @@ const E2E_GOAL_STEPS  = [
 // (tests/e2e/admin-actions.spec.js) can drive the write flows that need
 // edit_users / edit_sites / edit_settings / edit_modules capabilities. The
 // analyst user above cannot reach any of those. Throwaway LOCAL creds only.
+/*
+ * A custom report belonging to SOMEBODY ELSE.
+ *
+ * Its owner is a user id that never signs in, which is the whole point: editing
+ * somebody else's report is governed by a capability, and a test that builds a
+ * report and then opens it is always looking at its own, where ownership alone
+ * is enough. That blind spot hid a real bug -- the capability was asked before
+ * the request had authenticated, so it was always false, and an admin opening
+ * another author's report got no edit control.
+ */
+const E2E_OTHERS_REPORT_OWNER = 'owa-e2e-someone-else@example.test';
+const E2E_OTHERS_REPORT_NAME  = 'E2E Owned By Someone Else';
+
+/*
+ * A custom report whose trend is BROKEN OUT by a dimension.
+ *
+ * No shipped report has one: Content's trend became a card, and a card cannot
+ * be broken out. The feature is still reachable -- any author can build one --
+ * so it is covered here rather than by giving a shipped report a shape nobody
+ * asked it to have.
+ */
+const E2E_BREAKDOWN_REPORT_NAME = 'E2E Broken Out Trend';
+
 const E2E_ADMIN_ID    = 'owa-e2e-admin@example.test';
 const E2E_ADMIN_PASS  = 'e2e-Admin-Pass-1!';       // local throwaway fixture creds
 const E2E_ADMIN_ROLE  = 'admin';                   // full edit_* capabilities
@@ -317,8 +340,147 @@ function seed(): array
     //    aggregates exist for.
     $out['domstreams_seeded'] = seedDomstreams();
 
+    // 8. A custom report owned by a user who never signs in, so a test can open
+    //    somebody ELSE'S report. See E2E_OTHERS_REPORT_OWNER.
+    $out['others_report_seeded'] = seedOthersReport();
+
+    // 9. A custom report with a broken-out trend, for the companion-grid specs.
+    $out['breakdown_report_seeded'] = seedBreakdownReport();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * One stored custom report, owned by a user nobody logs in as.
+ *
+ * Written through CustomReports::save() rather than as a raw row, so it is
+ * validated the way a real one is and cannot drift from what the builder
+ * produces.
+ *
+ * Idempotent by NAME: re-seeding reuses the existing row rather than piling up
+ * a copy per run.
+ */
+function seedOthersReport(): array
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_OTHERS_REPORT_NAME) {
+
+            return ['id' => $row['id'], 'owner' => $row['user_id'], 'reused' => true];
+        }
+    }
+
+    $result = \OWA\Module\Base\Classes\CustomReports::save([
+        'name'       => E2E_OTHERS_REPORT_NAME,
+        'definition' => [
+            'title'   => E2E_OTHERS_REPORT_NAME,
+            'widgets' => [[
+                'type'      => 'grid',
+                'id'        => 'pages',
+                'container' => 'pages',
+                'title'     => 'Pages',
+                'query'     => [
+                    'metrics'    => 'pageViews',
+                    'dimensions' => 'pagePath',
+                    'sort'       => 'pageViews-',
+                ],
+            ]],
+        ],
+    ], E2E_OTHERS_REPORT_OWNER);
+
+    return ['id' => $result['id'] ?? '', 'owner' => E2E_OTHERS_REPORT_OWNER,
+            'error' => $result['error'] ?? ''];
+}
+
+/**
+ * One stored custom report whose trend is broken out by page path.
+ *
+ * Owned by the admin fixture user, so the specs that drive it can also edit it
+ * if they need to. Idempotent by name, like the one above.
+ */
+function seedBreakdownReport(): array
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_BREAKDOWN_REPORT_NAME) {
+
+            return ['id' => $row['id'], 'reused' => true];
+        }
+    }
+
+    $result = \OWA\Module\Base\Classes\CustomReports::save([
+        'name'       => E2E_BREAKDOWN_REPORT_NAME,
+        'definition' => [
+            'title'   => E2E_BREAKDOWN_REPORT_NAME,
+            'widgets' => [[
+                'type'        => 'trend',
+                'id'          => 'trend',
+                'container'   => 'trend-chart',
+                'chartMetric' => 'pageViews',
+                'query'       => [
+                    // date first is the axis, pagePath second is the breakdown:
+                    // a line per page over the filled total, and the grid of
+                    // those pages underneath.
+                    'metrics'    => 'visits,pageViews',
+                    'dimensions' => 'date,pagePath',
+                    'sort'       => 'date',
+                ],
+            ]],
+        ],
+    ], E2E_ADMIN_ID);
+
+    return ['id' => $result['id'] ?? '', 'error' => $result['error'] ?? ''];
+}
+
+/** Remove the broken-out-trend fixture, by name. */
+function unseedBreakdownReport(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_BREAKDOWN_REPORT_NAME) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
+            $removed++;
+        }
+    }
+
+    return $removed;
+}
+
+/** Remove the somebody-else's-report fixture, by name. */
+function unseedOthersReport(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_OTHERS_REPORT_NAME) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
+            $removed++;
+        }
+    }
+
+    return $removed;
 }
 
 /**
@@ -610,6 +772,8 @@ function teardown(): array
     $removed['owa_referer'] = 'fixture rows cleared';
 
     $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
+    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport() )
+        . ' fixture report(s) removed';
 
     /*
      * The fixture goal. Goals are a per-site SETTING, not rows, so the table

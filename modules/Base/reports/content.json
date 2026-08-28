@@ -3,56 +3,43 @@
     "metrics": "visits,pageViews,bounceRate",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "trend",
             "container": "trend-chart",
             "query": {
                 "dimensions": "date",
-                "sort": "date"
+                "sort": "date",
+                "metrics": "pageViews,pagesPerVisit,bounceRate"
             },
             "chartMetric": "pageViews",
             "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages."
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "toppages",
             "container": "top-pages",
-            "title": "Top Pages",
+            "title": "Pages",
             "colspan": 6,
             "query": {
                 "metrics": "visits",
-                "dimensions": "pageTitle,pagePath",
-                "sort": "visits-",
-                "resultsPerPage": 25
+                "dimensions": "pageTitle",
+                "sort": "visits-"
             },
-            "link": {
-                "linkColumn": "pageTitle",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "pagePath"
-            },
-            "excludeColumns": [
-                "pagePath"
-            ],
             "more": {
                 "reportId": "pages",
                 "label": "View Full Report \u00bb"
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "toppagetypes",
             "container": "top-pagetypes",
-            "title": "Top Page Types",
-            "colspan": 6,
+            "title": "Page Types",
+            "colspan": 3,
             "query": {
                 "metrics": "visits",
                 "dimensions": "pageType",
-                "sort": "visits-",
-                "resultsPerPage": 25
+                "sort": "visits-"
             },
             "link": {
                 "linkColumn": "pageType",
@@ -69,9 +56,54 @@
             }
         },
         {
+            "type": "grid-card",
+            "id": "entrypages",
+            "container": "entry-pages",
+            "title": "Entry Pages",
+            "query": {
+                "metrics": "visits",
+                "dimensions": "entryPagePath",
+                "sort": "visits-"
+            },
+            "more": {
+                "reportId": "entry-pages",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "exitpages",
+            "container": "exit-pages",
+            "title": "Exit Pages",
+            "query": {
+                "metrics": "visits",
+                "dimensions": "exitPagePath",
+                "sort": "visits-"
+            },
+            "more": {
+                "reportId": "exit-pages",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "clickedelements",
+            "container": "clicked-elements",
+            "title": "Most Clicked Elements",
+            "query": {
+                "metrics": "domClicks",
+                "dimensions": "domElementId",
+                "sort": "domClicks-"
+            },
+            "more": {
+                "reportId": "clicks",
+                "label": "View Full Report \u00bb"
+            }
+        },
+        {
             "type": "report-links",
             "title": "Content Reports",
-            "colspan": 6,
+            "colspan": 3,
             "links": [
                 {
                     "reportId": "domstreams",

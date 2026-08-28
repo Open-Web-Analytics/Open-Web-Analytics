@@ -457,7 +457,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $entities = array();
 
         // reduce metric entities. this will give us the fact tables to choose from.
-        foreach ($metric_imps as $mimp) {
+        $reconciled = array();
+
+        foreach ($metric_imps as $metric_name => $mimp) {
 
             if (empty($entities)) {
                 $entities = $mimp;
@@ -466,8 +468,28 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $entities = $this->reduceTables($mimp, $entities);
 
             if (empty($entities)) {
-                return $this->addError('illegal metric combination');
+
+                /*
+                 * A REQUEST error, and it names the metric that broke the set.
+                 *
+                 * Every metric can be computed from one or more fact tables,
+                 * and a query is answered from ONE of them -- so a combination
+                 * is only askable if the metrics share a table. `domClicks`
+                 * comes from the click table alone; `visits` from the session
+                 * or the request; there is no table that has both, so asking
+                 * for them together is not a thin result, it is not a question.
+                 *
+                 * It used to be addError(), which puts it with the routine
+                 * misses that reports swallow -- so an impossible set came back
+                 * as an empty or nonsensical report with nothing said. A
+                 * request error is refused and explained, like an unknown
+                 * constraint name.
+                 */
+                return $this->addRequestError( self::incompatibleMessage(
+                    $metric_name, $reconciled, 'metric' ) );
             }
+
+            $reconciled[] = $metric_name;
         }
 
         \OWA\Core\CoreAPI::debug('post-reduce set of entities to choose from: '.print_r($entities, true));
@@ -547,7 +569,21 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
 
             if ($i === $entity_count) {
-                $this->addError('illegal dimension combination: '.$dimension);
+
+                /*
+                 * Same shape as the metric case above, and the same reason for
+                 * being a REQUEST error: the base entity has to satisfy every
+                 * metric AND every dimension, and constraints contribute their
+                 * dimensions to this list too. When no fact table is related to
+                 * all of them the question cannot be answered -- and answering
+                 * it with an empty grid and a debug line meant the reader saw a
+                 * report that looked merely uneventful.
+                 */
+                $this->addRequestError( self::incompatibleMessage(
+                    $dimension,
+                    array_merge( array_keys( (array) $metric_imps ),
+                        array_diff( $dims, array( $dimension ) ) ),
+                    'dimension' ) );
             } else {
                 $i++;
             }
@@ -690,6 +726,172 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function reduceTables($new, $old) {
 
         return array_intersect($new, $old);
+    }
+
+    /**
+     * Why a field cannot join the ones already reconciled.
+     *
+     * NAMES BOTH SIDES. "This combination cannot be queried" tells a reader
+     * nothing they can act on; "domClicks cannot be combined with visits,
+     * uniqueVisitors" tells them which one to take out. The offender is the
+     * field being added when the set of possible fact tables became empty, and
+     * the others are what it has to be compatible with.
+     *
+     * @param string $offender
+     * @param array  $with fields already reconciled
+     * @param string $kind metric|dimension
+     * @return string
+     */
+    public static function incompatibleMessage( $offender, array $with, $kind ) {
+
+        $with = array_values( array_filter( array_unique( $with ) ) );
+
+        if ( ! $with ) {
+
+            return sprintf( '"%s" cannot be queried here.', $offender );
+        }
+
+        return sprintf(
+            'Illegal combination: the %s "%s" cannot be combined with %s. Each of these is '
+          . 'recorded in a different place, and one query is answered from one fact table -- '
+          . 'so no query can return them together. Remove one side or put them in separate '
+          . 'widgets.',
+            $kind,
+            $offender,
+            '"' . implode( '", "', $with ) . '"' );
+    }
+
+    /**
+     * The first field that makes a combination impossible, and what it clashes
+     * with -- or null when the combination is fine.
+     *
+     * Fields are added in order, so the offender is the one being added when
+     * the possible fact tables run out. That is the same order the query engine
+     * reduces in, which is what makes the answer match what would actually
+     * happen.
+     *
+     * @param array $metrics
+     * @param array $dimensions
+     * @return array|null {name, with, kind}
+     */
+    public function firstIncompatible( array $metrics, array $dimensions = array() ) {
+
+        $seen = array();
+
+        foreach ( array( 'metric' => $metrics, 'dimension' => $dimensions ) as $kind => $fields ) {
+
+            foreach ( $fields as $field ) {
+
+                $field = trim( (string) $field );
+
+                if ( $field === '' ) {
+
+                    continue;
+                }
+
+                $candidate = $seen;
+                $candidate[ $kind ][] = $field;
+
+                $ok = $this->compatibleEntities(
+                    isset( $candidate['metric'] ) ? $candidate['metric'] : array(),
+                    isset( $candidate['dimension'] ) ? $candidate['dimension'] : array() );
+
+                if ( ! $ok ) {
+
+                    return array(
+                        'name' => $field,
+                        'kind' => $kind,
+                        'with' => array_merge(
+                            isset( $seen['metric'] ) ? $seen['metric'] : array(),
+                            isset( $seen['dimension'] ) ? $seen['dimension'] : array() ),
+                    );
+                }
+
+                $seen = $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The fact tables that could answer for ALL of these metrics at once.
+     *
+     * Empty means the combination cannot be queried -- there is no one table
+     * holding them, so no single query can return them together.
+     *
+     * The same reduction getResults() performs, exposed so it can be ASKED
+     * rather than discovered by running a query and getting nothing. The
+     * custom report builder uses it twice: to refuse an impossible set at save
+     * time, and to stop offering metrics that would make one.
+     *
+     * Dimensions narrow it further, because the base entity has to be related
+     * to every one of them as well -- which is the second reduction
+     * getResults() performs, and the reason a dimension can be as impossible as
+     * a metric. Constraint dimensions belong in the same list: the engine folds
+     * them in with getDimensionsFromConstraints().
+     *
+     * @param array $names metric names
+     * @param array $dimensions dimension names, including any from constraints
+     * @return array entity names, empty when the combination is illegal
+     */
+    public function compatibleEntities( array $names, array $dimensions = array() ) {
+
+        $imps = array();
+
+        foreach ( $names as $name ) {
+
+            $name = trim( (string) $name );
+
+            if ( $name === '' ) {
+
+                continue;
+            }
+
+            $imps = array_merge( $this->getMetricEntities( $name ), $imps );
+        }
+
+        $entities = array();
+
+        foreach ( $imps as $mimp ) {
+
+            if ( empty( $entities ) ) {
+
+                $entities = $mimp;
+            }
+
+            $entities = $this->reduceTables( $mimp, $entities );
+
+            if ( empty( $entities ) ) {
+
+                return array();
+            }
+        }
+
+        $entities = array_values( array_unique( $entities ) );
+
+        foreach ( $dimensions as $dimension ) {
+
+            $dimension = trim( (string) $dimension );
+
+            if ( $dimension === '' ) {
+
+                continue;
+            }
+
+            $entities = array_values( array_filter( $entities,
+                function ( $entity ) use ( $dimension ) {
+
+                    return (bool) $this->isDimensionRelated( $dimension, $entity );
+                } ) );
+
+            if ( empty( $entities ) ) {
+
+                return array();
+            }
+        }
+
+        return $entities;
     }
 
     function getDimensionForeignKey($dimension, $entity) {
@@ -1847,11 +2049,23 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->resultSet->errors = $this->errors;
         $this->resultSet->request_errors = $this->request_errors;
 		
-		// set related dimensions
-        $this->resultSet->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
-        
-        // set related metrics
-        $this->resultSet->setRelatedMetrics( $this->getAllRelatedMetrics( $bm ) );
+		/*
+		 * Related dimensions and metrics, WHEN there is a base entity.
+		 *
+		 * There is not when the combination asked for is impossible: nothing
+		 * serves clicks and visits at once, so the reduction produces no
+		 * entity and $bm is null. The request error saying so has just been
+		 * put on the result set two lines up -- and then this dereferenced the
+		 * null and the whole request died as a 500 with an empty body, which
+		 * is how an answerable "these cannot be asked for together" became an
+		 * unexplained failure.
+		 *
+		 * Empty is the honest answer: with no table chosen, nothing is related
+		 * to it. The reader gets the request error instead.
+		 */
+        $this->resultSet->setRelatedDimensions( $bm ? $this->getAllRelatedDimensions( $bm ) : array() );
+
+        $this->resultSet->setRelatedMetrics( $bm ? $this->getAllRelatedMetrics( $bm ) : array() );
 
         return $this->resultSet;
     }
@@ -2092,6 +2306,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function getAllRelatedDimensions($entity) {
 
+        // No entity, nothing related to it. See the caller: this is reached
+        // with null when the metric/dimension combination has no base table.
+        if ( ! $entity ) {
+
+            return array();
+        }
+
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $dims = array();
         $denormalized_dims = $s->denormalizedDimensions;
@@ -2130,6 +2351,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     function getAllRelatedMetrics( $entity ) {
+
+        // No entity, nothing related to it -- same reason as
+        // getAllRelatedDimensions().
+        if ( ! $entity ) {
+
+            return array();
+        }
 
         $related_metrics = array();
         $s = \OWA\Core\CoreAPI::serviceSingleton();
