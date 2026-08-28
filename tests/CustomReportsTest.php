@@ -485,6 +485,13 @@ final class CustomReportsTest extends TestCase
     /** The normalisation is on the STORED definition, not only in the builder. */
     public function testAStoredGridComesBackWithNoWidth(): void
     {
+        // It STORES, so it needs somewhere to store to -- like every other
+        // test here that does. Without this it ran in the configless CI
+        // environment, where load() answers null and the assertion below
+        // errored on it rather than skipping. Nothing else in this file is
+        // missing the guard; see composer test:configless to reproduce.
+        $this->requireDb();
+
         $definition = $this->definition();
         $definition['widgets'][1]['colspan'] = 6;
 
