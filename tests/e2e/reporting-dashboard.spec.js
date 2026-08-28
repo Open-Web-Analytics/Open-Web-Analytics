@@ -303,9 +303,17 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(underTrend.boxes).toBeGreaterThan(1);
         expect(underTrend.sparklines).toBe(0);
 
-        // ...and a widget of boxes with no chart above them is untouched.
+        /*
+         * ...and a widget of boxes with no chart above them is untouched.
+         *
+         * `goals`, not `traffic`: traffic used to carry three standalone
+         * metric-boxes widgets counting visits per medium, and it has three
+         * PIES of the same splits now -- the number stated beside the shape of
+         * it was the same fact twice. The goals report's Goal Performance
+         * panel is the remaining standalone one.
+         */
         await page.goto(
-            `?owa_do=base.report&owa_reportId=traffic&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
             { waitUntil: 'networkidle' });
 
         await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
@@ -743,11 +751,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         //
         // NOT on the dashboard any more. Its only boxes are the ones under the
         // trend, and those deliberately draw no sparkline -- the chart above
-        // them already shows the shape over time. `traffic` has metric-boxes
-        // widgets with no chart above them, which is where sparklines still
-        // belong and so where the library can still be pinned.
+        // them already shows the shape over time. `goals` has a metric-boxes
+        // widget with no chart above it, which is where sparklines still
+        // belong and so where the library can still be pinned. (It was
+        // `traffic`; that report's standalone boxes became pies.)
         await page.goto(
-            `?owa_do=base.report&owa_reportId=traffic&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
+            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
             { waitUntil: 'networkidle' });
 
         const sparkCanvases = page.locator('p.sparkline canvas');

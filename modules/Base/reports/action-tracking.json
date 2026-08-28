@@ -3,40 +3,28 @@
     "metrics": "actions,uniqueActions,actionsValue",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "trend",
             "container": "trend-chart",
             "query": {
+                "metrics": "actions,uniqueActions,actionsValue",
                 "dimensions": "date",
                 "sort": "date"
             },
             "chartMetric": "actions",
-            "headline": "There were {actions.formatted} {actions|action|actions} performed on all pages."
+            "headline": "There were {actions.formatted} {actions|action|actions} performed on all pages.",
+            "colspan": 12
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "actionsByName",
             "container": "actionsByNameExplorer",
             "title": "Actions by Name",
             "colspan": 6,
             "query": {
                 "metrics": "actions",
-                "dimensions": "actionGroup,actionName",
-                "sort": "actions-",
-                "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "actionName",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "action-detail",
-                    "actionName": "%s",
-                    "actionGroup": "%s"
-                },
-                "valueColumns": [
-                    "actionName",
-                    "actionGroup"
-                ]
+                "dimensions": "actionName",
+                "sort": "actions-"
             }
         },
         {

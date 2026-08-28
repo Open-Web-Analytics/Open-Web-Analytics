@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login } = require('./fixtures');
+const { FIXTURE, loginAs } = require('./fixtures');
 
 /**
  * A trend, and the grid of the rows behind it.
@@ -30,8 +30,43 @@ const { FIXTURE, login } = require('./fixtures');
  * Prereq: run `php tests/e2e/seed_reporting_fixtures.php seed` first.
  */
 
-const CONTENT = `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
-    + '&owa_period=last_thirty_days';
+/*
+ * An AUTHORED report, not a shipped one.
+ *
+ * No shipped report has a broken-out trend any more: Content's became a card,
+ * and a card cannot be broken out. The feature is still reachable to anyone
+ * building a report, so it is driven through one -- rather than giving a
+ * shipped report a shape nobody asked it to have, purely to keep a test alive.
+ *
+ * The seeder plants it; this finds it by name on the roster, because a report
+ * id is minted at seed time and cannot be written down here.
+ */
+let breakdownUrl = '';
+
+async function findBreakdownReport(page) {
+
+    if (breakdownUrl) {
+
+        return breakdownUrl;
+    }
+
+    await page.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+
+    const href = await page
+        .locator(`table.owa_customReportRoster a:text-is("${FIXTURE.breakdownReportName}")`)
+        .first().getAttribute('href');
+
+    expect(href, 'the broken-out-trend fixture is missing -- re-run the seeder').toBeTruthy();
+
+    const id = (href.match(/reportId=(custom-[0-9]+)/) || [])[1];
+
+    expect(id, `no report id in the roster link: ${href}`).toBeTruthy();
+
+    breakdownUrl = `?owa_do=base.report&owa_reportId=${id}&owa_siteId=${FIXTURE.siteId}`
+        + '&owa_period=last_thirty_days';
+
+    return breakdownUrl;
+}
 
 /** The trend's own query, as the explorer last fetched it. */
 const trendQuery = (page) => page.evaluate(() => ({
@@ -67,7 +102,8 @@ async function pickDimension(page, index, label) {
 
 async function openContent(page) {
     await page.setViewportSize({ width: 1400, height: 1200 });
-    await page.goto(CONTENT, { waitUntil: 'networkidle' });
+
+    await page.goto(await findBreakdownReport(page), { waitUntil: 'networkidle' });
 
     // The grid builds from its own fetch, so wait for a row rather than the
     // container -- the container is in the markup before anything is queried.
@@ -81,7 +117,9 @@ test.describe('a broken-out trend and its companion grid', () => {
         page.on('pageerror', e => errors.push(e.message));
         page.__owaErrors = errors;
 
-        await login(page);
+        // The author, because the roster lists only your own reports and the
+        // fixture report is found there by name.
+        await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);
     });
 
     test('a trend with a breakdown grows a grid of those rows', async ({ page }) => {

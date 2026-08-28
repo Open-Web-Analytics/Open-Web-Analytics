@@ -88,6 +88,27 @@ final class ReportCharacterizationTest extends TestCase
         unset( $actual['config']['deprecated'] );
 
         /*
+         * Widgets ADDED since the conversion come out first, so the allowances
+         * below are only ever asked about widgets the record also has. Same
+         * list the equivalence test uses -- see Harness::ADDED.
+         */
+        $retitled = Harness::undoRetitling( $name, $actual['config'] );
+
+        $this->assertSame( array(), $retitled['problems'],
+            "the rename allowance for " . $name . " does not match the definition:\n  "
+            . implode( "\n  ", $retitled['problems'] ) );
+
+        $actual['config'] = $retitled['config'];
+
+        $added = Harness::undoAdding( $name, $actual['config'] );
+
+        $this->assertSame( array(), $added['problems'],
+            "the addition allowance for $name does not match the definition:\n  "
+            . implode( "\n  ", $added['problems'] ) );
+
+        $actual['config'] = $added['config'];
+
+        /*
          * ...and the widgets deliberately re-typed since the conversion are put
          * back to what the controller declared, so everything else about them
          * is still compared. Same allowance the equivalence test applies, from
@@ -114,6 +135,18 @@ final class ReportCharacterizationTest extends TestCase
          * span are reconciled with the record, everything else still compared.
          */
         $expected = self::$golden[ $name ];
+
+        /*
+         * Widgets deliberately REMOVED come out of the RECORD, so what is left
+         * on both sides is the set the report still has.
+         */
+        $dropped = Harness::undoRemoval( $name, $expected['config'], $actual['config'] );
+
+        $this->assertSame( array(), $dropped['problems'],
+            "the removal allowance for " . $name . " does not match the definition:\n  "
+            . implode( "\n  ", $dropped['problems'] ) );
+
+        $expected['config'] = $dropped['expected'];
 
         $layout = Harness::normaliseLayout( $name, $expected['config'], $actual['config'] );
 

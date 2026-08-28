@@ -323,9 +323,169 @@ OWA.areaChart.prototype = {
             this.init = true;
 
         } else {
-            jQuery('#'+ dom_id).html("No data is available for this time period");
-            jQuery('#'+ dom_id).css('height', '50px');
+
+            /*
+             * STILL A CHART, with nothing in it.
+             *
+             * An empty period used to replace the whole widget with a line of
+             * text and collapse it to 50px -- so a report with no data for the
+             * period changed SHAPE, and the reader had to work out whether the
+             * chart was missing or the data was. The axes and the grid are the
+             * frame of the answer; they belong there whether or not anything
+             * has been plotted on them.
+             *
+             * The same path as a chart with data, minus the series: setup, plot,
+             * watch the width. A caption over the plot says which of the two
+             * empty states this is.
+             */
+            /*
+             * ZERO ACROSS THE PERIOD, drawn as a trend.
+             *
+             * A period with nothing in it is not an absence of a chart, it is a
+             * chart of zero -- and for a count that is the true answer rather
+             * than a stand-in for one. So the series is synthesised: one point
+             * per day of the period being reported on, all of them zero.
+             *
+             * The result set carries the period it was asked for, so the days
+             * come from the question rather than from the answer -- which is
+             * the only place they could come from when the answer is empty.
+             */
+            var zeroX = ( this.options.series[0] && this.options.series[0].x ) || 'date';
+            var zero  = this.zeroFilled( resultSet, zeroX );
+
+            this.xDimension = zeroX;
+            this.selected   = null;
+
+            this.setupAreaChart( this.options.series, dom_id );
+
+            if ( zero ) {
+
+                this.dataseries = [ this.areaSeries( '', zero.points ) ];
+
+                this.flotOptions = {
+
+                    /*
+                     * Stated, not derived. Every point is zero, and flot given a
+                     * flat series scales to it -- an axis running -1 to 1, which
+                     * reads as a chart of negative numbers.
+                     */
+                    yaxis: { min: 0, max: 1, tickDecimals: 0 },
+                    xaxis: {
+                        mode: 'time',
+                        timeformat: zero.x_type === 'yyyymm'
+                            ? this.options.monthFormat
+                            : this.options.timeformat,
+                        ticks: Math.min( 10, zero.points.length )
+                    },
+                    grid: { show: this.options.showGrid, hoverable: true,
+                            borderWidth: 0, borderColor: null },
+                    series: {
+                        points: { show: false },
+                        lines: { show: true, fill: true, lineWidth: this.options.lineWidth }
+                    },
+                    legend: { show: false }
+                };
+
+                this.dataseries[0].color = this.options.totalColor;
+
+            } else {
+
+                /*
+                 * No period to draw against -- a result set handed in directly
+                 * carries none. An axis and a caption, which is better than a
+                 * widget that collapses to a line of text.
+                 */
+                this.dataseries = [ { data: [] } ];
+
+                this.flotOptions = {
+                    yaxis: { min: 0, max: 1, ticks: [ 0, 1 ] },
+                    xaxis: { min: 0, max: 1, ticks: [] },
+                    grid:  { show: this.options.showGrid, hoverable: false,
+                             borderWidth: 0, borderColor: null },
+                    series: { lines: { show: false }, points: { show: false } },
+                    legend: { show: false }
+                };
+
+                jQuery( '#' + dom_id + ' > .owa_areaChart' ).append(
+                    '<div class="owa_chartEmpty">No data for this period</div>' );
+            }
+
+            this.draw();
+
+            this.drawGranularityControl( dom_id );
+
+            this.watchWidth( dom_id );
+
+            this.init = true;
         }
+    },
+
+    /**
+     * A point per interval of the reported period, all zero.
+     *
+     * For an EMPTY result set. The rows cannot say which days were asked about
+     * -- there are none -- so the period does: the result set carries the
+     * timePeriod it was queried for, and that is the question the empty answer
+     * belongs to.
+     *
+     * Days or months, matching whatever the chart is drawn over, so the
+     * granularity control still means something on an empty report.
+     *
+     * @return {points, x_type} or null when there is no period to draw against
+     */
+    zeroFilled : function ( resultSet, x_name ) {
+
+        var period = ( resultSet && resultSet.timePeriod ) || null;
+
+        if ( ! period || ! period.startDate || ! period.endDate ) {
+
+            return null;
+        }
+
+        var asDate = function ( yyyymmdd ) {
+
+            var text = String( yyyymmdd );
+
+            return new Date( Date.UTC(
+                text.substring( 0, 4 ) * 1,
+                ( text.substring( 4, 6 ) * 1 ) - 1,
+                text.substring( 6, 8 ) * 1 ) );
+        };
+
+        var start = asDate( period.startDate );
+        var end   = asDate( period.endDate );
+
+        if ( isNaN( start.getTime() ) || isNaN( end.getTime() ) || end < start ) {
+
+            return null;
+        }
+
+        var points = [];
+
+        if ( x_name === 'month' ) {
+
+            var month = new Date( Date.UTC( start.getUTCFullYear(), start.getUTCMonth(), 1 ) );
+
+            while ( month <= end && points.length < 120 ) {
+
+                points.push( [ month.getTime(), 0 ] );
+                month.setUTCMonth( month.getUTCMonth() + 1 );
+            }
+
+            return { points: points, x_type: 'yyyymm' };
+        }
+
+        var day = new Date( start.getTime() );
+
+        // Bounded: a hand-edited date range could otherwise ask for a point per
+        // day of a decade, and a chart of four thousand zeroes is not a chart.
+        while ( day <= end && points.length < 400 ) {
+
+            points.push( [ day.getTime(), 0 ] );
+            day.setUTCDate( day.getUTCDate() + 1 );
+        }
+
+        return { points: points, x_type: 'yyyymmdd' };
     },
 
     /**

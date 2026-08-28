@@ -33,6 +33,13 @@ const FIXTURE = {
     // own -- where ownership alone is enough and the capability is never
     // exercised. That blind spot hid a real bug.
     othersReportName: 'E2E Owned By Someone Else',
+
+    // A custom report whose trend is BROKEN OUT by page path
+    // (E2E_BREAKDOWN_REPORT_NAME in the seeder). No shipped report has one --
+    // Content's trend is a card now, and a card cannot be broken out -- so the
+    // companion-grid specs drive an authored report instead of a shipped shape
+    // nobody asked for.
+    breakdownReportName: 'E2E Broken Out Trend',
     othersReportOwner: 'owa-e2e-someone-else@example.test',
 
     // The password-CHANGE fixture user (E2E_PWUSER_* in the seeder). OWA has no

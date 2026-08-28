@@ -74,6 +74,26 @@ final class ReportConfigEquivalenceTest extends TestCase
          */
         unset( $actual['deprecated'] );
 
+        /*
+         * Widgets ADDED since the conversion come out first, so the allowances
+         * below are only ever asked about widgets the record also has.
+         */
+        $retitled = Harness::undoRetitling( $class, $actual );
+
+        $this->assertSame( array(), $retitled['problems'],
+            "the rename allowance for " . $class . " does not match the definition:\n  "
+            . implode( "\n  ", $retitled['problems'] ) );
+
+        $actual = $retitled['config'];
+
+        $added = Harness::undoAdding( $class, $actual );
+
+        $this->assertSame( array(), $added['problems'],
+            "the addition allowance for $class does not match the definition:\n  "
+            . implode( "\n  ", $added['problems'] ) );
+
+        $actual = $added['config'];
+
         $actual = $this->undoRetyping( $class, $actual );
 
         $restated = Harness::undoRestating( $class, $actual );
@@ -89,6 +109,18 @@ final class ReportConfigEquivalenceTest extends TestCase
          * with the record on position and span alone, so everything else about
          * every widget is still compared. See Harness::RELAID_OUT.
          */
+        /*
+         * Widgets deliberately REMOVED come out of the RECORD, so what is left
+         * on both sides is the set the report still has.
+         */
+        $dropped = Harness::undoRemoval( $class, $expected, $actual );
+
+        $this->assertSame( array(), $dropped['problems'],
+            "the removal allowance for " . $class . " does not match the definition:\n  "
+            . implode( "\n  ", $dropped['problems'] ) );
+
+        $expected = $dropped['expected'];
+
         $layout = Harness::normaliseLayout( $class, $expected, $actual );
 
         $this->assertSame( array(), $layout['problems'],

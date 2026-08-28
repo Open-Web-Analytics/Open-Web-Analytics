@@ -1,0 +1,29 @@
+{
+    "title": "Clicks",
+    "metrics": "domClicks",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "domClicks",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "domClicks"
+            },
+            "headline": "There were {domClicks.raw} {domClicks|click|clicks} on all elements."
+        },
+        {
+            "type": "grid",
+            "id": "elements",
+            "container": "clicked-elements",
+            "title": "Clicked Elements",
+            "query": {
+                "metrics": "domClicks",
+                "dimensions": "pagePath,domElementId",
+                "sort": "domClicks-"
+            }
+        }
+    ]
+}

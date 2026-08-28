@@ -138,39 +138,124 @@ test.describe('every configured report renders in a browser', () => {
                 .toBeVisible({ timeout: 20_000 });
         });
 
-        test('the pie chart paints a canvas of its own', async ({ page }) => {
-            await expect(page.locator('#traffic-sources canvas').first())
-                .toBeVisible({ timeout: 20_000 });
-        });
-
-        test('each metric-boxes widget draws its own labelled box', async ({ page }) => {
-            // Three boxes, one per medium, each into its OWN container -- the
-            // template this replaced appended all three into one element, so
-            // separate containers are the thing worth checking.
-            for (const [container, label] of [
-                ['trend-metrics-search',   'Visits From Search Engines'],
-                ['trend-metrics-direct',   'Visits From Direct Navigation'],
-                ['trend-metrics-referral', 'Visits From Referrals'],
+        /**
+         * THREE pies, each into its own container.
+         *
+         * The report splits its visits three ways -- by medium, by source, by
+         * campaign -- and draws each split as its own chart. Three widgets of
+         * one type on one report is the case that catches a template writing
+         * them all into the first container, or into a container it names from
+         * the type rather than from the widget: the traffic report used to
+         * have three metric-boxes widgets and that is exactly the bug they
+         * were guarding, so the guard follows the shape rather than the type.
+         *
+         * Campaign has no canvas ASSERTED and that is deliberate -- see the
+         * empty-pie test below.
+         */
+        test('each pie draws into its own container', async ({ page }) => {
+            for (const [container, title] of [
+                ['traffic-sources',          'Mediums'],
+                ['traffic-sources-source',   'Sources'],
+                ['traffic-sources-campaign', 'Campaigns'],
             ]) {
-                const box = page.locator(`#${container} .owa_metricInfobox`).first();
+                const widget = page.locator(`#${container}`).locator('xpath=ancestor::*[contains(@class,"owa_widget-pie")][1]');
 
-                await expect(box, `${container} drew no metric box`)
-                    .toBeVisible({ timeout: 20_000 });
+                await expect(widget, `${container} is not in a pie widget`)
+                    .toHaveCount(1, { timeout: 20_000 });
 
-                await expect(box).toContainText(label);
+                await expect(widget.locator('.owa_reportSectionHeader'))
+                    .toHaveText(title);
+            }
+
+            // The two the fixture attributes traffic to actually paint.
+            for (const container of ['traffic-sources', 'traffic-sources-source']) {
+                await expect(page.locator(`#${container} canvas`).first(),
+                    `${container} painted no canvas`).toBeVisible({ timeout: 20_000 });
             }
         });
 
         /**
-         * Each grid builds and shows the traffic it was seeded.
+         * A pie with nothing to draw says so, rather than drawing nothing.
          *
-         * The fixture attributes its four visits -- two organic-search from
-         * different engines, one referral, one direct -- so each of these three
-         * grids has rows of its own to draw. Asserting the CONTENT is what
-         * separates "the widget rendered" from "the widget rendered the right
-         * query": top-keywords is constrained to organic-search, so a widget
-         * that dropped its constraint would show the referral traffic too.
+         * The fixture attributes no campaign to any visit, so the campaign pie
+         * is the one shipped widget on a seeded report with an empty result
+         * set. An empty pie that painted a blank canvas -- or an empty panel
+         * with no message at all -- reads as a broken widget rather than as an
+         * answer, and the two are indistinguishable from outside.
          */
+        test('a pie with no data says so instead of drawing', async ({ page }) => {
+            const empty = page.locator('#traffic-sources-campaign');
+
+            await expect(empty).toContainText(/no data/i, { timeout: 20_000 });
+
+            /*
+             * ...and no slices to read it against. flot builds its two
+             * canvases either way -- they are just painted blank -- so the
+             * canvas is not the difference. The LEGEND is: one entry per
+             * slice, and an empty pie has none.
+             */
+            await expect(empty.locator('.legend tr')).toHaveCount(0);
+
+            /*
+             * The other half of the same question, and what stops the above
+             * from passing on a report where every pie is empty: the pie next
+             * to it has slices and does NOT carry the message.
+             */
+            const drawn = page.locator('#traffic-sources');
+
+            await expect(drawn.locator('.legend tr').first()).toBeVisible({ timeout: 20_000 });
+            await expect(drawn).not.toContainText(/no data/i);
+        });
+
+        /**
+         * The three cards, each showing the fixture's own traffic.
+         *
+         * Content rather than mere presence: a card that lost its dimension or
+         * its constraint still builds a grid, and these are the four dimensions
+         * -- entry page, referring site, country -- that separate "the widget
+         * rendered" from "the widget rendered the right query".
+         */
+        test('the entry pages card lists the pages traffic arrived on', async ({ page }) => {
+            await expect(page.locator('#entry-pages tr.jqgrow').first(),
+                'entry-pages drew no rows').toBeVisible({ timeout: 20_000 });
+
+            await expect(page.locator('#entry-pages')).toContainText(FIXTURE.pageTitles[0]);
+        });
+
+        test('the referring sites card lists the referring host', async ({ page }) => {
+            await expect(page.locator('#referring-sites tr.jqgrow').first(),
+                'referring-sites drew no rows').toBeVisible({ timeout: 20_000 });
+
+            /*
+             * By SITE, not by page. The old grid on this report groups by
+             * referral page URL and is still here, so a card that had taken
+             * the wrong dimension would show the same host inside a full URL
+             * and read as correct. The cell is compared whole.
+             *
+             * This card has no "View Full Report" and the two beside it do:
+             * there is no shipped report grouped by referring web site. The
+             * one CALLED Referring Web Sites groups by referral page URL, and
+             * a card that led there would be a link the report builder itself
+             * would refuse to offer -- see
+             * CustomReportsTest::testTheDerivationReproducesTheShippedFullReportLinks.
+             */
+            const cells = page.locator('#referring-sites tr.jqgrow td[aria-describedby$="referralWebSite"]');
+
+            await expect(cells.filter({ hasText: FIXTURE.traffic.refererHost }))
+                .toHaveCount(1);
+        });
+
+        test('the countries card links to the geolocation report', async ({ page }) => {
+            await expect(page.locator('#visitor-countries tr.jqgrow').first(),
+                'visitor-countries drew no rows').toBeVisible({ timeout: 20_000 });
+
+            const more = page.locator('#visitor-countries')
+                .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
+                .locator('.owa_moreLinks a');
+
+            await expect(more).toHaveAttribute( 'href', /reportId=geolocation/ );
+        });
+
         test('the sources grid lists the seeded sources', async ({ page }) => {
             const grid = page.locator('#top-sources .ui-jqgrid');
 
@@ -190,57 +275,17 @@ test.describe('every configured report renders in a browser', () => {
                 .toContainText(FIXTURE.traffic.refererHost);
         });
 
-        test('the keywords grid lists only organic-search terms', async ({ page }) => {
-            const grid = page.locator('#top-keywords .ui-jqgrid');
-
-            await expect(grid, 'top-keywords built no grid').toHaveCount(1, { timeout: 20_000 });
-
-            /*
-             * ...and its ROWS have arrived.
-             *
-             * The grid element exists as soon as the explorer injects it, which
-             * is before its fetch comes back -- so the text assertions below
-             * were racing the query and failed intermittently under load, on a
-             * report that renders correctly. Waiting for a row is waiting for
-             * the thing being asserted about.
-             */
-            await expect(page.locator('#top-keywords tr.jqgrow').first(),
-                'top-keywords drew no rows').toBeVisible({ timeout: 20_000 });
-
-            const cell = page.locator('#top-keywords');
-
-            for (const term of FIXTURE.traffic.searchTerms) {
-                await expect(cell).toContainText(term);
-            }
-
-            /*
-             * The widget's own constraint at work, measured by ROW COUNT.
-             *
-             * Checking that the referral's host is absent looked like a
-             * constraint test and was vacuous: the referral visit has no search
-             * term, so its host could never appear in a grid of search terms
-             * whether the constraint applied or not. Removing the constraint
-             * from the definition left that assertion passing.
-             *
-             * What the constraint actually changes is which SESSIONS reach the
-             * grid. Unconstrained, the referral and direct visits arrive too --
-             * with no search term of their own -- and the grid grows rows.
-             */
-            await expect(cell.locator('tr.jqgrow'),
-                'the keywords grid is not constrained to organic-search')
-                .toHaveCount(FIXTURE.traffic.searchTerms.length);
-        });
-
-        /**
-         * The related-reports block, which used to be hand-written markup and
-         * printed its own title twice.
+        /*
+         * NO keywords test and NO related-reports test here any more: Top
+         * Keywords and the links block are off this report.
+         *
+         * Neither property went with them. That a widget's declared constraint
+         * reaches its query is measured on the dashboard, where #top-referers
+         * is constrained to medium==referral and the assertion is its row COUNT
+         * -- of the four seeded visits only the referral may arrive. That a
+         * links block prints its heading once is measured on the goals report,
+         * which still has one.
          */
-        test('the related reports are listed once', async ({ page }) => {
-            await expect(page.locator('.owa_reportSectionHeader', { hasText: 'Related Reports' }))
-                .toHaveCount(1);
-
-            await expect(page.locator('.relatedReports a')).toHaveCount(4);
-        });
     });
 });
 
@@ -490,6 +535,81 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
+     * AN EMPTY PERIOD IS A CHART OF ZERO.
+     *
+     * It used to replace the whole widget with a line of text and collapse it
+     * to 50px, so a report with no data changed SHAPE and the reader had to
+     * work out whether the chart was missing or the data was.
+     *
+     * Drawn as a real trend instead, with a point per day of the period and
+     * every one of them zero. For a count that IS the answer rather than a
+     * stand-in for one -- and the days come from the period the result set was
+     * queried for, which is the only place they can come from when the rows are
+     * empty.
+     *
+     * The fixture seeds no clicks, which is what makes the Clicks report a
+     * reliable empty state. If that ever changes, point this at another report
+     * with nothing in it rather than weakening the assertions.
+     */
+    test('a trend with no data is drawn as a zero-filled period', async ({ page }) => {
+        await login(page);
+        await page.setViewportSize({ width: 1500, height: 1200 });
+
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=clicks&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
+
+        await page.waitForSelector('#trend-chart', { timeout: 20_000 });
+        await page.waitForTimeout(1500);
+
+        const state = await page.evaluate(() => {
+
+            const c = document.querySelector('#trend-chart');
+
+            const chart = window.trend.areaChart;
+            const drawn = chart.dataseries[0];
+
+            return {
+                height: Math.round(c.getBoundingClientRect().height),
+                canvas: !!c.querySelector('canvas'),
+                rowsReturned: window.trend.resultSet.resultsRows.length,
+                series: chart.dataseries.length,
+                points: drawn ? drawn.data.length : 0,
+                allZero: drawn ? drawn.data.every((p) => p[1] === 0) : null,
+                xTicks: c.querySelectorAll('.flot-x-axis .flot-tick-label').length,
+                yTicks: c.querySelectorAll('.flot-y-axis .flot-tick-label').length,
+            };
+        });
+
+        // The premise: this really is an empty period.
+        expect(state.rowsReturned,
+            'the Clicks report has data now -- pick another empty report').toBe(0);
+
+        expect(state.canvas, 'an empty period drew no chart at all').toBe(true);
+
+        // Not collapsed to a line of text.
+        expect(state.height, 'the widget collapsed instead of keeping its shape')
+            .toBeGreaterThan(90);
+
+        /*
+         * A point per day of the period, all zero. Thirty days is
+         * last_thirty_days; asserted as a range rather than exactly, because
+         * whether a period includes both endpoints is not what this is about.
+         */
+        expect(state.series).toBe(1);
+        expect(state.points, 'the empty period was not filled with days')
+            .toBeGreaterThanOrEqual(28);
+        expect(state.points).toBeLessThanOrEqual(32);
+        expect(state.allZero, 'the synthetic series is not all zero').toBe(true);
+
+        // ...and it is drawn against real dates, not a bare box.
+        expect(state.xTicks, 'no dated axis under the zero line').toBeGreaterThan(0);
+        expect(state.yTicks, 'no value axis beside the zero line').toBeGreaterThan(0);
+    });
+
+    /**
      * A trend card's chart FILLS what the panel has left.
      *
      * The card has a floor under its height, and the chart was drawing at its
@@ -709,16 +829,31 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         expect(narrow.length).toBe(2);
 
-        // ...and Traffic's is half of one, in a container twice as wide.
+        /*
+         * ...and Traffic's are a THIRD of one each, in wider containers.
+         *
+         * Two, not three: the report declares a third pie for campaigns, and
+         * the fixture runs none, so that one writes its no-data message and
+         * never builds a plot at all. A pie that drew an empty circle would
+         * turn up here as a third entry with a circle of 0 and fail the
+         * same-size assertion below, which is the right answer.
+         */
         const wide = await circles('traffic');
 
-        expect(wide.length).toBe(1);
+        expect(wide.length).toBe(2);
 
+        /*
+         * A quarter of a row against a third of one. Not the 1.5x this used to
+         * ask for -- the pie was half a row when it was the only one -- but
+         * still a real difference, and still enough for the same-circle
+         * assertion below to be about something: at equal widths it would be
+         * comparing a number to itself.
+         */
         expect(wide[0].widget,
             'the wide pie is no longer in a wider widget, so this proves nothing')
-            .toBeGreaterThan(narrow[0].widget * 1.5);
+            .toBeGreaterThan(narrow[0].widget * 1.2);
 
-        // Same circle in all three, within a pixel of rounding.
+        // Same circle in all four, within a pixel of rounding.
         const all = [...narrow, ...wide].map((p) => p.circle);
 
         expect(Math.min(...all)).toBeGreaterThan(0);
@@ -935,9 +1070,15 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         await login(page);
 
+        /*
+         * Latest Visits, not the trend's companion grid: Content's trend is a
+         * card now and cannot be broken out, so no shipped report has one. Any
+         * grid answers this question -- it is about jqGrid refitting to its
+         * widget, not about which report it is on.
+         */
         const measure = () => page.evaluate(() => {
-            const w = document.querySelector('#trend-breakdown');
-            const g = document.querySelector('#trend-breakdown .ui-jqgrid');
+            const w = document.querySelector('#latest-visits');
+            const g = document.querySelector('#latest-visits .ui-jqgrid');
             return w && g ? {
                 widget: Math.round(w.getBoundingClientRect().width),
                 grid:   Math.round(g.getBoundingClientRect().width),
@@ -947,12 +1088,12 @@ test.describe('the report grid gives every widget a usable width', () => {
         await page.setViewportSize({ width: 1600, height: 1000 });
 
         await page.goto(
-            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
             + '&owa_period=last_thirty_days',
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('#trend-breakdown tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#latest-visits tr.jqgrow', { timeout: 20_000 });
 
         const wide = await measure();
 
@@ -996,12 +1137,12 @@ test.describe('the report grid gives every widget a usable width', () => {
         await page.setViewportSize({ width: 1600, height: 1000 });
 
         await page.goto(
-            `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
             + '&owa_period=last_thirty_days',
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('#trend-breakdown tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#latest-visits tr.jqgrow', { timeout: 20_000 });
 
         for (const width of [1000, 1600, 800, 1600]) {
 

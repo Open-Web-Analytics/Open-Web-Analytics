@@ -1240,7 +1240,16 @@ li.constraintRow {
  * what keeps the row from stepping when the reader picks a different metric.
  */
 .owa .owa_metricInfobox.owa_metricInfoboxCharted {
-    border-top-color: #1874CD;
+    /*
+     * An INSET BAR, not a thicker border.
+     *
+     * A 3px top border on the charted box alone would stand it 2px taller than
+     * its neighbours and step the row -- and reserving the 3px on every box
+     * took away the 1px grey top the others had, so every box but one read as
+     * open at the top. An inset shadow paints the same bar inside the box's own
+     * edge: no geometry changes and nothing loses a border.
+     */
+    box-shadow: inset 0 3px 0 #1874CD;
     background-color: #f5faff;
 }
 
@@ -2037,13 +2046,6 @@ li.constraintRow {
     width: auto;
     margin: 0;
 
-    /* THE INDICATOR STRIP, reserved on every box.
-     *
-     * Which metric the chart is drawing is marked along the TOP edge. Every
-     * box carries the strip and only the charted one colours it -- if the
-     * charted box alone had a thicker border it would stand 2px taller than
-     * its neighbours and the row of numbers would step. */
-    border-top: 3px solid transparent;
 
     /* Share the row evenly, wrapping once they would go under ~135px. A widget
        showing two metrics gets two half-width boxes rather than two narrow ones
@@ -2244,6 +2246,26 @@ li.constraintRow {
     opacity: 0;
 }
 
+/* An empty period still draws its axes; this says which kind of empty it is.
+ *
+ * Over the plot rather than instead of it: the frame is the shape of the
+ * answer, and a widget that collapses to a line of text when the data runs out
+ * makes the reader work out whether the chart is missing or the data is. */
+.owa .owa_areaChart {
+    position: relative;
+}
+
+.owa .owa_chartEmpty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    color: #9f9f9f;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
 /* ---------------------------------------------------------------------------
  * Metric carousel
  *
@@ -2344,10 +2366,9 @@ li.constraintRow {
  * ------------------------------------------------------------------------- */
 
 .owa .owa_trendCardMetrics .owa_metricInfobox {
-    /* Borderless, except for the indicator strip along the top -- reserved
-       here too, transparent until this box is the one being charted. */
+    /* Borderless. The charted marker is painted inside the box rather than on
+       its edge, so there is nothing here for it to depend on. */
     border: 0;
-    border-top: 3px solid transparent;
     background-color: transparent;
 }
 
@@ -2357,12 +2378,13 @@ li.constraintRow {
     background-color: transparent;
 }
 
-/* ...except this one edge, which is not decoration: it is the only thing
-   saying WHICH metric the plot underneath is drawing, and a card whose boxes
-   cannot say that has boxes that say nothing. Along the top, at the chart's own
-   colour, so the box and the line are visibly the same thing. */
+/* ...except this one bar, which is not decoration: it is the only thing saying
+   WHICH metric the plot underneath is drawing, and a card whose boxes cannot
+   say that has boxes that say nothing. Along the top, at the chart's own
+   colour, so the box and the line are visibly the same thing. Inherited from
+   the rule above -- restated here only because the tint is not wanted. */
 .owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
-    border-top-color: #1874CD;
+    box-shadow: inset 0 3px 0 #1874CD;
 }
 
 /* Room between the numbers and the plot they describe -- without the box
@@ -2416,6 +2438,17 @@ li.constraintRow {
 .owa .owa_trendBreakdown {
     margin-top: 18px;
     clear: both;
+}
+
+/* NO BOX AROUND IT. The grid of rows behind a trend is part of that widget --
+   the same question at more detail -- and jqGrid's own frame drew it as a
+   second, nested card sitting inside the first. The rows and their headings
+   keep their rules; only the outer frame goes. */
+.owa .owa_trendBreakdown .ui-jqgrid,
+.owa .owa_trendBreakdown .ui-jqgrid-view,
+.owa .owa_trendBreakdown .ui-jqgrid-bdiv,
+.owa .owa_trendBreakdown .ui-jqgrid-hdiv {
+    border: 0;
 }
 
 /* ---------------------------------------------------------------------------

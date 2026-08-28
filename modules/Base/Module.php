@@ -2448,6 +2448,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', 'reports/document.json' );
+        $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
@@ -2541,11 +2542,12 @@ class Module extends \OWA\Core\Module {
 
         //Content
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Top Pages', 1);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
 
 
         //Actions

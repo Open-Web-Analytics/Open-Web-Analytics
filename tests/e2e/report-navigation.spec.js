@@ -27,7 +27,7 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login } = require('./fixtures');
 
 /** A report that lives inside a nav subgroup, and its group. */
-const REPORT = { id: 'pages', label: 'Top Pages', group: 'Content' };
+const REPORT = { id: 'pages', label: 'Pages', group: 'Content' };
 
 /** A second one in the same group, so "current" can be shown to move. */
 const SIBLING = { id: 'entry-pages', label: 'Entry Pages' };

@@ -3,80 +3,97 @@
     "metrics": "visits",
     "widgets": [
         {
-            "type": "trend",
+            "type": "trend-card",
             "id": "trend",
             "container": "trend-chart",
-            "colspan": 12,
-            "showMetricBoxes": false,
+            "colspan": 6,
             "query": {
                 "dimensions": "date",
-                "sort": "date"
+                "sort": "date",
+                "metrics": "visits,uniqueVisitors,visitDuration"
             },
             "chartMetric": "visits",
             "headline": "There were {visits.formatted} {visits|visit|visits} from all mediums."
         },
         {
+            "type": "grid-card",
+            "id": "entryPages",
+            "container": "entry-pages",
+            "title": "Entry Pages",
+            "colspan": 6,
+            "query": {
+                "metrics": "visits",
+                "dimensions": "entryPageTitle",
+                "sort": "visits-"
+            },
+            "more": {
+                "reportId": "entry-pages",
+                "label": "View Full Report »"
+            }
+        },
+        {
             "type": "pie",
             "id": "medium",
             "container": "traffic-sources",
-            "colspan": 6,
-            "rowspan": 3,
+            "colspan": 4,
             "chartMetric": "visits",
             "query": {
                 "dimensions": "medium",
                 "sort": "visits-"
+            },
+            "title": "Mediums"
+        },
+        {
+            "type": "pie",
+            "id": "source",
+            "container": "traffic-sources-source",
+            "title": "Sources",
+            "colspan": 4,
+            "chartMetric": "visits",
+            "query": {
+                "dimensions": "source",
+                "sort": "visits-"
             }
         },
         {
-            "type": "metric-boxes",
-            "id": "fromsearch",
-            "container": "trend-metrics-search",
-            "title": "Visits From Search Engines",
-            "colspan": 6,
+            "type": "pie",
+            "id": "campaign",
+            "container": "traffic-sources-campaign",
+            "title": "Campaigns",
+            "colspan": 4,
+            "chartMetric": "visits",
             "query": {
-                "dimensions": "date",
-                "sort": "date"
-            },
-            "constraints": [
-                {
-                    "dimension": "medium",
-                    "value": "organic-search"
-                }
-            ]
+                "dimensions": "campaign",
+                "sort": "visits-"
+            }
         },
         {
-            "type": "metric-boxes",
-            "id": "fromdirect",
-            "container": "trend-metrics-direct",
-            "title": "Visits From Direct Navigation",
+            "type": "grid-card",
+            "id": "referringSites",
+            "container": "referring-sites",
+            "title": "Referring Web Sites",
             "colspan": 6,
             "query": {
-                "dimensions": "date",
-                "sort": "date"
-            },
-            "constraints": [
-                {
-                    "dimension": "medium",
-                    "value": "direct"
-                }
-            ]
+                "metrics": "visits",
+                "dimensions": "referralWebSite",
+                "sort": "visits-"
+            }
         },
         {
-            "type": "metric-boxes",
-            "id": "fromreferral",
-            "container": "trend-metrics-referral",
-            "title": "Visits From Referrals",
+            "type": "grid-card",
+            "id": "countries",
+            "container": "visitor-countries",
+            "title": "Countries",
             "colspan": 6,
             "query": {
-                "dimensions": "date",
-                "sort": "date"
+                "metrics": "visits",
+                "dimensions": "country",
+                "sort": "visits-"
             },
-            "constraints": [
-                {
-                    "dimension": "medium",
-                    "value": "referral"
-                }
-            ]
+            "more": {
+                "reportId": "geolocation",
+                "label": "View Full Report »"
+            }
         },
         {
             "type": "grid",
@@ -104,7 +121,7 @@
             },
             "more": {
                 "reportId": "sources",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -131,68 +148,8 @@
             },
             "more": {
                 "reportId": "referring-sites",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
-        },
-        {
-            "type": "grid",
-            "id": "topkeywords",
-            "container": "top-keywords",
-            "title": "Top Keywords",
-            "colspan": 6,
-            "query": {
-                "dimensions": "referralSearchTerms",
-                "sort": "visits-",
-                "resultsPerPage": 25
-            },
-            "constraints": [
-                {
-                    "dimension": "medium",
-                    "value": "organic-search"
-                }
-            ],
-            "link": {
-                "linkColumn": "referralSearchTerms",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "keyword-detail",
-                    "referralSearchTerms": "%s"
-                },
-                "valueColumns": [
-                    "referralSearchTerms"
-                ]
-            },
-            "more": {
-                "reportId": "keywords",
-                "label": "View Full Report \u00bb"
-            }
-        },
-        {
-            "type": "report-links",
-            "title": "Related Reports",
-            "colspan": 6,
-            "links": [
-                {
-                    "reportId": "search-engines",
-                    "label": "Search Engines",
-                    "description": "See which search engines your visitors are coming from."
-                },
-                {
-                    "reportId": "keywords",
-                    "label": "Keywords",
-                    "description": "See what keywords your visitor are using to find your web site."
-                },
-                {
-                    "reportId": "referring-sites",
-                    "label": "Referring Web Sites",
-                    "description": "See which web sites are linking to your web site."
-                },
-                {
-                    "reportId": "anchortext",
-                    "label": "Inbound Link Text",
-                    "description": "See what words Referring Web Sites use to describe your web site."
-                }
-            ]
         }
     ]
 }

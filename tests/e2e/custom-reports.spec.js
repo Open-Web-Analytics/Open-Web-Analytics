@@ -781,26 +781,30 @@ test.describe('custom reports', () => {
             expect(boxBox.y).toBeLessThan(chartBox.y);
 
             /*
-             * Borderless, which is the type's whole visual difference -- except
-             * along the TOP, where every box reserves the strip that marks the
-             * one being charted. Reserved on all of them so the row does not
-             * step when the reader picks a different metric.
+             * Borderless, which is the type's whole visual difference.
+             *
+             * The bar marking the charted metric is painted INSIDE the box, not
+             * on its edge: a thicker border on that box alone would stand it 2px
+             * taller than its neighbours and step the row, and reserving the
+             * space on every box took away the top border the bordered ones
+             * have. An inset shadow changes no geometry and costs no border.
              */
             const edges = await boxes.locator('.owa_metricInfobox').first()
                 .evaluate((el) => {
                     const cs = getComputedStyle(el);
                     return { left: cs.borderLeftWidth, right: cs.borderRightWidth,
                              bottom: cs.borderBottomWidth, top: cs.borderTopWidth,
-                             topColor: cs.borderTopColor };
+                             shadow: cs.boxShadow };
                 });
 
             expect(edges.left).toBe('0px');
             expect(edges.right).toBe('0px');
             expect(edges.bottom).toBe('0px');
-            expect(edges.top).toBe('3px');
+            expect(edges.top).toBe('0px');
 
-            // The first metric is the charted one, so its strip is coloured.
-            expect(edges.topColor).toBe('rgb(24, 116, 205)');
+            // The first metric is the charted one, so it carries the bar.
+            expect(edges.shadow).toContain('inset');
+            expect(edges.shadow).toContain('rgb(24, 116, 205)');
 
             // Half a row by default, without the author choosing a width.
             await expect(page.locator('.owa_reportGridItem.owa_span-6')).toHaveCount(1);

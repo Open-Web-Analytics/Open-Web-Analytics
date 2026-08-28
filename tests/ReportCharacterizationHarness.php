@@ -149,7 +149,7 @@ final class ReportCharacterizationHarness
      * things -- a converted report has a recorded standard to meet, an authored
      * one has only its own baseline.
      */
-    public const AUTHORED = array( 'latest-visits' );
+    public const AUTHORED = array( 'clicks', 'latest-visits' );
 
     public const SENTINEL = 'characterization_sentinel';
 
@@ -189,7 +189,9 @@ final class ReportCharacterizationHarness
      * class => [ widget id => [ what the controller declared, what it is now ] ]
      */
     public const RETYPED = array(
-        'ReportActionTracking' => array( 'actionsByGroup' => array( 'grid', 'grid-card' ) ),
+        'ReportActionTracking' => array( 'actionsByGroup' => array( 'grid', 'grid-card' ),
+                                         'actionsByName'  => array( 'grid', 'grid-card' ),
+                                         'trend'          => array( 'trend', 'trend-card' ) ),
 
         /*
          * Site Metrics is a trend CARD -- its totals above the chart, its own
@@ -199,9 +201,15 @@ final class ReportCharacterizationHarness
         'ReportDashboard'      => array( 'siteTrend'      => array( 'trend', 'trend-card' ),
                                          'topContent'     => array( 'grid', 'grid-card' ) ),
         'ReportContent'        => array( 'toppagetypes'   => array( 'grid', 'grid-card' ),
-                                         'toppages'       => array( 'grid', 'grid-card' ) ),
+                                         'toppages'       => array( 'grid', 'grid-card' ),
+                                         // Page views, pages per visit and
+                                         // bounce rate above the shape, at half
+                                         // a row.
+                                         'trend'          => array( 'trend', 'trend-card' ) ),
         'ReportEcommerce'      => array( 'productName'    => array( 'grid', 'grid-card' ) ),
-        'ReportVisitors'       => array( 'browserTypes'   => array( 'grid', 'grid-card' ) ),
+        'ReportTraffic'        => array( 'trend'          => array( 'trend', 'trend-card' ) ),
+        'ReportVisitors'       => array( 'browserTypes'   => array( 'grid', 'grid-card' ),
+                                         'trend'          => array( 'trend', 'trend-card' ) ),
     );
 
     /**
@@ -285,6 +293,181 @@ final class ReportCharacterizationHarness
      *
      * class => [ widget ids whose position and span are no longer the record's ]
      */
+    /**
+     * Widgets ADDED since the conversion, by the report they were added to.
+     *
+     * The golden file records what a controller declared, and a report that has
+     * since grown a widget declares more than that. Without naming them, the
+     * comparison fails wholesale and says only that two bags differ -- which
+     * would leave a converted report unable to gain a widget without giving up
+     * the proof that the rest of it still matches.
+     *
+     * So an addition is named here and dropped from the comparison, and
+     * EVERYTHING ELSE about the report goes on being compared key for key. The
+     * allowance is checked as it is applied: a listed widget that is not there
+     * is reported, so an entry cannot outlive the widget it describes.
+     *
+     * This does NOT excuse removals. A widget the record has and the definition
+     * does not still fails, which is the direction that loses a report
+     * something.
+     */
+    public const ADDED = array(
+
+        /*
+         * Entry pages, exit pages and the most-clicked elements, as cards
+         * beside Top Page Types. The first two were only reachable through the
+         * links block at the bottom; the third is new reporting.
+         */
+        'ReportContent' => array( 'entrypages', 'exitpages', 'clickedelements' ),
+
+        /*
+         * One card per way of looking at a visitor -- where they came from, how
+         * often, how recently, how long ago they first arrived. Each leads to
+         * the report that details it, which is what the links block used to do
+         * by naming them.
+         */
+        'ReportVisitors' => array( 'domains', 'loyalty', 'recency', 'age' ),
+
+        /*
+         * Where traffic ARRIVED (entry pages), what it was split by (a pie per
+         * medium, source and campaign), and the two reports the links block
+         * named without showing: referring sites and countries.
+         */
+        'ReportTraffic' => array(
+            'entryPages', 'source', 'campaign', 'referringSites', 'countries' ),
+    );
+
+    /**
+     * Take the added widgets out, so the rest of the report is still compared.
+     *
+     * @return array{config: array, problems: array<int, string>}
+     */
+    public static function undoAdding( string $class, array $config ): array
+    {
+        $added = self::ADDED[ $class ] ?? array();
+
+        if ( ! $added ) {
+
+            return array( 'config' => $config, 'problems' => array() );
+        }
+
+        $problems = array();
+        $seen     = array();
+        $kept     = array();
+
+        foreach ( (array) ( $config['widgets'] ?? array() ) as $widget ) {
+
+            $id = (string) ( ( (array) $widget )['id'] ?? '' );
+
+            if ( in_array( $id, $added, true ) ) {
+
+                $seen[] = $id;
+
+                continue;
+            }
+
+            $kept[] = $widget;
+        }
+
+        foreach ( array_diff( $added, $seen ) as $missing ) {
+
+            $problems[] = sprintf( '%s lists "%s" as added, but the definition does not have '
+                . 'it -- the allowance is stale', $class, $missing );
+        }
+
+        $config['widgets'] = $kept;
+
+        return array( 'config' => $config, 'problems' => $problems );
+    }
+
+    /**
+     * Widgets deliberately REMOVED since the conversion.
+     *
+     * The counterpart of ADDED, and kept separate from it on purpose: an
+     * addition is a report gaining something and a removal is a report losing
+     * it, and the second is the one worth being asked about twice. Both are
+     * named rather than tolerated, and both are checked as they are applied --
+     * a widget listed here that is STILL in the definition fails, so an entry
+     * cannot outlive the removal it describes.
+     *
+     * class => [ widget ids the definition no longer has ]
+     */
+    public const REMOVED = array(
+
+        /*
+         * Latest Visits and the links block. The roster of visits is its own
+         * report and was duplicated here at half a row; the links block listed
+         * four reports that are now cards on this page, each showing what it
+         * links to instead of naming it.
+         */
+        'ReportVisitors' => array( 'latestVisits', 'visitorReports' ),
+
+        /*
+         * The three "Visits From ..." boxes, Top Keywords, and the links block.
+         *
+         * The boxes counted visits by medium and the pie beside them drew the
+         * same split; there are three pies now -- medium, source, campaign --
+         * and a number stated once beside the shape of it is the same fact
+         * twice. Top Keywords has its own report and the search-terms grid on
+         * it is not a summary of anything. The links block named Referring Web
+         * Sites and the rest; two of them are cards on this report now, which
+         * is the same journey with the data already on it.
+         *
+         * The empty string is the links block: it declares no id, which is
+         * legal, and an id-less widget keys as ''.
+         */
+        'ReportTraffic' => array(
+            'fromsearch', 'fromdirect', 'fromreferral', 'topkeywords', '' ),
+    );
+
+    /**
+     * Take the removed widgets out of the RECORD, so the rest still compares.
+     *
+     * @return array{expected: array, problems: array<int, string>}
+     */
+    public static function undoRemoval( string $class, array $expected, array $actual ): array
+    {
+        $removed = self::REMOVED[ $class ] ?? array();
+
+        if ( ! $removed ) {
+
+            return array( 'expected' => $expected, 'problems' => array() );
+        }
+
+        $problems = array();
+
+        $stillThere = array();
+
+        foreach ( (array) ( $actual['widgets'] ?? array() ) as $widget ) {
+
+            $stillThere[] = (string) ( ( (array) $widget )['id'] ?? '' );
+        }
+
+        $kept = array();
+
+        foreach ( (array) ( $expected['widgets'] ?? array() ) as $widget ) {
+
+            $id = (string) ( ( (array) $widget )['id'] ?? '' );
+
+            if ( in_array( $id, $removed, true ) ) {
+
+                if ( in_array( $id, $stillThere, true ) ) {
+
+                    $problems[] = sprintf( '%s lists "%s" as removed, but the definition still '
+                        . 'has it -- the allowance is stale', $class, $id );
+                }
+
+                continue;
+            }
+
+            $kept[] = $widget;
+        }
+
+        $expected['widgets'] = $kept;
+
+        return array( 'expected' => $expected, 'problems' => $problems );
+    }
+
     public const RELAID_OUT = array(
         // Latest Visits moved under the site trend at full width -- it groups
         // by seven dimensions and half a row was never enough. The other three
@@ -312,11 +495,42 @@ final class ReportCharacterizationHarness
          * rather than giving it an id keeps this a layout allowance instead of
          * also adding a key the record does not have.
          */
-        'ReportContent'  => array( 'toppages', 'toppagetypes', '' ),
+        /*
+         * Only the page-types card and the links block beside it. toppages used
+         * to be here and is not any more: it is back at half a row immediately
+         * after the trend, which is exactly where and how the controller had
+         * it. The trend never needed an entry -- it declared no span then and
+         * declares none now; what changed is that half a row is the trend
+         * card's own default rather than a number it states.
+         */
+        'ReportContent'  => array( 'toppagetypes', '' ),
 
         // Prior/Next pages, the heatmap link and the related reports are a row
         // of four quarters.
         'ReportDocument' => array( 'priorpages', 'nextpages', 'heatmap', 'moreAnalytics' ),
+
+        /*
+         * The trend states its width now. A trend card is half a row by
+         * default, and this one is meant to run the whole way across, so the
+         * number is stated where the type's own default used to be enough.
+         */
+        'ReportActionTracking' => array( 'trend' ),
+
+        /*
+         * The medium pie. It was half a row on its own; it is now one of three
+         * pies across a row -- medium, source, campaign -- so it is a third,
+         * and it sits with the other two rather than directly under the trend.
+         */
+        /*
+         * The medium pie was half a row on its own; it is now one of three
+         * pies across a row -- medium, source, campaign -- so it is a third,
+         * and it sits with the other two rather than directly under the trend.
+         */
+        /*
+         * ...and the trend went to half a row, which puts Entry Pages beside
+         * it instead of under it.
+         */
+        'ReportTraffic' => array( 'medium', 'trend' ),
     );
 
     /**
@@ -336,6 +550,52 @@ final class ReportCharacterizationHarness
      *
      * class => [ widget id => [ path => [ was, is ] ] ]
      */
+    /**
+     * Reports deliberately RENAMED since the conversion.
+     *
+     * The report's own title, which RESTATED cannot carry because that is keyed
+     * by widget. Same shape and same rule: what the controller declared, what
+     * it says now, and the allowance fails if the definition says neither.
+     *
+     * class => [ was, is ]
+     */
+    public const RETITLED = array(
+
+        // "Web Pages" was the odd one out: every other content report is named
+        // for what it lists, and the nav entry beside it already said "Pages".
+        'ReportPages' => array( 'Web Pages', 'Pages' ),
+    );
+
+    /**
+     * Put a deliberately renamed report's title back to what the record has.
+     *
+     * @return array{config: array, problems: array<int, string>}
+     */
+    public static function undoRetitling( string $class, array $config ): array
+    {
+        $entry = self::RETITLED[ $class ] ?? null;
+
+        if ( ! $entry ) {
+
+            return array( 'config' => $config, 'problems' => array() );
+        }
+
+        list( $was, $is ) = $entry;
+
+        $now = $config['title'] ?? null;
+
+        if ( $now !== $is ) {
+
+            return array( 'config' => $config, 'problems' => array( sprintf(
+                '%s is listed as renamed to "%s", but its title is %s -- either it changed '
+              . 'again or the allowance is stale', $class, $is, json_encode( $now ) ) ) );
+        }
+
+        $config['title'] = $was;
+
+        return array( 'config' => $config, 'problems' => array() );
+    }
+
     public const RESTATED = array(
 
         /*
@@ -394,8 +654,23 @@ final class ReportCharacterizationHarness
          * reports.
          */
         'ReportTraffic' => array(
+
             'medium' => array(
                 'chartWidth' => array( '300px', null ),
+
+                // It had none. One of three pies in a row needs to say which
+                // one it is; the only pie on the report did not.
+                'title'      => array( null, 'Mediums' ),
+            ),
+
+            /*
+             * A trend CARD names its own metrics and always shows them -- the
+             * boxes ARE the card, so there is nothing left for
+             * showMetricBoxes to turn off.
+             */
+            'trend' => array(
+                'query.metrics'    => array( null, 'visits,uniqueVisitors,visitDuration' ),
+                'showMetricBoxes'  => array( false, null ),
             ),
         ),
 
@@ -410,32 +685,129 @@ final class ReportCharacterizationHarness
              * guard in getAllRelatedDimensions() it was a 500 with an empty
              * body.
              */
+            /*
+             * It names its own metrics because a trend CARD does not take the
+             * report metric set, and those are not the report's: page views
+             * with pages per visit and bounce rate beside it.
+             *
+             * The dimensions came BACK to what the controller declared. It had
+             * been broken out by page path -- a line per page over the total --
+             * and a card cannot be broken out at all, so `date` alone is both
+             * the new answer and the old one. No allowance needed for it.
+             */
             'trend' => array(
-                'query.dimensions' => array( 'date', 'date,pagePath' ),
-                'query.metrics'    => array( null, 'visits,pageViews' ),
+                'query.metrics' => array( null, 'pageViews,pagesPerVisit,bounceRate' ),
             ),
             /*
-             * Top Pages became a card, and a card shows ONE dimension. It has
-             * to be the one the link is built from -- the row link carries a
-             * pagePath into the page detail report -- so pageTitle goes and the
-             * excludeColumns that hid pagePath goes with it.
+             * Top Pages shows TITLES again, which is what the controller had.
+             *
+             * It had been narrowed to pagePath when it became a card -- one
+             * metric by one dimension -- and that left its row link naming a
+             * pageTitle column the grid no longer drew. The path is back in the
+             * query and out of the columns, which is the shape that makes the
+             * link work: the title is what a reader picks, the path is what the
+             * page detail report reads. So only the page size is restated.
+             */
+            /*
+             * Top Pages shows TITLES, which is the dimension the controller
+             * had -- but ONE of them, where the controller had the path
+             * alongside it and hidden.
+             *
+             * A card shows one metric against one dimension; that is what makes
+             * it a card rather than a narrow table, and it is enforced for
+             * shipped cards by ReportDefinitionFormatTest. So the hidden path
+             * goes, and the row link goes with it: `document` is reached by
+             * pagePath and nothing else, and there is no longer a pagePath in
+             * the result set to reach it with. "View Full Report" still leads
+             * to the full Top Pages report.
+             *
+             * The link had been broken anyway since the card was narrowed to
+             * pagePath alone -- linkColumn named a pageTitle column the grid no
+             * longer drew.
              */
             'toppages' => array(
-                'query.dimensions'     => array( 'pageTitle,pagePath', 'pagePath' ),
+                // "Top" says the same thing the sort already does. Every card
+                // on this report is a ranking; naming them all "Top X" made the
+                // word furniture.
+                'title'                => array( 'Top Pages', 'Pages' ),
+                'query.dimensions'     => array( 'pageTitle,pagePath', 'pageTitle' ),
                 'excludeColumns'       => array( array( 'pagePath' ), null ),
+                'link'                 => array(
+                    array(
+                        'linkColumn'   => 'pageTitle',
+                        'template'     => array(
+                            'do'       => 'base.report',
+                            'pagePath' => '%s',
+                            'reportId' => 'document',
+                        ),
+                        'valueColumns' => 'pagePath',
+                    ),
+                    null,
+                ),
                 'query.resultsPerPage' => array( 25, null ),
             ),
             'toppagetypes' => array(
+                'title'                => array( 'Top Page Types', 'Page Types' ),
                 'query.resultsPerPage' => array( 25, null ),
             ),
         ),
 
         'ReportActionTracking' => array(
+
             'actionsByGroup' => array( 'query.resultsPerPage' => array( 5, null ) ),
+
+            /*
+             * A trend CARD names its own metrics -- it does not take the report
+             * metric set. These are the set, stated: the same three the widget
+             * was already drawing, now said out loud because the type requires
+             * it.
+             */
+            'trend' => array(
+                'query.metrics' => array( null, 'actions,uniqueActions,actionsValue' ),
+            ),
+
+            /*
+             * Actions by Name became a card, and a card shows ONE dimension. So
+             * the group goes -- and the row link with it: action-detail is
+             * constrained on the name AND the group, and a card with a single
+             * dimension has no second value to carry.
+             */
+            'actionsByName' => array(
+                'query.dimensions'     => array( 'actionGroup,actionName', 'actionName' ),
+                'query.resultsPerPage' => array( 5, null ),
+                'link'                 => array(
+                    array(
+                        'linkColumn'   => 'actionName',
+                        'template'     => array(
+                            'actionGroup' => '%s',
+                            'actionName'  => '%s',
+                            'do'          => 'base.report',
+                            'reportId'    => 'action-detail',
+                        ),
+                        'valueColumns' => array( 'actionName', 'actionGroup' ),
+                    ),
+                    null,
+                ),
+            ),
         ),
 
         'ReportVisitors' => array(
+
             'browserTypes' => array( 'query.resultsPerPage' => array( 10, null ) ),
+
+            /*
+             * A trend CARD names its own metrics. These are the report's set
+             * minus `visits` -- this report is about visitORS, and the visit
+             * count belongs to the reports that are about visits.
+             *
+             * chartMetric is NOT here: the controller already charted
+             * uniqueVisitors, and it still does. Only the metrics moved from
+             * the report's set onto the widget.
+             */
+            'trend' => array(
+                'query.metrics' => array(
+                    null, 'uniqueVisitors,newVisitors,repeatVisitors,visitDuration' ),
+            ),
         ),
 
         'ReportEcommerce' => array(
