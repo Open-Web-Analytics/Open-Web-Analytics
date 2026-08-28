@@ -247,6 +247,10 @@ OWA.pieChart.prototype = {
                 var metric = this.options.metric;
 
                 //create data array
+                // Null-prototype: a slice legitimately labelled "constructor" or
+                // "toString" would otherwise find a function on Object.prototype
+                // and be merged into a slice that does not exist.
+                var byLabel = Object.create(null);
                 var iterations = 0;
                 if (numSlices > resultSet.resultsRows.length) {
                     iterations = resultSet.resultsRows.length;
@@ -284,8 +288,37 @@ OWA.pieChart.prototype = {
                         slice_label = cell.formatted_value;
                     }
 
-                    var item = {label: slice_label, data: resultSet.resultsRows[i][metric].value * 1};
-                    data.push(item);
+                    /*
+                     * ONE SLICE PER LABEL, not one per row.
+                     *
+                     * Two rows can resolve to the same label, and a pie that
+                     * pushed both drew the same word twice with the total
+                     * split between them -- the dashboard's Visitor Types read
+                     * "New" and "New".
+                     *
+                     * It is valueLabels that makes this happen, and by design:
+                     * a boolean column holds three values, not two. 1, 0 and
+                     * NULL each group separately in SQL, so `isRepeatVisitor`
+                     * comes back as three rows on any site with history, and
+                     * the report folds 0 and NULL together because they mean
+                     * the same thing -- this visitor had not been here before.
+                     * Folding is a statement about MEANING, so the slices have
+                     * to fold too; a label map cannot merge rows on its own.
+                     *
+                     * Kept in first-seen order, which is the query's order, so
+                     * the largest slice is still first.
+                     */
+                    var value = resultSet.resultsRows[i][metric].value * 1;
+                    var existing = byLabel[slice_label];
+
+                    if (existing) {
+                        existing.data = existing.data + value;
+                    } else {
+                        var item = {label: slice_label, data: value};
+                        byLabel[slice_label] = item;
+                        data.push(item);
+                    }
+
                     count = count + resultSet.resultsRows[i][metric].value;
                 }
 
@@ -319,6 +352,25 @@ OWA.pieChart.prototype = {
 
             }
 
+        }
+
+        /*
+         * NOTHING TO DRAW IS NOT A DRAWING.
+         *
+         * Both no-data branches above say so on the page and then fell through
+         * to flot with an empty series, and flot's pie plugin reads
+         * `series[0].series` on the way in -- so an empty pie threw
+         * "Cannot read properties of null (reading 'series')" into the console
+         * and left the message it had just written sitting under a plot that
+         * never appeared.
+         *
+         * Latent until a shipped report had a pie that could come back empty:
+         * the traffic report's campaign pie is empty on any site running no
+         * campaigns, which is most of them.
+         */
+        if ( ! data.length ) {
+
+            return;
         }
 
         if ( ! this.init ) {
