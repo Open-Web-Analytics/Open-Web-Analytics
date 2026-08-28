@@ -11,7 +11,7 @@
     Require all denied
 
     # Public PHP entry points, matched by BASENAME so this also covers api/index.php.
-    <FilesMatch "^(index|log|install|queue|blank|wp_plugin)\.php$">
+    <FilesMatch "^(index|log|install|queue|blank)\.php$">
         Require all granted
     </FilesMatch>
 

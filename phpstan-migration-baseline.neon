@@ -1062,20 +1062,5 @@ parameters:
 			count: 1
 			path: owa.php
 
-		-
-			message: '#^Function add_action not found\.$#'
-			identifier: function.notFound
-			count: 2
-			path: wp_plugin.php
 
-		-
-			message: '#^Function network_admin_url not found\.$#'
-			identifier: function.notFound
-			count: 1
-			path: wp_plugin.php
 
-		-
-			message: '#^Function plugin_dir_path not found\.$#'
-			identifier: function.notFound
-			count: 1
-			path: wp_plugin.php

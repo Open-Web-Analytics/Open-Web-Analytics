@@ -1088,7 +1088,6 @@ namespace OWA\Module\Base\Classes;
                 'visitors_table'                    => 'visitor',
                 'impressions_table'                    => 'impression',
                 'clicks_table'                        => 'click',
-                'exits_table'                        => 'exit',
                 'users_table'                        => 'user',
                 'db_type'                            => '',
                 'db_name'                            => '',

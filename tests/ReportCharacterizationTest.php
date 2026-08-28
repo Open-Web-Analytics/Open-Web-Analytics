@@ -8,45 +8,21 @@ require_once __DIR__ . '/ReportCharacterizationHarness.php';
 use OWA\Tests\ReportCharacterizationHarness as Harness;
 
 /**
- * What every config-driven report declares today, pinned before it is rewritten.
+ * The converted reports render, and rendering them raises nothing.
  *
- * This is step 0 of moving reports into stored configuration, and it exists
- * because "same behaviour, different plumbing" has no other definition. Fifty-five
- * of the sixty-eight report controllers are configuration wearing a class: their
- * action() sets metrics, dimensions, a sort, a page size, constraints and a
- * subview, and nothing else. Converting one to JSON is only correct if the
- * resulting report declares exactly what the controller declared.
+ * This began as a recording of what 35 report controllers declared, made before
+ * any of them moved, so the conversion could be held to it. That recording is
+ * retired along with the gate that read it -- see ReportConfigEquivalenceTest
+ * for why -- and what is left is the part that never depended on it: these
+ * reports are executed, and executing them must stay silent.
  *
- * So the fixture is not a description of the desired output. It is a recording of
- * the CURRENT output, made before anything moved, and its whole value is that
- * nobody chose its contents.
- *
- * Regenerate deliberately, never to make a red test green:
- *
- *     OWA_REGEN_REPORT_GOLDEN=1 ./vendor/bin/phpunit tests/ReportCharacterizationTest.php
- *
- * A diff in that file during the conversion is the question "is this report
- * meant to change?" -- and for a behaviour-preserving move the answer is no.
+ * That silence is worth its own test. These controllers had never been run by
+ * any test until this harness existed, and the first CI run turned up three
+ * deprecations and a warning that had been there the whole time.
  */
 final class ReportCharacterizationTest extends TestCase
 {
-    /** @var array<string, array>|null */
-    private static ?array $golden = null;
 
-    public static function setUpBeforeClass(): void
-    {
-        if ( getenv( 'OWA_REGEN_REPORT_GOLDEN' ) ) {
-
-            file_put_contents(
-                Harness::goldenPath(),
-                json_encode( Harness::captureAll(),
-                    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "\n"
-            );
-        }
-
-        self::$golden = json_decode(
-            (string) file_get_contents( Harness::goldenPath() ), true );
-    }
 
     /**
      * @return array<string, array{0:string}>
@@ -62,145 +38,33 @@ final class ReportCharacterizationTest extends TestCase
         return $cases;
     }
 
-    /**
-     * One case per report, so a failure names the report rather than saying
-     * "the reports changed".
-     *
-     * @dataProvider reportProvider
-     */
-    public function testTheReportStillDeclaresWhatItDeclared( string $name ): void
-    {
-        $this->assertArrayHasKey( $name, self::$golden,
-            "$name has no recorded baseline -- regenerate the fixture deliberately, "
-            . 'and say in the commit why a new report appeared' );
 
-        $actual = Harness::snapshot( $name );
-
-        /*
-         * `deprecated` is a deliberate addition that no controller ever
-         * declared -- see ReportConfigEquivalenceTest, which reads this same
-         * fixture. Removed rather than regenerated into the baseline: this
-         * file is the pre-conversion record, and rewriting it from current
-         * output is what would make that equivalence proof tautological.
-         *
-         * Removed from $actual only, so every other drift still fails below.
-         */
-        unset( $actual['config']['deprecated'] );
-
-        /*
-         * Widgets ADDED since the conversion come out first, so the allowances
-         * below are only ever asked about widgets the record also has. Same
-         * list the equivalence test uses -- see Harness::ADDED.
-         */
-        $retitled = Harness::undoRetitling( $name, $actual['config'] );
-
-        $this->assertSame( array(), $retitled['problems'],
-            "the rename allowance for " . $name . " does not match the definition:\n  "
-            . implode( "\n  ", $retitled['problems'] ) );
-
-        $actual['config'] = $retitled['config'];
-
-        $added = Harness::undoAdding( $name, $actual['config'] );
-
-        $this->assertSame( array(), $added['problems'],
-            "the addition allowance for $name does not match the definition:\n  "
-            . implode( "\n  ", $added['problems'] ) );
-
-        $actual['config'] = $added['config'];
-
-        /*
-         * ...and the widgets deliberately re-typed since the conversion are put
-         * back to what the controller declared, so everything else about them
-         * is still compared. Same allowance the equivalence test applies, from
-         * the same list -- see Harness::RETYPED.
-         */
-        $retyped = Harness::undoRetyping( $name, $actual['config'] );
-
-        $this->assertSame( array(), $retyped['problems'],
-            "the re-typing allowance for $name does not match the definition:\n  "
-            . implode( "\n  ", $retyped['problems'] ) );
-
-        $actual['config'] = $retyped['config'];
-
-        $restated = Harness::undoRestating( $name, $actual['config'] );
-
-        $this->assertSame( array(), $restated['problems'],
-            "the restatement allowance for $name does not match the definition:\n  "
-            . implode( "\n  ", $restated['problems'] ) );
-
-        $actual['config'] = $restated['config'];
-
-        /*
-         * ...and the same for a report deliberately relaid out: position and
-         * span are reconciled with the record, everything else still compared.
-         */
-        $expected = self::$golden[ $name ];
-
-        /*
-         * Widgets deliberately REMOVED come out of the RECORD, so what is left
-         * on both sides is the set the report still has.
-         */
-        $dropped = Harness::undoRemoval( $name, $expected['config'], $actual['config'] );
-
-        $this->assertSame( array(), $dropped['problems'],
-            "the removal allowance for " . $name . " does not match the definition:\n  "
-            . implode( "\n  ", $dropped['problems'] ) );
-
-        $expected['config'] = $dropped['expected'];
-
-        $layout = Harness::normaliseLayout( $name, $expected['config'], $actual['config'] );
-
-        $this->assertSame( array(), $layout['problems'],
-            "the relayout allowance for $name does not match the definition:\n  "
-            . implode( "\n  ", $layout['problems'] ) );
-
-        $expected['config'] = $layout['expected'];
-        $actual['config']   = $layout['actual'];
-
-        $this->assertSame(
-            $expected,
-            $actual,
-            "$name declares something different from its recorded baseline. If that is "
-            . 'intended, regenerate; if this is a conversion, it is a regression.'
-        );
-    }
-
-    /**
-     * Coverage drift in the other direction: a report deleted, or newly
-     * excluded, silently shrinks what the suite protects. The per-report cases
-     * above cannot see that, because they only iterate what exists now.
-     */
-    public function testTheBaselineCoversExactlyTheReportsInScope(): void
-    {
-        $recorded = array_keys( self::$golden );
-        $present  = Harness::reportNames();
-
-        sort( $recorded );
-        sort( $present );
-
-        $this->assertSame( $recorded, $present,
-            'the fixture and the tree disagree about which reports exist' );
-    }
 
     /**
      * The parameterised reports are the ones a naive harness under-tests: run
      * with no parameter, the constraint interpolation -- the only thing that
      * distinguishes them from a pure config report -- never executes.
+     *
+     * Asked of the report as it is TODAY, not of the recorded controller. The
+     * property was always a live one; reading it out of a frozen fixture only
+     * ever proved that a controller interpolated its parameter in August 2026.
      */
     public function testEveryParameterReachesTheConfig(): void
     {
         $checked = 0;
 
-        foreach ( self::$golden as $name => $recorded ) {
+        foreach ( Harness::CONVERTED as $id => $name ) {
 
-            if ( ! $recorded['params'] ) {
+            $snapshot = Harness::snapshotConfigured( $id );
+
+            if ( ! $snapshot['params'] ) {
                 continue;
             }
 
-            $flat = json_encode( $recorded['config'] );
+            $flat = json_encode( $snapshot['config'] );
 
             $this->assertStringContainsString( Harness::SENTINEL, $flat,
-                "$name reads " . implode( ', ', $recorded['params'] )
+                "$id reads " . implode( ', ', $snapshot['params'] )
                 . ' but the value reaches nothing it declares' );
 
             $checked++;
@@ -269,27 +133,6 @@ final class ReportCharacterizationTest extends TestCase
         $this->assertSame( 'test.noisy', $observed['config']['subview'] );
     }
 
-    /**
-     * Vacuity guards.
-     *
-     * Every assertion above passes trivially against an empty fixture or an
-     * empty snapshot, which is exactly how a characterization suite rots into
-     * decoration.
-     */
-    public function testTheBaselineIsSubstantial(): void
-    {
-        $this->assertGreaterThan( 50, count( self::$golden ),
-            'the whole point is breadth; a handful of reports is not a baseline' );
-
-        foreach ( self::$golden as $name => $recorded ) {
-
-            $this->assertNotEmpty( $recorded['config'],
-                "$name recorded no configuration at all" );
-
-            $this->assertArrayHasKey( 'subview', $recorded['config'],
-                "$name records no subview, so nothing pins how it renders" );
-        }
-    }
 
     /**
      * The harness must actually run the controller. If snapshot() ever returned
