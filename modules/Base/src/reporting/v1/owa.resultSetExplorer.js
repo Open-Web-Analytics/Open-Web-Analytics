@@ -2523,12 +2523,25 @@ OWA.constraintBuilder.prototype = {
          * built from it (the row list, the two buttons, the apply handler's
          * iteration) would silently address nothing. An id survives the move.
          *
-         * Derived from the explorer's own selector so two grids on one report
-         * get two different ids; the non-word characters in a selector are not
-         * legal in one.
+         * Named after the thing it FILTERS.
+         *
+         * Once the builder is a dialog it is a sibling of every other dialog
+         * under .owa, so the id is the only way anything -- a test, a second
+         * filter on the same report -- can say which one it means. Sanitising
+         * the whole selector gave unique but unreadable ids: a grid's builder
+         * came out `trend-breakdownexplorerTopControlsulcontrolItem...`.
+         *
+         * The leading #id of the selector is the element the filter belongs
+         * to, and it is already unique on the page, so it names the dialog:
+         * `#owa_filterBuilder-trend-breakdown`, `-domstreamFilter`,
+         * `-funnelFilter`. A selector that does not start with an id falls
+         * back to the sanitised whole thing, which is still unique.
          */
-        var builder_id = 'owa_filterBuilder-'
-            + String( that.dom_selector ).replace( /[^A-Za-z0-9_-]/g, '' );
+        var owner = String( that.dom_selector ).match( /^#([A-Za-z0-9_-]+)/ );
+
+        var builder_id = 'owa_filterBuilder-' + ( owner
+            ? owner[1]
+            : String( that.dom_selector ).replace( /[^A-Za-z0-9_-]/g, '' ) );
 
         /*
          * The toggle is an ICON.

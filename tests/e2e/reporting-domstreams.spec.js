@@ -172,8 +172,15 @@ test.describe('reporting: domstreams', () => {
             await openDomstreams(page);
             await page.waitForSelector('#domstreamFilter', { timeout: 20_000 });
 
-            const names = await page.locator('#domstreamFilter option').evaluateAll(
-                (opts) => opts.map((o) => o.getAttribute('value')));
+            /*
+             * The options live in the filter DIALOG, not in #domstreamFilter:
+             * the builder is a jQuery-UI dialog now, and jQuery UI lifts it to
+             * `.owa`. It keeps an id naming the element it filters -- see
+             * builder_id in owa.resultSetExplorer.js -- which is how one filter
+             * is told from another now that they are all siblings.
+             */
+            const names = await page.locator('#owa_filterBuilder-domstreamFilter option')
+                .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
 
             for (const excluded of ['siteId', 'siteDomain', 'siteName', 'date', 'day', 'month', 'year']) {
                 expect(names).not.toContain(excluded);

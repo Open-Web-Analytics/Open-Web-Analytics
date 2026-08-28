@@ -241,8 +241,16 @@ test.describe('a broken-out trend and its companion grid', () => {
         const setFilter = async (value) => {
 
             const toggle = page.locator('#trend-breakdown .constraintPickerContainer > .toggle-button');
-            const panel  = page.locator('#trend-breakdown .constraintPickerContainer > .builder');
 
+            /*
+             * The builder is a DIALOG and no longer sits inside the grid it
+             * filters -- jQuery UI lifts it to `.owa`. It carries an id naming
+             * the element it belongs to, which is how the right one is picked
+             * now that every filter's dialog is a sibling of every other.
+             */
+            const panel = page.locator('#owa_filterBuilder-trend-breakdown');
+
+            // Applying CLOSES the dialog, so each pass opens it again.
             if (!(await panel.isVisible())) {
                 await toggle.click();
             }
@@ -251,15 +259,18 @@ test.describe('a broken-out trend and its companion grid', () => {
 
             await page.evaluate((val) => {
                 const row = document.querySelector(
-                    '#trend-breakdown .constraintPickerContainer .builder li.constraintRow');
+                    '#owa_filterBuilder-trend-breakdown li.constraintRow');
 
                 jQuery(row).find('.constraintDimensionPicker select.dim-list')
                     .val('pagePath').trigger('chosen:updated');
-                jQuery(row).find('.constraintOperatorPicker select.operator-list').val('=@');
+                // The operator is a chosen widget too now; same contract --
+                // the native <select> carries the value.
+                jQuery(row).find('.constraintOperatorPicker select.operator-list')
+                    .val('=@').trigger('chosen:updated');
                 jQuery(row).find('.constraintValueField').val(val);
             }, value);
 
-            await page.locator('#trend-breakdown .apply-button').click();
+            await panel.locator('.apply-button').click();
         };
 
         // Matches one of the four seeded pages.
