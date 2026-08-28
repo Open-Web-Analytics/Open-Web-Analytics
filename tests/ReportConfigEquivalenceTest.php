@@ -10,29 +10,26 @@ require_once __DIR__ . '/ReportCharacterizationHarness.php';
 use OWA\Tests\ReportCharacterizationHarness as Harness;
 
 /**
- * The 35 converted reports must declare exactly what their controllers did.
+ * Every converted report has a definition, and that definition is usable.
  *
- * A report is the query it will issue and the widgets it declares. Those
- * controllers expressed both as a bag of key/value pairs, the golden file
- * recorded that bag for every one of them, and this holds the JSON to it --
- * key by key, value by value, including types.
+ * This file used to hold each definition to a RECORD of what its controller
+ * declared, key by key and type by type -- the gate that made the conversion
+ * safe while the controllers were being deleted underneath it.
  *
- * The comparison is against the RECORD rather than against the live
- * controllers, which is what lets the controllers be deleted while the standard
- * they set stays enforced. A conversion checked only by diffing against code
- * that is about to be removed stops being checked the moment it lands.
+ * That gate is retired. It had done its job by the time the conversion merged,
+ * and everything after that was a deliberate redesign asking to be let past:
+ * seven allowance lists and their undo routines, one entry per report per
+ * change, all added AFTER the migration landed. A test whose only remaining
+ * answer is "this differs from what a controller declared in August 2026" is
+ * measuring the calendar, not the code.
+ *
+ * What survives is the part that was never about the record: every converted id
+ * still has a definition file, that file is well formed, nothing claims an id
+ * twice, and rendering it raises no diagnostic. What a report EMITS is pinned
+ * separately, against current behaviour, by ReportRenderCharacterizationTest.
  */
 final class ReportConfigEquivalenceTest extends TestCase
 {
-    /** @var array<string, array> */
-    private static $golden = array();
-
-    public static function setUpBeforeClass(): void
-    {
-        self::$golden = (array) json_decode(
-            (string) file_get_contents( Harness::goldenPath() ), true );
-    }
-
     public static function convertedProvider(): array
     {
         // Reading the map rather than the directory: a definition file that
@@ -47,113 +44,7 @@ final class ReportConfigEquivalenceTest extends TestCase
         return $cases;
     }
 
-    /**
-     * @dataProvider convertedProvider
-     */
-    public function testTheDefinitionDeclaresWhatTheControllerDeclared( string $id, string $class ): void
-    {
-        $this->assertArrayHasKey( $class, self::$golden,
-            "$class has no recorded behaviour, so converting it cannot be checked" );
 
-        $expected = self::$golden[ $class ]['config'];
-        $actual   = Harness::snapshotConfigured( $id )['config'];
-
-        /*
-         * `deprecated` is the one key a definition may add that no controller
-         * ever declared. It says the report is still here but no longer
-         * filling -- a fact about the data, not about the conversion.
-         *
-         * Dropped from the comparison rather than written into the golden file:
-         * the golden records what the CONTROLLER declared, and no controller
-         * ever declared this. Writing it there would make the record claim
-         * something untrue about code that no longer exists. The key's own
-         * behaviour is pinned in ReportDefinitionFormatTest.
-         *
-         * Unset from $actual only, so a definition that DROPS a real key still
-         * fails below.
-         */
-        unset( $actual['deprecated'] );
-
-        /*
-         * Widgets ADDED since the conversion come out first, so the allowances
-         * below are only ever asked about widgets the record also has.
-         */
-        $retitled = Harness::undoRetitling( $class, $actual );
-
-        $this->assertSame( array(), $retitled['problems'],
-            "the rename allowance for " . $class . " does not match the definition:\n  "
-            . implode( "\n  ", $retitled['problems'] ) );
-
-        $actual = $retitled['config'];
-
-        $added = Harness::undoAdding( $class, $actual );
-
-        $this->assertSame( array(), $added['problems'],
-            "the addition allowance for $class does not match the definition:\n  "
-            . implode( "\n  ", $added['problems'] ) );
-
-        $actual = $added['config'];
-
-        $actual = $this->undoRetyping( $class, $actual );
-
-        $restated = Harness::undoRestating( $class, $actual );
-
-        $this->assertSame( array(), $restated['problems'],
-            "the restatement allowance for $class does not match the definition:\n  "
-            . implode( "\n  ", $restated['problems'] ) );
-
-        $actual = $restated['config'];
-
-        /*
-         * ...and a report that has been deliberately relaid out is reconciled
-         * with the record on position and span alone, so everything else about
-         * every widget is still compared. See Harness::RELAID_OUT.
-         */
-        /*
-         * Widgets deliberately REMOVED come out of the RECORD, so what is left
-         * on both sides is the set the report still has.
-         */
-        $dropped = Harness::undoRemoval( $class, $expected, $actual );
-
-        $this->assertSame( array(), $dropped['problems'],
-            "the removal allowance for " . $class . " does not match the definition:\n  "
-            . implode( "\n  ", $dropped['problems'] ) );
-
-        $expected = $dropped['expected'];
-
-        $layout = Harness::normaliseLayout( $class, $expected, $actual );
-
-        $this->assertSame( array(), $layout['problems'],
-            "the relayout allowance for $class does not match the definition:\n  "
-            . implode( "\n  ", $layout['problems'] ) );
-
-        $expected = $layout['expected'];
-        $actual   = $layout['actual'];
-
-        // Whole-bag comparison, not key-by-key: a conversion that DROPPED a key
-        // would pass every per-key assertion that only looks at keys present in
-        // both.
-        $this->assertSame( $expected, $actual,
-            "report '$id' does not declare what $class declared" );
-    }
-
-    /**
-     * Put a deliberately re-typed widget back to what the controller declared,
-     * so everything ELSE about it is still compared.
-     *
-     * The list lives in the harness because the characterization test reads the
-     * same fixture and needs the same allowance -- see Harness::RETYPED.
-     */
-    private function undoRetyping( string $class, array $config ): array
-    {
-        $result = Harness::undoRetyping( $class, $config );
-
-        $this->assertSame( array(), $result['problems'],
-            "the re-typing allowance for $class does not match the definition:\n  "
-            . implode( "\n  ", $result['problems'] ) );
-
-        return $result['config'];
-    }
 
     /**
      * @dataProvider convertedProvider

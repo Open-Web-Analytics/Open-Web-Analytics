@@ -2441,7 +2441,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'browsers', 'reports/browsers.json' );
         $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
-        $this->registerReport( 'commerce', 'reports/commerce.json' );
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
@@ -2719,7 +2718,6 @@ class Module extends \OWA\Core\Module {
                 'site',
                 'visitor',
                 'host',
-                'exit',
                 'os',
                 'impression',
                 'configuration',

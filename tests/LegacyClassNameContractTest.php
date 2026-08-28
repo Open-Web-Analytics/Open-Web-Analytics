@@ -42,6 +42,13 @@ use PHPUnit\Framework\TestCase;
  * RETIRED 2026-08-24: the referral crawler. OWA no longer fetches referring
  * pages, so its CLI controller and view are gone -- see RefererCrawlRemovedTest.
  *
+ * RETIRED 2026-08-28: owa_exit, the entity behind the `exit` table. It was
+ * registered and mapped by a setting, and nothing anywhere constructed or wrote
+ * one -- there has been no write path for it in the tracker for years. The
+ * TABLE is deliberately left in place: dropping it is a destructive migration
+ * and a separate decision from removing dead code. (Unrelated to the exit-pages
+ * REPORT, which is live.)
+ *
  * RETIRED 2026-08-24, same reasoning: the 8 report VIEWS whose reports became
  * widget configuration. Seven were bespoke views that did nothing but name a
  * template; the eighth, ReportSimpleDimensional, was the generic subview they
@@ -154,6 +161,8 @@ final class LegacyClassNameContractTest extends TestCase
         'owa_reportSourceDetailController',
         'owa_reportSourcesController',
         'owa_reportStateDetailController',
+        // The dead entity behind the `exit` table; see the header.
+        'owa_exit',
         'owa_reportTrafficController',
         'owa_reportTransactionsController',
         'owa_reportVisitorsAgeController',

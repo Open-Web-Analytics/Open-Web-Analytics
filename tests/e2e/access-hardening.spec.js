@@ -42,7 +42,6 @@ const PUBLIC_PATHS = [
     'install.php',
     'queue.php',
     'blank.php',
-    'wp_plugin.php',
     // Built, intentionally-public assets, ALL now under the public/ asset tree (moved
     // out of the source tree so the deny-all can allow public/** wholesale) -- the
     // canonical tracker, the reporting JS, and the combined CSS.

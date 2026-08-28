@@ -84,7 +84,6 @@
     "owa_eventQueue",
     "owa_exampleSettingsController",
     "owa_exampleSettingsView",
-    "owa_exit",
     "owa_factTable",
     "owa_feedReaders",
     "owa_feedRequestHandlers",

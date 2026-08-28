@@ -121,7 +121,7 @@ final class ClassLoadSmokeTest extends TestCase
         ];
         $skipBasenames = [
             'owa_env.php', 'owa.php', 'index.php', 'install.php',
-            'cli.php', 'queue.php', 'log.php', 'blank.php', 'wp_plugin.php',
+            'cli.php', 'queue.php', 'log.php', 'blank.php',
         ];
 
         $files = [];
