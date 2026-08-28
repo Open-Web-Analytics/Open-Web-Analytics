@@ -2482,7 +2482,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
         $this->registerReport( 'source-detail', 'reports/source-detail.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );
-        $this->registerReport( 'state-detail', 'reports/state-detail.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );

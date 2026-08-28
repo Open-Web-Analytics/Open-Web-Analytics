@@ -127,7 +127,6 @@ final class ReportCharacterizationHarness
         'search-engines'            => 'ReportSearchEngines',
         'source-detail'             => 'ReportSourceDetail',
         'sources'                   => 'ReportSources',
-        'state-detail'              => 'ReportStateDetail',
         'traffic'                   => 'ReportTraffic',
         'transactions'              => 'ReportTransactions',
         'visitors-age'              => 'ReportVisitorsAge',

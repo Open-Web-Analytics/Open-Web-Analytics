@@ -2284,42 +2284,6 @@
             ]
         }
     },
-    "ReportStateDetail": {
-        "params": [
-            "country",
-            "stateRegion"
-        ],
-        "diagnostics": [],
-        "config": {
-            "constraints": "country==characterization_sentinel,stateRegion==characterization_sentinel",
-            "subview": "base.reportWidgets",
-            "title": "State/Region: ",
-            "titleSuffix": "characterization_sentinel",
-            "view_method": "delegate",
-            "widgets": [
-                {
-                    "container": "trend-chart",
-                    "headline": "There were {visits.formatted} visits from this state/region.",
-                    "id": "trend",
-                    "query": {
-                        "dimensions": "date",
-                        "sort": "date"
-                    },
-                    "type": "trend"
-                },
-                {
-                    "container": "dimension-grid",
-                    "id": "dim",
-                    "query": {
-                        "dimensions": "city,stateRegion",
-                        "resultsPerPage": 30,
-                        "sort": "visits"
-                    },
-                    "type": "grid"
-                }
-            ]
-        }
-    },
     "ReportTraffic": {
         "params": [],
         "diagnostics": [],
