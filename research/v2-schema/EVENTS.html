@@ -124,6 +124,18 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
 .ph-c{background:var(--sunk);color:var(--muted);border-color:var(--rule)}
 .ph-ins{background:transparent;color:var(--muted);border-color:var(--rule);
   border-style:dashed;font-size:9.5px}
+.allprops tr.stage td{background:var(--ink);color:var(--paper);font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;padding:9px 14px}
+.allprops tr.grp td{background:var(--sunk);font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:7px 14px;font-weight:600}
+.allprops .no{font-family:var(--mono);font-size:11px;color:var(--open)}
+.v1{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  padding:1.5px 5px;border-radius:2px;font-weight:600;white-space:nowrap}
+.v1-y{background:var(--sunk);color:var(--muted);border:1px solid var(--rule)}
+.v1-n{background:var(--fwd-bg);color:var(--fwd);border:1px solid var(--fwd)}
+.v1-r{background:var(--legacy-bg);color:var(--legacy);border:1px solid var(--legacy)}
+.allprops td:nth-child(3){white-space:nowrap}
+.allprops td:nth-child(2){white-space:nowrap}
 .who{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--muted)}
 .who b{color:var(--ink);font-weight:600}
 td.col{font-family:var(--mono);font-size:12px;white-space:nowrap}
@@ -141,8 +153,7 @@ td.col{font-family:var(--mono);font-size:12px;white-space:nowrap}
   <a href="#s1">1 · The boundary</a>
   <a href="#s2">2 · Where 1.x draws it</a>
   <div class="r-part">The rows</div>
-  <a href="#s3">3 · The envelope</a>
-  <a href="#s32">3.2 · Sent, not stored</a>
+  <a href="#s3">3 · All properties</a>
   <a href="#s4">4 · Per event</a>
   <a href="#s5">5 · Materialized events</a>
   <div class="r-part">Consequences</div>
@@ -278,110 +289,119 @@ message is not one.</p>
 
 <div class="part" id="s3">
   <p class="part-n">Part Three</p>
-  <h2>The envelope</h2>
-  <p class="part-note">Thirty columns every event row carries, whatever its type.</p>
+  <h2>Every property, by stage</h2>
+  <p class="part-note">One list. What sends it, when, and whether it survives into the table.</p>
 </div>
 
-<p>Of the 40 columns in §1.10, thirty are present on every event and ten are event-specific.
-Listing the envelope once and then only each event's <em>delta</em> is both shorter and truer:
-the envelope is what makes a single fact table work, and the deltas are small.</p>
+<p>Seventy-six properties move through the pipeline; <strong>fifty-four persist and twenty-two do
+not</strong>. Listing only the columns would record the survivors and lose every decision that
+produced them — a control flag replaced by a derivation, a URL narrowed to a URI, a client clock
+refused in favour of the server's. So this is one table, ordered by the stage that sets each
+value, with persistence as a column rather than as a separate section.</p>
 
-<div class="scroll"><table class="envelope">
-<thead><tr><th>#</th><th>Column</th><th>Set by</th><th>Phase</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td class="n">1</td><td class="col">id</td><td class="who"><b>server</b></td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>Content-derived for idempotent events (from values already on the message), random otherwise. Either way the drain can produce it; it just cannot be filled in after the row exists, being half the PK.</td></tr>
-<tr><td class="n">2</td><td class="col">event_type</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Validated against the taxonomy at receipt.</td></tr>
-<tr><td class="n">3</td><td class="col">site_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Existence checked at receipt — see §7.2, the check needs the application store.</td></tr>
-<tr><td class="n">4</td><td class="col">visitor_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>From the cookie. The one value that cannot be content-derived (§1.5).</td></tr>
-<tr><td class="n">5</td><td class="col">session_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Embeds its creation timestamp; the midnight rule reads it back.</td></tr>
-<tr><td class="n">6</td><td class="col">user_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-declared. Resolves at collection only — earlier events stay anonymous forever (§1.5).</td></tr>
-<tr><td class="n">7</td><td class="col">ts</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The server clock at edge receipt. Travels with the queue item.</td></tr>
-<tr><td class="n">8</td><td class="col">yyyymmdd</td><td class="who">derived</td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>A pure function of <code>ts</code> — or of <code>session_id</code> for idempotent events, so a retry lands in the same partition. Both inputs travel with the message, so the drain computes it. Being the partition key it must be right at insert, which is a different constraint from being request-time work.</td></tr>
-<tr><td class="n">9</td><td class="col">visitor_fsts</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>First-seen ts, carried on every event. New-visitor derives from it rather than being flagged.</td></tr>
-<tr><td class="n">10</td><td class="col">prior_sessions</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Carried visitor history.</td></tr>
-<tr><td class="n">11</td><td class="col">page_uri</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td>Pure function of <code>page_url</code>. Page identity is <code>hash(site_id + uri)</code>.</td></tr>
-<tr><td class="n">12</td><td class="col">page_title</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td></td></tr>
-<tr><td class="n">13</td><td class="col">referer_url</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>The raw referer. Attribution is what the server makes of it.</td></tr>
-<tr><td class="n">14</td><td class="col">medium</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td><td rowspan="5"><strong>Both halves write these names today.</strong> In 1.x the tracker sends <code>source</code>, <code>medium</code>, <code>campaign</code> and <code>search_terms</code> when the landing URL is tagged (they are registered <code>regular</code>, <em>set by clients</em>), and the server derives the same five from the referer when it does not. Nothing records which happened. §7.5 proposes renaming the tracker's half to <code>tagged_*</code> and adding <code>attribution_basis</code>, so the claim, the answer and the rule that produced it are three different things.<br><br>Sticky either way: stamped on every event of the session, which is what makes &ldquo;sessions by landing page&rdquo; a group-by instead of a join. Deferrable, but see §7.3 — stickiness needs the session's first touch and a drain sees arrival order.</td></tr>
-<tr><td class="n">15</td><td class="col">source</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">16</td><td class="col">campaign</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">17</td><td class="col">ad</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">18</td><td class="col">search_terms</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">19</td><td class="col">browser</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td rowspan="3">Parsed from <code>raw_ua</code>, which is stored on every row — so the parse can happen at the drain, in a backfill, or be redone when the browscap data improves. This is the largest deferrable cost in the handler.</td></tr>
-<tr><td class="n">20</td><td class="col">browser_type</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">21</td><td class="col">os</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">22</td><td class="col">language</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td><code>Accept-Language</code>. A header, so it dies with the request.</td></tr>
-<tr><td class="n">23</td><td class="col">country</td><td class="who">derived</td><td><span class="ph ph-ap">A*</span></td><td rowspan="2">From <code>ip_address</code>, so deferrable <em>only if the full IP survives to the drain</em>. §1.8 anonymises by default. See §7.1 — this ordering is the sharpest open question in the spec.</td></tr>
-<tr><td class="n">24</td><td class="col">city</td><td class="who">derived</td><td><span class="ph ph-ap">A*</span></td></tr>
-<tr><td class="n">25</td><td class="col">host</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td><code>Host</code> header.</td></tr>
-<tr><td class="n">26</td><td class="col">ip_address</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The connection, read through <code>X-Forwarded-For</code> — and the leftmost value there is attacker-controlled. Anonymised by default before storage.</td></tr>
-<tr><td class="n">36</td><td class="col">engagement_msec</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Rides every event: time accrued on the current page since the last report. Additive, so session engagement is a SUM over anything.</td></tr>
-<tr><td class="n">37</td><td class="col">is_key_event</td><td class="who"><b>server</b></td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>The drain stamps it, matching the event against the goal config. The real constraint is not the request but the <em>reporting boundary</em>: it must be resolved before the row is readable, because no reporting query may join the application store (§1.10). Which means the drain needs that store — see §7.2.</td></tr>
-<tr><td class="n">39</td><td class="col">raw_ua</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The header itself, kept behind <code>store_raw_ua</code> (default on). It is what makes rows 19–21 deferrable and re-derivable.</td></tr>
-<tr><td class="n">40</td><td class="col">params</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-defined custom variables, event params, nested commerce items. One param key, one type, enforced at ingest.</td></tr>
+<p>Read <strong>not stored</strong> as a deliberate outcome, never an oversight: each one is
+either an input that has been transformed, a control flag that has done its job, or a field v2
+declines to keep. The <strong>In&nbsp;1.x</strong> column separates what already exists from what
+v2 introduces — <strong>seven properties are genuinely new</strong> and seven more exist under a
+different name, so the collection surface is far closer to today's than the schema change
+suggests.</p>
+
+<div class="scroll"><table class="allprops">
+<thead><tr><th>Property</th><th>Stage</th><th>In&nbsp;1.x</th><th>Persists as</th><th>Note</th></tr></thead><tbody>
+<tr class="stage"><td colspan="5">Stage 1 &mdash; the tracker sends it</td></tr>
+<tr class="grp"><td colspan="5">identity</td></tr>
+<tr><td class="col">event_type</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>event_type</code></td><td>Validated against the taxonomy at receipt.</td></tr>
+<tr><td class="col">site_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>site_id</code></td><td>Existence checked where a store is reachable (&sect;7.2).</td></tr>
+<tr><td class="col">visitor_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>visitor_id</code></td><td>The one value that cannot be content-derived (&sect;1.5).</td></tr>
+<tr><td class="col">session_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>session_id</code></td><td>Embeds its creation timestamp; the midnight rule reads it back.</td></tr>
+<tr><td class="col">user_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>user_name / user_email</code></td><td><code>user_id</code></td><td>Site-declared. Resolves at collection only &mdash; earlier events stay anonymous forever.</td></tr>
+<tr><td class="col">fsts</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>visitor_fsts</code></td><td>Renamed. First-seen ts on every event; new-visitor derives from it.</td></tr>
+<tr><td class="col">nps</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>prior_sessions</code></td><td>Renamed &mdash; &ldquo;number of prior sessions&rdquo;.</td></tr>
+<tr><td class="col">sts</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Session start ts. No session row exists in v2 to compute days-since once, so it stays on the wire and is read, not stored.</td></tr>
+<tr class="grp"><td colspan="5">control flags</td></tr>
+<tr><td class="col">is_new_session</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Materializes the <code>session_start</code> row, then discarded.</td></tr>
+<tr><td class="col">is_new_session_start</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Same.</td></tr>
+<tr><td class="col">is_new_visitor</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Materializes <code>first_visit</code>. &sect;1.10 lists it among the columns <em>deliberately absent</em>: it derives from <code>visitor_fsts</code>, and a flag that can disagree with its own derivation is a bug you cannot see.</td></tr>
+<tr><td class="col">is_new_visitor_created</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Same.</td></tr>
+<tr class="grp"><td colspan="5">clocks</td></tr>
+<tr><td class="col">timestamp</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>The client clock. <strong>Overridden</strong> by the server&rsquo;s <code>ts</code> and kept nowhere.</td></tr>
+<tr><td class="col">last_req</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Client clock again. In 1.x it is subtracted from a server clock with nothing recording that the two came from different clocks.</td></tr>
+<tr class="grp"><td colspan="5">page</td></tr>
+<tr><td class="col">page_url</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Input. Becomes <code>page_uri</code> &mdash; URI, not URL &mdash; so the query string deliberately does not identify a page.</td></tr>
+<tr><td class="col">page_title</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>page_title</code></td><td></td></tr>
+<tr><td class="col">HTTP_REFERER</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>referer_url</code></td><td>Renamed. The raw referer; attribution is what the server makes of it.</td></tr>
+<tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Input to attribution.</td></tr>
+<tr class="grp"><td colspan="5">attribution claim</td></tr>
+<tr><td class="col">tagged_source</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>source</code></td><td><span class="no">not stored</span></td><td><strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column.</td></tr>
+<tr><td class="col">tagged_medium</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>medium</code></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">tagged_campaign</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>campaign</code></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">tagged_ad</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">tagged_terms</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>search_terms</code></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr class="grp"><td colspan="5">engagement and geometry</td></tr>
+<tr><td class="col">engagement_msec</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>engagement_msec</code></td><td>Time accrued on the current page since the last report. Additive, so session engagement is a SUM over anything.</td></tr>
+<tr><td class="col">click_x</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>click_x</code></td><td></td></tr>
+<tr><td class="col">click_y</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>click_y</code></td><td></td></tr>
+<tr><td class="col">page_width</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>page_width</code></td><td></td></tr>
+<tr><td class="col">page_height</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>page_height</code></td><td></td></tr>
+<tr><td class="col">scroll_depth</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>scroll_depth</code></td><td>New in v2. 1.x&rsquo;s <code>dom.scroll</code> is a recording sample with no server handler.</td></tr>
+<tr><td class="col">target_url</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>target_url</code></td><td>Click, download or outbound target.</td></tr>
+<tr class="grp"><td colspan="5">element capture</td></tr>
+<tr><td class="col">element_path</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>element_path</code></td><td>New in v2, and the one that matters: a path identifies an element across renders.</td></tr>
+<tr><td class="col">dom_element_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>element_id</code></td><td>Renamed.</td></tr>
+<tr><td class="col">dom_element_tag</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>element_tag</code></td><td>Renamed.</td></tr>
+<tr><td class="col">dom_element_class</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td><strong>Dropped.</strong> Six fields with no home in v2 &mdash; the path replaces them.</td></tr>
+<tr><td class="col">dom_element_name</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">dom_element_text</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">dom_element_value</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">dom_element_x</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr><td class="col">dom_element_y</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td></td></tr>
+<tr class="grp"><td colspan="5">commerce</td></tr>
+<tr><td class="col">ct_total</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>revenue</code></td><td>Renamed, and stored in cents. Negative on <code>refund</code>.</td></tr>
+<tr><td class="col">ct_line_items</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params.items</code></td><td>The nested array <code>params</code> exists for. Costs 1.x a separate fact table and a join.</td></tr>
+<tr><td class="col">ct_gateway</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">ct_order_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">ct_order_source</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">ct_shipping</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">ct_tax</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">city / country / state</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td><strong>Billing address</strong>, sent on <code>ecommerce.transaction</code>. Two of the three names collide with the IP-derived columns below &mdash; see &sect;7.6.</td></tr>
+<tr class="grp"><td colspan="5">custom</td></tr>
+<tr><td class="col">action_name</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">action_group</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">action_label</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">numeric_value</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
+<tr><td class="col">attribs</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td>Custom variables.</td></tr>
+<tr><td class="col">cv1 &ndash; cv3</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td>The visible edge of 1.x&rsquo;s ten columns implementing five fixed slots &mdash; a limit a fixed-width row forced.</td></tr>
+<tr><td class="col">feed_subscription_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td><code>feed_request</code> only.</td></tr>
+<tr class="stage"><td colspan="5">Stage 2 &mdash; the server stamps it at receipt</td></tr>
+<tr><td class="col">ts</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-r">1.x</span> <code>timestamp</code></td><td><code>ts</code></td><td>The server clock at edge receipt. Travels with the queue item, which is what keeps at-least-once redelivery from re-dating an event.</td></tr>
+<tr><td class="col">ip_address</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>ip_address</code></td><td>The connection, read through <code>X-Forwarded-For</code> &mdash; whose leftmost value is attacker-controlled. Anonymised by default before storage.</td></tr>
+<tr><td class="col">raw_ua</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-r">1.x</span> <code>header only</code></td><td><code>raw_ua</code></td><td>The <code>User-Agent</code> header, behind <code>store_raw_ua</code> (default on). It is what makes browser and OS deferrable and re-derivable.</td></tr>
+<tr><td class="col">host</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>host</code></td><td><code>Host</code> header.</td></tr>
+<tr><td class="col">language</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>language</code></td><td><code>Accept-Language</code> header.</td></tr>
+<tr><td class="col">country</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>country</code></td><td><span class="ph ph-ap">A*</span> Derived from the IP, so this sits at receipt <em>only because anonymisation is about to destroy its input</em> &mdash; the one genuine A* in the spec. See &sect;7.1.</td></tr>
+<tr><td class="col">city</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>city</code></td><td><span class="ph ph-ap">A*</span> Same.</td></tr>
+<tr><td class="col">REMOTE_HOST</td><td><span class="ph ph-a">A</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>1.x only. Reverse DNS on the connection; no v2 column.</td></tr>
+<tr class="stage"><td colspan="5">Stage 3 &mdash; the server resolves it at the drain</td></tr>
+<tr><td class="col">id</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>id</code></td><td><span class="ph ph-ins">by INSERT</span> Content-derived for idempotent events, random otherwise. Either way the drain produces it; it just cannot be added after the row exists, being half the PK.</td></tr>
+<tr><td class="col">yyyymmdd</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>yyyymmdd</code></td><td><span class="ph ph-ins">by INSERT</span> From <code>ts</code>, or from <code>session_id</code> for idempotent events so a retry lands in the same partition. The partition key, so it must be right at insert &mdash; which is not the same as being request-time work.</td></tr>
+<tr><td class="col">page_uri</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>page_uri</code></td><td><code>hash(site_id + uri)</code> is page identity.</td></tr>
+<tr><td class="col">source</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>source</code></td><td>The <em>answer</em>. Sticky: stamped on every event of the session, which is what makes &ldquo;sessions by landing page&rdquo; a group-by instead of a join. See &sect;7.3 for the ordering problem this creates at a drain.</td></tr>
+<tr><td class="col">medium</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>medium</code></td><td></td></tr>
+<tr><td class="col">campaign</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>campaign</code></td><td></td></tr>
+<tr><td class="col">ad</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>ad</code></td><td></td></tr>
+<tr><td class="col">search_terms</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>search_terms</code></td><td><strong>Referral</strong> terms. Collides with site-internal search &mdash; &sect;7.4.</td></tr>
+<tr><td class="col">attribution_basis</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-n">new</span></td><td><code>attribution_basis</code></td><td><strong>Proposed, &sect;7.5.</strong> Which rule produced the answer: <code>tagged</code>, <code>referer</code>, <code>direct</code>, or <code>carried</code>.</td></tr>
+<tr><td class="col">browser</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>browser</code></td><td>Parsed from <code>raw_ua</code>, so re-derivable when the browscap data improves.</td></tr>
+<tr><td class="col">browser_type</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>browser_type</code></td><td></td></tr>
+<tr><td class="col">os</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>os</code></td><td></td></tr>
+<tr><td class="col">is_key_event</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-n">new</span></td><td><code>is_key_event</code></td><td><span class="ph ph-ins">by INSERT</span> Matched against the goal config. The constraint is the <em>reporting boundary</em>, not the request: resolved before the row is readable, because no reporting query may join the application store.</td></tr>
+<tr><td class="col">session_start / first_visit</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-n">new</span></td><td><span class="dash">(whole rows)</span></td><td>Not a property but a product of this stage: the server materializes these two events from the control flags above. Every column on them is server-set (&sect;5).</td></tr>
 </tbody></table></div>
 
-<div class="note"><p><strong>Absent means NULL.</strong> §1.9 retires sentinel strings, so a column
-an event does not carry is NULL rather than <code>(not set)</code>. That is what makes
-<code>COUNT(column)</code> mean something — in 1.x <code>dom_element_id</code> reads as populated
-on 94% of clicks while being real on 0.09%.</p></div>
-
-
-<h3 id="s32"><span class="num">3.2</span>The wire is wider than the schema</h3>
-<p>Listing columns answers &ldquo;what is stored&rdquo; and quietly skips a larger set: properties
-the tracker <em>sends</em> that never become a column. Measured against 1.x's beacon contract,
-<strong>31 of 52 wire parameters are not columns in the v2 table</strong>. They are not noise —
-each one is doing a job, and the job explains why it is not stored.</p>
-
-<div class="scroll"><table>
-<thead><tr><th>Kind</th><th>Wire parameter</th><th>Where it goes</th></tr></thead>
-<tbody>
-<tr><td><strong>Renamed</strong><br><span class="dash">stored, different name</span></td>
-<td class="col">HTTP_REFERER, fsts, nps, dom_element_id, dom_element_tag, ct_total</td>
-<td>→ <code>referer_url</code>, <code>visitor_fsts</code>, <code>prior_sessions</code>,
-<code>element_id</code>, <code>element_tag</code>, <code>revenue</code>. Worth writing down
-because a wire name that survives into the schema unchanged is the exception, not the rule.</td></tr>
-
-<tr><td><strong>Input</strong><br><span class="dash">transformed, then dropped</span></td>
-<td class="col">page_url, session_referer, last_req, timestamp, sts, <em>and under §7.5's rename</em> tagged_source, tagged_medium, tagged_campaign, tagged_terms</td>
-<td><code>page_url</code> becomes <code>page_uri</code> — URI, not URL — and page identity is
-<code>hash(site_id + uri)</code>, so the full URL with its query string is deliberately not what
-identifies a page. <code>session_referer</code> feeds attribution. The client
-<code>timestamp</code> is <strong>overridden</strong> by the server's <code>ts</code> and kept
-nowhere, which is the correct resolution of 1.x's clock-provenance problem —
-<code>last_req</code> is a client clock that today gets subtracted from a server clock with
-nothing recording that they came from different clocks. <code>sts</code> stays on the wire
-because there is no session row in v2 to compute days-since once.</td></tr>
-
-<tr><td><strong>Control</strong><br><span class="dash">decides something, then dropped</span></td>
-<td class="col">is_new_session, is_new_session_start, is_new_visitor, is_new_visitor_created</td>
-<td>These are what tell the server to materialize <code>session_start</code> and
-<code>first_visit</code> (§5). Having done that they are discarded — §1.10 lists
-<code>is_new_visitor</code> among the columns <em>deliberately absent</em>, because it derives
-from <code>visitor_fsts</code>, which is on every row. A flag and a derivation that disagree is a
-bug you cannot detect; only one of them should exist.</td></tr>
-
-<tr><td><strong>Into <code>params</code></strong><br><span class="dash">stored, unstructured</span></td>
-<td class="col">attribs, cv1–cv3, action_group, action_label, action_name, numeric_value,
-ct_gateway, ct_order_id, ct_order_source, ct_shipping, ct_tax, ct_line_items</td>
-<td>Exactly the column-admission rule from §1.10: site-defined keys unknown at release time, and
-nested arrays. The <code>cv1…cv3</code> here are the visible edge of 1.x's ten columns
-implementing five fixed custom-variable slots — a limit a fixed-width row forced, and which a
-param map removes.</td></tr>
-
-<tr><td><strong>Dropped</strong><br><span class="dash">no home in v2</span></td>
-<td class="col">dom_element_class, dom_element_name, dom_element_text, dom_element_value,
-dom_element_x, dom_element_y, state</td>
-<td>v2 keeps <code>element_path</code>, <code>element_tag</code> and <code>element_id</code> and
-drops the other six — the path is the thing that identifies an element across renders, and it is
-what §2.3 of PLAN.html calls the value in element capture. <code>state</code> is a billing
-region with no column: see §7.6, which is a collision rather than a simple drop.</td></tr>
-</tbody></table></div>
-
-<div class="note"><p><strong>This is where the schema gets its discipline.</strong> Roughly three
-in five wire parameters do not survive into storage, and almost every one of those is a decision:
-a flag replaced by a derivation, a URL narrowed to a URI, a client clock refused in favour of the
-server's. A spec that lists only columns records the outcomes and loses all of the reasoning.</p></div>
+<div class="note"><p><strong>Three in five wire parameters do not become a column of their own.</strong>
+That ratio is the schema's discipline showing: <code>owa_event</code> lands at 40 columns against
+<code>owa_request</code>'s 58 plus <code>owa_session</code>'s 121, and it does so by refusing
+flags it can derive, clocks it does not trust, and element attributes a path already identifies.</p></div>
 
 <div class="part" id="s4">
   <p class="part-n">Part Four</p>
