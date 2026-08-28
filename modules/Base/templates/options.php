@@ -10,7 +10,7 @@
     <TR>
         <TD colspan="2" class="introtext">
             <P>You are using <strong>Open Web Analytics <?php $view->out(OWA_VERSION);?></strong></P>
-            <P>Open Web Analytics has several configuration options that can be set using the controls below. Once changes are made click the "save" button to save the configuration to the database. To learn more about configuring OWA, visit the <a href="http://wiki.openwebanalytics.com">OWA Wiki</a></P>
+            <P>Open Web Analytics has several configuration options that can be set using the controls below. Once changes are made click the "save" button to save the configuration to the database. To learn more about configuring OWA, visit the <a href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki">OWA Wiki</a></P>
         </TD>
     </TR>
     <TR>
