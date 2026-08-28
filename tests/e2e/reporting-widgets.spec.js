@@ -232,17 +232,27 @@ test.describe('every configured report renders in a browser', () => {
              * the wrong dimension would show the same host inside a full URL
              * and read as correct. The cell is compared whole.
              *
-             * This card has no "View Full Report" and the two beside it do:
-             * there is no shipped report grouped by referring web site. The
-             * one CALLED Referring Web Sites groups by referral page URL, and
-             * a card that led there would be a link the report builder itself
-             * would refuse to offer -- see
-             * CustomReportsTest::testTheDerivationReproducesTheShippedFullReportLinks.
              */
             const cells = page.locator('#referring-sites tr.jqgrow td[aria-describedby$="referralWebSite"]');
 
             await expect(cells.filter({ hasText: FIXTURE.traffic.refererHost }))
                 .toHaveCount(1);
+
+            /*
+             * ...and it leads to the report about the same thing.
+             *
+             * This link did not exist at first: Referring Web Sites grouped by
+             * referral page URL, so a card of SITES leading there was a link
+             * the report builder itself refuses to offer -- a fuller report
+             * has to be about the dimension the card shows. The report was
+             * repointed at referralWebSite, which is what its nav entry had
+             * always called it, and the link followed.
+             */
+            const more = page.locator('#referring-sites')
+                .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
+                .locator('.owa_moreLinks a');
+
+            await expect(more).toHaveAttribute( 'href', /reportId=referring-sites/ );
         });
 
         test('the countries card links to the geolocation report', async ({ page }) => {

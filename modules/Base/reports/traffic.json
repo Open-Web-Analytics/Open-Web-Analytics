@@ -77,6 +77,10 @@
                 "metrics": "visits",
                 "dimensions": "referralWebSite",
                 "sort": "visits-"
+            },
+            "more": {
+                "reportId": "referring-sites",
+                "label": "View Full Report »"
             }
         },
         {
@@ -145,10 +149,6 @@
                 "valueColumns": [
                     "referralPageUrl"
                 ]
-            },
-            "more": {
-                "reportId": "referring-sites",
-                "label": "View Full Report »"
             }
         }
     ]

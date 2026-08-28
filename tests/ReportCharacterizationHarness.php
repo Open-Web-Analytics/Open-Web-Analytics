@@ -564,6 +564,11 @@ final class ReportCharacterizationHarness
         // "Web Pages" was the odd one out: every other content report is named
         // for what it lists, and the nav entry beside it already said "Pages".
         'ReportPages' => array( 'Web Pages', 'Pages' ),
+
+        // The nav has called it this all along. The definition said
+        // "Referrals" over a grid of referral page URLs; it is a grid of
+        // referring web sites now, which is what the menu entry promised.
+        'ReportReferringSites' => array( 'Referrals', 'Referring Web Sites' ),
     );
 
     /**
@@ -609,6 +614,23 @@ final class ReportCharacterizationHarness
          */
 
         'ReportDashboard' => array(
+
+            /*
+             * Top Referrers has no "View Full Report" any more.
+             *
+             * It led to Referring Web Sites, and that report is about the
+             * referring SITE now rather than the referral page -- so the link
+             * became one the report builder itself refuses to offer: a card's
+             * fuller report has to be about the same dimension. See
+             * CustomReportsTest::testTheDerivationReproducesTheShippedFullReportLinks.
+             *
+             * No report is about referralPageUrl any more, so there is nowhere
+             * for it to point rather than somewhere better.
+             */
+            'topReferrers' => array( 'more' => array(
+                array( 'reportId' => 'referring-sites' ),
+                null ) ),
+
             // A full URL in a column narrow enough for a path.
             'latestVisits' => array(
                 'query.dimensions' => array(
@@ -654,6 +676,11 @@ final class ReportCharacterizationHarness
          * reports.
          */
         'ReportTraffic' => array(
+
+            // Same as the dashboard's Top Referrers, and for the same reason.
+            'topreferrals' => array( 'more' => array(
+                array( 'label' => 'View Full Report »', 'reportId' => 'referring-sites' ),
+                null ) ),
 
             'medium' => array(
                 'chartWidth' => array( '300px', null ),
@@ -812,6 +839,39 @@ final class ReportCharacterizationHarness
 
         'ReportEcommerce' => array(
             'productName' => array( 'query.resultsPerPage' => array( 5, null ) ),
+        ),
+
+        /*
+         * The report is about the referring SITE now, not the referral page.
+         *
+         * It was the only report the nav called one thing and the definition
+         * called another -- "Referring Web Sites" in the menu, "Referrals" in
+         * the title, and a grid of referral page URLs underneath. Nothing was
+         * grouped by referralWebSite at all, so a summary card of referring
+         * sites had no report to lead to.
+         *
+         * The row link goes with the page URL: it led to referral-detail,
+         * which reads a referralPageUrl the query no longer selects, and no
+         * report details a referring site. excludeColumns named the title
+         * column of a pair that is no longer queried.
+         */
+        'ReportReferringSites' => array(
+            'dim' => array(
+                'query.dimensions' => array( 'referralPageTitle,referralPageUrl',
+                                             'referralWebSite' ),
+                'link' => array(
+                    array(
+                        'linkColumn'   => 'referralPageUrl',
+                        'template'     => array(
+                            'do'               => 'base.report',
+                            'referralPageUrl'  => '%s',
+                            'reportId'         => 'referral-detail',
+                        ),
+                        'valueColumns' => 'referralPageUrl',
+                    ),
+                    null ),
+                'excludeColumns' => array( array( 'referralPageTitle' ), null ),
+            ),
         ),
     );
 

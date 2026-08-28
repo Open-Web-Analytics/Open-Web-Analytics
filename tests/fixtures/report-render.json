@@ -3149,7 +3149,7 @@
                 "var": "site_usage_dimurl",
                 "query": {
                     "constraints": "medium==referral",
-                    "dimensions": "referralPageTitle,referralPageUrl",
+                    "dimensions": "referralWebSite",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
