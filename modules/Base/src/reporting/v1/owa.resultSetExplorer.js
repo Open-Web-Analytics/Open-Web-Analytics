@@ -2514,6 +2514,23 @@ OWA.constraintBuilder.prototype = {
         var container_selector = that.dom_selector + ' > .constraintPickerContainer';
 
         /*
+         * The builder is addressed by ID from here on, not as a child of the
+         * container it was appended to.
+         *
+         * .dialog() MOVES the element -- it wraps it in .ui-dialog and appends
+         * that to appendTo -- so `... > .constraintPickerContainer > .builder`
+         * stops matching the moment the dialog is created, and every selector
+         * built from it (the row list, the two buttons, the apply handler's
+         * iteration) would silently address nothing. An id survives the move.
+         *
+         * Derived from the explorer's own selector so two grids on one report
+         * get two different ids; the non-word characters in a selector are not
+         * legal in one.
+         */
+        var builder_id = 'owa_filterBuilder-'
+            + String( that.dom_selector ).replace( /[^A-Za-z0-9_-]/g, '' );
+
+        /*
          * The toggle is an ICON.
          *
          * It sits in a bar whose other controls are the dimensions the grid is
@@ -2540,8 +2557,9 @@ OWA.constraintBuilder.prototype = {
         );
 
         var button_selector = container_selector + ' > .toggle-button';
-        var builder_selector = container_selector + ' > .builder';
-        jQuery(builder_selector).hide();
+        var builder_selector = '#' + builder_id;
+
+        jQuery( container_selector + ' > .builder' ).attr( 'id', builder_id );
 
         // if there are existing constraints
         if (constraints.length > 0) {
@@ -2561,13 +2579,42 @@ OWA.constraintBuilder.prototype = {
             this.addNewConstraintRow(builder_selector + ' > ul');
         }
 
-        // Reveal the builder. Keyboard as well as mouse: the icon is not a
-        // <button>, so Enter and Space are not free.
+        /*
+         * A MODAL, not a panel hanging off the bar.
+         *
+         * The builder is as wide as a filter row needs; the widget it belongs
+         * to can be a quarter of a row. Every in-flow arrangement of those two
+         * facts is a choice about which edge to overflow -- anchored to the
+         * funnel's left it hung past the card's right edge, anchored right it
+         * ran off the left and clipped the dimension picker. A dialog has no
+         * parent to overflow.
+         *
+         * appendTo: '.owa' IS LOAD-BEARING. jQuery UI lifts a dialog to <body>
+         * by default, and every rule styling what is inside this thing is
+         * written `.owa .owa_...` like the rest of the reporting stylesheet --
+         * so a lifted dialog matches none of them. That is exactly how both
+         * report-builder modals shipped unstyled for a while.
+         */
+        jQuery( builder_selector ).dialog( {
+            autoOpen: false,
+            modal: true,
+            appendTo: '.owa',
+            width: Math.min( 560, jQuery( window ).width() - 40 ),
+            title: OWA.l( 'Filter' ),
+            dialogClass: 'owa_filterDialogFrame',
+            close: function () {
+
+                jQuery( button_selector ).attr( 'aria-expanded', 'false' );
+            }
+        } );
+
+        // Open it. Keyboard as well as mouse: the icon is not a <button>, so
+        // Enter and Space are not free.
         var toggle = function () {
 
-            var open = jQuery( builder_selector ).is( ':visible' );
+            var open = jQuery( builder_selector ).dialog( 'isOpen' );
 
-            jQuery( builder_selector ).toggle();
+            jQuery( builder_selector ).dialog( open ? 'close' : 'open' );
             jQuery( button_selector ).attr( 'aria-expanded', open ? 'false' : 'true' );
         };
 
@@ -2639,6 +2686,11 @@ OWA.constraintBuilder.prototype = {
                     constraints ? constraints.split( ',' ).filter( Boolean ).length : 0 );
 
                 var el = jQuery( that.dom_selector ).trigger('constraint_change', [constraints]);
+
+                // Applying is the point of the dialog, so it closes on the way
+                // out -- the reader wants to see the rows it changed, and they
+                // are behind it.
+                jQuery( builder_selector ).dialog( 'close' );
             });
     },
 
@@ -2760,15 +2812,36 @@ OWA.constraintBuilder.prototype = {
 
         jQuery(selector).append(c);
 
-        // Core jQuery-UI selectmenu (1.11+) replaces the Nagel fork. It has no
-        // "value" setter method: set the value on the native <select> first, then
-        // enhance / refresh so the widget reflects it. width is now a style, not an
-        // option, so size the menu via width in the widget's classes option.
+        /*
+         * CHOSEN, like the dimension picker beside it.
+         *
+         * This was a jQuery-UI selectmenu, so a filter row put two different
+         * select widgets side by side -- a rounded chosen pill naming the
+         * dimension, then a square selectmenu naming the operator, then a bare
+         * <input> for the value. Three controls that do one job together, in
+         * three different sets of clothes.
+         *
+         * The value is set on the native <select> BEFORE enhancing: chosen
+         * renders from the select's state at enhancement time and has no
+         * "set the value" method of its own -- the same reason the old code
+         * set it before calling selectmenu(). The apply handler still reads
+         * `.operator-list` directly, which keeps working because chosen leaves
+         * the <select> in place and only hides it.
+         *
+         * disable_search because there are six operators; a search box on six
+         * options is furniture.
+         *
+         * The width is EXPLICIT for the same reason the dimension picker's is:
+         * chosen-js 1.x measures the <select> at enhancement time and reads 0
+         * inside a display:none parent, and these rows are built while the
+         * builder is still hidden. Without it the control collapses to a
+         * sliver. See the comment in dimensionPicker.display().
+         */
         var opList = jQuery(selector + ' > .operator-list');
         if ( selected ) {
             opList.val(selected);
         }
-        opList.selectmenu({ width: 200 });
+        opList.chosen( { disable_search: true, width: '150px' } );
 
     }
 

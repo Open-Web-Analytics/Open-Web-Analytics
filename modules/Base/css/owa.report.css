@@ -598,16 +598,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     position: relative;
 }
 
-/* The panel hangs BELOW the bar rather than growing it, so opening the filter
-   does not move the controls beside it. */
-.owa .owa_reportControl .constraintPickerContainer .builder {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 100;
-    margin: 6px 0 0 0;
-    min-width: 760px;
-}
+/*
+ * NOT positioned any more: the builder is a dialog, and jQuery UI places it.
+ * This rule used to hang the panel below the report-level bar; left in place it
+ * would fight the dialog's own absolute positioning and drag it back under the
+ * control that opened it.
+ */
 
 /* The scope switch sits inline in the bar; the Live View control it borrows
    its markup from floats right in the report header instead. */
@@ -864,29 +860,174 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     max-width: 100%;
 }
 
-.constraintPickerContainer .builder {
+/*
+ * THE FILTER BUILDER, in the same clothes as the bar it drops out of.
+ *
+ * It used to be a white box with a mid-grey border holding rows that were
+ * themselves 700px-wide bordered boxes with 20px of padding -- a card inside a
+ * card inside a card, wider than the widget it belonged to, so on anything less
+ * than a full-width grid it simply ran off the right-hand edge. The controls
+ * inside were a chosen pill, a jQuery-UI selectmenu and a bare <input>: three
+ * shapes for three parts of one sentence.
+ *
+ * Now: one panel, rows that are flex lines, and every control the same pill the
+ * dimension pickers on the bar already are.
+ */
+/*
+ * On a GRID's bar the panel hangs below rather than growing the bar.
+ *
+ * The report-level control already did this (see .owa_reportControl above);
+ * the grid's did not, so opening a filter pushed the whole table down and the
+ * panel drew inside the card, clipped at its right edge. Same treatment, and
+ * the width is capped by the card rather than a fixed number.
+ */
+/*
+ * The builder is a DIALOG BODY, so it draws no frame of its own -- the dialog
+ * around it has the border, the shadow and the title bar. It kept its own here
+ * while it was a panel hanging off the bar; leaving them would be a box inside
+ * a box.
+ */
+.builder {
 
-    margin:15px;
-    padding:10px;
-    background-color: #ffffff;
-    border: 1px solid #9f9f9f;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border: 0;
 }
 
+/*
+ * No list indent. A <ul>'s 40px of default padding-left pushed every filter
+ * row in from the dialog's edge while the buttons under it started at 0.
+ */
+.owa .builder ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/*
+ * A row is a LINE, and it wraps rather than overflowing.
+ *
+ * The width was 700px flat, which is wider than a half-row widget's whole
+ * panel. A filter row has to fit wherever the grid it filters fits.
+ */
 li.constraintRow {
-    width:700px;
-    padding:20px;
-    border: 1px solid #9f9f9f;
-    background-color: #fafafa;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    margin: 0 0 6px 0;
+    padding: 0;
+    border: 0;
+    background-color: transparent;
 }
 
-.constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
-    float:left;
-    margin-right:10px;
+.constraintRow .constraintOperatorPicker,
+.constraintRow .constraintDimensionPicker {
+    float: none;
+    margin-right: 0;
 }
 
-.constraintRow .constraintRemoveButton {
-    float:right;
-    margin-right:10px;
+/*
+ * The value field: the pill's geometry, but filled white.
+ *
+ * Same height, border and corner as the two menus beside it, because it is the
+ * third part of the same sentence. White rather than grey because it is the one
+ * part a reader TYPES into, and the fill is what says so.
+ */
+.owa .constraintRow .constraintValueField {
+    flex: 1 1 140px;
+    min-width: 120px;
+    height: 22px;
+    box-sizing: border-box;
+    padding: 3px 9px;
+    border: 1px solid #cccccc;
+    border-radius: 12px;
+    background-color: #ffffff;
+    background-image: none;
+    font-family: inherit;
+    font-size: 11px;
+    color: #303030;
+}
+
+.owa .constraintRow .constraintValueField:focus {
+    border-color: #1874CD;
+    outline: none;
+}
+
+/*
+ * The remove control is an X, not a button.
+ *
+ * It was a jQuery-UI button, which put a third kind of chrome on the row for
+ * the smallest thing in it. Marked up as a control for the keyboard, drawn as
+ * a glyph.
+ */
+.owa .constraintRow .constraintRemoveButton {
+    float: none;
+    margin-right: 0;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #303030;
+    opacity: 0.45;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.owa .constraintRow .constraintRemoveButton:hover,
+.owa .constraintRow .constraintRemoveButton:focus {
+    opacity: 1;
+    color: #c0392b;
+}
+
+/*
+ * Add and Apply, as pills.
+ *
+ * Apply carries the trend blue because it is the one that changes what the
+ * numbers say; Add only grows the form. A builder whose two buttons look
+ * identical makes the reader work out which one commits.
+ */
+/*
+ * Scoped to .builder, NOT to .constraintPickerContainer.
+ *
+ * The builder is a dialog now and jQuery UI moves it out of that container to
+ * `.owa`, so anything qualified by the container stops matching -- which is
+ * what left these two as default jQuery-UI buttons the first time. The same
+ * move broke the JS selectors; see the builder_id comment there.
+ */
+.owa .builder .add-button.ui-button,
+.owa .builder .apply-button.ui-button,
+.owa .builder .add-button,
+.owa .builder .apply-button {
+    display: inline-block;
+    margin: 4px 6px 0 0;
+    padding: 3px 12px;
+    border: 1px solid #cccccc;
+    border-radius: 12px;
+    background: #e6e6e6;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 15px;
+    color: #303030;
+    cursor: pointer;
+}
+
+.owa .builder .apply-button.ui-button,
+.owa .builder .apply-button {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+}
+
+.owa .builder .add-button:hover,
+.owa .builder .apply-button:hover {
+    filter: brightness( 0.95 );
 }
 
 /* Still used by the report-level control bar (the funnel's scope switch, the
@@ -2464,11 +2605,21 @@ li.constraintRow {
  * "available", and a control you are currently using is not merely available.
  * ------------------------------------------------------------------------- */
 
+.owa .explorerTopControls .owa_filterToggle,
 .owa .owa_filterToggle {
     display: inline-block;
-    /* Beats .explorerTopControls .controlItem span, which sets 10px for the
-       text controls on the same bar. An icon at 10px is a smudge. */
-    font-size: 14px;
+    /*
+     * 16px, which is what every other icon on the page is -- the nav's group
+     * icons and its carets both.
+     *
+     * The selector carries .explorerTopControls for a reason. That bar sets
+     * `.explorerTopControls .controlItem span { font-size: 10px }`, which is
+     * two classes and an element (0,2,1) against this rule's two classes
+     * (0,2,0), so it WON and the funnel rendered at 10px -- a smudge, and half
+     * the size of the icons it sits among. The comment here used to claim the
+     * opposite; it was never measured.
+     */
+    font-size: 16px;
     line-height: 1;
     padding: 2px;
     color: #303030;
@@ -2548,14 +2699,25 @@ li.constraintRow {
     flex: 0 1 auto;
 }
 
-.owa .owa_dimSlot .chosen-container {
+/*
+ * THE PILL, wherever a dimension is chosen.
+ *
+ * Scoped to .owa_dimSlot at first, because the bar was the only place one
+ * appeared. The filter builder builds dimension pickers too -- and an operator
+ * picker beside them now -- and left to chosen's own defaults those rendered
+ * 25px tall at 13px with a 5px corner, next to 22px/11px/12px pills on the bar
+ * two lines above. Same control, same clothes.
+ */
+.owa .owa_dimSlot .chosen-container,
+.owa .constraintRow .chosen-container {
     font-size: 11px;
     max-width: 100%;
     /* Content width, not the 100% chosen was given at enhancement time. */
     width: auto !important;
 }
 
-.owa .owa_dimSlot .chosen-container .chosen-single {
+.owa .owa_dimSlot .chosen-container .chosen-single,
+.owa .constraintRow .chosen-container .chosen-single {
     height: auto;
     padding: 3px 22px 3px 9px;
     border: 1px solid #cccccc;
@@ -2566,7 +2728,8 @@ li.constraintRow {
     line-height: 1.4;
 }
 
-.owa .owa_dimSlot .chosen-container .chosen-single span {
+.owa .owa_dimSlot .chosen-container .chosen-single span,
+.owa .constraintRow .chosen-container .chosen-single span {
     margin-right: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -2574,13 +2737,15 @@ li.constraintRow {
     display: block;
 }
 
-.owa .owa_dimSlot .chosen-container-active .chosen-single {
+.owa .owa_dimSlot .chosen-container-active .chosen-single,
+.owa .constraintRow .chosen-container-active .chosen-single {
     border-color: #999999;
 }
 
 /* The drop is wider than the pill that opened it -- a name has to be readable
    even when the trigger is only as wide as "Date". */
-.owa .owa_dimSlot .chosen-container .chosen-drop {
+.owa .owa_dimSlot .chosen-container .chosen-drop,
+.owa .constraintRow .chosen-container .chosen-drop {
     min-width: 240px;
     width: auto;
 }
@@ -2680,4 +2845,26 @@ li.constraintRow {
 
 .owa .owa_dimPillAdd .chosen-container {
     font-size: 11px;
+}
+
+
+/*
+ * THE FILTER DIALOG.
+ *
+ * The builder was a panel that hung off the control bar, and a filter row is
+ * wider than a quarter-row widget -- so wherever it was anchored, it overflowed
+ * the widget on one side or the other. A dialog has no parent to overflow.
+ */
+.owa .owa_filterDialogFrame {
+    border-radius: 6px;
+}
+
+.owa .owa_filterDialogFrame .ui-dialog-content {
+    padding: 14px;
+}
+
+/* Room for the dimension menu to drop INTO the dialog rather than be clipped
+   by it -- chosen's drop is absolutely positioned inside the row. */
+.owa .owa_filterDialogFrame .ui-dialog-content {
+    overflow: visible;
 }

@@ -814,44 +814,70 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await group.first().locator('.ui-checkboxradio-icon').count()).toBe(0);
     });
 
-    test('the filter/constraint builder opens with button + selectmenu widgets', async ({ page }) => {
-        // Guard for the RISKIEST widgets: the result-set explorer's constraint
-        // builder uses jQuery-UI button() plus selectmenu. The 1.8.12 -> 1.13.3
-        // upgrade replaced the vendored ui.selectmenu (Nagel fork) with CORE
-        // jQuery-UI selectmenu (bundled since 1.11). The builder is built hidden and
-        // revealed by a .toggle-button; open it and assert both widget types
-        // rendered so a selectmenu regression can't slip by.
-        // (The .constraintPickerContainer itself collapses to height 0 -- its
-        // .builder child is display:none until toggled -- so anchor on the visible
-        // toggle-button, not the container.)
-        const builder = page.locator('.constraintPickerContainer').first();
-        const toggle = builder.locator('> .toggle-button');
+    test('the filter builder opens as a modal with pill controls', async ({ page }) => {
+        /*
+         * The builder is a DIALOG now, not a panel inside the bar.
+         *
+         * A filter row is wider than a quarter-row widget, so every in-flow
+         * position for it was a choice about which edge of the card to
+         * overflow. A dialog has no parent to overflow. That move is also why
+         * this test can no longer look for `.constraintPickerContainer >
+         * .builder`: jQuery UI lifts the element out of that container.
+         *
+         * The operator picker is chosen, not jQuery-UI selectmenu. It was the
+         * odd one out -- a square selectmenu between a rounded chosen pill and
+         * a bare input, three shapes for three parts of one sentence.
+         */
+        const toggle = page.locator('.constraintPickerContainer > .toggle-button').first();
         await expect(toggle).toBeVisible();
 
         // The toggle is an ICON, not a jQuery-UI button -- it carries no label
         // and no dropdown triangle, because it sits beside the dimension
         // pickers and a second labelled box there reads as another dimension.
-        // Its font-awesome glyph is what makes it a filter.
         await expect(toggle).toHaveClass(/owa_filterToggle/);
         await expect(toggle).not.toHaveClass(/ui-button/);
         await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
         await expect(toggle).toHaveText('');
 
+        /*
+         * ...at the size every other icon on the page is. It computed to 10px
+         * for a while: `.explorerTopControls .controlItem span` is (0,2,1) and
+         * the rule meant to set it was (0,2,0), so the bar's text size won and
+         * the funnel rendered at half the size of the nav's icons beside it.
+         */
+        await expect(toggle).toHaveCSS('font-size', '16px');
+
         await toggle.click();
-        await expect(builder.locator('> .builder')).toBeVisible();
 
-        // Add / Apply are jQuery-UI buttons inside the revealed builder.
-        await expect(builder.locator('.add-button.ui-button')).toBeVisible();
-        await expect(builder.locator('.apply-button.ui-button')).toBeVisible();
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(dialog).toBeVisible();
 
-        // Each constraint row's <select.operator-list> is enhanced by CORE
-        // selectmenu, which inserts a span.ui-selectmenu-button as its trigger and
-        // hides the native <select>. At least one row exists by default.
-        expect(await page.locator('span.ui-selectmenu-button').count()).toBeGreaterThanOrEqual(1);
-        // The underlying native select is hidden once selectmenu takes over.
-        const selectDisplay = await page.evaluate(() => {
-            const s = document.querySelector('select.operator-list');
-            return s ? getComputedStyle(s).display : null;
+        /*
+         * INSIDE .owa, which is load-bearing rather than cosmetic. jQuery UI
+         * appends a dialog to <body> by default, and every rule styling what is
+         * in here is written `.owa .owa_...` -- a lifted dialog matches none of
+         * them, which is exactly how both report-builder modals once shipped
+         * with browser defaults.
+         */
+        await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
+            .toHaveCount(1);
+
+        await expect(dialog.locator('.add-button')).toBeVisible();
+        await expect(dialog.locator('.apply-button')).toBeVisible();
+
+        /*
+         * Both select controls are chosen, and there is no selectmenu left.
+         * A row has two: the dimension and the operator.
+         */
+        await expect(dialog.locator('.constraintRow .chosen-container'))
+            .toHaveCount(2);
+        await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
+
+        // The native <select> is hidden once chosen takes over -- and it stays
+        // in the DOM, which is what the apply handler reads.
+        const selectDisplay = await dialog.evaluate((d) => {
+            const sel = d.querySelector('select.operator-list');
+            return sel ? getComputedStyle(sel).display : null;
         });
         expect(selectDisplay).toBe('none');
     });
@@ -867,15 +893,27 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // Fix: pass an explicit width:'150px' to .chosen(). Unlike the secondary-
         // dimension picker (created visible), THIS one is created hidden -- so it is
         // the specific case that regressed. Assert it opens at a real, usable width.
-        const builder = page.locator('.constraintPickerContainer').first();
-        await builder.locator('> .toggle-button').click();
-        await expect(builder.locator('> .builder')).toBeVisible();
+        await page.locator('.constraintPickerContainer > .toggle-button').first().click();
+
+        // The builder is a dialog, so it is addressed as one -- see the modal
+        // test above.
+        const builder = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(builder).toBeVisible();
 
         const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
         await expect(dimChosen).toBeVisible();
-        // The enhanced container must be a real width, not the collapsed sliver.
+        /*
+         * The enhanced container must be a real width, not the collapsed sliver.
+         *
+         * Not 150 any more: the pill is CONTENT-sized now (the filter rows share
+         * the bar's pill styling, which is `width: auto`), so it is as wide as
+         * "Select..." rather than as wide as the explicit width chosen was given.
+         * That does not bring the sliver back -- the width comes from CSS laying
+         * out the text, not from chosen measuring a hidden <select> -- but it does
+         * mean the number to assert is "wider than a caret", not a fixed size.
+         */
         const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(contWidth).toBeGreaterThanOrEqual(100);
+        expect(contWidth).toBeGreaterThanOrEqual(50);
 
         // Open the dropdown and assert the dimension list is present, grouped, and
         // painted at the same usable width (chosen sizes .chosen-drop off the container).
@@ -888,11 +926,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
     });
 
-    test('selectmenu keeps the native select in sync with the selected operator', async ({ page }) => {
+    test('chosen keeps the native select in sync with the selected operator', async ({ page }) => {
         // Runtime guard (not just render): the constraint-apply path reads the
-        // chosen operator (owa.resultSetExplorer.js ~1638). The old Nagel fork used
-        // .selectmenu('value'); core jQuery-UI selectmenu has no such method and
-        // instead keeps the native <select> in sync, so the code now reads .val().
+        // chosen operator (owa.resultSetExplorer.js ~1638). Neither the old Nagel
+        // selectmenu fork nor chosen offers a "read the widget" method -- both keep
+        // the native <select> in sync, which is what the code reads with .val().
+        // The widget changed from selectmenu to chosen; this contract did not.
         // Pin that contract: the select carries a non-empty value.
         await page.locator('.constraintPickerContainer .toggle-button').first().click();
         const value = await page.evaluate(() => {
@@ -1048,15 +1087,17 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         //   - browserType contains "Chrome"  matches the row  -> grid keeps 1 row
         // Asserting BOTH directions proves the filter genuinely discriminates on the
         // constraint, not merely that Apply clears/reloads the grid.
-        const builder = page.locator('.constraintPickerContainer').first();
-        // Reveal the builder (toggle only when it's currently hidden -- a requery
-        // may leave it open, and a blind toggle would hide it again).
+        /*
+         * The builder is a MODAL, so it is opened and addressed as one. Applying
+         * closes it -- the rows it just changed are behind it -- so each pass
+         * through this test opens it again.
+         */
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
         const openBuilder = async () => {
-            const panel = builder.locator('> .builder');
-            if (!(await panel.isVisible())) {
-                await builder.locator('> .toggle-button').click();
+            if (!(await dialog.isVisible().catch(() => false))) {
+                await page.locator('.constraintPickerContainer > .toggle-button').first().click();
             }
-            await expect(panel).toBeVisible();
+            await expect(dialog).toBeVisible();
         };
         await openBuilder();
         await expect(page.locator('tr.jqgrow')).toHaveCount(1);
@@ -1064,15 +1105,19 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // Fill the single default constraint row: browserType =@ <value>.
         const setConstraint = async (value) => {
             await page.evaluate((val) => {
-                const row = document.querySelector('.constraintPickerContainer .builder li.constraintRow');
+                const frame = [ ...document.querySelectorAll('.owa_filterDialogFrame') ]
+                    .find((f) => f.offsetParent !== null);
+                const row = frame.querySelector('li.constraintRow');
                 // dimension picker is a chosen widget -> set the <select> + resync
                 jQuery(row).find('.constraintDimensionPicker select.dim-list')
                     .val('browserType').trigger('chosen:updated');
-                // operator is a jQuery-UI selectmenu kept in sync via the native <select>
-                jQuery(row).find('.constraintOperatorPicker select.operator-list').val('=@');
+                // ...and so is the operator now. Same contract either way: the
+                // native <select> carries the value and the widget follows it.
+                jQuery(row).find('.constraintOperatorPicker select.operator-list')
+                    .val('=@').trigger('chosen:updated');
                 jQuery(row).find('.constraintValueField').val(val);
             }, value);
-            await builder.locator('.apply-button').click();
+            await dialog.locator('.apply-button').click();
         };
 
         // Non-matching value -> the grid must empty out.
@@ -1080,7 +1125,8 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
 
         // Matching value -> the Chrome row must come back (proves it filtered on the
-        // constraint, not just wiped the grid). Re-open the builder (rebuilt on reload).
+        // constraint, not just wiped the grid). Re-open the dialog: applying closed
+        // it, and a requery rebuilds it.
         await openBuilder();
         await setConstraint('Chrome');
         await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
