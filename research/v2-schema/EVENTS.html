@@ -122,6 +122,8 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
 .ph-ap{background:var(--legacy-bg);color:var(--legacy);border-color:var(--legacy)}
 .ph-b{background:var(--fwd-bg);color:var(--fwd);border-color:var(--fwd)}
 .ph-c{background:var(--sunk);color:var(--muted);border-color:var(--rule)}
+.ph-ins{background:transparent;color:var(--muted);border-color:var(--rule);
+  border-style:dashed;font-size:9.5px}
 .who{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--muted)}
 .who b{color:var(--ink);font-weight:600}
 td.col{font-family:var(--mono);font-size:12px;white-space:nowrap}
@@ -140,6 +142,7 @@ td.col{font-family:var(--mono);font-size:12px;white-space:nowrap}
   <a href="#s2">2 · Where 1.x draws it</a>
   <div class="r-part">The rows</div>
   <a href="#s3">3 · The envelope</a>
+  <a href="#s32">3.2 · Sent, not stored</a>
   <a href="#s4">4 · Per event</a>
   <a href="#s5">5 · Materialized events</a>
   <div class="r-part">Consequences</div>
@@ -175,7 +178,21 @@ Everything else has to happen while the request is open, because the request is 
   elsewhere in the plan pins it here. Each one names the decision and what moving it would cost.</span>
   <span class="ph ph-b">B</span>
   <span><strong>Deferrable.</strong> A pure function of values already captured. Safe to compute
-  at the drain, in a backfill, or never.</span>
+  at the drain.</span>
+  <span class="ph ph-ins">by INSERT</span>
+  <span><strong>A second, independent axis.</strong> Some deferrable values still cannot be left
+  NULL and filled in afterwards — they must be resolved by the time the row is written. This is
+  <em>not</em> a reason to compute them during the request, because in a queued topology the
+  insert happens at the drain too.</span>
+</div>
+
+<div class="flag">
+  <p class="h">Corrected 28 Aug</p>
+  <p>An earlier version of this page marked <code>id</code>, <code>yyyymmdd</code> and
+  <code>is_key_event</code> as request-time work. That was wrong, and wrong in an instructive
+  way: it confused <em>must exist at insert</em> with <em>must be captured during the
+  request</em>. Those are the same moment only when there is no queue. All three are
+  <span class="ph ph-b">B</span>.</p>
 </div>
 
 <div class="part" id="s1">
@@ -185,19 +202,22 @@ Everything else has to happen while the request is open, because the request is 
 </div>
 
 <h3><span class="num">1.1</span>Three things make a value irreducible</h3>
-<p>A property is <span class="ph ph-a">A</span> for exactly one of three reasons, and it is worth
-separating them because only the first is truly physics.</p>
+<p>A property is <span class="ph ph-a">A</span> for one of two reasons — and the list was
+longer before this page was checked against its own definition. Only the first is physics.</p>
 <ul>
 <li><strong>It is the request.</strong> The connection's IP, the <code>User-Agent</code>,
 <code>Host</code> and <code>Accept-Language</code> headers, and the server's clock at receipt.
 Nothing reconstructs these afterwards.</li>
-<li><strong>The row cannot be written without it.</strong> <code>id</code> and
-<code>yyyymmdd</code> are the primary key of a partitioned table, so they must exist at insert
-even though both are computable. Deferral moves <em>when</em> the insert happens; it does not let
-the insert happen without a key.</li>
-<li><strong>A decision forbids doing it later.</strong> §1.9 rules out retroactive reprocessing —
-no bot reclassification, no backwards identity stitching. That converts several otherwise
-deferrable computations into request-time work by policy rather than by nature.</li>
+<li><strong class="dash">(Struck.)</strong> This list used to include &ldquo;the row cannot be
+written without it&rdquo;, naming <code>id</code> and <code>yyyymmdd</code>. That is a real
+constraint but not this one: it says those values must exist <em>at insert</em>, and in a queued
+topology the insert happens at the drain. Both are pure functions of things already captured
+(<code>ts</code>, <code>session_id</code>), so both are deferrable. They are marked
+<span class="ph ph-ins">by INSERT</span> instead.</li>
+<li><strong>A destructive step is about to remove the input.</strong> This is the only
+surviving <span class="ph ph-ap">A*</span>, and there is exactly one instance: §1.8 anonymises
+the IP, and §1.10 derives <code>country</code> and <code>city</code> from it. Whichever runs
+first decides whether geolocation can be deferred at all — see §7.1.</li>
 </ul>
 
 <div class="note"><p><strong>The clock is the one people get wrong.</strong> §1.10 already pins
@@ -248,9 +268,13 @@ else                performAction( $processor );    //   the 34 derived properti
 
 <p>Environmentals are stamped <em>before</em> the queue and travel with the message; the derived
 properties are computed by the processor, which is exactly what the queue defers. So v2 does not
-need to invent this boundary. It needs to keep it, and to be explicit about the three
-<span class="ph ph-ap">A*</span> checks sitting on the request side of it — each is there because
-of a decision, and each is a candidate for moving.</p>
+need to invent this boundary; it needs to keep it.</p>
+<p>What is worth being explicit about is the three <em>checks</em> 1.x puts on the request side —
+bot refusal, IP exclusion, site validation. None of them is irreducible. Each needs configuration
+rather than the request, so each can move to the drain in a topology where the edge has no store;
+what they buy by running early is queue volume, not correctness. A bot refused at the drain still
+never becomes a row, because §1.9's ban is on reclassifying <em>stored</em> rows and a queued
+message is not one.</p>
 
 <div class="part" id="s3">
   <p class="part-n">Part Three</p>
@@ -265,24 +289,24 @@ the envelope is what makes a single fact table work, and the deltas are small.</
 <div class="scroll"><table class="envelope">
 <thead><tr><th>#</th><th>Column</th><th>Set by</th><th>Phase</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="n">1</td><td class="col">id</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>Content-derived for idempotent events, random otherwise. Needed at insert — it is half the PK.</td></tr>
+<tr><td class="n">1</td><td class="col">id</td><td class="who"><b>server</b></td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>Content-derived for idempotent events (from values already on the message), random otherwise. Either way the drain can produce it; it just cannot be filled in after the row exists, being half the PK.</td></tr>
 <tr><td class="n">2</td><td class="col">event_type</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Validated against the taxonomy at receipt.</td></tr>
 <tr><td class="n">3</td><td class="col">site_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Existence checked at receipt — see §7.2, the check needs the application store.</td></tr>
 <tr><td class="n">4</td><td class="col">visitor_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>From the cookie. The one value that cannot be content-derived (§1.5).</td></tr>
 <tr><td class="n">5</td><td class="col">session_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Embeds its creation timestamp; the midnight rule reads it back.</td></tr>
 <tr><td class="n">6</td><td class="col">user_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-declared. Resolves at collection only — earlier events stay anonymous forever (§1.5).</td></tr>
 <tr><td class="n">7</td><td class="col">ts</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The server clock at edge receipt. Travels with the queue item.</td></tr>
-<tr><td class="n">8</td><td class="col">yyyymmdd</td><td class="who">derived</td><td><span class="ph ph-a">A</span></td><td>Partition key, so required at insert. From <code>ts</code> — except idempotent events, which take it from <code>session_id</code> so a retry lands in the same partition.</td></tr>
+<tr><td class="n">8</td><td class="col">yyyymmdd</td><td class="who">derived</td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>A pure function of <code>ts</code> — or of <code>session_id</code> for idempotent events, so a retry lands in the same partition. Both inputs travel with the message, so the drain computes it. Being the partition key it must be right at insert, which is a different constraint from being request-time work.</td></tr>
 <tr><td class="n">9</td><td class="col">visitor_fsts</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>First-seen ts, carried on every event. New-visitor derives from it rather than being flagged.</td></tr>
 <tr><td class="n">10</td><td class="col">prior_sessions</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Carried visitor history.</td></tr>
 <tr><td class="n">11</td><td class="col">page_uri</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td>Pure function of <code>page_url</code>. Page identity is <code>hash(site_id + uri)</code>.</td></tr>
 <tr><td class="n">12</td><td class="col">page_title</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td></td></tr>
 <tr><td class="n">13</td><td class="col">referer_url</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>The raw referer. Attribution is what the server makes of it.</td></tr>
-<tr><td class="n">14</td><td class="col">medium</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td rowspan="5">Attribution, resolved server-side and <strong>sticky</strong> — stamped on every event of the session, which is what makes &ldquo;sessions by landing page&rdquo; a group-by instead of a join. Deferrable, but see §7.3: stickiness needs the session's first touch, and a drain sees events in arrival order.</td></tr>
-<tr><td class="n">15</td><td class="col">source</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">16</td><td class="col">campaign</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">17</td><td class="col">ad</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
-<tr><td class="n">18</td><td class="col">search_terms</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">14</td><td class="col">medium</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td><td rowspan="5"><strong>Both halves write these names today.</strong> In 1.x the tracker sends <code>source</code>, <code>medium</code>, <code>campaign</code> and <code>search_terms</code> when the landing URL is tagged (they are registered <code>regular</code>, <em>set by clients</em>), and the server derives the same five from the referer when it does not. Nothing records which happened. §7.5 proposes renaming the tracker's half to <code>tagged_*</code> and adding <code>attribution_basis</code>, so the claim, the answer and the rule that produced it are three different things.<br><br>Sticky either way: stamped on every event of the session, which is what makes &ldquo;sessions by landing page&rdquo; a group-by instead of a join. Deferrable, but see §7.3 — stickiness needs the session's first touch and a drain sees arrival order.</td></tr>
+<tr><td class="n">15</td><td class="col">source</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">16</td><td class="col">campaign</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">17</td><td class="col">ad</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">18</td><td class="col">search_terms</td><td class="who"><b>server</b> <span class="dash">(1.x: client)</span></td><td><span class="ph ph-b">B</span></td></tr>
 <tr><td class="n">19</td><td class="col">browser</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td rowspan="3">Parsed from <code>raw_ua</code>, which is stored on every row — so the parse can happen at the drain, in a backfill, or be redone when the browscap data improves. This is the largest deferrable cost in the handler.</td></tr>
 <tr><td class="n">20</td><td class="col">browser_type</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
 <tr><td class="n">21</td><td class="col">os</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
@@ -292,7 +316,7 @@ the envelope is what makes a single fact table work, and the deltas are small.</
 <tr><td class="n">25</td><td class="col">host</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td><code>Host</code> header.</td></tr>
 <tr><td class="n">26</td><td class="col">ip_address</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The connection, read through <code>X-Forwarded-For</code> — and the leftmost value there is attacker-controlled. Anonymised by default before storage.</td></tr>
 <tr><td class="n">36</td><td class="col">engagement_msec</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Rides every event: time accrued on the current page since the last report. Additive, so session engagement is a SUM over anything.</td></tr>
-<tr><td class="n">37</td><td class="col">is_key_event</td><td class="who"><b>server</b></td><td><span class="ph ph-ap">A*</span></td><td>Stamped at ingest so no reporting query ever joins the goal config (§1.10, two stores). Needs the application store — see §7.2.</td></tr>
+<tr><td class="n">37</td><td class="col">is_key_event</td><td class="who"><b>server</b></td><td><span class="ph ph-b">B</span> <span class="ph ph-ins">by INSERT</span></td><td>The drain stamps it, matching the event against the goal config. The real constraint is not the request but the <em>reporting boundary</em>: it must be resolved before the row is readable, because no reporting query may join the application store (§1.10). Which means the drain needs that store — see §7.2.</td></tr>
 <tr><td class="n">39</td><td class="col">raw_ua</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The header itself, kept behind <code>store_raw_ua</code> (default on). It is what makes rows 19–21 deferrable and re-derivable.</td></tr>
 <tr><td class="n">40</td><td class="col">params</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-defined custom variables, event params, nested commerce items. One param key, one type, enforced at ingest.</td></tr>
 </tbody></table></div>
@@ -301,6 +325,63 @@ the envelope is what makes a single fact table work, and the deltas are small.</
 an event does not carry is NULL rather than <code>(not set)</code>. That is what makes
 <code>COUNT(column)</code> mean something — in 1.x <code>dom_element_id</code> reads as populated
 on 94% of clicks while being real on 0.09%.</p></div>
+
+
+<h3 id="s32"><span class="num">3.2</span>The wire is wider than the schema</h3>
+<p>Listing columns answers &ldquo;what is stored&rdquo; and quietly skips a larger set: properties
+the tracker <em>sends</em> that never become a column. Measured against 1.x's beacon contract,
+<strong>31 of 52 wire parameters are not columns in the v2 table</strong>. They are not noise —
+each one is doing a job, and the job explains why it is not stored.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Kind</th><th>Wire parameter</th><th>Where it goes</th></tr></thead>
+<tbody>
+<tr><td><strong>Renamed</strong><br><span class="dash">stored, different name</span></td>
+<td class="col">HTTP_REFERER, fsts, nps, dom_element_id, dom_element_tag, ct_total</td>
+<td>→ <code>referer_url</code>, <code>visitor_fsts</code>, <code>prior_sessions</code>,
+<code>element_id</code>, <code>element_tag</code>, <code>revenue</code>. Worth writing down
+because a wire name that survives into the schema unchanged is the exception, not the rule.</td></tr>
+
+<tr><td><strong>Input</strong><br><span class="dash">transformed, then dropped</span></td>
+<td class="col">page_url, session_referer, last_req, timestamp, sts, <em>and under §7.5's rename</em> tagged_source, tagged_medium, tagged_campaign, tagged_terms</td>
+<td><code>page_url</code> becomes <code>page_uri</code> — URI, not URL — and page identity is
+<code>hash(site_id + uri)</code>, so the full URL with its query string is deliberately not what
+identifies a page. <code>session_referer</code> feeds attribution. The client
+<code>timestamp</code> is <strong>overridden</strong> by the server's <code>ts</code> and kept
+nowhere, which is the correct resolution of 1.x's clock-provenance problem —
+<code>last_req</code> is a client clock that today gets subtracted from a server clock with
+nothing recording that they came from different clocks. <code>sts</code> stays on the wire
+because there is no session row in v2 to compute days-since once.</td></tr>
+
+<tr><td><strong>Control</strong><br><span class="dash">decides something, then dropped</span></td>
+<td class="col">is_new_session, is_new_session_start, is_new_visitor, is_new_visitor_created</td>
+<td>These are what tell the server to materialize <code>session_start</code> and
+<code>first_visit</code> (§5). Having done that they are discarded — §1.10 lists
+<code>is_new_visitor</code> among the columns <em>deliberately absent</em>, because it derives
+from <code>visitor_fsts</code>, which is on every row. A flag and a derivation that disagree is a
+bug you cannot detect; only one of them should exist.</td></tr>
+
+<tr><td><strong>Into <code>params</code></strong><br><span class="dash">stored, unstructured</span></td>
+<td class="col">attribs, cv1–cv3, action_group, action_label, action_name, numeric_value,
+ct_gateway, ct_order_id, ct_order_source, ct_shipping, ct_tax, ct_line_items</td>
+<td>Exactly the column-admission rule from §1.10: site-defined keys unknown at release time, and
+nested arrays. The <code>cv1…cv3</code> here are the visible edge of 1.x's ten columns
+implementing five fixed custom-variable slots — a limit a fixed-width row forced, and which a
+param map removes.</td></tr>
+
+<tr><td><strong>Dropped</strong><br><span class="dash">no home in v2</span></td>
+<td class="col">dom_element_class, dom_element_name, dom_element_text, dom_element_value,
+dom_element_x, dom_element_y, state</td>
+<td>v2 keeps <code>element_path</code>, <code>element_tag</code> and <code>element_id</code> and
+drops the other six — the path is the thing that identifies an element across renders, and it is
+what §2.3 of PLAN.html calls the value in element capture. <code>state</code> is a billing
+region with no column: see §7.6, which is a collision rather than a simple drop.</td></tr>
+</tbody></table></div>
+
+<div class="note"><p><strong>This is where the schema gets its discipline.</strong> Roughly three
+in five wire parameters do not survive into storage, and almost every one of those is a decision:
+a flag replaced by a derivation, a URL narrowed to a URI, a client clock refused in favour of the
+server's. A spec that lists only columns records the outcomes and loses all of the reasoning.</p></div>
 
 <div class="part" id="s4">
   <p class="part-n">Part Four</p>
@@ -398,9 +479,11 @@ to. Three topologies, in increasing order of how little the edge does:</p>
   <div class="phase-h"><span class="phase-n">Topology 2</span><span class="phase-t">Queued, application store reachable</span></div>
   <p class="phase-why">The default deferred shape. The node can read config and goals.</p>
   <ul>
-    <li>Request does: <span class="ph ph-a">A</span> plus all three <span class="ph ph-ap">A*</span>
-    checks — bot refusal, IP exclusion, site validation — and stamps <code>is_key_event</code>.</li>
-    <li>Drain does: UA parse, geolocation, attribution, <code>page_uri</code>, and materializes
+    <li>Request does: <span class="ph ph-a">A</span>, plus geolocation if the IP is anonymised
+    here (§7.1). The three checks — bot refusal, IP exclusion, site validation — run here by
+    preference, to keep junk out of the queue.</li>
+    <li>Drain does: everything else. UA parse, attribution, <code>page_uri</code>,
+    <code>id</code>, <code>yyyymmdd</code>, <code>is_key_event</code>, and materializes
     <code>session_start</code> / <code>first_visit</code>.</li>
     <li>This is the shape the fan-out argument in §3.1 assumes: &ldquo;an argument for the queue
     carrying the fan-out rather than the request doing it inline.&rdquo;</li>
@@ -413,13 +496,12 @@ to. Three topologies, in increasing order of how little the edge does:</p>
   <ul>
     <li>Request does: <span class="ph ph-a">A</span> only. It cannot validate the site, cannot
     read the goal config, cannot consult a stored exclusion list.</li>
-    <li>Therefore every <span class="ph ph-ap">A*</span> must move to the drain — which
-    <strong>contradicts two decisions</strong> unless they are revisited: bot rows are supposed to
-    be refused at ingest, and <code>is_key_event</code> stamped there. See §7.2.</li>
-    <li>What survives intact: bot refusal can still happen at the drain <em>before</em> the row is
-    written, so &ldquo;no bot rows in the table&rdquo; holds even though &ldquo;refused at
-    ingest&rdquo; does not. The §1.9 ban is on reclassifying <em>stored</em> rows later, and a
-    queued message is not a stored row.</li>
+    <li>So all three checks move to the drain, and so does geolocation unless the node ships a
+    local geo database. Nothing here breaks: a bot refused at the drain still never becomes a row,
+    since §1.9's ban is on reclassifying <em>stored</em> rows and a queued message is not one.</li>
+    <li>The real limit is further along. If the <em>drain</em> also lacks the application store,
+    key events cannot be stamped at all and the site check never runs — so a database-less
+    collector is fine, but a database-less pipeline is not. See §7.2.</li>
   </ul>
 </div>
 
@@ -446,15 +528,19 @@ that a database-less node either ships a local geo database or records no geogra
 alternative trades a privacy guarantee for a deployment convenience, which is the wrong way round
 for a product positioned on privacy.</p>
 
-<h3><span class="num">7.2</span><code>is_key_event</code> versus the two-store rule <span class="chip c-open">Open</span></h3>
+<h3><span class="num">7.2</span>The drain needs the application store <span class="chip c-open">Open</span></h3>
 <p>§1.10 establishes that no reporting query ever joins an application table, and that key events
-are stamped at ingest so the goal config is never joined at read time. Goals live in the
-application store; events live in the reporting store. Stamping therefore needs both — at the
-moment of ingest.</p>
-<p>Topology 3 has neither at the edge. So one of these has to give: either a database-less node
-cannot stamp key events (and the drain does it, making the column <span class="ph ph-b">B</span>),
-or such nodes are not supported for installations that use goals. The second is a real option and
-should be stated rather than discovered.</p>
+are stamped so the goal config is never consulted at read time. Goals live in the application
+store; events live in the reporting store.</p>
+<p>That constraint is about the <strong>reporting boundary</strong>, not about the request. The
+drain can stamp <code>is_key_event</code> perfectly well — it simply has to reach the goal config
+while it does. In Topology 2 it does. In Topology 3 the edge cannot, and if the drain is a
+different process with the same limitation, nothing can.</p>
+<p>So the question is narrower than it first looked, and worth stating as a supported-configuration
+rule rather than leaving to be discovered: <strong>an installation that uses goals needs a
+drain with application-store access.</strong> A database-less collector is fine; a database-less
+<em>pipeline</em> is not, and the same holds for the site-existence check and any stored IP
+exclusion list.</p>
 
 <h3><span class="num">7.3</span>Sticky attribution at the drain <span class="chip c-open">Open</span></h3>
 <p>Attribution is stamped on <em>every</em> event of a session, and that stickiness is load-bearing
@@ -477,6 +563,61 @@ makes &ldquo;top search terms&rdquo; silently blend acquisition with on-site beh
 internal-search term belongs in <code>params</code>, or it earns its own column — but the
 collision should be resolved before either is built, because separating them afterwards means
 rewriting rows.</p>
+
+
+<h3><span class="num">7.5</span>Attribution: name the claim apart from the answer <span class="chip c-dec">Proposed</span></h3>
+<p>In 1.x the tracker parses the landing URL and puts <code>source</code>, <code>medium</code>,
+<code>campaign</code> and <code>search_terms</code> on the wire — registered <code>regular</code>,
+&ldquo;set by clients&rdquo;. The server <em>also</em> derives them, from the referer, when the
+tracker did not send them. So both halves already write the same five names, and which one you are
+looking at is not recorded anywhere.</p>
+
+<p>That is the confusion to remove, and renaming the tracker's half removes it. The tracker is not
+answering &ldquo;what is the source&rdquo;; it is reporting <strong>what the landing URL was tagged
+with</strong>. Naming it for that makes the whole chain expressible:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Stage</th><th>Name</th><th>Set by</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td>Claim</td><td class="col">tagged_source, tagged_medium, tagged_campaign, tagged_ad, tagged_terms</td><td class="who">tracker</td><td>Campaign parameters lifted off the landing URL. A claim, not a conclusion — and absent on most events.</td></tr>
+<tr><td>Evidence</td><td class="col">referer_url, session_referer</td><td class="who">tracker</td><td>What the server classifies when there is no tag.</td></tr>
+<tr><td>Answer</td><td class="col">source, medium, campaign, ad, search_terms</td><td class="who"><b>server</b></td><td>The resolution. Sticky across the session, stamped on every event.</td></tr>
+<tr><td>Basis</td><td class="col">attribution_basis</td><td class="who"><b>server</b></td><td>Which rule produced the answer: <code>tagged</code>, <code>referer</code>, <code>direct</code>, or <code>carried</code> (inherited from earlier in the session).</td></tr>
+</tbody></table></div>
+
+<p>The precedence is the ordinary one — an explicit tag wins, else classify the referer, else
+direct, then stay sticky for the rest of the session. What today's schema loses is
+<em>which of those fired</em>, and that is a question people genuinely ask: how much traffic is
+attributed because it was tagged, versus because we guessed from a referer? Today it cannot be
+answered at all. <code>attribution_basis</code> is scalar and release-known, so it satisfies the
+column-admission rule in §1.10 rather than needing <code>params</code>.</p>
+
+<div class="note"><p><strong>Open within this:</strong> whether the <code>tagged_*</code> values
+are persisted as well as the answer. They are redundant whenever
+<code>attribution_basis = tagged</code>, which is the only case they exist for — so the cheap
+option is to keep the basis column and drop the claims after resolution, and the expensive one is
+five mostly-NULL columns that let you audit the resolver against its own inputs. The claims could
+also ride <code>params</code> only when the resolver <em>overrode</em> them, which is the case
+worth being able to see.</p></div>
+
+<p>Two consequences of the move survive whatever is decided about storage. A server computing
+attribution from scratch has <strong>no sliding 60-day window</strong> until it has been
+collecting for sixty days, so a migration cannot switch this on and expect matching numbers on day
+one. And the tracker keeps sending campaign parameters as long as the snippet is deployed — under
+the rename that is fine, because <code>tagged_source</code> arriving is no longer indistinguishable
+from <code>source</code> having been decided.</p>
+
+<h3><span class="num">7.6</span>Billing address versus geolocation <span class="chip c-open">Open</span></h3>
+<p>The same shape as §7.4, found the same way. <code>ecommerce.transaction</code> sends
+<code>city</code>, <code>country</code> and <code>state</code> — the <strong>billing
+address</strong>, supplied by the site. Columns 23 and 24 are <code>country</code> and
+<code>city</code> <strong>derived from the IP</strong>. Two of those three names collide, and
+<code>state</code> has no column at all.</p>
+<p>A purchase row would then carry either the buyer's billing city or the network's geolocated
+city depending on which writer ran last, and nothing in the schema records which one it is. The
+fix is the same as §7.4 — billing belongs in <code>params</code> with the rest of the commerce
+detail, or in columns of its own — and the reason to settle it now is also the same: separating
+them afterwards means rewriting rows.</p>
 
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
