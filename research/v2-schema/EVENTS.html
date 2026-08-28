@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Every event, every column</title>
+<style>
+:root{
+  --paper:#F7F7F5; --ink:#16191C; --muted:#5C6470; --rule:#E2E2DE; --sunk:#EFEFEC;
+  --fwd:#0F6E6B; --legacy:#8A6134; --open:#A33B32;
+  --fwd-bg:#E4EFEE; --legacy-bg:#F3EBE0; --open-bg:#F6E5E3;
+  --serif:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#14161A; --ink:#E6E8EA; --muted:#98A1AC; --rule:#272B31; --sunk:#1B1E23;
+  --fwd:#57BDB6; --legacy:#C99C60; --open:#DC7D71;
+  --fwd-bg:#172A2A; --legacy-bg:#2A2318; --open-bg:#2C1D1C;
+}}
+:root[data-theme="dark"]{
+  --paper:#14161A; --ink:#E6E8EA; --muted:#98A1AC; --rule:#272B31; --sunk:#1B1E23;
+  --fwd:#57BDB6; --legacy:#C99C60; --open:#DC7D71;
+  --fwd-bg:#172A2A; --legacy-bg:#2A2318; --open-bg:#2C1D1C;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);
+  font-size:17px;line-height:1.62;margin:0;-webkit-font-smoothing:antialiased}
+.wrap{display:grid;grid-template-columns:1fr;gap:0;max-width:1180px;margin:0 auto;padding:0 24px}
+@media(min-width:1080px){.wrap{grid-template-columns:220px minmax(0,1fr);gap:56px;padding:0 40px}}
+/* ---------- rail ---------- */
+nav{display:none}
+@media(min-width:1080px){
+  nav{display:block;position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;
+    padding:120px 0 60px;font-family:var(--mono);font-size:11.5px;line-height:1.5}
+  nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0;
+    border-left:2px solid transparent;padding-left:11px;margin-left:-13px}
+  nav a:hover{color:var(--fwd);border-left-color:var(--fwd)}
+  nav .r-part{color:var(--ink);text-transform:uppercase;letter-spacing:.10em;
+    margin-top:20px;padding-top:9px;border-top:1px solid var(--rule)}
+  nav .r-part:first-child{margin-top:0}
+}
+main{min-width:0;padding:64px 0 140px;max-width:70ch}
+/* ---------- masthead ---------- */
+.mast{border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.20em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 20px}
+h1{font-size:clamp(2.5rem,6vw,3.7rem);line-height:1.02;margin:0;font-weight:600;
+  letter-spacing:-.022em;text-wrap:balance}
+.standfirst{font-size:1.18rem;color:var(--muted);margin:20px 0 0;text-wrap:pretty}
+.meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:22px;margin:0 0 56px;padding-top:12px}
+/* ---------- structure ---------- */
+.part{margin:88px 0 0;padding-top:26px;border-top:2px solid var(--ink)}
+.part-n{font-family:var(--mono);font-size:11px;letter-spacing:.20em;color:var(--fwd);
+  text-transform:uppercase;margin:0 0 8px}
+.part h2{font-size:2.05rem;line-height:1.1;margin:0 0 10px;font-weight:600;letter-spacing:-.016em}
+.part-note{color:var(--muted);margin:0;font-size:1.02rem}
+h3{font-size:1.3rem;margin:52px 0 4px;font-weight:600;line-height:1.25;letter-spacing:-.01em;
+  text-wrap:balance;scroll-margin-top:20px}
+h3 .num{font-family:var(--mono);font-size:.72em;color:var(--muted);font-weight:400;margin-right:.6em}
+h4{font-size:1.02rem;margin:32px 0 2px;font-weight:600}
+p{margin:14px 0}
+a{color:var(--fwd)}
+strong{font-weight:600}
+ul,ol{padding-left:22px;margin:14px 0}
+li{margin:7px 0}
+code{font-family:var(--mono);font-size:.845em;background:var(--sunk);padding:1px 5px;
+  border-radius:3px;border:1px solid var(--rule)}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunk);
+  border:1px solid var(--rule);border-radius:5px;padding:15px 17px;overflow-x:auto;margin:20px 0}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+/* ---------- chips ---------- */
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  padding:2.5px 7px;border-radius:3px;white-space:nowrap;vertical-align:2px;font-weight:600}
+.c-dec{background:var(--fwd-bg);color:var(--fwd)}
+.c-open{background:var(--open-bg);color:var(--open)}
+.c-meas{background:var(--legacy-bg);color:var(--legacy)}
+.c-done{background:var(--fwd-bg);color:var(--fwd);border:1px solid var(--fwd)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:.9rem;color:var(--muted);
+  border:1px solid var(--rule);border-left:3px solid var(--fwd);
+  border-radius:0 5px 5px 0;padding:16px 20px;margin:34px 0}
+.legend div{display:flex;gap:9px;align-items:baseline}
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;margin:22px 0;border:1px solid var(--rule);border-radius:5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  text-align:left;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--rule);
+  background:var(--sunk);white-space:nowrap;font-weight:600}
+td{padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.n{text-align:right;font-family:var(--mono);font-size:12.5px}
+td code{font-size:.9em}
+.ev{font-family:var(--mono);font-size:12px;color:var(--fwd);font-weight:600;white-space:nowrap}
+.ev-l{font-family:var(--mono);font-size:12px;color:var(--legacy);white-space:nowrap}
+.dash{color:var(--muted)}
+/* ---------- callouts ---------- */
+.note{border-left:3px solid var(--rule);padding:2px 0 2px 20px;margin:24px 0;color:var(--muted)}
+.note strong{color:var(--ink)}
+.flag{background:var(--open-bg);border-left:3px solid var(--open);padding:16px 20px;
+  margin:26px 0;border-radius:0 5px 5px 0}
+.flag p{margin:8px 0}
+.flag p:first-child{margin-top:0}.flag p:last-child{margin-bottom:0}
+.flag .h{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--open);font-weight:600}
+/* ---------- ordered phases ---------- */
+.phase{border:1px solid var(--rule);border-radius:5px;padding:20px 22px;margin:20px 0}
+.phase-h{display:flex;gap:13px;align-items:baseline;margin-bottom:5px}
+.phase-n{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--fwd);
+  font-weight:600;white-space:nowrap;text-transform:uppercase}
+.phase-t{font-weight:600;font-size:1.08rem}
+.phase-why{color:var(--muted);font-size:.94rem;margin:0 0 12px}
+.phase ul{margin:0;padding-left:20px;font-size:.96rem}
+footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.75}
+:focus-visible{outline:2px solid var(--fwd);outline-offset:3px}
+</style>
+<style>
+/* --- phase tags: square-cornered, so they never read as decision chips --- */
+.ph{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;
+  padding:2px 6px;border-radius:2px;white-space:nowrap;border:1px solid transparent}
+.ph-a{background:var(--open-bg);color:var(--open);border-color:var(--open)}
+.ph-ap{background:var(--legacy-bg);color:var(--legacy);border-color:var(--legacy)}
+.ph-b{background:var(--fwd-bg);color:var(--fwd);border-color:var(--fwd)}
+.ph-c{background:var(--sunk);color:var(--muted);border-color:var(--rule)}
+.who{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--muted)}
+.who b{color:var(--ink);font-weight:600}
+td.col{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.keyrow{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:baseline;
+  border:1px solid var(--rule);border-left:3px solid var(--fwd);border-radius:0 5px 5px 0;
+  padding:18px 22px;margin:30px 0;font-size:.95rem}
+.envelope th:first-child,.envelope td:first-child{position:sticky;left:0;background:var(--paper)}
+.envelope th:first-child{background:var(--sunk)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Contents">
+  <div class="r-part">Reading it</div>
+  <a href="#s1">1 · The boundary</a>
+  <a href="#s2">2 · Where 1.x draws it</a>
+  <div class="r-part">The rows</div>
+  <a href="#s3">3 · The envelope</a>
+  <a href="#s4">4 · Per event</a>
+  <a href="#s5">5 · Materialized events</a>
+  <div class="r-part">Consequences</div>
+  <a href="#s6">6 · Deferral topologies</a>
+  <a href="#s7">7 · Open questions</a>
+</nav>
+
+<main>
+<div class="mast">
+  <p class="eyebrow">Open Web Analytics · v2 · Collection spec</p>
+  <h1>Every event, every column, and who fills it</h1>
+  <p class="standfirst">For each event <code>owa_event</code> will carry: the properties it
+  persists, whether the tracker or the server sets them, and — for the server's share — whether
+  the value must be captured while the HTTP request is still open or can wait for the drain.</p>
+</div>
+<p class="meta"><span>28 Aug 2026</span><span>Companion to PLAN.html §1.4, §1.10</span>
+<span>Branch research/v2-single-fact-table</span></p>
+
+<p>PLAN.html settles <em>what</em> v2 stores: a 40-column event table (§1.10) and a GA4-shaped
+taxonomy (§1.4). It does not settle <em>when</em> each column acquires its value, and that
+question decides which deployment topologies are possible. An installation that queues events —
+or runs a logging node with no database at all — can only defer work that is still doable later.
+Everything else has to happen while the request is open, because the request is where it lives.</p>
+
+<div class="keyrow">
+  <span class="ph ph-c">CLIENT</span>
+  <span>Arrives in the beacon. The server's only jobs are validation and storage.</span>
+  <span class="ph ph-a">A</span>
+  <span><strong>Irreducible.</strong> Reads the HTTP request itself. When the response is sent
+  the value is gone forever, so no topology can defer it.</span>
+  <span class="ph ph-ap">A*</span>
+  <span><strong>In the request by policy.</strong> Technically computable later, but a decision
+  elsewhere in the plan pins it here. Each one names the decision and what moving it would cost.</span>
+  <span class="ph ph-b">B</span>
+  <span><strong>Deferrable.</strong> A pure function of values already captured. Safe to compute
+  at the drain, in a backfill, or never.</span>
+</div>
+
+<div class="part" id="s1">
+  <p class="part-n">Part One</p>
+  <h2>The boundary</h2>
+  <p class="part-note">What dies with the request, and what merely looks like it does.</p>
+</div>
+
+<h3><span class="num">1.1</span>Three things make a value irreducible</h3>
+<p>A property is <span class="ph ph-a">A</span> for exactly one of three reasons, and it is worth
+separating them because only the first is truly physics.</p>
+<ul>
+<li><strong>It is the request.</strong> The connection's IP, the <code>User-Agent</code>,
+<code>Host</code> and <code>Accept-Language</code> headers, and the server's clock at receipt.
+Nothing reconstructs these afterwards.</li>
+<li><strong>The row cannot be written without it.</strong> <code>id</code> and
+<code>yyyymmdd</code> are the primary key of a partitioned table, so they must exist at insert
+even though both are computable. Deferral moves <em>when</em> the insert happens; it does not let
+the insert happen without a key.</li>
+<li><strong>A decision forbids doing it later.</strong> §1.9 rules out retroactive reprocessing —
+no bot reclassification, no backwards identity stitching. That converts several otherwise
+deferrable computations into request-time work by policy rather than by nature.</li>
+</ul>
+
+<div class="note"><p><strong>The clock is the one people get wrong.</strong> §1.10 already pins
+it: <code>ts</code> is stamped once at edge receipt and travels with the queue item. A queue that
+timestamps at <em>drain</em> would date every event to whenever the worker happened to run, and
+at-least-once redelivery would give the same event two different times. 1.x learned this the hard
+way in the other direction — <code>last_req</code> is a client clock that gets subtracted from a
+server clock, and the schema records no provenance for either.</p></div>
+
+<h3><span class="num">1.2</span>What deferral actually buys</h3>
+<p>The expensive request-time work in 1.x is not the insert. It is user-agent parsing, geolocation
+lookup and attribution resolution — three operations that touch external data and together
+dominate the handler. All three are <span class="ph ph-b">B</span> by nature. That is the whole
+prize: a logging node that captures the request and defers those three does almost no work per
+beacon, which is what makes a static-config-only node viable at all.</p>
+
+<div class="part" id="s2">
+  <p class="part-n">Part Two</p>
+  <h2>Where 1.x already draws it</h2>
+  <p class="part-note">The classification exists in the code. v2 inherits the boundary, not just the idea.</p>
+</div>
+
+<h3><span class="num">2.1</span>The existing three-way split</h3>
+<p><code>Core/Module.php::registerTrackingProperties()</code> classifies every tracking property
+as one of three kinds, in these words:</p>
+<div class="scroll"><table>
+<thead><tr><th>1.x class</th><th>Its own definition</th><th>Count</th><th>v2 equivalent</th></tr></thead>
+<tbody>
+<tr><td class="col">environmental</td><td>&ldquo;dependent on the PHP SERVER environment&rdquo;</td><td class="n">7</td><td><span class="ph ph-a">A</span> — the request</td></tr>
+<tr><td class="col">regular</td><td>&ldquo;set by clients&rdquo;</td><td class="n">19</td><td><span class="ph ph-c">CLIENT</span></td></tr>
+<tr><td class="col">derived</td><td>&ldquo;derived from or dependent on other properties&rdquo;</td><td class="n">34</td><td><span class="ph ph-b">B</span>, mostly</td></tr>
+</tbody></table></div>
+
+<p>The environmental seven are <code>REMOTE_HOST</code>, <code>HTTP_USER_AGENT</code>,
+<code>HTTP_HOST</code>, <code>language</code>, <code>ip_address</code>, <code>timestamp</code> and
+<code>microtime</code> — which is the irreducible set, arrived at independently and years earlier.</p>
+
+<h3><span class="num">2.2</span>And it already sequences them correctly</h3>
+<p><code>CoreAPI::logEvent()</code> runs in this order, and the order is the specification:</p>
+<pre><code>setTrackerProperties( $event, $environmentals );   // A — stamp the request
+if ( $event-&gt;get('do_not_log') ) return false;
+$bcap-&gt;robotCheck();                               // A* — refuse bots at ingest
+isIpAddressExcluded( $event-&gt;get('ip_address') );   // A* — needs the IP
+isSiteRegistered( $site_id );                      // A* — needs the app store
+
+if ( queue_events ) $q-&gt;sendMessage( $event );      // ← everything after here is B
+else                performAction( $processor );    //   the 34 derived properties</code></pre>
+
+<p>Environmentals are stamped <em>before</em> the queue and travel with the message; the derived
+properties are computed by the processor, which is exactly what the queue defers. So v2 does not
+need to invent this boundary. It needs to keep it, and to be explicit about the three
+<span class="ph ph-ap">A*</span> checks sitting on the request side of it — each is there because
+of a decision, and each is a candidate for moving.</p>
+
+<div class="part" id="s3">
+  <p class="part-n">Part Three</p>
+  <h2>The envelope</h2>
+  <p class="part-note">Thirty columns every event row carries, whatever its type.</p>
+</div>
+
+<p>Of the 40 columns in §1.10, thirty are present on every event and ten are event-specific.
+Listing the envelope once and then only each event's <em>delta</em> is both shorter and truer:
+the envelope is what makes a single fact table work, and the deltas are small.</p>
+
+<div class="scroll"><table class="envelope">
+<thead><tr><th>#</th><th>Column</th><th>Set by</th><th>Phase</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="col">id</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>Content-derived for idempotent events, random otherwise. Needed at insert — it is half the PK.</td></tr>
+<tr><td class="n">2</td><td class="col">event_type</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Validated against the taxonomy at receipt.</td></tr>
+<tr><td class="n">3</td><td class="col">site_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Existence checked at receipt — see §7.2, the check needs the application store.</td></tr>
+<tr><td class="n">4</td><td class="col">visitor_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>From the cookie. The one value that cannot be content-derived (§1.5).</td></tr>
+<tr><td class="n">5</td><td class="col">session_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Embeds its creation timestamp; the midnight rule reads it back.</td></tr>
+<tr><td class="n">6</td><td class="col">user_id</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-declared. Resolves at collection only — earlier events stay anonymous forever (§1.5).</td></tr>
+<tr><td class="n">7</td><td class="col">ts</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The server clock at edge receipt. Travels with the queue item.</td></tr>
+<tr><td class="n">8</td><td class="col">yyyymmdd</td><td class="who">derived</td><td><span class="ph ph-a">A</span></td><td>Partition key, so required at insert. From <code>ts</code> — except idempotent events, which take it from <code>session_id</code> so a retry lands in the same partition.</td></tr>
+<tr><td class="n">9</td><td class="col">visitor_fsts</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>First-seen ts, carried on every event. New-visitor derives from it rather than being flagged.</td></tr>
+<tr><td class="n">10</td><td class="col">prior_sessions</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Carried visitor history.</td></tr>
+<tr><td class="n">11</td><td class="col">page_uri</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td>Pure function of <code>page_url</code>. Page identity is <code>hash(site_id + uri)</code>.</td></tr>
+<tr><td class="n">12</td><td class="col">page_title</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td></td></tr>
+<tr><td class="n">13</td><td class="col">referer_url</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>The raw referer. Attribution is what the server makes of it.</td></tr>
+<tr><td class="n">14</td><td class="col">medium</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td rowspan="5">Attribution, resolved server-side and <strong>sticky</strong> — stamped on every event of the session, which is what makes &ldquo;sessions by landing page&rdquo; a group-by instead of a join. Deferrable, but see §7.3: stickiness needs the session's first touch, and a drain sees events in arrival order.</td></tr>
+<tr><td class="n">15</td><td class="col">source</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">16</td><td class="col">campaign</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">17</td><td class="col">ad</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">18</td><td class="col">search_terms</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">19</td><td class="col">browser</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td><td rowspan="3">Parsed from <code>raw_ua</code>, which is stored on every row — so the parse can happen at the drain, in a backfill, or be redone when the browscap data improves. This is the largest deferrable cost in the handler.</td></tr>
+<tr><td class="n">20</td><td class="col">browser_type</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">21</td><td class="col">os</td><td class="who">derived</td><td><span class="ph ph-b">B</span></td></tr>
+<tr><td class="n">22</td><td class="col">language</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td><code>Accept-Language</code>. A header, so it dies with the request.</td></tr>
+<tr><td class="n">23</td><td class="col">country</td><td class="who">derived</td><td><span class="ph ph-ap">A*</span></td><td rowspan="2">From <code>ip_address</code>, so deferrable <em>only if the full IP survives to the drain</em>. §1.8 anonymises by default. See §7.1 — this ordering is the sharpest open question in the spec.</td></tr>
+<tr><td class="n">24</td><td class="col">city</td><td class="who">derived</td><td><span class="ph ph-ap">A*</span></td></tr>
+<tr><td class="n">25</td><td class="col">host</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td><code>Host</code> header.</td></tr>
+<tr><td class="n">26</td><td class="col">ip_address</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The connection, read through <code>X-Forwarded-For</code> — and the leftmost value there is attacker-controlled. Anonymised by default before storage.</td></tr>
+<tr><td class="n">36</td><td class="col">engagement_msec</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Rides every event: time accrued on the current page since the last report. Additive, so session engagement is a SUM over anything.</td></tr>
+<tr><td class="n">37</td><td class="col">is_key_event</td><td class="who"><b>server</b></td><td><span class="ph ph-ap">A*</span></td><td>Stamped at ingest so no reporting query ever joins the goal config (§1.10, two stores). Needs the application store — see §7.2.</td></tr>
+<tr><td class="n">39</td><td class="col">raw_ua</td><td class="who"><b>server</b></td><td><span class="ph ph-a">A</span></td><td>The header itself, kept behind <code>store_raw_ua</code> (default on). It is what makes rows 19–21 deferrable and re-derivable.</td></tr>
+<tr><td class="n">40</td><td class="col">params</td><td class="who">tracker</td><td><span class="ph ph-c">CLIENT</span></td><td>Site-defined custom variables, event params, nested commerce items. One param key, one type, enforced at ingest.</td></tr>
+</tbody></table></div>
+
+<div class="note"><p><strong>Absent means NULL.</strong> §1.9 retires sentinel strings, so a column
+an event does not carry is NULL rather than <code>(not set)</code>. That is what makes
+<code>COUNT(column)</code> mean something — in 1.x <code>dom_element_id</code> reads as populated
+on 94% of clicks while being real on 0.09%.</p></div>
+
+<div class="part" id="s4">
+  <p class="part-n">Part Four</p>
+  <h2>Per event</h2>
+  <p class="part-note">Only the delta. Every event also carries the thirty envelope columns above.</p>
+</div>
+
+<h3><span class="num">4.1</span>Automatically collected</h3>
+<div class="scroll"><table>
+<thead><tr><th>Event</th><th>Adds</th><th>Set by</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="ev">page_view</td><td class="dash">envelope only</td><td class="who">—</td><td>1.x's <code>first_page_request</code> collapses in; new-visitor derives from <code>visitor_fsts</code>.</td></tr>
+<tr><td class="ev">user_engagement</td><td class="col">engagement_msec</td><td class="who">tracker</td><td>Carries the hide-time residue rather than a fresh delta. <strong>Idempotent</strong>: id is <code>hash(session_id + page_ref + seq)</code>, <code>yyyymmdd</code> from <code>session_id</code>, so beacon and retry collapse at the table.</td></tr>
+<tr><td class="ev">click</td><td class="col">click_x, click_y, page_width, page_height, target_url, element_path, element_tag, element_id</td><td class="who">tracker</td><td>Geometry and element capture. Outbound detection is the tracker comparing <code>target_url</code>'s host to its own.</td></tr>
+<tr><td class="ev">scroll</td><td class="col">scroll_depth</td><td class="who">tracker</td><td>Percent bucket. New in v2 — 1.x's <code>dom.scroll</code> is a recording sample with no server handler, not an event.</td></tr>
+<tr><td class="ev">file_download</td><td class="col">target_url</td><td class="who">tracker</td><td>The <em>event type</em> is the derived part: the tracker classifies a click by its target's extension and emits this instead. Server-side it is an ordinary event.</td></tr>
+<tr><td class="ev">view_search_results</td><td class="col">search_terms</td><td class="who">tracker</td><td><strong>Column collision — see §7.4.</strong> Envelope <code>search_terms</code> is <em>referral</em> search terms, derived; this is site-internal search, client-supplied. Same column, two meanings.</td></tr>
+<tr><td class="ev">form_start</td><td class="col">element_id, element_path</td><td class="who">tracker</td><td rowspan="2">Identify the form. Reuses the element columns rather than adding form-specific ones.</td></tr>
+<tr><td class="ev">form_submit</td><td class="col">element_id, element_path</td><td class="who">tracker</td></tr>
+<tr><td class="ev">feed_request</td><td class="dash">envelope only</td><td class="who">—</td><td>OWA-specific, kept. Server-side only: no browser, so most envelope columns are NULL.</td></tr>
+</tbody></table></div>
+
+<h3><span class="num">4.2</span>Opt-in — commerce</h3>
+<div class="scroll"><table>
+<thead><tr><th>Event</th><th>Adds</th><th>Set by</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="ev">purchase</td><td class="col">revenue, params.items</td><td class="who">tracker</td><td>Cents in <code>revenue</code>; line items are the nested array <code>params</code> exists for. 1.x pays a whole fact table and a join for this.</td></tr>
+<tr><td class="ev">refund</td><td class="col">revenue, params.items</td><td class="who">tracker</td><td><code>revenue</code> negative. 1.x handles refunds nowhere.</td></tr>
+<tr><td class="ev">view_item</td><td class="col">params.items</td><td class="who">tracker</td><td rowspan="4">The funnel 1.x cannot express, because it has only the completed transaction. No revenue until purchase.</td></tr>
+<tr><td class="ev">add_to_cart</td><td class="col">params.items</td><td class="who">tracker</td></tr>
+<tr><td class="ev">remove_from_cart</td><td class="col">params.items</td><td class="who">tracker</td></tr>
+<tr><td class="ev">view_cart</td><td class="col">params.items</td><td class="who">tracker</td></tr>
+<tr><td class="ev">begin_checkout</td><td class="col">params.items</td><td class="who">tracker</td><td></td></tr>
+</tbody></table></div>
+
+<h3><span class="num">4.3</span>Opt-in — lifecycle and custom</h3>
+<div class="scroll"><table>
+<thead><tr><th>Event</th><th>Adds</th><th>Set by</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="ev">login</td><td class="col">user_id, params</td><td class="who">tracker</td><td rowspan="2">Tracked-site users. 1.x fires <code>base.login</code> for OWA <em>admin</em> logins — a different thing wearing the same name, and not what this is.</td></tr>
+<tr><td class="ev">sign_up</td><td class="col">user_id, params</td><td class="who">tracker</td></tr>
+<tr><td class="ev">search</td><td class="col">search_terms</td><td class="who">tracker</td><td>Site-internal search. Same collision as <code>view_search_results</code> (§7.4).</td></tr>
+<tr><td class="ev">share</td><td class="col">params</td><td class="who">tracker</td><td>GA4 recommended.</td></tr>
+<tr><td class="ev">&lt;custom&gt;</td><td class="col">params</td><td class="who">tracker</td><td>Arbitrary name plus params, no registration step. 1.x's <code>track.action</code>, without the five fixed custom-variable slots a fixed-width session row forced.</td></tr>
+</tbody></table></div>
+
+<div class="part" id="s5">
+  <p class="part-n">Part Five</p>
+  <h2>The two events with no client half</h2>
+  <p class="part-note">Where the tracker column is empty for every row.</p>
+</div>
+
+<p><code>session_start</code> and <code>first_visit</code> are <strong>server-materialized</strong>
+(§1.4): no beacon, zero wire cost. The server recognises new-session or fresh-<code>fsts</code>
+state on an incoming <code>page_view</code> and writes a second row beside it. So every one of
+their columns is server-set — copied from the triggering request, or derived from it.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Aspect</th><th>session_start</th><th>first_visit</th></tr></thead>
+<tbody>
+<tr><td>Trigger</td><td colspan="2">A <code>page_view</code> whose state says new session / <code>prior_sessions = 0</code></td></tr>
+<tr><td>id</td><td colspan="2"><code>hash(site_id + session_id + event_type)</code> — content-derived</td></tr>
+<tr><td>yyyymmdd</td><td colspan="2">From <code>session_id</code>, never from <code>ts</code> — the midnight rule</td></tr>
+<tr><td>Carries</td><td>Session-scoped attribution</td><td>User-scoped acquisition</td></tr>
+<tr><td>Phase</td><td colspan="2"><span class="ph ph-b">B</span> — materializable at the drain, since every input is on the queued <code>page_view</code></td></tr>
+</tbody></table></div>
+
+<div class="note"><p><strong>Racing tabs cost nothing.</strong> Because the id is content-derived,
+two tabs starting the same session produce the same row and the second insert is a duplicate-key
+no-op — no coordination, and it works across subdomains where the origin-scoped Web Locks API
+cannot reach. This is also why a negative breakdown remainder is a pure defect signal rather than
+an expected artefact: duplicates are structurally impossible, so the count can only go one way.</p></div>
+
+<p>They are emitted for <em>grain</em>, never counted from. §1.4 is emphatic: session totals come
+from the rollup, so a lost marker degrades that session's attribution and erases nothing.</p>
+
+<div class="part" id="s6">
+  <p class="part-n">Part Six</p>
+  <h2>What each topology can defer</h2>
+  <p class="part-note">The boundary is not one line. It moves with what the node can reach.</p>
+</div>
+
+<p>Splitting <span class="ph ph-a">A</span> from <span class="ph ph-ap">A*</span> pays off here.
+The irreducible set is fixed; the policy set moves depending on what the receiving node has access
+to. Three topologies, in increasing order of how little the edge does:</p>
+
+<div class="phase">
+  <div class="phase-h"><span class="phase-n">Topology 1</span><span class="phase-t">Inline</span></div>
+  <p class="phase-why">No queue. The request does everything, as 1.x does with <code>queue_events</code> off.</p>
+  <ul><li>Every column resolved before the response. Simplest, and the slowest per beacon —
+  measured at 79 events/s in 1.x against v2's 202 for the insert alone.</li></ul>
+</div>
+
+<div class="phase">
+  <div class="phase-h"><span class="phase-n">Topology 2</span><span class="phase-t">Queued, application store reachable</span></div>
+  <p class="phase-why">The default deferred shape. The node can read config and goals.</p>
+  <ul>
+    <li>Request does: <span class="ph ph-a">A</span> plus all three <span class="ph ph-ap">A*</span>
+    checks — bot refusal, IP exclusion, site validation — and stamps <code>is_key_event</code>.</li>
+    <li>Drain does: UA parse, geolocation, attribution, <code>page_uri</code>, and materializes
+    <code>session_start</code> / <code>first_visit</code>.</li>
+    <li>This is the shape the fan-out argument in §3.1 assumes: &ldquo;an argument for the queue
+    carrying the fan-out rather than the request doing it inline.&rdquo;</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-h"><span class="phase-n">Topology 3</span><span class="phase-t">Logging node, no database</span></div>
+  <p class="phase-why">A file-queue collector. 1.x has this today as <code>OWA_USE_STATIC_CONFIG_ONLY</code>, which skips both boot queries.</p>
+  <ul>
+    <li>Request does: <span class="ph ph-a">A</span> only. It cannot validate the site, cannot
+    read the goal config, cannot consult a stored exclusion list.</li>
+    <li>Therefore every <span class="ph ph-ap">A*</span> must move to the drain — which
+    <strong>contradicts two decisions</strong> unless they are revisited: bot rows are supposed to
+    be refused at ingest, and <code>is_key_event</code> stamped there. See §7.2.</li>
+    <li>What survives intact: bot refusal can still happen at the drain <em>before</em> the row is
+    written, so &ldquo;no bot rows in the table&rdquo; holds even though &ldquo;refused at
+    ingest&rdquo; does not. The §1.9 ban is on reclassifying <em>stored</em> rows later, and a
+    queued message is not a stored row.</li>
+  </ul>
+</div>
+
+<div class="part" id="s7">
+  <p class="part-n">Part Seven</p>
+  <h2>What this exposes</h2>
+  <p class="part-note">Four questions the plan has not answered, found by asking when rather than what.</p>
+</div>
+
+<h3><span class="num">7.1</span>Geolocation versus anonymisation <span class="chip c-open">Open</span></h3>
+<p>§1.8 anonymises the IP by default. §1.10 derives <code>country</code> and <code>city</code>
+from it. Those two decisions are compatible only if their order is stated, and it is not.</p>
+<div class="flag">
+  <p class="h">The trap</p>
+  <p>If the IP is anonymised at receipt, geolocation must also happen at receipt — it becomes
+  <span class="ph ph-a">A</span>, and a no-database logging node cannot do it at all without a
+  local geo database. If geolocation is deferred instead, the <strong>full IP has to sit in the
+  queue</strong>, which puts the least-anonymised copy of the data in the place it waits longest
+  and is least protected. A file queue makes that a plaintext IP on disk.</p>
+</div>
+<p><strong>Recommendation:</strong> resolve geo at receipt, anonymise immediately after, and never
+let a full IP enter the queue. That makes rows 23–24 <span class="ph ph-a">A</span> and accepts
+that a database-less node either ships a local geo database or records no geography. The
+alternative trades a privacy guarantee for a deployment convenience, which is the wrong way round
+for a product positioned on privacy.</p>
+
+<h3><span class="num">7.2</span><code>is_key_event</code> versus the two-store rule <span class="chip c-open">Open</span></h3>
+<p>§1.10 establishes that no reporting query ever joins an application table, and that key events
+are stamped at ingest so the goal config is never joined at read time. Goals live in the
+application store; events live in the reporting store. Stamping therefore needs both — at the
+moment of ingest.</p>
+<p>Topology 3 has neither at the edge. So one of these has to give: either a database-less node
+cannot stamp key events (and the drain does it, making the column <span class="ph ph-b">B</span>),
+or such nodes are not supported for installations that use goals. The second is a real option and
+should be stated rather than discovered.</p>
+
+<h3><span class="num">7.3</span>Sticky attribution at the drain <span class="chip c-open">Open</span></h3>
+<p>Attribution is stamped on <em>every</em> event of a session, and that stickiness is load-bearing
+— it is why &ldquo;sessions by landing page&rdquo; costs 215&nbsp;ms instead of 3.1&nbsp;s. The
+sticky value comes from the session's first touch. A drain, though, sees events in arrival order,
+which is not necessarily session order: a queued <code>page_view</code> from a session's start may
+be processed after a later event from the same session, and retries reorder freely.</p>
+<p>So deferred attribution needs one of: session state the drain can read and update, ordering by
+<code>session_id</code> within a drain batch, or a second pass that backfills the session's events
+once its first touch is known. The plan settles what the value <em>is</em> (§1.3 attribution
+model) but not how a deferred pipeline arrives at it consistently.</p>
+
+<h3><span class="num">7.4</span>Two meanings on one <code>search_terms</code> column <span class="chip c-open">Open</span></h3>
+<p>§1.10 lists <code>search_terms</code> among the attribution columns (14–18): the terms someone
+searched <em>before arriving</em>, derived server-side from the referer. §1.4 also has
+<code>view_search_results</code> and <code>search</code> — site-internal search, supplied by the
+tracker, describing what someone looked for <em>while here</em>.</p>
+<p>These are different facts with opposite provenance sharing one name. Storing both in column 18
+makes &ldquo;top search terms&rdquo; silently blend acquisition with on-site behaviour. Either the
+internal-search term belongs in <code>params</code>, or it earns its own column — but the
+collision should be resolved before either is built, because separating them afterwards means
+rewriting rows.</p>
+
+<footer>
+<p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
+§3.1 one tracker two pipelines.</p>
+<p>Property classes and the ingest sequence in Part Two are read from
+<code>Core/Module.php::registerTrackingProperties()</code> and
+<code>Core/CoreAPI::logEvent()</code> on master, not from the plan.</p>
+<p>Branch <code>research/v2-single-fact-table</code> · 28 Aug 2026</p>
+</footer>
+</main>
+</div>
+
+</body>
+</html>
