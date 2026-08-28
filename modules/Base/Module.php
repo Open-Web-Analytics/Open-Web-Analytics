@@ -2443,7 +2443,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
         $this->registerReport( 'commerce', 'reports/commerce.json' );
         $this->registerReport( 'content', 'reports/content.json' );
-        $this->registerReport( 'country-detail', 'reports/country-detail.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );

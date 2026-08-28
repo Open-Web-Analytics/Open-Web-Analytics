@@ -784,54 +784,6 @@
             ]
         }
     },
-    "ReportCountryDetail": {
-        "params": [
-            "country"
-        ],
-        "diagnostics": [],
-        "config": {
-            "constraints": "country==characterization_sentinel",
-            "subview": "base.reportWidgets",
-            "title": "Country: ",
-            "titleSuffix": "characterization_sentinel",
-            "view_method": "delegate",
-            "widgets": [
-                {
-                    "container": "trend-chart",
-                    "headline": "There were {visits.formatted} visits from this country.",
-                    "id": "trend",
-                    "query": {
-                        "dimensions": "date",
-                        "sort": "date"
-                    },
-                    "type": "trend"
-                },
-                {
-                    "container": "dimension-grid",
-                    "id": "dim",
-                    "link": {
-                        "linkColumn": "stateRegion",
-                        "template": {
-                            "country": "%s",
-                            "do": "base.report",
-                            "reportId": "state-detail",
-                            "stateRegion": "%s"
-                        },
-                        "valueColumns": [
-                            "stateRegion",
-                            "country"
-                        ]
-                    },
-                    "query": {
-                        "dimensions": "stateRegion,country",
-                        "resultsPerPage": 30,
-                        "sort": "visits"
-                    },
-                    "type": "grid"
-                }
-            ]
-        }
-    },
     "ReportCreativePerformance": {
         "params": [],
         "diagnostics": [],

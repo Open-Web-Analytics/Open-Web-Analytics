@@ -19,15 +19,6 @@
                 "dimensions": "country,countryCode",
                 "sort": "visits-",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "country",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "country-detail",
-                    "country": "%s"
-                },
-                "valueColumns": "country"
             }
         }
     ]

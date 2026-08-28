@@ -96,7 +96,6 @@ final class ReportCharacterizationHarness
         'commerce'                  => 'ReportCommerce',
         'content'                   => 'ReportContent',
         'dashboard'                 => 'ReportDashboard',
-        'country-detail'            => 'ReportCountryDetail',
         'creative-performance'      => 'ReportCreativePerformance',
         'days-to-purchase'          => 'ReportDaysToPurchase',
         'ecommerce'                 => 'ReportEcommerce',
@@ -839,6 +838,31 @@ final class ReportCharacterizationHarness
 
         'ReportEcommerce' => array(
             'productName' => array( 'query.resultsPerPage' => array( 5, null ) ),
+        ),
+
+        /*
+         * The rows do not lead anywhere any more, because there is nowhere
+         * left to lead: country-detail is gone.
+         *
+         * It was a country's name over a trend of that country's visits and a
+         * grid of its states -- and this report is already a grid of countries
+         * with their visits, so following a row asked the same question about
+         * one row of it. Retired rather than relinked.
+         */
+        'ReportGeolocation' => array(
+            'dim' => array(
+                'link' => array(
+                    array(
+                        'linkColumn'   => 'country',
+                        'template'     => array(
+                            'country'  => '%s',
+                            'do'       => 'base.report',
+                            'reportId' => 'country-detail',
+                        ),
+                        'valueColumns' => 'country',
+                    ),
+                    null ),
+            ),
         ),
 
         /*
