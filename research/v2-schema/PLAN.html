@@ -153,7 +153,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -201,8 +201,13 @@ and inverts on a columnar engine, and it has been explicitly traded away.</p>
 Under v2, 4,443 (81%) work unchanged, 770 (14%) reference the eleven <code>*InVisit</code>
 dimensions which have <em>zero references anywhere outside their own registration</em>, and 280 (5%)
 need an exit page served by an <code>is_exit</code> flag. <strong>Nothing is genuinely lost.</strong></p>
-<p>Also retired: <code>owa_session</code>'s 121 columns (45 of them goal columns), nine derived
-date-part columns per fact row, and the dead <code>owa_exit</code> entity.</p>
+<p>Also retired: <code>owa_session</code>'s 121 columns (45 of them goal columns) and nine derived
+date-part columns per fact row. The dead <code>owa_exit</code> entity is <em>already gone</em> —
+removed from 1.x in #1048 with its registration and its setting. Its <strong>table is
+deliberately left in place</strong>: dropping it is a destructive migration and a separate
+decision from deleting dead code. The name also moved to the legacy class-name test's RETIRED
+list, which asserts it is gone rather than merely dropping it — a real backward-compat break,
+taken deliberately.</p>
 <div class="note"><strong>The risk inverts.</strong> 1.x's entity boundaries <em>prevent</em>
 non-additive metric combinations — the resolver intersects entity sets, so <code>bounceRate ×
 pagePath</code> is correctly refused today. A single table has no such boundary, so v2's registry
@@ -487,12 +492,13 @@ layout descriptors covers both, and can be retrofitted into 1.x additively.</li>
 <li><strong>Both reporting UIs run side by side</strong> for as long as wanted, sharing one
 session. A separate login for each would make comparison tedious enough that nobody does it —
 which turns the overlap period into a rubber stamp.</li>
-<li><strong>The charted metric is chosen by the reader, not by the report.</strong> Clicking a
-metric box redraws the trend on that metric. Today it is fixed at render: a report or a metric set
-names one <code>chartMetric</code>, the template issues <code>makeAreaChart</code> once, and
-nothing re-issues it — there is no click handler on a metric box anywhere in the reporting JS. So
-a reader who wants to see revenue instead of visits has no way to ask, even though the boxes
-showing those numbers are already on screen and the result set already carries every series.
+<li><strong>The charted metric is chosen by the reader, not by the report.</strong>
+<span class="chip c-done">Shipped</span> in 1.x — clicking a metric box redraws the trend on
+that metric, and the boxes mark which one is charted. This paragraph used to end &ldquo;there is
+no click handler on a metric box anywhere in the reporting JS&rdquo;; there is one now, and
+<code>chartMetric</code> already means what the next paragraph says it should. Kept here because
+what v2 inherits is the <em>reasoning</em>, not the diagnosis: the result set already carried
+every series, so the only thing missing was a way to ask.
 <br><br>
 This changes what the key <em>means</em>, which is why it belongs here rather than in the format:
 <code>chartMetric</code> stops being <em>the</em> charted metric and becomes the one charted
@@ -658,6 +664,17 @@ the end for the other (<code>setRepeatVisitorFlag</code>, unchanged since 2015).
 bug is fixed, but the <em>shape</em> is the problem: nothing in the schema, the entity layer or
 the ingestion pipeline stops a write path leaving NULL in a column that has only two meanings.</p>
 
+<p><strong>Update, 28 Aug &mdash; fixing the derivation was not enough, and the reason
+generalises.</strong> Rows written before that fix still hold NULL, so the third bucket survives
+in the data whatever the writer does now: the pie was still drawing two slices labelled
+&ldquo;New&rdquo; on a live install, months after the derivation was corrected. The client half
+had to change too &mdash; the chart now sums by <em>label</em> rather than emitting one slice per
+row, because a <code>valueLabels</code> map that folds two values onto one name is a statement
+that they mean the same thing, and a renderer that still draws them apart contradicts it. Two
+things for v2 follow: <code>NOT NULL DEFAULT 0</code> fixes new writes and nothing else, so a
+schema that has ever permitted the third value needs a migration to close it; and any renderer
+that groups by a <em>labelled</em> value must fold labels, not rows.</p>
+
 <p>For v2:</p>
 <ul>
 <li><strong>Declare booleans NOT NULL DEFAULT 0.</strong> The storage should refuse the third
@@ -708,7 +725,7 @@ namespace stripping and cookie consolidation both moved into this column.</p>
 <tr><td><strong>Cookie + state consolidation</strong> <span class="chip c-done">Shipped</span></td><td>one write format; the dual-format reader already exists, so existing cookies keep parsing. Now carries an <code>sv</code> version marker, so the <em>next</em> format change is routine rather than bespoke</td></tr>
 <tr><td><strong>URL parameter namespacing</strong> <span class="chip c-done">Shipped</span></td><td>the <code>owa_</code> prefix was a leftover from embedded-mode, long since removed. Split rather than deleted: <code>ns</code> still governs cookies, <code>owa_state</code>, campaign keys and the table prefix; <code>app_ns</code> governs OWA's own URLs and the beacon, and is now empty</td></tr>
 <tr><td><strong><code>preconnect</code> + snippet placement</strong> <span class="chip c-done">Shipped</span></td><td>removes DNS, TCP and TLS from the critical path on a cold origin — worth far more for a self-hosted tracker than for GA, whose origin is already warm in most browsers</td></tr>
-<tr><td><strong>Report config as JSON</strong> <span class="chip c-open">Next</span></td><td>retrofits the v2 widget format into v1 (§1.7)</td></tr>
+<tr><td><strong>Report config as JSON</strong> <span class="chip c-done">Shipped</span></td><td>retrofits the v2 widget format into v1 (§1.7). Went further than this row asked: 62 of 64 shipped reports are configuration, and the format is now <em>user-authored</em> &mdash; see Phase 4 for what that costs v2</td></tr>
 </tbody></table></div>
 
 <h3 id="s23"><span class="num">2.3</span>Tracker-additive — mostly NOT 1.x work after all</h3>
@@ -802,8 +819,13 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   is more code depending on the current shape.</p>
   <ul>
     <li>PDO driver behind the existing data-access seam
-    <span class="chip c-open">Open</span> <span class="dash">— written and CI-green, but
-    <strong>not merged</strong>. Nothing downstream may assume bound parameters yet.</span></li>
+    <span class="chip c-done">Shipped</span> <span class="dash">— merged;
+    <code>Core/Db/Pdo.php</code> and <code>Core/Db/PdoMysql.php</code> are on master.
+    One caveat outlived the merge: <code>Db::query()</code> returns a <em>driver-native</em>
+    result — a PDOStatement on PDO, a mysqli_result on mysqli — so
+    <code>-&gt;fetchAll()</code> is fatal under mysqli. Use <code>get_results()</code> /
+    <code>get_row()</code>. Both database CI jobs exist for exactly this: a green run on a PDO
+    box proves nothing about the other driver.</span></li>
     <li>CORS replacing JSONP — also unblocks the API contract work
     <span class="chip c-done">Shipped</span> <span class="dash">— PR&nbsp;#1019</span></li>
     <li>Query builder emits a closed partition-key range whenever a time bound is given (§1.6)
@@ -861,9 +883,25 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     showed as well as what was ticked, so absence is absence rather than
     revocation.</span></li>
     <li>Report config as JSON, retrofitted to v1 reports
-    <span class="chip c-open">Open</span> <span class="dash">&mdash; <strong>the only untouched
-    item in this phase</strong>, and the next thing to build. Nothing in the tree matches it
-    yet.</span></li>
+    <span class="chip c-done">Shipped</span> <span class="dash">&mdash; and it closes this
+    phase. Landed in three parts: <strong>#1044</strong> converted the reports (62 of 64 are
+    JSON now; <code>goal-funnel</code> and <code>domstreams</code> stay controllers because they
+    compute rather than configure), <strong>#1047</strong> added the widget vocabulary a builder
+    can offer &mdash; <code>trend-card</code>, <code>grid-card</code>, <code>pie</code>,
+    <code>metric-boxes</code>, with panel chrome and a width floor &mdash; and user-authored
+    reports on top of it, and <strong>#1048</strong> retired the conversion scaffolding once it
+    had done its job.
+    <br><br>
+    <strong>Two consequences v2 inherits, neither in this item's original scope.</strong>
+    First, the definition format is now a <em>user-facing contract</em>: rows in
+    <code>owa_custom_report</code> hold definitions written by people, so v2 cannot change the
+    format freely, and the narrowing that made authoring safe (fixed renderer, formatters chosen
+    by name, <code>excludeColumns</code> as names rather than script) is load-bearing now rather
+    than stylistic. Second, and more useful: <strong>the explicit-enforcement seam &sect;1.2
+    says v2 will need already exists</strong>. Every metric, dimension and sort in an authored
+    definition resolves through the registry at save time <em>and</em> again at render time,
+    because the registry changes under a saved report. That is the machinery v2 must have once
+    the schema stops refusing non-additive combinations on its own.</span></li>
     <li>Installation-wide retention as a scheduled job
     <span class="chip c-done">Shipped</span> <span class="dash">&mdash; as a mechanism, opt-in by
     design. <code>partition-rotate</code> is registered <em>with empty params</em>, so no
@@ -897,7 +935,31 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
 </div>
 
 <div class="flag">
-  <p class="h">Status — 2026-08-23 (revised, end of day)</p>
+  <p class="h">Status — 2026-08-28</p>
+  <p><strong>Phases 1, 2, 3 and 4 are closed.</strong> Two items moved since the 23 Aug note,
+  both by shipping. The <strong>PDO driver</strong> merged, closing Phase 2. <strong>Report
+  config as JSON</strong> merged in three parts — #1044, #1047, #1048 — closing Phase 4.
+  <strong>Phase 5, v2 groundwork, is now the whole of the remaining plan</strong>, and none of
+  it has started.</p>
+
+  <p><strong>What the report work changed about v2, beyond ticking a box.</strong> The item
+  asked for a widget format retrofitted into v1. What shipped also made that format
+  <em>user-authored</em>, which hands v2 one constraint and one asset. The constraint: stored
+  definitions in <code>owa_custom_report</code> are documents written by people, so the format
+  is a compatibility surface now and the narrowing that made authoring safe cannot be relaxed.
+  The asset: registry validation of every metric, dimension and sort — at save time and again
+  at render time — already exists. That is the explicit enforcement §1.2 warns v2 will need
+  once a single table stops refusing non-additive combinations on its own. It was written to
+  keep authored reports honest; it turns out to be the seam v2 needs for a different reason.</p>
+
+  <p><strong>Reports retired along the way</strong>, none of them anticipated here:
+  <code>country-detail</code> and <code>state-detail</code> (duplicative, then orphaned),
+  <code>commerce</code> (an unreachable duplicate of <code>ecommerce</code>) and
+  <code>transaction-detail</code>. Two dead things went with them, <code>wp_plugin.php</code>
+  and the <code>owa_exit</code> entity (§1.2). The eleven <em>InVisit</em> dimensions §1.2 marks
+  for deletion are <strong>still registered in 1.x</strong> — that one is still v2's to make.</p>
+
+  <p class="h" style="margin-top:1.2em">Status — 2026-08-23 (revised, end of day)</p>
   <p><strong>Phases 1 and 3 are closed. Phase 4 has one item left.</strong> An earlier
   revision of this note said execution was &ldquo;in Phase 3&rdquo; with Phases 1 and 2 partly
   open. That was read against the phase lists above rather than against the tree, and the
