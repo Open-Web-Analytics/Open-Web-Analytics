@@ -2553,7 +2553,7 @@ OWA.constraintBuilder.prototype = {
           + ' title="' + OWA.l('Filter') + '" aria-label="' + OWA.l('Filter') + '"'
           + ' aria-expanded="false"><i class="fa fa-filter"></i></span>'
           + '<span class="constraintCount" style="display:none;"></span>'
-          + '<div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
+          + '<div class="builder"><ul></ul><div style="clear:both;"></div><div class="apply-button"></div>'
         );
 
         var button_selector = container_selector + ' > .toggle-button';
@@ -2629,15 +2629,15 @@ OWA.constraintBuilder.prototype = {
                 }
             } );
 
-        // setup add button
-        jQuery( builder_selector + ' > .add-button' )
-            .button({
-
-                label: OWA.l('+ Add Filter ')
-            })
-            .click(function() {
-                that.addNewConstraintRow( builder_selector + ' > ul' );
-        });
+        /*
+         * NO bottom "Add filter" button.
+         *
+         * Two buttons at the foot of the dialog read as a choice between two
+         * ways of finishing, when only one of them finishes anything: Apply is
+         * the action, and adding a row is part of writing the filter. The plus
+         * sits in the row it grows from -- see addNewConstraintRow -- which
+         * leaves exactly one action button at the bottom.
+         */
 
         // setup apply button
         jQuery( builder_selector + ' > .apply-button' )
@@ -2750,13 +2750,23 @@ OWA.constraintBuilder.prototype = {
         }
     },
 
-    addNewConstraintRow : function(selector, name, operator, value) {
+    addNewConstraintRow : function(selector, name, operator, value, after) {
+
+        var that = this;
 
         // generate container
 
         // generate the dim/metric chooser button
         jQuery( selector ).append(
-            '<LI class="constraintRow"><span class="constraintDimensionPicker"></span> <span class="constraintOperatorPicker"></span><input class="constraintValueField" type="text" size="30"><span class="constraintRemoveButton">X</span></LI>'
+            '<LI class="constraintRow"><span class="constraintDimensionPicker"></span> '
+          + '<span class="constraintOperatorPicker"></span>'
+          + '<input class="constraintValueField" type="text" size="30">'
+          + '<span class="constraintAddButton" role="button" tabindex="0"'
+          + ' title="' + OWA.l( 'Add another filter' ) + '"'
+          + ' aria-label="' + OWA.l( 'Add another filter' ) + '">+</span>'
+          + '<span class="constraintRemoveButton" role="button" tabindex="0"'
+          + ' title="' + OWA.l( 'Remove this filter' ) + '"'
+          + ' aria-label="' + OWA.l( 'Remove this filter' ) + '">X</span></LI>'
         );
 
         // create constraint dimension picker
@@ -2772,15 +2782,53 @@ OWA.constraintBuilder.prototype = {
             jQuery(selector + ' > li:last > .constraintValueField').val(value);
         }
 
-        // setup add button
-        jQuery( selector + '> li:last > .constraintRemoveButton' )
-            .button({
+        var $row = jQuery( selector + ' > li:last' );
 
-                label: OWA.l('X')
-            })
-            .click(function() {
-                jQuery( this ).parent().remove();
-        });
+        /*
+         * The new row goes directly BELOW the one whose plus was pressed,
+         * rather than at the end of the list. The rows are read top to bottom
+         * as one sentence, so "another one after this" is where the reader is
+         * looking.
+         *
+         * It is appended first and moved second: everything above addresses
+         * the row it just built as `li:last`, and inserting in the middle
+         * would leave those selectors pointing at somebody else's row.
+         */
+        if ( after && after.length ) {
+
+            $row.insertAfter( after );
+        }
+
+        var addAfter = function () {
+
+            that.addNewConstraintRow( selector, '', '', '', $row );
+        };
+
+        $row.children( '.constraintAddButton' )
+            .on( 'click', addAfter )
+            .on( 'keydown', function ( e ) {
+
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); addAfter(); }
+            } );
+
+        var remove = function () {
+
+            $row.remove();
+
+            // Never zero rows: with the plus living IN a row, removing the last
+            // one would leave nothing to add from.
+            if ( ! jQuery( selector + ' > li' ).length ) {
+
+                that.addNewConstraintRow( selector );
+            }
+        };
+
+        $row.children( '.constraintRemoveButton' )
+            .on( 'click', remove )
+            .on( 'keydown', function ( e ) {
+
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); remove(); }
+            } );
 
 
 

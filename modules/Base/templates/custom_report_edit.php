@@ -337,10 +337,24 @@ $owa_max        = (int) $view->get('max_widgets');
     </div>
 
     <div class="owa_builderField">
-        <label for="dlgConstraints">Constraints</label>
-        <input type="text" id="dlgConstraints" placeholder="medium==organic-search" />
+        <label>Constraints</label>
+        <?php
+            /*
+             * ROWS, the same ones the grid's filter uses.
+             *
+             * This was a text field the author typed `medium==organic-search`
+             * into -- a syntax with no discoverable operator list, no
+             * dimension names, and nothing to catch a typo until the widget
+             * came back empty. The rows carry the same classes as the filter
+             * builder's, so they get its pills, and they serialise back to
+             * exactly that string on the way out: the STORED format has not
+             * changed, only the way it is written.
+             */
+        ?>
+        <div id="dlgConstraintRows" class="owa_builderConstraints"><ul></ul></div>
         <div class="owa_builderHelp">
-            Comma-separated, e.g. <code>medium==organic-search,browserType==Chrome</code>
+            Rows are combined, e.g. <code>medium</code> is <code>organic-search</code>
+            <em>and</em> <code>browserType</code> contains <code>Chrome</code>.
         </div>
     </div>
 </div>
@@ -979,7 +993,7 @@ $owa_max        = (int) $view->get('max_widgets');
             more.label && more.label !== MORE_LABEL ? more.label : '' );
 
         jQuery( '#dlgSort' ).val( query.sort || '' );
-        jQuery( '#dlgConstraints' ).val( widget.constraints || '' );
+        renderConstraintRows( widget.constraints || '' );
 
         jQuery( '#widgetDialog' )
             .dialog( 'option', 'title', widget.title || ( 'Widget ' + ( index + 1 ) ) )
@@ -1183,6 +1197,195 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /** Read the dialog back into the widget it was opened on. */
+    /*
+     * ------------------------------------------------------------------
+     * Constraints, as rows rather than as a string the author types
+     * ------------------------------------------------------------------
+     *
+     * The STORED format is unchanged -- `name==value`, comma separated, which
+     * is what CustomReports::constraintDimensions() parses. These two functions
+     * are the only place that string is written or read here, so the syntax
+     * stops being something an author has to know.
+     *
+     * The markup deliberately matches the grid's filter builder
+     * (li.constraintRow > .constraintDimensionPicker / .constraintOperatorPicker
+     * / .constraintValueField), because the pill styling is written against
+     * those classes and a filter should look the same wherever it is built.
+     */
+    var CONSTRAINT_OPERATORS = {
+        '==': 'Exactly Matching',
+        '!=': 'Not Matching',
+        '>':  'Greater than',
+        '<':  'Less than',
+        '=@': 'Contains'
+    };
+
+    /**
+     * Split one clause into name / operator / value.
+     *
+     * LONGEST OPERATOR FIRST. '=@' and '!=' both contain a character that '='
+     * would match, and '>=' starts with '>' -- testing in any order but longest
+     * first splits `medium=@news` into name `medium=` with operator `@`.
+     */
+    function splitConstraint( clause ) {
+
+        var ops = Object.keys( CONSTRAINT_OPERATORS ).sort( function ( a, b ) {
+            return b.length - a.length;
+        } );
+
+        for ( var i = 0; i < ops.length; i++ ) {
+
+            var at = clause.indexOf( ops[ i ] );
+
+            if ( at > 0 ) {
+
+                return {
+                    name:     jQuery.trim( clause.slice( 0, at ) ),
+                    operator: ops[ i ],
+                    value:    jQuery.trim( clause.slice( at + ops[ i ].length ) )
+                };
+            }
+        }
+
+        return { name: jQuery.trim( clause ), operator: '==', value: '' };
+    }
+
+    function addConstraintRow( name, operator, value, after ) {
+
+        var $row = jQuery(
+              '<li class="constraintRow">'
+            + '<span class="constraintDimensionPicker"></span>'
+            + '<span class="constraintOperatorPicker"></span>'
+            + '<input class="constraintValueField" type="text" />'
+            + '<span class="constraintAddButton" role="button" tabindex="0"'
+            + ' title="Add another filter" aria-label="Add another filter">+</span>'
+            + '<span class="constraintRemoveButton" role="button" tabindex="0"'
+            + ' title="Remove this filter" aria-label="Remove this filter">X</span>'
+            + '</li>' );
+
+        var $dim = jQuery( '<select class="dim-list"></select>' )
+            .append( jQuery( '<option value=""></option>' ).text( 'Select...' ) );
+
+        /*
+         * The same list the dimension slots offer, labelled the same way -- see
+         * fillChoices(). DIMENSIONS is a LIST of { name, label }, not a
+         * name => label map: iterating it as a map yields the array index and
+         * the object, so every option came out `[object Object]` with a numeric
+         * value.
+         */
+        DIMENSIONS.forEach( function ( choice ) {
+            $dim.append( jQuery( '<option>' )
+                .attr( 'value', choice.name )
+                .text( choice.label + ' (' + choice.name + ')' ) );
+        } );
+
+        var $op = jQuery( '<select class="operator-list"></select>' );
+
+        jQuery.each( CONSTRAINT_OPERATORS, function ( value, label ) {
+            $op.append( jQuery( '<option></option>' ).attr( 'value', value ).text( label ) );
+        } );
+
+        $row.children( '.constraintDimensionPicker' ).append( $dim );
+        $row.children( '.constraintOperatorPicker' ).append( $op );
+
+        if ( name )     { $dim.val( name ); }
+        if ( operator ) { $op.val( operator ); }
+        if ( value )    { $row.children( '.constraintValueField' ).val( value ); }
+
+        if ( after && after.length ) {
+
+            // Directly below the row whose plus was pressed -- the rows read
+            // top to bottom as one sentence.
+            $row.insertAfter( after );
+
+        } else {
+
+            jQuery( '#dlgConstraintRows > ul' ).append( $row );
+        }
+
+        /*
+         * Enhanced AFTER the row is in the document, and with explicit widths.
+         *
+         * chosen-js 1.x measures the <select> at enhancement time and reads 0
+         * inside a hidden parent -- this dialog is display:none until it opens,
+         * which is exactly the case that once left the grid filter's dimension
+         * picker a 2px sliver. The width option bypasses the measurement.
+         */
+        $dim.chosen( { no_results_text: 'Name not found.', width: '160px' } );
+        $op.chosen( { disable_search: true, width: '150px' } );
+
+        var addAfter = function () { addConstraintRow( '', '', '', $row ); };
+
+        $row.children( '.constraintAddButton' )
+            .on( 'click', addAfter )
+            .on( 'keydown', function ( e ) {
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); addAfter(); }
+            } );
+
+        var remove = function () {
+
+            $row.remove();
+
+            // Never zero rows: the plus lives IN a row, so removing the last
+            // one would leave nothing to add from.
+            if ( ! jQuery( '#dlgConstraintRows > ul > li' ).length ) {
+                addConstraintRow();
+            }
+        };
+
+        $row.children( '.constraintRemoveButton' )
+            .on( 'click', remove )
+            .on( 'keydown', function ( e ) {
+                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); remove(); }
+            } );
+    }
+
+    function renderConstraintRows( str ) {
+
+        jQuery( '#dlgConstraintRows > ul' ).empty();
+
+        var clauses = String( str || '' ).split( ',' ).filter( function ( c ) {
+            return jQuery.trim( c ) !== '';
+        } );
+
+        if ( ! clauses.length ) {
+
+            addConstraintRow();
+            return;
+        }
+
+        clauses.forEach( function ( clause ) {
+            var part = splitConstraint( clause );
+            addConstraintRow( part.name, part.operator, part.value );
+        } );
+    }
+
+    /**
+     * The rows, back as the stored string.
+     *
+     * A row with no dimension or no value contributes NOTHING -- it filters
+     * nothing, and writing `==` into the definition would be a clause the
+     * server then has to reject. That is also what lets the form always carry
+     * one empty row without it meaning anything.
+     */
+    function readConstraintRows() {
+
+        var out = [];
+
+        jQuery( '#dlgConstraintRows > ul > li' ).each( function () {
+
+            var name  = jQuery( this ).find( 'select.dim-list' ).val();
+            var op    = jQuery( this ).find( 'select.operator-list' ).val();
+            var value = jQuery.trim( jQuery( this ).children( '.constraintValueField' ).val() || '' );
+
+            if ( name && value ) {
+                out.push( name + ( op || '==' ) + value );
+            }
+        } );
+
+        return out.join( ',' );
+    }
+
     function applyDialog() {
 
         if ( editing === null ) {
@@ -1210,7 +1413,7 @@ $owa_max        = (int) $view->get('max_widgets');
         widget.rowspan = Number( jQuery( '#dlgRowspan' ).val() ) || 1;
 
         var metrics = jQuery( '#dlgMetrics' ).val() || [];
-        var cons    = jQuery.trim( jQuery( '#dlgConstraints' ).val() || '' );
+        var cons    = readConstraintRows();
 
         /*
          * The dimensions, from whichever of the three this type is.

@@ -862,14 +862,39 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
             .toHaveCount(1);
 
-        await expect(dialog.locator('.add-button')).toBeVisible();
+        /*
+         * ONE action button at the foot, and a plus per row.
+         *
+         * There used to be "+ Add Filter" beside Apply, which read as a choice
+         * between two ways of finishing when only one of them finishes
+         * anything. Growing the filter is part of writing it, so the plus sits
+         * in the row it grows from.
+         */
+        await expect(dialog.locator('.add-button')).toHaveCount(0);
         await expect(dialog.locator('.apply-button')).toBeVisible();
+        await expect(dialog.locator('li.constraintRow .constraintAddButton')).toHaveCount(1);
+
+        /*
+         * ...and Apply does not look like the pills it sits under. It was the
+         * same shape and height as the three selects above it, which made the
+         * one control that commits look like a fourth thing to pick from.
+         */
+        const applyBox = await dialog.locator('.apply-button')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+        const pillBox = await dialog.locator('.constraintOperatorPicker .chosen-single')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+        expect(applyBox).toBeGreaterThan(pillBox + 6);
+
+        // The plus grows the list, directly below the row it was pressed on.
+        await dialog.locator('li.constraintRow').first().locator('.constraintAddButton').click();
+        await expect(dialog.locator('li.constraintRow')).toHaveCount(2);
 
         /*
          * Both select controls are chosen, and there is no selectmenu left.
          * A row has two: the dimension and the operator.
          */
-        await expect(dialog.locator('.constraintRow .chosen-container'))
+        await expect(dialog.locator('.constraintRow').first().locator('.chosen-container'))
             .toHaveCount(2);
         await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
 

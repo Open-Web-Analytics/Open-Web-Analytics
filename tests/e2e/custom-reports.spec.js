@@ -40,6 +40,28 @@ async function openRoster(page) {
 }
 
 /**
+ * Fill the widget modal's FIRST constraint row, by driving its controls.
+ *
+ * The dimension and the operator are chosen widgets, so the native <select>
+ * is hidden and page.selectOption() cannot reach it -- and setting the hidden
+ * select would pass with the visible control broken, which is the only part an
+ * author touches. Same reasoning as chooseInChosen() above.
+ */
+async function fillConstraintRow(page, { dimension, operator, value }) {
+    const row = page.locator('#dlgConstraintRows li.constraintRow').first();
+
+    const pick = async (holder, label) => {
+        const chosen = row.locator(`${holder} .chosen-container`);
+        await chosen.click();
+        await chosen.locator('.chosen-results li', { hasText: label }).first().click();
+    };
+
+    if (dimension) { await pick('.constraintDimensionPicker', dimension); }
+    if (operator)  { await pick('.constraintOperatorPicker', operator); }
+    if (value !== undefined) { await row.locator('.constraintValueField').fill(value); }
+}
+
+/**
  * Build and save a report with one grid widget.
  * @returns {Promise<string>} the name it was saved under
  */
@@ -353,6 +375,67 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'reportMetricSet', 'visits');
 
             await expect(chosenPills(page, 'reportMetricSet')).toHaveCount(1);
+        });
+
+        /**
+         * Constraints are ROWS now, not a string the author types.
+         *
+         * The field used to be a text input taking `medium==organic-search` --
+         * a syntax with no discoverable operator list, no dimension names, and
+         * nothing to catch a typo until the widget came back empty. The STORED
+         * format is unchanged, which is the thing worth pinning: the rows have
+         * to serialise to exactly what the definition already holds, and parse
+         * that same string back when the widget is reopened.
+         *
+         * Round-tripped through a real save, so the assertion is about what
+         * reached the database rather than what the form is holding.
+         */
+        test('a constraint built as rows survives a save and reopens as rows', async ({ page }) => {
+            const name = reportName('constraint-rows');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            await chooseInChosen(page, 'dlgMetrics', 'visits');
+            await chooseInChosen(page, 'dlgDimensions', 'browserType');
+
+            await fillConstraintRow(page,
+                { dimension: '(medium)', operator: 'Contains', value: 'organic' });
+
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            // Saving lands on the report itself; its own edit control is the
+            // way back into the builder.
+            await expect(page.locator('.owa_reportTitle')).toContainText(name);
+            await page.locator('.owa_reportTitle a[href*="customReportEdit"]').click();
+            await page.waitForSelector('#customReportForm', { timeout: 20_000 });
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+
+            const row = page.locator('#dlgConstraintRows li.constraintRow').first();
+
+            /*
+             * Read off the NATIVE selects, which is where chosen keeps the
+             * value and where the serialiser reads it -- the visible pill is
+             * asserted below, so both halves are covered.
+             */
+            await expect(row.locator('select.dim-list')).toHaveValue('medium');
+            await expect(row.locator('select.operator-list')).toHaveValue('=@');
+            await expect(row.locator('.constraintValueField')).toHaveValue('organic');
+
+            // ...and the pills show it, which is what an author sees.
+            await expect(row.locator('.constraintDimensionPicker .chosen-single'))
+                .toContainText('(medium)');
+            await expect(row.locator('.constraintOperatorPicker .chosen-single'))
+                .toContainText('Contains');
         });
 
         test('a report can be built, saved, and opens showing its own name', async ({ page }) => {

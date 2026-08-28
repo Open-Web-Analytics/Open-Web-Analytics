@@ -963,6 +963,12 @@ li.constraintRow {
  * the smallest thing in it. Marked up as a control for the keyboard, drawn as
  * a glyph.
  */
+/*
+ * The plus and the X are a matched pair, sitting at the end of the row they
+ * act on. Glyphs rather than buttons: they are the smallest things in the row,
+ * and a third and fourth kind of chrome there is noise.
+ */
+.owa .constraintRow .constraintAddButton,
 .owa .constraintRow .constraintRemoveButton {
     float: none;
     margin-right: 0;
@@ -986,47 +992,51 @@ li.constraintRow {
     color: #c0392b;
 }
 
+.owa .constraintRow .constraintAddButton {
+    font-size: 15px;
+}
+
+.owa .constraintRow .constraintAddButton:hover,
+.owa .constraintRow .constraintAddButton:focus {
+    opacity: 1;
+    color: #1874CD;
+}
+
 /*
- * Add and Apply, as pills.
+ * APPLY IS NOT A PILL.
  *
- * Apply carries the trend blue because it is the one that changes what the
- * numbers say; Add only grows the form. A builder whose two buttons look
- * identical makes the reader work out which one commits.
- */
-/*
- * Scoped to .builder, NOT to .constraintPickerContainer.
+ * It was the same shape and height as the three select pills on the row above
+ * it, which made the one control that COMMITS look like another thing to pick
+ * from. A submit button is taller, squarer and heavier than the fields it acts
+ * on, and that difference is the whole point.
  *
- * The builder is a dialog now and jQuery UI moves it out of that container to
- * `.owa`, so anything qualified by the container stops matching -- which is
- * what left these two as default jQuery-UI buttons the first time. The same
- * move broke the JS selectors; see the builder_id comment there.
+ * The trend blue, which is the colour this reporting UI already uses for the
+ * thing that is active -- the selected tab, the Live View segment, the charted
+ * metric's marker. White on #1874CD is about 4.6:1, so the label is legible at
+ * button size.
+ *
+ * There is only ONE of these now. Adding a row moved into the row itself (the
+ * plus beside each X), so the foot of the dialog holds the single action that
+ * finishes the job.
  */
-.owa .builder .add-button.ui-button,
 .owa .builder .apply-button.ui-button,
-.owa .builder .add-button,
 .owa .builder .apply-button {
     display: inline-block;
-    margin: 4px 6px 0 0;
-    padding: 3px 12px;
-    border: 1px solid #cccccc;
-    border-radius: 12px;
-    background: #e6e6e6;
+    margin: 10px 0 0 0;
+    padding: 8px 20px;
+    border: 1px solid #1462ac;
+    border-radius: 3px;
+    background: #1874CD;
     font-family: inherit;
-    font-size: 11px;
-    line-height: 15px;
-    color: #303030;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 16px;
+    color: #ffffff;
     cursor: pointer;
 }
 
-.owa .builder .apply-button.ui-button,
-.owa .builder .apply-button {
-    border-color: #1874CD;
-    background: #1874CD;
-    color: #ffffff;
-}
-
-.owa .builder .add-button:hover,
-.owa .builder .apply-button:hover {
+.owa .builder .apply-button:hover,
+.owa .builder .apply-button:focus {
     filter: brightness( 0.95 );
 }
 
@@ -2867,4 +2877,19 @@ li.constraintRow {
    by it -- chosen's drop is absolutely positioned inside the row. */
 .owa .owa_filterDialogFrame .ui-dialog-content {
     overflow: visible;
+}
+
+
+/*
+ * The widget builder's constraint rows.
+ *
+ * The rows themselves are already styled -- they carry the same classes as the
+ * grid's filter builder, which is the point -- so this only places them in the
+ * form. There is no "Add filter" button here either: the plus lives in each
+ * row, and this form's one action is the dialog's own Done.
+ */
+.owa .owa_builderConstraints ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
