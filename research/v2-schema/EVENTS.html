@@ -189,8 +189,10 @@ Everything else has to happen while the request is open, because the request is 
   <span><strong>Irreducible.</strong> Reads the HTTP request itself. When the response is sent
   the value is gone forever, so no topology can defer it.</span>
   <span class="ph ph-ap">A*</span>
-  <span><strong>In the request by policy.</strong> Technically computable later, but a decision
-  elsewhere in the plan pins it here. Each one names the decision and what moving it would cost.</span>
+  <span><strong>Defined, and empty.</strong> &ldquo;In the request by policy&rdquo; had one
+  instance &mdash; geolocation, held there because anonymisation was about to destroy its input.
+  &sect;7.1 moved both to the drain, and the category emptied. Kept in the legend because the
+  <em>question</em> it asks is the right one to ask of anything added later.</span>
   <span class="ph ph-b">B</span>
   <span><strong>Deferrable.</strong> A pure function of values already captured. Safe to compute
   at the drain.</span>
@@ -217,8 +219,10 @@ Everything else has to happen while the request is open, because the request is 
 </div>
 
 <h3><span class="num">1.1</span>Three things make a value irreducible</h3>
-<p>A property is <span class="ph ph-a">A</span> for one of two reasons — and the list was
-longer before this page was checked against its own definition. Only the first is physics.</p>
+<p>After two rounds of checking this page against its own definition, <strong>one reason
+survives</strong>. Both others were struck: one confused <em>at insert</em> with <em>during the
+request</em>, the other dissolved once &sect;7.1 ordered geolocation and masking. What is left is
+physics, and it is a short list.</p>
 <ul>
 <li><strong>It is the request.</strong> The connection's IP, the <code>User-Agent</code>,
 <code>Host</code> and <code>Accept-Language</code> headers, and the server's clock at receipt.
@@ -229,10 +233,11 @@ constraint but not this one: it says those values must exist <em>at insert</em>,
 topology the insert happens at the drain. Both are pure functions of things already captured
 (<code>ts</code>, <code>session_id</code>), so both are deferrable. They are marked
 <span class="ph ph-ins">by INSERT</span> instead.</li>
-<li><strong>A destructive step is about to remove the input.</strong> This is the only
-surviving <span class="ph ph-ap">A*</span>, and there is exactly one instance: §1.8 anonymises
-the IP, and §1.10 derives <code>country</code> and <code>city</code> from it. Whichever runs
-first decides whether geolocation can be deferred at all — see §7.1.</li>
+<li><strong class="dash">(Also struck.)</strong> &ldquo;A destructive step is about to
+remove the input&rdquo; had exactly one instance &mdash; geolocation, ahead of IP masking.
+&sect;7.1 moves both to the drain and orders them, so the destructive step no longer forces
+anything into the request. It was still the right question: answering it is what moved the
+work.</li>
 </ul>
 
 <div class="note"><p><strong>The clock is the one people get wrong.</strong> §1.10 already pins
@@ -339,7 +344,7 @@ table's entire point.</p>
 <tr><td class="col">page_url</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Input. Becomes <code>page_uri</code> &mdash; URI, not URL &mdash; so the query string deliberately does not identify a page.</td></tr>
 <tr><td class="col">page_title</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>page_title</code></td><td></td></tr>
 <tr><td class="col">HTTP_REFERER</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>referer_url</code></td><td>Renamed. The raw referer; attribution is what the server makes of it.</td></tr>
-<tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>Load-bearing, and more so in v2 than in 1.x.</strong> The referer that started the SESSION, held in the session store and carried on every event of it &mdash; not the current page&rsquo;s referer, which is <code>referer_url</code>. It is what lets attribution be resolved per event with no session state: see &sect;7.3.</td></tr>
+<tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Input to attribution.</td></tr>
 <tr class="grp"><td colspan="5">acquisition &mdash; the visitor cookie</td></tr>
 <tr><td class="col">first_source</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_source</code></td><td><strong>New.</strong> The visitor’s FIRST session’s attribution, written once at first session and never rewritten — the same permanence <code>visitor_id</code> and <code>fsts</code> already have in the <code>v</code> store. Stamped on every event, so &ldquo;revenue by acquisition source&rdquo; is a group-by rather than a join to each visitor’s first row.</td></tr>
 <tr><td class="col">first_medium</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_medium</code></td><td></td></tr>
@@ -387,12 +392,10 @@ table's entire point.</p>
 <tr><td class="col">feed_subscription_id</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td><code>feed_request</code> only.</td></tr>
 <tr class="stage"><td colspan="5">Stage 2 &mdash; the server stamps it at receipt</td></tr>
 <tr><td class="col">ts</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>timestamp</code></td><td><code>ts</code></td><td>The server clock at edge receipt. Travels with the queue item, which is what keeps at-least-once redelivery from re-dating an event.</td></tr>
-<tr><td class="col">ip_address</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>ip_address</code></td><td>The connection, read through <code>X-Forwarded-For</code> &mdash; whose leftmost value is attacker-controlled. Anonymised by default before storage.</td></tr>
+<tr><td class="col">ip_address</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>ip_address</code></td><td>The connection, read through <code>X-Forwarded-For</code> &mdash; whose leftmost value is attacker-controlled. <strong>Captured</strong> here because it is the request; <strong>anonymised</strong> at the drain, with geolocation, so the full value travels on the message (&sect;7.1).</td></tr>
 <tr><td class="col">raw_ua</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>header only</code></td><td><code>raw_ua</code></td><td>The <code>User-Agent</code> header, behind <code>store_raw_ua</code> (default on). It is what makes browser and OS deferrable and re-derivable.</td></tr>
 <tr><td class="col">host</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>host</code></td><td><code>Host</code> header.</td></tr>
 <tr><td class="col">language</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>language</code></td><td><code>Accept-Language</code> header.</td></tr>
-<tr><td class="col">country</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>country</code></td><td><span class="ph ph-ap">A*</span> Derived from the IP, so this sits at receipt <em>only because anonymisation is about to destroy its input</em> &mdash; the one genuine A* in the spec. See &sect;7.1.</td></tr>
-<tr><td class="col">city</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>city</code></td><td><span class="ph ph-ap">A*</span> Same.</td></tr>
 <tr><td class="col">REMOTE_HOST</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>1.x only. Reverse DNS on the connection; no v2 column.</td></tr>
 <tr class="stage"><td colspan="5">Stage 3 &mdash; the server resolves it at the drain</td></tr>
 <tr><td class="col">id</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>id</code></td><td><span class="ph ph-ins">by INSERT</span> Content-derived for idempotent events, random otherwise. Either way the drain produces it; it just cannot be added after the row exists, being half the PK.</td></tr>
@@ -407,6 +410,9 @@ table's entire point.</p>
 <tr><td class="col">browser</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>browser</code></td><td>Parsed from <code>raw_ua</code>, so re-derivable when the browscap data improves.</td></tr>
 <tr><td class="col">browser_type</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>browser_type</code></td><td></td></tr>
 <tr><td class="col">os</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>os</code></td><td></td></tr>
+<tr><td class="col">country</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>country</code></td><td>Resolved at the drain from the full IP that travelled on the message, immediately before that IP is masked. Geo and anonymisation are one ordered step, and it completes before the insert (&sect;7.1).</td></tr>
+<tr><td class="col">city</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>city</code></td><td></td></tr>
+<tr><td class="col">ip_address <span class="dash">(anonymised)</span></td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>ip_address</code></td><td><span class="ph ph-ins">by INSERT</span> <strong>Anonymised after geolocation and before the insert</strong>, so the anonymised form is the only one ever written &mdash; the table never holds a full address, not even briefly. <code>Lib::anonymizeIp()</code> masks to <strong>/24</strong> for IPv4 and <strong>/64</strong> for IPv6: truncation, not a hash. Masking is idempotent, so a retry that re-masks an already-masked address is a no-op.</td></tr>
 <tr><td class="col">is_key_event</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>is_key_event</code></td><td><span class="ph ph-ins">by INSERT</span> Matched against the goal config. The constraint is the <em>reporting boundary</em>, not the request: resolved before the row is readable, because no reporting query may join the application store.</td></tr>
 <tr><td class="col">session_start / first_visit</td><td><span class="ph ph-b">B</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><span class="dash">(whole rows)</span></td><td>Not a property but a product of this stage: the server materializes these two events from the control flags above. Every column on them is server-set (&sect;5).</td></tr>
 <tr class="stage stage-x"><td colspan="5">Stage 0 &mdash; in 1.x, not carried forward</td></tr>
@@ -455,7 +461,7 @@ table's entire point.</p>
 <tr class="gone"><td class="col">page_type</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>A site-declared classification with no consumer in the v2 reporting surface. If one is wanted it belongs in <code>params</code>, where site-defined keys live.</td></tr>
 <tr class="gone"><td class="col">prior_page</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>Derivable from the visitor&rsquo;s own events, which is the single table&rsquo;s whole argument.</td></tr>
 <tr class="grp"><td colspan="5">listed for completeness &mdash; this one IS carried</td></tr>
-<tr><td class="col">num_prior_sessions</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>prior_sessions</code></td><td>The registered name for what the wire calls <code>nps</code>. Carried, and already in Stage 1 under that name.</td></tr>
+<tr class="gone"><td class="col">num_prior_sessions</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><code>prior_sessions</code></td><td>The registered name for what the wire calls <code>nps</code>. Carried, and already in Stage 1 under that name.</td></tr>
 </tbody></table></div>
 
 <div class="note"><p><strong>Three in five wire parameters do not become a column of their own.</strong>
@@ -559,12 +565,13 @@ to. Three topologies, in increasing order of how little the edge does:</p>
   <div class="phase-h"><span class="phase-n">Topology 2</span><span class="phase-t">Queued, application store reachable</span></div>
   <p class="phase-why">The default deferred shape. The node can read config and goals.</p>
   <ul>
-    <li>Request does: <span class="ph ph-a">A</span>, plus geolocation if the IP is anonymised
-    here (§7.1). The three checks — bot refusal, IP exclusion, site validation — run here by
-    preference, to keep junk out of the queue.</li>
-    <li>Drain does: everything else. UA parse, attribution, <code>page_uri</code>,
-    <code>id</code>, <code>yyyymmdd</code>, <code>is_key_event</code>, and materializes
-    <code>session_start</code> / <code>first_visit</code>.</li>
+    <li>Request does: <span class="ph ph-a">A</span> and nothing it does not have to. The three
+    checks &mdash; bot refusal, IP exclusion, site validation &mdash; run here by preference, to
+    keep junk out of the queue.</li>
+    <li>Drain does: everything else. UA parse, geolocation then IP masking (&sect;7.1),
+    attribution, <code>page_uri</code>, <code>id</code>, <code>yyyymmdd</code>,
+    <code>is_key_event</code>, and materializes <code>session_start</code> /
+    <code>first_visit</code>.</li>
     <li>This is the shape the fan-out argument in §3.1 assumes: &ldquo;an argument for the queue
     carrying the fan-out rather than the request doing it inline.&rdquo;</li>
   </ul>
@@ -576,9 +583,10 @@ to. Three topologies, in increasing order of how little the edge does:</p>
   <ul>
     <li>Request does: <span class="ph ph-a">A</span> only. It cannot validate the site, cannot
     read the goal config, cannot consult a stored exclusion list.</li>
-    <li>So all three checks move to the drain, and so does geolocation unless the node ships a
-    local geo database. Nothing here breaks: a bot refused at the drain still never becomes a row,
-    since §1.9's ban is on reclassifying <em>stored</em> rows and a queued message is not one.</li>
+    <li>So all three checks move to the drain. Geolocation is already there (&sect;7.1), so this
+    topology costs nothing extra for it &mdash; the incidental win of that decision. Nothing
+    breaks: a bot refused at the drain still never becomes a row, since §1.9's ban is on
+    reclassifying <em>stored</em> rows and a queued message is not one.</li>
     <li>The real limit is further along. If the <em>drain</em> also lacks the application store,
     key events cannot be stamped at all and the site check never runs — so a database-less
     collector is fine, but a database-less pipeline is not. See §7.2.</li>
@@ -591,22 +599,39 @@ to. Three topologies, in increasing order of how little the edge does:</p>
   <p class="part-note">Four questions the plan has not answered, found by asking when rather than what.</p>
 </div>
 
-<h3><span class="num">7.1</span>Geolocation versus anonymisation <span class="chip c-open">Open</span></h3>
-<p>§1.8 anonymises the IP by default. §1.10 derives <code>country</code> and <code>city</code>
-from it. Those two decisions are compatible only if their order is stated, and it is not.</p>
-<div class="flag">
-  <p class="h">The trap</p>
-  <p>If the IP is anonymised at receipt, geolocation must also happen at receipt — it becomes
-  <span class="ph ph-a">A</span>, and a no-database logging node cannot do it at all without a
-  local geo database. If geolocation is deferred instead, the <strong>full IP has to sit in the
-  queue</strong>, which puts the least-anonymised copy of the data in the place it waits longest
-  and is least protected. A file queue makes that a plaintext IP on disk.</p>
-</div>
-<p><strong>Recommendation:</strong> resolve geo at receipt, anonymise immediately after, and never
-let a full IP enter the queue. That makes rows 23–24 <span class="ph ph-a">A</span> and accepts
-that a database-less node either ships a local geo database or records no geography. The
-alternative trades a privacy guarantee for a deployment convenience, which is the wrong way round
-for a product positioned on privacy.</p>
+<h3><span class="num">7.1</span>Geolocation and anonymisation both happen at the drain <span class="chip c-dec">Decided</span></h3>
+<p>&sect;1.8 anonymises the IP by default; &sect;1.10 derives <code>country</code> and
+<code>city</code> from it. This section used to ask which runs first, because the answer decides
+whether geolocation can be deferred at all. It is settled: <strong>both move to the drain, in that
+order, and the insert follows them.</strong></p>
+
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Where</th><th>Step</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td><span class="ph ph-a">A</span> receipt</td><td>Read the connection address through <code>X-Forwarded-For</code>. Irreducible — it is the request.</td></tr>
+<tr><td class="n">2</td><td>&mdash;</td><td>The <strong>full</strong> address travels on the queue message.</td></tr>
+<tr><td class="n">3</td><td><span class="ph ph-b">B</span> drain</td><td>Geolocate from the full address → <code>country</code>, <code>city</code>.</td></tr>
+<tr><td class="n">4</td><td><span class="ph ph-b">B</span> drain</td><td>Mask it. <code>Lib::anonymizeIp()</code> is a bitwise AND: <strong>/24</strong> for IPv4, <strong>/64</strong> for IPv6.</td></tr>
+<tr><td class="n">5</td><td><span class="ph ph-ins">by INSERT</span></td><td>Write the row. The masked value is the one stored.</td></tr>
+</tbody></table></div>
+
+<p><strong>The guarantee this buys:</strong> the table never holds a full address, not even
+briefly, because masking happens before the insert rather than as a later UPDATE. And because
+masking is a bitwise AND it is idempotent, so a redelivered message that is masked twice produces
+the same value — the property every other deferred step in this spec already relies on.</p>
+
+<p><strong>The cost, stated plainly:</strong> the full address now sits in the queue. That is the
+one place it lives outside a request, and it is the place data waits longest. Three things follow
+and should be treated as part of this decision rather than discovered later: queue storage is
+sensitive storage and a file queue means plaintext addresses on disk; the erasure command
+(&sect;1.8) has to reach queued messages as well as rows and payloads, or it misses the least
+protected copy; and queue retention becomes a privacy parameter, not just an operational one.</p>
+
+<div class="note"><p><strong>Worth knowing, since masking is truncation rather than a hash:</strong>
+a /24 is still geo-locatable — country essentially exactly, city usually — so anonymising at
+receipt and geolocating from the masked value afterwards is a real alternative, and the only one
+that keeps a full address out of the queue entirely. It costs some city precision. Recorded
+because the choice is now an ordering preference with a known trade, not a constraint.</p></div>
 
 <h3><span class="num">7.2</span>The drain needs the application store <span class="chip c-open">Open</span></h3>
 <p>§1.10 establishes that no reporting query ever joins an application table, and that key events
