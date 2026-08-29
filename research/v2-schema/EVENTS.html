@@ -293,8 +293,8 @@ message is not one.</p>
   <p class="part-note">One list. What sends it, when, and whether it survives into the table.</p>
 </div>
 
-<p>Seventy-six properties move through the pipeline; <strong>fifty-four persist and twenty-two do
-not</strong>. Listing only the columns would record the survivors and lose every decision that
+<p>Seventy-nine properties move through the pipeline; <strong>fifty-seven persist and twenty-two
+do not</strong>. Listing only the columns would record the survivors and lose every decision that
 produced them — a control flag replaced by a derivation, a URL narrowed to a URI, a client clock
 refused in favour of the server's. So this is one table, ordered by the stage that sets each
 value, with persistence as a column rather than as a separate section.</p>
@@ -317,7 +317,6 @@ suggests.</p>
 <tr><td class="col">user_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>user_name / user_email</code></td><td><code>user_id</code></td><td>Site-declared. Resolves at collection only &mdash; earlier events stay anonymous forever.</td></tr>
 <tr><td class="col">fsts</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>visitor_fsts</code></td><td>Renamed. First-seen ts on every event; new-visitor derives from it.</td></tr>
 <tr><td class="col">nps</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>prior_sessions</code></td><td>Renamed &mdash; &ldquo;number of prior sessions&rdquo;.</td></tr>
-<tr><td class="col">sts</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Session start ts. No session row exists in v2 to compute days-since once, so it stays on the wire and is read, not stored.</td></tr>
 <tr class="grp"><td colspan="5">control flags</td></tr>
 <tr><td class="col">is_new_session</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Materializes the <code>session_start</code> row, then discarded.</td></tr>
 <tr><td class="col">is_new_session_start</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Same.</td></tr>
@@ -326,12 +325,17 @@ suggests.</p>
 <tr class="grp"><td colspan="5">clocks</td></tr>
 <tr><td class="col">timestamp</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>The client clock. <strong>Overridden</strong> by the server&rsquo;s <code>ts</code> and kept nowhere.</td></tr>
 <tr><td class="col">last_req</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Client clock again. In 1.x it is subtracted from a server clock with nothing recording that the two came from different clocks.</td></tr>
+<tr><td class="col">sts</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Session start, client clock. No session row exists in v2 to compute days-since once, so it stays on the wire and is read, not stored.</td></tr>
 <tr class="grp"><td colspan="5">page</td></tr>
 <tr><td class="col">page_url</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Input. Becomes <code>page_uri</code> &mdash; URI, not URL &mdash; so the query string deliberately does not identify a page.</td></tr>
 <tr><td class="col">page_title</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>page_title</code></td><td></td></tr>
 <tr><td class="col">HTTP_REFERER</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>referer_url</code></td><td>Renamed. The raw referer; attribution is what the server makes of it.</td></tr>
 <tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td>Input to attribution.</td></tr>
-<tr class="grp"><td colspan="5">attribution claim</td></tr>
+<tr class="grp"><td colspan="5">acquisition &mdash; the visitor cookie</td></tr>
+<tr><td class="col">first_source</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>first_source</code></td><td><strong>New.</strong> The visitor’s FIRST session’s attribution, written once at first session and never rewritten — the same permanence <code>visitor_id</code> and <code>fsts</code> already have in the <code>v</code> store. Stamped on every event, so &ldquo;revenue by acquisition source&rdquo; is a group-by rather than a join to each visitor’s first row.</td></tr>
+<tr><td class="col">first_medium</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>first_medium</code></td><td></td></tr>
+<tr><td class="col">first_campaign</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-n">new</span></td><td><code>first_campaign</code></td><td></td></tr>
+<tr class="grp"><td colspan="5">attribution claim &mdash; this touch</td></tr>
 <tr><td class="col">tagged_source</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>source</code></td><td><span class="no">not stored</span></td><td><strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column.</td></tr>
 <tr><td class="col">tagged_medium</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>medium</code></td><td><span class="no">not stored</span></td><td></td></tr>
 <tr><td class="col">tagged_campaign</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-r">1.x</span> <code>campaign</code></td><td><span class="no">not stored</span></td><td></td></tr>
@@ -626,6 +630,28 @@ collecting for sixty days, so a migration cannot switch this on and expect match
 one. And the tracker keeps sending campaign parameters as long as the snippet is deployed — under
 the rename that is fine, because <code>tagged_source</code> arriving is no longer indistinguishable
 from <code>source</code> having been decided.</p>
+
+<h3><span class="num">7.5b</span>Acquisition is carried, not reconstructed <span class="chip c-dec">Decided</span></h3>
+<p>A visitor's <em>first</em> source, medium and campaign are now three columns of their own,
+written once into the visitor cookie at first session and stamped on every event thereafter &mdash;
+the same permanence <code>visitor_id</code> and <code>fsts</code> already have in the
+<code>v</code> store.</p>
+<p><strong>Today they are mutually exclusive with the current touch, and that is the problem.</strong>
+1.x keeps a campaign array in the <code>c</code> store (registered for 60 days) and
+<code>originalAttributionModel()</code> returns <code>campaignState[0]</code> &mdash; the oldest
+entry &mdash; <em>in place of</em> the current campaign. So <code>source</code>,
+<code>medium</code> and <code>campaign</code> carry first-touch or last-touch depending on a
+configured model, never both, and the row does not record which. Choosing an attribution model is
+therefore a collection-time decision that destroys the alternative: switching it later cannot be
+applied to data already collected, which §1.9 rules out anyway.</p>
+<p>Carrying acquisition separately makes it a reporting choice instead of a collection one. It
+also removes the migration warm-up §7.5 warns about for this half: a server deriving acquisition
+from a sliding window needs sixty days of history first, while a value the visitor cookie has been
+holding all along is available on the very first event after upgrade.</p>
+<p>Stamped on every event rather than left on the <code>first_visit</code> row for the reason
+§1.4 gives for session-scoped values: it turns &ldquo;revenue by acquisition source&rdquo; into a
+group-by instead of a join to each visitor's first row &mdash; the same shape that measured
+215&nbsp;ms against 3.1&nbsp;s for sessions by landing page.</p>
 
 <h3><span class="num">7.6</span>Billing address versus geolocation <span class="chip c-open">Open</span></h3>
 <p>The same shape as §7.4, found the same way. <code>ecommerce.transaction</code> sends
