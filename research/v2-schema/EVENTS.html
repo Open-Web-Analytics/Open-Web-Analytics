@@ -337,15 +337,15 @@ table's entire point.</p>
 <tr><td class="col">visitor_id</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>visitor_id</code></td><td>The one value that cannot be content-derived (&sect;1.5).</td></tr>
 <tr><td class="col">session_id</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>session_id</code></td><td>Embeds its creation timestamp; the midnight rule reads it back.</td></tr>
 <tr><td class="col">user_id</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>user_name / user_email</code></td><td><code>user_id</code></td><td>Site-declared. Resolves at collection only &mdash; earlier events stay anonymous forever.</td></tr>
-<tr><td class="col">fsts</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>visitor_fsts</code></td><td>Renamed. First-seen ts on every event; new-visitor derives from it.</td></tr>
+<tr><td class="col">fsts</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>visitor_fsts</code></td><td><strong>Kept.</strong> The first-visit anchor on the client clock, sent raw so the server does day arithmetic without losing granularity. Recoverable from <code>visitor_id</code>&rsquo;s time prefix, and explicitly not taken that way &mdash; same reason as <code>sts</code>, &sect;7.8.</td></tr>
 <tr><td class="col">nps</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>prior_sessions</code></td><td>Renamed &mdash; &ldquo;number of prior sessions&rdquo;.</td></tr>
 <tr class="grp"><td colspan="5">control flags</td></tr>
 <tr><td class="col">is_new_session_start</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This request created the session&rdquo;</strong> &mdash; true for exactly one event. Materializes <code>session_start</code>. In v2 an <em>optimisation, not a correctness mechanism</em>: the marker&rsquo;s id is content-derived, so materializing from every event of the session would produce the same row and dedupe. See &sect;7.7.</td></tr>
 <tr><td class="col">is_new_visitor_created</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This request minted the visitor&rdquo;</strong> &mdash; exactly one event. Materializes <code>first_visit</code>. Unconsumed in 1.x and kept deliberately for v2; same optimisation-not-correctness status. See &sect;7.7.</td></tr>
 <tr class="grp"><td colspan="5">clocks</td></tr>
-<tr><td class="col">timestamp</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>The client clock. <strong>Overridden</strong> by the server&rsquo;s <code>ts</code> and kept nowhere.</td></tr>
-<tr><td class="col">last_req</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Client clock again. In 1.x it is subtracted from a server clock with nothing recording that the two came from different clocks.</td></tr>
-<tr><td class="col">sts</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Session start, client clock. No session row exists in v2 to compute days-since once, so it stays on the wire and is read, not stored.</td></tr>
+<tr><td class="col">timestamp</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>The client clock. Not stored &mdash; <code>ts</code> is the authority for <em>when</em>. Its only remaining job is to stand in for <code>sts</code> when that is missing (<code>sessionDateOf()</code>); with <code>sts</code> kept and guaranteed it has none. Proposed for removal &mdash; &sect;7.8.</td></tr>
+<tr><td class="col">last_req</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>The one that crosses domains.</strong> A client instant the server differences against its own clock, with nothing recording that the two came from different clocks. Every other client time value in this table is differenced only against other client values. &sect;7.8.</td></tr>
+<tr><td class="col">sts</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>Kept.</strong> Session start on the <em>client</em> clock &mdash; which is the point: days-since is computed from client anchors on both sides, so skew cancels. Recoverable from <code>session_id</code>&rsquo;s embedded timestamp, but <strong>deliberately sent explicitly rather than parsed out of an id</strong> &mdash; &sect;7.8.</td></tr>
 <tr class="grp"><td colspan="5">page</td></tr>
 <tr><td class="col">page_url</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Input. Becomes <code>page_uri</code> &mdash; URI, not URL &mdash; so the query string deliberately does not identify a page.</td></tr>
 <tr><td class="col">page_title</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>page_title</code></td><td></td></tr>
@@ -362,7 +362,7 @@ table's entire point.</p>
 <tr><td class="col">tagged_ad</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td></td></tr>
 <tr><td class="col">tagged_terms</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>search_terms</code></td><td><span class="no">not stored</span></td><td></td></tr>
 <tr class="grp"><td colspan="5">engagement and geometry</td></tr>
-<tr><td class="col">engagement_msec</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>engagement_msec</code></td><td>Time accrued on the current page since the last report. Additive, so session engagement is a SUM over anything.</td></tr>
+<tr><td class="col">engagement_msec</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>engagement_msec</code></td><td><strong>A duration, not a clock.</strong> Milliseconds accrued on the current page since the last report &mdash; a difference between two readings of the SAME client clock, so skew cancels and only rate error survives. That is why it is trusted where a client <em>timestamp</em> is not. Additive, so session engagement is a SUM over anything.</td></tr>
 <tr><td class="col">click_x</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>click_x</code></td><td></td></tr>
 <tr><td class="col">click_y</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>click_y</code></td><td></td></tr>
 <tr><td class="col">page_width</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>page_width</code></td><td></td></tr>
@@ -856,6 +856,55 @@ this decision is about not reaching for that shape by default.</p>
 <p>The hint/correctness split matters because &sect;1.4 already accepts that markers get lost
 &mdash; consent mode, app lifecycle. A correctness mechanism must never go missing; a hint may.
 Both survivors are hints, so nothing should be built that breaks when one does not arrive.</p>
+
+
+<h3><span class="num">7.8</span>Two clock domains, and nothing crosses between them <span class="chip c-dec">Decided</span></h3>
+<p>Six time values ride the wire or land in a column, which invites the question of how many are
+really needed. Asking &ldquo;which of these are clocks?&rdquo; turns out to be the wrong cut. The
+one that matters is <strong>where the subtraction happens</strong>.</p>
+
+<div class="keyrow" style="border-left-color:var(--fwd)">
+  <span class="ph ph-a">SERVER</span>
+  <span><strong>Ordering and partitioning.</strong> <code>ts</code>, stamped at receipt, and
+  <code>yyyymmdd</code> derived from it. Answers <em>when did this happen</em> and
+  <em>how fresh is this</em>.</span>
+  <span class="ph ph-c">CLIENT</span>
+  <span><strong>Elapsed time.</strong> Anchors (<code>fsts</code>, <code>sts</code>) and durations
+  (<code>engagement_msec</code>). Answers <em>how long since</em> — and answers it entirely among
+  themselves.</span>
+</div>
+
+<p><strong>The rule: a value from one domain is never differenced against a value from the
+other.</strong> That is what makes the client's clock being wrong not matter. Days-since is
+computed from <code>fsts</code> against <code>sts</code>, both client, so skew cancels;
+<code>engagement_msec</code> is a difference between two readings of the same client clock taken
+before it is sent, so skew cancels there too. Only rate error survives either, and that is
+negligible.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Value</th><th>Domain</th><th>Kind</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td class="col">ts</td><td>server</td><td>instant</td><td>The authority for <em>when</em>. Everything about ordering, partitioning and freshness reads this and only this.</td></tr>
+<tr><td class="col">yyyymmdd</td><td>server</td><td>derived date</td><td>From <code>ts</code>. Partition key.</td></tr>
+<tr><td class="col">fsts</td><td>client</td><td>anchor</td><td><strong>Kept.</strong> Recoverable from <code>visitor_id</code>'s time prefix and deliberately not taken that way — parsing a timestamp out of an id would make the id's internal format load-bearing for a second purpose, and &sect;1.10 already has to pin it once.</td></tr>
+<tr><td class="col">sts</td><td>client</td><td>anchor</td><td><strong>Kept</strong>, same reasoning. Recoverable from <code>session_id</code>; sent explicitly instead.</td></tr>
+<tr><td class="col">engagement_msec</td><td>client</td><td><strong>duration</strong></td><td>The model for how a client should report elapsed time: subtract before sending, ship the interval. Not a clock at all — which is why it is trusted where a client instant is not.</td></tr>
+<tr><td class="col">last_req</td><td class="dash">crosses</td><td>instant</td><td><strong>The violation.</strong> A client instant the server differences against its own clock, with nothing in the schema recording that the two came from different clocks. Drop it — or, if &ldquo;time since last request&rdquo; is wanted, have the client send the delta and it becomes an <code>engagement_msec</code>-shaped value.</td></tr>
+<tr><td class="col">timestamp</td><td>client</td><td>instant</td><td>Its only job is standing in for <code>sts</code> when that is absent (<code>sessionDateOf()</code>). With <code>sts</code> kept and guaranteed, it has none. Drop.</td></tr>
+</tbody></table></div>
+
+<p><strong>So the rationalisation is two removals, not five.</strong> The client clocks are not
+clutter; they are a deliberate second domain that keeps offset arithmetic away from a clock the
+client cannot see. What was wrong was one value crossing between them, and one value existing only
+as a fallback for another.</p>
+
+<div class="note"><p><strong>Why this is worth a rule rather than a fix.</strong> 1.x got the
+domains right almost everywhere — <code>deriveDaysSinceFirstSession()</code> reads
+<code>fsts</code> against the session's own date, and <code>sessionDateOf()</code> falls back to
+the client's <code>timestamp</code>, keeping both sides client-side. That is careful work, and it
+is invisible: nothing in the schema says which column came from which clock, so the one place that
+crosses looks exactly like the places that do not. Stating the domains is what makes the next
+addition checkable.</p></div>
 
 
 <footer>
