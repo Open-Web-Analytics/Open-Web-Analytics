@@ -293,7 +293,7 @@ message is not one.</p>
   <p class="part-note">One list. What sends it, when, and whether it survives into the table.</p>
 </div>
 
-<p>Seventy-nine properties move through the pipeline; <strong>fifty-seven persist and twenty-two
+<p>Seventy-nine properties move through the pipeline; <strong>fifty-six persist and twenty-three
 do not</strong>. Listing only the columns would record the survivors and lose every decision that
 produced them — a control flag replaced by a derivation, a URL narrowed to a URI, a client clock
 refused in favour of the server's. So this is one table, ordered by the stage that sets each
@@ -373,7 +373,7 @@ suggests.</p>
 <tr><td class="col">action_group</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
 <tr><td class="col">action_label</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
 <tr><td class="col">numeric_value</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td></td></tr>
-<tr><td class="col">attribs</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td>Custom variables.</td></tr>
+<tr><td class="col">attribs</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">not stored</span></td><td><strong>Not custom variables</strong> &mdash; the campaign HISTORY array from the <code>c</code> cookie, stored today as <code>latest_attributions</code> on the session row and surfaced as the <code>latestAttributions</code> dimension. Gone in v2 with the <code>c</code> cookie itself: see &sect;7.5c.</td></tr>
 <tr><td class="col">cv1 &ndash; cv3</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td>The visible edge of 1.x&rsquo;s ten columns implementing five fixed slots &mdash; a limit a fixed-width row forced.</td></tr>
 <tr><td class="col">feed_subscription_id</td><td><span class="ph ph-c">CLIENT</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>params</code></td><td><code>feed_request</code> only.</td></tr>
 <tr class="stage"><td colspan="5">Stage 2 &mdash; the server stamps it at receipt</td></tr>
@@ -652,6 +652,31 @@ holding all along is available on the very first event after upgrade.</p>
 §1.4 gives for session-scoped values: it turns &ldquo;revenue by acquisition source&rdquo; into a
 group-by instead of a join to each visitor's first row &mdash; the same shape that measured
 215&nbsp;ms against 3.1&nbsp;s for sessions by landing page.</p>
+
+<h3><span class="num">7.5c</span>The campaign cookie goes away <span class="chip c-dec">Decided</span></h3>
+<p>1.x keeps a third cookie, <code>c</code>, holding an array of prior campaigns under the key
+<code>attribs</code>. The tracker ships that array on the wire, the server stores it as
+<code>latest_attributions</code> on the session row, and it surfaces as the
+<code>latestAttributions</code> dimension behind the Attribution History report. v2 does not need
+it, and both of its jobs are better done elsewhere.</p>
+<ul>
+<li><strong>First touch</strong> moves into the visitor cookie as <code>first_source</code> /
+<code>first_medium</code> / <code>first_campaign</code> (&sect;7.5b). It <em>has</em> to be
+carried rather than derived, because retention can delete the events that would otherwise be the
+only evidence of a visitor's first session.</li>
+<li><strong>The history in between</strong> is derivable, and this is where the single table pays.
+Every v2 event carries its own session's attribution, so a visitor's campaign sequence is a
+group-by over their own events. 1.x cannot do that — attribution lives only on the session row,
+so reconstructing a sequence means joining sessions, which is exactly why the client cached it in
+a cookie in the first place.</li>
+</ul>
+<p>So <code>c</code> goes, and <code>attribs</code> goes with it: one fewer cookie, one fewer wire
+field, one fewer stored blob, and no <code>maxPriorCampaigns</code> cap silently truncating the
+history at the client.</p>
+<div class="note"><p><strong>The bound changes rather than disappearing.</strong> Today the
+history is bounded by <code>maxPriorCampaigns</code> and by the cookie surviving; in v2 it is
+bounded by event retention. Neither is unlimited, and the Attribution History report should say
+which bound it is showing rather than implying completeness.</p></div>
 
 <h3><span class="num">7.6</span>Billing address versus geolocation <span class="chip c-open">Open</span></h3>
 <p>The same shape as §7.4, found the same way. <code>ecommerce.transaction</code> sends
