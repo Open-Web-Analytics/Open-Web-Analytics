@@ -62,11 +62,6 @@ CLIENT = [
  ('city / country / state','','<strong>Billing address</strong>, sent on <code>ecommerce.transaction</code>. Two of the three names collide with the IP-derived columns below &mdash; see &sect;7.6.'),
 
  ('~custom', None, None),
- ('action_name','params',''),
- ('action_group','params',''),
- ('action_label','params',''),
- ('numeric_value','params',''),
- ('cv1 &ndash; cv3','params','The visible edge of 1.x&rsquo;s ten columns implementing five fixed slots &mdash; a limit a fixed-width row forced.'),
  ('feed_subscription_id','params','<code>feed_request</code> only.'),
 ]
 
@@ -136,6 +131,15 @@ DROPPED = [
  ('user_email','',''),
  ('page_type','','A site-declared classification with no consumer in the v2 reporting surface. If one is wanted it belongs in <code>params</code>, where site-defined keys live.'),
  ('prior_page','','Derivable from the visitor&rsquo;s own events, which is the single table&rsquo;s whole argument.'),
+
+ ('~fixed-slot custom data, replaced by event_type + params', None, None),
+ ('action_name','','<strong>Becomes the event&rsquo;s own name.</strong> In v2 a custom event <em>is</em> its name: <code>event_type</code> carries it, so there is no separate field to send. &sect;7.9.'),
+ ('action_group','','UA-era category / label / value slots, three fixed names for whatever a site wanted to say. In v2 they are ordinary <code>params</code> keys the site chooses &mdash; the fixed names go away, the values do not. &sect;7.9.'),
+ ('action_label','',''),
+ ('numeric_value','',''),
+ ('cv1','','<strong>Numbered slots.</strong> 1.x spends ten session columns (<code>cv1_name</code>&hellip;<code>cv5_value</code>) implementing exactly five custom variables &mdash; not a preference but what a fixed-width session row forces. On a param map the limit disappears and the slot numbers with it. &sect;7.9.'),
+ ('cv2','',''),
+ ('cv3','',''),
 
  ('~client clocks v2 does not need', None, None),
  ('last_req','','<strong>The domain crossing.</strong> A client instant the server differenced against its own clock, with nothing in the schema recording that the two came from different clocks. Every other client time value is differenced only against other client values. Dropped &mdash; if &ldquo;time since last request&rdquo; is wanted, the client sends the delta and it becomes an <code>engagement_msec</code>-shaped duration. &sect;7.8.'),

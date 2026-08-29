@@ -381,11 +381,6 @@ table's entire point.</p>
 <tr><td class="col">ct_tax</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td></td></tr>
 <tr><td class="col">city / country / state</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>Billing address</strong>, sent on <code>ecommerce.transaction</code>. Two of the three names collide with the IP-derived columns below &mdash; see &sect;7.6.</td></tr>
 <tr class="grp"><td colspan="5">custom</td></tr>
-<tr><td class="col">action_name</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td></td></tr>
-<tr><td class="col">action_group</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td></td></tr>
-<tr><td class="col">action_label</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td></td></tr>
-<tr><td class="col">numeric_value</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td></td></tr>
-<tr><td class="col">cv1 &ndash; cv3</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td>The visible edge of 1.x&rsquo;s ten columns implementing five fixed slots &mdash; a limit a fixed-width row forced.</td></tr>
 <tr><td class="col">feed_subscription_id</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>params</code></td><td><code>feed_request</code> only.</td></tr>
 <tr class="stage"><td colspan="5">Stage 2 &mdash; the server stamps it at receipt</td></tr>
 <tr><td class="col">ts</td><td><span class="ph ph-a">A</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>timestamp</code></td><td><code>ts</code></td><td>The server clock at edge receipt. Travels with the queue item, which is what keeps at-least-once redelivery from re-dating an event.</td></tr>
@@ -457,6 +452,14 @@ table's entire point.</p>
 <tr class="gone"><td class="col">user_email</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td></td></tr>
 <tr class="gone"><td class="col">page_type</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>A site-declared classification with no consumer in the v2 reporting surface. If one is wanted it belongs in <code>params</code>, where site-defined keys live.</td></tr>
 <tr class="gone"><td class="col">prior_page</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>Derivable from the visitor&rsquo;s own events, which is the single table&rsquo;s whole argument.</td></tr>
+<tr class="grp"><td colspan="5">fixed-slot custom data, replaced by event_type + params</td></tr>
+<tr class="gone"><td class="col">action_name</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td><strong>Becomes the event&rsquo;s own name.</strong> In v2 a custom event <em>is</em> its name: <code>event_type</code> carries it, so there is no separate field to send. &sect;7.9.</td></tr>
+<tr class="gone"><td class="col">action_group</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>UA-era category / label / value slots, three fixed names for whatever a site wanted to say. In v2 they are ordinary <code>params</code> keys the site chooses &mdash; the fixed names go away, the values do not. &sect;7.9.</td></tr>
+<tr class="gone"><td class="col">action_label</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">numeric_value</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">cv1</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td><strong>Numbered slots.</strong> 1.x spends ten session columns (<code>cv1_name</code>&hellip;<code>cv5_value</code>) implementing exactly five custom variables &mdash; not a preference but what a fixed-width session row forces. On a param map the limit disappears and the slot numbers with it. &sect;7.9.</td></tr>
+<tr class="gone"><td class="col">cv2</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">cv3</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td></td></tr>
 <tr class="grp"><td colspan="5">client clocks v2 does not need</td></tr>
 <tr class="gone"><td class="col">last_req</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td><strong>The domain crossing.</strong> A client instant the server differenced against its own clock, with nothing in the schema recording that the two came from different clocks. Every other client time value is differenced only against other client values. Dropped &mdash; if &ldquo;time since last request&rdquo; is wanted, the client sends the delta and it becomes an <code>engagement_msec</code>-shaped duration. &sect;7.8.</td></tr>
 <tr class="gone"><td class="col">timestamp</td><td><span class="ph ph-x">&mdash;</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-off">v2</span></td><td><span class="no">dropped</span></td><td>The client clock. Its only job was standing in for <code>sts</code> when that was absent (<code>sessionDateOf()</code>); with <code>sts</code> kept and guaranteed it has none, and <code>ts</code> is the authority for <em>when</em>. Dropped &mdash; &sect;7.8.</td></tr>
@@ -906,6 +909,43 @@ the client's <code>timestamp</code>, keeping both sides client-side. That is car
 is invisible: nothing in the schema says which column came from which clock, so the one place that
 crosses looks exactly like the places that do not. Stating the domains is what makes the next
 addition checkable.</p></div>
+
+
+<h3><span class="num">7.9</span>Actions and custom variables are not ported &mdash; they are replaced <span class="chip c-dec">Decided</span></h3>
+<p>1.x has two separate mechanisms for &ldquo;things the site wants to record that OWA does not
+know about in advance&rdquo;, and both are fixed-shape:</p>
+<ul>
+<li><strong>Actions</strong> &mdash; <code>track.action</code>, carrying
+<code>action_name</code>, <code>action_group</code>, <code>action_label</code> and
+<code>numeric_value</code>. The UA event schema: category, action, label, value.</li>
+<li><strong>Custom variables</strong> &mdash; <code>cv1</code>, <code>cv2</code>,
+<code>cv3</code> on the wire, landing in ten session columns
+(<code>cv1_name</code>&hellip;<code>cv5_value</code>) that implement exactly five slots.</li>
+</ul>
+<p>v2 has one mechanism and no slots. <strong>A custom event is its name plus a parameter
+map</strong> &mdash; <code>event_type</code> carries the name, <code>params</code> carries
+whatever the site wants to say, under keys the site chooses. So neither 1.x mechanism is ported:
+each is replaced by something more general, and their wire fields have no v2 counterpart.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>1.x</th><th>v2</th></tr></thead>
+<tbody>
+<tr><td class="col">action_name</td><td>The event&rsquo;s own <code>event_type</code>. A custom event <em>is</em> its name; there is nothing separate to send.</td></tr>
+<tr><td class="col">action_group, action_label, numeric_value</td><td>Ordinary <code>params</code> keys, named by the site. Three fixed names become however many the site needs, called whatever it calls them.</td></tr>
+<tr><td class="col">cv1 &ndash; cv5</td><td>Ordinary <code>params</code> keys. The numbers go away with the slots.</td></tr>
+</tbody></table></div>
+
+<p><strong>Why the slots existed is the point.</strong> &sect;1.10 is explicit that five was never
+a design preference &mdash; it is what a fixed-width session row forces. Ten columns buy five
+name/value pairs, and a sixth would cost two more columns and a schema migration on every install.
+A JSON map removes the ceiling, which is what makes unregistered custom-variable segmentation
+possible at all.</p>
+
+<p>The commerce fields are a <em>different</em> case and stay in the v2 pipeline:
+<code>ct_order_id</code>, <code>ct_tax</code>, <code>ct_shipping</code> and the rest map onto
+GA4&rsquo;s recommended commerce parameter names. Those are fields being relocated into
+<code>params</code>, not a mechanism being retired &mdash; the distinction being whether the name
+is known at release time.</p>
 
 
 <footer>
