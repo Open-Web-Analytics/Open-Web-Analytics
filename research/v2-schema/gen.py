@@ -91,7 +91,6 @@ DRAIN = [
  ('city','city',''),
  ('ip_address <span class="dash">(anonymised)</span>','ip_address','<span class="ph ph-ins">by INSERT</span> <strong>Anonymised after geolocation and before the insert</strong>, so the anonymised form is the only one ever written &mdash; the table never holds a full address, not even briefly. <code>Lib::anonymizeIp()</code> masks to <strong>/24</strong> for IPv4 and <strong>/64</strong> for IPv6: truncation, not a hash. Masking is idempotent, so a retry that re-masks an already-masked address is a no-op.'),
  ('is_key_event','is_key_event','<span class="ph ph-ins">by INSERT</span> Matched against the goal config. The constraint is the <em>reporting boundary</em>, not the request: resolved before the row is readable, because no reporting query may join the application store.'),
- ('session_start / first_visit','(whole rows)','Not a property but a product of this stage: the server materializes these two events from the control flags above. Every column on them is server-set (&sect;5).'),
 ]
 
 DROPPED = [

@@ -11,13 +11,20 @@ V1={'event_type':'y','site_id':'y','visitor_id':'y','session_id':'y','user_id':'
 # --- the guard: a v2 row may not describe itself as gone -----------------
 GONE = re.compile(r'\b(dropped|removed|goes away|not carried|replaced by|no v2 stage)\b', re.I)
 KEPT = re.compile(r'\b(kept|proposed|recoverable|deliberately not)\b', re.I)
+# A property list may only contain properties. A row that says otherwise, or
+# whose "persists as" is prose rather than a column name, is not one.
+NOTAPROP = re.compile(r'not a (property|field|column)', re.I)
 bad=[]
 for lst,stage in ((C,'1'),(R,'2'),(D,'3')):
     for n,per,note in lst:
-        if n.startswith('~') or not note: continue
-        plain=re.sub(r'<[^>]+>','',note)
+        if n.startswith('~'): continue
+        plain=re.sub(r'<[^>]+>','',note or '')
         if GONE.search(plain) and not KEPT.search(plain):
-            bad.append('stage %s: %s -- "%s"' % (stage, n, plain[:80]))
+            bad.append('stage %s: %s -- says gone, but sits in a v2 stage' % (stage, n))
+        if NOTAPROP.search(plain):
+            bad.append('stage %s: %s -- says it is not a property' % (stage, n))
+        if per.startswith('('):
+            bad.append('stage %s: %s -- "persists as" is prose, not a column' % (stage, n))
 if bad:
     print('REFUSING TO BUILD -- rows in a v2 stage whose note says they are gone:')
     for b in bad: print('   '+b)
