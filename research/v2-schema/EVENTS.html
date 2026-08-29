@@ -339,7 +339,7 @@ table's entire point.</p>
 <tr><td class="col">page_url</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Input. Becomes <code>page_uri</code> &mdash; URI, not URL &mdash; so the query string deliberately does not identify a page.</td></tr>
 <tr><td class="col">page_title</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>page_title</code></td><td></td></tr>
 <tr><td class="col">HTTP_REFERER</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>referer_url</code></td><td>Renamed. The raw referer; attribution is what the server makes of it.</td></tr>
-<tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Input to attribution.</td></tr>
+<tr><td class="col">session_referer</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>Load-bearing, and more so in v2 than in 1.x.</strong> The referer that started the SESSION, held in the session store and carried on every event of it &mdash; not the current page&rsquo;s referer, which is <code>referer_url</code>. It is what lets attribution be resolved per event with no session state: see &sect;7.3.</td></tr>
 <tr class="grp"><td colspan="5">acquisition &mdash; the visitor cookie</td></tr>
 <tr><td class="col">first_source</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_source</code></td><td><strong>New.</strong> The visitor’s FIRST session’s attribution, written once at first session and never rewritten — the same permanence <code>visitor_id</code> and <code>fsts</code> already have in the <code>v</code> store. Stamped on every event, so &ldquo;revenue by acquisition source&rdquo; is a group-by rather than a join to each visitor’s first row.</td></tr>
 <tr><td class="col">first_medium</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_medium</code></td><td></td></tr>
@@ -622,16 +622,32 @@ drain with application-store access.</strong> A database-less collector is fine;
 <em>pipeline</em> is not, and the same holds for the site-existence check and any stored IP
 exclusion list.</p>
 
-<h3><span class="num">7.3</span>Sticky attribution at the drain <span class="chip c-open">Open</span></h3>
-<p>Attribution is stamped on <em>every</em> event of a session, and that stickiness is load-bearing
-— it is why &ldquo;sessions by landing page&rdquo; costs 215&nbsp;ms instead of 3.1&nbsp;s. The
-sticky value comes from the session's first touch. A drain, though, sees events in arrival order,
-which is not necessarily session order: a queued <code>page_view</code> from a session's start may
-be processed after a later event from the same session, and retries reorder freely.</p>
-<p>So deferred attribution needs one of: session state the drain can read and update, ordering by
-<code>session_id</code> within a drain batch, or a second pass that backfills the session's events
-once its first touch is known. The plan settles what the value <em>is</em> (§1.3 attribution
-model) but not how a deferred pipeline arrives at it consistently.</p>
+<h3><span class="num">7.3</span>Sticky attribution needs no state &mdash; 1.x already shows how <span class="chip c-dec">Resolved</span></h3>
+<p>This section used to ask how a deferred pipeline arrives at sticky attribution consistently,
+given that a drain sees arrival order and retries reorder freely. The answer was already in the
+1.x code, and it is better than the options previously listed here.</p>
+<p>The tracker keeps the referer that <strong>started the session</strong> in the session store and
+sends it on every event as <code>session_referer</code> &mdash; distinct from
+<code>referer_url</code>, which is the current page&rsquo;s. The server&rsquo;s derivation reads
+that, not the session's first row. The property registrations say so explicitly: <code>source</code>,
+<code>medium</code> and <code>search_terms</code> each carry a derive callback and each is preceded
+by the comment <code>// must come after session_referer</code>.</p>
+<div class="keyrow" style="border-left-color:var(--fwd)">
+  <span class="ph ph-b">B</span>
+  <span>Every event carries the same session-originating input, so the resolver is a
+  <strong>pure function of one event</strong>. Two events of one session resolve to the same answer
+  because they were handed the same input &mdash; not because the second consulted the first.</span>
+</div>
+<p>That makes deferred attribution stateless, order-independent and idempotent: no session state at
+the drain, no ordering requirement within a batch, no backfill pass, and a retry produces the same
+row. It is the same property the content-derived ids give the marker events, arrived at the same
+way &mdash; put the input on the message rather than in the processor.</p>
+<p><strong>What v2 must add.</strong> The rule only holds for inputs the client carries. Today
+<code>session_referer</code> is carried but the session&rsquo;s <em>originating campaign
+parameters</em> are not &mdash; the tracker sends the current page's tags. Under &sect;7.5's
+rename the <code>tagged_*</code> values must therefore be the ones the session STARTED with, held
+in the session store beside the referer, or a campaign-tagged session falls back to needing state
+after all. That is a tracker change, and it is the price of keeping the resolver pure.</p>
 
 <h3><span class="num">7.4</span>Two meanings on one <code>search_terms</code> column <span class="chip c-open">Open</span></h3>
 <p>§1.10 lists <code>search_terms</code> among the attribution columns (14–18): the terms someone
