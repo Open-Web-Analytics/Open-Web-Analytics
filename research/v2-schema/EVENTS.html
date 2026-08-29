@@ -332,10 +332,10 @@ table's entire point.</p>
 <tr><td class="col">fsts</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>visitor_fsts</code></td><td>Renamed. First-seen ts on every event; new-visitor derives from it.</td></tr>
 <tr><td class="col">nps</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><code>prior_sessions</code></td><td>Renamed &mdash; &ldquo;number of prior sessions&rdquo;.</td></tr>
 <tr class="grp"><td colspan="5">control flags</td></tr>
-<tr><td class="col">is_new_session</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Materializes the <code>session_start</code> row, then discarded.</td></tr>
-<tr><td class="col">is_new_session_start</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Same.</td></tr>
-<tr><td class="col">is_new_visitor</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Materializes <code>first_visit</code>. &sect;1.10 lists it among the columns <em>deliberately absent</em>: it derives from <code>visitor_fsts</code>, and a flag that can disagree with its own derivation is a bug you cannot see.</td></tr>
-<tr><td class="col">is_new_visitor_created</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Same.</td></tr>
+<tr><td class="col">is_new_session_start</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This request created the session&rdquo;</strong> &mdash; true for exactly one event. Materializes <code>session_start</code>. In v2 an <em>optimisation, not a correctness mechanism</em>: the marker&rsquo;s id is content-derived, so materializing from every event of the session would produce the same row and dedupe. See &sect;7.7.</td></tr>
+<tr><td class="col">is_new_visitor_created</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This request minted the visitor&rdquo;</strong> &mdash; exactly one event. Materializes <code>first_visit</code>. Unconsumed in 1.x and kept deliberately for v2; same optimisation-not-correctness status. See &sect;7.7.</td></tr>
+<tr><td class="col">is_new_session</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This event is on the page the session started on&rdquo;</strong> &mdash; true for all of them. Served a per-event dimension; v2 has none, entry flags being deliberately absent (&sect;1.10). Removed &mdash; &sect;7.7.</td></tr>
+<tr><td class="col">is_new_visitor</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td><strong>&ldquo;This session was the visitor&rsquo;s first&rdquo;</strong> &mdash; and <strong>not on clicks, actions or transactions</strong>, so it cannot answer &ldquo;was this purchase from a new visitor?&rdquo; at all. <code>prior_sessions</code> can, on every event type. Replaced by the derived <code>newVsReturning</code> dimension &mdash; &sect;7.7.</td></tr>
 <tr class="grp"><td colspan="5">clocks</td></tr>
 <tr><td class="col">timestamp</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>The client clock. <strong>Overridden</strong> by the server&rsquo;s <code>ts</code> and kept nowhere.</td></tr>
 <tr><td class="col">last_req</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td>Client clock again. In 1.x it is subtracted from a server clock with nothing recording that the two came from different clocks.</td></tr>
@@ -786,6 +786,66 @@ city depending on which writer ran last, and nothing in the schema records which
 fix is the same as §7.4 — billing belongs in <code>params</code> with the rest of the commerce
 detail, or in columns of its own — and the reason to settle it now is also the same: separating
 them afterwards means rewriting rows.</p>
+
+<h3><span class="num">7.7</span>Named dimensions, not <code>is_*</code> columns <span class="chip c-dec">Decided</span></h3>
+<p>1.x answers &ldquo;new or returning?&rdquo; with a boolean column. That is a chain of four
+problems, and each link was paid for separately:</p>
+<ol>
+<li>A boolean column holds <strong>three</strong> values &mdash; 1, 0 and NULL each group
+separately in SQL &mdash; so the dimension has three buckets, not two.</li>
+<li>Raw, those buckets read as <code>1</code>, <code>0</code> and empty, so the type needs a
+<strong>formatter</strong> to render Yes/No.</li>
+<li>Yes/No is the wrong vocabulary for the question, so each report needs a
+<strong><code>valueLabels</code> map</strong> to say New/Repeat.</li>
+<li>And a map that folds two values onto one name still leaves two rows, so the chart has to fold
+slices too &mdash; which it did not, and drew &ldquo;New&rdquo; twice on a live install.</li>
+</ol>
+<p><strong>v2 exposes <code>newVsReturning</code> instead</strong>, a derived dimension whose
+values are <code>new</code> and <code>returning</code>. Two values, named at the source, no NULL
+bucket, no formatter, no per-report relabelling, nothing for a renderer to fold. It groups and
+charts directly.</p>
+
+<div class="keyrow" style="border-left-color:var(--fwd)">
+  <span class="ph ph-b">B</span>
+  <span><code>newVsReturning = prior_sessions == 0 ? 'new' : 'returning'</code>, derived at query
+  time from a stored column that rides <strong>every event type</strong>.</span>
+</div>
+
+<p>That last point is why the flag could never have done this job. <code>is_new_visitor</code> is
+sent on the <code>page_request</code> family and <strong>not on clicks, actions or
+transactions</strong> &mdash; so &ldquo;was this purchase from a new visitor?&rdquo; has no answer
+today. <code>prior_sessions</code> is on all seven event types, so the derived dimension answers
+everywhere the flag cannot. The plan already assumes this shape: &sect;1.4 describes
+<code>first_visit</code> as materialized from &ldquo;fresh <code>fsts</code>,
+<code>prior_sessions=0</code>&rdquo;.</p>
+
+<p><strong>GA does the same thing</strong>, which is worth knowing before inventing: GA4 exposes
+<code>newVsReturning</code> with values <code>new</code> and <code>returning</code> (UA called it
+User Type, New/Returning Visitor). Its wire protocol carries <em>one-shot</em> markers &mdash;
+first-visit and session-start &mdash; and derives the every-event dimension server-side, rather
+than sending a per-event new-versus-returning flag.</p>
+
+<h4>The rule this generalises to</h4>
+<p>Prefer a <strong>derived dimension with named values</strong> over a stored boolean, wherever
+the question has a natural vocabulary. 1.x carries five <code>is_*</code> dimensions
+&mdash; <code>is_repeat_visitor</code>, <code>is_new_visitor</code>, <code>is_browser</code>,
+<code>is_robot</code>, <code>is_entry_page</code> &mdash; and every one pays the same tax.
+&sect;1.12 keeps <code>valueLabels</code> for the cases where a boolean genuinely is the shape;
+this decision is about not reaching for that shape by default.</p>
+
+<h4>What the four new-ness flags become</h4>
+<div class="scroll"><table>
+<thead><tr><th>Flag</th><th>Answers</th><th>v2</th></tr></thead>
+<tbody>
+<tr><td class="col">is_new_session_start</td><td>this request created the session</td><td>Kept as a <strong>hint</strong>. The marker's id is content-derived, so materializing from any event of the session yields the same row and dedupes &mdash; correctness comes from the id, and this only saves the redundant insert attempts.</td></tr>
+<tr><td class="col">is_new_visitor_created</td><td>this request minted the visitor</td><td>Same. Unconsumed in 1.x and kept deliberately for v2; now explicitly a hint, so nothing may break when it is missing.</td></tr>
+<tr><td class="col">is_new_session</td><td>this event is on the session's first page</td><td><strong>Dropped.</strong> Served a per-event entry dimension; entry and exit flags are deliberately absent in v2.</td></tr>
+<tr><td class="col">is_new_visitor</td><td>this session is the visitor's first</td><td><strong>Dropped</strong>, replaced by <code>newVsReturning</code> above.</td></tr>
+</tbody></table></div>
+<p>The hint/correctness split matters because &sect;1.4 already accepts that markers get lost
+&mdash; consent mode, app lifecycle. A correctness mechanism must never go missing; a hint may.
+Both survivors are hints, so nothing should be built that breaks when one does not arrive.</p>
+
 
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
