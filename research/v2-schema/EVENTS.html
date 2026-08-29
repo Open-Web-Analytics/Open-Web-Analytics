@@ -126,6 +126,9 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   border-style:dashed;font-size:9.5px}
 .allprops tr.stage td{background:var(--ink);color:var(--paper);font-family:var(--mono);
   font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;padding:9px 14px}
+.allprops tr.stage-x td{background:var(--open);color:#fff}
+.allprops tr.gone td:first-child{color:var(--muted);text-decoration:line-through}
+.ph-x{background:transparent;color:var(--muted);border-color:var(--rule);border-style:dotted}
 .allprops tr.grp td{background:var(--sunk);font-family:var(--mono);font-size:10px;
   letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:7px 14px;font-weight:600}
 .allprops .no{font-family:var(--mono);font-size:11px;color:var(--open)}
@@ -293,8 +296,10 @@ message is not one.</p>
   <p class="part-note">One list. What sends it, when, and whether it survives into the table.</p>
 </div>
 
-<p>Seventy-nine properties move through the pipeline; <strong>fifty-six persist and twenty-three
-do not</strong>. Listing only the columns would record the survivors and lose every decision that
+<p>Seventy-nine properties move through the v2 pipeline; <strong>fifty-six persist and
+twenty-three do not</strong>. A fourth block follows them: <strong>the twenty-four 1.x properties
+v2 does not carry at all</strong>, which for a migration is the half that decides whether anything
+is being lost. Listing only the columns would record the survivors and lose every decision that
 produced them — a control flag replaced by a derivation, a URL narrowed to a URI, a client clock
 refused in favour of the server's. So this is one table, ordered by the stage that sets each
 value, with persistence as a column rather than as a separate section.</p>
@@ -304,7 +309,10 @@ either an input that has been transformed, a control flag that has done its job,
 declines to keep. The <strong>In&nbsp;1.x</strong> column separates what already exists from what
 v2 introduces — <strong>seven properties are genuinely new</strong> and seven more exist under a
 different name, so the collection surface is far closer to today's than the schema change
-suggests.</p>
+suggests. <strong>Stage 0 at the foot of the table is the other direction</strong>: everything
+1.x registers that v2 drops, grouped by why. Nothing there is lost by accident — the date parts
+and the dimension FKs alone account for twenty-one of the twenty-four, and both are the single
+table's entire point.</p>
 
 <div class="scroll"><table class="allprops">
 <thead><tr><th>Property</th><th>Stage</th><th>In&nbsp;1.x</th><th>Persists as</th><th>Note</th></tr></thead><tbody>
@@ -400,6 +408,37 @@ suggests.</p>
 <tr><td class="col">os</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>os</code></td><td></td></tr>
 <tr><td class="col">is_key_event</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-n">new</span></td><td><code>is_key_event</code></td><td><span class="ph ph-ins">by INSERT</span> Matched against the goal config. The constraint is the <em>reporting boundary</em>, not the request: resolved before the row is readable, because no reporting query may join the application store.</td></tr>
 <tr><td class="col">session_start / first_visit</td><td><span class="ph ph-b">B</span></td><td><span class="v1 v1-n">new</span></td><td><span class="dash">(whole rows)</span></td><td>Not a property but a product of this stage: the server materializes these two events from the control flags above. Every column on them is server-set (&sect;5).</td></tr>
+<tr class="stage stage-x"><td colspan="5">Stage 0 &mdash; in 1.x, not carried forward</td></tr>
+<tr class="grp"><td colspan="5">derived date parts &mdash; replaced by one</td></tr>
+<tr class="gone"><td class="col">year, month, day</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td><strong>Eleven columns on every 1.x fact row.</strong> v2 keeps <code>yyyymmdd</code> alone, as the partition key, and derives the rest from <code>ts</code> at query time. &sect;1.2 counts this as one of the schema&rsquo;s clearest wins: nine derived date parts per row, gone.</td></tr>
+<tr class="gone"><td class="col">dayofweek, dayofyear, weekofyear</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">hour, minute, second</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">sec, msec</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="grp"><td colspan="5">dimension foreign keys &mdash; the star itself</td></tr>
+<tr class="gone"><td class="col">document_id</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td><strong>Ten FKs, all deliberately absent.</strong> They are what a star schema is, and removing the class of bug this release cycle was spent fixing (the double-hashed dimension FKs) is one of the stated reasons for the single table. The values they pointed at are denormalised onto the event instead &mdash; which 1.x already did for 58 of them anyway.</td></tr>
+<tr class="gone"><td class="col">ua_id, location_id, host_id, os_id</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">campaign_id, ad_id, source_id</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">referer_id, referring_search_term_id</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="grp"><td colspan="5">flags replaced by derivations</td></tr>
+<tr class="gone"><td class="col">is_repeat_visitor</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Derives from <code>visitor_fsts</code>, which is on every row. A flag that can disagree with its own derivation is a bug nothing detects &mdash; and this one did: it was NULL from 2015 until this year, and a boolean column holding 1/0/NULL made a pie draw two slices with the same label.</td></tr>
+<tr class="gone"><td class="col">is_entry_page</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Entry and exit flags are deliberately absent (&sect;1.10). Exit is served by an <code>is_exit</code> flag set by a closer job, for the one report that consumes it.</td></tr>
+<tr class="gone"><td class="col">is_robot</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Bots are refused at ingest and never become rows, so there is nothing to flag. &sect;1.9 forbids reclassifying stored rows later, which is what a flag would invite.</td></tr>
+<tr class="gone"><td class="col">is_browser</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Implied by the absence of a bot.</td></tr>
+<tr class="gone"><td class="col">full_host</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td><code>host</code> covers it.</td></tr>
+<tr class="grp"><td colspan="5">geo detail beyond country and city</td></tr>
+<tr class="gone"><td class="col">latitude, longitude</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>v2 keeps <code>country</code> and <code>city</code>. Coordinates are precision this product does not report on and a privacy surface it would rather not hold.</td></tr>
+<tr class="gone"><td class="col">country_code</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Redundant with <code>country</code>.</td></tr>
+<tr class="gone"><td class="col">state</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>No column. Note the collision in &sect;7.6: the tracker also sends <code>state</code> as part of a billing address.</td></tr>
+<tr class="grp"><td colspan="5">session offsets &mdash; anchors travel instead</td></tr>
+<tr class="gone"><td class="col">psts</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Prior session start. v2 ships <em>anchors</em> and derives offsets, the way GA does: <code>fsts</code>, <code>sts</code> and <code>prior_sessions</code> are on the wire, and days-since is arithmetic at query time.</td></tr>
+<tr class="gone"><td class="col">days_since_first_session</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">days_since_prior_session</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="gone"><td class="col">time_since_last_session</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td></td></tr>
+<tr class="grp"><td colspan="5">named identity and page type</td></tr>
+<tr class="gone"><td class="col">user_name, user_email</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Replaced by the single <code>user_id</code> &mdash; &sect;1.5 makes a site-supplied id the only identity field, and two free-text fields are two chances to store PII by accident.</td></tr>
+<tr class="gone"><td class="col">page_type</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>A site-declared classification with no consumer in the v2 reporting surface. If one is wanted it belongs in <code>params</code>, where site-defined keys live.</td></tr>
+<tr class="gone"><td class="col">prior_page</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><span class="no">dropped</span></td><td>Derivable from the visitor&rsquo;s own events, which is the single table&rsquo;s whole argument.</td></tr>
+<tr class="gone"><td class="col">num_prior_sessions</td><td><span class="ph ph-x">NONE</span></td><td><span class="v1 v1-y">1.x</span></td><td><code>prior_sessions</code></td><td><span class="dash">Not dropped</span> &mdash; the registered name for what the wire calls <code>nps</code>, listed in Stage 1 as <code>prior_sessions</code>.</td></tr>
 </tbody></table></div>
 
 <div class="note"><p><strong>Three in five wire parameters do not become a column of their own.</strong>
