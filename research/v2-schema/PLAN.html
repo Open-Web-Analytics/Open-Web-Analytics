@@ -679,7 +679,28 @@ breaks only if it names something that fell out.</p>
 <!-- ============ PART II ============ -->
 <section class="part" id="p2">
   <p class="part-n">Part Two</p>
-  <h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
+  <h4>Derived dimensions declare a kind, not SQL <span class="chip c-dec">Decided</span></h4>
+<p>Some new dimensions are functions of columns rather than columns &mdash;
+<code>sourceMedium</code> and <code>firstSourceMedium</code> concatenate two, and
+<code>newVsReturning</code> maps one (EVENTS.html &sect;7.7, &sect;7.12). The tempting shortcut is
+to let each carry its own SQL, which works until the reporting store is not MySQL &mdash; and
+&sect;1.10 deliberately holds that door open behind a second DSN. Then a store move rewrites every
+derived dimension by hand.</p>
+<p>The dialect layer does not cover this today: <code>MysqlDialect</code> abstracts DDL and
+introspection &mdash; partitioning, keys, indexes, session <code>sql_mode</code> &mdash; and has no
+expression surface, nor an interface for a second implementation to satisfy.</p>
+<p>So a dimension declares its <strong>kind</strong> and the dialect renders it, and the reason
+that is cheap rather than a mini-language is that the column-admission rule keeps the set small
+and closed. Everything proposed so far needs three: <code>concat</code>, <code>map</code> and
+<code>datePart</code>. That makes a store migration <strong>O(kinds), not O(dimensions)</strong>
+&mdash; three renderers to write once, rather than a bill that grows quietly every time somebody
+adds a dimension.</p>
+<p>Worth settling before the first one is built. Once dimensions carry SQL strings, converting
+them means recovering intent from expressions, which is precisely where the report controllers
+were before they became configuration &mdash; and the narrowing that made <em>that</em> safe was
+the same move: names from a known list, never code (&sect;1.7).</p>
+
+<h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
 <p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact
 columns are nullable with no default, so <code>is_repeat_visitor</code> holds
 <code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a

@@ -1166,6 +1166,46 @@ be a third copy of facts already on the row.</p>
   supplies a default rendering and the report may override it.</p>
 </div>
 
+<h4>Declare the kind, not the SQL</h4>
+<p>A derived dimension has to become SQL somewhere, and the tempting shortcut is to let each one
+carry its own: <code>CONCAT(source, ' / ', medium)</code> in the registration. That works until the
+reporting store is not MySQL &mdash; and &sect;1.10 explicitly holds the door open for a columnar
+one behind a second DSN. Then a store move means auditing and rewriting <em>every</em> derived
+dimension by hand, with nothing to tell you which ones broke.</p>
+<p>The existing dialect layer does not help. <code>MysqlDialect</code> covers DDL and
+introspection &mdash; partitioning, primary keys, indexes, session <code>sql_mode</code>, charset
+&mdash; and <strong>nothing about expressions</strong>. There is also no interface or abstract
+base, so &ldquo;another dialect&rdquo; is not yet a defined shape.</p>
+
+<p><strong>So a dimension declares its KIND, and the dialect renders it.</strong> The point that
+makes this cheap rather than a mini-language: <strong>the set of kinds is small and closed</strong>,
+because &sect;1.10's column-admission rule keeps nearly everything a plain column. Everything v2 has
+proposed so far needs exactly three:</p>
+<div class="scroll"><table>
+<thead><tr><th>Kind</th><th>Used by</th><th>MySQL</th></tr></thead>
+<tbody>
+<tr><td class="col">concat</td><td><code>sourceMedium</code>, <code>firstSourceMedium</code></td><td><code>CONCAT_WS</code> over the columns, with the absent-value rule applied</td></tr>
+<tr><td class="col">map</td><td><code>newVsReturning</code></td><td><code>CASE</code> over one column to a small set of named values</td></tr>
+<tr><td class="col">datePart</td><td><code>year</code>, <code>month</code>, <code>day</code>, <code>week</code>, <code>dayofweek</code>, <code>dayofyear</code></td><td>integer division on <code>yyyymmdd</code>, or a calendar function over a date built from it</td></tr>
+</tbody></table></div>
+
+<p>Which changes the shape of a migration from <strong>O(dimensions)</strong> to
+<strong>O(kinds)</strong>. A new store implements three renderers; adding a fourth
+<code>concat</code> dimension afterwards costs nothing in portability. The alternative grows the
+migration bill every time someone adds a dimension, and does it invisibly.</p>
+
+<div class="note"><p><strong>This repo just did the same thing one level up.</strong>
+Reports-as-config moved reports from code to declarations precisely so the renderer could change
+without rewriting the reports &mdash; and the narrowing that made it safe was the same move:
+formatters chosen by <em>name</em> from a known list rather than carried as code,
+<code>excludeColumns</code> a list of names rather than a fragment of script (&sect;1.7). Raw SQL
+in a dimension registration is the thing that narrowing exists to prevent, one layer down.</p></div>
+
+<p>It also wants deciding <em>now</em> rather than later, because retrofitting runs the expensive
+way. Once dimensions carry SQL strings, converting them means recovering intent from expressions
+&mdash; which is exactly the position the report controllers were in before they became
+configuration.</p>
+
 <h4>What this asks of the registry</h4>
 <p>1.x cannot express either of these. <code>registerDimension()</code> maps a name to a
 <strong>column</strong> &mdash; the signature takes the column twice, once for display and once for
