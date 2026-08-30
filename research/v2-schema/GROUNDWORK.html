@@ -1,0 +1,404 @@
+<title>Coexistence Groundwork</title>
+<style>
+:root{
+  --paper:#F7F7F5; --ink:#16191C; --muted:#5C6470; --rule:#E2E2DE; --sunk:#EFEFEC;
+  --fwd:#0F6E6B; --legacy:#8A6134; --open:#A33B32;
+  --fwd-bg:#E4EFEE; --legacy-bg:#F3EBE0; --open-bg:#F6E5E3;
+  --serif:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#14161A; --ink:#E6E8EA; --muted:#98A1AC; --rule:#272B31; --sunk:#1B1E23;
+  --fwd:#57BDB6; --legacy:#C99C60; --open:#DC7D71;
+  --fwd-bg:#172A2A; --legacy-bg:#2A2318; --open-bg:#2C1D1C;
+}}
+:root[data-theme="dark"]{
+  --paper:#14161A; --ink:#E6E8EA; --muted:#98A1AC; --rule:#272B31; --sunk:#1B1E23;
+  --fwd:#57BDB6; --legacy:#C99C60; --open:#DC7D71;
+  --fwd-bg:#172A2A; --legacy-bg:#2A2318; --open-bg:#2C1D1C;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);
+  font-size:17px;line-height:1.62;margin:0;-webkit-font-smoothing:antialiased}
+.wrap{display:grid;grid-template-columns:1fr;gap:0;max-width:1180px;margin:0 auto;padding:0 24px}
+@media(min-width:1080px){.wrap{grid-template-columns:220px minmax(0,1fr);gap:56px;padding:0 40px}}
+/* ---------- rail ---------- */
+nav{display:none}
+@media(min-width:1080px){
+  nav{display:block;position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;
+    padding:120px 0 60px;font-family:var(--mono);font-size:11.5px;line-height:1.5}
+  nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0;
+    border-left:2px solid transparent;padding-left:11px;margin-left:-13px}
+  nav a:hover{color:var(--fwd);border-left-color:var(--fwd)}
+  nav .r-part{color:var(--ink);text-transform:uppercase;letter-spacing:.10em;
+    margin-top:20px;padding-top:9px;border-top:1px solid var(--rule)}
+  nav .r-part:first-child{margin-top:0}
+}
+main{min-width:0;padding:64px 0 140px;max-width:70ch}
+/* ---------- masthead ---------- */
+.mast{border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.20em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 20px}
+h1{font-size:clamp(2.5rem,6vw,3.7rem);line-height:1.02;margin:0;font-weight:600;
+  letter-spacing:-.022em;text-wrap:balance}
+.standfirst{font-size:1.18rem;color:var(--muted);margin:20px 0 0;text-wrap:pretty}
+.meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:22px;margin:0 0 56px;padding-top:12px}
+/* ---------- structure ---------- */
+.part{margin:88px 0 0;padding-top:26px;border-top:2px solid var(--ink)}
+.part-n{font-family:var(--mono);font-size:11px;letter-spacing:.20em;color:var(--fwd);
+  text-transform:uppercase;margin:0 0 8px}
+.part h2{font-size:2.05rem;line-height:1.1;margin:0 0 10px;font-weight:600;letter-spacing:-.016em}
+.part-note{color:var(--muted);margin:0;font-size:1.02rem}
+h3{font-size:1.3rem;margin:52px 0 4px;font-weight:600;line-height:1.25;letter-spacing:-.01em;
+  text-wrap:balance;scroll-margin-top:20px}
+h3 .num{font-family:var(--mono);font-size:.72em;color:var(--muted);font-weight:400;margin-right:.6em}
+h4{font-size:1.02rem;margin:32px 0 2px;font-weight:600}
+p{margin:14px 0}
+a{color:var(--fwd)}
+strong{font-weight:600}
+ul,ol{padding-left:22px;margin:14px 0}
+li{margin:7px 0}
+code{font-family:var(--mono);font-size:.845em;background:var(--sunk);padding:1px 5px;
+  border-radius:3px;border:1px solid var(--rule)}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunk);
+  border:1px solid var(--rule);border-radius:5px;padding:15px 17px;overflow-x:auto;margin:20px 0}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+/* ---------- chips ---------- */
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  padding:2.5px 7px;border-radius:3px;white-space:nowrap;vertical-align:2px;font-weight:600}
+.c-dec{background:var(--fwd-bg);color:var(--fwd)}
+.c-open{background:var(--open-bg);color:var(--open)}
+.c-meas{background:var(--legacy-bg);color:var(--legacy)}
+.c-done{background:var(--fwd-bg);color:var(--fwd);border:1px solid var(--fwd)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:.9rem;color:var(--muted);
+  border:1px solid var(--rule);border-left:3px solid var(--fwd);
+  border-radius:0 5px 5px 0;padding:16px 20px;margin:34px 0}
+.legend div{display:flex;gap:9px;align-items:baseline}
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;margin:22px 0;border:1px solid var(--rule);border-radius:5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  text-align:left;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--rule);
+  background:var(--sunk);white-space:nowrap;font-weight:600}
+td{padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.n{text-align:right;font-family:var(--mono);font-size:12.5px}
+td code{font-size:.9em}
+.ev{font-family:var(--mono);font-size:12px;color:var(--fwd);font-weight:600;white-space:nowrap}
+.ev-l{font-family:var(--mono);font-size:12px;color:var(--legacy);white-space:nowrap}
+.dash{color:var(--muted)}
+/* ---------- callouts ---------- */
+.note{border-left:3px solid var(--rule);padding:2px 0 2px 20px;margin:24px 0;color:var(--muted)}
+.note strong{color:var(--ink)}
+.flag{background:var(--open-bg);border-left:3px solid var(--open);padding:16px 20px;
+  margin:26px 0;border-radius:0 5px 5px 0}
+.flag p{margin:8px 0}
+.flag p:first-child{margin-top:0}.flag p:last-child{margin-bottom:0}
+.flag .h{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--open);font-weight:600}
+/* ---------- ordered phases ---------- */
+.phase{border:1px solid var(--rule);border-radius:5px;padding:20px 22px;margin:20px 0}
+.phase-h{display:flex;gap:13px;align-items:baseline;margin-bottom:5px}
+.phase-n{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--fwd);
+  font-weight:600;white-space:nowrap;text-transform:uppercase}
+.phase-t{font-weight:600;font-size:1.08rem}
+.phase-why{color:var(--muted);font-size:.94rem;margin:0 0 12px}
+.phase ul{margin:0;padding-left:20px;font-size:.96rem}
+footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.75}
+:focus-visible{outline:2px solid var(--fwd);outline-offset:3px}
+</style>
+<div class="wrap">
+<nav>
+  <a class="r-part" href="#shape">The shape</a>
+  <a href="#principle">The principle</a>
+  <a href="#summary">At a glance</a>
+  <a class="r-part" href="#p1">I · The work</a>
+  <a href="#w1">1 Dimension catalog</a>
+  <a href="#w2">2 Catalog accessors</a>
+  <a href="#w3">3 Site identity</a>
+  <a href="#w4">4 Profiles</a>
+  <a class="r-part" href="#p2">II · Not building</a>
+  <a class="r-part" href="#p3">III · Order &amp; proof</a>
+  <a href="#order">Why this order</a>
+  <a href="#proof">How each is proved</a>
+  <a class="r-part" href="#p4">IV · Silent failures</a>
+  <a class="r-part" href="#p5">V · Open</a>
+</nav>
+<main>
+
+<div class="mast">
+  <p class="eyebrow">OWA · v2 · Phase 5 groundwork</p>
+  <h1>Coexistence Groundwork</h1>
+  <p class="standfirst">Four pieces of additive 1.x work that let two schema generations answer
+  questions in one install — arrived at by removing every mechanism that needed someone to be
+  careful.</p>
+</div>
+<p class="meta"><span>Branch research/v2-single-fact-table</span><span>Companion to PLAN.html §1.11, §3.4</span><span>2026-08-30</span></p>
+
+<div class="legend">
+  <div><span class="chip c-dec">Decided</span><span>settled; build to it</span></div>
+  <div><span class="chip c-meas">Measured</span><span>counted in the tree, not estimated</span></div>
+  <div><span class="chip c-open">Open</span><span>needs a decision before it blocks</span></div>
+</div>
+
+<h3 id="shape">What this is</h3>
+<p>v2 replaces the star schema with a single event table. That change is worthless if the reporting
+layer cannot serve both generations at once, because <strong>no data is migrated</strong> — v1 holds
+the history permanently and v2 accumulates from cutover forward. This document plans the work that
+makes that coexistence possible. None of it is v2 code. All of it ships in 1.x releases, each
+standing on its own, and three of the four pieces are improvements even if v2 never happens.</p>
+
+<h3 id="principle">The principle that fell out</h3>
+<p>Every version-aware mechanism considered for this got discarded in favour of something the
+codebase already had. The sequence is worth recording, because it is the reason the plan is small:</p>
+<div class="scroll"><table>
+<thead><tr><th>Proposed</th><th>Failed because</th><th>Replaced by</th></tr></thead>
+<tbody>
+<tr><td>Route by date period</td><td>there is no boundary instant — cutover is per-feature, dual-write overlaps, switch-off is an admin action, the queue is async</td><td>the profile</td></tr>
+<tr><td>An install-wide version setting</td><td>with no migration, a flip blanks every historical report</td><td>the profile</td></tr>
+<tr><td>A required version on every query</td><td>62 report configs, the REST API and the UI would each grow a field</td><td>the profile supplies it from <code>siteId</code></td></tr>
+<tr><td>Filter versions at the entity-pool sort</td><td>fixes one consumer of ten; the picker had already offered the wrong definition</td><td>scope the catalog</td></tr>
+<tr><td>Partition the catalog by version</td><td>threads a version concept through every accessor, and such concepts leak</td><td><strong>scope by entity</strong></td></tr>
+</tbody></table></div>
+<p>What survived is the entity. It is in every registration already, understood everywhere already,
+and it implies the generation without naming it. So the word &ldquo;version&rdquo; ends up confined
+to the profile record and the migration machinery — the only place generational schema changes are
+actually relevant.</p>
+<p>The through-line: <strong>prefer structure that makes the wrong answer unreachable over
+discipline that remembers to exclude it.</strong> Each replacement above removed a place where
+something had to be careful.</p>
+
+<h3 id="summary">At a glance</h3>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Work</th><th>Touch points</th><th>Value without v2</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Dimension catalog becomes entity-keyed</td><td>2 writes, 1 reader</td><td>fixes a latent overwrite</td></tr>
+<tr><td>2</td><td>Catalog accessors take an entity scope</td><td>4 accessors, 10 consumers</td><td>the picker stops offering unqueryable metrics</td></tr>
+<tr><td>3</td><td>Site identity decoupled from domain</td><td>3 derivations, 1 in auth</td><td>domain renames, two configs per domain, multi-domain properties</td></tr>
+<tr><td>4</td><td>Profiles</td><td>new concept; dormant column exists</td><td>the container the rest needs</td></tr>
+</tbody></table></div>
+
+<div class="part" id="p1">
+  <p class="part-n">Part One</p>
+  <h2>The work</h2>
+  <p class="part-note">In dependency order. Each is testable against v1 alone, before a second
+  generation exists to mask a mistake.</p>
+</div>
+
+<h3 id="w1"><span class="num">1</span>The dimension catalog becomes entity-keyed <span class="chip c-dec">Decided</span></h3>
+<p><strong>The prerequisite everything else stands on.</strong> <code>registerDimension()</code>
+loops <code>$entity_names</code> but writes two different shapes:</p>
+<pre><code>if ($denormalized) {
+    $this-&gt;denormalizedDimensions[$dim_name][$entity] = $dim;   // entity-keyed
+} else {
+    $this-&gt;dimensions[$dim_name] = $dim;                        // name-keyed — last write wins
+}</code></pre>
+<p>The normalized branch overwrites itself on every iteration, so only the last entity survives. And
+<code>_loadDimensions()</code> compounds it with a flat <code>array_merge</code> across modules. A
+second generation registering <code>pageTitle</code> would <em>replace</em> the first at load time —
+gone before any read-side scoping could apply, which is why this must land before item 2 rather
+than alongside it.</p>
+<p><span class="chip c-meas">Measured</span> across 103 registrations: <strong>58</strong>
+denormalized (already entity-keyed, unaffected), <strong>41</strong> normalized against a single
+entity (the overwrite is a no-op), and <strong>3</strong> normalized against all seven
+<code>$fact_table_entities</code> — <code>month</code>, <code>userName</code>,
+<code>priorVisitCount</code>.</p>
+<p><strong>Change:</strong> <code>$this-&gt;dimensions[$dim_name][$entity]</code>, matching
+<code>denormalizedDimensions</code>, which already has the correct shape. Metrics need nothing —
+<code>$this-&gt;metrics[$name][] = $map</code> already accumulates a list per name, which is why the
+registry has always been able to hold <code>visits</code> twice (<code>base.session</code>/<code>id</code>
+and <code>base.request</code>/<code>session_id</code>).</p>
+<p><strong>Blast radius:</strong> the registration loop, the <code>_loadDimensions()</code> merge,
+and <code>getDimension()</code> — which has exactly <strong>one</strong> caller,
+<code>ResultSetManager:970</code>.</p>
+<p><strong>Proof:</strong> with one generation registered the change must be behaviour-preserving,
+so every existing report renders identically. That is a characterization run, and the harness
+exists — <code>tests/ReportCharacterizationHarness.php</code>, 433 lines with
+<code>snapshot</code>/<code>observe</code>/<code>normalise</code>.</p>
+<div class="flag">
+  <p class="h">Trace the three multi-entity registrations while you are here</p>
+  <p><code>month</code>, <code>userName</code> and <code>priorVisitCount</code> currently keep the
+  last of seven entities, and <code>$dim['entity']</code> then drives the JOIN
+  (<code>entityFactory()</code>, <code>getForeignKeyColumn()</code>, <code>$db-&gt;join()</code>).
+  <code>date</code> is registered against the same list with <code>denormalized = true</code> while
+  <code>month</code> beside it is not, which looks like an oversight rather than a distinction.
+  <strong>Not claimed as a live defect</strong> — it may be masked downstream — but this change makes
+  the question concrete, and it is the natural moment to answer it.</p>
+</div>
+
+<h3 id="w2"><span class="num">2</span>Catalog accessors take an entity scope <span class="chip c-dec">Decided</span></h3>
+<p>The catalog is keyed by name, and the failure is at <strong>enumeration</strong>, not resolution.
+<code>getAllMetrics()</code> and <code>getAllDimensions()</code> return the flat name-keyed map to
+ten consumers:</p>
+<div class="scroll"><table>
+<thead><tr><th>Consumer</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>ResultSetManager</code> :930, :937, :2364</td><td>internal resolution</td></tr>
+<tr><td><code>CustomReports</code> :1371, :1378</td><td>custom report definition</td></tr>
+<tr><td><code>CustomReportEdit</code> :220, :226, :243, :270, :282</td><td>the picker UI and its validation</td></tr>
+</tbody></table></div>
+<p>The picker is built from <code>array_keys( getAllMetrics() )</code>. Array keys are unique, so
+with two generations registered it offers <strong>one</strong> <code>visits</code> that silently
+means two different things, and the validation loops beside it are equally blind. Selection never
+gets the chance to be wrong, because the wrong definition was offered and accepted as valid
+upstream of it. This is why filtering inside <code>getMetricEntities()</code> was rejected: it fixes
+one consumer.</p>
+<p><strong>Change:</strong> the accessors take an entity scope, supplied by the profile. Nothing
+downstream filters, because the other generation is not in scope — the picker lists one generation's
+names with no change to <code>CustomReportEdit</code>, validation follows, and
+<code>ResultSetManager</code> needs nothing at all: its summary-level sort simply runs inside the
+scope it is handed.</p>
+<p><strong>Value independent of v2:</strong> <code>getAllMetrics()</code> today returns everything
+regardless of whether it is queryable in the current context. An entity-scoped picker is more
+correct with one generation, not just two.</p>
+<div class="flag">
+  <p class="h">Calculated metrics have no entity</p>
+  <p>They carry <code>child_metrics</code> and a formula instead, so scoping must include a
+  calculated metric when <em>all</em> of its children resolve within the scope, and exclude it
+  otherwise. It falls out of the existing recursion — <code>getMetricEntities()</code> already
+  merges children's entities — but it is the one case where scoping is not a direct property test.
+  Getting it wrong <strong>silently drops <code>bounceRate</code> and its siblings from the
+  picker</strong> rather than erroring, so it needs an explicit test rather than an assumption.</p>
+</div>
+
+<h3 id="w3"><span class="num">3</span>Site identity decoupled from the domain <span class="chip c-dec">Decided</span></h3>
+<p>A site's identifier is a pure function of its domain:</p>
+<pre><code>Site::generateSiteId( $domain ) { return md5( $domain ); }</code></pre>
+<p>So two profiles for one website are impossible <em>by construction</em>, not by policy. Three
+places derive it — <code>Site::generateSiteId()</code>, an inline <code>md5($domain)</code> at
+<code>SiteManager.php:44</code> that bypasses the method, and
+<code>InstallManager.php:95</code> — and one <strong>re-derives it at runtime in the permission
+path</strong>, <code>ServiceUser.php:283</code>. That last one is the edge that needs care and
+tests; note that a site's allowed-user grant set is full-replace, which is an easy place to revoke
+people silently while refactoring nearby.</p>
+<p><strong>Change:</strong> stop deriving new identifiers and treat the column as opaque. The domain
+becomes an attribute of a profile rather than its identity.</p>
+<div class="flag">
+  <p class="h">Never rewrite existing site_id values</p>
+  <p>Every identifier in the wild is <code>md5(domain)</code> and every fact row references it.
+  Decoupling identity from derivation does not require reissuing identities already handed out —
+  stop computing new ones, leave existing ones alone, and the change is genuinely additive with no
+  data migration.</p>
+</div>
+<p><strong>Value independent of v2:</strong> the derivation currently prevents tracking two
+configurations of one domain, renaming a domain without orphaning its data, and expressing one
+property spanning several domains. All three are fixed by the same change.</p>
+
+<h3 id="w4"><span class="num">4</span>Profiles <span class="chip c-open">Open</span></h3>
+<p>One tracked website, several profiles; a profile declares its generation and supplies the entity
+scope of item 2. The whole experience fans out from it — a v2 profile shows v2 navigation, v2
+reports, and queries the v2 REST endpoint. This is the path GA took to GA4.</p>
+<p>It dissolves the problems rather than solving them: version selection is never inferred, spanning
+two generations in one result set is <strong>structurally impossible</strong> rather than a rule
+somebody must remember, history needs no migration because the v1 profile keeps its data
+<em>and</em> its reports, and cutover is per-site opt-in whose rollback is &ldquo;use the other
+profile&rdquo;.</p>
+<p>Two things are already in place. <code>site_family</code> exists as a column on
+<code>owa_site</code>, is settable at creation, and is <strong>written but never read anywhere</strong>
+— a dormant slot, so the grouping can be defined freshly rather than migrated. And the per-site
+session store (<code>owa_s_&lt;siteId&gt;</code>) already gives two profiles on one domain
+independent session cookies, which is both correct and exactly GA's
+<code>_ga_&lt;property&gt;</code>.</p>
+<p><strong>No client change.</strong> §3.1 is Decided: one tracker, server-side fan-out, and nothing
+about the page changes on cutover day. The site&nbsp;&rarr;&nbsp;profiles mapping is server-side, so
+the page never learns profiles exist. Two trackers were rejected there because they split a site's
+data by which snippet happened to be deployed — stepping v1's history exactly when a site upgrades,
+destroying the thing v1 is being kept for.</p>
+
+<div class="part" id="p2">
+  <p class="part-n">Part Two</p>
+  <h2>What this deliberately does not build</h2>
+  <p class="part-note">Each of these was proposed during design and ruled out. Recorded so they are
+  not reinvented.</p>
+</div>
+<div class="scroll"><table>
+<thead><tr><th>Not building</th><th>Why not</th></tr></thead>
+<tbody>
+<tr><td>Any change to <code>ResultSetManager</code></td><td>it already holds the combination logic and the summary-table-over-fact-table selection; handed a scoped catalog it needs nothing</td></tr>
+<tr><td>A version field on the 62 report configs</td><td>the profile carries it; configs stay portable across generations</td></tr>
+<tr><td>A version parameter on the REST API</td><td><code>siteId</code> is already present in every query and resolves to a profile</td></tr>
+<tr><td>Renamed metrics or dimensions</td><td>entity-keyed lookup is precisely what avoids <code>v2Visits</code>; one name, several implementations, is the existing contract</td></tr>
+<tr><td>Union logic across generations, seam annotations, spanning rules</td><td>a result set is one profile. <code>visits</code> is a <code>distinct_count</code> and could not be summed across stores even if the definitions matched</td></tr>
+<tr><td>A formula parser to replace <code>@ eval()</code></td><td>needed only when an <em>author</em> can write a formula; all 8 formulas ship in the repo, and a config file in the repo is as trusted as a class in the repo</td></tr>
+<tr><td>Moving metrics and dimensions to configuration</td><td>worth doing and now orthogonal — it is no longer load-bearing for v2, so it can be scheduled on its own merits</td></tr>
+</tbody></table></div>
+
+<div class="part" id="p3">
+  <p class="part-n">Part Three</p>
+  <h2>Order and proof</h2>
+</div>
+<h3 id="order">Why this order</h3>
+<ol>
+<li><strong>1 before 2</strong> — the overwrite happens at registration. Until the catalog can hold
+two definitions under one name, there is nothing for scoping to select between.</li>
+<li><strong>2 before 4</strong> — the profile's job is to supply a scope. Build the thing that
+consumes a scope before the thing that produces one.</li>
+<li><strong>3 before 4</strong> — <code>md5(domain)</code> makes a second profile per website
+impossible, so profiles cannot be built on top of it.</li>
+<li><strong>All four before any v2 schema work</strong> — building v2 tables before the container
+they live in is backwards, and both of the blockers found here were invisible until coexistence was
+attempted. Assume there are more.</li>
+</ol>
+<h3 id="proof">How each is proved</h3>
+<p>The standing rule applies: coverage precedes development, bug fixes start with a failing test,
+behaviour-preserving work starts with a characterization suite, and every pin is mutation-checked at
+creation. Concretely here:</p>
+<div class="scroll"><table>
+<thead><tr><th>Work</th><th>Proof</th></tr></thead>
+<tbody>
+<tr><td>1 · entity-keyed dimensions</td><td>characterization: one generation registered, every existing report byte-identical. Mutation-check by registering a second definition and asserting both survive</td></tr>
+<tr><td>2 · scoped accessors</td><td>a metric registered against an out-of-scope entity must <em>not</em> appear in the picker — and a calculated metric whose children are all in scope <em>must</em></td></tr>
+<tr><td>3 · site identity</td><td>existing installs unchanged; a new site gets a non-derived id; two sites on one domain become possible</td></tr>
+<tr><td>4 · profiles</td><td>two profiles on one website resolve to different catalogs and different session cookies from one tracker</td></tr>
+</tbody></table></div>
+<p>Three standing traps apply to all of it: an <strong>order-dependent</strong> test that passes only
+because an earlier file warmed a registry (CI runs an isolation sweep); a <strong>vacuous</strong>
+assertion, where a double-quoted PHP needle containing <code>$this-&gt;</code> interpolates away and
+passes unconditionally; and <strong>configless CI</strong>, which has no database and skips ~506
+tests that pass locally — reproduce with <code>composer test:configless</code>, not
+<code>test:scratch</code>.</p>
+
+<div class="part" id="p4">
+  <p class="part-n">Part Four</p>
+  <h2>Silent failures to guard</h2>
+  <p class="part-note">Every one of these looks like the natural way to do the thing, and none of
+  them fails loudly.</p>
+</div>
+<div class="scroll"><table>
+<thead><tr><th>Doing this</th><th>Produces</th></tr></thead>
+<tbody>
+<tr><td>Appending the v2 entity to <code>$fact_table_entities</code></td><td><strong>every</strong> dimension claims to work on v2 while naming v1's columns. One line, broadly wrong SQL, and the obvious-looking way to add v2 support</td></tr>
+<tr><td>Rewriting existing <code>site_id</code> values</td><td>every fact row orphaned</td></tr>
+<tr><td>Scoping calculated metrics by a property test</td><td><code>bounceRate</code> and siblings vanish from the picker; no error</td></tr>
+<tr><td>Letting a version default when none resolves</td><td>v1 numbers under a v2 heading. A missing scope must be an error</td></tr>
+<tr><td>Asserting <code>=== 0</code> on a boolean fact column</td><td>NULL is a third group; fixtures can write it</td></tr>
+</tbody></table></div>
+
+<div class="part" id="p5">
+  <p class="part-n">Part Five</p>
+  <h2>Open before building</h2>
+</div>
+<ul>
+<li><strong>Vocabulary</strong> — site / profile / property / <code>site_family</code>. It surfaces
+in the UI, the REST API and the schema simultaneously, and renaming later is the expensive kind of
+change.</li>
+<li><strong>Do modules declare a generation?</strong> If a v2 module registers into a v2-scoped
+catalog, module loading grows a concept — including for third-party modules. Worth deciding whether
+to take that on before the scoping shape is fixed.</li>
+<li><strong>Linked or independent?</strong> Whether a v1 and v2 profile for one website present as
+related in the UI (&ldquo;the old version of this property&rdquo;) or as two entries that happen to
+share a domain. GA chose linked, and it is how people found their way across.</li>
+<li><strong>Are <code>month</code>, <code>userName</code> and <code>priorVisitCount</code> broken
+today?</strong> Unresolved, and cheap to answer once item 1 makes the surviving entity explicit.</li>
+</ul>
+
+<footer>
+  <p>Companion to <strong>PLAN.html</strong> §1.11 (catalog scoping) and §3.4 (profiles), and to
+  <strong>EVENTS.html</strong> §7.12–7.13 (derived dimensions and metric kinds). Where they
+  disagree, this document is the later thinking.</p>
+</footer>
+
+</main>
+</div>
