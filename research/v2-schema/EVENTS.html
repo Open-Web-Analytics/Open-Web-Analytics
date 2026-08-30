@@ -1134,6 +1134,53 @@ re-derived <code>yyyymmdd</code> &mdash; the row contradicts itself. Derived par
 wrong. Neither is retroactively correct, and only one is self-consistent.</p></div>
 
 
+<h3><span class="num">7.12</span>Source / medium as one dimension <span class="chip c-dec">Decided</span></h3>
+<p>Ranking traffic means grouping by source <em>and</em> medium together &mdash;
+<code>google / organic</code> as one value, not two columns a reader has to join in their head.
+GA ships it as a first-class dimension for exactly this reason, and v2 needs the same.</p>
+
+<p><strong>Two of them, because v2 now has two attribution scopes.</strong> &sect;7.5 separates the
+session's answer from the visitor's acquisition, so the combined dimension separates the same way:</p>
+<div class="scroll"><table>
+<thead><tr><th>Dimension</th><th>From</th><th>Answers</th></tr></thead>
+<tbody>
+<tr><td class="col">sourceMedium</td><td><code>source</code> + <code>medium</code></td><td>How this session arrived.</td></tr>
+<tr><td class="col">firstSourceMedium</td><td><code>first_source</code> + <code>first_medium</code></td><td>How this visitor was originally acquired (&sect;7.5b).</td></tr>
+</tbody></table></div>
+
+<p><strong>Derived, not stored</strong> &mdash; the same call as <code>newVsReturning</code> in
+&sect;7.7, for the same reasons. A concatenation of two columns on the same row cannot drift from
+its inputs, costs nothing to add, and needs no migration when the format changes. Storing it would
+be a third copy of facts already on the row.</p>
+
+<div class="flag">
+  <p class="h">The NULL trap, and where the sentinel belongs</p>
+  <p><code>CONCAT()</code> with a NULL argument returns <strong>NULL</strong>, not a partial
+  string. So a naive <code>CONCAT(source, ' / ', medium)</code> collapses <em>every</em> row
+  missing either side into one bucket &mdash; direct traffic, unattributed traffic and genuine
+  gaps all landing together, and the bucket labelled with nothing.</p>
+  <p>&sect;1.9 retires sentinel strings from <em>storage</em>, and that is right: NULL means
+  absent, which is what makes <code>COUNT(column)</code> meaningful. But it means the display
+  value has to come from somewhere else, and the dimension layer is that somewhere. Store the
+  truth, name it at the edge &mdash; the same split &sect;7.7 draws for booleans, where the type
+  supplies a default rendering and the report may override it.</p>
+</div>
+
+<h4>What this asks of the registry</h4>
+<p>1.x cannot express either of these. <code>registerDimension()</code> maps a name to a
+<strong>column</strong> &mdash; the signature takes the column twice, once for display and once for
+SQL, and there is no expression anywhere in it. Every one of its 93 dimensions is one name over one
+column.</p>
+<p>v2 now has three dimensions that are functions rather than columns &mdash;
+<code>newVsReturning</code>, <code>sourceMedium</code>, <code>firstSourceMedium</code> &mdash;
+which makes <strong>derived dimensions a first-class registry concept</strong> rather than a
+special case to be worked around. That is worth planning deliberately, because &sect;1.2 already
+loads the registry with the other half of this: a single fact table has no entity boundaries, so
+the registry becomes the only thing preventing non-additive metric and dimension combinations. It
+is now both the guard and the home of derived values, and it should be designed as such rather
+than grown into it.</p>
+
+
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
 §3.1 one tracker two pipelines.</p>
