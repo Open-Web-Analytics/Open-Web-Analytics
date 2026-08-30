@@ -457,6 +457,30 @@ buys breadth, not recency.</p>
 </tbody></table></div>
 <p>So the freshest number in the system is the most naively computed one, and “is my tracking
 working?” — the question that must never be stale — never touches a summary.</p>
+
+<h4>Realtime is one screen, not a mode on every report <span class="chip c-dec">Decided</span></h4>
+<p>1.x expresses realtime as a <strong>Live View toggle on every report</strong>, and what that
+does is re-run the historical query more often. Each widget owns a <code>setInterval</code>
+calling <code>getNewResultSet()</code> — its full query, over the full period. On the traffic
+report that is nine widgets, so Live View across thirty days issues <strong>nine full-period
+aggregations every fifteen seconds</strong>, thirty-six queries a minute, to learn about whatever
+arrived in the last fifteen.</p>
+<p>The cost scales with <em>period width × widget count</em> and not at all with how much changed,
+which is the tell: it is asking a historical question to get a realtime answer. The two tiers
+above exist precisely because those are different questions with different costs.</p>
+<p><strong>So realtime becomes a single dedicated screen</strong> — a short window over raw
+events, answering &ldquo;what is happening now&rdquo; and &ldquo;is my tracking working&rdquo;.
+That is the question the table above says must never be stale, and on a narrow window it is cheap
+by construction: one query, one partition, no summary touched. It is also what GA ships, and it
+removes the per-report auto-refresh control along with the per-widget polling behind it.</p>
+
+<div class="note"><p><strong>What this does not fix, and should not pretend to.</strong>
+Historical reports remain stale for the current day, because they read the rollup and the rollup
+runs on a schedule. The answer is composition rather than polling — a period metric is
+<code>rollup(closed days) + raw(today)</code>, where closed days never change and so cache
+indefinitely, and only today's slice is volatile and bounded to one partition. That makes every
+report current without any refresh loop, and it is worth doing on its own merits. Recorded here as
+the follow-on, not folded into this decision.</p></div>
 <div class="flag">
   <p class="h">Measured — the trap this creates</p>
   <p>Partitioning is on <code>yyyymmdd</code>, so the obvious way to write “last 30 minutes”
