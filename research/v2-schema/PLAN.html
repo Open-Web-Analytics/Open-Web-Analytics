@@ -712,13 +712,15 @@ SQL &mdash; so the conversion is mechanical, exactly as the report controllers w
 three aggregate kinds, three renderers. Calculated metrics are arithmetic over other metrics'
 <em>results</em> and need no SQL whatsoever, so they port for free. Six renderers total covers
 both surfaces (EVENTS.html &sect;7.13).</p>
-<p><strong>The ordering constraint is the real finding.</strong> Formulas are evaluated by
-<code>ResultSetManager::evalFormula()</code>, which builds a PHP string and runs
-<code>@ eval()</code> on it &mdash; safe only while every formula ships in the repo, and
-disqualifying the moment formulas become configuration an author can write. A restricted
-arithmetic parser has to land <em>before</em> the move, not after. The <code>@</code> deserves its
-own note: a malformed formula is suppressed and the metric falls through to <code>0</code>, so a
-broken metric reads as a real zero.</p>
+<p><strong>The conversion is additive; the evaluator is not part of it.</strong> Formulas are
+run through <code>ResultSetManager::evalFormula()</code>, which <code>@ eval()</code>s a PHP
+string &mdash; but moving a shipped metric from a class to a config entry does not move the trust
+boundary. All 8 formulas in the tree are repo-authored and stay repo-authored, so nothing in
+<code>ResultSetManager</code> needs to change. The parser is the prerequisite for a
+<em>user-authored</em> metric builder, a separate later feature &mdash; and a plain four-operator
+grammar would not even cover today's set, since <code>round(actions / visits, 1)</code> needs
+function application. Separately and on its own terms: the <code>@</code> means a malformed
+formula falls through to <code>0</code>, so a broken metric reads as a real zero.</p>
 
 <h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
 <p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact

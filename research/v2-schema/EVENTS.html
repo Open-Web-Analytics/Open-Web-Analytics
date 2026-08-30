@@ -1253,23 +1253,25 @@ These need <strong>no SQL at all</strong>, so they are portable for free: a stor
 <strong>six renderers</strong>, which is the number worth knowing before choosing a second store.</p>
 
 <div class="flag">
-  <p class="h">The blocker: formulas are eval()</p>
-  <p><code>ResultSetManager::evalFormula()</code> builds a PHP string and runs
-  <code>@ eval( $formula )</code>. It strips <code>$</code> first and the comment says
-  &ldquo;safety first. should only be computing numbers&rdquo; &mdash; which is a hope, not a
-  parser.</p>
-  <p>That is tolerable <em>only</em> while every formula ships in the repo. It is disqualifying the
-  moment formulas become configuration, and flatly unacceptable if custom reports ever let an
-  author define a metric &mdash; the custom-report work established exactly this rule one layer up:
-  a definition may name a formatter, never carry code (&sect;1.7).</p>
-  <p>So the order matters. <strong>Replace the evaluator before the formulas become
-  configuration</strong>, not after: a restricted arithmetic parser over child-metric values, with
-  the four operators and parentheses, and no execution. Doing it the other way round means shipping
-  an <code>eval()</code> that reads user input and then trying to take it back.</p>
-  <p>The <code>@</code> is worth its own line. A malformed formula is silently suppressed and the
-  metric falls through to <code>0</code> &mdash; so a broken metric reads as a real zero, which is
-  the same silent-failure shape as the NULL writes and the vacuous tests this project has spent the
-  year digging out.</p>
+  <p class="h">The eval() is a separate milestone, not a prerequisite</p>
+  <p>An earlier draft of this section said the evaluator had to be replaced <em>before</em> metrics
+  could move to configuration. That was wrong, and the distinction matters because it decides how
+  invasive this work is.</p>
+  <p><code>ResultSetManager::evalFormula()</code> builds a PHP string and runs <code>@ eval()</code>
+  on it. But <strong>moving a shipped metric from a class to a config entry does not move the trust
+  boundary</strong>: the formula ships in the repo either way, and a config file in the repo is
+  exactly as trusted as a class in the repo. All <strong>8</strong> formulas in the tree are
+  repo-authored today and stay repo-authored after the conversion. So the config move is
+  <strong>additive</strong> and needs no change to <code>ResultSetManager</code> at all.</p>
+  <p>The evaluator becomes a real hole at a different moment: when an <em>author</em> can write a
+  formula &mdash; a custom-report metric builder. That is a separate, later feature, and the parser
+  is its prerequisite, not the conversion's.</p>
+  <p>Two things worth carrying forward when that day comes. First, a plain four-operator parser
+  would not even cover today's set: <code>round(actions / visits, 1)</code> needs function
+  application, which is precisely why <code>eval</code> was reached for. Second, the
+  <code>@</code> suppresses malformed formulas and the metric falls through to <code>0</code>, so a
+  broken metric reads as a real zero &mdash; worth fixing on its own terms, independently of any
+  of this.</p>
 </div>
 
 <p>Left <span class="chip c-open">Open</span> rather than decided, because the conversion is
