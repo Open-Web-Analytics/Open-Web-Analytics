@@ -1221,6 +1221,62 @@ is now both the guard and the home of derived values, and it should be designed 
 than grown into it.</p>
 
 
+<h3><span class="num">7.13</span>Metrics move to configuration too &mdash; and the formula evaluator has to go first <span class="chip c-open">Open</span></h3>
+<p>The same question as &sect;7.12, one layer over. It turns out to be <strong>half-built
+already</strong>, and the half that is missing is not the part anyone would guess.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Measured</th><th>Found</th></tr></thead>
+<tbody>
+<tr><td>Mechanism</td><td><code>ConfigurableMetric</code> exists and supports four types: <code>count</code>, <code>distinct_count</code>, <code>sum</code> and <code>calculated</code>.</td></tr>
+<tr><td>Adoption</td><td><strong>6</strong> metrics registered through the config map against <strong>22</strong> registered as class references, with 48 metric classes on disk.</td></tr>
+<tr><td><code>calculated</code></td><td>Supported by the machinery and used by <strong>no registration at all</strong> &mdash; every ratio metric is still a class.</td></tr>
+<tr><td>What a class contains</td><td><code>BounceRate</code> is six setter calls: name, label, two child metrics, the formula <code>'bounces / visits'</code>, a data type. No logic.</td></tr>
+<tr><td>SQL in metric classes</td><td><strong>None.</strong> No metric class anywhere contains <code>SELECT</code>, <code>FROM</code> or <code>GROUP BY</code>.</td></tr>
+</tbody></table></div>
+
+<p>So the metric classes are <strong>declarations wearing class clothing</strong> &mdash; which is
+precisely the position the report controllers were in before reports-as-config, where 62 of 64
+turned out to be pure configuration. The conversion is mechanical for the same reason: each
+constructor is already a property bag.</p>
+
+<h4>The portability payoff is larger here than for dimensions</h4>
+<p>Metrics decompose into two groups, and only one of them touches SQL:</p>
+<ul>
+<li><strong>Base metrics</strong> &mdash; <code>count</code>, <code>distinct_count</code>,
+<code>sum</code> over a column. Three kinds, three dialect renderers.</li>
+<li><strong>Calculated metrics</strong> &mdash; arithmetic over other metrics' <em>results</em>.
+These need <strong>no SQL at all</strong>, so they are portable for free: a store move cannot break
+<code>bounces / visits</code>.</li>
+</ul>
+<p>Three kinds for metrics and three for dimensions (&sect;7.12) puts a whole store migration at
+<strong>six renderers</strong>, which is the number worth knowing before choosing a second store.</p>
+
+<div class="flag">
+  <p class="h">The blocker: formulas are eval()</p>
+  <p><code>ResultSetManager::evalFormula()</code> builds a PHP string and runs
+  <code>@ eval( $formula )</code>. It strips <code>$</code> first and the comment says
+  &ldquo;safety first. should only be computing numbers&rdquo; &mdash; which is a hope, not a
+  parser.</p>
+  <p>That is tolerable <em>only</em> while every formula ships in the repo. It is disqualifying the
+  moment formulas become configuration, and flatly unacceptable if custom reports ever let an
+  author define a metric &mdash; the custom-report work established exactly this rule one layer up:
+  a definition may name a formatter, never carry code (&sect;1.7).</p>
+  <p>So the order matters. <strong>Replace the evaluator before the formulas become
+  configuration</strong>, not after: a restricted arithmetic parser over child-metric values, with
+  the four operators and parentheses, and no execution. Doing it the other way round means shipping
+  an <code>eval()</code> that reads user input and then trying to take it back.</p>
+  <p>The <code>@</code> is worth its own line. A malformed formula is silently suppressed and the
+  metric falls through to <code>0</code> &mdash; so a broken metric reads as a real zero, which is
+  the same silent-failure shape as the NULL writes and the vacuous tests this project has spent the
+  year digging out.</p>
+</div>
+
+<p>Left <span class="chip c-open">Open</span> rather than decided, because the conversion is
+straightforward and the evaluator replacement is a real piece of work that should be sized before
+being committed to.</p>
+
+
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
 §3.1 one tracker two pipelines.</p>

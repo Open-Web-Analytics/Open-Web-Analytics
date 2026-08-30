@@ -700,6 +700,26 @@ them means recovering intent from expressions, which is precisely where the repo
 were before they became configuration &mdash; and the narrowing that made <em>that</em> safe was
 the same move: names from a known list, never code (&sect;1.7).</p>
 
+  <h4>Metrics too &mdash; but replace the formula evaluator first <span class="chip c-open">Open</span></h4>
+<p>The same argument one layer over, where it is <strong>half-built already</strong>:
+<code>ConfigurableMetric</code> supports <code>count</code>, <code>distinct_count</code>,
+<code>sum</code> and <code>calculated</code>, but only <strong>6</strong> metrics are registered
+through it against <strong>22</strong> class references, and the <code>calculated</code> type has
+no registrations at all. The classes are declarations in class clothing &mdash;
+<code>BounceRate</code> is six setters and a formula string, and <em>no</em> metric class contains
+SQL &mdash; so the conversion is mechanical, exactly as the report controllers were.</p>
+<p>The payoff is bigger than for dimensions, because only base metrics touch the store at all:
+three aggregate kinds, three renderers. Calculated metrics are arithmetic over other metrics'
+<em>results</em> and need no SQL whatsoever, so they port for free. Six renderers total covers
+both surfaces (EVENTS.html &sect;7.13).</p>
+<p><strong>The ordering constraint is the real finding.</strong> Formulas are evaluated by
+<code>ResultSetManager::evalFormula()</code>, which builds a PHP string and runs
+<code>@ eval()</code> on it &mdash; safe only while every formula ships in the repo, and
+disqualifying the moment formulas become configuration an author can write. A restricted
+arithmetic parser has to land <em>before</em> the move, not after. The <code>@</code> deserves its
+own note: a malformed formula is suppressed and the metric falls through to <code>0</code>, so a
+broken metric reads as a real zero.</p>
+
 <h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
 <p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact
 columns are nullable with no default, so <code>is_repeat_visitor</code> holds
