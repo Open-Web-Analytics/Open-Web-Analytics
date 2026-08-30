@@ -1339,6 +1339,41 @@ anything is selected, the version filter belongs in <code>getMetricEntities()</c
 whose entity is the wrong version, so wrong-version objects are never constructed — rather than at
 the niceness sort, where they already exist. And the recursion into child metrics means filtering
 children constrains their calculated parents for free.</p>
+<h4>Partition the registry by version; do not filter a merged one <span class="chip c-meas">Measured</span></h4>
+<p>The paragraphs above proposed registering the v2 set into the existing registry and
+discriminating downstream — a filter in <code>getMetricEntities()</code>. <strong>That is
+wrong</strong>, and the reason is enumeration rather than resolution.
+<code>getAllMetrics()</code> and <code>getAllDimensions()</code> return the flat, name-keyed map,
+and they are consumed in ten places:</p>
+<div class="scroll"><table>
+<thead><tr><th>Consumer</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>ResultSetManager</code> :930, :937, :2364</td><td>internal resolution</td></tr>
+<tr><td><code>CustomReports.php</code> :1371, :1378</td><td>custom report definition</td></tr>
+<tr><td><code>CustomReportEdit.php</code> :220, :226, :243, :270, :282</td><td><strong>the metric/dimension picker UI and its validation</strong></td></tr>
+</tbody></table></div>
+<p>The picker is built from <code>array_keys( getAllMetrics() )</code>. Array keys are unique, so
+with both sets registered it offers <strong>one</strong> <code>visits</code> that silently means two
+different things, and the validation loops beside it are equally version-blind. Selection never gets
+the chance to be wrong, because the wrong definition was already offered and accepted as valid. A
+filter at one consumer fixes one consumer.</p>
+<p><strong>So partition at the aggregation points instead.</strong> There are exactly two, and they
+are the only places module registries merge into the service:</p>
+<pre><code>_loadMetrics()    : $this-&gt;metrics    = array_merge_recursive( $this-&gt;metrics, $module-&gt;metrics );
+_loadDimensions() : $this-&gt;dimensions = array_merge( $this-&gt;dimensions, $module-&gt;dimensions );</code></pre>
+<p>Group by version there rather than flattening, and resolve accessors within a version. Nothing
+downstream filters anything, because the other version is not in scope: the picker lists one
+version's names with no change to <code>CustomReportEdit</code>, validation follows automatically,
+<code>ResultSetManager</code> needs no niceness-sort filter, and <strong>the name-collision blocker
+below dissolves</strong> — separate partitions cannot overwrite one another, so keying
+<code>$this-&gt;dimensions</code> by entity may prove unnecessary.</p>
+<p>The distinction is scoping the registry once versus remembering to discriminate at ten
+consumers. <em>Open:</em> the service is a boot-time singleton, built before a query knows its
+profile, so either every accessor takes a version or the version becomes request-scoped ambient
+state. <strong>The explicit parameter is safer</strong> — ten call sites is tractable, and it keeps
+the version visible at each consumer rather than hidden in ambient state, which is the same
+silent-wrong-answer failure in a different costume.</p>
+
 <div class="flag">
   <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
   <p>The claim above that dimensions behave like metrics is <strong>only true for denormalized
