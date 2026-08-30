@@ -120,35 +120,57 @@ final class CatalogCharacterizationTest extends TestCase
      * ---- the two defects, recorded on purpose ------------------------------
      */
 
-    public function testNormalizedDimensionsKeepEveryEntityTheyAreRegisteredAgainst(): void
+    public function testNormalizedDimensionsAreKeyedByEntity(): void
     {
-        $counts = Harness::snapshot()['counts'];
-
         /*
-         * DEFECT 1, fixed. registerDimension() loops $entity_names, and the
-         * normalized branch used to overwrite $this->dimensions[$dim_name] on
-         * each turn, keeping only the last entity. Entries now exceed names,
-         * which is what makes registering a second schema generation under an
-         * existing name possible: it sits beside the first instead of replacing
-         * it.
+         * The shape, not a count.
+         *
+         * An earlier version asserted entries outnumbered names, using userName
+         * as its example -- which held only because userName was MISREGISTERED
+         * as normalized against seven entities. Fixing that left the assertion
+         * pinning a defect, and it began failing the moment the defect went. A
+         * capability should be tested directly, not through the accident that
+         * happened to exercise it.
+         *
+         * Every normalized dimension currently names exactly one entity, which
+         * is what a normalized dimension SHOULD do: it points at the table it
+         * joins. The structure still has to hold several, because that is what
+         * lets a second schema generation register under an existing name.
          */
-        $this->assertGreaterThan(
-            $counts['dimensionNamesNormalized'],
-            $counts['dimensionEntriesNormalized'],
-            'Normalized dimensions are entity-keyed and must hold more entries than names.' );
+        $snapshot = Harness::snapshot();
+
+        $this->assertNotEmpty( $snapshot['dimensionsNormalized'] );
+
+        foreach ( $snapshot['dimensionsNormalized'] as $name => $entry ) {
+
+            $this->assertTrue(
+                Harness::isEntityKeyed( $entry ),
+                "The normalized dimension '$name' is not keyed by entity, so a second "
+                . 'definition under this name would overwrite it rather than sit beside it.' );
+        }
     }
 
-    public function testTheDimensionThatWasLosingEntitiesKeepsThemAll(): void
+    public function testTheRegistryHoldsSeveralEntitiesUnderOneName(): void
     {
         /*
-         * Named rather than counted, because a total can be moved by anything.
-         * userName is registered against all seven fact entities and was the
-         * only dimension actually losing any -- six of them.
+         * Exercised through the denormalized registry, which shares the shape
+         * and genuinely carries multi-entity names -- `date` is registered
+         * against every fact table. Both halves are now name => entity =>
+         * registration, so this proves the structure both rely on.
          */
-        $entities = \OWA\Core\CoreAPI::serviceSingleton()->getDimensionEntities( 'userName' );
+        $counts = Harness::snapshot()['counts'];
 
-        $this->assertCount( 7, $entities );
-        $this->assertContains( 'base.session', $entities );
+        $this->assertGreaterThan(
+            $counts['dimensionNamesDenormalized'],
+            $counts['dimensionEntriesDenormalized'] );
+
+        $entities = \OWA\Core\CoreAPI::serviceSingleton()
+            ->getDimensionEntities( 'userName' );
+
+        $this->assertSame(
+            array(), $entities,
+            'userName is denormalized now, so it holds no NORMALIZED entities. If this starts '
+            . 'returning entities it has been re-registered the old way.' );
     }
 
     public function testDenormalizedDimensionsAlreadyHoldManyEntitiesEach(): void
@@ -222,16 +244,20 @@ final class CatalogCharacterizationTest extends TestCase
     {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
+        /*
+         * siteDomain rather than userName: a dimension that is genuinely
+         * normalized, naming the table it joins.
+         */
         $this->assertSame(
-            'base.session',
-            $service->getDimension( 'userName', 'base.session' )['entity'] );
+            'base.site',
+            $service->getDimension( 'siteDomain', 'base.site' )['entity'] );
 
         $this->assertNull(
-            $service->getDimension( 'userName', 'base.nonexistentEntity' ),
+            $service->getDimension( 'siteDomain', 'base.nonexistentEntity' ),
             'An entity a dimension is not defined on must answer nothing, not a fallback.' );
 
         $this->assertNotNull(
-            $service->getDimension( 'userName' ),
+            $service->getDimension( 'siteDomain' ),
             'Asking without an entity must still answer, as the flat registry did.' );
     }
 

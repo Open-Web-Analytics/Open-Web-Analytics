@@ -1497,13 +1497,32 @@ class Module extends \OWA\Core\Module {
             'The ID of the visitor.'
         );
 
+        /*
+         * Denormalized, like every other column that lives ON the fact row --
+         * `date` is registered against this same list the same way.
+         *
+         * It was registered normalized, which means "join this dimension's own
+         * table through a foreign key". There is no foreign key here because
+         * user_name is not a separate table: it is a tracking property with
+         * required => true, so every event carries it and it is written to all
+         * seven fact tables. The result was a dimension that related to nothing,
+         * offered by the picker and then refused at save as an impossible
+         * combination.
+         *
+         * Note this reads the value AS AT THE EVENT. Its sibling userEmail is
+         * registered against base.visitor and so reads the visitor's stored
+         * identity, which VisitorHandlers writes only when the visitor row is
+         * created. The two answer different questions on purpose.
+         */
         $this->registerDimension(
             'userName',
             $fact_table_entities,
             'user_name',
             'User Name',
             'visitor',
-            'The name or ID of the user.'
+            'The name or ID of the user.',
+            '',
+            true
         );
 
         $this->registerDimension(
