@@ -235,6 +235,56 @@ final class CatalogCharacterizationTest extends TestCase
             'Asking without an entity must still answer, as the flat registry did.' );
     }
 
+    public function testEveryEntityStillReachesTheDimensionsItDid(): void
+    {
+        /*
+         * The regression this file failed to catch the first time.
+         *
+         * getAllRelatedDimensions() reads $service->dimensions as a PUBLIC
+         * PROPERTY, so re-keying the registry changed what it saw without any
+         * accessor being involved -- and both accessors were verified
+         * byte-identical against master, which is exactly why the change looked
+         * safe. Its answer silently halved, 305 dimensions to 153, and the
+         * reports that broke did so by dropping constraints and returning MORE
+         * rows than asked for.
+         *
+         * Counted per entity rather than in total so a compensating pair of
+         * changes cannot cancel out.
+         */
+        $recorded = $this->recorded()['relatedDimensions'];
+        $actual   = Harness::relatedDimensions();
+
+        $this->assertSame( array_keys( $recorded ), array_keys( $actual ) );
+
+        foreach ( $recorded as $entity => $families ) {
+
+            $this->assertSame(
+                $families, $actual[ $entity ],
+                "The dimensions reachable from $entity changed. A report can only constrain by "
+                . 'a dimension it can reach, and an unreachable constraint is dropped silently.' );
+        }
+    }
+
+    public function testTheRelatedRecordingIsSubstantial(): void
+    {
+        /*
+         * Guards the guard. If getAllRelatedDimensions() ever returns nothing --
+         * a construction failure, say -- every per-entity comparison above would
+         * still pass against an equally empty recording.
+         */
+        $total = 0;
+
+        foreach ( Harness::relatedDimensions() as $families ) {
+
+            foreach ( $families as $names ) {
+
+                $total += count( $names );
+            }
+        }
+
+        $this->assertGreaterThan( 250, $total );
+    }
+
     public function testTheRecordingIsNotEmpty(): void
     {
         /*

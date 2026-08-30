@@ -5518,5 +5518,434 @@
             "data_type": "string",
             "denormalized": true
         }
+    },
+    "relatedDimensions": {
+        "base.session": {
+            "campaign": [
+                "ad",
+                "adType",
+                "campaign",
+                "isSearchEngine",
+                "medium",
+                "referralLinkText",
+                "referralPageTitle",
+                "referralPageUrl",
+                "referralSearchTerms",
+                "referralWebSite",
+                "source"
+            ],
+            "campaign-special": [
+                "latestAttributions"
+            ],
+            "custom variables": [
+                "customVarName1",
+                "customVarName2",
+                "customVarName3",
+                "customVarName4",
+                "customVarName5",
+                "customVarValue1",
+                "customVarValue2",
+                "customVarValue3",
+                "customVarValue4",
+                "customVarValue5"
+            ],
+            "geo": [
+                "city",
+                "country",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "stateRegion"
+            ],
+            "network": [
+                "hostName",
+                "ipAddress"
+            ],
+            "site": [
+                "siteDomain",
+                "siteId",
+                "siteName"
+            ],
+            "system": [
+                "browserType",
+                "browserVersion",
+                "language",
+                "osType"
+            ],
+            "time": [
+                "date",
+                "day",
+                "dayofweek",
+                "dayofyear",
+                "month",
+                "weekofyear",
+                "year"
+            ],
+            "visit": [
+                "daysSinceFirstVisit",
+                "daysSinceLastVisit",
+                "distinctItemsInVisit",
+                "entryPagePath",
+                "entryPageTitle",
+                "entryPageType",
+                "entryPageUrl",
+                "exitPagePath",
+                "exitPageTitle",
+                "exitPageType",
+                "exitPageUrl",
+                "goalStartsInVisit",
+                "goalValueInVisit",
+                "goalsInVisit",
+                "itemQuantityInVisit",
+                "itemRevenueInVisit",
+                "pagesViewsInVisit",
+                "priorVisitCount",
+                "revenueInVisit",
+                "shippingRevenueInVisit",
+                "taxRevenueInVisit",
+                "transactionsInVisit"
+            ],
+            "visitor": [
+                "isNewVisitor",
+                "isRepeatVisitor",
+                "userEmail",
+                "visitorId"
+            ]
+        },
+        "base.request": {
+            "campaign": [
+                "ad",
+                "adType",
+                "campaign",
+                "isSearchEngine",
+                "medium",
+                "referralLinkText",
+                "referralPageTitle",
+                "referralPageUrl",
+                "referralSearchTerms",
+                "referralWebSite",
+                "source"
+            ],
+            "content": [
+                "pagePath",
+                "pageTitle",
+                "pageType",
+                "pageUrl",
+                "priorPagePath",
+                "priorPageTitle",
+                "priorPageType",
+                "priorPageUrl"
+            ],
+            "custom variables": [
+                "customVarName1",
+                "customVarName2",
+                "customVarName3",
+                "customVarName4",
+                "customVarName5",
+                "customVarValue1",
+                "customVarValue2",
+                "customVarValue3",
+                "customVarValue4",
+                "customVarValue5"
+            ],
+            "geo": [
+                "city",
+                "country",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "stateRegion"
+            ],
+            "network": [
+                "hostName",
+                "ipAddress"
+            ],
+            "site": [
+                "siteDomain",
+                "siteId",
+                "siteName"
+            ],
+            "system": [
+                "browserType",
+                "browserVersion",
+                "language",
+                "osType"
+            ],
+            "time": [
+                "date",
+                "day",
+                "dayofweek",
+                "dayofyear",
+                "month",
+                "weekofyear",
+                "year"
+            ],
+            "visit": [
+                "daysSinceFirstVisit",
+                "daysSinceLastVisit",
+                "priorVisitCount"
+            ],
+            "visit-special": [
+                "sessionId"
+            ],
+            "visitor": [
+                "isNewVisitor",
+                "isRepeatVisitor",
+                "userEmail",
+                "visitorId"
+            ]
+        },
+        "base.action_fact": {
+            "actions": [
+                "actionGroup",
+                "actionLabel",
+                "actionName"
+            ],
+            "campaign": [
+                "ad",
+                "adType",
+                "campaign",
+                "isSearchEngine",
+                "medium",
+                "referralLinkText",
+                "referralPageTitle",
+                "referralPageUrl",
+                "referralSearchTerms",
+                "referralWebSite",
+                "source"
+            ],
+            "content": [
+                "pagePath",
+                "pageTitle",
+                "pageType",
+                "pageUrl"
+            ],
+            "custom variables": [
+                "customVarName1",
+                "customVarName2",
+                "customVarName3",
+                "customVarName4",
+                "customVarName5",
+                "customVarValue1",
+                "customVarValue2",
+                "customVarValue3",
+                "customVarValue4",
+                "customVarValue5"
+            ],
+            "geo": [
+                "city",
+                "country",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "stateRegion"
+            ],
+            "network": [
+                "hostName",
+                "ipAddress"
+            ],
+            "site": [
+                "siteDomain",
+                "siteId",
+                "siteName"
+            ],
+            "system": [
+                "browserType",
+                "browserVersion",
+                "language",
+                "osType"
+            ],
+            "time": [
+                "date",
+                "day",
+                "dayofweek",
+                "dayofyear",
+                "month",
+                "weekofyear",
+                "year"
+            ],
+            "visit": [
+                "daysSinceFirstVisit",
+                "daysSinceLastVisit",
+                "priorVisitCount"
+            ],
+            "visit-special": [
+                "sessionId"
+            ],
+            "visitor": [
+                "isNewVisitor",
+                "isRepeatVisitor",
+                "userEmail",
+                "visitorId"
+            ]
+        },
+        "base.click": {
+            "campaign": [
+                "ad",
+                "adType",
+                "campaign",
+                "isSearchEngine",
+                "medium",
+                "referralLinkText",
+                "referralPageTitle",
+                "referralPageUrl",
+                "referralSearchTerms",
+                "referralWebSite",
+                "source"
+            ],
+            "content": [
+                "pagePath",
+                "pageTitle",
+                "pageType",
+                "pageUrl"
+            ],
+            "custom variables": [
+                "customVarName1",
+                "customVarName2",
+                "customVarName3",
+                "customVarName4",
+                "customVarName5",
+                "customVarValue1",
+                "customVarValue2",
+                "customVarValue3",
+                "customVarValue4",
+                "customVarValue5"
+            ],
+            "dom": [
+                "clickX",
+                "clickY",
+                "domElementClass",
+                "domElementId",
+                "domElementName",
+                "domElementTag",
+                "domElementText",
+                "domElementValue"
+            ],
+            "geo": [
+                "city",
+                "country",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "stateRegion"
+            ],
+            "network": [
+                "hostName",
+                "ipAddress"
+            ],
+            "site": [
+                "siteDomain",
+                "siteId",
+                "siteName"
+            ],
+            "system": [
+                "browserType",
+                "browserVersion",
+                "language",
+                "osType"
+            ],
+            "time": [
+                "date",
+                "day",
+                "dayofweek",
+                "dayofyear",
+                "month",
+                "weekofyear",
+                "year"
+            ],
+            "visit": [
+                "daysSinceFirstVisit",
+                "daysSinceLastVisit",
+                "priorVisitCount"
+            ],
+            "visit-special": [
+                "sessionId"
+            ],
+            "visitor": [
+                "isNewVisitor",
+                "isRepeatVisitor",
+                "userEmail",
+                "visitorId"
+            ]
+        },
+        "base.domstream": {
+            "campaign": [
+                "ad",
+                "adType",
+                "campaign",
+                "isSearchEngine",
+                "medium",
+                "referralLinkText",
+                "referralPageTitle",
+                "referralPageUrl",
+                "referralSearchTerms",
+                "referralWebSite",
+                "source"
+            ],
+            "content": [
+                "pagePath",
+                "pageTitle",
+                "pageType",
+                "pageUrl"
+            ],
+            "custom variables": [
+                "customVarName1",
+                "customVarName2",
+                "customVarName3",
+                "customVarName4",
+                "customVarName5",
+                "customVarValue1",
+                "customVarValue2",
+                "customVarValue3",
+                "customVarValue4",
+                "customVarValue5"
+            ],
+            "geo": [
+                "city",
+                "country",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "stateRegion"
+            ],
+            "network": [
+                "hostName",
+                "ipAddress"
+            ],
+            "site": [
+                "siteDomain",
+                "siteId",
+                "siteName"
+            ],
+            "system": [
+                "browserType",
+                "browserVersion",
+                "language",
+                "osType"
+            ],
+            "time": [
+                "date",
+                "day",
+                "dayofweek",
+                "dayofyear",
+                "month",
+                "weekofyear",
+                "year"
+            ],
+            "visit": [
+                "daysSinceFirstVisit",
+                "daysSinceLastVisit",
+                "priorVisitCount"
+            ],
+            "visit-special": [
+                "sessionId"
+            ],
+            "visitor": [
+                "isNewVisitor",
+                "isRepeatVisitor",
+                "userEmail",
+                "visitorId"
+            ]
+        }
     }
 }

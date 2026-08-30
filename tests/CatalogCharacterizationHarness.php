@@ -66,6 +66,7 @@ final class CatalogCharacterizationHarness
             'dimensionsDenormalized'  => self::normaliseNestedDimensions( $denormalized ),
             'accessorGetAllDimensions'=> self::normaliseFlatDimensions(
                                             (array) \OWA\Core\CoreAPI::getAllDimensions() ),
+            'relatedDimensions'       => self::relatedDimensions(),
         );
     }
 
@@ -281,6 +282,61 @@ final class CatalogCharacterizationHarness
         $property->setAccessible( true );
 
         return (array) $property->getValue( $service );
+    }
+
+    /** Entities a report is commonly built on. */
+    public const RELATED_ENTITIES = array(
+        'base.session', 'base.request', 'base.action_fact', 'base.click', 'base.domstream',
+    );
+
+    /**
+     * Which dimensions each entity can actually reach.
+     *
+     * Recorded because ResultSetManager::getAllRelatedDimensions() reads the
+     * dimension registry as a PUBLIC PROPERTY rather than through an accessor,
+     * so changing the registry's shape changes what it sees without any
+     * accessor being involved. Nothing covered it, and a shape change silently
+     * halved its answer -- 305 dimensions to 153 -- while every unit test and
+     * both accessors stayed byte-identical. The reports that broke did so by
+     * dropping constraints, which is the failure this codebase already knows
+     * to be silent.
+     *
+     * @return array<string,array<string,array<int,string>>>
+     */
+    public static function relatedDimensions(): array
+    {
+        $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'resultSetManager' );
+
+        $out = array();
+
+        foreach ( self::RELATED_ENTITIES as $entityName ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( $entityName );
+
+            $families = (array) $manager->getAllRelatedDimensions( $entity );
+
+            $normalised = array();
+
+            foreach ( $families as $family => $dimensions ) {
+
+                $names = array();
+
+                foreach ( (array) $dimensions as $dimension ) {
+
+                    $names[] = (string) ( $dimension['name'] ?? '' );
+                }
+
+                sort( $names );
+
+                $normalised[ $family ] = $names;
+            }
+
+            ksort( $normalised );
+
+            $out[ $entityName ] = $normalised;
+        }
+
+        return $out;
     }
 
     /** Absolute path to the recorded catalog. */
