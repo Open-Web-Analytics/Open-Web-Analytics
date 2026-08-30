@@ -781,6 +781,30 @@ implies it, so it is one property on the entity plus one filter in the manager.<
   by a shared name.</p>
 </div>
 
+<h3 id="s113"><span class="num">1.12</span>&ldquo;(not set)&rdquo; is a presentation choice, never a stored value <span class="chip c-dec">Decided</span></h3>
+<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
+<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
+those properties are <code>required</code>, the string is written to the fact row on every event
+that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
+every row carries the literal text.</p>
+<p>This is the &sect;1.12 problem in a different costume. A magic string is not absence; it is a
+value that merely looks like absence, and the difference shows up everywhere downstream. It groups
+as its own bucket, so a pie over the dimension draws a &ldquo;(not set)&rdquo; slice indistinguishable
+from a real category. It sorts among real values. It cannot be told apart from a visitor who
+genuinely typed that. And the codebase already knows it is lying: <code>Visitor.php</code> checks
+<code>!= '(not set)'</code> before using a name, and <code>TrackingEventHelpers</code> does the same
+for <code>REMOTE_HOST</code> and <code>search_terms</code> &mdash; three separate places
+reconstructing an absence the schema threw away.</p>
+<p><strong>v2 stores absence as NULL and decides the label at render time.</strong> The reporting
+layer already formats values; &ldquo;show nothing as <em>(not set)</em>&rdquo; is a formatter's job,
+one place, changeable without touching data, and translatable. Baking it into the row makes a
+display string permanent and unrecoverable &mdash; the one thing &sect;1.10 says facts must never
+be.</p>
+<p>Follows the same rule as the boolean columns below it: <strong>the store records what happened,
+the presentation layer decides how to say it.</strong> Note this narrows what a nullable column
+means rather than widening it &mdash; NULL becomes unambiguously &ldquo;not provided&rdquo;, which
+is only useful if the write path never also writes a sentinel meaning the same thing.</p>
+
 <h3 id="s112"><span class="num">1.12</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
 <p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact
 columns are nullable with no default, so <code>is_repeat_visitor</code> holds

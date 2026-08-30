@@ -119,6 +119,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#w2">2 Catalog accessors</a>
   <a href="#w3">3 Site identity</a>
   <a href="#w4">4 Profiles</a>
+  <a href="#w5">5 Metrics as config</a>
   <a class="r-part" href="#p2">II · Not building</a>
   <a class="r-part" href="#p3">III · Order &amp; proof</a>
   <a href="#order">Why this order</a>
@@ -178,6 +179,7 @@ something had to be careful.</p>
 <tr><td>2</td><td>Catalog accessors take an entity scope</td><td>4 accessors, 10 consumers; no aggregation change; schema-version gate</td><td>the picker stops offering unqueryable metrics</td></tr>
 <tr><td>3</td><td>Site identity decoupled from domain</td><td>3 derivations, 1 in auth</td><td>domain renames, two configs per domain, multi-domain properties</td></tr>
 <tr><td>4</td><td>Profiles</td><td>new concept; dormant column exists</td><td>the container the rest needs</td></tr>
+<tr><td>5</td><td>Metrics become configuration</td><td>22 class files</td><td>less code; avoids writing v2's metrics twice</td></tr>
 </tbody></table></div>
 
 <div class="part" id="p1">
@@ -337,7 +339,12 @@ becomes an attribute of a profile rather than its identity.</p>
 configurations of one domain, renaming a domain without orphaning its data, and expressing one
 property spanning several domains. All three are fixed by the same change.</p>
 
-<h3 id="w4"><span class="num">4</span>Profiles <span class="chip c-open">Open</span></h3>
+<h3 id="w4"><span class="num">4</span>Profiles <span class="chip c-dec">Decided</span></h3>
+<p><strong>Vocabulary settled.</strong> A <strong>site</strong> stays the tracked website; a
+<strong>profile</strong> is the new thing measuring it; <code>site_family</code> becomes the
+grouping. &ldquo;Property&rdquo; is avoided deliberately &mdash; it carries a GA meaning close
+enough to mislead and not quite the same. This needed settling first because it surfaces in the
+UI, the REST API and the schema at once.</p>
 <p>One tracked website, several profiles; a profile declares its generation and supplies the entity
 scope of item 2. The whole experience fans out from it — a v2 profile shows v2 navigation, v2
 reports, and queries the v2 REST endpoint. This is the path GA took to GA4.</p>
@@ -358,6 +365,34 @@ the page never learns profiles exist. Two trackers were rejected there because t
 data by which snippet happened to be deployed — stepping v1's history exactly when a site upgrades,
 destroying the thing v1 is being kept for.</p>
 
+<h3 id="w5"><span class="num">5</span>Metrics become configuration <span class="chip c-open">Open</span></h3>
+<p><strong>Different in kind from 1&ndash;4, and the distinction matters.</strong> Those are
+prerequisites: v2 cannot happen without them. This one is a preference. Nothing breaks if it is
+skipped &mdash; v2's metrics simply get written as classes and converted later, which is the same
+work done twice. That is the whole argument for its position, and it is a weaker argument than the
+others in this document.</p>
+<p><span class="chip c-meas">Measured</span> <code>ConfigurableMetric</code> already supports
+<code>count</code>, <code>distinct_count</code>, <code>sum</code> and <code>calculated</code>, but
+only <strong>6</strong> metrics are registered through it against <strong>22</strong> class
+references, and <code>calculated</code> has no registrations at all. The classes are declarations
+wearing class clothing &mdash; <code>BounceRate</code> is six setters and a formula string, and
+<strong>no metric class in the tree contains SQL</strong> &mdash; so the conversion is mechanical,
+exactly as the report controllers were.</p>
+<p><strong>Why it is no longer load-bearing.</strong> An earlier draft had this on the critical path
+for coexistence. It is not: the registry is keyed by entity, so v2 registers additional
+implementations under existing names whether those implementations are classes or config entries.
+Nothing about two generations coexisting depends on the format.</p>
+<p><strong>Not included: the formula evaluator.</strong> <code>ResultSetManager::evalFormula()</code>
+runs <code>@ eval()</code> on a PHP string, which is tolerable only while every formula ships in the
+repo &mdash; and a config file in the repo is exactly as trusted as a class in the repo, so moving
+the 8 shipped formulas does not move the trust boundary. The parser is the prerequisite for a
+<em>user-authored</em> metric builder, a separate feature, and a plain four-operator grammar would
+not even cover today's set since <code>round(actions / visits, 1)</code> needs function
+application.</p>
+<p><em>Position:</em> after the groundwork and before v2's own metrics are authored. Later than that
+and the conversion covers twice as many metrics; earlier and it competes with work that actually
+blocks.</p>
+
 <div class="part" id="p2">
   <p class="part-n">Part Two</p>
   <h2>What this deliberately does not build</h2>
@@ -373,7 +408,7 @@ destroying the thing v1 is being kept for.</p>
 <tr><td>Renamed metrics or dimensions</td><td>entity-keyed lookup is precisely what avoids <code>v2Visits</code>; one name, several implementations, is the existing contract</td></tr>
 <tr><td>Union logic across generations, seam annotations, spanning rules</td><td>a result set is one profile. <code>visits</code> is a <code>distinct_count</code> and could not be summed across stores even if the definitions matched</td></tr>
 <tr><td>A formula parser to replace <code>@ eval()</code></td><td>needed only when an <em>author</em> can write a formula; all 8 formulas ship in the repo, and a config file in the repo is as trusted as a class in the repo</td></tr>
-<tr><td>Moving metrics and dimensions to configuration</td><td>worth doing and now orthogonal — it is no longer load-bearing for v2, so it can be scheduled on its own merits</td></tr>
+<tr><td>Moving metrics to configuration</td><td><strong>now item 5</strong>, and last for a reason — it is not a prerequisite. Derived dimensions declaring a <em>kind</em> (&sect;7.12) is not scheduled here at all: it is absorbed into building v2's dimensions, since v1 has nothing for it to bite on</td></tr>
 </tbody></table></div>
 
 <div class="part" id="p3">
@@ -432,9 +467,6 @@ tests that pass locally — reproduce with <code>composer test:configless</code>
   <h2>Open before building</h2>
 </div>
 <ul>
-<li><strong>Vocabulary</strong> — site / profile / property / <code>site_family</code>. It surfaces
-in the UI, the REST API and the schema simultaneously, and renaming later is the expensive kind of
-change.</li>
 <li><strong>Linked or independent?</strong> Whether a v1 and v2 profile for one website present as
 related in the UI (&ldquo;the old version of this property&rdquo;) or as two entries that happen to
 share a domain. GA chose linked, and it is how people found their way across.</li>
