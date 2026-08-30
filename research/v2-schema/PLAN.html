@@ -513,6 +513,9 @@ abandoned jQuery plugins (flot, jqgrid), which have to be replaced regardless.</
 <li><strong>Reports become JSON.</strong> Most existing reports are one shape wearing different
 labels, and the bespoke remainder are largely dashboards — so a generic widget format with grid
 layout descriptors covers both, and can be retrofitted into 1.x additively.</li>
+<li><strong>Realtime is its own screen</strong>, not a refresh toggle on every report &mdash;
+see &sect;1.6. One narrow view over raw events, which retires the per-widget polling that made
+Live View cost nine full-period aggregations every fifteen seconds.</li>
 <li><strong>Both reporting UIs run side by side</strong> for as long as wanted, sharing one
 session. A separate login for each would make comparison tedious enough that nobody does it —
 which turns the overlap period into a rubber stamp.</li>
