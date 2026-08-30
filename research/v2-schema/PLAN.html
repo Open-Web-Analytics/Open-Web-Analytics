@@ -1340,6 +1340,40 @@ whose entity is the wrong version, so wrong-version objects are never constructe
 the niceness sort, where they already exist. And the recursion into child metrics means filtering
 children constrains their calculated parents for free.</p>
 <div class="flag">
+  <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
+  <p>The claim above that dimensions behave like metrics is <strong>only true for denormalized
+  ones</strong>. <code>registerDimension()</code> loops <code>$entity_names</code> but writes to
+  two different shapes:</p>
+  <pre><code>if ($denormalized) {
+    $this-&gt;denormalizedDimensions[$dim_name][$entity] = $dim;   // entity-keyed
+} else {
+    $this-&gt;dimensions[$dim_name] = $dim;                        // NAME-keyed — last write wins
+}</code></pre>
+  <p><span class="chip c-meas">Measured</span> of 103 registrations: <strong>58</strong>
+  denormalized (safe), <strong>41</strong> normalized against a single entity (the overwrite is a
+  no-op), and <strong>3</strong> normalized against all seven
+  <code>$fact_table_entities</code> — <code>month</code>, <code>userName</code>,
+  <code>priorVisitCount</code>.</p>
+  <p><strong>This blocks v2 for all 44 normalized dimensions.</strong> v1 registers
+  <code>pageTitle</code> against its dimension table, v2 registers <code>pageTitle</code> against
+  the event table, and the second write <em>replaces</em> the first — the v1 definition is gone from
+  the registry before any entity filter could run. No downstream selection can recover it, and
+  renaming is not an option.</p>
+  <p><strong>Fix:</strong> key <code>$this-&gt;dimensions</code> by entity, matching
+  <code>denormalizedDimensions</code>, which already has the right shape.
+  <code>getDimension()</code> has exactly <strong>one caller</strong>
+  (<code>ResultSetManager:970</code>), so the change is that call site plus the registration loop.
+  This is a <strong>prerequisite in 1.x</strong>: the registry must be able to hold two definitions
+  under one name before a second set can exist at all.</p>
+  <p><em>Unverified, worth a trace:</em> the 3 normalized multi-entity registrations keep only the
+  last of seven entities, and <code>$dim['entity']</code> then drives the JOIN
+  (<code>entityFactory()</code>, <code>getForeignKeyColumn()</code>, <code>$db-&gt;join()</code>).
+  <code>date</code> is registered against the same list with <code>denormalized = true</code> while
+  <code>month</code> beside it is not, which looks like an oversight rather than a distinction. Not
+  claimed as a live defect until traced.</p>
+</div>
+
+<div class="flag">
   <p class="h">Do not add the v2 entity to $fact_table_entities</p>
   <p>Dimensions are registered against a shared array:
   <code>registerDimension('date', $fact_table_entities, 'yyyymmdd', …)</code>. Appending the v2
