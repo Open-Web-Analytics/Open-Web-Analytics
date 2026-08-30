@@ -1,0 +1,766 @@
+{
+    "actions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.action_fact",
+            "expression": "count(distinct action_fact.id)",
+            "alias": "actions"
+        }
+    ],
+    "actionsValue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.action_fact",
+            "expression": "sum(action_fact.numeric_value)",
+            "alias": "actionsValue"
+        }
+    ],
+    "bounceRate": [
+        {
+            "kind": "calculated",
+            "formula": "bounces / visits",
+            "children": [
+                "bounces",
+                "visits"
+            ]
+        }
+    ],
+    "bounces": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "sum(CASE session.is_bounce WHEN TRUE THEN 1 ELSE 0 END)",
+            "alias": "bounces"
+        }
+    ],
+    "domClicks": [
+        {
+            "kind": "aggregate",
+            "entity": "base.click",
+            "expression": "count(click.id)",
+            "alias": "domClicks"
+        }
+    ],
+    "ecommerceConversionRate": [
+        {
+            "kind": "calculated",
+            "formula": "transactions / visits",
+            "children": [
+                "transactions",
+                "visits"
+            ]
+        }
+    ],
+    "feedReaders": [
+        {
+            "kind": "aggregate",
+            "entity": "base.feed_request",
+            "expression": "count(distinct feed_request.feed_reader_guid)",
+            "alias": "feedReaders"
+        }
+    ],
+    "feedRequests": [
+        {
+            "kind": "aggregate",
+            "entity": "base.feed_request",
+            "expression": "count(distinct feed_request.id)",
+            "alias": "feedRequests"
+        }
+    ],
+    "feedSubscriptions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.feed_request",
+            "expression": "count(distinct feed_request.subscription_id)",
+            "alias": "feedSubscriptions"
+        }
+    ],
+    "goal10Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_10)",
+            "alias": "goal10Completions"
+        }
+    ],
+    "goal10Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_10_start)",
+            "alias": "goal10Starts"
+        }
+    ],
+    "goal10Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_10_value)",
+            "alias": "goal10Value"
+        }
+    ],
+    "goal11Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_11)",
+            "alias": "goal11Completions"
+        }
+    ],
+    "goal11Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_11_start)",
+            "alias": "goal11Starts"
+        }
+    ],
+    "goal11Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_11_value)",
+            "alias": "goal11Value"
+        }
+    ],
+    "goal12Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_12)",
+            "alias": "goal12Completions"
+        }
+    ],
+    "goal12Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_12_start)",
+            "alias": "goal12Starts"
+        }
+    ],
+    "goal12Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_12_value)",
+            "alias": "goal12Value"
+        }
+    ],
+    "goal13Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_13)",
+            "alias": "goal13Completions"
+        }
+    ],
+    "goal13Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_13_start)",
+            "alias": "goal13Starts"
+        }
+    ],
+    "goal13Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_13_value)",
+            "alias": "goal13Value"
+        }
+    ],
+    "goal14Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_14)",
+            "alias": "goal14Completions"
+        }
+    ],
+    "goal14Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_14_start)",
+            "alias": "goal14Starts"
+        }
+    ],
+    "goal14Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_14_value)",
+            "alias": "goal14Value"
+        }
+    ],
+    "goal15Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_15)",
+            "alias": "goal15Completions"
+        }
+    ],
+    "goal15Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_15_start)",
+            "alias": "goal15Starts"
+        }
+    ],
+    "goal15Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_15_value)",
+            "alias": "goal15Value"
+        }
+    ],
+    "goal1Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_1)",
+            "alias": "goal1Completions"
+        }
+    ],
+    "goal1Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_1_start)",
+            "alias": "goal1Starts"
+        }
+    ],
+    "goal1Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_1_value)",
+            "alias": "goal1Value"
+        }
+    ],
+    "goal2Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_2)",
+            "alias": "goal2Completions"
+        }
+    ],
+    "goal2Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_2_start)",
+            "alias": "goal2Starts"
+        }
+    ],
+    "goal2Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_2_value)",
+            "alias": "goal2Value"
+        }
+    ],
+    "goal3Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_3)",
+            "alias": "goal3Completions"
+        }
+    ],
+    "goal3Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_3_start)",
+            "alias": "goal3Starts"
+        }
+    ],
+    "goal3Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_3_value)",
+            "alias": "goal3Value"
+        }
+    ],
+    "goal4Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_4)",
+            "alias": "goal4Completions"
+        }
+    ],
+    "goal4Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_4_start)",
+            "alias": "goal4Starts"
+        }
+    ],
+    "goal4Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_4_value)",
+            "alias": "goal4Value"
+        }
+    ],
+    "goal5Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_5)",
+            "alias": "goal5Completions"
+        }
+    ],
+    "goal5Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_5_start)",
+            "alias": "goal5Starts"
+        }
+    ],
+    "goal5Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_5_value)",
+            "alias": "goal5Value"
+        }
+    ],
+    "goal6Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_6)",
+            "alias": "goal6Completions"
+        }
+    ],
+    "goal6Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_6_start)",
+            "alias": "goal6Starts"
+        }
+    ],
+    "goal6Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_6_value)",
+            "alias": "goal6Value"
+        }
+    ],
+    "goal7Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_7)",
+            "alias": "goal7Completions"
+        }
+    ],
+    "goal7Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_7_start)",
+            "alias": "goal7Starts"
+        }
+    ],
+    "goal7Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_7_value)",
+            "alias": "goal7Value"
+        }
+    ],
+    "goal8Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_8)",
+            "alias": "goal8Completions"
+        }
+    ],
+    "goal8Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_8_start)",
+            "alias": "goal8Starts"
+        }
+    ],
+    "goal8Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_8_value)",
+            "alias": "goal8Value"
+        }
+    ],
+    "goal9Completions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_9)",
+            "alias": "goal9Completions"
+        }
+    ],
+    "goal9Starts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_9_start)",
+            "alias": "goal9Starts"
+        }
+    ],
+    "goal9Value": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goal_9_value)",
+            "alias": "goal9Value"
+        }
+    ],
+    "goalAbandonRateAll": [
+        {
+            "kind": "calculated",
+            "formula": "goalStartsAll / goalCompletionsAll",
+            "children": [
+                "goalCompletionsAll",
+                "goalStartsAll"
+            ]
+        }
+    ],
+    "goalCompletionsAll": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.num_goals)",
+            "alias": "goalCompletionsAll"
+        }
+    ],
+    "goalConversionRateAll": [
+        {
+            "kind": "calculated",
+            "formula": "goalCompletionsAll / visits",
+            "children": [
+                "goalCompletionsAll",
+                "visits"
+            ]
+        }
+    ],
+    "goalStartsAll": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.num_goal_starts)",
+            "alias": "goalStartsAll"
+        }
+    ],
+    "goalValueAll": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.goals_value)",
+            "alias": "goalValueAll"
+        }
+    ],
+    "lineItemQuantity": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_line_item_fact",
+            "expression": "SUM(commerce_line_item_fact.quantity)",
+            "alias": "lineItemQuantity"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_items_quantity)",
+            "alias": "lineItemQuantity"
+        }
+    ],
+    "lineItemRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_line_item_fact",
+            "expression": "SUM(commerce_line_item_fact.item_revenue)",
+            "alias": "lineItemRevenue"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_items_revenue)",
+            "alias": "lineItemRevenue"
+        }
+    ],
+    "newVisitors": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END)",
+            "alias": "newVisitors"
+        }
+    ],
+    "pageViews": [
+        {
+            "kind": "aggregate",
+            "entity": "base.request",
+            "expression": "COUNT(request.id)",
+            "alias": "pageViews"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.num_pageviews)",
+            "alias": "pageViews"
+        }
+    ],
+    "pagesPerVisit": [
+        {
+            "kind": "calculated",
+            "formula": "round(pageViews / visits, 2)",
+            "children": [
+                "pageViews",
+                "visits"
+            ]
+        }
+    ],
+    "repeatVisitors": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "(count(distinct(session.visitor_id)) - sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END))",
+            "alias": "repeatVisitors"
+        }
+    ],
+    "revenuePerTransaction": [
+        {
+            "kind": "calculated",
+            "formula": "transactionRevenue / transactions",
+            "children": [
+                "transactionRevenue",
+                "transactions"
+            ]
+        }
+    ],
+    "revenuePerVisit": [
+        {
+            "kind": "calculated",
+            "formula": "transactionRevenue / visits",
+            "children": [
+                "transactionRevenue",
+                "visits"
+            ]
+        }
+    ],
+    "shippingRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "SUM(commerce_transaction_fact.shipping_revenue)",
+            "alias": "shippingRevenue"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_shipping_revenue)",
+            "alias": "shippingRevenue"
+        }
+    ],
+    "taxRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "SUM(commerce_transaction_fact.tax_revenue)",
+            "alias": "taxRevenue"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_tax_revenue)",
+            "alias": "taxRevenue"
+        }
+    ],
+    "transactionRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "SUM(commerce_transaction_fact.total_revenue)",
+            "alias": "transactionRevenue"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_trans_revenue)",
+            "alias": "transactionRevenue"
+        }
+    ],
+    "transactions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "count(commerce_transaction_fact.id)",
+            "alias": "transactions"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_trans_count)",
+            "alias": "transactions"
+        }
+    ],
+    "uniqueActions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.action_fact",
+            "expression": "count(distinct action_fact.action_name)",
+            "alias": "uniqueActions"
+        }
+    ],
+    "uniqueLineItems": [
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "count(distinct commerce_transaction_fact.sku)",
+            "alias": "uniqueLineItems"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "SUM(session.commerce_items_count)",
+            "alias": "uniqueLineItems"
+        }
+    ],
+    "uniquePageViews": [
+        {
+            "kind": "aggregate",
+            "entity": "base.request",
+            "expression": "count(distinct request.document_id)",
+            "alias": "uniquePageViews"
+        }
+    ],
+    "uniqueVisitors": [
+        {
+            "kind": "aggregate",
+            "entity": "base.action_fact",
+            "expression": "COUNT(DISTINCT action_fact.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.click",
+            "expression": "COUNT(DISTINCT click.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_line_item_fact",
+            "expression": "COUNT(DISTINCT commerce_line_item_fact.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "COUNT(DISTINCT commerce_transaction_fact.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.domstream",
+            "expression": "COUNT(DISTINCT domstream.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.request",
+            "expression": "COUNT(DISTINCT request.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "COUNT(DISTINCT session.visitor_id)",
+            "alias": "uniqueVisitors"
+        }
+    ],
+    "visitDuration": [
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "round(avg(session.last_req - session.timestamp))",
+            "alias": "visitDuration"
+        }
+    ],
+    "visitors": [
+        {
+            "kind": "aggregate",
+            "entity": "base.action_fact",
+            "expression": "COUNT(action_fact.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.click",
+            "expression": "COUNT(click.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_line_item_fact",
+            "expression": "COUNT(commerce_line_item_fact.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.commerce_transaction_fact",
+            "expression": "COUNT(commerce_transaction_fact.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.domstream",
+            "expression": "COUNT(domstream.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.request",
+            "expression": "COUNT(request.visitor_id)",
+            "alias": "visitors"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "COUNT(session.visitor_id)",
+            "alias": "visitors"
+        }
+    ],
+    "visits": [
+        {
+            "kind": "aggregate",
+            "entity": "base.request",
+            "expression": "COUNT(DISTINCT request.session_id)",
+            "alias": "visits"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.session",
+            "expression": "COUNT(DISTINCT session.id)",
+            "alias": "visits"
+        }
+    ]
+}
