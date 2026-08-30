@@ -1319,6 +1319,36 @@ from <code>siteId</code> to a version — but nothing new threads through the RE
 configs, which is precisely what the profile model buys: an unambiguous input already present in
 every query.</p>
 
+<h4>Nothing feeds the manager a &ldquo;v2 list&rdquo; <span class="chip c-meas">Measured</span></h4>
+<p>A fair question is what supplies ResultSetManager with the v2 metric and dimension sets. The
+answer is that no new channel is needed. <code>getMetricEntities()</code> asks the service
+singleton for <em>every</em> registered implementation of a requested name, instantiates each, and
+keys it by its own entity:</p>
+<pre><code>$classes = $s-&gt;getMetricClasses($metric_name);   // every implementation
+foreach ($classes as $map) {
+    $m = metricFactory($map['class'], $map['params']);
+    $this-&gt;metricObjectsByEntityMap[ $m-&gt;getEntityName() ][ $metric_name ] = $m;
+}</code></pre>
+<p>So a v2 registration appears alongside the v1 one automatically. Dimensions behave identically —
+<code>registerDimension()</code> loops <code>$entity_names</code> into one entry per entity, and
+lookup is <code>denormalizedDimensions[$name][$entity]</code>. The v2 set is just more registrations
+carrying the v2 entity, or more config entries once §1.11 lands. This is the same reason report
+configs need no version field.</p>
+<p><strong>Which relocates the filter.</strong> Because implementations are built <em>before</em>
+anything is selected, the version filter belongs in <code>getMetricEntities()</code> — skip a class
+whose entity is the wrong version, so wrong-version objects are never constructed — rather than at
+the niceness sort, where they already exist. And the recursion into child metrics means filtering
+children constrains their calculated parents for free.</p>
+<div class="flag">
+  <p class="h">Do not add the v2 entity to $fact_table_entities</p>
+  <p>Dimensions are registered against a shared array:
+  <code>registerDimension('date', $fact_table_entities, 'yyyymmdd', …)</code>. Appending the v2
+  entity to that one variable would make <strong>every</strong> dimension claim to work on v2 while
+  still naming v1's columns — a one-line change producing broadly wrong SQL, and the obvious-looking
+  way to &ldquo;add v2 support&rdquo;. v2 needs its own registrations with its own columns, exactly
+  as metrics do.</p>
+</div>
+
 <p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
 settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
 
