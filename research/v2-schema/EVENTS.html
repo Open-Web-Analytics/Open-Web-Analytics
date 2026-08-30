@@ -1084,6 +1084,37 @@ real timezone-aware timestamp types, and an epoch converts into one cleanly. A c
 wrong for MySQL can be right for the store beside it.</p>
 
 
+<h4>No hourly bucket, because nothing asks for one</h4>
+<p>The obvious counter-proposal to deriving is a stored <code>yyyymmddhh</code> &mdash; one
+sortable integer that makes every resolution arithmetic on a single column
+(<code>DIV 100</code> for the day, <code>DIV 10000</code> for the month) and carries the write-time
+zone with it, dodging both the GROUP BY and the timezone objections. It is the strongest version of
+the idea. It is also solving a problem the product does not have.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Checked</th><th>Found</th></tr></thead>
+<tbody>
+<tr><td>Trend chart buckets</td><td>Exactly two: <code>yyyymmdd</code> and <code>yyyymm</code>. Day and month. There is no hourly resolution to serve.</td></tr>
+<tr><td>Registered time dimensions</td><td><code>date</code>, <code>day</code>, <code>month</code>, <code>year</code>, <code>dayofweek</code>, <code>dayofyear</code>, <code>weekofyear</code> &mdash; every one a <em>date</em> part, derivable from <code>yyyymmdd</code>.</td></tr>
+<tr><td><code>hour</code>, <code>minute</code>, <code>second</code></td><td><strong>Zero</strong> <code>registerDimension</code> hits across 104 registrations, and no report references them. They are computed and stored on every fact row and <strong>nothing can query them</strong>.</td></tr>
+<tr><td>Live View</td><td><code>enableAutoRefresh( interval )</code> &mdash; it re-runs the <em>same</em> queries on a 15-second timer. Polling, not a finer bucket.</td></tr>
+</tbody></table></div>
+
+<p>So three of the eleven date parts are not merely cheaper to derive &mdash; they are
+<strong>dead</strong>. Three columns on every row and three <code>date()</code> calls on every
+event, for a grain no dimension exposes and no chart draws.</p>
+
+<p>And v2's realtime tier does not change it. &sect;1.6 describes realtime as a short window over
+raw events, which is a <em>filter</em> &mdash; <code>yyyymmdd IN (D-1, D) AND ts &gt; X</code>
+&mdash; not a group-by. Both columns it needs already exist.</p>
+
+<div class="note"><p><strong>Which downgrades the timezone hazard above, and it is worth saying
+plainly.</strong> The second conversion only bites <em>sub-day</em> parts, and there are no
+sub-day dimensions &mdash; so the connect-time <code>time_zone</code> setting protects future work
+rather than fixing a bug anyone can hit today. It is still worth doing: it is one line, it is
+structural rather than conventional, and it means the first person to add an hour-of-day report
+finds the ground already correct instead of discovering the trap themselves.</p></div>
+
 <h4>Most trends never read an event</h4>
 <p>The cost question barely arises, because <code>owa_rollup_day</code> is grained
 <code>(site_id, yyyymmdd)</code> &mdash; 5,785 rows measured against 692,829 events. A month
