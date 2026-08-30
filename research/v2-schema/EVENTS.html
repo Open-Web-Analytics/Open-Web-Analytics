@@ -1020,6 +1020,55 @@ session values and keeps what this page load set, which is precisely the swap ne
 </div>
 
 
+<h3><span class="num">7.11</span>Trend resolution needs no extra date columns <span class="chip c-dec">Decided</span></h3>
+<p>A trend chart offers day, week and month resolution, which raises the obvious worry about
+dropping eleven derived date parts. It holds up, but for three different reasons depending on the
+part &mdash; and one of the three hides a timezone bug worth naming before anyone writes the
+query.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Part</th><th>From</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td class="col">year<br>month<br>day of month</td><td><strong>Integer arithmetic on <code>yyyymmdd</code></strong> &mdash; <code>DIV 10000</code>, <code>DIV 100</code>, <code>MOD 100</code>.</td><td>Free, and it does not defeat pruning: the WHERE clause still bounds <code>yyyymmdd</code> by range, so the partitions selected are unchanged. Only the GROUP BY expression changes.</td></tr>
+<tr><td class="col">week<br>day of week<br>day of year</td><td>Calendar functions over a date built <em>from <code>yyyymmdd</code></em>.</td><td>Not arithmetic &mdash; week numbering has conventions no <code>DIV</code> reproduces. CPU per row across an already-pruned scan, which is the cheap kind of cost.</td></tr>
+<tr><td class="col">hour<br>minute<br>second</td><td><code>ts</code> &mdash; <code>yyyymmdd</code> has no time in it.</td><td>See the trap below. This is the one that needs care rather than confidence.</td></tr>
+</tbody></table></div>
+
+<div class="flag">
+  <p class="h">The timezone trap</p>
+  <p><strong><code>yyyymmdd</code> and <code>ts</code> are not in the same timezone.</strong> OWA
+  calls <code>date_default_timezone_set()</code> from a configured setting, so
+  <code>yyyymmdd</code> is a <em>local</em> date in the install's zone. <code>ts</code> is a raw
+  unix timestamp, which has no zone at all.</p>
+  <p>So <code>HOUR( FROM_UNIXTIME( ts ) )</code> answers in the <strong>database session's</strong>
+  timezone, which nothing guarantees to match the application's. A report grouping months from
+  <code>yyyymmdd</code> and hours from <code>ts</code> would then be reading two different
+  calendars in one chart, and the discrepancy is a few hours &mdash; big enough to move traffic
+  across a day boundary, small enough to look like noise.</p>
+  <p>The rule: <strong>derive from <code>yyyymmdd</code> wherever the part is a date</strong>, and
+  for sub-day parts convert <code>ts</code> into the configured zone explicitly before extracting.
+  Never read a time part straight off the epoch.</p>
+</div>
+
+<h4>Most trends never read an event</h4>
+<p>The cost question barely arises, because <code>owa_rollup_day</code> is grained
+<code>(site_id, yyyymmdd)</code> &mdash; 5,785 rows measured against 692,829 events. A month
+resolution trend over a year aggregates about 365 rollup rows; day resolution reads them
+directly. Only two cases touch raw events: realtime, which is a short window by definition, and
+sub-day resolution.</p>
+<p>Which leaves <strong>one real gap to decide later, not now</strong>: an hour-of-day report over
+a long period cannot come from a day-grained rollup, so it scans events. That is exactly the
+trigger condition &sect;1.4 describes for an optional materialization &mdash; a cache with a
+reason, added if breakdown latency outgrows the shape, rather than a column added to every row
+today on the chance someone wants it.</p>
+
+<div class="note"><p><strong>Deriving is also more robust than storing here.</strong> If an
+install changes its timezone, stored date parts written under the old zone disagree with a
+re-derived <code>yyyymmdd</code> &mdash; the row contradicts itself. Derived parts move with
+<code>yyyymmdd</code>, so the whole row stays internally consistent even when it is historically
+wrong. Neither is retroactively correct, and only one is self-consistent.</p></div>
+
+
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
 §3.1 one tracker two pipelines.</p>
