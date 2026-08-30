@@ -1295,16 +1295,30 @@ independent session cookies, which is both correct and exactly GA's <code>_ga_&l
   existing identities keep their values and existing data is untouched. Decoupling identity from
   derivation does not require reissuing the identities already handed out.</p>
 </div>
-<p><strong>The second tracking tag is a feature, not a cost.</strong> §2.1's server-side fan-out
-could feed a v2 profile from an existing v1 tag, but v2's tracker collects what v1's cannot —
-<code>engagement_msec</code>, the <code>tagged_*</code> attribution in the <code>s</code> cookie,
-the <code>sv</code> marker. A v1 tag would therefore populate a v2 profile at degraded <em>and
-time-dependent</em> fidelity: events before the tag upgrade missing fields that later ones carry,
-which is the absent-is-not-zero trap (§1.12) reproduced inside one profile. Requiring the v2 tag
-keeps a profile's contents uniform.</p>
+<p><strong>No second tracking tag, and no second tracker.</strong> An earlier draft of this
+section argued for one; that contradicted §3.1, which is Decided and whose reasoning still holds —
+two trackers split a site's data by which snippet happened to be deployed, so v1's history steps or
+stops the moment a site upgrades, destroying the thing v1 is being kept for. The fidelity argument
+was also backwards: the tracker is <em>extended</em> in Phase 3, so it already emits v2-rich events
+and the server <strong>degrades</strong> them for v1 — not v1-poor events upgraded for v2. There is
+no fidelity gap to protect against.</p>
+<p>So the profile model requires <strong>no client change whatsoever</strong>: one tag, one event,
+and the server writes each received event into every profile configured for that website. The
+site → profiles mapping is server-side, so the page never learns that profiles exist, and §3.1's
+promise holds — nothing about the page changes on cutover day.</p>
 <p><strong>Independent of v2</strong>, <code>md5(domain)</code> already prevents tracking two
 configurations of one domain, renaming a domain without orphaning its data, and expressing one
 property across several domains. The decoupling is additive 1.x work with standalone value.</p>
+<p><strong>What the profile does not do is spare ResultSetManager.</strong> It settles where the
+version <em>comes from</em>, not how the manager acts on it, so the entity-pool change of §1.11
+survives intact and is still the work: resolve the version from the profile behind
+<code>siteId</code>, filter candidate entities to that version <em>before</em>
+<code>arsort($niceness)</code>, and error when none resolves. <code>setSiteId()</code> today only
+records a query param and a constraint rather than loading the site, so there is a little plumbing
+from <code>siteId</code> to a version — but nothing new threads through the REST API or the report
+configs, which is precisely what the profile model buys: an unambiguous input already present in
+every query.</p>
+
 <p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
 settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
 
