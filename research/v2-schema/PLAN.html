@@ -740,6 +740,17 @@ the entity the query lands on. That is precisely the mechanism that already lets
 <code>visits</code> come from <code>owa_session</code> or from a summary table, and
 <strong>v2 is just another entity in that pool</strong> — no version flag, no namespaced metric
 names, and no rewriting of report configs at cutover.</p>
+<p><strong>This is not a new pattern; <code>visits</code> is registered twice today.</strong></p>
+<pre><code>'name' =&gt; 'visits',  'entity' =&gt; 'base.session',  'column' =&gt; 'id'
+'name' =&gt; 'visits',  'entity' =&gt; 'base.request',  'column' =&gt; 'session_id'</code></pre>
+<p>Same name, same label, same <code>metric_type</code>; different entity and different column,
+because the concept is expressed differently in each table. Nothing is called
+<code>sessionVisits</code> or <code>requestVisits</code>. v2 adds a third registration and renames
+nothing — the entity-keyed lookup is what <em>avoids</em> a naming scheme, since name-only
+resolution would force <code>v2Visits</code> and a rewrite of every report config. The name is the
+concept; the entity is where it is computed. <strong>Version is a query scope, like
+<code>siteId</code> and <code>period</code></strong> — <code>visits</code> already means different
+numbers per site and per date range without that being part of its name.</p>
 <p><strong>Calculated metrics inherit it for free.</strong> Children resolve through the same map,
 so a formula never names a store and the version rides in on the children. Six of the eight
 formulas in the tree become v2-correct without being touched.</p>
@@ -752,10 +763,17 @@ resolution path. And the version need not be tagged onto metrics at all: the ent
 implies it, so it is one property on the entity plus one filter in the manager.</p>
 <div class="flag">
   <p class="h">Version context must be required, not defaulted</p>
-  <p>Selection here is automatic and silent, and during dual-write both entity sets are live. A
-  report that does not state its version would resolve to whichever entity won the sort — showing
-  v1 numbers while the reader believes they are looking at v2. A missing version context should be
-  an <strong>error</strong>, not a guess.</p>
+  <p>The deeper reason is an invariant, not a usability worry. The two <code>visits</code>
+  registrations above are <em>semantically equivalent</em> — a distinct count of session ids
+  answers the same question from either table — and that equivalence is exactly what makes
+  automatic summary-level selection safe: every candidate answers identically, so take the
+  cheapest. <strong>v1 and v2 <code>visits</code> are not equivalent</strong> (§3.3), so putting
+  them in one pool violates the assumption the selector was built on.</p>
+  <p>Hence a <strong>partition, not a preference</strong>: within a version the candidates are
+  equivalent and automatic selection stays correct; across versions they never are, and selection
+  must not be able to cross. And hence a missing version context is an <strong>error</strong>, not
+  a default — a default is precisely a silent crossing, showing v1 numbers to a reader who believes
+  they are looking at v2.</p>
   <p>Note this is the mechanism being additive, not the numbers being equal (§3.3). The property
   worth having is that the architecture accommodates the divergence honestly: <code>visits</code>
   meaning something different per version is directly expressible, rather than being papered over
