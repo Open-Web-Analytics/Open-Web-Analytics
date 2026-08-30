@@ -1118,12 +1118,46 @@ row, the encoding becomes delta tuples plus gzip (~30× measured). Dual-writing 
 options — either the new capture has nowhere to land, or <code>owa_domstream</code> is renovated
 to accept a format v1 will never report on. Heatmaps follow, being built on the same capture.</p>
 
-<h3 id="s33"><span class="num">3.3</span>The parity harness <span class="chip c-dec">Decided</span></h3>
-<p>The real prize of dual-write, and more than a migration convenience: both pipelines consume
-identical events, so <strong>v1 is the oracle</strong> for everything v2 is not deliberately
-changing. The comparison surface is already enumerated — 5,493 registry pairs — which makes it a
-<em>generated</em> matrix, not hand-written cases. It runs against real traffic, and it is
-exhaustive over the API surface rather than over the cases someone thought to write down.</p>
+<h3 id="s33"><span class="num">3.3</span>The parity harness — two instruments, not one <span class="chip c-dec">Decided</span></h3>
+<p>Both pipelines consume identical events, so v1 can serve as an oracle — but only
+<strong>below the session boundary</strong>, and an earlier draft of this section did not say so.
+The correction matters enough to state first, because it changes what this harness is for.</p>
+
+<div class="flag">
+  <p class="h">v1 is not an oracle for anything session-scoped</p>
+  <p>This section already made the argument for attribution — parity there “would prove only that
+  the new code reproduces the old verdicts, which is not the same as proving the new model right.”
+  That reasoning is not special to attribution. <strong>v2 keeps the event and changes the
+  session</strong>, so it applies to everything the session model touches.</p>
+  <p>And the divergence propagates. Per-site session stores give site B its own session where v1
+  shared one; sessions are created only by page-view events; the store is withheld until
+  <code>sendAccepted</code>. So <code>visits</code> is a different number <em>by design</em> — and
+  <code>visits</code> is the denominator of <strong>6 of the 8</strong> formulas in the tree.
+  Bounce rate, pages/visit, actions/visit and revenue/visit all diverge without anything about
+  their own definitions changing. Separately, <strong>18 of 34</strong> metric classes bind to
+  <code>base.session</code> directly.</p>
+  <p>Which means the “intended differences” list below is not five enumerable items, it is most of
+  the surface — and the warning attached to it turns on itself. An exclusion list that large is not
+  an exclusion list; it is the majority case, and a real regression hides comfortably inside it.</p>
+</div>
+
+<p>So what was described as one harness is <strong>two instruments</strong>, and they must not
+share a verdict:</p>
+<div class="scroll"><table>
+<thead><tr><th>Instrument</th><th>Scope</th><th>Basis</th></tr></thead>
+<tbody>
+<tr><td><strong>Pipeline integrity</strong></td><td>below the session boundary — event-level
+attributes parsed from the same wire data (browser, OS, device, geo, page host/path/title,
+referrer host), plus raw event counts 1:1</td><td><strong>v1 is a true oracle.</strong> Same input,
+same parser, same expected output; a disagreement is a bug. Generated and exhaustive, as originally
+described</td></tr>
+<tr><td><strong>Model characterization</strong></td><td>at or above it — sessions, attribution, and
+everything derived from them</td><td><strong>v1 is not an oracle.</strong> Expected values come from
+the new model's definition, not from v1's output. Hand-written and small, because the model
+decisions are few</td></tr>
+</tbody></table></div>
+<p>The 5,493 registry pairs still enumerate the surface, but they partition across these two rather
+than feeding one comparison.</p>
 <p><strong>Two exclusion lists, deliberately distinct.</strong> Conflating them is how a real
 regression hides behind an expected one:</p>
 <div class="scroll"><table>
@@ -1132,8 +1166,10 @@ regression hides behind an expected one:</p>
 <tr><td>Intended differences</td><td>compared, expected to diverge</td><td>bounce, visit duration, exit page, goals, the 11 dead <code>*InVisit</code> dimensions</td></tr>
 <tr><td>Early cutover</td><td><em>not compared at all</em> — no v1 side exists</td><td>domstreams, heatmaps</td></tr>
 </tbody></table></div>
-<p>This should be a command whose output is the artefact the cutover decision is made from. “We
-reached parity” then means a specific empty list, not an opinion.</p>
+<p>This should be a command whose output is the artefact the cutover decision is made from —
+but the criterion is no longer a single empty list. It is <strong>integrity empty, and every model
+change carrying a stated, tested expected behaviour</strong>. Collapsing those into one number is
+exactly what would let an expected difference shelter a real one.</p>
 
 <div class="flag">
   <p class="h">Attribution has a warm-up — it cannot be cut over cold</p>
@@ -1220,7 +1256,7 @@ exactly when one is tempted to modernise it into something needing a toolchain o
 machine. The schema changing is not a reason for the delivery mechanism to change.</p>
 
 <h3 id="s44"><span class="num">4.4</span>Testing <span class="chip c-dec">Decided</span></h3>
-<p>The parity harness (§3.3) is the primary test. Around it: 77 test files and 509 methods today,
+<p>The two harnesses of §3.3 are the primary tests — pipeline integrity generated and exhaustive, model characterization hand-written and small. Neither alone is “the” test, and reporting them as one is the failure mode that section describes. Around it: 77 test files and 509 methods today,
 of which only 8 files are named for star-schema artefacts — most of the suite tests CLI commands,
 settings, auth, validation, the queue and the scheduler, and ports unchanged. What genuinely
 expires is the part testing the star's <em>mechanics</em>.</p>
