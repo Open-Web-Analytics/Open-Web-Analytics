@@ -1339,7 +1339,44 @@ anything is selected, the version filter belongs in <code>getMetricEntities()</c
 whose entity is the wrong version, so wrong-version objects are never constructed — rather than at
 the niceness sort, where they already exist. And the recursion into child metrics means filtering
 children constrains their calculated parents for free.</p>
-<h4>Partition the registry by version; do not filter a merged one <span class="chip c-meas">Measured</span></h4>
+<h4>Scope the catalog by entity, not by version <span class="chip c-dec">Decided</span></h4>
+<p><strong>Refinement of the section below.</strong> Partitioning by version works but spreads a
+version concept through every accessor, and concepts like that leak until they are everywhere.
+Keying off the <em>entity</em> achieves the same isolation using something already present in every
+registration and already understood across the codebase: a profile determines a candidate entity
+set, the accessors scope to it, and the word &ldquo;version&rdquo; survives only in the profile
+record and the migration machinery — which is the one place generational schema changes are
+actually relevant.</p>
+<p>It is still a single choke point rather than scattered filtering: every consumer goes through the
+accessor, so there is one place to be right instead of ten. And it improves the API independently of
+v2 — <code>getAllMetrics()</code> today returns everything regardless of whether it is queryable in
+the current context, so an entity-scoped picker is more correct even with one generation.</p>
+<div class="scroll"><table>
+<thead><tr><th>Piece</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>Service::$metrics</code></td><td>none — <code>[$name][] = $impl</code> already accumulates</td></tr>
+<tr><td><code>Service::$dimensions</code></td><td><strong>must</strong> become <code>[$name][$entity]</code></td></tr>
+<tr><td>Accessors</td><td>take an entity scope instead of a version</td></tr>
+<tr><td>Profile</td><td>supplies the scope; the only place a version is named</td></tr>
+<tr><td><code>ResultSetManager</code></td><td>nothing — the niceness sort runs inside the scope it is given</td></tr>
+</tbody></table></div>
+<p><strong>This makes the dimension fix required, not optional.</strong> An earlier note suggested
+partitioning might subsume it; under entity-scoped accessors it is the foundation, because the
+overwrite happens at <em>registration</em>, before any read scoping can apply — both
+<code>registerDimension()</code> and <code>_loadDimensions()</code> write flat name-keyed. A v2
+<code>pageTitle</code> replaces v1’s at load time, so by the time an accessor scopes by entity there
+is only one definition left to scope.</p>
+<div class="flag">
+  <p class="h">Calculated metrics have no entity</p>
+  <p>They carry <code>child_metrics</code> and a formula instead, so an entity-scoped
+  <code>getAllMetrics()</code> must include a calculated metric when all of its children resolve
+  within the scope and exclude it otherwise. This falls out of recursion naturally, but it is the
+  one case where scoping is not a direct property test — and getting it wrong silently drops
+  <code>bounceRate</code> and its siblings from the picker rather than erroring.</p>
+</div>
+
+<h5>Superseded: partition by version <span class="chip c-meas">Measured</span></h5>
+<p><em>Kept for the measurement, which still stands; the entity-scoped approach above is preferred.</em></p>
 <p>The paragraphs above proposed registering the v2 set into the existing registry and
 discriminating downstream — a filter in <code>getMetricEntities()</code>. <strong>That is
 wrong</strong>, and the reason is enumeration rather than resolution.
