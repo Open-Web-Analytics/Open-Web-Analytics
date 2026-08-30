@@ -120,22 +120,35 @@ final class CatalogCharacterizationTest extends TestCase
      * ---- the two defects, recorded on purpose ------------------------------
      */
 
-    public function testNormalizedDimensionsCurrentlyHoldExactlyOneEntityEach(): void
+    public function testNormalizedDimensionsKeepEveryEntityTheyAreRegisteredAgainst(): void
     {
         $counts = Harness::snapshot()['counts'];
 
         /*
-         * DEFECT 1, registration-time. registerDimension() loops $entity_names
-         * but the normalized branch overwrites $this->dimensions[$dim_name] on
-         * each turn, so a name registered against seven entities keeps one.
-         * The equality IS the defect: when the registry becomes entity-keyed
-         * the entry count rises above the name count and this test changes.
+         * DEFECT 1, fixed. registerDimension() loops $entity_names, and the
+         * normalized branch used to overwrite $this->dimensions[$dim_name] on
+         * each turn, keeping only the last entity. Entries now exceed names,
+         * which is what makes registering a second schema generation under an
+         * existing name possible: it sits beside the first instead of replacing
+         * it.
          */
-        $this->assertSame(
+        $this->assertGreaterThan(
             $counts['dimensionNamesNormalized'],
             $counts['dimensionEntriesNormalized'],
-            'Normalized dimensions now hold more than one entity each -- which is the intended '
-            . 'fix. Update this test and the fixture together.' );
+            'Normalized dimensions are entity-keyed and must hold more entries than names.' );
+    }
+
+    public function testTheDimensionThatWasLosingEntitiesKeepsThemAll(): void
+    {
+        /*
+         * Named rather than counted, because a total can be moved by anything.
+         * userName is registered against all seven fact entities and was the
+         * only dimension actually losing any -- six of them.
+         */
+        $entities = \OWA\Core\CoreAPI::serviceSingleton()->getDimensionEntities( 'userName' );
+
+        $this->assertCount( 7, $entities );
+        $this->assertContains( 'base.session', $entities );
     }
 
     public function testDenormalizedDimensionsAlreadyHoldManyEntitiesEach(): void
@@ -153,25 +166,73 @@ final class CatalogCharacterizationTest extends TestCase
             'Denormalized dimensions are entity-keyed and must hold more entries than names.' );
     }
 
-    public function testTheReadAccessorFlattensDenormalizedDimensions(): void
+    public function testAnUnscopedAnswerStillReturnsOneEntryPerName(): void
     {
         $counts = Harness::snapshot()['counts'];
 
         /*
-         * DEFECT 2, read-time. CoreAPI::getAllDimensions() collapses the
-         * entity-keyed registry with $dims[$k] = $dedim, keeping the last
-         * entity. So the accessor the picker UI reads cannot express two
-         * generations however well the registry stores them.
+         * getAllDimensions() flattens by letting the last entity win. That was
+         * DEFECT 2 while it was the only thing on offer; it is now the
+         * deliberate unscoped behaviour, kept because the picker and its
+         * validation are written against one entry per name. The scoped call
+         * below is what a second generation will use.
          */
-        $this->assertLessThan(
-            $counts['dimensionEntriesDenormalized'],
-            $counts['accessorDimensionNames'],
-            'getAllDimensions() no longer flattens -- which is the intended fix.' );
-
         $this->assertSame(
             $counts['dimensionNamesNormalized'] + $counts['dimensionNamesDenormalized'],
-            $counts['accessorDimensionNames'],
-            'The accessor should return exactly one entry per registered name today.' );
+            $counts['accessorDimensionNames'] );
+
+        $entry = \OWA\Core\CoreAPI::getAllDimensions()['userName'];
+
+        $this->assertArrayHasKey(
+            'column', $entry,
+            'An unscoped entry must still be a registration, not a map of them -- ten callers '
+            . 'read it directly.' );
+    }
+
+    public function testScopingAnswersOnlyDimensionsDefinedOnThoseEntities(): void
+    {
+        $scoped = \OWA\Core\CoreAPI::getAllDimensions( array( 'base.session' ) );
+        $all    = \OWA\Core\CoreAPI::getAllDimensions();
+
+        $this->assertLessThan(
+            count( $all ), count( $scoped ),
+            'Scoping to one entity must narrow the catalog.' );
+
+        $this->assertArrayHasKey( 'userName', $scoped );
+
+        $this->assertSame(
+            'base.session', $scoped['userName']['entity'],
+            'A scoped answer must give the definition for the entity asked for, not whichever '
+            . 'was registered last.' );
+    }
+
+    public function testANameDefinedOnNoScopedEntityIsAbsentEntirely(): void
+    {
+        /*
+         * Absent rather than present-and-wrong. This is the property that makes
+         * scoping structural: a caller cannot accidentally use a dimension from
+         * the other generation, because it is not in the answer to filter out.
+         */
+        $scoped = \OWA\Core\CoreAPI::getAllDimensions( array( 'base.nonexistentEntity' ) );
+
+        $this->assertSame( array(), $scoped );
+    }
+
+    public function testGetDimensionAnswersByEntityWhenAsked(): void
+    {
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $this->assertSame(
+            'base.session',
+            $service->getDimension( 'userName', 'base.session' )['entity'] );
+
+        $this->assertNull(
+            $service->getDimension( 'userName', 'base.nonexistentEntity' ),
+            'An entity a dimension is not defined on must answer nothing, not a fallback.' );
+
+        $this->assertNotNull(
+            $service->getDimension( 'userName' ),
+            'Asking without an entity must still answer, as the flat registry did.' );
     }
 
     public function testTheRecordingIsNotEmpty(): void

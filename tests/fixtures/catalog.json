@@ -3,7 +3,7 @@
         "metricNames": 78,
         "metricImplementations": 99,
         "dimensionNamesNormalized": 42,
-        "dimensionEntriesNormalized": 42,
+        "dimensionEntriesNormalized": 48,
         "dimensionNamesDenormalized": 59,
         "dimensionEntriesDenormalized": 223,
         "accessorDimensionNames": 101
@@ -1221,466 +1221,616 @@
     },
     "dimensionsNormalized": {
         "ad": {
-            "name": "ad",
-            "entity": "base.ad_dim",
-            "column": "name",
-            "family": "campaign",
-            "label": "Ad",
-            "description": "The name of the ad that originated the visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.ad_dim": {
+                "name": "ad",
+                "entity": "base.ad_dim",
+                "column": "name",
+                "family": "campaign",
+                "label": "Ad",
+                "description": "The name of the ad that originated the visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "adType": {
-            "name": "adType",
-            "entity": "base.ad_dim",
-            "column": "type",
-            "family": "campaign",
-            "label": "Ad Type",
-            "description": "The type of ad that originated the visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.ad_dim": {
+                "name": "adType",
+                "entity": "base.ad_dim",
+                "column": "type",
+                "family": "campaign",
+                "label": "Ad Type",
+                "description": "The type of ad that originated the visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "browserType": {
-            "name": "browserType",
-            "entity": "base.ua",
-            "column": "browser_type",
-            "family": "system",
-            "label": "Browser Type",
-            "description": "The browser type of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.ua": {
+                "name": "browserType",
+                "entity": "base.ua",
+                "column": "browser_type",
+                "family": "system",
+                "label": "Browser Type",
+                "description": "The browser type of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "browserVersion": {
-            "name": "browserVersion",
-            "entity": "base.ua",
-            "column": "browser",
-            "family": "system",
-            "label": "Browser Version",
-            "description": "The browser version of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.ua": {
+                "name": "browserVersion",
+                "entity": "base.ua",
+                "column": "browser",
+                "family": "system",
+                "label": "Browser Version",
+                "description": "The browser version of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "campaign": {
-            "name": "campaign",
-            "entity": "base.campaign_dim",
-            "column": "name",
-            "family": "campaign",
-            "label": "Campaign",
-            "description": "The campaign that originated the visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.campaign_dim": {
+                "name": "campaign",
+                "entity": "base.campaign_dim",
+                "column": "name",
+                "family": "campaign",
+                "label": "Campaign",
+                "description": "The campaign that originated the visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "city": {
-            "name": "city",
-            "entity": "base.location_dim",
-            "column": "city",
-            "family": "geo",
-            "label": "City",
-            "description": "The city of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "city",
+                "entity": "base.location_dim",
+                "column": "city",
+                "family": "geo",
+                "label": "City",
+                "description": "The city of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "country": {
-            "name": "country",
-            "entity": "base.location_dim",
-            "column": "country",
-            "family": "geo",
-            "label": "Country",
-            "description": "The country of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "country",
+                "entity": "base.location_dim",
+                "column": "country",
+                "family": "geo",
+                "label": "Country",
+                "description": "The country of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "countryCode": {
-            "name": "countryCode",
-            "entity": "base.location_dim",
-            "column": "country_code",
-            "family": "geo",
-            "label": "Country Code",
-            "description": "The ISO country code of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "countryCode",
+                "entity": "base.location_dim",
+                "column": "country_code",
+                "family": "geo",
+                "label": "Country Code",
+                "description": "The ISO country code of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "entryPagePath": {
-            "name": "entryPagePath",
-            "entity": "base.document",
-            "column": "uri",
-            "family": "visit",
-            "label": "Entry Page Path",
-            "description": "The URI of the entry page.",
-            "foreign_key_name": "first_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "entryPagePath",
+                "entity": "base.document",
+                "column": "uri",
+                "family": "visit",
+                "label": "Entry Page Path",
+                "description": "The URI of the entry page.",
+                "foreign_key_name": "first_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "entryPageTitle": {
-            "name": "entryPageTitle",
-            "entity": "base.document",
-            "column": "page_title",
-            "family": "visit",
-            "label": "Entry Page Title",
-            "description": "The title of the entry page.",
-            "foreign_key_name": "first_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "entryPageTitle",
+                "entity": "base.document",
+                "column": "page_title",
+                "family": "visit",
+                "label": "Entry Page Title",
+                "description": "The title of the entry page.",
+                "foreign_key_name": "first_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "entryPageType": {
-            "name": "entryPageType",
-            "entity": "base.document",
-            "column": "page_type",
-            "family": "visit",
-            "label": "Entry Page Type",
-            "description": "The page type of the entry page.",
-            "foreign_key_name": "first_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "entryPageType",
+                "entity": "base.document",
+                "column": "page_type",
+                "family": "visit",
+                "label": "Entry Page Type",
+                "description": "The page type of the entry page.",
+                "foreign_key_name": "first_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "entryPageUrl": {
-            "name": "entryPageUrl",
-            "entity": "base.document",
-            "column": "url",
-            "family": "visit",
-            "label": "Entry Page URL",
-            "description": "The URL of the entry page.",
-            "foreign_key_name": "first_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "entryPageUrl",
+                "entity": "base.document",
+                "column": "url",
+                "family": "visit",
+                "label": "Entry Page URL",
+                "description": "The URL of the entry page.",
+                "foreign_key_name": "first_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "exitPagePath": {
-            "name": "exitPagePath",
-            "entity": "base.document",
-            "column": "uri",
-            "family": "visit",
-            "label": "Exit Page Path",
-            "description": "The URI of the exit page.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "exitPagePath",
+                "entity": "base.document",
+                "column": "uri",
+                "family": "visit",
+                "label": "Exit Page Path",
+                "description": "The URI of the exit page.",
+                "foreign_key_name": "last_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "exitPageTitle": {
-            "name": "exitPageTitle",
-            "entity": "base.document",
-            "column": "page_title",
-            "family": "visit",
-            "label": "Exit Page Title",
-            "description": "The title of the exit page.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "exitPageTitle",
+                "entity": "base.document",
+                "column": "page_title",
+                "family": "visit",
+                "label": "Exit Page Title",
+                "description": "The title of the exit page.",
+                "foreign_key_name": "last_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "exitPageType": {
-            "name": "exitPageType",
-            "entity": "base.document",
-            "column": "page_type",
-            "family": "visit",
-            "label": "Exit Page Type",
-            "description": "The page type of the exit page.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "exitPageType",
+                "entity": "base.document",
+                "column": "page_type",
+                "family": "visit",
+                "label": "Exit Page Type",
+                "description": "The page type of the exit page.",
+                "foreign_key_name": "last_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "exitPageUrl": {
-            "name": "exitPageUrl",
-            "entity": "base.document",
-            "column": "url",
-            "family": "visit",
-            "label": "Exit Page URL",
-            "description": "The URL of the exit page.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "exitPageUrl",
+                "entity": "base.document",
+                "column": "url",
+                "family": "visit",
+                "label": "Exit Page URL",
+                "description": "The URL of the exit page.",
+                "foreign_key_name": "last_page_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "hostName": {
-            "name": "hostName",
-            "entity": "base.host",
-            "column": "host",
-            "family": "network",
-            "label": "Host Name",
-            "description": "The host name of the network used by the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.host": {
+                "name": "hostName",
+                "entity": "base.host",
+                "column": "host",
+                "family": "network",
+                "label": "Host Name",
+                "description": "The host name of the network used by the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "isSearchEngine": {
-            "name": "isSearchEngine",
-            "entity": "base.referer",
-            "column": "is_searchengine",
-            "family": "campaign",
-            "label": "Search Engine",
-            "description": "Is traffic source a search engine.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.referer": {
+                "name": "isSearchEngine",
+                "entity": "base.referer",
+                "column": "is_searchengine",
+                "family": "campaign",
+                "label": "Search Engine",
+                "description": "Is traffic source a search engine.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "latitude": {
-            "name": "latitude",
-            "entity": "base.location_dim",
-            "column": "latitude",
-            "family": "geo",
-            "label": "Latitude",
-            "description": "The latitude of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "latitude",
+                "entity": "base.location_dim",
+                "column": "latitude",
+                "family": "geo",
+                "label": "Latitude",
+                "description": "The latitude of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "longitude": {
-            "name": "longitude",
-            "entity": "base.location_dim",
-            "column": "longitude",
-            "family": "geo",
-            "label": "Longitude",
-            "description": "The longitude of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "longitude",
+                "entity": "base.location_dim",
+                "column": "longitude",
+                "family": "geo",
+                "label": "Longitude",
+                "description": "The longitude of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "osType": {
-            "name": "osType",
-            "entity": "base.os",
-            "column": "name",
-            "family": "system",
-            "label": "Operating System",
-            "description": "The operating System of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.os": {
+                "name": "osType",
+                "entity": "base.os",
+                "column": "name",
+                "family": "system",
+                "label": "Operating System",
+                "description": "The operating System of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "pagePath": {
-            "name": "pagePath",
-            "entity": "base.document",
-            "column": "uri",
-            "family": "content",
-            "label": "Page Path",
-            "description": "The path of the web page.",
-            "foreign_key_name": "document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "pagePath",
+                "entity": "base.document",
+                "column": "uri",
+                "family": "content",
+                "label": "Page Path",
+                "description": "The path of the web page.",
+                "foreign_key_name": "document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "pageTitle": {
-            "name": "pageTitle",
-            "entity": "base.document",
-            "column": "page_title",
-            "family": "content",
-            "label": "Page Title",
-            "description": "The title of the web page.",
-            "foreign_key_name": "document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "pageTitle",
+                "entity": "base.document",
+                "column": "page_title",
+                "family": "content",
+                "label": "Page Title",
+                "description": "The title of the web page.",
+                "foreign_key_name": "document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "pageType": {
-            "name": "pageType",
-            "entity": "base.document",
-            "column": "page_type",
-            "family": "content",
-            "label": "Page Type",
-            "description": "The page type of the web page.",
-            "foreign_key_name": "document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "pageType",
+                "entity": "base.document",
+                "column": "page_type",
+                "family": "content",
+                "label": "Page Type",
+                "description": "The page type of the web page.",
+                "foreign_key_name": "document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "pageUrl": {
-            "name": "pageUrl",
-            "entity": "base.document",
-            "column": "url",
-            "family": "content",
-            "label": "Page URL",
-            "description": "The URL of the web page.",
-            "foreign_key_name": "document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "pageUrl",
+                "entity": "base.document",
+                "column": "url",
+                "family": "content",
+                "label": "Page URL",
+                "description": "The URL of the web page.",
+                "foreign_key_name": "document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "priorPagePath": {
-            "name": "priorPagePath",
-            "entity": "base.document",
-            "column": "uri",
-            "family": "content",
-            "label": "Prior Page Path",
-            "description": "The URI of the prior page.",
-            "foreign_key_name": "prior_document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "priorPagePath",
+                "entity": "base.document",
+                "column": "uri",
+                "family": "content",
+                "label": "Prior Page Path",
+                "description": "The URI of the prior page.",
+                "foreign_key_name": "prior_document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "priorPageTitle": {
-            "name": "priorPageTitle",
-            "entity": "base.document",
-            "column": "page_title",
-            "family": "content",
-            "label": "Prior Page Title",
-            "description": "The title of the prior page.",
-            "foreign_key_name": "prior_document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "priorPageTitle",
+                "entity": "base.document",
+                "column": "page_title",
+                "family": "content",
+                "label": "Prior Page Title",
+                "description": "The title of the prior page.",
+                "foreign_key_name": "prior_document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "priorPageType": {
-            "name": "priorPageType",
-            "entity": "base.document",
-            "column": "page_type",
-            "family": "content",
-            "label": "Prior Page Type",
-            "description": "The page type of the prior page.",
-            "foreign_key_name": "prior_document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "priorPageType",
+                "entity": "base.document",
+                "column": "page_type",
+                "family": "content",
+                "label": "Prior Page Type",
+                "description": "The page type of the prior page.",
+                "foreign_key_name": "prior_document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "priorPageUrl": {
-            "name": "priorPageUrl",
-            "entity": "base.document",
-            "column": "url",
-            "family": "content",
-            "label": "Prior Page URL",
-            "description": "The URL of the prior page.",
-            "foreign_key_name": "prior_document_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.document": {
+                "name": "priorPageUrl",
+                "entity": "base.document",
+                "column": "url",
+                "family": "content",
+                "label": "Prior Page URL",
+                "description": "The URL of the prior page.",
+                "foreign_key_name": "prior_document_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "referralLinkText": {
-            "name": "referralLinkText",
-            "entity": "base.referer",
-            "column": "refering_anchortext",
-            "family": "campaign",
-            "label": "Referral Link Text",
-            "description": "The text of the referring link.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.referer": {
+                "name": "referralLinkText",
+                "entity": "base.referer",
+                "column": "refering_anchortext",
+                "family": "campaign",
+                "label": "Referral Link Text",
+                "description": "The text of the referring link.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "referralPageTitle": {
-            "name": "referralPageTitle",
-            "entity": "base.referer",
-            "column": "page_title",
-            "family": "campaign",
-            "label": "Referral Page Title",
-            "description": "The title of the referring web page.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.referer": {
+                "name": "referralPageTitle",
+                "entity": "base.referer",
+                "column": "page_title",
+                "family": "campaign",
+                "label": "Referral Page Title",
+                "description": "The title of the referring web page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "referralPageUrl": {
-            "name": "referralPageUrl",
-            "entity": "base.referer",
-            "column": "url",
-            "family": "campaign",
-            "label": "Referral Page URL",
-            "description": "The url of the referring web page.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.referer": {
+                "name": "referralPageUrl",
+                "entity": "base.referer",
+                "column": "url",
+                "family": "campaign",
+                "label": "Referral Page URL",
+                "description": "The url of the referring web page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "referralSearchTerms": {
-            "name": "referralSearchTerms",
-            "entity": "base.search_term_dim",
-            "column": "terms",
-            "family": "campaign",
-            "label": "Search Terms",
-            "description": "The referring search terms.",
-            "foreign_key_name": "referring_search_term_id",
-            "data_type": "string",
-            "denormalized": false
+            "base.search_term_dim": {
+                "name": "referralSearchTerms",
+                "entity": "base.search_term_dim",
+                "column": "terms",
+                "family": "campaign",
+                "label": "Search Terms",
+                "description": "The referring search terms.",
+                "foreign_key_name": "referring_search_term_id",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "referralWebSite": {
-            "name": "referralWebSite",
-            "entity": "base.referer",
-            "column": "site",
-            "family": "campaign",
-            "label": "Referral Web Site",
-            "description": "The full domain of the referring web site.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.referer": {
+                "name": "referralWebSite",
+                "entity": "base.referer",
+                "column": "site",
+                "family": "campaign",
+                "label": "Referral Web Site",
+                "description": "The full domain of the referring web site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "sessionId": {
-            "name": "sessionId",
-            "entity": "base.session",
-            "column": "id",
-            "family": "visit-special",
-            "label": "Session ID",
-            "description": "The ID of the session/visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.session": {
+                "name": "sessionId",
+                "entity": "base.session",
+                "column": "id",
+                "family": "visit-special",
+                "label": "Session ID",
+                "description": "The ID of the session/visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "siteDomain": {
-            "name": "siteDomain",
-            "entity": "base.site",
-            "column": "domain",
-            "family": "site",
-            "label": "Site Domain",
-            "description": "The domain of the web site.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.site": {
+                "name": "siteDomain",
+                "entity": "base.site",
+                "column": "domain",
+                "family": "site",
+                "label": "Site Domain",
+                "description": "The domain of the web site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "siteName": {
-            "name": "siteName",
-            "entity": "base.site",
-            "column": "name",
-            "family": "site",
-            "label": "Site Name",
-            "description": "The name of the site.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.site": {
+                "name": "siteName",
+                "entity": "base.site",
+                "column": "name",
+                "family": "site",
+                "label": "Site Name",
+                "description": "The name of the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "source": {
-            "name": "source",
-            "entity": "base.source_dim",
-            "column": "source_domain",
-            "family": "campaign",
-            "label": "Source",
-            "description": "The traffic source of the visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.source_dim": {
+                "name": "source",
+                "entity": "base.source_dim",
+                "column": "source_domain",
+                "family": "campaign",
+                "label": "Source",
+                "description": "The traffic source of the visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "stateRegion": {
-            "name": "stateRegion",
-            "entity": "base.location_dim",
-            "column": "state",
-            "family": "geo",
-            "label": "State/Region",
-            "description": "The state or region of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.location_dim": {
+                "name": "stateRegion",
+                "entity": "base.location_dim",
+                "column": "state",
+                "family": "geo",
+                "label": "State/Region",
+                "description": "The state or region of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "userEmail": {
-            "name": "userEmail",
-            "entity": "base.visitor",
-            "column": "user_email",
-            "family": "visitor",
-            "label": "Email Address",
-            "description": "The email address of the user.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.visitor": {
+                "name": "userEmail",
+                "entity": "base.visitor",
+                "column": "user_email",
+                "family": "visitor",
+                "label": "Email Address",
+                "description": "The email address of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "userName": {
-            "name": "userName",
-            "entity": "base.commerce_line_item_fact",
-            "column": "user_name",
-            "family": "visitor",
-            "label": "User Name",
-            "description": "The name or ID of the user.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.action_fact": {
+                "name": "userName",
+                "entity": "base.action_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.click": {
+                "name": "userName",
+                "entity": "base.click",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.commerce_line_item_fact": {
+                "name": "userName",
+                "entity": "base.commerce_line_item_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.commerce_transaction_fact": {
+                "name": "userName",
+                "entity": "base.commerce_transaction_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.domstream": {
+                "name": "userName",
+                "entity": "base.domstream",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.request": {
+                "name": "userName",
+                "entity": "base.request",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            },
+            "base.session": {
+                "name": "userName",
+                "entity": "base.session",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         },
         "visitorId": {
-            "name": "visitorId",
-            "entity": "base.visitor",
-            "column": "id",
-            "family": "visitor",
-            "label": "Visitor ID",
-            "description": "The ID of the visitor.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": false
+            "base.visitor": {
+                "name": "visitorId",
+                "entity": "base.visitor",
+                "column": "id",
+                "family": "visitor",
+                "label": "Visitor ID",
+                "description": "The ID of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
         }
     },
     "dimensionsDenormalized": {
