@@ -135,7 +135,8 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s31">3.1 One tracker</a>
   <a href="#s32">3.2 Early cutover</a>
   <a href="#s33">3.3 Parity harness</a>
-  <a href="#s34">3.4 Cutover</a>
+  <a href="#s34">3.4 Profiles</a>
+  <a href="#s35">3.5 Cutover</a>
   <a class="r-part" href="#p4">IV · Supporting</a>
   <a href="#s41">4.1 Schema versioning</a>
   <a href="#s42">4.2 Scheduling</a>
@@ -1251,7 +1252,63 @@ exactly what would let an expected difference shelter a real one.</p>
   60-day hold on the one part of v2 that cannot be hurried.</p>
 </div>
 
-<h3 id="s34"><span class="num">3.4</span>Cutover sequence</h3>
+<h3 id="s34"><span class="num">3.4</span>Profiles carry the version <span class="chip c-open">Proposed</span></h3>
+<p>Everything above resolves the version at <em>query</em> time, and every automatic signal for
+doing so fails. A date boundary cannot work: §3.2 makes cutover per-feature so there is no single
+instant, dual-write means both stores hold the same period, the switch-off is an administrator's
+action rather than a release date, and the queue is asynchronous so an event accepted before a
+switch can land after it. Coverage watermarks fail for the same reason — during overlap both
+stores answer, and the data cannot say which is authoritative. An install-wide setting fails
+differently: since <strong>no data is migrated</strong>, v1 holds the history permanently
+(§3.5 keeps v1 reporting precisely for that), so a global flip would blank every historical
+report.</p>
+<p><strong>The proposal is to stop resolving it at query time and carry it in the data model
+instead.</strong> Decouple the tracked website from the profile that measures it: one website may
+have several profiles, and <em>a profile declares its version</em>. The whole experience fans out
+from the profile — a v2 profile shows v2 navigation, v2 reports, and queries the v2 REST endpoint.
+This is the path GA took to GA4, and it dissolves rather than solves the open questions:</p>
+<div class="scroll"><table>
+<thead><tr><th>Question</th><th>How the profile answers it</th></tr></thead>
+<tbody>
+<tr><td>Which version does a query use?</td><td>The profile's. Never inferred, timed, or defaulted</td></tr>
+<tr><td>Spanning the boundary</td><td><strong>Structurally impossible</strong> — a result set is one profile — rather than a rule someone must remember. No cross-store union, no summing <code>distinct_count</code> across a seam</td></tr>
+<tr><td>History with no migration</td><td>The v1 profile keeps its data <em>and its reports</em>. Nothing is migrated or stranded</td></tr>
+<tr><td>62 report configs with no version field</td><td>Reports register per version; the profile selects the set. Configs stay clean</td></tr>
+<tr><td>Cutover</td><td>Per-site opt-in, no big-bang flip. Rollback is &ldquo;use the other profile&rdquo;</td></tr>
+</tbody></table></div>
+
+<h4>What it requires — and it is smaller than it sounds <span class="chip c-meas">Measured</span></h4>
+<p><strong><code>site_id</code> is <code>md5($domain)</code></strong>
+(<code>Site::generateSiteId()</code>, and inline at <code>SiteManager.php:44</code>), so two
+profiles for one domain are impossible <em>by construction</em>. Only three call sites derive it,
+and just one re-derives at runtime — <code>ServiceUser.php:283</code>, in the permission path,
+which is the edge needing care and tests.</p>
+<p>Two things are already in place. <code>site_family</code> exists as a column on
+<code>owa_site</code> and is <strong>written but never read anywhere</strong> — a dormant grouping
+slot, so &ldquo;tracked website&rdquo; can be defined freshly rather than migrated. And the
+per-site session store (<code>owa_s_&lt;siteId&gt;</code>) already gives two profiles on one domain
+independent session cookies, which is both correct and exactly GA's <code>_ga_&lt;property&gt;</code>.</p>
+<div class="flag">
+  <p class="h">Do not rewrite existing site_id values</p>
+  <p>Every <code>site_id</code> in the wild is <code>md5(domain)</code> and every fact row
+  references it. The change is to stop <em>deriving</em> new ones and treat the column as opaque —
+  existing identities keep their values and existing data is untouched. Decoupling identity from
+  derivation does not require reissuing the identities already handed out.</p>
+</div>
+<p><strong>The second tracking tag is a feature, not a cost.</strong> §2.1's server-side fan-out
+could feed a v2 profile from an existing v1 tag, but v2's tracker collects what v1's cannot —
+<code>engagement_msec</code>, the <code>tagged_*</code> attribution in the <code>s</code> cookie,
+the <code>sv</code> marker. A v1 tag would therefore populate a v2 profile at degraded <em>and
+time-dependent</em> fidelity: events before the tag upgrade missing fields that later ones carry,
+which is the absent-is-not-zero trap (§1.12) reproduced inside one profile. Requiring the v2 tag
+keeps a profile's contents uniform.</p>
+<p><strong>Independent of v2</strong>, <code>md5(domain)</code> already prevents tracking two
+configurations of one domain, renaming a domain without orphaning its data, and expressing one
+property across several domains. The decoupling is additive 1.x work with standalone value.</p>
+<p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
+settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
+
+<h3 id="s35"><span class="num">3.5</span>Cutover sequence</h3>
 <ol>
 <li>Ship the additive work in 1.x releases, each standing on its own</li>
 <li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
