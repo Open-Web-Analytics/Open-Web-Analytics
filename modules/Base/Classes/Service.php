@@ -409,7 +409,14 @@ class Service extends \OWA\Core\Base {
         foreach ($this->modules as $k => $module) {
 
             if (is_array($module->dimensions)) {
-                $this->dimensions = array_merge($this->dimensions, $module->dimensions);
+                /*
+                 * Recursive, because dimensions are now keyed name => entity =>
+                 * registration. A flat array_merge would replace a whole name's
+                 * entity map with whichever module was loaded last, reproducing
+                 * inside the merge exactly the loss that registerDimension() no
+                 * longer commits.
+                 */
+                $this->dimensions = array_merge_recursive($this->dimensions, $module->dimensions);
             }
 
             if (is_array($module->denormalizedDimensions)) {
@@ -599,11 +606,48 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function getDimension($name) {
+    /**
+     * A normalized dimension, optionally the one defined for a given entity.
+     *
+     * Called without an entity this answers the LAST registration for the name,
+     * which is what the previously flat registry held after overwriting itself.
+     * That equivalence is deliberate: this change is about retaining the other
+     * registrations, not about changing which one an existing caller resolves.
+     *
+     * Called with an entity it answers that entity's registration, or nothing.
+     * This is the path a second schema generation will use -- one name, several
+     * entities, the caller saying which it means rather than hoping.
+     */
+    function getDimension($name, $entity = null) {
 
-        if (array_key_exists($name, $this->dimensions)) {
-            return $this->dimensions[$name];
+        if (! array_key_exists($name, $this->dimensions)) {
+            return null;
         }
+
+        $byEntity = $this->dimensions[$name];
+
+        if ($entity !== null) {
+
+            return array_key_exists($entity, $byEntity) ? $byEntity[$entity] : null;
+        }
+
+        return end($byEntity) ?: null;
+    }
+
+    /**
+     * Every entity a normalized dimension is defined for.
+     *
+     * Nothing consumes this yet. It exists so that scoping can be written and
+     * tested against a real second registration before there is a second schema
+     * generation to depend on it.
+     */
+    function getDimensionEntities($name) {
+
+        if (! array_key_exists($name, $this->dimensions)) {
+            return array();
+        }
+
+        return array_keys($this->dimensions[$name]);
     }
 
     function getDenormalizedDimension($name, $entity) {

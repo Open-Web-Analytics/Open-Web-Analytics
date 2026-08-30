@@ -2241,15 +2241,49 @@ class CoreAPI {
         return md5( $salt );
     }
 
-    public static function getAllDimensions() {
+    /**
+     * Every registered dimension, one entry per name.
+     *
+     * Both registries are keyed name => entity => registration, and this
+     * flattens them to name => registration by letting the last entity win --
+     * which is what this method has always returned, and what its callers (the
+     * report picker and its validation among them) are written against.
+     *
+     * Pass $entities to scope the answer to a set of entities: a dimension is
+     * offered only if it is defined on one of them, and a name defined on none
+     * is absent entirely. That is how one catalog will serve two schema
+     * generations without a caller having to tell them apart by name -- the
+     * scope decides, so the wrong generation is not filtered out downstream, it
+     * is never in the answer.
+     *
+     * Called without a scope the behaviour is unchanged.
+     *
+     * @param array|null $entities entity names to restrict the answer to
+     */
+    public static function getAllDimensions( $entities = null ) {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
 
-        $dims = $s->dimensions;
+        $dims = array();
 
-        foreach ( $s->denormalizedDimensions as $k => $entity_dims ) {
-            foreach ($entity_dims as $entity => $dedim) {
-                $dims[$k] = $dedim;
+        /*
+         * Normalized first, then denormalized, because a name carried by both
+         * has always resolved to the denormalized definition and callers depend
+         * on that precedence.
+         */
+        foreach ( array( $s->dimensions, $s->denormalizedDimensions ) as $registry ) {
+
+            foreach ( $registry as $k => $entity_dims ) {
+
+                foreach ( $entity_dims as $entity => $dim ) {
+
+                    if ( $entities !== null && ! in_array( $entity, (array) $entities, true ) ) {
+
+                        continue;
+                    }
+
+                    $dims[$k] = $dim;
+                }
             }
         }
 

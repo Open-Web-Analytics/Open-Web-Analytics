@@ -2329,21 +2329,49 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $normalized_dims = $s->dimensions;
 
-        foreach ( $normalized_dims as $k => $ndim ) {
+        /*
+         * Keyed name => entity => registration, like denormalizedDimensions
+         * above, so both loops have the same shape.
+         *
+         * One entry per NAME rather than per entity: the question here is only
+         * whether the entity being reported on can reach the dimension, so the
+         * first definition that relates answers it and the rest would be
+         * duplicates in the picker.
+         */
+        foreach ( $normalized_dims as $k => $ndim_implementations ) {
 
-            // check to see if realation exists with dim's speficied foreign key
-            $fk = $ndim['foreign_key_name'];
-            if ( $fk ) {
+            /*
+             * The LAST registration, which is exactly what the flat registry
+             * held after overwriting itself. Deliberate: retaining every entity
+             * is a storage change, and nothing an existing caller sees may move
+             * because of it. Considering all of them here would put userName --
+             * registered normalized against seven entities with no foreign key,
+             * and broken for that reason -- into four more pickers than it
+             * reaches today, which is widening a defect rather than preserving
+             * behaviour.
+             *
+             * A caller that wants a specific entity's definition asks for it by
+             * entity; this one is answering "what can this report reach", and
+             * its answer must not change here.
+             */
+            foreach ( array( end( $ndim_implementations ) ) as $ndim ) {
 
-                $col_exists = $entity->getProperty($fk);
+                // check to see if realation exists with dim's speficied foreign key
+                $fk = $ndim['foreign_key_name'];
+                if ( $fk ) {
 
-            } else {
-                // check to see if there is any foreign key to the dim's entity
-                $col_exists = $entity->getForeignKeyColumn( $ndim['entity'] );
-            }
+                    $col_exists = $entity->getProperty($fk);
 
-            if ( $col_exists ) {
-                $dims[ $ndim['family'] ][] = array( 'name' => $ndim['name'], 'label' => $ndim['label'] );
+                } else {
+                    // check to see if there is any foreign key to the dim's entity
+                    $col_exists = $entity->getForeignKeyColumn( $ndim['entity'] );
+                }
+
+                if ( $col_exists ) {
+                    $dims[ $ndim['family'] ][] = array( 'name' => $ndim['name'], 'label' => $ndim['label'] );
+
+                    break;
+                }
             }
         }
 

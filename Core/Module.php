@@ -1055,7 +1055,24 @@ abstract class Module {
             if ($denormalized) {
                 $this->denormalizedDimensions[$dim_name][$entity] = $dim;
             } else {
-                $this->dimensions[$dim_name] = $dim;
+                /*
+                 * Keyed by entity, like the denormalized branch above.
+                 *
+                 * This loop runs once per entity the dimension was registered
+                 * against, and the old flat write ($this->dimensions[$dim_name])
+                 * overwrote itself on each turn -- so a name registered against
+                 * several entities kept only the last, and the rest were lost
+                 * before anything could read them. That is why a second schema
+                 * generation could not be registered under an existing name: it
+                 * would replace the first rather than sit beside it.
+                 *
+                 * Storing every entity does NOT change which one is resolved.
+                 * getDimension() still answers with the last registration when
+                 * asked without an entity, exactly as the flat array did. The
+                 * information is now retained so that a caller CAN ask by
+                 * entity; nothing yet changes what an unscoped caller gets.
+                 */
+                $this->dimensions[$dim_name][$entity] = $dim;
             }
         }
     }
