@@ -556,7 +556,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>widened-entropy guid, time prefix kept</td></tr>
 <tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds creation timestamp (midnight rule)</td></tr>
 <tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared identity, forward-only; the only identity field</td></tr>
-<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned</td></tr>
+<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned. Deliberately zone-less &mdash; MySQL's <code>DATETIME</code> carries no zone and its <code>TIMESTAMP</code> renders per <em>session</em>, so a stored row would read differently depending on who asked. The zone is applied once at write, into <code>yyyymmdd</code>. Anything deriving a SUB-DAY part converts a second time, at query time, and must be told the same zone: set <code>time_zone</code> on connect beside the existing <code>SET SESSION sql_mode</code>. See EVENTS.html &sect;7.11 &mdash; and note the type is a per-store choice, since a columnar reporting store has real timestamp types and should use one.</td></tr>
 <tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key; the only derived date part (1.x stores nine)</td></tr>
 <tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts on every event; new-visitor derives from it</td></tr>
 <tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>carried visitor history</td></tr>

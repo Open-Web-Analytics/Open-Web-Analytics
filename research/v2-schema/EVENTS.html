@@ -1038,27 +1038,51 @@ query.</p>
   <p class="h">One conversion at write time, another at query time</p>
   <p><code>yyyymmdd</code> <strong>is</strong> derived from the timestamp &mdash;
   <code>date("Ymd", $timestamp)</code>. There are not two timestamps and not two timezones on the
-  row. What there is, is <strong>one instant and one conversion already applied to it</strong>:</p>
-  <ul>
-    <li><code>ts</code> is the raw instant. A unix timestamp has no timezone.</li>
-    <li><code>yyyymmdd</code> is that same instant <em>rendered as a calendar date</em>, using the
-    zone <code>Settings</code> hands to <code>date_default_timezone_set()</code>. The conversion
-    happened once, at write time, and is frozen into the value.</li>
-  </ul>
-  <p>Which is fine until the sub-day parts, because <strong>they need a second conversion, and it
-  happens somewhere else</strong>. <code>HOUR( FROM_UNIXTIME( ts ) )</code> converts in
-  <em>MySQL's</em> session timezone. Nothing makes that match the zone PHP used at write time. So
-  a chart grouping months from <code>yyyymmdd</code> and hours from <code>ts</code> has two
-  conversion sites that must agree and nothing enforcing that they do.</p>
-  <p>1.x never meets this, because it converts once: every date part including <code>hour</code>
-  is computed in PHP under the same default zone, so they are consistent by construction. Dropping
-  the stored parts is what moves the sub-day conversion to query time &mdash; which is the right
-  trade, and it comes with the obligation to name the zone there rather than inherit whatever the
-  database session happens to have.</p>
-  <p><strong>Rule:</strong> date parts derive from <code>yyyymmdd</code>, which already carries
-  the decision. Sub-day parts convert <code>ts</code> <em>explicitly into the configured zone</em>
-  &mdash; never bare <code>FROM_UNIXTIME</code>.</p>
+  row. There is one instant, and one conversion already applied to it: <code>ts</code> is the raw
+  epoch, which has no zone; <code>yyyymmdd</code> is that instant rendered as a calendar date
+  using the zone <code>Settings</code> hands to <code>date_default_timezone_set()</code>.</p>
+  <p>Fine until the sub-day parts, because <strong>they need a second conversion, in a different
+  place</strong>. <code>HOUR( FROM_UNIXTIME( ts ) )</code> converts in <em>MySQL's</em> session
+  timezone, and nothing makes that match the zone PHP used at write time. New York install, UTC
+  database: an event at 22:00 on the 30th is stored <code>yyyymmdd = 20260830</code> and reports
+  as hour 2. Evening traffic reads as overnight traffic, daily totals stay correct, and nothing
+  flags it.</p>
+  <p>1.x never meets this because it converts once &mdash; every part including <code>hour</code>
+  is computed in PHP under the same default zone. Dropping the stored parts is what moves the
+  sub-day conversion to query time.</p>
 </div>
+
+<h4>The fix is at the connection, not in the column</h4>
+<p>The obvious move is to type the column, and on MySQL it makes things worse:</p>
+<div class="scroll"><table>
+<thead><tr><th>Type</th><th>Why not</th></tr></thead>
+<tbody>
+<tr><td class="col">DATETIME</td><td>A wall-clock value carrying no zone. Keeps the ambiguity, loses cheap arithmetic, costs more bytes.</td></tr>
+<tr><td class="col">TIMESTAMP</td><td>Stores UTC and converts on read using <code>@@session.time_zone</code> &mdash; so the value's rendering depends on <em>who is asking</em>, and two connections read one row differently. For a reporting store that is a worse failure than the one it fixes. Also 2038-bound.</td></tr>
+<tr><td class="col">TIMESTAMP WITH TIME ZONE</td><td>The type that would genuinely solve it. MySQL does not have it.</td></tr>
+</tbody></table></div>
+
+<p>So <code>ts BIGINT UNSIGNED</code> stays, and it is the honest choice: an explicitly zone-less
+instant that does not pretend otherwise. <strong>Set the session timezone on connect instead</strong>,
+from the same <code>base.timezone</code> the application uses. There is already a place for it
+&mdash; OWA issues <code>SET SESSION sql_mode=&hellip;</code> on every connection in both
+<code>Core/Db/Mysql.php</code> and <code>Core/Db/Pdo.php</code>, with a dialect method choosing the
+value. One line beside it and <code>FROM_UNIXTIME(ts)</code>, PHP's <code>date()</code> and
+<code>yyyymmdd</code> agree by construction, with no <code>CONVERT_TZ</code> discipline for query
+authors to remember.</p>
+
+<div class="note"><p><strong>Two things that come with it.</strong> The reporting store's timezone
+becomes part of its <em>contract</em>: anything querying it outside OWA's connection layer &mdash;
+a BI tool, a direct <code>mysql</code> session, the columnar engine &mdash; must set the same zone
+or get different answers. And a per-connection setting is powerful and easy to forget is there:
+OWA sent <code>SET SESSION sql_mode=''</code> for years, and that turned out to be hiding
+truncation bugs on every install. Worth a comment at the call site saying what depends on it.</p></div>
+
+<p>On the columnar path the answer flips, which is why this is a <em>per-store</em> decision rather
+than a schema-wide one &mdash; consistent with the two-store split in &sect;1.10. Those engines have
+real timezone-aware timestamp types, and an epoch converts into one cleanly. A column type that is
+wrong for MySQL can be right for the store beside it.</p>
+
 
 <h4>Most trends never read an event</h4>
 <p>The cost question barely arises, because <code>owa_rollup_day</code> is grained
