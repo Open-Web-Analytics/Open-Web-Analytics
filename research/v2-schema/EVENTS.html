@@ -1035,19 +1035,29 @@ query.</p>
 </tbody></table></div>
 
 <div class="flag">
-  <p class="h">The timezone trap</p>
-  <p><strong><code>yyyymmdd</code> and <code>ts</code> are not in the same timezone.</strong> OWA
-  calls <code>date_default_timezone_set()</code> from a configured setting, so
-  <code>yyyymmdd</code> is a <em>local</em> date in the install's zone. <code>ts</code> is a raw
-  unix timestamp, which has no zone at all.</p>
-  <p>So <code>HOUR( FROM_UNIXTIME( ts ) )</code> answers in the <strong>database session's</strong>
-  timezone, which nothing guarantees to match the application's. A report grouping months from
-  <code>yyyymmdd</code> and hours from <code>ts</code> would then be reading two different
-  calendars in one chart, and the discrepancy is a few hours &mdash; big enough to move traffic
-  across a day boundary, small enough to look like noise.</p>
-  <p>The rule: <strong>derive from <code>yyyymmdd</code> wherever the part is a date</strong>, and
-  for sub-day parts convert <code>ts</code> into the configured zone explicitly before extracting.
-  Never read a time part straight off the epoch.</p>
+  <p class="h">One conversion at write time, another at query time</p>
+  <p><code>yyyymmdd</code> <strong>is</strong> derived from the timestamp &mdash;
+  <code>date("Ymd", $timestamp)</code>. There are not two timestamps and not two timezones on the
+  row. What there is, is <strong>one instant and one conversion already applied to it</strong>:</p>
+  <ul>
+    <li><code>ts</code> is the raw instant. A unix timestamp has no timezone.</li>
+    <li><code>yyyymmdd</code> is that same instant <em>rendered as a calendar date</em>, using the
+    zone <code>Settings</code> hands to <code>date_default_timezone_set()</code>. The conversion
+    happened once, at write time, and is frozen into the value.</li>
+  </ul>
+  <p>Which is fine until the sub-day parts, because <strong>they need a second conversion, and it
+  happens somewhere else</strong>. <code>HOUR( FROM_UNIXTIME( ts ) )</code> converts in
+  <em>MySQL's</em> session timezone. Nothing makes that match the zone PHP used at write time. So
+  a chart grouping months from <code>yyyymmdd</code> and hours from <code>ts</code> has two
+  conversion sites that must agree and nothing enforcing that they do.</p>
+  <p>1.x never meets this, because it converts once: every date part including <code>hour</code>
+  is computed in PHP under the same default zone, so they are consistent by construction. Dropping
+  the stored parts is what moves the sub-day conversion to query time &mdash; which is the right
+  trade, and it comes with the obligation to name the zone there rather than inherit whatever the
+  database session happens to have.</p>
+  <p><strong>Rule:</strong> date parts derive from <code>yyyymmdd</code>, which already carries
+  the decision. Sub-day parts convert <code>ts</code> <em>explicitly into the configured zone</em>
+  &mdash; never bare <code>FROM_UNIXTIME</code>.</p>
 </div>
 
 <h4>Most trends never read an event</h4>
