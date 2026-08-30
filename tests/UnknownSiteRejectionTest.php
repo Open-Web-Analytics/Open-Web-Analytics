@@ -144,13 +144,16 @@ final class UnknownSiteRejectionTest extends TestCase
     public function testTheAnswerIsMemoisedWithinAProcess(): void
     {
         $domain  = 'https://memo-test-' . bin2hex(random_bytes(4)) . '.example.com';
-        $site_id = md5($domain);
+        // Pinned, not predicted. Identifiers are minted now, so a test cannot
+        // know one before the site exists -- and this test has to ask about the
+        // id BEFORE creating it, to prove the negative answer is memoised.
+        $site_id = 'OWA-memo-' . bin2hex(random_bytes(6));
 
         $this->assertFalse(\OWA\Core\CoreAPI::isSiteRegistered($site_id),
             'the site does not exist yet');
 
         $sm   = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
-        $site = $sm->createNewSite($domain, 'Memoisation test');
+        $site = $sm->createNewSite($domain, 'Memoisation test', '', '', $site_id);
 
         $this->created[] = $site->get('id');
 

@@ -324,9 +324,11 @@ function up(string $repoRoot): array
  * installation does not have. Until that check existed the specs relied on OWA
  * accepting an unregistered id, which is exactly the behaviour being removed.
  *
- * Written directly rather than through SiteManager because that derives
- * site_id as md5( domain ) and cannot produce an arbitrary literal. The row is
- * otherwise identical to one the admin UI creates.
+ * Written directly rather than through SiteManager. That used to be necessary
+ * -- SiteManager derived site_id as md5( domain ) and could not produce an
+ * arbitrary literal -- and is now merely simpler: createSite() accepts a pinned
+ * identifier, but this row needs no other setup. It is otherwise identical to
+ * one the admin UI creates.
  */
 function registerHarnessSite(string $repoRoot): void
 {
