@@ -31,7 +31,7 @@ CLIENT = [
  ('first_campaign','first_campaign',''),
 
  ('~attribution claim &mdash; this touch', None, None),
- ('tagged_source','','<strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column.'),
+ ('tagged_source','','<strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column. <strong>Held in the SESSION store</strong> beside <code>session_referer</code>, written once when the session is minted, so every event carries the session&rsquo;s originating tags and the resolver needs no state (&sect;7.3). A tag that differs mid-session starts a new session rather than overwriting them &mdash; &sect;7.10.'),
  ('tagged_medium','',''),
  ('tagged_campaign','',''),
  ('tagged_ad','',''),

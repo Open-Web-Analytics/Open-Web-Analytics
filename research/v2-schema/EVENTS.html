@@ -354,7 +354,7 @@ table's entire point.</p>
 <tr><td class="col">first_medium</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_medium</code></td><td></td></tr>
 <tr><td class="col">first_campaign</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><code>first_campaign</code></td><td></td></tr>
 <tr class="grp"><td colspan="5">attribution claim &mdash; this touch</td></tr>
-<tr><td class="col">tagged_source</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>source</code></td><td><span class="no">not stored</span></td><td><strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column.</td></tr>
+<tr><td class="col">tagged_source</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>source</code></td><td><span class="no">not stored</span></td><td><strong>&sect;7.5 rename.</strong> Today the tracker sends these as <code>source</code>/<code>medium</code>/<code>campaign</code>/<code>search_terms</code> &mdash; the same names the server writes &mdash; so nothing records which half produced a value. As <code>tagged_*</code> they are a claim, and the answer is a separate column. <strong>Held in the SESSION store</strong> beside <code>session_referer</code>, written once when the session is minted, so every event carries the session&rsquo;s originating tags and the resolver needs no state (&sect;7.3). A tag that differs mid-session starts a new session rather than overwriting them &mdash; &sect;7.10.</td></tr>
 <tr><td class="col">tagged_medium</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>medium</code></td><td><span class="no">not stored</span></td><td></td></tr>
 <tr><td class="col">tagged_campaign</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-on">1.x</span><span class="vsq v-on">v2</span> <code>campaign</code></td><td><span class="no">not stored</span></td><td></td></tr>
 <tr><td class="col">tagged_ad</td><td><span class="ph ph-c">CLIENT</span></td><td class="ver"><span class="vsq v-off">1.x</span><span class="vsq v-on">v2</span></td><td><span class="no">not stored</span></td><td></td></tr>
@@ -945,6 +945,79 @@ possible at all.</p>
 GA4&rsquo;s recommended commerce parameter names. Those are fields being relocated into
 <code>params</code>, not a mechanism being retired &mdash; the distinction being whether the name
 is known at release time.</p>
+
+
+<h3><span class="num">7.10</span>A campaign change is a session boundary <span class="chip c-dec">Decided</span></h3>
+<p>&sect;7.5 puts the session&rsquo;s originating campaign tags in the session store so the resolver
+stays stateless. That only works if the value never changes mid-session &mdash; which is the
+session-scope contract the tracker already states: <em>identical on every event sharing a
+session_id, a divergence being a regression</em>, enforced by
+<code>SessionScopedInvariant.test.js</code>.</p>
+
+<p>So what happens when someone with an active session clicks a newsletter link and lands on
+<code>?utm_source=newsletter</code>? Writing the new tag breaks the invariant. Ignoring it means
+the newsletter never gets credit for the visit it caused. <strong>Neither is acceptable, so the
+sessionization rule changes instead.</strong></p>
+
+<div class="keyrow" style="border-left-color:var(--fwd)">
+  <span class="ph ph-b">RULE</span>
+  <span>A new session starts on <strong>timeout OR campaign change</strong>. 1.x sessionizes on
+  timeout alone &mdash; <code>isNewSession()</code> is <code>timestamp - last_req &gt;=
+  sessionLength</code> and nothing else. Campaign parameters play no part in it today.</span>
+</div>
+
+<p>This is what GA does, and it preserves the invariant rather than carving an exception into it:
+session-scoped values may never change within a session, so when attribution must change, a new
+session is started to hold it. Each campaign owns the session it created.</p>
+
+<h4>What counts as a change</h4>
+<p><strong>A tag that <em>differs</em> from the session&rsquo;s stored one &mdash; not a tag that
+is merely present.</strong> The distinction is load-bearing, and 1.x gets it wrong for this
+purpose: <code>getCampaignProperties()</code> sets <code>isNewCampaign</code> the moment any
+campaign parameter appears on the URL &mdash; &ldquo;anytime we see a campaign param on the URL
+its a new campaign&rdquo;. That is fine for choosing an attribution model and wrong for deciding a
+session boundary, because the tag stays in the address bar: a refresh, a back-navigation, or any
+in-page link that preserves the query string would start a fresh session every time.</p>
+<div class="scroll"><table>
+<thead><tr><th>Stored</th><th>Incoming</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td class="dash">(none)</td><td class="col">utm_source=newsletter</td><td><strong>New session.</strong> Direct traffic acquiring a campaign mid-visit.</td></tr>
+<tr><td class="col">newsletter</td><td class="col">utm_source=ads</td><td><strong>New session.</strong> A different campaign.</td></tr>
+<tr><td class="col">newsletter</td><td class="col">utm_source=newsletter</td><td>Same session. A refresh or re-navigation with the tag still in the URL.</td></tr>
+<tr><td class="col">newsletter</td><td class="dash">(none)</td><td>Same session. Attribution is sticky; an untagged page later in the visit does not un-attribute it.</td></tr>
+</tbody></table></div>
+
+<h4>Restarting gracefully</h4>
+<p>The rotation has an ordering trap, and it is the reason &ldquo;gracefully&rdquo; is the right
+word. <strong>Engagement accrued on the previous page belongs to the previous session.</strong>
+<code>engagement_msec</code> rides the next outgoing event, so if the session id rotates first,
+that residue is attributed to the new session and inflates it &mdash; while the session that
+actually earned the time loses it. The sequence has to be:</p>
+<ol>
+<li><strong>Settle the outgoing session first.</strong> Flush or attribute the pending engagement
+residue and any pending one-shot flags against the <em>old</em> <code>session_id</code>.</li>
+<li><strong>Close it.</strong> The old id becomes <code>prior_session_id</code> &mdash; 1.x
+already carries that, and already reports it for the life of the successor session.</li>
+<li><strong>Mint the new session.</strong> New <code>session_id</code>, new <code>sts</code>, and
+the new <code>tagged_*</code> written into a fresh session store. Visitor-scoped state is
+untouched: <code>visitor_id</code>, <code>fsts</code> and the acquisition triple (&sect;7.5b) all
+survive, and <code>prior_sessions</code> increments.</li>
+<li><strong>Let the marker follow.</strong> <code>is_new_session_start</code> fires for the new
+session, materializing a <code>session_start</code> carrying the new attribution &mdash; which is
+exactly what that marker is for.</li>
+</ol>
+<p>The state manager already has the machinery: a new-session decision discards the persisted
+session values and keeps what this page load set, which is precisely the swap needed here.</p>
+
+<div class="flag">
+  <p class="h">Expected parity difference</p>
+  <p>v2 will count <strong>more sessions than 1.x on identical traffic</strong>, because a
+  mid-session campaign click now splits one session into two. The number is correct and the change
+  is deliberate, but the parity harness (&sect;3.3) compares v1 against v2 and will report it as a
+  divergence. It has to be <em>declared</em> as an expected difference before cutover, or it will
+  surface during the overlap looking exactly like a regression &mdash; and &ldquo;sessions do not
+  match&rdquo; is the last thing anyone wants to be debugging from scratch on the day.</p>
+</div>
 
 
 <footer>
