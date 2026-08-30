@@ -218,14 +218,28 @@ so every existing report renders identically. That is a characterization run, an
 exists — <code>tests/ReportCharacterizationHarness.php</code>, 433 lines with
 <code>snapshot</code>/<code>observe</code>/<code>normalise</code>.</p>
 <div class="flag">
-  <p class="h">Trace the three multi-entity registrations while you are here</p>
-  <p><code>month</code>, <code>userName</code> and <code>priorVisitCount</code> currently keep the
-  last of seven entities, and <code>$dim['entity']</code> then drives the JOIN
-  (<code>entityFactory()</code>, <code>getForeignKeyColumn()</code>, <code>$db-&gt;join()</code>).
-  <code>date</code> is registered against the same list with <code>denormalized = true</code> while
-  <code>month</code> beside it is not, which looks like an oversight rather than a distinction.
-  <strong>Not claimed as a live defect</strong> — it may be masked downstream — but this change makes
-  the question concrete, and it is the natural moment to answer it.</p>
+  <p class="h">Traced: userName is the one, and it is registered wrongly <span class="chip c-meas">Measured</span></p>
+  <p>An earlier draft named three suspects from static analysis &mdash; <code>month</code>,
+  <code>userName</code>, <code>priorVisitCount</code>. At runtime only <strong>one</strong>
+  dimension was losing entities: <code>userName</code>, which keeps 1 of 7. The other two parse as
+  multi-entity but register denormalized; the static count mis-read their argument positions. The
+  recovered total is <strong>6</strong> entries, not the ~18 estimated.</p>
+  <p><strong>And the loss was hiding a defect.</strong> <code>userName</code> is registered
+  <em>normalized</em> against seven fact entities that all carry <code>user_name</code>
+  <em>denormalized</em> on the row. Normalized resolution joins a dimension table through a foreign
+  key, and its <code>foreign_key_name</code> is empty &mdash; so it builds an alias ending
+  <code>_via_</code> and joins whichever entity was registered last
+  (<code>base.commerce_line_item_fact</code>) rather than the one being queried.</p>
+  <p>The fix is one flag, <code>denormalized = true</code>, exactly as <code>date</code> is
+  registered against the same list; it then lands in
+  <code>denormalizedDimensions[$name][$entity]</code>, which is where it belonged. Note the value is
+  written <strong>both</strong> ways &mdash; denormalized onto fact rows, and to
+  <code>owa_visitor</code> alongside <code>user_email</code>, which <code>SessionHandlers</code>
+  updates on change &mdash; so the denormalized reading is the correct one for these entities.</p>
+  <p><strong>Reachable but unexercised:</strong> no shipped report uses <code>userName</code>, yet
+  <code>getAllDimensions()</code> offers it, so it is selectable in the custom-report picker. That
+  is why it has gone unnoticed. <em>Deliberately not fixed in the characterization PR</em> &mdash; a
+  behaviour change does not belong in a behaviour-preserving commit, and it needs its own test.</p>
 </div>
 
 <h3 id="w2"><span class="num">2</span>Catalog accessors take an entity scope <span class="chip c-dec">Decided</span></h3>
