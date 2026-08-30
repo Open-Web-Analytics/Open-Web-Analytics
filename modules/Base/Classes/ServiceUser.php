@@ -272,15 +272,35 @@ class ServiceUser extends \OWA\Core\Base {
         $this->isInitialized = true;
     }
 
+    /**
+     * Grant this user the sites matching a list of domains.
+     *
+     * Resolves each domain with a lookup. It used to COMPUTE the key instead --
+     * generateId( generateSiteId( $domain ) ) -- which worked only while a
+     * site's identity was md5 of its domain. Identifiers are now minted, so a
+     * computed key would name a site that does not exist, and this would grant
+     * access to nothing while appearing to succeed.
+     *
+     * Nothing calls this. It is corrected rather than removed because it is a
+     * public method that could be called from a module, and a permission helper
+     * that silently resolves to the wrong sites is worse than one that is
+     * merely unused. A domain with no site is skipped, so an unknown domain
+     * grants nothing rather than granting something arbitrary.
+     */
     public function loadAssignedSitesByDomain($domains) {
 
         if ( $domains ) {
             $site_ids = array();
-            $s = \OWA\Core\CoreAPI::entityFactory('base.site');
 
             foreach ($domains as $domain) {
 
-                $site_ids[] = array('site_id' => $s->generateId( $s->generateSiteId( $domain ) ) );
+                $site = \OWA\Core\CoreAPI::entityFactory('base.site');
+                $site->load( $domain, 'domain' );
+
+                if ( $site->wasPersisted() ) {
+
+                    $site_ids[] = array('site_id' => $site->get('id') );
+                }
             }
 
             $this->setAllowedSitesList($site_ids);

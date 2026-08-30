@@ -161,11 +161,22 @@ test.describe('admin: site CRUD', () => {
         await expect(page.locator(`text=${FIXTURE.newSiteDomain}`).first()).toBeVisible();
 
         // --- EDIT --------------------------------------------------------------
-        // site_id = md5(domain-as-typed) -- same scheme the seeder/fixtures use.
-        const createdSiteId = require('crypto')
-            .createHash('md5')
-            .update(FIXTURE.newSiteDomain)
-            .digest('hex');
+        // Read the identifier off the list rather than deriving it. site_id used
+        // to be md5(domain-as-typed), so the spec could compute what the admin UI
+        // would store; identifiers are minted now, so the only thing that knows
+        // this site's id is the page that just listed it.
+        const createdRow = page.locator('div.owa_reportSectionContent', {
+            hasText: FIXTURE.newSiteDomain,
+        });
+        const editHref = await createdRow
+            .locator('a[href*="base.sitesProfile"]')
+            .first()
+            .getAttribute('href');
+        const editParams = new URL(editHref, page.url()).searchParams;
+        // The link is built by makeLink(), which prefixes params with the app
+        // namespace when one is configured -- so accept either spelling.
+        const createdSiteId = editParams.get('owa_siteId') || editParams.get('siteId');
+        expect(createdSiteId, 'the sites list must expose the new site id').toBeTruthy();
         const newName = 'OWA E2E Renamed Site';
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
         // On the edit form the domain is fixed (hidden) and only name/description

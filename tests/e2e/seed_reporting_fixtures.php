@@ -27,6 +27,13 @@
 
 // ---- Fixture identifiers (stable contract with the Playwright config) --------
 const E2E_SITE_DOMAIN = 'https://owa-e2e.example.test';
+/*
+ * Pinned, not derived. site_id used to be md5( domain ), so the seeder and the
+ * specs could each compute it independently and agree. Identifiers are minted
+ * now, so the fixture states the one it wants and passes it at creation --
+ * fixtureInfo() then hands the same value to the specs.
+ */
+const E2E_SITE_ID = 'OWA-e2e-reporting-fixture';
 const E2E_SITE_NAME   = 'OWA E2E Reporting Fixture';
 const E2E_USER_ID     = 'owa-e2e-reporter@example.test';
 const E2E_USER_PASS   = 'e2e-Reporter-Pass-1!';   // local throwaway fixture creds
@@ -202,7 +209,7 @@ function fixtureInfo(): array
 {
     return [
         'site_domain'    => E2E_SITE_DOMAIN,
-        'site_id'        => md5(E2E_SITE_DOMAIN),
+        'site_id'        => E2E_SITE_ID,
         'user_id'        => E2E_USER_ID,
         'password'       => E2E_USER_PASS,
         'role'           => E2E_USER_ROLE,
@@ -222,9 +229,11 @@ function seed(): array
 {
     $out = fixtureInfo();
 
-    // 1. Site (createNewSite is idempotent: site_id = md5(domain), guarded by wasPersisted).
+    // 1. Site. createNewSite() is still idempotent -- it now recognises the
+    //    domain by lookup rather than by deriving its identifier -- and the
+    //    identifier is pinned so the specs can reference it without a query.
     $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
-    $sm->createNewSite(E2E_SITE_DOMAIN, E2E_SITE_NAME);
+    $sm->createNewSite(E2E_SITE_DOMAIN, E2E_SITE_NAME, '', '', E2E_SITE_ID);
 
     // 2. User with a known password (idempotent: skip if already present).
     $u = owa_coreAPI::entityFactory('base.user');
@@ -254,7 +263,7 @@ function seed(): array
     //     page is denied. The relation is keyed by INTERNAL ids (not the md5
     //     site_id / user_id string), mirroring siteAddAllowedUserRestController.
     $s = owa_coreAPI::entityFactory('base.site');
-    $s->load(md5(E2E_SITE_DOMAIN), 'site_id');
+    $s->load(E2E_SITE_ID, 'site_id');
     if ($u->get('id') && $s->get('id') && !siteUserRelationExists($u->get('id'), $s->get('id'))) {
         $rel = owa_coreAPI::entityFactory('base.site_user');
         $rel->set('user_id', $u->get('id'));
@@ -303,14 +312,14 @@ function seed(): array
      *    a previous run died midway, and the fixture should be torn down, not
      *    patched up.
      */
-    $existing = countSiteRequests(md5(E2E_SITE_DOMAIN));
+    $existing = countSiteRequests(E2E_SITE_ID);
     $seeded = 0;
     if ($existing < E2E_PAGEVIEWS) {
         $seeded = seedPageviews(E2E_PAGEVIEWS - $existing);
     }
 
     $out['pageviews_seeded']  = $seeded;
-    $out['pageviews_total']   = countSiteRequests(md5(E2E_SITE_DOMAIN));
+    $out['pageviews_total']   = countSiteRequests(E2E_SITE_ID);
 
     // Loud enough to notice when a "seed" changed nothing, or resumed a partial
     // one. Both mean the rows on disk are not what the current code writes.
@@ -324,8 +333,8 @@ function seed(): array
     // 4. E-commerce. The setting is per-site; enabling it is what makes the
     //    e-commerce tab appear on the session-based reports and lets the
     //    commerce reports return rows.
-    owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting', true);
-    $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'enableEcommerceReporting');
+    owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting', true);
+    $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting');
     $out['transactions_seeded'] = seedTransactions();
 
     // 5. Notifications for the header bell.
@@ -510,7 +519,7 @@ function unseedOthersReport(): int
  */
 function seedDomstreams(): array
 {
-    $site_id = md5(E2E_SITE_DOMAIN);
+    $site_id = E2E_SITE_ID;
     $db      = owa_coreAPI::dbSingleton();
     $db->connect();
 
@@ -700,7 +709,7 @@ function seedGoal(): array
         $steps[$n] = $step + ['step_number' => $n];
     }
 
-    $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+    $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
 
     $goals[E2E_GOAL_NUMBER] = [
         'goal_number' => E2E_GOAL_NUMBER,
@@ -715,9 +724,9 @@ function seedGoal(): array
         ],
     ];
 
-    owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+    owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
 
-    $stored = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+    $stored = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
     $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
 
     return [
@@ -730,7 +739,7 @@ function seedGoal(): array
 
 function teardown(): array
 {
-    $site_id = md5(E2E_SITE_DOMAIN);
+    $site_id = E2E_SITE_ID;
 
     // Remove fact/session/request rows for the fixture site. Dimension rows are
     // content-hashed and shared, so (as in the ingestion tests) we leave them.
@@ -785,11 +794,11 @@ function teardown(): array
      * other slots, and clearing the setting wholesale would take them too.
      */
     try {
-        $goals = (array) owa_coreAPI::getSiteSetting(md5(E2E_SITE_DOMAIN), 'goals');
+        $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
 
         if (array_key_exists(E2E_GOAL_NUMBER, $goals)) {
             unset($goals[E2E_GOAL_NUMBER]);
-            owa_coreAPI::persistSiteSetting(md5(E2E_SITE_DOMAIN), 'goals', $goals);
+            owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
             $removed['goal'] = 'fixture goal removed';
         } else {
             $removed['goal'] = 'none';
@@ -822,7 +831,9 @@ function teardown(): array
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try {
         $cs = owa_coreAPI::entityFactory('base.site');
-        $cs->load(md5(E2E_NEW_SITE_DOMAIN), 'site_id');
+        // Created through the admin UI, so its identifier is minted and cannot
+        // be predicted here. The domain is what this cleanup actually knows.
+        $cs->load(E2E_NEW_SITE_DOMAIN, 'domain');
         if ($cs->get('id')) { $cs->delete($cs->get('id'), 'id'); }
     } catch (\Throwable $e) {}
     try {
@@ -869,7 +880,7 @@ function teardown(): array
  */
 function seedTransactions(): int
 {
-    $site_id = md5(E2E_SITE_DOMAIN);
+    $site_id = E2E_SITE_ID;
     $seeded  = 0;
     foreach (E2E_TXNS as $txn) {
         $existing = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
@@ -996,7 +1007,7 @@ function summariseCommerceOntoSession($session_pk): void
 
 function seedPageviews(int $n): int
 {
-    $site_id = md5(E2E_SITE_DOMAIN);
+    $site_id = E2E_SITE_ID;
     $rc = owa_coreAPI::requestContainerSingleton();
 
     // Two stable visitor identities so repeat-visitor reports have a returning

@@ -11,7 +11,7 @@
 
 // Mirrors the E2E_* constants in seed_reporting_fixtures.php.
 const FIXTURE = {
-    siteId: 'fdb09e48d872a24bca13083c2c5f7579', // md5('https://owa-e2e.example.test')
+    siteId: 'OWA-e2e-reporting-fixture', // pinned by E2E_SITE_ID in the seeder, not derived
     siteDomain: 'https://owa-e2e.example.test',
     userId: 'owa-e2e-reporter@example.test',
     password: 'e2e-Reporter-Pass-1!', // throwaway LOCAL fixture creds, never production

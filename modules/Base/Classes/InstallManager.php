@@ -83,44 +83,60 @@ class InstallManager extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Ensure the install's default site exists, and return its site_id.
+     *
+     * Idempotent, as before, but no longer because the identifier is a function
+     * of the domain. It used to derive md5( $domain ) and look THAT up, so a
+     * re-run recognised the site only by arriving at the same identifier;
+     * minting identifiers breaks that, and the domain is looked up directly
+     * instead.
+     *
+     * A caller may still pin an identifier by passing $site_id -- the install
+     * wizard does -- and in that case the pinned value is what gets looked up,
+     * so pinning stays idempotent on its own terms.
+     */
     function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
 
         if (!$name) {
             $name = $domain;
         }
 
+        $this->e->notice('Checking for existence of default site.');
+
+        $existing = \OWA\Core\CoreAPI::entityFactory('base.site');
+
+        if ($site_id) {
+            $existing->load($site_id, 'site_id');
+        } else {
+            $existing->load($domain, 'domain');
+        }
+
+        if ($existing->wasPersisted()) {
+
+            $this->e->notice(sprintf(
+                "Default site already exists (id = %s). nothing to do here.", $existing->get('id')));
+
+            return $existing->get('site_id');
+        }
+
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
 
         if (!$site_id) {
-            $site_id = $site->generateSiteId($domain);
+            $site_id = $site->mintSiteId();
         }
 
+        $site->set('id', $site->generateId($site_id));
+        $site->set('site_id', $site_id);
+        $site->set('name', $name);
+        $site->set('description', $description);
+        $site->set('domain', $domain);
+        $site->set('site_family', $site_family);
 
-        // Check to see if default site already exists
-        $this->e->notice('Checking for existence of default site.');
-
-        // create site_id....how???
-        $site->getByColumn('site_id', $site_id);
-        $id = $site->get('id');
-
-        if(empty($id)) {
-            // Create default site
-            $site->set('id', $site->generateId($site_id));
-            $site->set('site_id', $site_id);
-            $site->set('name', $name);
-            $site->set('description', $description);
-            $site->set('domain', $domain);
-            $site->set('site_family', $site_family);
-            $site_status = $site->create();
-
-            if ($site_status == true) {
-                $this->e->notice('Created default site.');
-            } else {
-                $this->e->notice('Creation of default site failed.');
-            }
-
+        if ($site->create()) {
+            $this->e->notice('Created default site.');
         } else {
-            $this->e->notice(sprintf("Default site already exists (id = %s). nothing to do here.", $id));
+            $this->e->notice('Creation of default site failed.');
         }
 
         return $site->get('site_id');

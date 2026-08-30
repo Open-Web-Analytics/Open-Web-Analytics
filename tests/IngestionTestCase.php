@@ -99,10 +99,13 @@ abstract class IngestionTestCase extends TestCase
 
         if (!$site->wasPersisted()) {
 
-            // md5( domain ) is what SiteManager stores as site_id, so passing
-            // the value these tests already hash gives exactly their site id.
+            // Pin the identifier rather than relying on how one is generated.
+            // site_id used to be md5( domain ), so hashing the domain happened
+            // to reproduce it; identifiers are now minted, so the fixture says
+            // which one it wants. The value itself is an arbitrary constant
+            // these tests share -- nothing derives it any more.
             $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
-            $sm->createNewSite('owa-test-site', 'OWA ingestion test site');
+            $sm->createNewSite('owa-test-site', 'OWA ingestion test site', '', '', $site_id);
         }
 
         self::$registeredSites[$site_id] = true;

@@ -59,9 +59,37 @@ class Site extends \OWA\Core\Entity {
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
     }
 
+    /**
+     * The identifier an existing site was given, derived from its domain.
+     *
+     * LEGACY. Every site_id issued before identity was decoupled from the
+     * domain has this shape, and they are never reissued -- every fact row
+     * references one. Kept so a legacy identifier can still be reconstructed
+     * from a domain where something needs to; new sites get mintSiteId().
+     *
+     * Deriving identity from the domain is what made two sites for one domain
+     * impossible, which is why new sites no longer use this.
+     */
     function generateSiteId($domain) {
 
         return md5($domain);
+    }
+
+    /**
+     * A fresh identifier for a new site, owing nothing to its domain.
+     *
+     * Prefixed so a minted identifier is recognisable on sight and can be told
+     * from a legacy md5 without consulting the database. The prefix is cosmetic
+     * only: generateId() lowercases before hashing and MySQL's collation
+     * compares case-insensitively, so OWA- and owa- are the same identifier.
+     *
+     * Sixteen hex characters of randomness. The collision that actually matters
+     * is not on this string but on the numeric key derived from it, so callers
+     * mint against a uniqueness check rather than trusting the width alone.
+     */
+    function mintSiteId() {
+
+        return 'OWA-' . bin2hex( random_bytes( 8 ) );
     }
 
     function settingsGetFilter($value) {
