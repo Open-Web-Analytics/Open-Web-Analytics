@@ -179,7 +179,7 @@ something had to be careful.</p>
 <tr><td>2</td><td>Catalog accessors take an entity scope</td><td>4 accessors, 10 consumers; no aggregation change; schema-version gate</td><td>the picker stops offering unqueryable metrics</td></tr>
 <tr><td>3</td><td>Site identity decoupled from domain</td><td>3 derivations, 1 in auth</td><td>domain renames, two configs per domain, multi-domain properties</td></tr>
 <tr><td>4</td><td>Profiles</td><td>new concept; dormant column exists</td><td>the container the rest needs</td></tr>
-<tr><td>5</td><td>Metrics become configuration</td><td>22 class files</td><td>less code; avoids writing v2's metrics twice</td></tr>
+<tr><td>5</td><td>Metrics as configuration</td><td>a policy, plus 22 class files</td><td>the policy is free; the conversion is optional cleanup</td></tr>
 </tbody></table></div>
 
 <div class="part" id="p1">
@@ -366,11 +366,24 @@ data by which snippet happened to be deployed — stepping v1's history exactly 
 destroying the thing v1 is being kept for.</p>
 
 <h3 id="w5"><span class="num">5</span>Metrics become configuration <span class="chip c-open">Open</span></h3>
-<p><strong>Different in kind from 1&ndash;4, and the distinction matters.</strong> Those are
-prerequisites: v2 cannot happen without them. This one is a preference. Nothing breaks if it is
-skipped &mdash; v2's metrics simply get written as classes and converted later, which is the same
-work done twice. That is the whole argument for its position, and it is a weaker argument than the
-others in this document.</p>
+<p><strong>Two things, and only one of them is work.</strong> An earlier draft argued this had to
+come before v2's metrics were authored, or they would be written as classes and converted later --
+the same work twice. That was wrong: nothing forces v2's metrics to be classes.</p>
+<div class="scroll"><table>
+<thead><tr><th></th><th>What</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td><strong>5a</strong></td><td><strong>A policy: new metrics are registered as
+configuration.</strong> <code>registerMetricDefinition()</code> already works and 6 metrics use it
+today</td><td><strong>None.</strong> Needs no machinery and no sequencing. Adopt it and the doubled
+work cannot happen, because v2's metrics are config from the first one written</td></tr>
+<tr><td><strong>5b</strong></td><td>Converting v1's existing <strong>22</strong> class metrics</td>
+<td>Real but optional. Pure cleanup of code that already works, on no critical path, schedulable
+whenever &mdash; or never</td></tr>
+</tbody></table></div>
+<p>So 5a should be adopted immediately and is not really an item at all, while 5b is
+<strong>different in kind from 1&ndash;4</strong>: those are prerequisites v2 cannot happen
+without, and this is housekeeping. Separating them removes the only argument for scheduling the
+conversion early.</p>
 <p><span class="chip c-meas">Measured</span> <code>ConfigurableMetric</code> already supports
 <code>count</code>, <code>distinct_count</code>, <code>sum</code> and <code>calculated</code>, but
 only <strong>6</strong> metrics are registered through it against <strong>22</strong> class
@@ -389,9 +402,9 @@ the 8 shipped formulas does not move the trust boundary. The parser is the prere
 <em>user-authored</em> metric builder, a separate feature, and a plain four-operator grammar would
 not even cover today's set since <code>round(actions / visits, 1)</code> needs function
 application.</p>
-<p><em>Position:</em> after the groundwork and before v2's own metrics are authored. Later than that
-and the conversion covers twice as many metrics; earlier and it competes with work that actually
-blocks.</p>
+<p><em>Position:</em> 5a now, as a standing rule. 5b unscheduled &mdash; it competes with work that
+actually blocks, and its cost does not grow if it waits, because 5a stops the class metrics
+multiplying in the meantime.</p>
 
 <div class="part" id="p2">
   <p class="part-n">Part Two</p>
