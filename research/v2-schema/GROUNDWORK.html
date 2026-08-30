@@ -175,7 +175,7 @@ something had to be careful.</p>
 <thead><tr><th>#</th><th>Work</th><th>Touch points</th><th>Value without v2</th></tr></thead>
 <tbody>
 <tr><td>1</td><td>Dimension catalog becomes entity-keyed</td><td>2 writes, 1 reader</td><td>fixes a latent overwrite</td></tr>
-<tr><td>2</td><td>Catalog accessors take an entity scope</td><td>4 accessors, 10 consumers</td><td>the picker stops offering unqueryable metrics</td></tr>
+<tr><td>2</td><td>Catalog accessors take an entity scope</td><td>4 accessors, 10 consumers; no aggregation change; schema-version gate</td><td>the picker stops offering unqueryable metrics</td></tr>
 <tr><td>3</td><td>Site identity decoupled from domain</td><td>3 derivations, 1 in auth</td><td>domain renames, two configs per domain, multi-domain properties</td></tr>
 <tr><td>4</td><td>Profiles</td><td>new concept; dormant column exists</td><td>the container the rest needs</td></tr>
 </tbody></table></div>
@@ -253,6 +253,43 @@ scope it is handed.</p>
 <p><strong>Value independent of v2:</strong> <code>getAllMetrics()</code> today returns everything
 regardless of whether it is queryable in the current context. An entity-scoped picker is more
 correct with one generation, not just two.</p>
+<h4>Modules do not declare a generation <span class="chip c-dec">Decided</span></h4>
+<p>A module registers across entities, exactly as Base already does — <code>visits</code> is
+registered twice today, against <code>base.session</code>/<code>id</code> and
+<code>base.request</code>/<code>session_id</code>. The v2 registration is a third call in the same
+file, in the same module, against the event entity. There is no per-module generation, so
+<strong><code>_loadMetrics()</code> and <code>_loadDimensions()</code> need no grouping</strong>:
+they keep merging modules flat, and the accessors filter that merged map by the entity scope. The
+single choke point is preserved because every consumer goes through an accessor.</p>
+<p><strong>A third-party module registering only against v1 entities is unaffected</strong> and
+needs no change: it simply will not appear in a v2 profile's scope, automatically, because its
+entity is not in scope. When such a module wants to support v2 it adds a registration against the
+event entity — the porting story is <em>one more registration</em>, not a version declaration or a
+rewrite, and a module can serve both generations at once without knowing generations exist.</p>
+<p><strong>But that registration must be safeguarded by the module's schema version</strong>, or it
+will advertise a dimension whose column does not exist on installs that have not reached the update
+which created it. The machinery is already there: <code>Core/Module.php</code> carries
+<code>$required_schema_version</code> and <code>getRequiredSchemaVersion()</code>, and the applied
+version is persisted per module as a <code>schema_version</code> setting. Because §4.1 keeps
+<strong>one</strong> numbered sequence rather than a v1/v2 pair, the check is a numeric comparison —
+no compatibility matrix, which is precisely why that decision was made. A module adding v2
+registrations raises its required version to the sequence number that introduced the entity.</p>
+<div class="flag">
+  <p class="h">The safeguard has to run in both directions</p>
+  <p>The forward case is an install whose schema predates the v2 entity. The mirror case is more
+  likely and easier to miss: §4.1 makes <strong>a dropped v1 a supported state</strong>, so a module
+  registering against <code>base.session</code> may be offering dimensions backed by a table the
+  administrator deliberately removed.</p>
+  <p>So scoping filters for two distinct reasons at the same accessor — <em>not in this
+  profile</em> (the entity scope of this item) and <em>not in this install</em> (schema version and
+  entity existence). They are separate conditions and conflating them will read as one bug and be
+  two.</p>
+</div>
+<p>This also makes the <code>$fact_table_entities</code> hazard below the <em>principal</em> way to
+get this wrong, rather than an incidental one: with everything registered from one module, appending
+the v2 entity to the shared array is the tempting shortcut. v2 registrations are separate calls with
+their own columns.</p>
+
 <div class="flag">
   <p class="h">Calculated metrics have no entity</p>
   <p>They carry <code>child_metrics</code> and a formula instead, so scoping must include a
@@ -349,7 +386,7 @@ creation. Concretely here:</p>
 <thead><tr><th>Work</th><th>Proof</th></tr></thead>
 <tbody>
 <tr><td>1 · entity-keyed dimensions</td><td>characterization: one generation registered, every existing report byte-identical. Mutation-check by registering a second definition and asserting both survive</td></tr>
-<tr><td>2 · scoped accessors</td><td>a metric registered against an out-of-scope entity must <em>not</em> appear in the picker — and a calculated metric whose children are all in scope <em>must</em></td></tr>
+<tr><td>2 · scoped accessors</td><td>a metric registered against an out-of-scope entity must <em>not</em> appear in the picker — and a calculated metric whose children are all in scope <em>must</em>. Separately: a module whose <code>required_schema_version</code> exceeds the install's must not register, and neither must one whose entity's table has been dropped</td></tr>
 <tr><td>3 · site identity</td><td>existing installs unchanged; a new site gets a non-derived id; two sites on one domain become possible</td></tr>
 <tr><td>4 · profiles</td><td>two profiles on one website resolve to different catalogs and different session cookies from one tracker</td></tr>
 </tbody></table></div>
@@ -384,9 +421,6 @@ tests that pass locally — reproduce with <code>composer test:configless</code>
 <li><strong>Vocabulary</strong> — site / profile / property / <code>site_family</code>. It surfaces
 in the UI, the REST API and the schema simultaneously, and renaming later is the expensive kind of
 change.</li>
-<li><strong>Do modules declare a generation?</strong> If a v2 module registers into a v2-scoped
-catalog, module loading grows a concept — including for third-party modules. Worth deciding whether
-to take that on before the scoping shape is fixed.</li>
 <li><strong>Linked or independent?</strong> Whether a v1 and v2 profile for one website present as
 related in the UI (&ldquo;the old version of this property&rdquo;) or as two entries that happen to
 share a domain. GA chose linked, and it is how people found their way across.</li>
