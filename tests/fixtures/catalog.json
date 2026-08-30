@@ -2,10 +2,10 @@
     "counts": {
         "metricNames": 78,
         "metricImplementations": 99,
-        "dimensionNamesNormalized": 42,
-        "dimensionEntriesNormalized": 48,
-        "dimensionNamesDenormalized": 59,
-        "dimensionEntriesDenormalized": 223,
+        "dimensionNamesNormalized": 41,
+        "dimensionEntriesNormalized": 41,
+        "dimensionNamesDenormalized": 60,
+        "dimensionEntriesDenormalized": 230,
         "accessorDimensionNames": 101
     },
     "metrics": {
@@ -1735,85 +1735,6 @@
                 "family": "visitor",
                 "label": "Email Address",
                 "description": "The email address of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            }
-        },
-        "userName": {
-            "base.action_fact": {
-                "name": "userName",
-                "entity": "base.action_fact",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.click": {
-                "name": "userName",
-                "entity": "base.click",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.commerce_line_item_fact": {
-                "name": "userName",
-                "entity": "base.commerce_line_item_fact",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.commerce_transaction_fact": {
-                "name": "userName",
-                "entity": "base.commerce_transaction_fact",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.domstream": {
-                "name": "userName",
-                "entity": "base.domstream",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.request": {
-                "name": "userName",
-                "entity": "base.request",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": false
-            },
-            "base.session": {
-                "name": "userName",
-                "entity": "base.session",
-                "column": "user_name",
-                "family": "visitor",
-                "label": "User Name",
-                "description": "The name or ID of the user.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -4212,6 +4133,85 @@
                 "denormalized": true
             }
         },
+        "userName": {
+            "base.action_fact": {
+                "name": "userName",
+                "entity": "base.action_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.click": {
+                "name": "userName",
+                "entity": "base.click",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.commerce_line_item_fact": {
+                "name": "userName",
+                "entity": "base.commerce_line_item_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.commerce_transaction_fact": {
+                "name": "userName",
+                "entity": "base.commerce_transaction_fact",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.domstream": {
+                "name": "userName",
+                "entity": "base.domstream",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.request": {
+                "name": "userName",
+                "entity": "base.request",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.session": {
+                "name": "userName",
+                "entity": "base.session",
+                "column": "user_name",
+                "family": "visitor",
+                "label": "User Name",
+                "description": "The name or ID of the user.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "visitsToTransaction": {
             "base.commerce_transaction_fact": {
                 "name": "visitsToTransaction",
@@ -5472,7 +5472,7 @@
             "description": "The name or ID of the user.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "visitorId": {
             "name": "visitorId",
@@ -5609,6 +5609,7 @@
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
+                "userName",
                 "visitorId"
             ]
         },
@@ -5692,6 +5693,7 @@
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
+                "userName",
                 "visitorId"
             ]
         },
@@ -5776,6 +5778,7 @@
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
+                "userName",
                 "visitorId"
             ]
         },
@@ -5865,6 +5868,7 @@
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
+                "userName",
                 "visitorId"
             ]
         },
@@ -5944,6 +5948,7 @@
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
+                "userName",
                 "visitorId"
             ]
         }
