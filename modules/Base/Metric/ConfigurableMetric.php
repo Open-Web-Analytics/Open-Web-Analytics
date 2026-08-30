@@ -52,6 +52,17 @@ class ConfigurableMetric extends \OWA\Core\Metric {
         } else {
             $this->setEntity( $params['entity'] );
             $this->setColumn( $params['column'] );
+
+            /*
+             * Only the avg_difference kind uses this, and it is set from the
+             * definition rather than defaulted, so a definition that names the
+             * kind without supplying the column fails loudly instead of
+             * subtracting nothing.
+             */
+            if ( array_key_exists( 'subtrahend_column', $params ) ) {
+
+                $this->setSubtrahendColumn( $params['subtrahend_column'] );
+            }
         }
         
         return parent::__construct();

@@ -3,7 +3,7 @@
         {
             "kind": "aggregate",
             "entity": "base.action_fact",
-            "expression": "count(distinct action_fact.id)",
+            "expression": "COUNT(DISTINCT action_fact.id)",
             "alias": "actions"
         }
     ],
@@ -11,7 +11,7 @@
         {
             "kind": "aggregate",
             "entity": "base.action_fact",
-            "expression": "sum(action_fact.numeric_value)",
+            "expression": "SUM(action_fact.numeric_value)",
             "alias": "actionsValue"
         }
     ],
@@ -37,7 +37,7 @@
         {
             "kind": "aggregate",
             "entity": "base.click",
-            "expression": "count(click.id)",
+            "expression": "COUNT(click.id)",
             "alias": "domClicks"
         }
     ],
@@ -55,7 +55,7 @@
         {
             "kind": "aggregate",
             "entity": "base.feed_request",
-            "expression": "count(distinct feed_request.feed_reader_guid)",
+            "expression": "COUNT(DISTINCT feed_request.feed_reader_guid)",
             "alias": "feedReaders"
         }
     ],
@@ -63,7 +63,7 @@
         {
             "kind": "aggregate",
             "entity": "base.feed_request",
-            "expression": "count(distinct feed_request.id)",
+            "expression": "COUNT(DISTINCT feed_request.id)",
             "alias": "feedRequests"
         }
     ],
@@ -71,7 +71,7 @@
         {
             "kind": "aggregate",
             "entity": "base.feed_request",
-            "expression": "count(distinct feed_request.subscription_id)",
+            "expression": "COUNT(DISTINCT feed_request.subscription_id)",
             "alias": "feedSubscriptions"
         }
     ],
@@ -613,7 +613,7 @@
         {
             "kind": "aggregate",
             "entity": "base.commerce_transaction_fact",
-            "expression": "count(commerce_transaction_fact.id)",
+            "expression": "COUNT(commerce_transaction_fact.id)",
             "alias": "transactions"
         },
         {
@@ -627,7 +627,7 @@
         {
             "kind": "aggregate",
             "entity": "base.action_fact",
-            "expression": "count(distinct action_fact.action_name)",
+            "expression": "COUNT(DISTINCT action_fact.action_name)",
             "alias": "uniqueActions"
         }
     ],
@@ -635,7 +635,7 @@
         {
             "kind": "aggregate",
             "entity": "base.commerce_transaction_fact",
-            "expression": "count(distinct commerce_transaction_fact.sku)",
+            "expression": "COUNT(DISTINCT commerce_transaction_fact.sku)",
             "alias": "uniqueLineItems"
         },
         {
@@ -649,7 +649,7 @@
         {
             "kind": "aggregate",
             "entity": "base.request",
-            "expression": "count(distinct request.document_id)",
+            "expression": "COUNT(DISTINCT request.document_id)",
             "alias": "uniquePageViews"
         }
     ],
