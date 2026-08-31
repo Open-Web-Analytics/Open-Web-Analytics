@@ -136,7 +136,8 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s32">3.2 Early cutover</a>
   <a href="#s33">3.3 Parity harness</a>
   <a href="#s34">3.4 Profiles</a>
-  <a href="#s35">3.5 Cutover</a>
+  <a href="#s34b">3.5 Org › Property › Profile</a>
+  <a href="#s36">3.6 Cutover</a>
   <a class="r-part" href="#p4">IV · Supporting</a>
   <a href="#s41">4.1 Schema versioning</a>
   <a href="#s42">4.2 Scheduling</a>
@@ -1175,6 +1176,40 @@ that day.</p>
 <p>Two trackers would have split each site's data by which snippet happened to be deployed, so
 v1's history would step or stop the moment a site upgraded — destroying the value of the thing
 being kept.</p>
+
+<div class="flag">
+  <p class="h">Amended: two configurations, because sessionization is client-side</p>
+  <p>The paragraph above rules out <em>replacing</em> the tag, and that reasoning stands. It does
+  not rule out <strong>adding</strong> one — and sessionization forces that.</p>
+  <p>A session id is decided in the browser, from a cookie, and v1 and v2 disagree about when a
+  session <em>begins</em>: v2 creates sessions only on page-view events, withholds the store until
+  <code>sendAccepted</code>, and embeds creation time in the id (§1.4). One cookie cannot hold both
+  models. A single tracker fanned out server-side would therefore write v2 rows carrying <em>v1's</em>
+  session boundaries — the v2 session model inherited rather than implemented, and the parity
+  harness would be comparing v2 against a session model it does not have.</p>
+  <p>So during overlap the page carries <strong>two configurations of one tracker</strong> — the
+  gtag shape, not two script tags — one per observation profile. The per-profile session store makes
+  this work with no new machinery: cookies are keyed <code>owa_s_&lt;profileId&gt;</code>, so two
+  profile ids give two independent sessionizations on the same page, exactly as GA4's
+  <code>_ga_&lt;measurement_id&gt;</code> does.</p>
+  <p><strong>v1's history does not step</strong>, which was the concern: its tag stays, its events
+  keep arriving, its sessions keep being cut its own way. The cost is two beacons per event while
+  both run, which is what the server-side fan-out was buying. Correct sessionization on both sides
+  is worth more than the saved request &mdash; a v2 corpus sessionized by v1's rules would be
+  unusable for exactly the questions v2 exists to answer.</p>
+  <p><strong>Which supersedes the fan-out itself.</strong> Each configuration sends to its own
+  profile, so each pipeline receives its own events and the server has nothing to duplicate. The
+  section title still holds &mdash; one tracker <em>library</em>, two pipelines &mdash; but the
+  mechanism is two configurations rather than one stream written twice.</p>
+  <p>And it further narrows the oracle. &sect;3.3 already reduced v1 to an oracle only below the
+  session boundary; with separate streams the two pipelines no longer consume <em>identical</em>
+  events, so even there the comparison is between two observations of the same page rather than two
+  readings of one event. Event-level attributes (browser, geo, page identity) should still agree
+  exactly and remain worth checking. Raw event counts become <em>near</em>-equal rather than
+  identical, since a beacon can be lost on one configuration and not the other &mdash; so that check
+  needs a tolerance, and a tolerance is a much weaker instrument than a diff. Worth knowing before
+  anyone reads a small discrepancy as a bug.</p>
+</div>
 <div class="scroll"><table>
 <thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
 <tbody>
@@ -1284,7 +1319,7 @@ action rather than a release date, and the queue is asynchronous so an event acc
 switch can land after it. Coverage watermarks fail for the same reason — during overlap both
 stores answer, and the data cannot say which is authoritative. An install-wide setting fails
 differently: since <strong>no data is migrated</strong>, v1 holds the history permanently
-(§3.5 keeps v1 reporting precisely for that), so a global flip would blank every historical
+(§3.6 keeps v1 reporting precisely for that), so a global flip would blank every historical
 report.</p>
 <p><strong>The proposal is to stop resolving it at query time and carry it in the data model
 instead.</strong> Decouple the tracked website from the profile that measures it: one website may
@@ -1482,7 +1517,67 @@ silent-wrong-answer failure in a different costume.</p>
 <p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
 settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
 
-<h3 id="s35"><span class="num">3.5</span>Cutover sequence</h3>
+<h3 id="s34b"><span class="num">3.5</span>Organization › Property › Observation Profile <span class="chip c-dec">Decided</span></h3>
+<p>&sect;3.4 established that a profile carries the version, which is what lets two generations
+coexist without a query ever inferring one. This is the structure that holds profiles, and it is
+larger than that section assumed: not &ldquo;sites gain a grouping&rdquo; but a three-tier
+hierarchy, touching users and permissions as well as measurement.</p>
+<div class="scroll"><table>
+<thead><tr><th>Tier</th><th>Is</th><th>Carries</th><th>GA equivalent</th></tr></thead>
+<tbody>
+<tr><td><strong>Organization</strong></td><td>who is doing the measuring</td><td><strong>user accounts</strong> and their roles</td><td>Account</td></tr>
+<tr><td><strong>Property</strong></td><td>the website or app</td><td>name, domain, description &mdash; what the thing <em>is</em></td><td>Property</td></tr>
+<tr><td><strong>Observation Profile</strong></td><td>a way of measuring it</td><td>the <strong>tracker id</strong>, the schema generation, settings and filters &mdash; how it is <em>measured</em></td><td>Data Stream</td></tr>
+</tbody></table></div>
+<p>Today's <code>owa_site</code> fuses the middle and bottom tiers: it holds <code>domain</code>
+and <code>name</code> (Property) beside <code>site_id</code> and <code>settings</code> (Profile).
+Splitting them is what the whole thing turns on, and <code>site_family</code> &mdash; the column
+that is written but never read &mdash; is superseded rather than repurposed, since
+<code>property_id</code> does that job properly.</p>
+<p><strong>Timezone belongs to the Profile</strong>, not the Property. It is applied once at write
+into <code>yyyymmdd</code> and is not retroactive (&sect;1.10), so it describes the measurement
+rather than the website. Two profiles on one property may legitimately record in different
+zones.</p>
+
+<h4>Permissions are the consequential part</h4>
+<p><code>owa_user</code> carries a <strong>global</strong> <code>role</code> today, with per-site
+rows in <code>owa_site_user</code> narrowing access. Moving accounts under an Organization makes
+that role org-scoped, and every existing grant &mdash; which points at a site, i.e. a future
+<em>Profile</em> &mdash; has to be repointed.</p>
+<p><strong>Grant at the Property, not the Profile.</strong> Someone who may see a website should
+see its measurements; a per-profile grant would mostly express &ldquo;you may read the v1 data but
+not the v2 data&rdquo;, which nobody wants and which would silently split a user's view at cutover.
+It also makes the migration mechanical.</p>
+<p><strong>One organization per user to begin with.</strong> Multi-org membership is a real feature
+with a real question attached (which org am I acting in?), and nothing here needs it. Note the
+existing trap while touching this: the allowed-users form <em>replaces</em> the whole grant set, so
+a partial submission revokes everyone omitted.</p>
+
+<h4>Migration for existing installs</h4>
+<ol>
+<li>One Organization; every existing user joins it, keeping its role.</li>
+<li>One Property per existing site, taking its <code>domain</code>, <code>name</code> and
+<code>description</code>.</li>
+<li>One Observation Profile per existing site, <strong>keeping its <code>site_id</code>
+unchanged</strong> &mdash; the rule from the identity work, and one every fact row depends on.</li>
+<li>Grants move from site to Property.</li>
+</ol>
+<p>Nothing a tracker sends changes, and no fact row is touched.</p>
+
+<div class="flag">
+  <p class="h">Each profile has its own tracker id, and during overlap the page carries two</p>
+  <p>This follows from where the id lives, and from sessionization being decided in the browser
+  (&sect;3.1, amended). A v2 profile cannot be populated by translating a v1 profile's events,
+  because the session boundaries would be v1's &mdash; so the page runs two configurations of one
+  tracker, one per profile.</p>
+  <p>The per-profile session store already makes that work: cookies keyed
+  <code>owa_s_&lt;profileId&gt;</code> give two independent sessionizations on one page, which is
+  precisely what GA4 does with <code>_ga_&lt;measurement_id&gt;</code>. Adding a configuration does
+  not disturb v1 &mdash; its tag stays and its history does not step, which was §3.1's actual
+  concern.</p>
+</div>
+
+<h3 id="s36"><span class="num">3.6</span>Cutover sequence</h3>
 <ol>
 <li>Ship the additive work in 1.x releases, each standing on its own</li>
 <li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
