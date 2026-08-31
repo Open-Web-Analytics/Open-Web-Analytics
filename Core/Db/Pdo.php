@@ -15,9 +15,14 @@ namespace OWA\Core\Db;
  * statements travel and how failures are reported -- nothing about what the SQL
  * says. Selected with `db_type = 'pdo'`.
  *
- * WHY NOT BOUND PARAMETERS
- * ------------------------
- * This driver deliberately does NOT use prepared statements with placeholders,
+ * WHY THE BUILDER STILL INTERPOLATES
+ * ----------------------------------
+ * NOTE: query() DOES prepare and bind when it is handed parameters -- see the
+ * $params path below, which is how inserts and constrained selects run. What
+ * follows describes the builder, which is a separate thing and still
+ * interpolates.
+ *
+ * The builder deliberately does not use placeholders throughout,
  * and that is not laziness. OWA's reporting layer composes its SQL
  * dynamically -- Db's builder assembles select lists, joins, group-bys and
  * constraints from a registry at runtime, and ResultSetManager drives it -- so
@@ -197,14 +202,57 @@ abstract class Pdo extends \OWA\Core\Db
 
                 $statement = $this->connection->prepare( $sql );
 
-                foreach ( $params as $i => $value ) {
+                /*
+                 * Placeholders and values must agree in number, and the check
+                 * is here because the failure is otherwise silent and wrong
+                 * rather than loud.
+                 *
+                 * PDO binds what it is given; MySQL then reports a type error
+                 * against whichever column happens to line up with a misplaced
+                 * value -- "Incorrect integer value: 'ludhiana' for column
+                 * 'is_browser'" is what that looks like from the log, with
+                 * nothing to say the values were offset rather than the data
+                 * bad. Worse, an offset that lands a string in another string
+                 * column raises nothing at all and writes the wrong value.
+                 *
+                 * Counting '?' outside quotes is enough: this driver only ever
+                 * emits positional placeholders, and the SQL is assembled from
+                 * column names and bindValue() returns rather than from user
+                 * text.
+                 */
+                $expected = self::countPlaceholders( $sql );
+
+                if ( $expected !== count( $params ) ) {
+
+                    $this->logQueryError( sprintf(
+                        'Refusing to execute: %d placeholders but %d bound values. '
+                        . 'Binding these would put values in the wrong columns.',
+                        $expected, count( $params ) ), $sql, false );
+
+                    $this->new_result = false;
+
+                    return false;
+                }
+
+                /*
+                 * A running position, NOT the array key. Binding to the key
+                 * plus one is correct only while the bindings array is
+                 * contiguous and zero-based; a single unset() or filter
+                 * anywhere upstream would shift every parameter after the gap,
+                 * silently.
+                 */
+                $position = 0;
+
+                foreach ( $params as $value ) {
+
+                    $position++;
 
                     // Typed rather than everything-as-string: binding an int as
                     // an int is what lets strict mode reject a genuinely bad
                     // value instead of coercing it, and PARAM_NULL keeps a null
                     // a NULL rather than turning it into ''.
                     $statement->bindValue(
-                        $i + 1,
+                        $position,
                         is_bool( $value ) ? (int) $value : $value,
                         self::paramType( $value )
                     );
@@ -364,6 +412,59 @@ abstract class Pdo extends \OWA\Core\Db
      * and PARAM_BOOL round-trips as '' for false on some drivers, which lands as
      * 0 under a permissive sql_mode and fails outright under a strict one.
      */
+    /**
+     * How many positional placeholders a statement carries.
+     *
+     * String literals are skipped so a '?' inside quoted text is not counted.
+     * This driver assembles SQL from column names and bindValue() returns, so
+     * quoted text is rare -- but a miscount here would refuse a legitimate
+     * query, which is worse than the problem being guarded against.
+     */
+    public static function countPlaceholders( $sql ) {
+
+        $sql    = (string) $sql;
+        $count  = 0;
+        $quote  = '';
+        $length = strlen( $sql );
+
+        for ( $i = 0; $i < $length; $i++ ) {
+
+            $char = $sql[ $i ];
+
+            if ( $quote !== '' ) {
+
+                /* Escaped quote inside a literal: skip the pair. */
+                if ( $char === '\\' ) {
+
+                    $i++;
+
+                    continue;
+                }
+
+                if ( $char === $quote ) {
+
+                    $quote = '';
+                }
+
+                continue;
+            }
+
+            if ( $char === "'" || $char === '"' ) {
+
+                $quote = $char;
+
+                continue;
+            }
+
+            if ( $char === '?' ) {
+
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
     private static function paramType( $value ) {
 
         if ( is_null( $value ) ) {

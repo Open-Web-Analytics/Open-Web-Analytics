@@ -92,7 +92,25 @@ class ProcessEvent extends \OWA\Core\Controller {
         // here before we pass it along to any handlers.
 
         // get a list of properties that we do not know the data type of
-        $unsanitized_properties = array_diff_key( $this->event->getProperties(), $properties );
+        /*
+         * Everything the event carries that NO module has registered.
+         *
+         * Diffed against every registered map, not just the regular one. It
+         * used to diff against `regular` alone, which left all 39 derived
+         * properties and the environmental ones in this set -- so a value a
+         * client sent for a SERVER-COMPUTED property was captured here, and the
+         * re-apply at the end of this method put it back on top of the value
+         * the derivation had just computed.
+         *
+         * That is how a tracking request carrying owa_is_browser=ludhiana ended
+         * up writing 'ludhiana' into a boolean column: the derivation ran
+         * correctly and was then undone. Environmental properties -- ip_address,
+         * timestamp -- were overwritable the same way, which is the more
+         * serious half.
+         */
+        $protected = $properties + $teh->serverOwnedProperties();
+
+        $unsanitized_properties = array_diff_key( $this->event->getProperties(), $protected );
 
         // santize them genericly. we will apply them back to the event later
         $sanitized_properties = \OWA\Module\Base\Classes\Sanitize::cleanInput( $unsanitized_properties, array('remove_html' => true) );
