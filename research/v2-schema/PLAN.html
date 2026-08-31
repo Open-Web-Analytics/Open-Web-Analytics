@@ -1218,10 +1218,13 @@ being kept.</p>
     stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
     rather than a rate.</p>
     <p>This is the same limitation &sect;3.3 records for validating the attribution model &mdash;
-    <em>existing history is not a usable touchpoint log</em> &mdash; and it has the same remedy:
-    recording raw touchpoints, already identified there as an additive 1.x item and an early one.
-    This is a second reason to do it early: without it, the largest behavioural change in the
-    session model ships unquantified.</p>
+    <em>existing history is not a usable touchpoint log</em>.</p>
+    <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
+    requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
+    is uncommon outside heavy paid-campaign traffic. Recording raw touchpoints stays an early 1.x
+    item for its own reason &mdash; the server-side attribution model cannot be built without it
+    &mdash; rather than as a precondition for shipping this. If a number is wanted later, that data
+    supplies it; nothing waits on it.</p>
   </div>
   <p>Event-level history &mdash; page views, clicks, geo, referrers &mdash; is untouched by all of
   this, and nothing already stored is rewritten. The change still wants a <strong>UI annotation at
