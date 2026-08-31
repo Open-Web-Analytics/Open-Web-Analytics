@@ -1,0 +1,450 @@
+{
+    "request": {
+        "REMOTE_HOST": {
+            "callbacks": [
+                "owa_trackingEventHelpers::remoteHostDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": true
+        },
+        "HTTP_USER_AGENT": {
+            "callbacks": [
+                "owa_trackingEventHelpers::userAgentDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": true
+        },
+        "HTTP_HOST": {
+            "callbacks": [
+                "owa_trackingEventHelpers::httpHostDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": true
+        },
+        "language": {
+            "callbacks": [
+                "owa_trackingEventHelpers::languageDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": true
+        },
+        "ip_address": {
+            "callbacks": [
+                "owa_trackingEventHelpers::ipAddressDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": true
+        },
+        "timestamp": {
+            "callbacks": [
+                "owa_trackingEventHelpers::timestampDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "integer",
+            "filter": false
+        },
+        "microtime": {
+            "callbacks": [
+                "owa_trackingEventHelpers::microtimeDefault"
+            ],
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string",
+            "filter": false
+        }
+    },
+    "client": {
+        "page_type": {
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "string"
+        },
+        "page_url": {
+            "default_value": "(not set)",
+            "required": true,
+            "data_type": "url",
+            "callbacks": [
+                "owa_trackingEventHelpers::makeUrlCanonical"
+            ]
+        },
+        "page_title": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::utfEncodeProperty"
+            ],
+            "data_type": "string",
+            "default_value": "(not set)"
+        },
+        "fsts": {
+            "required": false,
+            "callbacks": [],
+            "data_type": "integer",
+            "default_value": false
+        },
+        "psts": {
+            "required": false,
+            "callbacks": [],
+            "data_type": "integer",
+            "default_value": false
+        },
+        "sts": {
+            "required": false,
+            "callbacks": [],
+            "data_type": "integer",
+            "default_value": false
+        },
+        "days_since_first_session": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveDaysSinceFirstSession"
+            ],
+            "data_type": "integer",
+            "default_value": false,
+            "alternative_key": "dsfs"
+        },
+        "time_since_last_session": {
+            "required": false,
+            "callbacks": [],
+            "data_type": "integer",
+            "default_value": false
+        },
+        "days_since_prior_session": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveDaysSincePriorSession"
+            ],
+            "data_type": "integer",
+            "default_value": false,
+            "alternative_key": "dsps"
+        },
+        "num_prior_sessions": {
+            "required": true,
+            "callbacks": [],
+            "data_type": "integer",
+            "default_value": false,
+            "alternative_key": "nps"
+        },
+        "is_new_visitor": {
+            "required": true,
+            "data_type": "boolean",
+            "default_value": false
+        },
+        "user_name": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::setUserName"
+            ],
+            "default_value": "(not set)"
+        },
+        "user_email": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::setEmailAddress"
+            ],
+            "default_value": "(not set)",
+            "alternative_key": "email_address"
+        },
+        "HTTP_REFERER": {
+            "required": false,
+            "data_type": "url",
+            "callbacks": []
+        },
+        "target_url": {
+            "required": false,
+            "data_type": "url",
+            "callbacks": [
+                "owa_trackingEventHelpers::makeUrlCanonical"
+            ]
+        },
+        "session_referer": {
+            "required": false,
+            "data_type": "url",
+            "callbacks": [],
+            "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
+        },
+        "source": {
+            "required": true,
+            "data_type": "string",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString",
+                "owa_trackingEventHelpers::deriveSource"
+            ],
+            "default_value": "(not set)",
+            "note": "Independently settable at request time (utm_source). deriveSource only fills it in when the tracker sent nothing, by parsing session_referer."
+        },
+        "medium": {
+            "required": true,
+            "data_type": "string",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString",
+                "owa_trackingEventHelpers::deriveMedium"
+            ],
+            "default_value": "direct",
+            "note": "Independently settable at request time (utm_medium). deriveMedium only fills it in when the tracker sent nothing, by classifying session_referer as referral, organic-search or social-network."
+        },
+        "search_terms": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::extractSearchTerm"
+            ],
+            "default_value": "(not set)",
+            "note": "Independently settable at request time. extractSearchTerm only fills it in when the tracker sent nothing, by reading the search engine query param off session_referer."
+        },
+        "feed_subscription_id": {
+            "required": false,
+            "callbacks": [],
+            "default_value": null,
+            "alternative_key": "sid"
+        },
+        "attribs": {
+            "required": false,
+            "data_type": "json",
+            "callbacks": "",
+            "default_value": ""
+        }
+    },
+    "server": {
+        "year": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveYear"
+            ]
+        },
+        "month": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveMonth"
+            ]
+        },
+        "day": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveDay"
+            ]
+        },
+        "yyyymmdd": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveYyyymmdd"
+            ]
+        },
+        "dayofweek": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveDayOfWeek"
+            ]
+        },
+        "dayofyear": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveDayOfYear"
+            ]
+        },
+        "weekofyear": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveWeekOfYear"
+            ]
+        },
+        "hour": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveHour"
+            ]
+        },
+        "minute": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveMinute"
+            ]
+        },
+        "second": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveSecond"
+            ]
+        },
+        "sec": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveSec"
+            ]
+        },
+        "msec": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::deriveMsec"
+            ]
+        },
+        "page_uri": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::derivePageUri"
+            ]
+        },
+        "is_repeat_visitor": {
+            "required": true,
+            "data_type": "boolean",
+            "default_value": false,
+            "callbacks": [
+                "owa_trackingEventHelpers::setRepeatVisitorFlag"
+            ]
+        },
+        "full_host": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveFullHost"
+            ],
+            "default_value": "(not set)"
+        },
+        "host": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::getHostDomain"
+            ],
+            "default_value": "(not set)"
+        },
+        "browser_type": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveBrowserType"
+            ]
+        },
+        "is_browser": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::isBrowser"
+            ],
+            "default_value": false
+        },
+        "browser": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveBrowserVersion"
+            ],
+            "default_value": "(unknown)"
+        },
+        "is_robot": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::isRobot"
+            ],
+            "default_value": false
+        },
+        "os": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveOs"
+            ],
+            "default_value": "(unknown)"
+        },
+        "is_entry_page": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveEntryPage"
+            ],
+            "default_value": false
+        },
+        "country": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveCountry"
+            ],
+            "default_value": false
+        },
+        "city": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveCity"
+            ],
+            "default_value": false
+        },
+        "state": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveState"
+            ],
+            "default_value": false
+        },
+        "latitude": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveLatitude"
+            ],
+            "default_value": false
+        },
+        "longitude": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveLongitude"
+            ],
+            "default_value": false
+        },
+        "country_code": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveCountryCode"
+            ],
+            "default_value": false
+        },
+        "prior_page": {
+            "required": true,
+            "callbacks": [
+                "owa_trackingEventHelpers::setPriorPage",
+                "owa_trackingEventHelpers::makeUrlCanonical"
+            ],
+            "default_value": false
+        },
+        "document_id": {
+            "alternative_key": "page_url",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "ua_id": {
+            "alternative_key": "HTTP_USER_AGENT",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "location_id": {
+            "alternative_key": "country",
+            "callbacks": "owa_trackingEventHelpers::generateLocationId"
+        },
+        "host_id": {
+            "alternative_key": "host",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "os_id": {
+            "alternative_key": "os",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "campaign_id": {
+            "alternative_key": "campaign",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "ad_id": {
+            "alternative_key": "ad",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "source_id": {
+            "alternative_key": "source",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "referer_id": {
+            "alternative_key": "session_referer",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "referring_search_term_id": {
+            "alternative_key": "search_terms",
+            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        }
+    }
+}

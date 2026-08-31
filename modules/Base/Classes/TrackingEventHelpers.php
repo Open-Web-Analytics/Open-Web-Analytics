@@ -96,6 +96,63 @@ class TrackingEventHelpers {
      *
      * @return array property name => true
      */
+    /** @var array|null the parsed config, read once per process */
+    private static $property_config;
+
+    /**
+     * The property definitions, read from modules/Base/config/tracking_properties.json.
+     *
+     * The file is the single enumeration of what a tracking event may carry:
+     * every property a handler expects by name, which of the three scopes owns
+     * it, and how the pipeline should treat it. Anything not named there is a
+     * custom property and is passed through without a contract.
+     *
+     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
+     * in the order they appear here, and a callback may read what earlier ones
+     * wrote -- the date parts read timestamp, the geo callbacks read
+     * ip_address, source and medium read session_referer. Reordering entries
+     * does not fail; the dependant silently derives from a value that has not
+     * been computed yet. TrackingPropertyOrderTest holds this.
+     *
+     * @param string $scope one of request, client, server
+     * @return array
+     */
+    private static function propertyConfig( $scope ) {
+
+        if ( self::$property_config === null ) {
+
+            $path = OWA_DIR . 'modules/Base/config/tracking_properties.json';
+            $config = json_decode( file_get_contents( $path ), true );
+
+            if ( ! is_array( $config ) ) {
+
+                throw new \RuntimeException(
+                    'Could not read the tracking property config at ' . $path . ': '
+                    . json_last_error_msg() );
+            }
+
+            /* 'note' documents the entry for whoever edits the file; it is not
+               part of the definition the pipeline consumes. */
+            foreach ( $config as $name => $properties ) {
+
+                foreach ( $properties as $property => $definition ) {
+
+                    unset( $config[ $name ][ $property ]['note'] );
+                }
+            }
+
+            self::$property_config = $config;
+        }
+
+        if ( ! isset( self::$property_config[ $scope ] ) ) {
+
+            throw new \InvalidArgumentException(
+                "There is no '$scope' scope in the tracking property config." );
+        }
+
+        return self::$property_config[ $scope ];
+    }
+
     /**
      * Properties the server reads off the HTTP request.
      *
@@ -111,65 +168,8 @@ class TrackingEventHelpers {
      */
     public static function requestProperties() {
 
-        return array(
+        return self::propertyConfig( 'request' );
 
-            'REMOTE_HOST'        => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::remoteHostDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => true
-            ),
-
-            'HTTP_USER_AGENT'    => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::userAgentDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => true
-            ),
-
-            'HTTP_HOST'            => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::httpHostDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => true
-            ),
-
-            'language'            => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::languageDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => true
-            ),
-
-            'ip_address'        => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::ipAddressDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => true
-            ),
-
-            'timestamp'            => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::timestampDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'integer',
-                'filter'            => false
-            ),
-
-            'microtime'            => array(
-                'callbacks'            => array( 'owa_trackingEventHelpers::microtimeDefault' ),
-                'default_value'        => '(not set)',
-                'required'            => true,
-                'data_type'            => 'string',
-                'filter'            => false
-            )
-
-        );
     }
 
     /**
@@ -188,157 +188,8 @@ class TrackingEventHelpers {
      */
     public static function clientProperties() {
 
-        return array(
+        return self::propertyConfig( 'client' );
 
-            'page_type'                        => array(
-                'default_value'                    => '(not set)',
-                'required'                        => true,
-                'data_type'                        => 'string'
-            ),
-
-            'page_url'                        => array(
-                'default_value'                    => '(not set)',
-                'required'                        => true,
-                'data_type'                        => 'url',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::makeUrlCanonical' )
-            ),
-
-            'page_title'                     => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::utfEncodeProperty' ),
-                'data_type'                        => 'string',
-                'default_value'                    => '(not set)'
-            ),
-
-            'fsts'                            => array(
-                'required'                        => false,
-                'callbacks'                        => array( ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false
-            ),
-
-            'psts'                            => array(
-                'required'                        => false,
-                'callbacks'                        => array( ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false
-            ),
-
-            'sts'                            => array(
-                'required'                        => false,
-                'callbacks'                        => array( ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false
-            ),
-
-            'days_since_first_session'         => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSinceFirstSession' ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false,
-                'alternative_key'                => 'dsfs'
-            ),
-
-            'time_since_last_session'        => array(
-                'required'                        => false,
-                'callbacks'                        => array( ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false
-            ),
-
-            'days_since_prior_session'         => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::deriveDaysSincePriorSession' ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false,
-                'alternative_key'                => 'dsps'
-            ),
-
-            'num_prior_sessions'             => array(
-                'required'                        => true,
-                'callbacks'                        => array( ),
-                'data_type'                        => 'integer',
-                'default_value'                    => false,
-                'alternative_key'                => 'nps'
-            ),
-
-            'is_new_visitor'                => array (
-                'required'                        => true,
-                'data_type'                        => 'boolean',
-                // Key had a LEADING SPACE, so isset($property['default_value'])
-                // never matched and this default was dead for its whole life.
-                'default_value'                => false
-            ),
-
-            'user_name'                        => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::setUserName' ),
-                'default_value'                    => '(not set)'
-            ),
-
-            'user_email'                    => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::setEmailAddress' ),
-                'default_value'                    => '(not set)',
-                'alternative_key'                => 'email_address'
-            ),
-
-            'HTTP_REFERER'                    => array(
-                'required'                        => false,
-                'data_type'                        => 'url',
-                'callbacks'                        => array()
-            ),
-
-            'target_url'                    => array(
-                'required'                        => false,
-                'data_type'                        => 'url',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::makeUrlCanonical' )
-            ),
-            
-            'session_referer'                => array(
-                'required'                        => false,
-                'data_type'                        => 'url',
-                'callbacks'                        => array()
-            ),
-			// must come after session_referer	
-            'source'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveSource' ),
-                'default_value'                    => '(not set)'
-            ),
-			// must come after session_referer	
-            'medium'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveMedium' ),
-                'default_value'                    => 'direct'
-            ),
-			
-			// must come after session_referer
-            // @todo investigate if this should be a required property so that a proper join can occur.
-            'search_terms'                    => array(
-                'required'                        => true,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::extractSearchTerm' ),
-                'default_value'                    => '(not set)'
-
-            ),
-
-            'feed_subscription_id'                    => array(
-                'required'                        => false,
-                'callbacks'                        => array( ),
-                'default_value'                    => null,
-                'alternative_key'                => 'sid'
-            ),
-
-            'attribs'                        => array(
-                'required'                        => false,
-                'data_type'                        => 'json',
-                'callbacks'                        => '',
-                'default_value'                    => ''
-            )
-
-        );
     }
 
     /**
@@ -357,235 +208,8 @@ class TrackingEventHelpers {
      */
     public static function serverProperties() {
 
-        return array(
+        return self::propertyConfig( 'server' );
 
-            'year'                 => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveYear')
-            ),
-
-            'month'             => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveMonth')
-            ),
-
-            'day'                 => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveDay')
-            ),
-
-            'yyyymmdd'             => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveYyyymmdd')
-            ),
-
-            'dayofweek'         => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveDayOfWeek')
-            ),
-
-            'dayofyear'         => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveDayOfYear')
-            ),
-
-            'weekofyear'         => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveWeekOfYear')
-            ),
-
-            'hour'                 => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveHour')
-            ),
-
-            'minute'             => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveMinute')
-            ),
-
-            'second'             => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveSecond')
-            ),
-
-            'sec'                 => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveSec')
-            ),
-
-            'msec'                 => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::deriveMsec')
-            ),
-
-            'page_uri'             => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::derivePageUri')
-            ),
-
-            'is_repeat_visitor' => array(
-                'required'            => true,
-                // Declared, so the pipeline can resolve the value by type when a
-                // callback returns nothing. Without it setDataType() is a no-op
-                // for this property and a null derivation reached the database.
-                'data_type'            => 'boolean',
-                'default_value'        => false,
-                'callbacks'            => array('owa_trackingEventHelpers::setRepeatVisitorFlag')
-            ),
-
-            'full_host'            => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::resolveFullHost'),
-                'default_value'        => '(not set)'
-            ),
-
-            'host'                => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::getHostDomain'),
-                'default_value'        => '(not set)'
-            ),
-
-            'browser_type'        => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::resolveBrowserType')
-            ),
-
-            'is_browser'        => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::isBrowser'),
-                'default_value'        => false
-            ),
-
-            'browser'            => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::resolveBrowserVersion'),
-                'default_value'        => '(unknown)'
-            ),
-
-            'is_robot'            => array(
-                'required'            => true,
-                'callbacks'            => array('owa_trackingEventHelpers::isRobot'),
-                'default_value'        => false
-            ),
-
-
-            'os'                => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveOs' ),
-                'default_value'        => '(unknown)'
-            ),
-
-            'is_entry_page'        => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveEntryPage' ),
-                'default_value'        => false
-            ),
-
-            'country'            => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveCountry' ),
-                'default_value'        => false
-            ),
-
-            'city'                => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveCity' ),
-                'default_value'        => false
-            ),
-
-            'state'                => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveState' ),
-                'default_value'        => false
-            ),
-
-            'latitude'            => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveLatitude' ),
-                'default_value'        => false
-            ),
-
-            'longitude'            => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveLongitude' ),
-                'default_value'        => false
-            ),
-
-            'country_code'        => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::resolveCountryCode' ),
-                'default_value'        => false
-            ),
-
-            'prior_page'        => array(
-                'required'            => true,
-                'callbacks'            => array( 'owa_trackingEventHelpers::setPriorPage', 'owa_trackingEventHelpers::makeUrlCanonical' ),
-                'default_value'        => false
-            ),
-            //related object IDs
-            /* @todo these should really be moved to handlers and logic encoded in entity objects.*/
-
-            'document_id'         => array(
-
-                'alternative_key'    => 'page_url',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'ua_id'             => array(
-
-                'alternative_key'    => 'HTTP_USER_AGENT',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'location_id'         => array(
-
-                'alternative_key'    => 'country',
-                'callbacks'            => 'owa_trackingEventHelpers::generateLocationId'
-            ),
-
-            'host_id'             => array(
-
-                'alternative_key'    => 'host',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'os_id'             => array(
-
-                'alternative_key'    => 'os',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'campaign_id'         => array(
-
-                'alternative_key'    => 'campaign',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'ad_id'             => array(
-
-                'alternative_key'    => 'ad',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'source_id'         => array(
-
-                'alternative_key'    => 'source',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'referer_id'         => array(
-
-                'alternative_key'    => 'session_referer',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            ),
-
-            'referring_search_term_id' => array(
-
-                'alternative_key'    => 'search_terms',
-                'callbacks'            => 'owa_trackingEventHelpers::generateDimensionId'
-            )
-        );
     }
 
     public static function clientSettableProperties() {

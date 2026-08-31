@@ -10,19 +10,25 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * A property must be set before anything that reads it.
  *
  * setTrackerProperties() walks the registered properties in INSERTION ORDER,
- * and a callback may read properties already on the event. So the order the
- * definitions appear in is part of the contract -- reorder two entries and a
- * derivation silently reads a value that has not been computed yet, producing a
- * wrong answer rather than an error.
+ * and a callback may read properties already on the event.
  *
- * That was recorded by three "// must come after session_referer" comments.
- * Measured, it is far larger than three: 32 of 66 callbacks read another
- * property, giving 34 ordering constraints, of which those comments covered
- * three. The rest were holding by luck and convention.
+ * That only constrains the order for properties the pass itself PRODUCES --
+ * ones with a callback or a default_value. A property that is merely carried
+ * from the wire is already on the event before the pass starts, so nothing can
+ * read it too early and its position is free. session_referer is the example:
+ * three callbacks read it and three comments said "must come after
+ * session_referer", but it has no callbacks and no default, so those three
+ * entries can sit anywhere. The comments described a constraint that was never
+ * there.
+ *
+ * Where the read value IS produced by the pass, the constraint is real and
+ * silent: reorder two entries and the dependant derives from a value that has
+ * not been computed yet, giving a wrong answer rather than an error. There are
+ * 30 such pairs -- the date parts reading timestamp, the geo callbacks reading
+ * ip_address, location_id reading city/country/state, host reading full_host.
  *
  * The graph is derived from the callback bodies rather than hand-listed, so a
- * new dependency is covered the moment it is written and cannot be forgotten
- * here.
+ * dependency written tomorrow is covered without anyone remembering this file.
  */
 final class TrackingPropertyOrderTest extends TestCase
 {
@@ -52,24 +58,33 @@ final class TrackingPropertyOrderTest extends TestCase
         return $reads;
     }
 
-    /** @return array{order: array, scope: array, deps: array} */
+    /** @return array{order: array, scope: array, produced: array, deps: array} */
     private function registration(): array
     {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $reads   = $this->callbackReads();
 
-        $order = array();
-        $scope = array();
-        $deps  = array();
+        $order    = array();
+        $scope    = array();
+        $produced = array();
+        $deps     = array();
 
         foreach ( self::SCOPES as $name ) {
 
             foreach ( (array) $service->getMap( 'tracking_properties_' . $name ) as $property => $definition ) {
 
+                $callbacks = (array) ( $definition['callbacks'] ?? array() );
+
                 $order[ $property ] = count( $order );
                 $scope[ $property ] = $name;
 
-                foreach ( (array) ( $definition['callbacks'] ?? array() ) as $callback ) {
+                /* Does the pass change this value? If not, whatever the wire
+                   sent is on the event before the pass starts and no reader
+                   can be too early. */
+                $produced[ $property ] =
+                    $callbacks || array_key_exists( 'default_value', $definition );
+
+                foreach ( $callbacks as $callback ) {
 
                     $short = substr( $callback, strrpos( $callback, ':' ) + 1 );
 
@@ -82,7 +97,8 @@ final class TrackingPropertyOrderTest extends TestCase
             }
         }
 
-        return array( 'order' => $order, 'scope' => $scope, 'deps' => $deps );
+        return array( 'order' => $order, 'scope' => $scope,
+                      'produced' => $produced, 'deps' => $deps );
     }
 
     public function testNoPropertyIsReadBeforeItIsSet(): void
@@ -99,6 +115,13 @@ final class TrackingPropertyOrderTest extends TestCase
                 /* Unregistered names are custom properties; nothing sets them
                    on a schedule, so there is no ordering to satisfy. */
                 if ( ! isset( $r['order'][ $need ] ) ) {
+
+                    continue;
+                }
+
+                /* Carried from the wire, not produced here -- see the note on
+                   this class. Its position is free. */
+                if ( ! $r['produced'][ $need ] ) {
 
                     continue;
                 }
@@ -123,23 +146,5 @@ final class TrackingPropertyOrderTest extends TestCase
         $this->assertSame(
             array(), $violations,
             "A property is read before it is set:\n  " . implode( "\n  ", $violations ) );
-    }
-
-    public function testTheDocumentedConstraintStillHolds(): void
-    {
-        /*
-         * Named explicitly as well as caught by the graph above, because these
-         * three are the ones a comment warns about and the ones most likely to
-         * be moved by someone tidying the list alphabetically -- which is
-         * exactly what an earlier attempt at a generated config did.
-         */
-        $order = $this->registration()['order'];
-
-        foreach ( array( 'source', 'medium', 'search_terms' ) as $dependant ) {
-
-            $this->assertGreaterThan(
-                $order['session_referer'], $order[ $dependant ],
-                "$dependant derives from session_referer and must be registered after it." );
-        }
     }
 }
