@@ -29,6 +29,135 @@ class Update020 extends \OWA\Core\Update {
     /** Profiles are numbered within their property, from one. */
     const PROFILE_NAME_PREFIX = 'Observation Profile ';
 
+    function up( $force = false ) {
+
+        /* 1. The new tiers. */
+        foreach ( array( 'base.organization', 'base.property' ) as $entityName ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( $entityName );
+
+            if ( $entity->createTable() === false ) {
+
+                $this->e->notice( "Create table for $entityName failed" );
+
+                return false;
+            }
+        }
+
+        /* 2. The links from the existing tables into them. */
+        \OWA\Core\CoreAPI::entityFactory( 'base.site' )->addColumn( 'property_id' );
+        \OWA\Core\CoreAPI::entityFactory( 'base.user' )->addColumn( 'organization_id' );
+
+        /* 3. What the existing rows imply. Decided by plan(), which is pure. */
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $db->selectFrom( 'owa_site' );
+        $db->selectColumn( 'site_id, domain, name, description' );
+
+        $sites = (array) $db->getAllRows();
+
+        $plan = self::plan( $sites );
+
+        /* 4. One organization. */
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+
+        $organizationId = $organization->generateId( 'organization:default' );
+
+        $organization->load( $organizationId );
+
+        if ( ! $organization->wasPersisted() ) {
+
+            $organization->set( 'id', $organizationId );
+            $organization->set( 'name', $plan['organization']['name'] );
+            $organization->set( 'creation_date', time() );
+            $organization->create();
+        }
+
+        /* 5. A property per website, keyed so the id is stable if this re-runs. */
+        $propertyIds = array();
+
+        foreach ( $plan['properties'] as $planned ) {
+
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+            $propertyId = $property->generateId( $planned['key'] );
+
+            $propertyIds[ $planned['key'] ] = $propertyId;
+
+            $property->load( $propertyId );
+
+            if ( $property->wasPersisted() ) {
+
+                continue;
+            }
+
+            $property->set( 'id', $propertyId );
+            $property->set( 'organization_id', $organizationId );
+            $property->set( 'name', $planned['name'] );
+            $property->set( 'domain', $planned['domain'] );
+            $property->set( 'description', $planned['description'] );
+            $property->set( 'creation_date', time() );
+            $property->create();
+        }
+
+        /*
+         * 6. Point each profile at its property and give it its profile name.
+         *
+         * The site's own name moved UP to the property, so the profile takes
+         * the generated one. That leaves the profile's stored name useless as a
+         * picker label on its own, which is why the label shown to a user is
+         * composed from both -- see getSitesAllowedForCurrentUser(). This
+         * migration must not ship ahead of that composition, or the site picker
+         * and the WordPress plugin would both start showing
+         * "Observation Profile 1" for every website.
+         */
+        foreach ( $plan['profiles'] as $planned ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+            $site->load( $planned['site_id'], 'site_id' );
+
+            if ( ! $site->wasPersisted() ) {
+
+                continue;
+            }
+
+            $site->set( 'property_id', $propertyIds[ $planned['property_key'] ] );
+            $site->set( 'name', $planned['name'] );
+            $site->update();
+        }
+
+        /* 7. Every existing account joins the organization. */
+        $db->selectFrom( 'owa_user' );
+        $db->selectColumn( 'id' );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $user = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+
+            $user->load( $row['id'] );
+
+            if ( $user->wasPersisted() ) {
+
+                $user->set( 'organization_id', $organizationId );
+                $user->update();
+            }
+        }
+
+        return true;
+    }
+
+    function down() {
+
+        /*
+         * Not implemented on purpose. Going back means deciding what to do with
+         * profiles created under the hierarchy and with a site's name, which
+         * this update overwrote -- neither is recoverable from what remains.
+         * The tables can be dropped by hand if an install needs to retry.
+         */
+        return false;
+    }
+
     /**
      * The hierarchy a set of existing sites implies.
      *
