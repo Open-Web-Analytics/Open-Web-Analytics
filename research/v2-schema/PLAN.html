@@ -1195,16 +1195,37 @@ being kept.</p>
   and the two pipelines keep consuming <em>identical</em> events — which is what lets the integrity
   check of §3.3 stay a diff rather than a tolerance.</p>
   <p><strong>The cost is one discontinuity in v1's session-derived numbers</strong>, accepted
-  deliberately. Sessions begin only on page views, the store is withheld until accepted, and the
-  midnight rule cuts a session that spans midnight into two — so visits, bounce rate, pages-per-visit
-  and visit duration all step once, at the release that ships it. Event-level history — page views,
-  clicks, geo, referrers — is untouched, and nothing already stored is rewritten.</p>
-  <p>This is the shape §1.10 already describes for definition changes: <em>historical data is
-  immutable, only the lens changes, with a UI annotation at the change date</em>. Sessionization is
-  the largest instance of it rather than a new kind of problem. Two things follow: the change wants
-  a <strong>UI annotation at its date</strong>, not just a release note; and the size of the step is
-  worth <strong>measuring before shipping</strong> — re-sessionize an existing corpus both ways and
-  compare visit counts — because the notes should say how much, not just that.</p>
+  deliberately &mdash; but not where an earlier draft put it. Three rules differ, and they are not
+  of equal size:</p>
+  <div class="scroll"><table>
+  <thead><tr><th>Rule</th><th>Effect on v1's counts</th></tr></thead>
+  <tbody>
+  <tr><td>Sessions begin only on page-view events</td><td><strong>None in practice.</strong> Integrations call <code>trackPageView</code> first regardless, so the first event of a session already is one</td></tr>
+  <tr><td>The midnight rule splits a session spanning midnight</td><td><span class="chip c-meas">Measured</span> <strong>0.106%</strong> &mdash; 8 sessions in 7,547, mean duration 109s. Negligible</td></tr>
+  <tr><td>The store is withheld until <code>sendAccepted</code></td><td>Edge cases only: a lost beacon means no session where one would previously have been recorded</td></tr>
+  <tr><td><strong>A session restarts when new attribution tags are seen</strong></td><td><strong>The material change.</strong> A visitor who arrives tagged, browses, then re-enters through another tagged link inside the timeout now starts a new session where v1 kept one</td></tr>
+  </tbody></table></div>
+  <p>That last is GA's behaviour and the reason the tracker must notice a mid-session tag change and
+  restart cleanly (EVENTS.html &sect;7). Its size depends entirely on traffic mix &mdash; near zero
+  for organic-only sites, material for campaign-heavy ones &mdash; so there is no single number to
+  quote.</p>
+  <div class="flag">
+    <p class="h">And v1's history cannot size it</p>
+    <p><code>owa_request</code> does carry per-request <code>medium</code>, <code>source_id</code>
+    and <code>campaign_id</code>, so the question looks answerable. It is not:
+    <code>setTrafficAttribution()</code> stamps the <em>decided</em>, session-sticky result rather
+    than the observation that produced it, so a mid-session tag change is collapsed before it is
+    stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
+    rather than a rate.</p>
+    <p>This is the same limitation &sect;3.3 records for validating the attribution model &mdash;
+    <em>existing history is not a usable touchpoint log</em> &mdash; and it has the same remedy:
+    recording raw touchpoints, already identified there as an additive 1.x item and an early one.
+    This is a second reason to do it early: without it, the largest behavioural change in the
+    session model ships unquantified.</p>
+  </div>
+  <p>Event-level history &mdash; page views, clicks, geo, referrers &mdash; is untouched by all of
+  this, and nothing already stored is rewritten. The change still wants a <strong>UI annotation at
+  its date</strong>, per &sect;1.10's rule for definition changes.</p>
 </div>
 <div class="scroll"><table>
 <thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
