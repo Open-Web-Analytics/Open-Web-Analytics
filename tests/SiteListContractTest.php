@@ -106,6 +106,36 @@ final class SiteListContractTest extends TestCase
             'GET v1/sites no longer resolves to the sites list controller.' );
     }
 
+    public function testOurOwnSelectorReadsTheSameTwoFieldsAsThePlugin(): void
+    {
+        /*
+         * The reporting UI's site filter and the WordPress plugin's picker are
+         * the same problem twice: both label an option with `name` and submit
+         * `site_id` as its value, and both get their list from
+         * getSitesAllowedForCurrentUser().
+         *
+         * That shared source is what makes the hierarchy tractable. Once a
+         * Property can hold several profiles, "Observation Profile 1" is an
+         * ambiguous label in both places -- and composing it as
+         * "Property — Profile" AT THAT ONE METHOD fixes our UI and every
+         * already-deployed plugin without either consumer changing. Composing
+         * it in the templates instead would fix only ours.
+         *
+         * Pinned by reading the template, because the coupling is invisible
+         * from PHP: nothing references filter_site.php's field names.
+         */
+        $template = file_get_contents( OWA_DIR . 'modules/Base/templates/filter_site.php' );
+
+        $this->assertStringContainsString(
+            "get('site_id')", $template,
+            'The site filter no longer submits site_id as the option value.' );
+
+        $this->assertStringContainsString(
+            "get('name')", $template,
+            'The site filter no longer labels its options with name -- so a composed label built '
+            . 'for the plugin would no longer reach our own selector.' );
+    }
+
     public function testAdministratorsSeeEveryProfileAndOthersSeeOnlyGranted(): void
     {
         if ( ! owa_test_db_available() ) {
