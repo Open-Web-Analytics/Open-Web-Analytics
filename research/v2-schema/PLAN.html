@@ -1221,10 +1221,27 @@ being kept.</p>
     <em>existing history is not a usable touchpoint log</em>.</p>
     <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
     requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
-    is uncommon outside heavy paid-campaign traffic. Recording raw touchpoints stays an early 1.x
-    item for its own reason &mdash; the server-side attribution model cannot be built without it
-    &mdash; rather than as a precondition for shipping this. If a number is wanted later, that data
+    is uncommon outside heavy paid-campaign traffic. If a number is wanted later, touchpoint data
     supplies it; nothing waits on it.</p>
+    <p><strong>Touchpoint recording earns its place on data quality, not on this.</strong>
+    Attribution is decided <em>in the browser</em> today &mdash;
+    <code>setTrafficAttribution()</code> reads the <code>owa_c</code> cookie's <code>attribs</code>
+    stack, applies the model, and the event carries the <em>verdict</em> rather than the observation
+    that produced it. So the server stores a conclusion it cannot check, and four things follow:</p>
+    <ul>
+    <li><strong>A model bug is permanent.</strong> Fix the attribution logic and every row already
+    written keeps the old verdict &mdash; there is nothing to recompute from.</li>
+    <li><strong>Attribution dies with the cookie.</strong> Clearing <code>owa_c</code> destroys the
+    stack, and the visitor's history is gone rather than re-derivable.</li>
+    <li><strong>The 60-day <code>original</code> window is measured on the client's clock</strong>,
+    which is unverifiable and, on a skewed device, wrong.</li>
+    <li><strong>No post-hoc enrichment.</strong> This research measured the star's one real
+    advantage as rewriting a dimension without touching facts (589&times;); attribution is precisely
+    the dimension worth rewriting, and today it is the one that cannot be.</li>
+    </ul>
+    <p>Recording the touchpoints makes attribution <em>derived</em> rather than <em>reported</em>:
+    recomputable, correctable, and independent of whether a cookie survived. That is the reason to
+    do it early, and it stands whether or not the session step is ever quantified.</p>
   </div>
   <p>Event-level history &mdash; page views, clicks, geo, referrers &mdash; is untouched by all of
   this, and nothing already stored is rewritten. The change still wants a <strong>UI annotation at
