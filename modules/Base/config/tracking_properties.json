@@ -173,33 +173,41 @@
             "callbacks": [],
             "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
         },
-        "source": {
-            "required": true,
+        "tagged_source": {
+            "required": false,
             "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString",
-                "owa_trackingEventHelpers::deriveSource"
-            ],
-            "default_value": "(not set)",
-            "note": "Independently settable at request time (utm_source). deriveSource only fills it in when the tracker sent nothing, by parsing session_referer."
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
         },
-        "medium": {
-            "required": true,
+        "tagged_medium": {
+            "required": false,
             "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString",
-                "owa_trackingEventHelpers::deriveMedium"
-            ],
-            "default_value": "direct",
-            "note": "Independently settable at request time (utm_medium). deriveMedium only fills it in when the tracker sent nothing, by classifying session_referer as referral, organic-search or social-network."
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
         },
-        "search_terms": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::extractSearchTerm"
-            ],
-            "default_value": "(not set)",
-            "note": "Independently settable at request time. extractSearchTerm only fills it in when the tracker sent nothing, by reading the search engine query param off session_referer."
+        "tagged_campaign": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+        },
+        "tagged_ad": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+        },
+        "tagged_ad_type": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+        },
+        "tagged_terms": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
         },
         "feed_subscription_id": {
             "required": false,
@@ -405,6 +413,56 @@
                 "owa_trackingEventHelpers::makeUrlCanonical"
             ],
             "default_value": false
+        },
+        "source": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveSource"
+            ],
+            "note": "The answer. tagged_source if the URL carried one, else the session_referer host."
+        },
+        "medium": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "direct",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveMedium"
+            ],
+            "note": "The answer. tagged_medium if the URL carried one, else the referer classified as referral / organic-search / social-network, else direct."
+        },
+        "campaign": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveCampaign"
+            ],
+            "note": "Was on the wire but registered nowhere until this entry, so nothing typed it and nothing could reject a forged one."
+        },
+        "ad": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveAd"
+            ],
+            "note": "As campaign: on the wire, previously unregistered."
+        },
+        "ad_type": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveAdType"
+            ],
+            "note": "As campaign: on the wire, previously unregistered. Read by AdHandlers alongside ad."
+        },
+        "search_terms": {
+            "required": true,
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::resolveSearchTerms"
+            ],
+            "note": "The answer. tagged_terms if the URL carried one, else the query param the referring search engine used."
         },
         "document_id": {
             "alternative_key": "page_url",
