@@ -154,7 +154,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -414,6 +414,33 @@ be built. The GA4 recommended set fills it in.</p>
 their samples — to events would swamp the table: one measured corpus held 229,663 chunks
 carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
 
+<h4>Key events are author-named events <span class="chip c-dec">Decided</span></h4>
+<p>1.x has twenty numbered goal slots. v2 has none: an author names a key event and gives it an
+event type and a condition &mdash; &ldquo;a click whose target is <em>x</em>&rdquo; &mdash; and when
+the condition matches, the server <strong>materialises an additional row whose
+<code>event_type</code> is that name</strong>. The same mechanism as <code>session_start</code>
+above, and the same shape as GA, where a key event is an event whose <em>name</em> is marked as
+key.</p>
+<p>Chosen over annotating the triggering event with a key-event-name column because it needs
+<strong>no schema change</strong>: <code>event_type</code> already carries the name, so the table
+stays at 40 columns and per-key-event reporting is an ordinary <code>GROUP BY</code>. Three rules
+come with it, stated here rather than left to whichever code is written first:</p>
+<ul>
+<li>The materialised row is <strong>never counted</strong> as an ordinary event &mdash; the rule
+already set for <code>session_start</code>, for the same reason.</li>
+<li>The triggering event stays an ordinary <code>page_view</code> with <code>is_key_event = 0</code>.
+Flagging both would double-count and blur which row <em>is</em> the conversion.</li>
+<li>The <code>event_type</code> vocabulary therefore <strong>stops being closed</strong>. Intended,
+given the site-opt-in group above &mdash; but stated so nobody discovers it by naming a key event
+<code>page_view</code>.</li>
+</ul>
+<p>Counting them is one metric plus one dimension, and <code>isKeyEvent</code> is registered as a
+dimension so it can be <em>constrained</em> on &mdash; in this engine a constraint name resolves
+through the dimension registry, so unregistered means unfilterable. Per-key-event metrics follow
+GA's <code>sessionKeyEventRate:&lt;name&gt;</code> shape, <strong>parameterised rather than
+pre-registered</strong>, because the set of key events is per-site while the catalog is built once
+per process. Full reasoning in EVENTS.html &sect;7.14.</p>
+
 <h3 id="s15"><span class="num">1.5</span>Visitor identity <span class="chip c-dec">Decided</span></h3>
 <p>The one dimension that cannot be content-derived — everything else in v2 hashes from its own
 value, but a visitor is arbitrary and must be assigned, carried and trusted.</p>
@@ -614,7 +641,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">34</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td></tr>
 <tr><td class="n">35</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percent bucket</td></tr>
 <tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>on <em>every</em> row: time accrued on the current page since the last report; <code>user_engagement</code> rows carry the hide-time residue. Must not pay JSON extraction</td></tr>
-<tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT</td><td>stamped at collection; the third engaged disjunct</td></tr>
+<tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>stamped at collection; the third engaged disjunct. Set on the <em>materialised</em> key-event row only, never on the event that triggered it (EVENTS.html &sect;7.14). Not nullable, per &sect;1.12: it is 0 on almost every row, so a three-valued variant would stay invisible and then be wrong</td></tr>
 <tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
 <tr><td class="n">39</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>on every row, behind a dedicated <code>store_raw_ua</code> setting (default on; not coupled to debug mode). Debugging is a reader — and retrospective forensics cannot be captured after the fact, hence the default; reporting never touches it</td></tr>
 <tr><td class="n">40</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>
@@ -701,85 +728,58 @@ them means recovering intent from expressions, which is precisely where the repo
 were before they became configuration &mdash; and the narrowing that made <em>that</em> safe was
 the same move: names from a known list, never code (&sect;1.7).</p>
 
-  <h4>Metrics too &mdash; but replace the formula evaluator first <span class="chip c-open">Open</span></h4>
-<p>The same argument one layer over, where it is <strong>half-built already</strong>:
-<code>ConfigurableMetric</code> supports <code>count</code>, <code>distinct_count</code>,
-<code>sum</code> and <code>calculated</code>, but only <strong>6</strong> metrics are registered
-through it against <strong>22</strong> class references, and the <code>calculated</code> type has
-no registrations at all. The classes are declarations in class clothing &mdash;
-<code>BounceRate</code> is six setters and a formula string, and <em>no</em> metric class contains
-SQL &mdash; so the conversion is mechanical, exactly as the report controllers were.</p>
-<p>The payoff is bigger than for dimensions, because only base metrics touch the store at all:
-three aggregate kinds, three renderers. Calculated metrics are arithmetic over other metrics'
-<em>results</em> and need no SQL whatsoever, so they port for free. Six renderers total covers
-both surfaces (EVENTS.html &sect;7.13).</p>
-<p><strong>The conversion is additive; the evaluator is not part of it.</strong> Formulas are
-run through <code>ResultSetManager::evalFormula()</code>, which <code>@ eval()</code>s a PHP
-string &mdash; but moving a shipped metric from a class to a config entry does not move the trust
-boundary. All 8 formulas in the tree are repo-authored and stay repo-authored, so nothing in
-<code>ResultSetManager</code> needs to change. The parser is the prerequisite for a
-<em>user-authored</em> metric builder, a separate later feature &mdash; and a plain four-operator
-grammar would not even cover today's set, since <code>round(actions / visits, 1)</code> needs
-function application. Separately and on its own terms: the <code>@</code> means a malformed
-formula falls through to <code>0</code>, so a broken metric reads as a real zero.</p>
-
-  <h4>The version selector already exists — it is the entity <span class="chip c-meas">Measured</span></h4>
-<p>The open question behind all of the above was whether renovating v1's metrics and dimensions is
-genuinely <em>additive</em> for v2, or whether it drags a rewrite of the query layer behind it.
-It is additive, and by a wider margin than expected: <strong>ResultSetManager is retained
-unchanged in v2</strong> — it already holds the combination logic and the selection of summary
-tables over fact tables — and the one thing it appears not to know, which definition set to use,
-turns out to be something it already resolves.</p>
-<p>Metric lookup is <strong>keyed by entity, not by name</strong>:</p>
-<pre><code>$this-&gt;metricObjectsByEntityMap[ $this-&gt;baseEntity-&gt;getName() ][ $metric_name ]</code></pre>
-<p><code>registerMetric()</code> stores a <em>list</em> per name
-(<code>$this-&gt;metrics[$metric_name][] = $map</code>), and the
-<code>registerMetricDefinition()</code> docblock makes it the contract:
-<em>&ldquo;the entity to use when calculating this metric — you must register the same metric for
-each entity that it can be calculated on.&rdquo;</em> One name, several implementations, chosen by
-the entity the query lands on. That is precisely the mechanism that already lets
-<code>visits</code> come from <code>owa_session</code> or from a summary table, and
-<strong>v2 is just another entity in that pool</strong> — no version flag, no namespaced metric
-names, and no rewriting of report configs at cutover.</p>
-<p><strong>This is not a new pattern; <code>visits</code> is registered twice today.</strong></p>
-<pre><code>'name' =&gt; 'visits',  'entity' =&gt; 'base.session',  'column' =&gt; 'id'
-'name' =&gt; 'visits',  'entity' =&gt; 'base.request',  'column' =&gt; 'session_id'</code></pre>
-<p>Same name, same label, same <code>metric_type</code>; different entity and different column,
-because the concept is expressed differently in each table. Nothing is called
-<code>sessionVisits</code> or <code>requestVisits</code>. v2 adds a third registration and renames
-nothing — the entity-keyed lookup is what <em>avoids</em> a naming scheme, since name-only
-resolution would force <code>v2Visits</code> and a rewrite of every report config. The name is the
-concept; the entity is where it is computed. <strong>Version is a query scope, like
-<code>siteId</code> and <code>period</code></strong> — <code>visits</code> already means different
-numbers per site and per date range without that being part of its name.</p>
-<p><strong>Calculated metrics inherit it for free.</strong> Children resolve through the same map,
-so a formula never names a store and the version rides in on the children. Six of the eight
-formulas in the tree become v2-correct without being touched.</p>
-<p><strong>The one genuine change</strong> is where the base entity is picked. Today the candidate
-entities are sorted by <code>getSummaryLevel()</code> and the highest wins; drop v2's event entity
-into that pool and the <em>version</em> gets decided by summary-level niceness, which is an
-arbitrary basis for that particular choice. The fix is a <strong>filter on the entity pool before
-the niceness sort</strong> — version by context first, summary level within it — not a new
-resolution path. And the version need not be tagged onto metrics at all: the entity already
-implies it, so it is one property on the entity plus one filter in the manager.</p>
+  <h4>Metrics are configuration &mdash; converted, and measured properly the second time <span class="chip c-done">Shipped</span></h4>
+<p><span class="chip c-meas">Measured</span> An earlier draft of this section said there were 22
+class references, that <strong>no metric class contains SQL</strong>, and that the conversion was
+therefore mechanical. Two of those three were wrong, and wrong the same way: they came from reading
+a few classes rather than classifying the set. The corrected figures, and what they changed:</p>
+<div class="scroll"><table>
+<thead><tr><th>Claimed</th><th>Actually</th></tr></thead>
+<tbody>
+<tr><td>22 class references</td><td><strong>40</strong> registered classes across 28 <code>registerMetric()</code> calls, producing 81 implementations</td></tr>
+<tr><td>No metric class contains SQL</td><td><strong>74 of 81</strong> implementations carry an explicit <code>setSelect()</code> expression with no <code>metric_type</code> at all. Five further classes build SQL with the query builder &mdash; all five unregistered and unreachable, since nothing calls their <code>calculate()</code></td></tr>
+<tr><td>Three aggregate kinds, six renderers total</td><td><strong>Five</strong> metric kinds. The 74 expressions collapse to <strong>seven shapes</strong>, five of which the vocabulary already had; two were added</td></tr>
+</tbody></table></div>
+<p>The distribution is what made it answerable, and it was never visible from samples: 61 plain
+sums (mostly generated goal metrics), 7 <code>distinct_count</code>, 7 calculated, 2
+<code>count</code>, 2 needing a boolean-true kind, 1 needing an average-of-difference, and exactly
+one bespoke composite.</p>
+<p><strong>The formatter model is what made it possible.</strong> A definition names a
+<em>kind</em> and an implementation renders it, so no definition carries SQL &mdash; the same rule
+as derived dimensions above, and the same rule reports-as-config used for formatters. The two new
+kinds, <code>boolean_true_count</code> and <code>avg_difference</code>, were each verified to render
+character-for-character what they replaced before any registration was touched.</p>
+<p><strong>Result:</strong> 48 metric class files became 7. Of 78 metrics, 68 resolve
+byte-identically and 10 differ only in SQL keyword case, since the classes hardcoded lowercase
+while the query builder emits upper.</p>
 <div class="flag">
-  <p class="h">Version context must be required, not defaulted</p>
-  <p>The deeper reason is an invariant, not a usability worry. The two <code>visits</code>
-  registrations above are <em>semantically equivalent</em> — a distinct count of session ids
-  answers the same question from either table — and that equivalence is exactly what makes
-  automatic summary-level selection safe: every candidate answers identically, so take the
-  cheapest. <strong>v1 and v2 <code>visits</code> are not equivalent</strong> (§3.3), so putting
-  them in one pool violates the assumption the selector was built on.</p>
-  <p>Hence a <strong>partition, not a preference</strong>: within a version the candidates are
-  equivalent and automatic selection stays correct; across versions they never are, and selection
-  must not be able to cross. And hence a missing version context is an <strong>error</strong>, not
-  a default — a default is precisely a silent crossing, showing v1 numbers to a reader who believes
-  they are looking at v2.</p>
-  <p>Note this is the mechanism being additive, not the numbers being equal (§3.3). The property
-  worth having is that the architecture accommodates the divergence honestly: <code>visits</code>
-  meaning something different per version is directly expressible, rather than being papered over
-  by a shared name.</p>
+  <p class="h">Two defects the conversion uncovered</p>
+  <p><code>ConfigurableMetric</code>'s <code>calculated</code> type <strong>had never
+  worked</strong>. It calls <code>setChildMetric()</code>, which existed only on
+  <code>CalculatedMetric</code> &mdash; not on <code>Core\Metric</code>, which
+  <code>ConfigurableMetric</code> extends. Supported on paper, fatal on first use, and never
+  registered by anything, so nobody found out. &ldquo;Supported but unused&rdquo; was doing more
+  work in the earlier draft than it could bear.</p>
+  <p>And <code>registerMetricDefinition()</code> filters its params with
+  <code>array_intersect_key()</code> against a fixed map, so <strong>any key missing from that map
+  is silently dropped</strong> rather than rejected. A new kind's parameter vanishes and the metric
+  renders a subtraction against nothing.</p>
 </div>
+<p><strong>What resists, and why it does not matter.</strong> Seven classes remain: three goal
+classes (which read the <code>siteId</code> request param to build per-site labels),
+<code>repeatVisitors</code> (the one composite expression), one unregistered class a parity test
+names by literal, and <code>ConfigurableMetric</code> itself. <strong>Every one is gone in
+v2</strong> &mdash; the numbered goal slots become named key events with a parameterised metric, and
+<code>repeatVisitors</code> becomes the <code>newVsReturning</code> dimension (EVENTS.html
+&sect;7.7, &sect;7.14). They are artefacts of numbered slots and stored booleans, which v2 removes
+for unrelated reasons, so <strong>v2's metrics are entirely configuration</strong>.</p>
+<p><strong>The evaluator stays out of scope.</strong> Formulas run through
+<code>ResultSetManager::evalFormula()</code>, which <code>@ eval()</code>s a PHP string &mdash; but
+moving a repo-shipped formula into a repo-shipped config entry does not move the trust boundary. The
+parser is the prerequisite for a <em>user-authored</em> metric builder, and a plain four-operator
+grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
+application. Separately: the <code>@</code> means a malformed formula falls through to
+<code>0</code>, so a broken metric reads as a real zero.</p>
 
 <h3 id="s113"><span class="num">1.12</span>&ldquo;(not set)&rdquo; is a presentation choice, never a stored value <span class="chip c-dec">Decided</span></h3>
 <p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in

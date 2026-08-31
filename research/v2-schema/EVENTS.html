@@ -1250,7 +1250,7 @@ These need <strong>no SQL at all</strong>, so they are portable for free: a stor
 <code>bounces / visits</code>.</li>
 </ul>
 <p>Three kinds for metrics and three for dimensions (&sect;7.12) puts a whole store migration at
-<strong>six renderers</strong>, which is the number worth knowing before choosing a second store.</p>
+<strong>eight renderers</strong> &mdash; three dimension kinds and five metric kinds &mdash; which is the number worth knowing before choosing a second store. It was estimated at six before the metric conversion measured the distribution: two aggregate kinds beyond count/sum/distinct_count turned out to be needed, and the 74 expressions collapsed to seven shapes rather than three.</p>
 
 <div class="flag">
   <p class="h">The eval() is a separate milestone, not a prerequisite</p>
