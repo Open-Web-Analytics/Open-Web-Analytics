@@ -74,6 +74,89 @@ class TrackingEventHelpers {
      */
     private $registeredCallbacks = array();
 
+    /**
+     * The properties a tracking request is allowed to set.
+     *
+     * A request reaches log.php with arbitrary owa_* parameters and they used
+     * to be copied onto the event wholesale, so anything whose name matched a
+     * column was written to that column -- owa_is_browser=ludhiana put a city
+     * name in a boolean, and owa_ip_address would have replaced the observed
+     * one.
+     *
+     * Membership is DECLARED, not inferred from which map a property lives in.
+     * `regular` is client-set by definition, but the classification is not a
+     * clean proxy in both directions: LocationHandlers deliberately accepts a
+     * client-supplied country and city and skips the IP lookup when it sees
+     * them, and those are registered as derived. So a derived property opts in
+     * with 'client_settable' => true rather than the endpoint guessing.
+     *
+     * Anything a module has not registered at all is still accepted -- it is
+     * sanitised in ProcessEvent and carried as a custom property, which is how
+     * custom variables and event parameters work.
+     *
+     * @return array property name => true
+     */
+    public static function clientSettableProperties() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $allowed = (array) $service->getMap( 'tracking_properties_regular' );
+
+        foreach ( array( 'tracking_properties_derived', 'tracking_properties_environmental' ) as $map ) {
+
+            foreach ( (array) $service->getMap( $map ) as $name => $property ) {
+
+                if ( ! empty( $property['client_settable'] ) ) {
+
+                    $allowed[ $name ] = $property;
+                }
+            }
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * Drop parameters naming a property the server computes for itself.
+     *
+     * Unregistered names pass through: this refuses to let a request OVERWRITE
+     * a derivation, it does not restrict what a site may send.
+     */
+    /**
+     * Properties only the server may set: derived and environmental, less
+     * anything that declared itself client-settable.
+     *
+     * One definition, used both to filter the wire and to decide what
+     * ProcessEvent may re-apply over a derivation. Two definitions would drift,
+     * and the symptom of drift is a value silently landing in the wrong column.
+     *
+     * @return array property name => definition
+     */
+    public static function serverOwnedProperties() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        return array_diff_key(
+            (array) $service->getMap( 'tracking_properties_derived' )
+                + (array) $service->getMap( 'tracking_properties_environmental' ),
+            self::clientSettableProperties() );
+    }
+
+    public static function rejectServerOwnedParams( array $params ) {
+
+        $serverOwned = self::serverOwnedProperties();
+
+        $refused = array_intersect_key( $params, $serverOwned );
+
+        if ( $refused ) {
+
+            \OWA\Core\CoreAPI::debug( 'Refused client-supplied values for server-owned properties: '
+                . implode( ', ', array_keys( $refused ) ) );
+        }
+
+        return array_diff_key( $params, $serverOwned );
+    }
+
     public function registerCallbacks( $items, $priority = 0 ) {
 
         foreach ($items as $name => $item ) {

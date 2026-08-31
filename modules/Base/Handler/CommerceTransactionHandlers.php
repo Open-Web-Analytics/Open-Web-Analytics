@@ -89,11 +89,26 @@ class CommerceTransactionHandlers extends \OWA\Core\Observer {
             $ct->set( 'id', $pk );
 
             // Generate Location Id. Location data is comming from user input NOT ip address
-            if ( $event->get( 'country' ) ) {
-                $s = \OWA\Core\CoreAPI::serviceSingleton();
-                $location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
-                $ct->set( 'location_id', $location_id );
-            }
+            /*
+             * The billing address is an attribute OF THE TRANSACTION, so it is
+             * stored on this row rather than in the geolocation dimension.
+             *
+             * It used to be sent as country/city/state -- the names of the
+             * server-derived geolocation properties -- and was used to build
+             * this row's location_id. So a transaction's location meant the
+             * billing address while every other event type meant the visitor's
+             * IP-derived location, and the two were indistinguishable in
+             * owa_location. They are different facts and now have different
+             * homes: location_id keeps its ordinary meaning here, and the
+             * billing address has its own columns.
+             *
+             * The fallback reads the old names for transactions from a tracker
+             * that has not been refreshed yet; requests can no longer set the
+             * geolocation properties, so it stops finding anything once it has.
+             */
+            $ct->set( 'billing_country', $event->get( 'ct_country' ) ?: $event->get( 'country' ) );
+            $ct->set( 'billing_state',   $event->get( 'ct_state' )   ?: $event->get( 'state' ) );
+            $ct->set( 'billing_city',    $event->get( 'ct_city' )    ?: $event->get( 'city' ) );
             // set entity properties
             $ct->set( 'order_id', trim( (string) $event->get( 'ct_order_id' ) ) );
             $ct->set( 'order_source', trim( strtolower( (string) $event->get( 'ct_order_source' ) ) ) );
