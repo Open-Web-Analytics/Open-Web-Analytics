@@ -128,15 +128,40 @@ class Site extends \OWA\Core\Entity {
         }
     }
 
+    /**
+     * The bare host, whether or not one was stored with a scheme.
+     *
+     * Returned unconditionally. It used to be guarded by
+     * `strpos( $domain, '://' )` and fall off the end when there was no scheme
+     * -- returning NULL for a domain stored bare, which the table already
+     * contains. The one caller uses the result to build `'://' . $domain` when
+     * checking domain aliases, so a null turned that test into a search for
+     * '://' alone, which matches any absolute URL and skipped alias resolution
+     * entirely.
+     *
+     * Schemes are on their way out of this column: a domain is not a URL, and
+     * storing one was only load-bearing while a site's identity was
+     * md5( domain ), where http:// and https:// produced two unrelated sites for
+     * one website. This method therefore has to cope with both shapes for as
+     * long as both exist.
+     */
     public function getDomainName() {
 
-        $domain = $this->get('domain');
+        $domain = trim( (string) $this->get('domain') );
 
-        if ( $domain && strpos( $domain, '://' ) ) {
-            list( $protocol, $domain ) = explode( '://', $domain );
+        if ( $domain === '' ) {
 
-            return rtrim( trim( $domain ), '/' );
+            return '';
         }
+
+        $separator = strpos( $domain, '://' );
+
+        if ( $separator !== false ) {
+
+            $domain = substr( $domain, $separator + 3 );
+        }
+
+        return rtrim( trim( $domain ), '/' );
     }
 
     /**

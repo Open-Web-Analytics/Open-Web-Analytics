@@ -173,6 +173,17 @@ function owa_compat_class_map(): array
         'owa_search_term_dim' => 'OWA\\Module\\Base\\Entity\\SearchTermDim',
         'owa_session' => 'OWA\\Module\\Base\\Entity\\Session',
         'owa_site' => 'OWA\\Module\\Base\\Entity\\Site',
+        /*
+         * Not legacy names -- nothing ever called these. The entity factory
+         * resolves 'base.organization' by checking class_exists('owa_organization'),
+         * so an entity is unreachable without an entry here whatever its age.
+         * Same reason owa_custom_report appears below despite postdating the
+         * namespace migration, and the same reason neither belongs in
+         * tests/fixtures/legacy_class_names.json: that fixture lists names the
+         * project promises to keep resolving, which is a different claim.
+         */
+        'owa_organization' => 'OWA\\Module\\Base\\Entity\\Organization',
+        'owa_property' => 'OWA\\Module\\Base\\Entity\\Property',
         'owa_site_user' => 'OWA\\Module\\Base\\Entity\\SiteUser',
         'owa_source_dim' => 'OWA\\Module\\Base\\Entity\\SourceDim',
         'owa_ua' => 'OWA\\Module\\Base\\Entity\\Ua',

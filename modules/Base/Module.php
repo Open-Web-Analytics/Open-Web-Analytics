@@ -2842,6 +2842,8 @@ class Module extends \OWA\Core\Module {
                 'ua',
                 'referer',
                 'site',
+                'organization',
+                'property',
                 'visitor',
                 'host',
                 'os',
