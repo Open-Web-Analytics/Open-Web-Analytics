@@ -67,6 +67,61 @@ final class LegacyClassNameContractTest extends TestCase
     private const STAGE0_COUNT = 406;
 
     private const RETIRED = [
+        /*
+         * RETIRED 2026-08-31: 41 metric classes, deleted when metrics became
+         * configuration.
+         *
+         * Thirty-five were pure declarations whose entire content is now a
+         * registerMetricDefinition() entry; six more were already unreachable --
+         * five legacy self-querying metrics whose only entry point was a
+         * calculate() method nothing calls, and one superseded duplicate.
+         *
+         * A DELIBERATE backward-compatibility break, accepted rather than
+         * stumbled into: the supported way to reach a metric is its registered
+         * name ('bounces'), not its implementation class, and every one of these
+         * disappears in v2 regardless. Code doing `new owa_bounces` breaks.
+         */
+        'owa_actions',
+        'owa_actionsValue',
+        'owa_bounceRate',
+        'owa_bounces',
+        'owa_clickBrowserTypes',
+        'owa_domClicks',
+        'owa_ecommerceConversionRate',
+        'owa_feedReaders',
+        'owa_feedRequests',
+        'owa_feedSubscriptions',
+        'owa_goalAbandonRateAll',
+        'owa_goalCompletionsAll',
+        'owa_goalConversionRateAll',
+        'owa_goalStartsAll',
+        'owa_goalValueAll',
+        'owa_latestDomstreams',
+        'owa_lineItemQuantity',
+        'owa_lineItemQuantityFromSessionFact',
+        'owa_lineItemRevenue',
+        'owa_lineItemRevenueFromSessionFact',
+        'owa_newVisitors',
+        'owa_pagesPerVisit',
+        'owa_revenuePerTransaction',
+        'owa_revenuePerVisit',
+        'owa_sessionBrowserTypes',
+        'owa_shippingRevenue',
+        'owa_shippingRevenueFromSessionFact',
+        'owa_taxRevenue',
+        'owa_taxRevenueFromSessionFact',
+        'owa_topReferers',
+        'owa_topVisitors',
+        'owa_transactionRevenue',
+        'owa_transactionRevenueFromSessionFact',
+        'owa_transactions',
+        'owa_transactionsFromSessionFact',
+        'owa_uniqueActions',
+        'owa_uniqueLineItems',
+        'owa_uniqueLineItemsFromSessionFact',
+        'owa_uniquePageViews',
+        'owa_visitDuration',
+        'owa_visitors',
         // RETIRED 2026-08-26: transaction-detail, removed rather than converted.
         // It was the per-transaction drill-down off the Transaction Roster --
         // one record as label/value rows plus its line items. Nothing else

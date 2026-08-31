@@ -274,6 +274,39 @@ class Metric extends \OWA\Core\Base {
                     $statement = $db->sum( $this->getColumn() );
                     break;
 
+                /*
+                 * Named kinds, so a definition can describe an expression
+                 * without carrying one. Both render exactly what the classes
+                 * they replace rendered, character for character -- the
+                 * conversion is meant to move where a metric is declared, not
+                 * what it computes.
+                 */
+                case 'boolean_true_count':
+
+                    /*
+                     * NULL counts as 0 here, which merges "false" with "not
+                     * recorded" (PLAN 1.12). Preserved deliberately rather than
+                     * corrected: this reproduces the classes it replaces, and
+                     * the three-valued boolean is a 1.x problem that v2's schema
+                     * removes rather than one to fix inside a conversion.
+                     */
+                    $statement = sprintf(
+                        'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->getColumn() );
+                    break;
+
+                case 'avg_difference':
+
+                    /*
+                     * Two columns on the same table, subtracted then averaged --
+                     * a duration. Qualified with the entity's alias because that
+                     * is what the class did, and the alias is what makes the
+                     * columns unambiguous once the query joins anything.
+                     */
+                    /* Both columns arrive already qualified by their setters. */
+                    $statement = sprintf( 'round(avg(%s - %s))',
+                        $this->getColumn(), $this->getSubtrahendColumn() );
+                    break;
+
                 default:
                     \OWA\Core\CoreAPI::error( sprintf(
                         'Metric "%s" has aggregation type "%s", which is not one of '
@@ -335,10 +368,67 @@ class Metric extends \OWA\Core\Base {
         return $this->column;
     }
     
+    /**
+     * The column subtracted from getColumn() by the avg_difference kind.
+     *
+     * Its own accessor rather than a second meaning for setColumn(), so a
+     * metric that does not use it cannot silently acquire one.
+     */
+    var $subtrahend_column;
+
+    function setSubtrahendColumn( $col_name ) {
+
+        /*
+         * Qualified here, exactly as setColumn() qualifies the primary column.
+         * A report query joins several tables and both session.timestamp and
+         * request.timestamp exist, so a bare column name is ambiguous -- but
+         * that is the setter's job, not the expression's.
+         */
+        $this->subtrahend_column = $this->entity->getTableAlias() . '.' . $col_name;
+    }
+
+    function getSubtrahendColumn() {
+
+        return $this->subtrahend_column;
+    }
+
     function getEntityName() {
         return $this->entity->getName();
     }
     
+    /**
+     * Children and formula of a calculated metric.
+     *
+     * These lived only on CalculatedMetric, so ConfigurableMetric -- which
+     * extends this class -- called setChildMetric() on an object that had no
+     * such method. Its 'calculated' type has therefore never worked: supported
+     * on paper, fatal on first use, and never registered by anything, so nobody
+     * found out. Held here so any metric can be calculated; CalculatedMetric
+     * keeps only the flag that says it is.
+     */
+    var $child_metrics = array();
+    var $formula;
+
+    function setChildMetric( $name ) {
+
+        $this->child_metrics[] = $name;
+    }
+
+    function getChildMetrics() {
+
+        return $this->child_metrics;
+    }
+
+    function setFormula( $string ) {
+
+        $this->formula = $string;
+    }
+
+    function getFormula() {
+
+        return $this->formula;
+    }
+
     function isCalculated() {
         return $this->is_calculated;
     }

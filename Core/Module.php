@@ -942,6 +942,14 @@ abstract class Module {
             'metric_type'    => '',
             'data_type'        => '',
             'column'        => '',
+            /*
+             * Used only by the avg_difference kind. It has to appear here even
+             * though most definitions omit it: the array_intersect_key() below
+             * filters params down to THIS map, so a key missing from it is
+             * silently dropped rather than rejected -- and a metric that lost
+             * its subtrahend would render a subtraction against nothing.
+             */
+            'subtrahend_column' => '',
             'child_metrics'    => array(),
             'formula'        => ''
         );

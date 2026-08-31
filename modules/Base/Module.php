@@ -945,14 +945,16 @@ class Module extends \OWA\Core\Module {
 
         ));
 
-        $this->registerMetric(
-            'newVisitors',
-            'base.newVisitors',
-            '',
-            'New Visitors',
-            'The total number of new visitors',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'newVisitors',
+            'label'       => 'New Visitors',
+            'description' => 'The total number of new visitors',
+            'group'       => 'Site Usage',
+            'metric_type' => 'boolean_true_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'is_new_visitor',
+        ) );
 
         $this->registerMetric(
             'repeatVisitors',
@@ -963,104 +965,127 @@ class Module extends \OWA\Core\Module {
             'Site Usage'
         );
 
-        $this->registerMetric(
-            'bounces',
-            'base.bounces',
-            '',
-            'Bounces',
-            'The total number of visits with a single page view',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'bounces',
+            'label'       => 'Bounces',
+            'description' => 'The total number of visits with a single page view',
+            'group'       => 'Site Usage',
+            'metric_type' => 'boolean_true_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'is_bounce',
+        ) );
 
-        $this->registerMetric(
-            'visitDuration',
-            'base.visitDuration',
-            '',
-            'Visit Duration',
-            'The average duration of visits.',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'              => 'visitDuration',
+            'label'             => 'Visit Duration',
+            'description'       => 'The average duration of visits.',
+            'group'             => 'Site Usage',
+            'metric_type'       => 'avg_difference',
+            'data_type'         => 'timestamp',
+            'entity'            => 'base.session',
+            'column'            => 'last_req',
+            'subtrahend_column' => 'timestamp',
+        ) );
 
-        $this->registerMetric(
-            'uniquePageViews',
-            'base.uniquePageViews',
-            '',
-            'Unique Page Views',
-            'The total number of unique pages viewed.',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'uniquePageViews',
+            'label'       => 'Unique Page Views',
+            'description' => 'The total number of unique pages viewed.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.request',
+            'column'      => 'document_id',
+        ) );
 
-        $this->registerMetric(
-            'bounceRate',
-            'base.bounceRate',
-            '',
-            'Bounce Rate',
-            'The percentage of visits that were bounces.',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'bounceRate',
+            'label'         => 'Bounce Rate',
+            'description'   => 'The percentage of visits that were bounces.',
+            'group'         => 'Site Usage',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'percentage',
+            'formula'       => 'bounces / visits',
+            'child_metrics' => array( 'bounces', 'visits' ),
+        ) );
 
-        $this->registerMetric(
-            'pagesPerVisit',
-            'base.pagesPerVisit',
-            '',
-            'Pages Per Visit',
-            'The average pages viewed per visit.',
-            'Site Usage'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'pagesPerVisit',
+            'label'         => 'Pages Per Visit',
+            'description'   => 'The average pages viewed per visit.',
+            'group'         => 'Site Usage',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'decimal',
+            'formula'       => 'round(pageViews / visits, 2)',
+            'child_metrics' => array( 'pageViews', 'visits' ),
+        ) );
 
-        $this->registerMetric(
-            'actions',
-            'base.actions',
-            '',
-            'Actions',
-            'The total number of action events.',
-            'Actions'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'actions',
+            'label'       => 'Actions',
+            'description' => 'The total number of action events.',
+            'group'       => 'Actions',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.action_fact',
+            'column'      => 'id',
+        ) );
 
-        $this->registerMetric(
-            'uniqueActions',
-            'base.uniqueActions',
-            '',
-            'Unique Actions',
-            'Total number of unique action events.',
-            'Actions'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'uniqueActions',
+            'label'       => 'Unique Actions',
+            'description' => 'Total number of unique action events.',
+            'group'       => 'Actions',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.action_fact',
+            'column'      => 'action_name',
+        ) );
 
-        $this->registerMetric(
-            'actionsValue',
-            'base.actionsValue',
-            '',
-            'Action Value',
-            'Total value of all action events.',
-            'Actions'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'actionsValue',
+            'label'       => 'Action Value',
+            'description' => 'Total value of all action events.',
+            'group'       => 'Actions',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.action_fact',
+            'column'      => 'numeric_value',
+        ) );
 
-        $this->registerMetric(
-            'feedRequests',
-            'base.feedRequests',
-            '',
-            'Feed Requests',
-            'Total number of feed requests.',
-            'Feeds'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'feedRequests',
+            'label'       => 'Feed Requests',
+            'description' => 'Total number of feed requests.',
+            'group'       => 'Feeds',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.feed_request',
+            'column'      => 'id',
+        ) );
 
-        $this->registerMetric(
-            'feedReaders',
-            'base.feedReaders',
-            '',
-            'Feed Readers',
-            'Total number of feed readers.',
-            'Feeds'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'feedReaders',
+            'label'       => 'Feed Readers',
+            'description' => 'Total number of feed readers.',
+            'group'       => 'Feeds',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.feed_request',
+            'column'      => 'feed_reader_guid',
+        ) );
 
-        $this->registerMetric(
-            'feedSubscriptions',
-            'base.feedSubscriptions',
-            '',
-            'Feed Subscriptions',
-            'Total number of feed subscribers.',
-            'Feeds'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'feedSubscriptions',
+            'label'       => 'Feed Subscriptions',
+            'description' => 'Total number of feed subscribers.',
+            'group'       => 'Feeds',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.feed_request',
+            'column'      => 'subscription_id',
+        ) );
 
         // goals
         $gcount = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
@@ -1098,170 +1123,252 @@ class Module extends \OWA\Core\Module {
             );
         }
 
-        $this->registerMetric(
-            'goalCompletionsAll',
-            'base.goalCompletionsAll',
-            '',
-            'Goal Completions',
-            'The total number of goal completions.',
-            'Goals'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'goalCompletionsAll',
+            'label'       => 'Goal Completions',
+            'description' => 'The total number of goal completions.',
+            'group'       => 'Goals',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'num_goals',
+        ) );
 
-        $this->registerMetric(
-            'goalStartsAll',
-            'base.goalStartsAll',
-            '',
-            'Goal Starts',
-            'The total number of goal starts.',
-            'Goals'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'goalStartsAll',
+            'label'       => 'Goal Starts',
+            'description' => 'The total number of goal starts.',
+            'group'       => 'Goals',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'num_goal_starts',
+        ) );
 
-        $this->registerMetric(
-            'goalValueAll',
-            'base.goalValueAll',
-            '',
-            'Goal Value',
-            'The total value of all goals achieved.',
-            'Goals'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'goalValueAll',
+            'label'       => 'Goal Value',
+            'description' => 'The total value of all goals achieved.',
+            'group'       => 'Goals',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.session',
+            'column'      => 'goals_value',
+        ) );
 
-        $this->registerMetric(
-            'goalConversionRateAll',
-            'base.goalConversionRateAll',
-            '',
-            'Goal Conversion Rate',
-            'The rate of goals achieved in all visits.',
-            'Goals'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'goalConversionRateAll',
+            'label'         => 'Goal Conversion Rate',
+            'description'   => 'The rate of goals achieved in all visits.',
+            'group'         => 'Goals',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'percentage',
+            'formula'       => 'goalCompletionsAll / visits',
+            'child_metrics' => array( 'goalCompletionsAll', 'visits' ),
+        ) );
 
-        $this->registerMetric(
-            'goalAbandonRateAll',
-            'base.goalAbandonRateAll',
-            '',
-            'Goal Abandon Rate',
-            'The rate of goal abandons in all visits.',
-            'Goals'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'goalAbandonRateAll',
+            'label'         => 'Goal Abandon Rate',
+            'description'   => 'The rate of goal abandons in all visits.',
+            'group'         => 'Goals',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'percentage',
+            'formula'       => 'goalStartsAll / goalCompletionsAll',
+            'child_metrics' => array( 'goalCompletionsAll', 'goalStartsAll' ),
+        ) );
 
         // ecommerce metrics
-        $this->registerMetric(
-            'lineItemQuantity',
-            array(
-                'base.lineItemQuantity',
-                'base.lineItemQuantityFromSessionFact'
-            ),
-            '',
-            'Item Quantity',
-            'The total umber of items purchased.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'lineItemQuantity',
+            'label'       => 'Item Quantity',
+            'description' => 'The total umber of items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.commerce_line_item_fact',
+            'column'      => 'quantity',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'lineItemQuantity',
+            'label'       => 'Item Quantity',
+            'description' => 'The total umber of items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_items_quantity',
+        ) );
 
-        $this->registerMetric(
-            'lineItemRevenue',
-            array(
-                'base.lineItemRevenue',
-                'base.lineItemRevenueFromSessionFact'
-            ),
-            '',
-            'Item Revenue',
-            'Total revenue from items purchased.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'lineItemRevenue',
+            'label'       => 'Item Revenue',
+            'description' => 'Total revenue from items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.commerce_line_item_fact',
+            'column'      => 'item_revenue',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'lineItemRevenue',
+            'label'       => 'Item Revenue',
+            'description' => 'Total revenue from items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_items_revenue',
+        ) );
 
-        $this->registerMetric(
-            'transactions',
-            array(
-                'base.transactions',
-                'base.transactionsFromSessionFact'
-            ),
-            '',
-            'Transactions',
-            'Total number of transactions.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'transactions',
+            'label'       => 'Transactions',
+            'description' => 'Total number of transactions.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.commerce_transaction_fact',
+            'column'      => 'id',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'transactions',
+            'label'       => 'Transactions',
+            'description' => 'Total number of transactions.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_trans_count',
+        ) );
 
-        $this->registerMetric(
-            'transactionRevenue',
-            array(
-                'base.transactionRevenue',
-                'base.transactionRevenueFromSessionFact'
-            ),
-            '',
-            'Revenue',
-            'Total revenue from all transactions.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'transactionRevenue',
+            'label'       => 'Revenue',
+            'description' => 'Total revenue from all transactions.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.commerce_transaction_fact',
+            'column'      => 'total_revenue',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'transactionRevenue',
+            'label'       => 'Revenue',
+            'description' => 'Total revenue from all transactions.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_trans_revenue',
+        ) );
 
-        $this->registerMetric(
-            'taxRevenue',
-            array(
-                'base.taxRevenue',
-                'base.taxRevenueFromSessionFact'
-            ),
-            '',
-            'Tax Revenue',
-            'Total revenue from taxes.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'taxRevenue',
+            'label'       => 'Tax Revenue',
+            'description' => 'Total revenue from taxes.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.commerce_transaction_fact',
+            'column'      => 'tax_revenue',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'taxRevenue',
+            'label'       => 'Tax Revenue',
+            'description' => 'Total revenue from taxes.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_tax_revenue',
+        ) );
 
-        $this->registerMetric(
-            'shippingRevenue',
-            array(
-                'base.shippingRevenue',
-                'base.shippingRevenueFromSessionFact'
-            ),
-            '',
-            'Shipping Revenue',
-            'Total revenue from shipping.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'shippingRevenue',
+            'label'       => 'Shipping Revenue',
+            'description' => 'Total revenue from shipping.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.commerce_transaction_fact',
+            'column'      => 'shipping_revenue',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'shippingRevenue',
+            'label'       => 'Shipping Revenue',
+            'description' => 'Total revenue from shipping.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_shipping_revenue',
+        ) );
 
-        $this->registerMetric(
-            'uniqueLineItems',
-            array(
-                'base.uniqueLineItems',
-                'base.uniqueLineItemsFromSessionFact'
-            ),
-            '',
-            'Unique Items',
-            'Total number of unique items purchased.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'uniqueLineItems',
+            'label'       => 'Unique Items',
+            'description' => 'Total number of unique items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.commerce_transaction_fact',
+            'column'      => 'sku',
+        ) );
+        $this->registerMetricDefinition( array(
+            'name'        => 'uniqueLineItems',
+            'label'       => 'Unique Items',
+            'description' => 'Total number of unique items purchased.',
+            'group'       => 'E-commerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'entity'      => 'base.session',
+            'column'      => 'commerce_items_count',
+        ) );
 
-        $this->registerMetric(
-            'revenuePerTransaction',
-            'base.revenuePerTransaction',
-            '',
-            'Revenue Per Transaction',
-            'Average revenue per transaction.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'revenuePerTransaction',
+            'label'         => 'Revenue Per Transaction',
+            'description'   => 'Average revenue per transaction.',
+            'group'         => 'E-commerce',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'currency',
+            'formula'       => 'transactionRevenue / transactions',
+            'child_metrics' => array( 'transactionRevenue', 'transactions' ),
+        ) );
 
-        $this->registerMetric(
-            'revenuePerVisit',
-            'base.revenuePerVisit',
-            '',
-            'Revenue Per Visit',
-            'Average revenue generated per visit.',
-            'E-commerce'
-        );
+        $this->registerMetricDefinition( array(
+            'name'          => 'revenuePerVisit',
+            'label'         => 'Revenue Per Visit',
+            'description'   => 'Average revenue generated per visit.',
+            'group'         => 'E-commerce',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'currency',
+            'formula'       => 'transactionRevenue / visits',
+            'child_metrics' => array( 'transactionRevenue', 'visits' ),
+        ) );
 
-        $this->registerMetric(
-            'ecommerceConversionRate',
-            'base.ecommerceConversionRate',
-            '',
-            'E-commerce Conversion Rate',
-            'The rate of visits that resulted in an e-commerce transaction.',
-            'E-commerce');
+        $this->registerMetricDefinition( array(
+            'name'          => 'ecommerceConversionRate',
+            'label'         => 'E-commerce Conversion Rate',
+            'description'   => 'The rate of visits that resulted in an e-commerce transaction.',
+            'group'         => 'E-commerce',
+            'metric_type'   => 'calculated',
+            'data_type'     => 'percentage',
+            'formula'       => 'transactions / visits',
+            'child_metrics' => array( 'transactions', 'visits' ),
+        ) );
 
-        $this->registerMetric(
-            'domClicks',
-            'base.domClicks',
-            '',
-            'Clicks',
-            'Total number of clicks on DOM elements.',
-            'Clicks'
-        );
+        $this->registerMetricDefinition( array(
+            'name'        => 'domClicks',
+            'label'       => 'Clicks',
+            'description' => 'Total number of clicks on DOM elements.',
+            'group'       => 'Clicks',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'entity'      => 'base.click',
+            'column'      => 'id',
+        ) );
     }
 
     /**

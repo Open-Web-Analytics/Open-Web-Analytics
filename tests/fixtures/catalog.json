@@ -12,100 +12,196 @@
         "actions": [
             {
                 "name": "actions",
-                "class": "base.actions",
+                "class": "base.configurableMetric",
                 "label": "Actions",
                 "group": "Actions",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "data_type": "integer",
+                    "description": "The total number of action events.",
+                    "entity": "base.action_fact",
+                    "formula": "",
+                    "group": "Actions",
+                    "label": "Actions",
+                    "metric_type": "distinct_count",
+                    "name": "actions",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "actionsValue": [
             {
                 "name": "actionsValue",
-                "class": "base.actionsValue",
+                "class": "base.configurableMetric",
                 "label": "Action Value",
                 "group": "Actions",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "numeric_value",
+                    "data_type": "integer",
+                    "description": "Total value of all action events.",
+                    "entity": "base.action_fact",
+                    "formula": "",
+                    "group": "Actions",
+                    "label": "Action Value",
+                    "metric_type": "sum",
+                    "name": "actionsValue",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "bounceRate": [
             {
                 "name": "bounceRate",
-                "class": "base.bounceRate",
+                "class": "base.configurableMetric",
                 "label": "Bounce Rate",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "bounces",
+                        "visits"
+                    ],
+                    "column": "",
+                    "data_type": "percentage",
+                    "description": "The percentage of visits that were bounces.",
+                    "entity": "",
+                    "formula": "bounces / visits",
+                    "group": "Site Usage",
+                    "label": "Bounce Rate",
+                    "metric_type": "calculated",
+                    "name": "bounceRate",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "bounces": [
             {
                 "name": "bounces",
-                "class": "base.bounces",
+                "class": "base.configurableMetric",
                 "label": "Bounces",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "is_bounce",
+                    "data_type": "integer",
+                    "description": "The total number of visits with a single page view",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Bounces",
+                    "metric_type": "boolean_true_count",
+                    "name": "bounces",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "domClicks": [
             {
                 "name": "domClicks",
-                "class": "base.domClicks",
+                "class": "base.configurableMetric",
                 "label": "Clicks",
                 "group": "Clicks",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "data_type": "integer",
+                    "description": "Total number of clicks on DOM elements.",
+                    "entity": "base.click",
+                    "formula": "",
+                    "group": "Clicks",
+                    "label": "Clicks",
+                    "metric_type": "count",
+                    "name": "domClicks",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "ecommerceConversionRate": [
             {
                 "name": "ecommerceConversionRate",
-                "class": "base.ecommerceConversionRate",
+                "class": "base.configurableMetric",
                 "label": "E-commerce Conversion Rate",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "transactions",
+                        "visits"
+                    ],
+                    "column": "",
+                    "data_type": "percentage",
+                    "description": "The rate of visits that resulted in an e-commerce transaction.",
+                    "entity": "",
+                    "formula": "transactions / visits",
+                    "group": "E-commerce",
+                    "label": "E-commerce Conversion Rate",
+                    "metric_type": "calculated",
+                    "name": "ecommerceConversionRate",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "feedReaders": [
             {
                 "name": "feedReaders",
-                "class": "base.feedReaders",
+                "class": "base.configurableMetric",
                 "label": "Feed Readers",
                 "group": "Feeds",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "feed_reader_guid",
+                    "data_type": "integer",
+                    "description": "Total number of feed readers.",
+                    "entity": "base.feed_request",
+                    "formula": "",
+                    "group": "Feeds",
+                    "label": "Feed Readers",
+                    "metric_type": "distinct_count",
+                    "name": "feedReaders",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "feedRequests": [
             {
                 "name": "feedRequests",
-                "class": "base.feedRequests",
+                "class": "base.configurableMetric",
                 "label": "Feed Requests",
                 "group": "Feeds",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "data_type": "integer",
+                    "description": "Total number of feed requests.",
+                    "entity": "base.feed_request",
+                    "formula": "",
+                    "group": "Feeds",
+                    "label": "Feed Requests",
+                    "metric_type": "distinct_count",
+                    "name": "feedRequests",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "feedSubscriptions": [
             {
                 "name": "feedSubscriptions",
-                "class": "base.feedSubscriptions",
+                "class": "base.configurableMetric",
                 "label": "Feed Subscriptions",
                 "group": "Feeds",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "subscription_id",
+                    "data_type": "integer",
+                    "description": "Total number of feed subscribers.",
+                    "entity": "base.feed_request",
+                    "formula": "",
+                    "group": "Feeds",
+                    "label": "Feed Subscriptions",
+                    "metric_type": "distinct_count",
+                    "name": "feedSubscriptions",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "goal10Completions": [
@@ -606,107 +702,213 @@
         "goalAbandonRateAll": [
             {
                 "name": "goalAbandonRateAll",
-                "class": "base.goalAbandonRateAll",
+                "class": "base.configurableMetric",
                 "label": "Goal Abandon Rate",
                 "group": "Goals",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "goalCompletionsAll",
+                        "goalStartsAll"
+                    ],
+                    "column": "",
+                    "data_type": "percentage",
+                    "description": "The rate of goal abandons in all visits.",
+                    "entity": "",
+                    "formula": "goalStartsAll / goalCompletionsAll",
+                    "group": "Goals",
+                    "label": "Goal Abandon Rate",
+                    "metric_type": "calculated",
+                    "name": "goalAbandonRateAll",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "goalCompletionsAll": [
             {
                 "name": "goalCompletionsAll",
-                "class": "base.goalCompletionsAll",
+                "class": "base.configurableMetric",
                 "label": "Goal Completions",
                 "group": "Goals",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "num_goals",
+                    "data_type": "integer",
+                    "description": "The total number of goal completions.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Goal Completions",
+                    "metric_type": "sum",
+                    "name": "goalCompletionsAll",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "goalConversionRateAll": [
             {
                 "name": "goalConversionRateAll",
-                "class": "base.goalConversionRateAll",
+                "class": "base.configurableMetric",
                 "label": "Goal Conversion Rate",
                 "group": "Goals",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "goalCompletionsAll",
+                        "visits"
+                    ],
+                    "column": "",
+                    "data_type": "percentage",
+                    "description": "The rate of goals achieved in all visits.",
+                    "entity": "",
+                    "formula": "goalCompletionsAll / visits",
+                    "group": "Goals",
+                    "label": "Goal Conversion Rate",
+                    "metric_type": "calculated",
+                    "name": "goalConversionRateAll",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "goalStartsAll": [
             {
                 "name": "goalStartsAll",
-                "class": "base.goalStartsAll",
+                "class": "base.configurableMetric",
                 "label": "Goal Starts",
                 "group": "Goals",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "num_goal_starts",
+                    "data_type": "integer",
+                    "description": "The total number of goal starts.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Goal Starts",
+                    "metric_type": "sum",
+                    "name": "goalStartsAll",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "goalValueAll": [
             {
                 "name": "goalValueAll",
-                "class": "base.goalValueAll",
+                "class": "base.configurableMetric",
                 "label": "Goal Value",
                 "group": "Goals",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "goals_value",
+                    "data_type": "currency",
+                    "description": "The total value of all goals achieved.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Goal Value",
+                    "metric_type": "sum",
+                    "name": "goalValueAll",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "lineItemQuantity": [
             {
                 "name": "lineItemQuantity",
-                "class": "base.lineItemQuantity",
+                "class": "base.configurableMetric",
                 "label": "Item Quantity",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_items_quantity",
+                    "data_type": "integer",
+                    "description": "The total umber of items purchased.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Item Quantity",
+                    "metric_type": "sum",
+                    "name": "lineItemQuantity",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "lineItemQuantity",
-                "class": "base.lineItemQuantityFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Item Quantity",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "quantity",
+                    "data_type": "integer",
+                    "description": "The total umber of items purchased.",
+                    "entity": "base.commerce_line_item_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Item Quantity",
+                    "metric_type": "sum",
+                    "name": "lineItemQuantity",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "lineItemRevenue": [
             {
                 "name": "lineItemRevenue",
-                "class": "base.lineItemRevenue",
+                "class": "base.configurableMetric",
                 "label": "Item Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_items_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from items purchased.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Item Revenue",
+                    "metric_type": "sum",
+                    "name": "lineItemRevenue",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "lineItemRevenue",
-                "class": "base.lineItemRevenueFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Item Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "item_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from items purchased.",
+                    "entity": "base.commerce_line_item_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Item Revenue",
+                    "metric_type": "sum",
+                    "name": "lineItemRevenue",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "newVisitors": [
             {
                 "name": "newVisitors",
-                "class": "base.newVisitors",
+                "class": "base.configurableMetric",
                 "label": "New Visitors",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "is_new_visitor",
+                    "data_type": "integer",
+                    "description": "The total number of new visitors",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "New Visitors",
+                    "metric_type": "boolean_true_count",
+                    "name": "newVisitors",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "pageViews": [
@@ -725,7 +927,8 @@
                     "group": "Site Usage",
                     "label": "Page Views",
                     "metric_type": "count",
-                    "name": "pageViews"
+                    "name": "pageViews",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -743,19 +946,33 @@
                     "group": "Site Usage",
                     "label": "Page Views",
                     "metric_type": "sum",
-                    "name": "pageViews"
+                    "name": "pageViews",
+                    "subtrahend_column": ""
                 }
             }
         ],
         "pagesPerVisit": [
             {
                 "name": "pagesPerVisit",
-                "class": "base.pagesPerVisit",
+                "class": "base.configurableMetric",
                 "label": "Pages Per Visit",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "pageViews",
+                        "visits"
+                    ],
+                    "column": "",
+                    "data_type": "decimal",
+                    "description": "The average pages viewed per visit.",
+                    "entity": "",
+                    "formula": "round(pageViews / visits, 2)",
+                    "group": "Site Usage",
+                    "label": "Pages Per Visit",
+                    "metric_type": "calculated",
+                    "name": "pagesPerVisit",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "repeatVisitors": [
@@ -772,145 +989,291 @@
         "revenuePerTransaction": [
             {
                 "name": "revenuePerTransaction",
-                "class": "base.revenuePerTransaction",
+                "class": "base.configurableMetric",
                 "label": "Revenue Per Transaction",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "transactionRevenue",
+                        "transactions"
+                    ],
+                    "column": "",
+                    "data_type": "currency",
+                    "description": "Average revenue per transaction.",
+                    "entity": "",
+                    "formula": "transactionRevenue / transactions",
+                    "group": "E-commerce",
+                    "label": "Revenue Per Transaction",
+                    "metric_type": "calculated",
+                    "name": "revenuePerTransaction",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "revenuePerVisit": [
             {
                 "name": "revenuePerVisit",
-                "class": "base.revenuePerVisit",
+                "class": "base.configurableMetric",
                 "label": "Revenue Per Visit",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [
+                        "transactionRevenue",
+                        "visits"
+                    ],
+                    "column": "",
+                    "data_type": "currency",
+                    "description": "Average revenue generated per visit.",
+                    "entity": "",
+                    "formula": "transactionRevenue / visits",
+                    "group": "E-commerce",
+                    "label": "Revenue Per Visit",
+                    "metric_type": "calculated",
+                    "name": "revenuePerVisit",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "shippingRevenue": [
             {
                 "name": "shippingRevenue",
-                "class": "base.shippingRevenue",
+                "class": "base.configurableMetric",
                 "label": "Shipping Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_shipping_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from shipping.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Shipping Revenue",
+                    "metric_type": "sum",
+                    "name": "shippingRevenue",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "shippingRevenue",
-                "class": "base.shippingRevenueFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Shipping Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "shipping_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from shipping.",
+                    "entity": "base.commerce_transaction_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Shipping Revenue",
+                    "metric_type": "sum",
+                    "name": "shippingRevenue",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "taxRevenue": [
             {
                 "name": "taxRevenue",
-                "class": "base.taxRevenue",
+                "class": "base.configurableMetric",
                 "label": "Tax Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_tax_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from taxes.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Tax Revenue",
+                    "metric_type": "sum",
+                    "name": "taxRevenue",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "taxRevenue",
-                "class": "base.taxRevenueFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Tax Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "tax_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from taxes.",
+                    "entity": "base.commerce_transaction_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Tax Revenue",
+                    "metric_type": "sum",
+                    "name": "taxRevenue",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "transactionRevenue": [
             {
                 "name": "transactionRevenue",
-                "class": "base.transactionRevenue",
+                "class": "base.configurableMetric",
                 "label": "Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_trans_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from all transactions.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Revenue",
+                    "metric_type": "sum",
+                    "name": "transactionRevenue",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "transactionRevenue",
-                "class": "base.transactionRevenueFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Revenue",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "total_revenue",
+                    "data_type": "currency",
+                    "description": "Total revenue from all transactions.",
+                    "entity": "base.commerce_transaction_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Revenue",
+                    "metric_type": "sum",
+                    "name": "transactionRevenue",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "transactions": [
             {
                 "name": "transactions",
-                "class": "base.transactions",
+                "class": "base.configurableMetric",
                 "label": "Transactions",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_trans_count",
+                    "data_type": "integer",
+                    "description": "Total number of transactions.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Transactions",
+                    "metric_type": "sum",
+                    "name": "transactions",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "transactions",
-                "class": "base.transactionsFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Transactions",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "data_type": "integer",
+                    "description": "Total number of transactions.",
+                    "entity": "base.commerce_transaction_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Transactions",
+                    "metric_type": "count",
+                    "name": "transactions",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "uniqueActions": [
             {
                 "name": "uniqueActions",
-                "class": "base.uniqueActions",
+                "class": "base.configurableMetric",
                 "label": "Unique Actions",
                 "group": "Actions",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "action_name",
+                    "data_type": "integer",
+                    "description": "Total number of unique action events.",
+                    "entity": "base.action_fact",
+                    "formula": "",
+                    "group": "Actions",
+                    "label": "Unique Actions",
+                    "metric_type": "distinct_count",
+                    "name": "uniqueActions",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "uniqueLineItems": [
             {
                 "name": "uniqueLineItems",
-                "class": "base.uniqueLineItems",
+                "class": "base.configurableMetric",
                 "label": "Unique Items",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "commerce_items_count",
+                    "data_type": "integer",
+                    "description": "Total number of unique items purchased.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Unique Items",
+                    "metric_type": "sum",
+                    "name": "uniqueLineItems",
+                    "subtrahend_column": ""
+                }
             },
             {
                 "name": "uniqueLineItems",
-                "class": "base.uniqueLineItemsFromSessionFact",
+                "class": "base.configurableMetric",
                 "label": "Unique Items",
                 "group": "E-commerce",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "sku",
+                    "data_type": "integer",
+                    "description": "Total number of unique items purchased.",
+                    "entity": "base.commerce_transaction_fact",
+                    "formula": "",
+                    "group": "E-commerce",
+                    "label": "Unique Items",
+                    "metric_type": "distinct_count",
+                    "name": "uniqueLineItems",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "uniquePageViews": [
             {
                 "name": "uniquePageViews",
-                "class": "base.uniquePageViews",
+                "class": "base.configurableMetric",
                 "label": "Unique Page Views",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "document_id",
+                    "data_type": "integer",
+                    "description": "The total number of unique pages viewed.",
+                    "entity": "base.request",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Unique Page Views",
+                    "metric_type": "distinct_count",
+                    "name": "uniquePageViews",
+                    "subtrahend_column": ""
+                }
             }
         ],
         "uniqueVisitors": [
@@ -929,7 +1292,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -947,7 +1311,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -965,7 +1330,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -983,7 +1349,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1001,7 +1368,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1019,7 +1387,8 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1037,19 +1406,30 @@
                     "group": "Site Usage",
                     "label": "Unique Visitors",
                     "metric_type": "distinct_count",
-                    "name": "uniqueVisitors"
+                    "name": "uniqueVisitors",
+                    "subtrahend_column": ""
                 }
             }
         ],
         "visitDuration": [
             {
                 "name": "visitDuration",
-                "class": "base.visitDuration",
+                "class": "base.configurableMetric",
                 "label": "Visit Duration",
                 "group": "Site Usage",
-                "params": [
-                    ""
-                ]
+                "params": {
+                    "child_metrics": [],
+                    "column": "last_req",
+                    "data_type": "timestamp",
+                    "description": "The average duration of visits.",
+                    "entity": "base.session",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Visit Duration",
+                    "metric_type": "avg_difference",
+                    "name": "visitDuration",
+                    "subtrahend_column": "timestamp"
+                }
             }
         ],
         "visitors": [
@@ -1068,7 +1448,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1086,7 +1467,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1104,7 +1486,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1122,7 +1505,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1140,7 +1524,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1158,7 +1543,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1176,7 +1562,8 @@
                     "group": "Site Usage",
                     "label": "Visitors",
                     "metric_type": "count",
-                    "name": "visitors"
+                    "name": "visitors",
+                    "subtrahend_column": ""
                 }
             }
         ],
@@ -1196,7 +1583,8 @@
                     "group": "Site Usage",
                     "label": "Visits",
                     "metric_type": "distinct_count",
-                    "name": "visits"
+                    "name": "visits",
+                    "subtrahend_column": ""
                 }
             },
             {
@@ -1214,7 +1602,8 @@
                     "group": "Site Usage",
                     "label": "Visits",
                     "metric_type": "distinct_count",
-                    "name": "visits"
+                    "name": "visits",
+                    "subtrahend_column": ""
                 }
             }
         ]

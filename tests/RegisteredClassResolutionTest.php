@@ -109,10 +109,25 @@ final class RegisteredClassResolutionTest extends TestCase
         }
         $classes = array_keys($classes);
 
+        /*
+         * Counts registered metric NAMES, not distinct implementation classes.
+         *
+         * It asserted more than 10 distinct classes, as a proxy for "the
+         * registry loaded". That proxy died with the conversion to configuration:
+         * nearly every metric now resolves to base.configurableMetric, so the
+         * distinct-class count is 5 and falling -- by design, not by breakage.
+         * The thing actually worth guarding is that the catalog is populated and
+         * every class it names can be loaded, which the loop below still does.
+         */
         $this->assertGreaterThan(
-            10,
-            count($classes),
-            'Expected many distinct metric implementation classes.'
+            50,
+            count( self::$service->metrics ),
+            'Expected the metric catalog to be populated.'
+        );
+
+        $this->assertNotEmpty(
+            $classes,
+            'Expected at least one metric implementation class to resolve.'
         );
 
         $failures = [];
