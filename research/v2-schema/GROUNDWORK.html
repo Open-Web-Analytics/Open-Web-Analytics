@@ -402,6 +402,19 @@ the 8 shipped formulas does not move the trust boundary. The parser is the prere
 <em>user-authored</em> metric builder, a separate feature, and a plain four-operator grammar would
 not even cover today's set since <code>round(actions / visits, 1)</code> needs function
 application.</p>
+<div class="flag">
+  <p class="h">In v2 the remaining classes disappear, so 5b is 1.x-only housekeeping</p>
+  <p>Of the seven metric classes left after the conversion, three are the goal classes, one is
+  <code>repeatVisitors</code>, one is unregistered and one is <code>ConfigurableMetric</code>
+  itself. <strong>Every one of them is gone in v2</strong> (EVENTS.html &sect;7.14): the numbered
+  goal slots retire in favour of named key events with a parameterised metric,
+  <code>repeatVisitors</code> retires into the <code>newVsReturning</code> dimension, and per-key-
+  event reporting becomes one metric plus one dimension.</p>
+  <p>So the classes that resist configuration are not a gap to close &mdash; they are artefacts of
+  numbered slots and stored booleans, which v2 removes for unrelated reasons. That makes 5b
+  housekeeping for the 1.x line rather than groundwork for v2, and lowers its priority further.</p>
+</div>
+
 <p><em>Position:</em> 5a now, as a standing rule. 5b unscheduled &mdash; it competes with work that
 actually blocks, and its cost does not grow if it waits, because 5a stops the class metrics
 multiplying in the meantime.</p>

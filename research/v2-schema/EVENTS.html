@@ -1279,6 +1279,78 @@ straightforward and the evaluator replacement is a real piece of work that shoul
 being committed to.</p>
 
 
+<h3><span class="num">7.14</span>Key events are named events, and the metrics that count them are parameterised <span class="chip c-dec">Decided</span></h3>
+<p>1.x has twenty numbered goal slots, ten columns implementing five custom-variable slots, and
+sixty registered metrics (<code>goal1Completions</code>&hellip;<code>goal20Value</code>) generated
+from three parameterised classes. Those three are the <em>only</em> metric classes in the tree that
+are not pure declarations: they read the <code>siteId</code> request param and call
+<code>getGoalManager()</code> to build a per-site label such as
+<code>G1: Newsletter&nbsp;Signup</code>. Everything about them follows from the numbered slot.</p>
+
+<h4>An author names a key event and gives it a condition</h4>
+<p>Not a slot: a name, an event type, and a condition (&ldquo;a click whose target is
+<em>x</em>&rdquo;). When the condition matches, the server <strong>materialises an additional event
+row whose <code>event_type</code> is the author's chosen name</strong> &mdash; the same mechanism
+&sect;1.4 already uses for <code>session_start</code>, which is materialised server-side with no
+client beacon and zero wire cost.</p>
+<p>This was chosen over annotating the triggering event with a <code>key_event_name</code> column,
+and the deciding argument is that it needs <strong>no schema change at all</strong>:
+<code>event_type</code> already carries the name, so the column count stays at 40 and per-key-event
+reporting is an ordinary <code>GROUP BY</code>. GA works this way too &mdash; a key event is an
+event whose <em>name</em> is marked as key, so the name is the identity.</p>
+<div class="scroll"><table>
+<thead><tr><th>Consequence</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td>A goal completion now produces <strong>two rows</strong></td><td>The materialised key event is <strong>never counted</strong> as an ordinary event &mdash; the rule &sect;1.4 already sets for <code>session_start</code>, for the same reason</td></tr>
+<tr><td>The triggering event</td><td>Stays an ordinary <code>page_view</code> with <code>is_key_event = 0</code>. Flagging both would double-count and blur which row <em>is</em> the conversion</td></tr>
+<tr><td><code>event_type</code> vocabulary</td><td>Stops being closed &mdash; author names join it. Intended, given &sect;1.4's site-opt-in group, but stated so nobody discovers it by naming a key event <code>page_view</code></td></tr>
+<tr><td><code>is_key_event</code></td><td>Stays <code>TINYINT NOT NULL DEFAULT 0</code>. Not nullable: &sect;1.12's rule, and this column is 0 on almost every row, so a three-valued variant would stay invisible for a long time and then be wrong</td></tr>
+</tbody></table></div>
+<p>The flag earns its place despite the name being on the row, for two reasons: &sect;1.10 forbids a
+reporting query from consulting the goal config, so without the stamp &ldquo;is this a key
+event?&rdquo; needs the list of configured names; and it is the third disjunct in the
+engaged-session test.</p>
+
+<h4>It is registered as a dimension, and the reason is constraints</h4>
+<p><span class="chip c-meas">Measured</span> GA4 exposes <code>isKeyEvent</code> &mdash; <em>&ldquo;the
+string 'true' if the event is a key event. Marking an event as a key event affects reports from time
+of creation.&rdquo;</em> A string, not a boolean, and explicitly not retroactive, which is the same
+property stamping gives v2.</p>
+<p>An earlier draft argued against exposing it, on &sect;7.7's rule that a boolean groups into
+Yes/No buckets. That reasoning was about <em>grouping</em> and missed <em>constraining</em>:
+&ldquo;conversions by source&rdquo; means filtering to key events, and in this engine a constraint
+name resolves through the dimension registry
+(<code>getDimensionNamesFromConstraints()</code> folds them into the same lookup). Unregistered
+means unfilterable. The Yes/No grouping is a cosmetic cost; losing the filter is a functional one.</p>
+
+<h4>Per-name metrics are kept, and parameterised rather than pre-registered</h4>
+<p>GA offers <code>sessionKeyEventRate:add_to_cart</code> &mdash; the suffix is the key event's
+name. Keeping that shape is <span class="chip c-dec">Decided</span>, because &ldquo;this one
+conversion's rate beside unrelated metrics&rdquo; is a real thing to want and a group-by cannot
+place it in a column.</p>
+<p><strong>Parameterised, not pre-registered per site.</strong> The set of key events varies by
+site while the catalog is built once per process, so registering a metric per name is precisely
+what forces the goal classes to reach for <code>getGoalManager( $siteId )</code> at construction.
+GA does not pre-register: it accepts the parameterised name and resolves the suffix. One
+configuration entry declaring itself parameterised by key-event name therefore gives per-name
+metrics with a <em>static</em> catalog.</p>
+<p><em>New machinery, and the only piece here that is:</em> resolution must split
+<code>name:parameter</code>. That is a change to lookup, not a class &mdash; which is what keeps
+the conclusion below true.</p>
+
+<div class="flag">
+  <p class="h">v2's metrics are entirely configuration</p>
+  <p>Following from the above: the sixty numbered goal metrics retire (no <code>goal_1..20</code>
+  columns exist in the 40-column table), <code>repeatVisitors</code> retires into the
+  <code>newVsReturning</code> dimension (&sect;7.7) &mdash; it was the only composite expression in
+  the catalog precisely because it was doing a grouping with arithmetic &mdash; and per-key-event
+  reporting is one metric plus one dimension.</p>
+  <p>So every metric class that resists configuration in 1.x is gone in v2, and not by coincidence:
+  each exists to serve a numbered slot or a stored boolean, which is the pattern &sect;7.7
+  generalises away.</p>
+</div>
+
+
 <footer>
 <p>Companion to <strong>PLAN.html</strong> — §1.4 event taxonomy, §1.10 the tables, §1.8 privacy,
 §3.1 one tracker two pipelines.</p>
