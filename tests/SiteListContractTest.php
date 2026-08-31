@@ -32,7 +32,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class SiteListContractTest extends TestCase
 {
-    /** What a /v1/sites entry has carried; the plugin depends on the first three. */
+    /** What a /v1/sites entry carries; the plugin depends on the first three. */
     private const PAYLOAD_FIELDS = array(
         'site_id',      // the tracking id -- what ends up in the tag
         'name',         // picker label
@@ -40,7 +40,22 @@ final class SiteListContractTest extends TestCase
         'description',
         'id',
         'settings',
+        /*
+         * SUPERSEDED by property_id but deliberately still emitted. Removing it
+         * would take a field out of a public API to save a column nothing
+         * reads.
+         */
         'site_family',
+        /*
+         * APPROVED ADDITION (Organization / Property / Observation Profile).
+         *
+         * Safe because it is an addition: JSON consumers ignore keys they do
+         * not know, so the plugin is unaffected, and a client that wants the
+         * hierarchy can now find the parent without a second call. Listed here
+         * rather than silently absorbed -- that is the point of matching the
+         * set exactly.
+         */
+        'property_id',
     );
 
     public function testThePayloadFieldsAreExactlyWhatWasPublished(): void

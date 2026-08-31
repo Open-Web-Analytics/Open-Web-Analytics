@@ -55,6 +55,16 @@ class User extends \OWA\Core\Entity {
         $this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['role'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
+
+        /*
+         * The organization this account belongs to. Roles are scoped to it.
+         *
+         * One per user for now: multi-organization membership carries a real
+         * question -- which organization am I acting in? -- and nothing yet
+         * needs to ask it (PLAN.html §3.5).
+         */
+        $this->properties['organization_id'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['organization_id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['real_name'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['email_address'] = new \OWA\Module\Base\Classes\DbColumn;

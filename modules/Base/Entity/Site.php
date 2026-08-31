@@ -53,6 +53,23 @@ class Site extends \OWA\Core\Entity {
         $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['description'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['description']->setDataType(OWA_DTD_TEXT);
+        /*
+         * The property this profile observes.
+         *
+         * Nullable until the migration backfills it, and nullable afterwards
+         * for a profile created before its property exists -- the resolution
+         * treats an unparented profile as belonging to no property rather than
+         * guessing one.
+         */
+        $this->properties['property_id'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['property_id']->setDataType(OWA_DTD_BIGINT);
+
+        /*
+         * SUPERSEDED by property_id, which does this job properly, but kept:
+         * it is emitted by GET /v1/sites, and that payload is a contract the
+         * WordPress plugin reads. Removing the column would remove a field from
+         * a public API to save a column nothing reads.
+         */
         $this->properties['site_family'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['settings'] = new \OWA\Module\Base\Classes\DbColumn;
