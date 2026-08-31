@@ -1178,37 +1178,33 @@ v1's history would step or stop the moment a site upgraded — destroying the va
 being kept.</p>
 
 <div class="flag">
-  <p class="h">Amended: two configurations, because sessionization is client-side</p>
-  <p>The paragraph above rules out <em>replacing</em> the tag, and that reasoning stands. It does
-  not rule out <strong>adding</strong> one — and sessionization forces that.</p>
+  <p class="h">Amended: one session model, adopted by both pipelines <span class="chip c-dec">Decided</span></p>
   <p>A session id is decided in the browser, from a cookie, and v1 and v2 disagree about when a
   session <em>begins</em>: v2 creates sessions only on page-view events, withholds the store until
-  <code>sendAccepted</code>, and embeds creation time in the id (§1.4). One cookie cannot hold both
-  models. A single tracker fanned out server-side would therefore write v2 rows carrying <em>v1's</em>
-  session boundaries — the v2 session model inherited rather than implemented, and the parity
-  harness would be comparing v2 against a session model it does not have.</p>
-  <p>So during overlap the page carries <strong>two configurations of one tracker</strong> — the
-  gtag shape, not two script tags — one per observation profile. The per-profile session store makes
-  this work with no new machinery: cookies are keyed <code>owa_s_&lt;profileId&gt;</code>, so two
-  profile ids give two independent sessionizations on the same page, exactly as GA4's
-  <code>_ga_&lt;measurement_id&gt;</code> does.</p>
-  <p><strong>v1's history does not step</strong>, which was the concern: its tag stays, its events
-  keep arriving, its sessions keep being cut its own way. The cost is two beacons per event while
-  both run, which is what the server-side fan-out was buying. Correct sessionization on both sides
-  is worth more than the saved request &mdash; a v2 corpus sessionized by v1's rules would be
-  unusable for exactly the questions v2 exists to answer.</p>
-  <p><strong>Which supersedes the fan-out itself.</strong> Each configuration sends to its own
-  profile, so each pipeline receives its own events and the server has nothing to duplicate. The
-  section title still holds &mdash; one tracker <em>library</em>, two pipelines &mdash; but the
-  mechanism is two configurations rather than one stream written twice.</p>
-  <p>And it further narrows the oracle. &sect;3.3 already reduced v1 to an oracle only below the
-  session boundary; with separate streams the two pipelines no longer consume <em>identical</em>
-  events, so even there the comparison is between two observations of the same page rather than two
-  readings of one event. Event-level attributes (browser, geo, page identity) should still agree
-  exactly and remain worth checking. Raw event counts become <em>near</em>-equal rather than
-  identical, since a beacon can be lost on one configuration and not the other &mdash; so that check
-  needs a tolerance, and a tolerance is a much weaker instrument than a diff. Worth knowing before
-  anyone reads a small discrepancy as a bug.</p>
+  <code>sendAccepted</code>, and embeds creation time in the id (§1.4). One cookie cannot hold two
+  models, so fanning one stream out unchanged would give v2 rows carrying <em>v1's</em> session
+  boundaries — the v2 session model inherited rather than implemented.</p>
+  <p>An intermediate draft concluded from this that the page must carry two tracker configurations,
+  one per profile. <strong>That is not the decision.</strong> Two configurations would mean two
+  session state machines in the tracker — the riskiest surface in the project — and would break the
+  property this section exists to provide, because two streams are not the same events and raw
+  counts would only match within a tolerance.</p>
+  <p><strong>Instead the tracker gets one session model, v2's, and v1 adopts it.</strong> One
+  tracker, one cookie, one beacon, one stream; the server writes v1's star from it as before and
+  v2's event table when enabled. The fan-out described above therefore stands exactly as written,
+  and the two pipelines keep consuming <em>identical</em> events — which is what lets the integrity
+  check of §3.3 stay a diff rather than a tolerance.</p>
+  <p><strong>The cost is one discontinuity in v1's session-derived numbers</strong>, accepted
+  deliberately. Sessions begin only on page views, the store is withheld until accepted, and the
+  midnight rule cuts a session that spans midnight into two — so visits, bounce rate, pages-per-visit
+  and visit duration all step once, at the release that ships it. Event-level history — page views,
+  clicks, geo, referrers — is untouched, and nothing already stored is rewritten.</p>
+  <p>This is the shape §1.10 already describes for definition changes: <em>historical data is
+  immutable, only the lens changes, with a UI annotation at the change date</em>. Sessionization is
+  the largest instance of it rather than a new kind of problem. Two things follow: the change wants
+  a <strong>UI annotation at its date</strong>, not just a release note; and the size of the step is
+  worth <strong>measuring before shipping</strong> — re-sessionize an existing corpus both ways and
+  compare visit counts — because the notes should say how much, not just that.</p>
 </div>
 <div class="scroll"><table>
 <thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
@@ -1565,16 +1561,18 @@ unchanged</strong> &mdash; the rule from the identity work, and one every fact r
 <p>Nothing a tracker sends changes, and no fact row is touched.</p>
 
 <div class="flag">
-  <p class="h">Each profile has its own tracker id, and during overlap the page carries two</p>
-  <p>This follows from where the id lives, and from sessionization being decided in the browser
-  (&sect;3.1, amended). A v2 profile cannot be populated by translating a v1 profile's events,
-  because the session boundaries would be v1's &mdash; so the page runs two configurations of one
-  tracker, one per profile.</p>
-  <p>The per-profile session store already makes that work: cookies keyed
-  <code>owa_s_&lt;profileId&gt;</code> give two independent sessionizations on one page, which is
-  precisely what GA4 does with <code>_ga_&lt;measurement_id&gt;</code>. Adding a configuration does
-  not disturb v1 &mdash; its tag stays and its history does not step, which was §3.1's actual
-  concern.</p>
+  <p class="h">The v2 pipeline is switched on per Property <span class="chip c-dec">Decided</span></p>
+  <p>Each Observation Profile has its own tracker id, but the page carries <strong>one</strong> — 
+  §3.1 settles that the tracker has a single session model and the server fans one stream to both
+  pipelines. So a v2 profile is not populated by adding a tag.</p>
+  <p>It is populated by a <strong>setting on the Property</strong>. Turn it on and incoming events
+  for that property are written to the v2 event table as well as the star; leave it off and nothing
+  changes. That makes v2 collection an opt-in per website, decided by whoever owns it, rather than
+  something an OWA upgrade starts doing.</p>
+  <p>Note what this separates. The <em>session change</em> ships with the tracker and reaches every
+  install at upgrade — it is not opt-in, and §3.1 records why that is accepted. The <em>v2
+  pipeline</em> is opt-in and reaches nobody until asked for. Conflating them would mean either a
+  silent schema change or a tracker that carries two session models to keep the switch honest.</p>
 </div>
 
 <h3 id="s36"><span class="num">3.6</span>Cutover sequence</h3>
