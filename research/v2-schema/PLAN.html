@@ -1554,6 +1554,25 @@ silent-wrong-answer failure in a different costume.</p>
 <p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
 settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
 
+<h4>Domain aliases stay v1-only, and narrow <span class="chip c-dec">Decided</span></h4>
+<p>A Property will hold the domains of the website it describes, and the temptation is to make that
+list do two further jobs it should not do.</p>
+<p><strong>It does not widen CORS.</strong> <code>matchAllowedOrigin()</code> today matches a
+request's <code>Origin</code> against each site's <code>domain</code> and nothing else &mdash;
+aliases are not consulted. Feeding alternates into that allowlist would grant cross-origin API
+access that installs do not have today, as a side effect of moving a setting into a column. The
+allowlist stays exactly as wide as it is.</p>
+<p><strong>And the alias itself narrows to a variant of the same domain.</strong> Its documented
+purpose is collapsing <code>www.mydomain.com</code> and <code>mydomain.com</code>; nothing needs it
+to map one website onto an unrelated one, and a general redirect map is a much larger thing to
+reason about than the help text implies. Restricting it to same-domain variants keeps the real use
+case and removes the rest.</p>
+<p>Both jobs then disappear together with v1: canonicalisation is v1-only machinery
+(&sect;1.9), and CORS never depended on aliases in the first place. So the fragile parts of the
+current implementation &mdash; a naive substring replace, and a <code>strpos( $url, $da )</code>
+that misses a match at position zero &mdash; want <em>not carrying forward</em> rather than
+fixing.</p>
+
 <h3 id="s34b"><span class="num">3.5</span>Organization › Property › Observation Profile <span class="chip c-dec">Decided</span></h3>
 <p>&sect;3.4 established that a profile carries the version, which is what lets two generations
 coexist without a query ever inferring one. This is the structure that holds profiles, and it is
