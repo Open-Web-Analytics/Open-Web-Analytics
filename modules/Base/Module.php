@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 19;
+        $this->required_schema_version = 20;
         return parent::__construct();
     }
 
@@ -382,22 +382,12 @@ class Module extends \OWA\Core\Module {
             ),
 
             'full_host'            => array(
-                /* A caller may supply the host rather than have it read from the
-                   request -- server-side event creation does, and
-                   FeedRequestIngestionTest covers it. Declared for the same reason
-                   as the geo properties: derived is otherwise server-owned. */
-                'client_settable'    => true,
                 'required'            => true,
                 'callbacks'            => array('owa_trackingEventHelpers::resolveFullHost'),
                 'default_value'        => '(not set)'
             ),
 
             'host'                => array(
-                /* A caller may supply the host rather than have it read from the
-                   request -- server-side event creation does, and
-                   FeedRequestIngestionTest covers it. Declared for the same reason
-                   as the geo properties: derived is otherwise server-owned. */
-                'client_settable'    => true,
                 'required'            => true,
                 'callbacks'            => array('owa_trackingEventHelpers::getHostDomain'),
                 'default_value'        => '(not set)'
@@ -440,33 +430,18 @@ class Module extends \OWA\Core\Module {
             ),
 
             'country'            => array(
-                /* LocationHandlers skips the IP lookup when an event already carries
-                   these, so a caller may legitimately supply them. Declared rather
-                   than inferred: they are registered as derived, and derived is
-                   otherwise server-owned. */
-                'client_settable'    => true,
                 'required'            => true,
                 'callbacks'            => array( 'owa_trackingEventHelpers::resolveCountry' ),
                 'default_value'        => false
             ),
 
             'city'                => array(
-                /* LocationHandlers skips the IP lookup when an event already carries
-                   these, so a caller may legitimately supply them. Declared rather
-                   than inferred: they are registered as derived, and derived is
-                   otherwise server-owned. */
-                'client_settable'    => true,
                 'required'            => true,
                 'callbacks'            => array( 'owa_trackingEventHelpers::resolveCity' ),
                 'default_value'        => false
             ),
 
             'state'                => array(
-                /* LocationHandlers skips the IP lookup when an event already carries
-                   these, so a caller may legitimately supply them. Declared rather
-                   than inferred: they are registered as derived, and derived is
-                   otherwise server-owned. */
-                'client_settable'    => true,
                 'required'            => true,
                 'callbacks'            => array( 'owa_trackingEventHelpers::resolveState' ),
                 'default_value'        => false

@@ -127,6 +127,25 @@ class CommerceTransactionFact extends \OWA\Core\Entity\FactTable {
         //$yyyymmdd = new \owa_dbColumn('yyyymmdd', OWA_DTD_INT);
         //$this->setProperty($yyyymmdd);
 
+        /*
+         * Billing address: an attribute of the TRANSACTION, not of the visitor.
+         *
+         * Deliberately not in the geolocation dimension. These used to arrive
+         * as country/city/state -- the names of the server-derived geolocation
+         * properties -- and were used to build this row's location_id, so a
+         * transaction's location meant the billing address while every other
+         * event type meant where the visitor's IP said they were. The two were
+         * indistinguishable once written. Different facts, different homes.
+         */
+        $billing_country = new \OWA\Module\Base\Classes\DbColumn('billing_country', OWA_DTD_VARCHAR255);
+        $this->setProperty($billing_country);
+
+        $billing_state = new \OWA\Module\Base\Classes\DbColumn('billing_state', OWA_DTD_VARCHAR255);
+        $this->setProperty($billing_state);
+
+        $billing_city = new \OWA\Module\Base\Classes\DbColumn('billing_city', OWA_DTD_VARCHAR255);
+        $this->setProperty($billing_city);
+
         $order_id = new \OWA\Module\Base\Classes\DbColumn('order_id', OWA_DTD_VARCHAR255);
         $order_id->setIndex();
         $this->setProperty($order_id);

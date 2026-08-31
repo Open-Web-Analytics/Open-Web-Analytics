@@ -58,24 +58,35 @@ final class ServerOwnedPropertyTest extends TestCase
         $this->assertSame( array(), $kept );
     }
 
-    public function testDeclaredPropertiesAreStillAccepted(): void
+    public function testLocationAndHostAreRefusedFromTheWire(): void
     {
         /*
-         * Membership is declared, not inferred from which map a property lives
-         * in. LocationHandlers skips the IP lookup when an event already carries
-         * country and city, and server-side callers supply their own host --
-         * all three are registered as derived, so inferring would have broken
-         * them.
+         * No exceptions for geo or host. An earlier version of this fix
+         * declared country, city, state and host client-settable, on the
+         * grounds that LocationHandlers accepts client geo and that a caller
+         * may supply a host. Both are wrong to allow:
+         *
+         *   - accepting geo lets a request choose the location its own traffic
+         *     is reported under, and the tracker only ever sends city/state/
+         *     country as an ecommerce BILLING address -- which is a different
+         *     fact that happens to share these names;
+         *
+         *   - host is not the site's host. getHostDomain() derives it from a
+         *     reverse-DNS lookup of the visitor's IP through the Public Suffix
+         *     List, so accepting one lets a request forge the visitor's
+         *     resolved hostname.
          */
         $kept = Helpers::rejectServerOwnedParams( array(
             'country' => 'India',
             'city'    => 'Ludhiana',
+            'state'   => 'Punjab',
             'host'    => 'example.com',
         ) );
 
         $this->assertSame(
-            array( 'country' => 'India', 'city' => 'Ludhiana', 'host' => 'example.com' ),
-            $kept );
+            array(), $kept,
+            'Location and host must never be accepted from a request. The only properties a '
+            . 'tracking request may set are the ones the tracker sends.' );
     }
 
     public function testUnregisteredPropertiesPassThrough(): void
@@ -110,12 +121,13 @@ final class ServerOwnedPropertyTest extends TestCase
             $this->assertArrayHasKey( $name, $serverOwned );
         }
 
-        foreach ( array( 'country', 'city', 'host' ) as $name ) {
+        foreach ( array( 'country', 'city', 'state', 'host', 'full_host' ) as $name ) {
 
-            $this->assertArrayNotHasKey(
+            $this->assertArrayHasKey(
                 $name, $serverOwned,
-                "'$name' declares itself client-settable, so it must not be treated as "
-                . 'server-owned by either enforcement point.' );
+                "'$name' must be server-owned. Location comes from the visitor's IP and host "
+                . 'from a reverse-DNS lookup of it; neither may be supplied by the request '
+                . 'whose location is being determined.' );
         }
     }
 
