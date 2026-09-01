@@ -881,12 +881,18 @@ class Controller extends \OWA\Core\Base {
      * that reads it (the /v1/sites payload, and the plugin picker built on it)
      * changes shape or value.
      *
-     * Each distinct Property is loaded once and reused across the Profiles
-     * that share it. base.property is cachable, so a repeat render costs
-     * nothing, and the surrounding code already loads a site per row -- this
-     * does not change the order of the work. It is deliberately not a single
-     * IN query: the Db layer has no IN operator, and inlining one here would
-     * mean building a value list by hand in a class that otherwise never does.
+     * One query for the whole map, not a load per Profile.
+     *
+     * An earlier version resolved each Property through the entity cache -- a
+     * query per distinct Property, on a path that runs on every report render.
+     *
+     * It reads every Property rather than joining owa_site to owa_property,
+     * which is smaller (Properties are by definition fewer than Profiles) and,
+     * more importantly, keeps the relationship where the caller put it: the
+     * grouping uses the property_id on the entities it was HANDED. A join
+     * re-reads that column from the table, so it would silently ignore an
+     * entity whose parent had been set but not yet saved, and would drop any
+     * Profile not present in owa_site at all.
      *
      * @param array $sites site_id => base.site entity
      * @return array property label => array of site entities, in the order given
@@ -900,35 +906,33 @@ class Controller extends \OWA\Core\Base {
             return array();
         }
 
+        $property_entity = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $property_entity->getTableName() );
+        $db->selectColumn( 'id, name' );
+
         $names = array();
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $names[ $row['id'] ] = $row['name'];
+        }
 
         $grouped = array();
 
         foreach ( $sites as $key => $site ) {
 
-            $id = $site->get( 'property_id' );
-
             /*
              * A Profile with no Property is not dropped. It can exist -- a site
              * created before the migration, or by a path that does not assign
              * one -- and silently omitting it would remove a site from the
              * selector, which is worse than showing it under a plain heading.
              */
-            if ( $id && ! array_key_exists( $id, $names ) ) {
+            $property_name = $names[ $site->get( 'property_id' ) ] ?? '';
 
-                $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-                $property->load( $id );
-                $names[ $id ] = (string) $property->get( 'name' );
-            }
-
-            /*
-             * A Profile with no Property is not dropped. It can exist -- a site
-             * created before the migration, or by a path that does not assign
-             * one -- and silently omitting it would remove a site from the
-             * selector, which is worse than showing it under a plain heading.
-             */
-            $label = ( $id && ! empty( $names[ $id ] ) )
-                ? $names[ $id ]
+            $label = ( $property_name !== '' && $property_name !== null )
+                ? $property_name
                 : ( $site->get( 'domain' ) ?: 'Unassigned' );
 
             $grouped[ $label ][ $key ] = $site;
