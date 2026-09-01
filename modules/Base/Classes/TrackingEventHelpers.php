@@ -440,28 +440,40 @@ class TrackingEventHelpers {
         return $var;
     }
 
+    /**
+     * Top up the custom variable properties for any slot the config does not
+     * declare.
+     *
+     * The pairs live in tracking_properties.json like everything else, but the
+     * number of them is the maxCustomVars SETTING rather than a constant --
+     * FactTable builds its cv columns from the same setting -- so an install
+     * that raises it would otherwise have slots with columns and no property
+     * definition. The config covers the shipped slots; this covers the rest,
+     * and skips anything already declared so the config stays authoritative.
+     */
     function addCustomVariableProperties( $properties ) {
 
         $maxCustomVars = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
-        for ($i = 1; $i <= $maxCustomVars; $i++) {
+        for ( $i = 1; $i <= $maxCustomVars; $i++ ) {
 
-            $properties[ 'cv'.$i.'_name' ] = array(
+            foreach ( array( 'name', 'value' ) as $half ) {
 
-                'required'        => true,
-                'data_type'        => 'string',
-                'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString'),
-                'default_value'    => '(not set)'
-            );
+                $key = 'cv' . $i . '_' . $half;
 
-            $properties[ 'cv'.$i.'_value' ] = array(
+                if ( array_key_exists( $key, $properties ) ) {
 
-                'required'        => true,
-                'data_type'        => 'string',
-                'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'    => '(not set)'
-            );
+                    continue;
+                }
 
+                $properties[ $key ] = array(
+
+                    'required'        => true,
+                    'data_type'        => 'string',
+                    'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString' ),
+                    'default_value'    => '(not set)'
+                );
+            }
         }
 
         return $properties;

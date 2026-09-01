@@ -83,9 +83,6 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         $properties = $s->getMap( 'tracking_properties_regular' );
 
-        // add custom var properties
-        $properties = $teh->addCustomVariableProperties( $properties );
-
         // there is no global input sanitization on tracking requests
         // because each module needs to register tracking properties and
         // their data types. Therefor we need to sanitize unregistered input
@@ -124,6 +121,16 @@ class ProcessEvent extends \OWA\Core\Controller {
         // STAGE 3 - derived properties
 
         $derived_properties = $s->getMap( 'tracking_properties_derived' );
+
+        /*
+         * The cv{n}_name / cv{n}_value pairs are DERIVED -- the server makes
+         * them by splitting the cv{n} slot the tracker sent. They used to be
+         * merged into the regular map, which made them settable from the wire:
+         * a request posting owa_cv1_name survived the filter and was then
+         * re-applied over the split result by the sanitized-properties step
+         * below.
+         */
+        $derived_properties = $teh->addCustomVariableProperties( $derived_properties );
         $teh->setTrackerProperties( $this->event, $derived_properties );
 
         // re-apply sanitized properties to event.
