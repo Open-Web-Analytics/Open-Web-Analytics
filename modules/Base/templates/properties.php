@@ -18,11 +18,9 @@ site tracked two ways has one Property and two Profiles.</P>
                     <?php endif;?>
 
                     <BR>
-                    <?php // 5th arg = $add_nonce. base.propertyEdit is setNonceRequired(),
-                          // so the nonce rides in the action's query string -- there is no
-                          // template helper that emits one as a hidden field. ?>
-                    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ), false, '', false, true );?>">
+                    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
                         <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $property['id'] );?>">
+                        <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
                         <span class="inline_h3">Name</span>
                         <input class="owa_largeFormField" type="text" size="30"
                                name="<?php echo $view->getNs();?>name" value="<?php $view->out( $property['name'] );?>">

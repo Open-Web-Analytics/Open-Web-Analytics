@@ -133,12 +133,16 @@ final class PropertyAdminScreensTest extends TestCase
             'base.propertyEdit', $template, 'The roster offers no way to rename.' );
 
         /*
-         * 5th arg of makeLink is $add_nonce. PropertyEdit is setNonceRequired(),
-         * so without it every rename fails the nonce check -- and the screen
-         * would look like it simply does not work.
+         * PropertyEdit is setNonceRequired(), so without a nonce every rename
+         * fails the check and the screen looks simply broken.
+         *
+         * createNonceFormField() is how every other admin form does this --
+         * sites_addoredit, users_addoredit, options_general, custom_report_edit.
+         * Asserted by name so this form cannot drift onto a different mechanism
+         * than the rest of the admin screens.
          */
-        $this->assertMatchesRegularExpression(
-            "/base\.propertyEdit'\s*\),\s*false,\s*'',\s*false,\s*true\s*\)/",
+        $this->assertStringContainsString(
+            "createNonceFormField( 'base.propertyEdit' )",
             $template,
             'The rename form does not carry a nonce, so every rename is refused.' );
     }
