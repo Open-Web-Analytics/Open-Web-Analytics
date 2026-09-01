@@ -199,6 +199,8 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
         $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.properties',                    'OWA\\Module\\Base\\Controller\\Properties',                   'Controller/Properties.php' );
+        $this->registerAction( 'base.propertyEdit',                  'OWA\\Module\\Base\\Controller\\PropertyEdit',                  'Controller/PropertyEdit.php' );
         $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
         $this->registerAction( 'base.customReportEdit',              'OWA\\Module\\Base\\Controller\\CustomReportEdit',             'Controller/CustomReportEdit.php' );
         $this->registerAction( 'base.customReportSave',              'OWA\\Module\\Base\\Controller\\CustomReportSave',             'Controller/CustomReportSave.php' );
@@ -388,6 +390,13 @@ class Module extends \OWA\Core\Module {
                 'anchortext'     => 'Tracked Sites',
                 'group'            => 'General',
                 'order'            => 3)
+        );
+        $this->addAdminPanel(array(
+                'do'             => 'base.properties',
+                'priviledge'     => 'admin',
+                'anchortext'     => 'Properties',
+                'group'            => 'General',
+                'order'            => 4)
         );
 
         $this->addAdminPanel(array(
