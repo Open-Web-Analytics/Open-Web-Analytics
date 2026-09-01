@@ -20,10 +20,20 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *     in the tag.
  *
  *   - domain and name must keep appearing on each entry, even though both
- *     conceptually belong to the Property once the hierarchy exists. They are
- *     what the plugin's picker labels its options with. If the profile stops
- *     carrying them the view has to enrich from the parent -- the fields cannot
- *     simply move.
+ *     conceptually belong to the Property once the hierarchy exists. If the
+ *     profile stops carrying them the view has to enrich from the parent -- the
+ *     fields cannot simply move.
+ *
+ *     CORRECTED: an earlier version of this note said both are "what the
+ *     plugin's picker labels its options with". Only domain is. The plugin
+ *     builds its label from site_id and domain and never reads name:
+ *
+ *         sprintf('%s (%s)', $site['properties']['site_id']['value'],
+ *                            $site['properties']['domain']['value'])
+ *
+ *     That line also shows the plugin reading the PRE-#977 nested payload, so
+ *     its picker has been broken since 2026-08-02 independently of any of
+ *     this. Recorded here because this file is where someone will look.
  *
  * The endpoint returns entities directly (SitesRest sets tracked_sites as the
  * response data), so the emitted field names ARE the entity's columns. That
@@ -35,8 +45,8 @@ final class SiteListContractTest extends TestCase
     /** What a /v1/sites entry carries; the plugin depends on the first three. */
     private const PAYLOAD_FIELDS = array(
         'site_id',      // the tracking id -- what ends up in the tag
-        'name',         // picker label
-        'domain',       // picker label
+        'name',         // NOT the plugin's picker label -- see the note below
+        'domain',       // the plugin labels with site_id and domain
         'description',
         'id',
         'settings',
@@ -179,5 +189,51 @@ final class SiteListContractTest extends TestCase
             $all,
             'No sites exist, so this test cannot distinguish "admin sees all" from "admin sees '
             . 'nothing".' );
+    }
+    /**
+     * What the VIEW emits, which is the actual API surface.
+     *
+     * The test above asserts the entity's columns as a proxy for the payload,
+     * and that proxy has a blind spot: the view may add fields the entity does
+     * not carry. property_name is exactly that -- it comes from the parent
+     * Property, so it is not a column on base.site and the entity assertion
+     * cannot see it.
+     *
+     * ADDING a field is safe: a JSON consumer ignores keys it does not know.
+     * What is not safe is renaming or dropping one, or changing what a
+     * published field CONTAINS -- which is why 'name' is asserted to still be
+     * the Profile's own stored name rather than a composed label.
+     */
+    public function testTheViewEmitsThePublishedFieldsPlusThePropertyName(): void
+    {
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->set( 'site_id', 'contract-probe' );
+        $site->set( 'name', 'Observation Profile 1' );
+
+        $view   = new \OWA\Module\Base\View\SitesRest();
+        $method = new \ReflectionMethod( $view, 'addPropertyNames' );
+        $method->setAccessible( true );
+
+        $emitted = $method->invoke( $view, array( 'contract-probe' => $site ) );
+
+        $this->assertArrayHasKey( 'contract-probe', $emitted );
+
+        $row = $emitted['contract-probe'];
+
+        foreach ( self::PAYLOAD_FIELDS as $field ) {
+
+            $this->assertArrayHasKey(
+                $field, $row, "$field stopped being emitted -- that is a breaking change." );
+        }
+
+        $this->assertArrayHasKey(
+            'property_name', $row,
+            'The website name lives on the Property now, so a client has no way to label a '
+            . 'picker without it.' );
+
+        $this->assertSame(
+            'Observation Profile 1', $row['name'],
+            "'name' is the Profile's own stored name. Composing a label into it would change "
+            . 'what a published field contains, which is not an addition.' );
     }
 }

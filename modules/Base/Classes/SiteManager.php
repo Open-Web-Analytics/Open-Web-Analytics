@@ -82,6 +82,125 @@ class SiteManager extends \OWA\Core\Base {
      * is one" and "make another" -- separable and testable before anything
      * depends on the distinction.
      */
+    /*
+     * The hierarchy defaults, duplicated from Update021 ON PURPOSE.
+     *
+     * A migration must stay self-contained -- it runs against a schema and a
+     * codebase that may be older than itself -- so it cannot reach in here, and
+     * this must not reach into it. The values are the contract between them:
+     * a freshly installed OWA and a migrated one have to be indistinguishable,
+     * or "Observation Profile 1" means one thing on one install and another
+     * elsewhere.
+     */
+    const DEFAULT_ORGANIZATION_NAME = 'My Organization';
+    const PROFILE_NAME_PREFIX       = 'Observation Profile ';
+
+    /**
+     * The Organization every Property hangs from, created on first need.
+     *
+     * There is exactly one until someone builds a screen to make more, which is
+     * why this looks one up rather than taking a name. Installing does not have
+     * to know about it, and neither does adding a site.
+     *
+     * @return string|null organization id
+     */
+    public function ensureOrganization() {
+
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+        $organization->getByColumn( 'name', self::DEFAULT_ORGANIZATION_NAME );
+
+        $id = $organization->get( 'id' );
+
+        if ( $id ) {
+
+            return $id;
+        }
+
+        $id = $organization->generateId( self::DEFAULT_ORGANIZATION_NAME );
+
+        $organization->set( 'id', $id );
+        $organization->set( 'name', self::DEFAULT_ORGANIZATION_NAME );
+        $organization->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        if ( $organization->create() ) {
+
+            return $id;
+        }
+    }
+
+    /**
+     * The Property a new Profile belongs to, found by domain or created.
+     *
+     * Keyed on the domain, matching Update021's planner: two Profiles of one
+     * website share a Property, and that is what makes adding a second way of
+     * tracking a site produce a second Profile rather than a second website.
+     *
+     * The NAME given here lands on the Property, not the Profile. That is the
+     * migration's rule too -- the human name describes the website, and the
+     * Profile is only one way of watching it.
+     *
+     * @return string|null property id
+     */
+    public function ensurePropertyFor( $domain, $name = '', $description = '' ) {
+
+        $domain = \OWA\Module\Base\Update\Update021::normaliseDomain( $domain );
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        if ( $domain !== '' ) {
+
+            $property->getByColumn( 'domain', $domain );
+
+            $existing = $property->get( 'id' );
+
+            if ( $existing ) {
+
+                return $existing;
+            }
+        }
+
+        /*
+         * A site with no domain gets its own Property rather than sharing one
+         * keyed on the empty string -- otherwise every domainless site on the
+         * install would collapse into a single website.
+         */
+        $seed = $domain !== '' ? 'domain:' . $domain : 'site:' . uniqid( '', true );
+        $id   = $property->generateId( $seed );
+
+        $property->set( 'id', $id );
+        $property->set( 'organization_id', $this->ensureOrganization() );
+        $property->set( 'name', $name !== '' ? $name : ( $domain !== '' ? $domain : 'Untitled' ) );
+        $property->set( 'domain', $domain );
+        $property->set( 'description', $description );
+        $property->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        if ( $property->create() ) {
+
+            return $id;
+        }
+    }
+
+    /**
+     * "Observation Profile N", numbered within its Property.
+     *
+     * Counts what is already there rather than tracking a sequence, so it is
+     * correct after a migration, after a delete, and on an install whose
+     * Profiles arrived by several different routes.
+     */
+    public function nextProfileName( $property_id ) {
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $site->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'property_id', $property_id );
+
+        $existing = count( (array) $db->getAllRows() );
+
+        return self::PROFILE_NAME_PREFIX . ( $existing + 1 );
+    }
+
     function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
@@ -113,9 +232,19 @@ class SiteManager extends \OWA\Core\Base {
             $name = $domain;
         }
 
+        /*
+         * The name the caller gave describes the WEBSITE, so it goes on the
+         * Property; the Profile takes the generated "Observation Profile N".
+         * That is the same split Update021 applies to existing sites, and the
+         * two have to agree -- a fresh install and a migrated one must not be
+         * distinguishable.
+         */
+        $property_id = $this->ensurePropertyFor( $domain, $name, $description );
+
         $site->set( 'id', $id );
         $site->set( 'site_id', $site_id );
-        $site->set( 'name', $name );
+        $site->set( 'property_id', $property_id );
+        $site->set( 'name', $property_id ? $this->nextProfileName( $property_id ) : $name );
         $site->set( 'domain', $domain );
         $site->set( 'description', $description );
         $site->set( 'site_family', $site_family );
