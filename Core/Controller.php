@@ -864,6 +864,79 @@ class Controller extends \OWA\Core\Base {
      * Returns array of owa_site entities where the current user has access to, taken the current controller cap into account
      * @return array
      */
+    /**
+     * Group Observation Profiles under the Property they belong to.
+     *
+     * A Property is the website; a Profile is one way of observing it, and it
+     * is the Profile that carries the tracker id. Several Profiles on one
+     * Property is the point of the hierarchy -- and it is also what makes a
+     * flat list unreadable, because two Profiles of the same site legitimately
+     * share a domain and differ only by an auto-assigned name:
+     *
+     *     Observation Profile 1 | example.com
+     *     Observation Profile 2 | example.com
+     *
+     * Grouped, the Property name supplies the context those labels lack. This
+     * is presentation only -- the Profile's own name is untouched, so nothing
+     * that reads it (the /v1/sites payload, and the plugin picker built on it)
+     * changes shape or value.
+     *
+     * Each distinct Property is loaded once and reused across the Profiles
+     * that share it. base.property is cachable, so a repeat render costs
+     * nothing, and the surrounding code already loads a site per row -- this
+     * does not change the order of the work. It is deliberately not a single
+     * IN query: the Db layer has no IN operator, and inlining one here would
+     * mean building a value list by hand in a class that otherwise never does.
+     *
+     * @param array $sites site_id => base.site entity
+     * @return array property label => array of site entities, in the order given
+     */
+    protected function groupSitesByProperty( $sites ) {
+
+        $sites = (array) $sites;
+
+        if ( ! $sites ) {
+
+            return array();
+        }
+
+        $names = array();
+
+        $grouped = array();
+
+        foreach ( $sites as $key => $site ) {
+
+            $id = $site->get( 'property_id' );
+
+            /*
+             * A Profile with no Property is not dropped. It can exist -- a site
+             * created before the migration, or by a path that does not assign
+             * one -- and silently omitting it would remove a site from the
+             * selector, which is worse than showing it under a plain heading.
+             */
+            if ( $id && ! array_key_exists( $id, $names ) ) {
+
+                $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+                $property->load( $id );
+                $names[ $id ] = (string) $property->get( 'name' );
+            }
+
+            /*
+             * A Profile with no Property is not dropped. It can exist -- a site
+             * created before the migration, or by a path that does not assign
+             * one -- and silently omitting it would remove a site from the
+             * selector, which is worse than showing it under a plain heading.
+             */
+            $label = ( $id && ! empty( $names[ $id ] ) )
+                ? $names[ $id ]
+                : ( $site->get( 'domain' ) ?: 'Unassigned' );
+
+            $grouped[ $label ][ $key ] = $site;
+        }
+
+        return $grouped;
+    }
+
     protected function getSitesAllowedForCurrentUser() {
    
         $currentUser = \OWA\Core\CoreAPI::getCurrentUser();

@@ -158,6 +158,14 @@ class ReportController extends \OWA\Core\AdminController {
         $this->set('sites', $sites);
 
         /*
+         * The same profiles, grouped under their Property, for the selector.
+         * Set ALONGSIDE 'sites' rather than replacing it: the flat list is what
+         * the rest of the report machinery resolves a siteId against, and the
+         * grouping is only for how the picker is drawn.
+         */
+        $this->set('sites_by_property', $this->groupSitesByProperty( $sites ));
+
+        /*
          * A REPORT IS ALWAYS OF A SITE, so one is resolved when the request
          * names none.
          *

@@ -4,8 +4,33 @@
     <div style="float:left;">
         <span>Web Site:</span>
         <SELECT name="owa_reportSiteFilterSelect" id="owa_reportSiteFilterSelect" style="height:auto;">
-        <?php  foreach ($view->sites as $site ):?>
+        <?php
+        /*
+         * Grouped by Property, the way the dimension picker groups dimensions.
+         *
+         * Two Observation Profiles of the same website legitimately share a
+         * domain and differ only by an auto-assigned name, so a flat list reads
+         * as "Observation Profile 1 / Observation Profile 2" with nothing to
+         * say which site either belongs to. The optgroup supplies that without
+         * touching the Profile's own name -- which the /v1/sites payload and
+         * the WordPress plugin's picker still read unchanged.
+         *
+         * Falls back to the flat list if the grouped one is absent, so a
+         * controller that has not been taught to group still renders a usable
+         * selector rather than an empty one.
+         */
+        $owa_site_groups = $view->sites_by_property;
+
+        if ( ! $owa_site_groups ) {
+            $owa_site_groups = array( '' => (array) $view->sites );
+        }
+        ?>
+        <?php foreach ( $owa_site_groups as $owa_property_label => $owa_property_sites ):?>
+            <?php if ( $owa_property_label !== '' ):?><OPTGROUP label="<?php $view->out( $owa_property_label );?>"><?php endif;?>
+            <?php foreach ( $owa_property_sites as $site ):?>
             <OPTION VALUE="<?php $view->out($site->get('site_id'), false);?>" <?php if ($view->params['siteId'] === $site->get('site_id')):?>selected="selected" selected <?php endif; ?>><?php $view->out( $site->get('name') );?></OPTION>
+            <?php endforeach;?>
+            <?php if ( $owa_property_label !== '' ):?></OPTGROUP><?php endif;?>
         <?php endforeach;?>
         </SELECT>
     </div>
