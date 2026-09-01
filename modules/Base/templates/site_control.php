@@ -88,6 +88,17 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
                         <span class="owa_siteControlItemName"><?php $view->out( $owa_prof['name'] );?></span>
                         <span class="owa_siteControlId"><?php $view->out( $owa_prof['site_id'] );?></span>
                     </a>
+                    <?php
+                        /*
+                         * Goals are per Profile, which is why they are reached
+                         * from here rather than from a "Goal Settings" entry in
+                         * the settings nav -- that entry had no way to say
+                         * WHICH site's goals it meant.
+                         */
+                    ?>
+                    <?php if ( $view->getCurrentUser()->isCapable('edit_settings') ):?>
+                    <a class="owa_siteControlEdit" href="<?php echo $view->makeLink( array( 'do' => 'base.optionsGoals', 'siteId' => $owa_prof['site_id'] ) );?>">goals</a>
+                    <?php endif;?>
                     <?php if ( $view->getCurrentUser()->isCapable('edit_sites') ):?>
                     <a class="owa_siteControlEdit" href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile', 'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>">edit</a>
                     <?php endif;?>

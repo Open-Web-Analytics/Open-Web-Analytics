@@ -376,23 +376,9 @@ class Module extends \OWA\Core\Module {
                 'order'            => 1)
         );
 
-        $this->addAdminPanel(array(
-                'do'             => 'base.users',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'User Management',
-                'group'            => 'General',
-                'order'            => 2)
-        );
 
 
 
-        $this->addAdminPanel(array(
-                'do'             => 'base.sites',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Tracked Sites',
-                'group'            => 'General',
-                'order'            => 3)
-        );
         /*
          * No Properties panel. The hierarchy is navigated from the site control
          * above the report nav, which is where someone is when they need it;
@@ -400,6 +386,25 @@ class Module extends \OWA\Core\Module {
          * The per-Property edit screen is reached from that control.
          */
 
+        /*
+         * The settings nav is for INSTALL-WIDE configuration only.
+         *
+         * Everything else now hangs off the Organization / Property / Profile
+         * hierarchy and is reached from the site control, which is where
+         * someone is when they need it:
+         *
+         *   - User Management -> the Organization, because that is where user
+         *     accounts live.
+         *   - Tracked Sites   -> the control itself replaced that roster.
+         *   - Goal Settings   -> a Profile, since goals are per site.
+         *
+         * What is left here is genuinely install-scoped: the modules that are
+         * active, and the timezone -- which cannot move down, because yyyymmdd
+         * and nine other date parts are baked into every fact row at collection
+         * in the configured zone, so it is not retroactive and two profiles
+         * disagreeing about it would put rows of different meanings in one
+         * table with nothing recording which.
+         */
         $this->addAdminPanel(array(
                 'do'             => 'base.optionsModules',
                 'priviledge'     => 'admin',
@@ -409,13 +414,6 @@ class Module extends \OWA\Core\Module {
         );
 
         /*
-        $this->addAdminPanel(array(
-                'do'             => 'base.optionsGoals',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Goal Settings',
-                'group'            => 'General',
-                'order'            => 3)
-        );
         */
     }
 

@@ -2980,6 +2980,10 @@ li.constraintRow {
     transform: rotate(180deg);
 }
 
+.owa_siteControl.is-open .owa_siteControlPanel {
+    display: flex;
+}
+
 /* --- the fan-out ------------------------------------------------------- */
 
 /*
@@ -2991,12 +2995,20 @@ li.constraintRow {
  * lands in the content area where there is room for three columns.
  */
 .owa_siteControlPanel {
+    /*
+     * display:none, NOT the hidden attribute alone.
+     *
+     * A class rule setting display:flex outranks the UA stylesheet's
+     * [hidden]{display:none}, so the panel rendered open on every page load
+     * even though the markup said hidden. The attribute stays for assistive
+     * technology; the class is what actually shows it.
+     */
+    display: none;
     position: absolute;
     top: 0;
     left: 100%;
     margin-left: 6px;
     z-index: 500;
-    display: flex;
     width: 660px;
     max-width: 90vw;
     background-color: #ffffff;

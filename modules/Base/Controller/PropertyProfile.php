@@ -26,7 +26,13 @@ class PropertyProfile extends \OWA\Core\AdminController {
 
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
-        $this->setView( 'base.options' );
+        /*
+         * The hierarchy wrapper, not base.options: the left column is the site
+         * control, because that is what these screens are reached from and what
+         * they describe. The settings nav belongs to install-wide options.
+         */
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyProfile' );
     }
 }

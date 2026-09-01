@@ -165,4 +165,135 @@ final class PropertyAdminScreensTest extends TestCase
             "'do' => 'base.sitesProfile'", $template,
             'The Profiles column offers no way to edit a Profile.' );
     }
+    /**
+     * The settings nav is for install-wide configuration only.
+     *
+     * Everything else hangs off the hierarchy and is reached from the site
+     * control. A "Goal Settings" entry in a global menu could not say WHICH
+     * site's goals it meant, and "User Management" put the people who belong to
+     * an Organization somewhere that never mentioned one.
+     *
+     * Timezone is the one that must NOT move down: yyyymmdd and nine other date
+     * parts are baked into every fact row at collection in the configured zone,
+     * so it is not retroactive, and two Profiles disagreeing would put rows of
+     * different meanings in one table with nothing recording which.
+     */
+    public function testTheSettingsNavHoldsOnlyInstallWideOptions(): void
+    {
+        $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
+
+        $actions = array();
+
+        foreach ( $panels as $items ) {
+            foreach ( (array) $items as $item ) {
+                $actions[] = $item['do'];
+            }
+        }
+
+        foreach ( array( 'base.users'        => 'the Organization',
+                         'base.sites'        => 'the site control',
+                         'base.optionsGoals' => 'a Profile' ) as $gone => $where ) {
+
+            $this->assertNotContains(
+                $gone, $actions,
+                "$gone is still in the settings nav -- it belongs to $where now." );
+        }
+
+        $this->assertContains(
+            'base.optionsModules', $actions,
+            'Modules is install-wide and has nowhere else to go.' );
+    }
+
+    /** Each tier is reachable from the control, which is the only way in now. */
+    public function testEveryTierIsReachableFromTheControl(): void
+    {
+        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
+
+        foreach ( array( 'base.organizationProfile' => 'the Organization',
+                         'base.propertyProfile'     => 'a Property',
+                         'base.sitesProfile'        => 'a Profile',
+                         'base.optionsGoals'        => "a Profile's goals" ) as $action => $what ) {
+
+            $this->assertStringContainsString(
+                $action, $template,
+                "The control offers no way to reach $what, and the settings nav no longer does." );
+        }
+    }
+
+    /**
+     * The hierarchy screens carry the control, not the settings nav.
+     *
+     * They are reached FROM the control and describe a tier of the tree;
+     * showing the install's settings menu beside them would offer a way out
+     * that has nothing to do with where you are.
+     */
+    public function testTheHierarchyScreensUseTheControlNotTheSettingsNav(): void
+    {
+        $wrapper = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+
+        $this->assertStringContainsString( "include('site_control.php')", $wrapper );
+        $this->assertStringNotContainsString(
+            'view->panels', $wrapper,
+            'The hierarchy wrapper renders the settings panels.' );
+
+        foreach ( array( 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ) as $screen ) {
+
+            $src = (string) file_get_contents(
+                OWA_DIR . "modules/Base/Controller/{$screen}.php" );
+
+            $this->assertStringContainsString(
+                "base.optionsHierarchy", $src,
+                "$screen still renders inside the install settings nav." );
+        }
+    }
+    /**
+     * The fan-out is closed until asked for.
+     *
+     * It shipped open on every page load: a class rule setting display:flex
+     * outranks the UA stylesheet's [hidden]{display:none}, so the markup said
+     * hidden and the panel rendered anyway. The attribute is for assistive
+     * technology; the class is what actually shows it, and both have to agree.
+     */
+    public function testTheFanOutIsHiddenUntilOpened(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        /*
+         * Anchored to the start of a line. Unanchored, this matched
+         * '.owa_siteControl.is-open .owa_siteControlPanel {' -- which contains
+         * the same substring and sets display:flex -- so the assertion below
+         * was reading the wrong rule entirely.
+         */
+        $panel = substr( $css, strpos( $css, "\n.owa_siteControlPanel {" ) );
+        /*
+         * Terminated on a brace at the START of a line. The first bare '}' is
+         * inside this rule's own comment -- it quotes [hidden]{display:none} --
+         * so cutting there truncated the block before the declaration being
+         * asserted on.
+         */
+        $panel = substr( $panel, 0, strpos( $panel, "\n}" ) );
+
+        $this->assertStringContainsString(
+            'display: none', $panel,
+            'The panel does not hide itself, so it renders open on every page load -- the '
+            . 'hidden attribute alone loses to a class rule setting display.' );
+
+        $this->assertStringContainsString(
+            '.owa_siteControl.is-open .owa_siteControlPanel', $css,
+            'Nothing shows the panel when the tile is clicked.' );
+
+        $js = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+
+        /*
+         * SINGLE quoted. $panel is a real variable in this test, so in double
+         * quotes the needle became the CSS text plus ".on('click', 'a'" -- and
+         * unlike an undefined variable, that interpolates silently.
+         */
+        $this->assertStringContainsString(
+            '$panel.on(\'click\', \'a\'', $js,
+            'A link inside the panel leaves it open under a pending navigation, which reads '
+            . 'as though the click missed.' );
+    }
 }

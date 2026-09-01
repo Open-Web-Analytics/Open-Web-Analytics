@@ -365,6 +365,16 @@ OWA.report.prototype = {
         });
 
         /*
+         * A link inside the panel closes it too. The click navigates, so the
+         * panel would go anyway on the new page -- but not before the browser
+         * has spent a moment fetching it, and leaving an overlay open under a
+         * pending navigation reads as though the click missed.
+         */
+        $panel.on('click', 'a', function() {
+            close();
+        });
+
+        /*
          * Column 2 -> column 3. Selecting a Property shows ITS Profiles; the
          * lists are all rendered and toggled rather than fetched, because the
          * whole hierarchy is already on the page and a request per click would
