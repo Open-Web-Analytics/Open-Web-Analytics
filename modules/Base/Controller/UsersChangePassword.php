@@ -62,12 +62,12 @@ class UsersChangePassword extends \OWA\Core\Controller {
 		
 		
         $auth = \OWA\Core\Auth::get_instance();
-        $status = $auth->authenticateUserTempPasskey($this->params['k']);
+        $status = $auth->authenticateUserTempPasskey($this->getParam('k'));
 
         // log to event queue
         if ($status === true) {
             $ed = \OWA\Core\CoreAPI::getEventDispatch();
-            $new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
+            $new_password = array('key' => $this->getParam('k'), 'password' => $this->getParam('password'), 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();
             $this->setRedirectAction('base.loginForm');
@@ -81,7 +81,23 @@ class UsersChangePassword extends \OWA\Core\Controller {
     function errorAction() {
 
         $this->setView('base.usersPasswordEntry');
-        $this->set('k', $this->getParam('k'));
+
+        /*
+         * 'key', not 'k'.
+         *
+         * The view reads 'key' -- UsersPasswordEntry::action() sets it under
+         * that name, and View::get() answers FALSE for a name nobody set. So
+         * setting 'k' here rendered the hidden field as value="", and the
+         * passkey was gone from the form the moment any validation failed.
+         *
+         * The effect was a reset that could not be completed: mistype the
+         * confirmation once, get "Your passwords must match", correct it, and
+         * the next submit carried no key at all -- authenticateUserTempPasskey
+         * refused it and the user was redirected to the login form with "can't
+         * find key in the db". Only a brand new reset email, typed correctly
+         * first time, could get through.
+         */
+        $this->set('key', $this->getParam('k'));
     }
 }
 
