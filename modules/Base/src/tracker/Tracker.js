@@ -261,6 +261,7 @@ class OWATracker  {
 	    // it next attaches those values to a different session.
 	    this.registerSiteScopedStores();
 	    this.registerSessionStoreSiteMigration();
+	    this.registerCampaignTagRenameMigration();
 
 	    // 'b' held session-scoped custom variables, alongside 's' which is the
 	    // session store -- two cookies for one concept. Session-scoped custom
@@ -297,13 +298,25 @@ class OWATracker  {
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        cookie_domain: false,
+	        /*
+	         * 'public' is the parameter a marketer puts in a campaign URL and can
+	         * never move -- those links are already published. 'private' keys the
+	         * campaign params. 'full' is the property name on the wire AND the key
+	         * in the session store, and it is deliberately tagged_*: what the
+	         * tracker reports is what the landing URL CLAIMED, and the server
+	         * decides the answer. They used to share one name, so a value in the
+	         * column recorded no trace of which half produced it.
+	         *
+	         * Renaming 'full' renames a key inside live visitor cookies, which is
+	         * what registerCampaignTagRenameMigration() exists to carry across.
+	         */
 	        campaignKeys: [
-	                { public: 'owa_medium', private: 'md', full: 'medium' },
-	                { public: 'owa_campaign', private: 'cn', full: 'campaign' },
-	                { public: 'owa_source', private: 'sr', full: 'source' },
-	                { public: 'owa_search_terms', private: 'tr', full: 'search_terms' },
-	                { public: 'owa_ad', private: 'ad', full: 'ad' },
-	                { public: 'owa_ad_type', private: 'at', full: 'ad_type' } ],
+	                { public: 'owa_medium', private: 'md', full: 'tagged_medium' },
+	                { public: 'owa_campaign', private: 'cn', full: 'tagged_campaign' },
+	                { public: 'owa_source', private: 'sr', full: 'tagged_source' },
+	                { public: 'owa_search_terms', private: 'tr', full: 'tagged_terms' },
+	                { public: 'owa_ad', private: 'ad', full: 'tagged_ad' },
+	                { public: 'owa_ad_type', private: 'at', full: 'tagged_ad_type' } ],
 	        logger_endpoint: '',
 	        api_endpoint: '',
 	        maxCustomVars: 5,
@@ -805,6 +818,81 @@ class OWATracker  {
             }
 
             state.clear( 's' );
+        } );
+    }
+
+    /**
+     * Carry campaign tags across the tagged_* rename.
+     *
+     * The session store keys campaign values by campaignKeys[].full, which this
+     * release changes from source/medium/campaign/... to tagged_*. A release
+     * ships the tracker and the server together, so there is no version skew --
+     * but cookies are not part of the release. A visitor already mid-session
+     * holds a store written under the old names, and the new code reads the new
+     * ones, so without this their campaign attribution silently becomes direct
+     * on the next page.
+     *
+     * A migration rather than a read-side fallback, per the rule: a fallback
+     * never expires and quietly keeps the old shape alive forever, whereas this
+     * runs once per store and is deletable in a later release.
+     *
+     * Pegged to cookieDomainEstablished like every other migration -- it
+     * rewrites a cookie, so it depends on knowing the domain.
+     */
+    registerCampaignTagRenameMigration() {
+
+        var tracker = this;
+
+        OWA.registerStateMigration( 'campaign-tags-renamed', function ( state ) {
+
+            var storeName = tracker.storeName('s');
+            var store = state.readPersistedStore( storeName );
+
+            if ( ! store || ! store.state ) {
+                return;
+            }
+
+            var carried = store.state;
+            var renamed = false;
+
+            var campaignKeys = tracker.getOption('campaignKeys') || [];
+
+            for ( var i = 0; i < campaignKeys.length; i++ ) {
+
+                // 'tagged_source' -> the 'source' it used to be stored under
+                var current = campaignKeys[i].full;
+                var legacy = current.replace( /^tagged_/, '' );
+
+                // tagged_terms was search_terms, not 'terms'
+                if ( legacy === 'terms' ) {
+                    legacy = 'search_terms';
+                }
+
+                if ( legacy === current || ! carried.hasOwnProperty( legacy ) ) {
+                    continue;
+                }
+
+                // Do not clobber a value already written under the new name.
+                if ( ! carried.hasOwnProperty( current ) ) {
+
+                    carried[ current ] = carried[ legacy ];
+                    renamed = true;
+                }
+
+                delete carried[ legacy ];
+                renamed = true;
+            }
+
+            if ( renamed ) {
+
+                OWA.debug( 'migrating campaign tags to tagged_* in %s', storeName );
+
+                // writePersistedStore, not an ordinary write: the session store
+                // is persist:'deferred', and a store being MOVED already exists
+                // -- a visitor who leaves before the next beacon must not lose
+                // it. Same reasoning as the per-site migration above.
+                state.writePersistedStore( storeName, carried, true );
+            }
         } );
     }
 

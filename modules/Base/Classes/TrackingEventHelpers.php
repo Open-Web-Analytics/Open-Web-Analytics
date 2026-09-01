@@ -866,51 +866,6 @@ class TrackingEventHelpers {
         }
     }
     
-    static function deriveMedium( $medium, $event ) {
-	    
-	    // respect what was already set by the tracker
-	    if ( $medium ) {
-		    
-		    return $medium;
-	    }
-
-	    if ( $event->get( 'session_referer' ) ) {
-	    		    
-		    // check for referrer url
-		    $ref = $event->get('session_referer');
-		    
-		    if ( $ref ) {
-			    
-			    // parse the referrer url
-	            $uri = self::parse_url( $ref );
-	
-	            $host = $uri['host'];
-	            
-                $medium = 'referral';
-                
-                // check if referral is a search engine
-                $engine = self::isSearchEngine( $host );
-               
-                if ( $engine ) {
-                    
-                    $medium = 'organic-search';
-                }
-                
-                if ( ! $engine ) {
-	                
-	                // check if referral is a social network
-	                $network = self::isSocialNetwork( $host );
-	                
-	                if ( $network ) {
-		                
-		                $medium = 'social-network';
-	                }
-                }
-	        }
-	        
-	        return $medium;
-	    }
-    }
     
     /**
      *  Use this function to parse out the url and query array element from
@@ -949,29 +904,6 @@ class TrackingEventHelpers {
     }
 
     
-    static function deriveSource( $source, $event ) {
-	    
-	    // respect what was already set by the tracker
-	    if ( $source ) {
-		    
-		    return $source;
-	    }
-
-	    
-	    if ( $event->get( 'session_referer' ) ) {
-			
-			$ref = $event->get( 'session_referer' );
-			$uri = self::parse_url( $ref );
-			
-			$host = $uri['host'];
-			
-			if ($host) {
-			
-				$source = self::stripWwwFromDomain( $host );
-				return $source;
-			}
-		}
-    }
     
     static function stripWWWFromDomain( $domain ) {
 
@@ -1022,52 +954,6 @@ class TrackingEventHelpers {
         }
     }
     
-    static function extractSearchTerm( $term, $event ) {
-	    
-	    if ( $term ) {
-			    
-			return $term;
-		}
-		    
-	    if ( $event->get( 'session_referer' ) ) {
-	    
-		    // check for referrer url
-		    $ref = $event->get( 'session_referer' );
-		    
-		    $uri = self::parse_url( $ref );
-		    \OWA\Core\CoreAPI::debug($uri);
-		    // check for query params, search engine might have sent them under https
-		    if ( array_key_exists('query_params', $uri) && ! empty( $uri['query_params'] ) ) {
-		    
-	            $host = $uri['host'];
-			    
-			    $organicSearchEngines = self::getSearchEngineList();
-			    
-			    foreach ( $organicSearchEngines as $engine ) {
-				    
-		            $domain = $engine['domain'];
-		
-		            if ( stripos( $host, $domain ) !== false ) {
-			            
-			            $query_param = $engine['query_param'];
-			            $term = '';
-			
-			            if (isset($uri['query_params'][$query_param])) {
-				            
-			                $term = $uri['query_params'][$query_param];
-			                \OWA\Core\CoreAPI::debug( 'Found search term: ' . $term);
-			                			                
-			            } else {
-				            
-				            $term = '(not provided)';
-			            }
-			            // need urldecode here ot clean up the "+" characters in the term
-			            return trim( urldecode( strtolower( $term ) ) );
-		            }
-		        }
-		    }
-	    }
-    }
     
     static function isSocialNetwork( $host ) {
 	    
@@ -1491,6 +1377,177 @@ class TrackingEventHelpers {
 
             return $email_address;
         }
+    }
+
+    /**
+     * Resolve the traffic source.
+     *
+     * The tracker reports what the landing URL was tagged with; the server
+     * decides what the source IS. Those used to be the same property name, so
+     * a value in the column recorded no trace of which half produced it and
+     * the callback had to open by respecting its own current value. Now the
+     * claim arrives as tagged_source and the answer is written here.
+     *
+     * Precedence: an explicit tag wins, else classify the referer.
+     */
+    static function resolveSource( $source, $event ) {
+
+        $tagged = $event->get( 'tagged_source' );
+
+        if ( $tagged ) {
+
+            return strtolower( trim( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $source;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['host'] ) ) {
+
+            return $source;
+        }
+
+        return strtolower( self::stripWwwFromDomain( $uri['host'] ) );
+    }
+
+    /**
+     * Resolve the medium. See resolveSource() for the claim/answer split.
+     *
+     * Precedence: an explicit tag wins, else classify the referer as a search
+     * engine, a social network or a plain referral, else leave the declared
+     * default of direct.
+     */
+    static function resolveMedium( $medium, $event ) {
+
+        $tagged = $event->get( 'tagged_medium' );
+
+        if ( $tagged ) {
+
+            return strtolower( trim( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $medium;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['host'] ) ) {
+
+            return $medium;
+        }
+
+        $host = $uri['host'];
+
+        if ( self::isSearchEngine( $host ) ) {
+
+            return 'organic-search';
+        }
+
+        if ( self::isSocialNetwork( $host ) ) {
+
+            return 'social-network';
+        }
+
+        return 'referral';
+    }
+
+    /**
+     * Resolve the campaign name.
+     *
+     * There is nothing to derive it from -- a campaign exists only because a
+     * URL was tagged with one -- so this is the claim, passed through. It is a
+     * callback rather than a bare property so that campaign is registered at
+     * all: it reached CampaignHandlers on the wire for years without appearing
+     * in any property map, which meant no declared type and no way for the
+     * wire filter to have an opinion about it.
+     */
+    static function resolveCampaign( $campaign, $event ) {
+
+        $tagged = $event->get( 'tagged_campaign' );
+
+        return $tagged ? trim( $tagged ) : $campaign;
+    }
+
+    /** As resolveCampaign(). Read by AdHandlers. */
+    static function resolveAd( $ad, $event ) {
+
+        $tagged = $event->get( 'tagged_ad' );
+
+        return $tagged ? trim( $tagged ) : $ad;
+    }
+
+    /** As resolveCampaign(). Read by AdHandlers beside ad. */
+    static function resolveAdType( $ad_type, $event ) {
+
+        $tagged = $event->get( 'tagged_ad_type' );
+
+        return $tagged ? trim( $tagged ) : $ad_type;
+    }
+
+    /**
+     * Resolve the search terms someone arrived on.
+     *
+     * Note this is acquisition, not site-internal search -- the v2 plan (§1.10)
+     * flags that those two facts share this one name and should not.
+     *
+     * Precedence: an explicit tag wins, else read the query param the
+     * referring search engine is known to use.
+     */
+    static function resolveSearchTerms( $terms, $event ) {
+
+        $tagged = $event->get( 'tagged_terms' );
+
+        if ( $tagged ) {
+
+            return trim( strtolower( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $terms;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['query_params'] ) || empty( $uri['host'] ) ) {
+
+            return $terms;
+        }
+
+        foreach ( self::getSearchEngineList() as $engine ) {
+
+            if ( stripos( $uri['host'], $engine['domain'] ) === false ) {
+
+                continue;
+            }
+
+            $param = $engine['query_param'];
+
+            if ( ! isset( $uri['query_params'][ $param ] ) ) {
+
+                /* A known engine that sent no term: it withheld it (https
+                   referrers usually do), which is a different fact from never
+                   having searched. */
+                return '(not provided)';
+            }
+
+            // urldecode to turn the '+' separators back into spaces
+            return trim( urldecode( strtolower( $uri['query_params'][ $param ] ) ) );
+        }
+
+        return $terms;
     }
 
 }
