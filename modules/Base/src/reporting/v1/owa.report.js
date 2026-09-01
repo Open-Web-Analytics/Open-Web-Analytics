@@ -318,7 +318,46 @@ OWA.report.prototype = {
         
         // bind event handlers
         var that = this;
-        jQuery('#owa_reportSiteFilterSelect').change( function() { that.reload(); } );
+        var $select = jQuery('#owa_reportSiteFilterSelect');
+
+        /*
+         * Enhance with chosen, the same control the dimension pickers use.
+         *
+         * The options are grouped in OPTGROUPs by Property, and a native select
+         * renders a group heading only as a greyed, unselectable line -- on a
+         * long list it is easy to miss which heading a profile sits under, and
+         * there is no way to search. chosen renders the group as a real heading
+         * and filters across both.
+         *
+         * width is explicit for the reason documented in
+         * owa.resultSetExplorer.js: chosen-js 1.x sizes its container from the
+         * select's offsetWidth AT ENHANCEMENT TIME, which is 0 whenever the
+         * select is inside a hidden parent, and the control collapses to a
+         * sliver. '100%' lets the CSS decide so it shrinks with the bar.
+         *
+         * Guarded, because the site filter is rendered on report pages only and
+         * this file also loads where the select is absent.
+         */
+        if ( $select.length && jQuery.fn.chosen ) {
+
+            $select.chosen( {
+                width: '100%',
+                no_results_text: 'No matching site.',
+                /*
+                 * A single-property install has one heading and nothing to
+                 * search for, so the box would be noise. Above that it is the
+                 * point of enhancing at all.
+                 */
+                disable_search_threshold: 8
+            } );
+        }
+
+        /*
+         * Bound on the SELECT, not the chosen widget. chosen keeps the original
+         * select in the DOM and fires a native change on it, so this handler
+         * works enhanced or not -- which is what makes the guard above safe.
+         */
+        $select.change( function() { that.reload(); } );
     },
     
     reportSetTimePeriod : function(period) {

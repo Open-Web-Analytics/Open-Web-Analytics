@@ -1,4 +1,18 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
+<div class="owa_reportSectionContent" style="min-width:500px;">
+    <span style="font-size:14px; font-weight:bold;">Organization</span><BR>
+    <span class="info_text">Everything below belongs to this Organization, and every
+    user account lives in it. It is named &quot;My Organization&quot; until you say
+    otherwise.</span>
+    <BR><BR>
+    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.organizationEdit' ) );?>">
+        <?php echo $view->createNonceFormField( 'base.organizationEdit' );?>
+        <input class="owa_largeFormField" type="text" size="30"
+               name="<?php echo $view->getNs();?>name" value="<?php $view->out( $view->organization_name );?>">
+        <input type="submit" value="Rename">
+    </form>
+</div>
+
 <P>A Property is a website or app. The Observation Profiles beneath it are the
 ways it is being watched &mdash; each Profile carries its own tracking id, so a
 site tracked two ways has one Property and two Profiles.</P>

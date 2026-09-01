@@ -28,7 +28,7 @@ final class PropertyAdminScreensTest extends TestCase
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $actions = (array) $service->getMap( 'actions' );
 
-        foreach ( array( 'base.properties', 'base.propertyEdit' ) as $action ) {
+        foreach ( array( 'base.properties', 'base.propertyEdit', 'base.organizationEdit' ) as $action ) {
 
             $this->assertArrayHasKey(
                 $action, $actions,
@@ -145,5 +145,69 @@ final class PropertyAdminScreensTest extends TestCase
             "createNonceFormField( 'base.propertyEdit' )",
             $template,
             'The rename form does not carry a nonce, so every rename is refused.' );
+    }
+    /**
+     * The Organization is the one tier a user could not name.
+     *
+     * There is exactly one, created as "My Organization" by the installer or by
+     * Update021 -- a name nobody chose -- and it heads the roster, so leaving it
+     * uneditable meant the tier describing the user was the only one they could
+     * not touch.
+     */
+    public function testTheOrganizationCanBeRenamedAndIsGuardedTheSameWay(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OrganizationEdit( array() );
+
+        $this->assertSame( 'edit_settings', $controller->getRequiredCapability() );
+
+        $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
+        $nonce->setAccessible( true );
+
+        $this->assertTrue( $nonce->getValue( $controller ) );
+
+        $controller->validate();
+
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+
+        $this->assertNotEmpty(
+            $v->getValue( $controller ),
+            'A blank Organization name would leave the roster headed by nothing.' );
+    }
+
+    public function testTheRosterOffersTheOrganizationRename(): void
+    {
+        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/properties.php' );
+
+        $this->assertStringContainsString( 'base.organizationEdit', $template );
+        $this->assertStringContainsString(
+            "createNonceFormField( 'base.organizationEdit' )", $template,
+            'Without a nonce the rename is refused and the form looks broken.' );
+        $this->assertStringContainsString( 'organization_name', $template );
+    }
+
+    /**
+     * The selector is enhanced with chosen, as the dimension pickers are.
+     *
+     * A native select renders an OPTGROUP heading as a greyed, unselectable
+     * line, which on a long list is easy to miss and impossible to search --
+     * so the grouping is there but does not read as grouping.
+     */
+    public function testTheSiteSelectorIsEnhanced(): void
+    {
+        $js = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+
+        $this->assertStringContainsString( '.chosen(', $js );
+
+        $this->assertStringContainsString(
+            "width: '100%'", $js,
+            'chosen-js 1.x measures the select at enhancement time and reads 0 inside a '
+            . 'hidden parent, collapsing the control to a sliver.' );
+
+        $this->assertStringContainsString(
+            "$select.change(", $js,
+            'The change handler must stay on the SELECT -- chosen fires a native change on '
+            . 'it, so binding there works enhanced or not.' );
     }
 }

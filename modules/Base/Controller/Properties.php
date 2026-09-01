@@ -68,6 +68,15 @@ class Properties extends \OWA\Core\AdminController {
             }
         }
 
+        /*
+         * The Organization heads the page rather than getting a screen of its
+         * own: there is exactly one, and its only editable field is its name.
+         */
+        $sm           = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+        $organization->load( $sm->ensureOrganization() );
+
+        $this->set( 'organization_name', (string) $organization->get( 'name' ) );
         $this->set( 'properties', $properties );
         $this->set( 'unassigned_profiles', $orphans );
         $this->setView( 'base.options' );
