@@ -18,9 +18,9 @@ namespace OWA\Module\Base\Update;
  * unchanged. Every fact row references it, so a migration that reissues
  * identifiers is a migration that orphans data.
  */
-class Update020 extends \OWA\Core\Update {
+class Update021 extends \OWA\Core\Update {
 
-    var $schema_version = 20;
+    var $schema_version = 21;
     var $is_cli_mode_required = false;
 
     /** What a migrated or freshly installed instance calls its organization. */

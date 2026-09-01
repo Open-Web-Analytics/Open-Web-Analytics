@@ -4,7 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
-use OWA\Module\Base\Update\Update020;
+use OWA\Module\Base\Update\Update021;
 
 /**
  * The shape an existing install turns into.
@@ -18,11 +18,11 @@ use OWA\Module\Base\Update\Update020;
  * Every fact row references it, so a migration that reissues identifiers is a
  * migration that orphans data.
  */
-final class Update020PlanTest extends TestCase
+final class Update021PlanTest extends TestCase
 {
     public function testEveryProfileKeepsItsExistingIdentifier(): void
     {
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => '5ababd603b22780302dd8d83498e5172', 'domain' => 'example.com' ),
             array( 'site_id' => 'OWA-7f3a91c4e85b402d',             'domain' => 'other.example' ),
         ) );
@@ -46,7 +46,7 @@ final class Update020PlanTest extends TestCase
          * exactly why installs have it: http:// and https:// looked like two
          * unrelated websites.
          */
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => 'http://mysite.com',  'name' => 'My Site' ),
             array( 'site_id' => 'b', 'domain' => 'https://mysite.com', 'name' => 'My Site (SSL)' ),
         ) );
@@ -65,7 +65,7 @@ final class Update020PlanTest extends TestCase
 
     public function testCaseAndTrailingSlashDoNotSplitAWebsite(): void
     {
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => 'https://MySite.com/' ),
             array( 'site_id' => 'b', 'domain' => 'mysite.com' ),
         ) );
@@ -82,7 +82,7 @@ final class Update020PlanTest extends TestCase
          * operator happened to call the same thing must not be merged -- that
          * would join their reporting irreversibly.
          */
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => 'one.example', 'name' => 'Blog' ),
             array( 'site_id' => 'b', 'domain' => 'two.example', 'name' => 'Blog' ),
         ) );
@@ -98,7 +98,7 @@ final class Update020PlanTest extends TestCase
          * the strength of a missing value -- and 'owa-test-site' is a real
          * domainless value in the wild.
          */
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => '' ),
             array( 'site_id' => 'b', 'domain' => '' ),
         ) );
@@ -108,7 +108,7 @@ final class Update020PlanTest extends TestCase
 
     public function testAPropertyWithNoNameFallsBackToItsDomain(): void
     {
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => 'https://unnamed.example', 'name' => '' ),
         ) );
 
@@ -125,7 +125,7 @@ final class Update020PlanTest extends TestCase
          * nothing to carry forward and nothing to attach data to, so inventing
          * one would silently create a site that never existed.
          */
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => '',  'domain' => 'ghost.example' ),
             array( 'site_id' => 'a', 'domain' => 'real.example' ),
         ) );
@@ -136,7 +136,7 @@ final class Update020PlanTest extends TestCase
 
     public function testAnEmptyInstallStillGetsItsOrganization(): void
     {
-        $plan = Update020::plan( array() );
+        $plan = Update021::plan( array() );
 
         $this->assertSame( 'My Organization', $plan['organization']['name'] );
         $this->assertSame( array(), $plan['properties'] );
@@ -150,7 +150,7 @@ final class Update020PlanTest extends TestCase
          * hierarchy after the migration ran -- visible to nothing, and hard to
          * explain later.
          */
-        $plan = Update020::plan( array(
+        $plan = Update021::plan( array(
             array( 'site_id' => 'a', 'domain' => 'one.example' ),
             array( 'site_id' => 'b', 'domain' => 'one.example' ),
             array( 'site_id' => 'c', 'domain' => '' ),
