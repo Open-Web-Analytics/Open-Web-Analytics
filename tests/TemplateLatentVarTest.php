@@ -272,7 +272,13 @@ final class TemplateLatentVarTest extends TestCase
                     // what the hoisted views now always provide
                     'site' => [], 'config' => [], 'validation_errors' => [],
                 ],
-                ['name="domain"', '<!--nonce:base.sitesEditSettings-->'],
+                /*
+                 * The settings nonce moved with its form. sites_addoredit is the
+                 * Profile's DETAILS now -- observation settings and access are
+                 * their own screens under the hierarchy nav, so the details
+                 * template carries only its own nonce.
+                 */
+                ['name="domain"', '<!--nonce:base.sitesAdd-->'],
             ],
             'users_addoredit (add)' => [
                 'users_addoredit.php',

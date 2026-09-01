@@ -6,7 +6,7 @@ class PropertyProfile extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Edit Property' );
+        $this->t->set( 'page_title', 'Property Details' );
         $this->body->set_template( 'property_profile.php' );
         $this->body->set( 'property', $this->get( 'property' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );

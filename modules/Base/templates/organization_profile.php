@@ -1,6 +1,6 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div style="width:550px;">
-    <div class="inline_h1" style="text-align:left;">Edit Organization</div><BR>
+    <div class="inline_h1" style="text-align:left;">Organization Details</div><BR>
     <div class="inline_h2" style="text-align:left;">Every Property and every user
     account belongs to this Organization.</div><BR>
 

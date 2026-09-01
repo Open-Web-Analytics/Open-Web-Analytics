@@ -865,6 +865,125 @@ class Controller extends \OWA\Core\Base {
      * @return array
      */
     /**
+     * The Profile the hierarchy screens show as current.
+     *
+     * The tile names all three tiers, so a screen reached without a siteId --
+     * editing the Organization, say -- would draw it with two of the three
+     * blank, which reads as though nothing is selected rather than as though
+     * this screen is simply about a higher tier.
+     *
+     * Falls back to the first Profile the user may see. Same reasoning the
+     * report controller uses when a request names no site: something has to be
+     * current, and the first allowed one is the only defensible choice without
+     * asking.
+     */
+    protected function resolveCurrentSiteId( $siteId = '' ) {
+
+        if ( $siteId ) {
+
+            return $siteId;
+        }
+
+        foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
+
+            return $site->get( 'site_id' );
+        }
+
+        return '';
+    }
+
+    /**
+     * The settings nav for the hierarchy, shown under the site control.
+     *
+     * One group per tier, each holding that tier's screens. This is why the
+     * tiers do not need one page carrying several forms: a Property's name and
+     * a Profile's goals are different screens under different headings, rather
+     * than sections of one long page that saves in pieces.
+     *
+     * Only the install-wide options live in the settings nav proper now, so
+     * this is the whole of what hangs off the hierarchy.
+     *
+     * @param string $siteId     the Profile in context, if any
+     * @param string $propertyId the Property in context; derived from the
+     *                           Profile when not given, because most screens
+     *                           know which site they are on and not which
+     *                           Property that implies
+     * @return array group label => array of items
+     */
+    protected function getHierarchyNav( $siteId = '', $propertyId = '' ) {
+
+        if ( ! $propertyId && $siteId ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $site->getByColumn( 'site_id', $siteId );
+            $propertyId = $site->get( 'property_id' );
+        }
+
+        $nav = array();
+
+        $nav['Organization'] = array(
+            array( 'do' => 'base.organizationProfile', 'label' => 'Details', 'params' => array(),
+                   'capability' => 'edit_settings' ),
+            /*
+             * User accounts live in the Organization, which is why Users is
+             * here and not in the install settings nav -- that put the people
+             * belonging to an Organization somewhere that never named one.
+             */
+            array( 'do' => 'base.users', 'label' => 'Users', 'params' => array(),
+                   'capability' => 'edit_users' ),
+        );
+
+        if ( $propertyId ) {
+
+            $nav['Property'] = array(
+                array( 'do' => 'base.propertyProfile', 'label' => 'Details',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_sites' ),
+            );
+
+            /*
+             * Access is granted to a WEBSITE, not to one way of observing it,
+             * so it belongs to the Property. The grants are still stored per
+             * Profile, which is why this needs a siteId to render -- moving the
+             * storage is a migration and a change to how sitesEditAllowedUsers
+             * resolves them.
+             */
+            if ( $siteId ) {
+
+                $nav['Property'][] = array(
+                    'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
+                    'params' => array( 'siteId' => $siteId ),
+                    'capability' => 'edit_sites' );
+            }
+        }
+
+        if ( $siteId ) {
+
+            $nav['Observation Profile'] = array(
+                array( 'do' => 'base.sitesProfile', 'label' => 'Details',
+                       'params' => array( 'siteId' => $siteId, 'edit' => true ),
+                       'capability' => 'edit_sites' ),
+                /*
+                 * An Observation Profile IS a way of observing, so how it
+                 * watches the site is its own screen rather than a second form
+                 * stacked under its name.
+                 */
+                array( 'do' => 'base.profileSettings', 'label' => 'Observation Settings',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_sites' ),
+                array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_sites' ),
+                array( 'do' => 'base.optionsGoals', 'label' => 'Goals',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
+            );
+        }
+
+        return $nav;
+    }
+
+    /**
      * The Organization / Property / Profile tree, for the site control.
      *
      * The control is the navigation for the hierarchy -- there is no separate

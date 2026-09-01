@@ -1,6 +1,6 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div style="width:550px;">
-    <div class="inline_h1" style="text-align:left;">Edit Property</div><BR>
+    <div class="inline_h1" style="text-align:left;">Property Details</div><BR>
     <div class="inline_h2" style="text-align:left;">A Property is the website or app.
     The Observation Profiles beneath it are the ways it is being watched, and each of
     those carries its own tracking id.</div><BR>

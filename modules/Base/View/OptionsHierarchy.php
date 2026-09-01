@@ -18,6 +18,7 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->body->set_template( 'options_hierarchy.php' );
         $this->body->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
         $this->body->set( 'params', $this->get( 'params' ) );
+        $this->body->set( 'hierarchy_nav', $this->get( 'hierarchy_nav' ) );
 
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );

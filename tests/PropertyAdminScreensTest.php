@@ -296,4 +296,135 @@ final class PropertyAdminScreensTest extends TestCase
             'A link inside the panel leaves it open under a pending navigation, which reads '
             . 'as though the click missed.' );
     }
+    /**
+     * The tiers get a nested nav, not one page carrying several forms.
+     *
+     * A Property's name and a Profile's goals are different screens under
+     * different headings. Stacking them on one page would mean a page that
+     * saves in pieces and a heading structure that says nothing about which
+     * tier each section belongs to.
+     */
+    public function testTheHierarchyHasItsOwnNestedNav(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
+        $method->setAccessible( true );
+
+        /* With no context at all, only the Organization can be offered: there
+           is no Property or Profile to name. */
+        $bare = (array) $method->invoke( $controller, '', '' );
+
+        $this->assertSame(
+            array( 'Organization' ), array_keys( $bare ),
+            'A screen with no site in context still offered Property or Profile links, '
+            . 'which would point at nothing.' );
+
+        $labels = array_column( $bare['Organization'], 'label' );
+
+        $this->assertContains(
+            'Users', $labels,
+            'User accounts live in the Organization, so Users belongs under it.' );
+
+        /* Given a Property, its group appears -- still without a Profile. */
+        $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
+
+        $this->assertSame(
+            array( 'Organization', 'Property' ), array_keys( $withProperty ) );
+    }
+
+    /** Every item declares the capability that gates it. */
+    public function testEveryNavItemIsGated(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
+        $method->setAccessible( true );
+
+        foreach ( (array) $method->invoke( $controller, '', 'p' ) as $group => $items ) {
+
+            foreach ( $items as $item ) {
+
+                $this->assertNotEmpty(
+                    $item['capability'],
+                    "$group / {$item['label']} names no capability, so it is offered to "
+                    . 'anyone who can see the page.' );
+            }
+        }
+    }
+
+    public function testTheNavIsRenderedUnderTheControl(): void
+    {
+        $wrapper = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+
+        $this->assertStringContainsString( "include('site_control.php')", $wrapper );
+        $this->assertStringContainsString( "include('hierarchy_nav.php')", $wrapper );
+
+        $this->assertLessThan(
+            strpos( $wrapper, 'hierarchy_nav.php' ),
+            strpos( $wrapper, 'site_control.php' ),
+            'The nav is above the tile; the tile is what says which thing the nav is about.' );
+    }
+    /**
+     * Each tier's screens are separate pages, not sections of one.
+     *
+     * The site page used to stack three forms -- details, observation settings
+     * and allowed users -- on one screen that saved in pieces, with nothing
+     * saying which tier each belonged to. The access one is not even a Profile
+     * concern: access is granted to a WEBSITE.
+     */
+    public function testTheProfileFormsAreSeparateScreens(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
+        $method->setAccessible( true );
+
+        $nav = (array) $method->invoke( $controller, 'a-site', 'a-property' );
+
+        $profile = array_column( $nav['Observation Profile'], 'label', 'do' );
+
+        $this->assertSame( 'Details', $profile['base.sitesProfile'] ?? null );
+        $this->assertSame( 'Observation Settings', $profile['base.profileSettings'] ?? null );
+        $this->assertSame( 'Tracking Tag', $profile['base.sitesInvocation'] ?? null );
+        $this->assertSame( 'Goals', $profile['base.optionsGoals'] ?? null );
+
+        $property = array_column( $nav['Property'], 'label', 'do' );
+
+        $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
+        $this->assertSame(
+            'Property Access Management', $property['base.propertyAccess'] ?? null,
+            'Access is granted to a website, so it belongs under the Property.' );
+
+        $this->assertSame(
+            'Details', array_column( $nav['Organization'], 'label', 'do' )['base.organizationProfile'] ?? null );
+    }
+
+    /**
+     * The tile shows all three tiers even on a screen about a higher one.
+     *
+     * Editing the Organization carries no siteId, so the tile drew the
+     * Organization over two blank lines -- which reads as nothing selected
+     * rather than as a screen about a higher tier.
+     */
+    public function testAHigherTierScreenStillHasACurrentProfile(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
+        }
+
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
+        $method->setAccessible( true );
+
+        $this->assertNotEmpty(
+            $method->invoke( $controller, '' ),
+            'No Profile is resolved, so the tile renders two of its three tiers blank.' );
+
+        $this->assertSame(
+            'given-one', $method->invoke( $controller, 'given-one' ),
+            'A siteId already in context must win over the fallback.' );
+    }
 }
