@@ -33,7 +33,13 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         $this->body->set( 'params', $params );
         $this->body->set( 'hierarchy_nav', $this->get( 'hierarchy_nav' ) );
-        $this->body->set( 'hierarchy_tier', $this->get( 'hierarchy_tier' ) ?: 3 );
+        /*
+ * Not ?: -- tier 0 (install-wide) is a legitimate value that ?: would turn
+ * into 3, putting a Property and a Profile above Main Configuration.
+ */
+        $tier = $this->get( 'hierarchy_tier' );
+
+        $this->body->set( 'hierarchy_tier', $tier === '' || $tier === false || $tier === null ? 3 : (int) $tier );
 
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );

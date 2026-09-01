@@ -22,11 +22,22 @@ $owa_current_site = $view->params['siteId'] ?? '';
 
 $owa_crumbs = array();
 
-if ( ! empty( $owa_h['organization']['name'] ) ) {
+/*
+ * Tier 0 is install-wide -- Main Configuration, Modules -- so it names the
+ * installation rather than an Organization. Saying "My Organization" above a
+ * screen whose settings apply to every Organization would be wrong in exactly
+ * the way the tiering is meant to prevent.
+ */
+if ( (int) $view->hierarchy_tier === 0 ) {
+
+    $owa_crumbs[] = array( 'label' => 'Installation', 'note' => '' );
+
+} elseif ( ! empty( $owa_h['organization']['name'] ) ) {
+
     $owa_crumbs[] = array( 'label' => $owa_h['organization']['name'], 'note' => '' );
 }
 
-$owa_tier = (int) ( $view->hierarchy_tier ?: 3 );
+$owa_tier = $view->hierarchy_tier === 0 ? 0 : (int) ( $view->hierarchy_tier ?: 3 );
 
 foreach ( $owa_h['properties'] as $owa_p ) {
     foreach ( $owa_p['profiles'] as $owa_prof ) {

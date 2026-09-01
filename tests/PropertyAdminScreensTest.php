@@ -199,9 +199,19 @@ final class PropertyAdminScreensTest extends TestCase
                 "$gone is still in the settings nav -- it belongs to $where now." );
         }
 
+        /*
+         * SUPERSEDED. The install-wide options are back in the same nav, at the
+         * top, as an Installation group -- possible only because every session
+         * now lands on a Profile, so the tile is always populated and one nav
+         * can carry both halves without either looking broken.
+         *
+         * The panels stay registered because that map is what the Installation
+         * group is BUILT from: a module registering one still appears.
+         */
         $this->assertContains(
             'base.optionsModules', $actions,
-            'Modules is install-wide and has nowhere else to go.' );
+            'The Installation group is built from the admin panel map, so a panel removed '
+            . 'from it disappears from the nav entirely.' );
     }
 
     /** Each tier is reachable from the control, which is the only way in now. */
@@ -315,8 +325,10 @@ final class PropertyAdminScreensTest extends TestCase
            is no Property or Profile to name. */
         $bare = (array) $method->invoke( $controller, '', '' );
 
+        /* Installation is always present -- it is install-wide and needs no
+           context. What must NOT appear without a site is Property or Profile. */
         $this->assertSame(
-            array( 'Organization' ), array_keys( $bare ),
+            array( 'Installation', 'Organization' ), array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -330,7 +342,7 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'Organization', 'Property' ), array_keys( $withProperty ) );
+            array( 'Installation', 'Organization', 'Property' ), array_keys( $withProperty ) );
     }
 
     /** Every item declares the capability that gates it. */
@@ -765,7 +777,13 @@ final class PropertyAdminScreensTest extends TestCase
          */
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
 
-        $this->assertStringContainsString( "hierarchy_tier' ) ?: 3", $view );
+        /*
+         * Defaulted, but NOT with ?: -- tier 0 (install-wide) is a real value
+         * that ?: would turn into 3. A screen that declares no tier should
+         * still show the most specific line, since an absent context line is
+         * harder to notice than an over-long one.
+         */
+        $this->assertStringContainsString( '? 3 : (int) $tier', $view );
     }
     /**
      * A grid inside the pane must not out-weigh the page it sits on.
@@ -898,5 +916,76 @@ final class PropertyAdminScreensTest extends TestCase
                 '.owa_hierarchyContent #panel ' . $sibling, $css,
                 "$sibling still inherits its left-column offset inside the pane." );
         }
+    }
+    /**
+     * One settings nav, install-wide options at the top.
+     *
+     * They were split out because the hierarchy screens had no reliable
+     * context: reached without a Profile, the tile drew two blank lines.
+     * Landing every session on a Profile settled that.
+     *
+     * The Installation group is built from the registered admin panels, not
+     * listed by hand -- Hello and MaxmindGeoip both register one, and
+     * hardcoding Base's two would have left theirs unreachable.
+     */
+    public function testInstallWideOptionsHeadTheSameNav(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\OptionsModules( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
+        $method->setAccessible( true );
+
+        $nav = (array) $method->invoke( $controller, '', '' );
+
+        $this->assertSame(
+            'Installation', array_key_first( $nav ),
+            'Install-wide options are the widest scope, so they head the nav -- the order '
+            . 'reads install, Organization, Property, Profile.' );
+
+        $actions = array_column( $nav['Installation'], 'do' );
+
+        foreach ( array( 'base.optionsGeneral', 'base.optionsModules' ) as $expected ) {
+            $this->assertContains( $expected, $actions );
+        }
+
+        $this->assertGreaterThan(
+            2, count( $actions ),
+            'Only Base\'s panels appear, so the group is hardcoded rather than built from '
+            . 'the registry -- a module adding one would be unreachable.' );
+
+        /* Those screens render in the hierarchy wrapper, or the nav would
+           vanish the moment you used it. */
+        foreach ( array( 'OptionsGeneral', 'OptionsModules' ) as $screen ) {
+
+            $src = (string) file_get_contents(
+                OWA_DIR . "modules/Base/Controller/{$screen}.php" );
+
+            $this->assertStringContainsString( 'base.optionsHierarchy', $src );
+            $this->assertStringContainsString( "'hierarchy_tier', 0", $src );
+        }
+    }
+
+    /**
+     * Tier 0 names the installation, not an Organization.
+     *
+     * Main Configuration applies to every Organization on the install, so
+     * heading it with one Organization's name would be wrong in exactly the way
+     * the tiering exists to prevent. It is also why the tier cannot be
+     * defaulted with ?: -- 0 is a real value that would become 3.
+     */
+    public function testAnInstallWideScreenIsNotHeadedByAnOrganization(): void
+    {
+        $crumb = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
+
+        $this->assertStringContainsString( "hierarchy_tier === 0", $crumb );
+        $this->assertStringContainsString( "'label' => 'Installation'", $crumb );
+
+        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
+
+        $this->assertStringNotContainsString(
+            "hierarchy_tier' ) ?: 3", $view,
+            '?: turns tier 0 into 3, putting a Property and a Profile above a screen whose '
+            . 'settings apply to the whole install.' );
     }
 }

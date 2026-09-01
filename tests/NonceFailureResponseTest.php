@@ -51,7 +51,13 @@ final class NonceFailureResponseTest extends TestCase
         $flag->setAccessible(true);
         $flag->setValue($currentUser, $authenticated);
 
-        $controller = new \OWA\Module\Base\Controller\Sites([]);
+        /*
+         * ReportingHome stands in for "any ordinary controller". It used to be
+         * base.sites, the roster screen, which was retired when reporting
+         * started landing on the last Profile viewed -- nothing here depends on
+         * which controller it is, only that it is one.
+         */
+        $controller = new \OWA\Module\Base\Controller\ReportingHome([]);
         $controller->setNonceRequired();
         $controller->nonceFailedAction();
 
@@ -119,7 +125,7 @@ final class NonceFailureResponseTest extends TestCase
     public function testTheWayBackIsEscaped()
     {
         $_SERVER['HTTP_REFERER'] =
-            'https://owa.example.test/owa/index.php?owa_do=base.sites&x="><script>alert(1)</script>';
+            'https://owa.example.test/owa/index.php?owa_do=base.reportingHome&x="><script>alert(1)</script>';
 
         $msg = (string) ($this->respondTo(true)['error_msg'] ?? '');
 

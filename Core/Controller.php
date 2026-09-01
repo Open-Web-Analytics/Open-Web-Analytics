@@ -950,6 +950,45 @@ class Controller extends \OWA\Core\Base {
 
         $nav = array();
 
+        /*
+         * Install-wide options head the SAME nav now.
+         *
+         * They were split into a separate settings menu because the hierarchy
+         * screens had no reliable context -- a screen reached without a Profile
+         * drew a tile with two blank lines. Landing every session on a Profile
+         * settled that: the tile is always populated, so one nav can carry both
+         * without either half looking broken.
+         *
+         * First, because they are the widest scope: the install contains the
+         * Organization contains the Property contains the Profile, and the nav
+         * reads in that order.
+         */
+        /*
+         * Built from the registered admin panels rather than listed here, so a
+         * module that adds one still appears -- Hello and MaxmindGeoip both
+         * register into that map, and hardcoding Base's two entries would have
+         * left theirs unreachable when the old settings menu went.
+         */
+        $installation = array();
+
+        foreach ( (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() as $items ) {
+
+            foreach ( (array) $items as $item ) {
+
+                $installation[] = array(
+                    'do'         => $item['do'],
+                    'label'      => $item['anchortext'],
+                    'params'     => array(),
+                    'capability' => 'edit_settings',
+                );
+            }
+        }
+
+        if ( $installation ) {
+
+            $nav['Installation'] = $installation;
+        }
+
         $nav['Organization'] = array(
             array( 'do' => 'base.organizationProfile', 'label' => 'Details', 'params' => array(),
                    'capability' => 'edit_settings' ),

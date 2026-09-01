@@ -31,6 +31,12 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  * The reason it matters for the conversion: a JSON-rendered report that forgets
  * to run pre() loses its site selector and its date picker on every screen, and
  * nothing in the characterization suite would say a word.
+ *
+ * The two base.sites cases were REMOVED 2026-09-01 with the page. It was the
+ * flat roster of every tracked site, and it inherited the report chrome and the
+ * period refusal from ReportController -- a dependency invisible from its own
+ * controller, which is why it was covered here. Reporting lands on the last
+ * Profile viewed now, so there is no such page to hold the contract.
  */
 final class ReportChromeContractTest extends TestCase
 {
@@ -284,47 +290,7 @@ final class ReportChromeContractTest extends TestCase
         $this->assertSame( 'base-reportDomstreams', $data['dom_id'] );
     }
 
-    /**
-     * The sites page is not a report, and depends on the report chrome anyway.
-     *
-     * base.sites extends ReportController, so it inherits pre() -- and its
-     * template builds one API URL per site with makeApiLink( ..., true ), which
-     * adds the current state. The per-site metric strips therefore honour the
-     * date picker exactly as a report's widgets do.
-     *
-     * It is covered here because that dependency is invisible from its
-     * controller, whose action() only lists sites. Someone reading it would
-     * reasonably conclude the page has nothing to do with periods, and remove
-     * the chrome from underneath it.
-     */
-    public function testTheSitesPageKeepsTheReportChrome(): void
-    {
-        $data = (array) ( new \OWA\Module\Base\Controller\Sites( array() ) )->doAction();
 
-        $this->assertHasChrome( $data, 'base.sites' );
-
-        $this->assertArrayHasKey( 'tracked_sites', $data,
-            'the page must still list the sites it exists to list' );
-    }
-
-    /**
-     * ...and it inherits the period refusal along with the chrome.
-     *
-     * Recorded because it is a consequence rather than a decision: the
-     * validation was added to ReportController for the reports, and every
-     * subclass got it. Here that is the behaviour we want -- a garbage period
-     * would otherwise have shown seven days of metrics beside every site while
-     * the picker claimed something else -- but a subclass that did NOT want it
-     * would need to say so, and nothing would have told us.
-     */
-    public function testTheSitesPageAlsoRefusesAnInvalidPeriod(): void
-    {
-        $data = (array) ( new \OWA\Module\Base\Controller\Sites(
-            array( 'period' => 'garbage' ) ) )->doAction();
-
-        $this->assertSame( 'base.error', $data['view'] ?? null );
-        $this->assertArrayNotHasKey( 'tracked_sites', $data );
-    }
 
     /**
      * Vacuity guard.

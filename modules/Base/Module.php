@@ -198,7 +198,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
-        $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.reportingHome',                 'OWA\\Module\\Base\\Controller\\ReportingHome',                 'Controller/ReportingHome.php' );
         $this->registerAction( 'base.propertyProfile',               'OWA\\Module\\Base\\Controller\\PropertyProfile',              'Controller/PropertyProfile.php' );
         $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile',          'Controller/OrganizationProfile.php' );
         $this->registerAction( 'base.profileSettings',               'OWA\\Module\\Base\\Controller\\ProfileSettings',              'Controller/ProfileSettings.php' );

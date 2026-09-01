@@ -43,7 +43,7 @@ class SitesDelete extends \OWA\Core\AdminController {
 
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
-        $this->setRedirectAction('base.sites');
+        $this->setRedirectAction('base.reportingHome');
         $this->set('status_code', 3204);
     }
 }

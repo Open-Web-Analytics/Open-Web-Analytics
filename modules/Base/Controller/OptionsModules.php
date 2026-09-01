@@ -94,7 +94,19 @@ class OptionsModules extends \OWA\Core\AdminController {
         }
 
         // add data to container
-        $this->setView('base.options');
+        /*
+         * The hierarchy wrapper. Install-wide options live at the top of the same
+         * nav now -- one settings menu rather than two, which is only possible
+         * because every session lands on a Profile and the tile is always
+         * populated.
+         */
+        $owa_site_id = $this->resolveCurrentSiteId();
+        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+        /* Tier 0: an install-wide screen, so the context line names nothing below it. */
+        $this->set( 'hierarchy_tier', 0 );
+        $this->setView('base.optionsHierarchy');
         $this->setSubview('base.optionsModules');
         $this->set('modules', $dirs);
 

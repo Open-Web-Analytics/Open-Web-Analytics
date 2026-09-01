@@ -78,7 +78,13 @@ final class ReportRegistryTest extends TestCase
 
             $name = basename( $file, '.php' );
 
-            if ( in_array( $name, array( 'ReportsRest', 'Report' ), true ) ) {
+            /*
+             * ReportingHome matches Report*.php but is not a report -- it
+             * resolves which Profile to open and redirects to base.report. It
+             * has no id because it is not something you can navigate TO by id;
+             * it is what decides the id.
+             */
+            if ( in_array( $name, array( 'ReportsRest', 'Report', 'ReportingHome' ), true ) ) {
                 continue;
             }
 

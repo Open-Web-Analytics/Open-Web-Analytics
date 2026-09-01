@@ -86,11 +86,11 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testBareParamsAreReadOnOwaSOwnEndpoints(): void
     {
-        $_GET = array('do' => 'base.sites', 'siteId' => 'abc123');
+        $_GET = array('do' => 'base.reportingHome', 'siteId' => 'abc123');
 
         $r = $this->container();
 
-        $this->assertSame('base.sites', $r->getParam('do'));
+        $this->assertSame('base.reportingHome', $r->getParam('do'));
         $this->assertSame('abc123', $r->getParam('siteId'));
     }
 
@@ -101,11 +101,11 @@ final class ParamNamespaceTest extends TestCase
      */
     public function testPrefixedParamsAreStillRead(): void
     {
-        $_GET = array('owa_do' => 'base.sites', 'owa_siteId' => 'abc123');
+        $_GET = array('owa_do' => 'base.reportingHome', 'owa_siteId' => 'abc123');
 
         $r = $this->container();
 
-        $this->assertSame('base.sites', $r->getParam('do'));
+        $this->assertSame('base.reportingHome', $r->getParam('do'));
         $this->assertSame('abc123', $r->getParam('siteId'));
     }
 
@@ -375,16 +375,16 @@ final class ParamNamespaceTest extends TestCase
     {
         $t = new \OWA\Core\Template('base');
 
-        $qs = $t->makeParamString(array('do' => 'base.sites', 'siteId' => 'abc'), false);
+        $qs = $t->makeParamString(array('do' => 'base.reportingHome', 'siteId' => 'abc'), false);
 
-        $this->assertSame('do=base.sites&siteId=abc', $qs);
+        $this->assertSame('do=base.reportingHome&siteId=abc', $qs);
 
         parse_str($qs, $parsed);
         $_GET = $parsed;
 
         $r = $this->container();
 
-        $this->assertSame('base.sites', $r->getParam('do'));
+        $this->assertSame('base.reportingHome', $r->getParam('do'));
         $this->assertSame('abc', $r->getParam('siteId'));
     }
 }

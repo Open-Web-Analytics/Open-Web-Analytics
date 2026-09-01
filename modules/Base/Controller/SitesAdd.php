@@ -97,7 +97,7 @@ class SitesAdd extends \OWA\Core\AdminController {
     
     function success() {
 	    
-	    $this->setRedirectAction('base.sites');
+	    $this->setRedirectAction('base.reportingHome');
         $this->set('status_code', 3202);
     }
 

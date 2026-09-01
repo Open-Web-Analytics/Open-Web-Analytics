@@ -71,8 +71,7 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->save();
 
         //$data['view_method'] = 'redirect';
-        //$data['do'] = 'base.sites';
-        $this->setRedirectAction('base.sites');
+        $this->setRedirectAction('base.reportingHome');
         $this->set('status_code', 3201);
     }
 }
