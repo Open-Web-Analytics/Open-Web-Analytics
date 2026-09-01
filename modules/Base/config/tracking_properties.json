@@ -65,6 +65,12 @@
         }
     },
     "client": {
+        "event_type": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "What happened. The tracker sends it and log.php also reads it with getRequestParam to call setEventType(), which sets a MEMBER -- getEventType() prefers that member and falls back to this property. Declared required:false with no default so the two cannot disagree: a default here would fabricate an event_type on events that carry their type on the member instead. It is already a column on the queue table, and v2 logs it on the fact row."
+        },
         "page_type": {
             "default_value": "(not set)",
             "required": true,

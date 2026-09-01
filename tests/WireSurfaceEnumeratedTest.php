@@ -22,16 +22,13 @@ final class WireSurfaceEnumeratedTest extends TestCase
 {
     /**
      * Names that ride the beacon but are deliberately NOT tracking properties.
-     * Each needs a reason, not just an entry.
+     *
+     * Empty, and that is the point: everything the tracker sends is declared.
+     * An entry here needs a reason, and the test below checks the reason still
+     * holds -- that the name is genuinely still sent and still undeclared --
+     * so an exception cannot outlive what justified it.
      */
-    private const NOT_TRACKING_PROPERTIES = array(
-
-        'event_type' =>
-            'Structural, not a property. log.php reads it with getRequestParam '
-            . 'and sets it through setEventType(); it routes the event rather '
-            . 'than describing it, and never comes out of the property bag.',
-
-    );
+    private const NOT_TRACKING_PROPERTIES = array();
 
     /** @return array every name the tracker emits, across all event types */
     private function emitted(): array
@@ -92,9 +89,9 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
     /**
      * The exceptions are the part that rots: it is easy to silence a failure by
-     * adding a name here, and easy for one to outlive the tracker that sent it.
+     * adding a name, and easy for one to outlive the tracker that sent it.
      */
-    public function testEveryExceptionIsStillOnTheWireAndStillUndeclared(): void
+    public function testNothingIsExceptedWithoutStillEarningIt(): void
     {
         $emitted  = $this->emitted();
         $declared = $this->declared();
@@ -111,6 +108,18 @@ final class WireSurfaceEnumeratedTest extends TestCase
                 $name, $declared,
                 "$name is declared now, so it should not also be an exception." );
         }
+
+        /*
+         * Stated rather than left implicit, so the empty list reads as a
+         * result and not as a loop nobody noticed does nothing. event_type was
+         * the last entry: it is a property like any other -- the tracker sends
+         * it, the queue table already stores it, and v2 logs it on the fact
+         * row.
+         */
+        $this->assertSame(
+            array(), self::NOT_TRACKING_PROPERTIES,
+            'Every property the tracker sends is declared. Adding an exception '
+            . 'needs a reason that survives the checks above.' );
     }
 
     /**
