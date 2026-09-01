@@ -205,8 +205,13 @@ final class PropertyAdminScreensTest extends TestCase
             'chosen-js 1.x measures the select at enhancement time and reads 0 inside a '
             . 'hidden parent, collapsing the control to a sliver.' );
 
+        /*
+         * SINGLE quoted. In a double-quoted PHP string "$select" interpolates
+         * to nothing, so the needle silently became ".change(" and the
+         * assertion passed no matter what the file said.
+         */
         $this->assertStringContainsString(
-            "$select.change(", $js,
+            '$select.change(', $js,
             'The change handler must stay on the SELECT -- chosen fires a native change on '
             . 'it, so binding there works enhanced or not.' );
     }
