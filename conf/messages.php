@@ -30,8 +30,13 @@
  */
 
 $_owa_messages = [
-    2000 => ['headline' => 'Success', 'message' => 'An e-mail containing instructions on how to complete the password reset process has been sent to %s'],
-    2001 => ['headline' => 'Error', 'message' => 'The e-mail %s was not found in our database. Please check the address and try again.'],
+    // Deliberately says the same thing whether or not the account exists: the
+    // reset form is unauthenticated, so a reply that distinguishes the two
+    // confirms which addresses are registered to anyone who asks.
+    2000 => ['headline' => 'Check your e-mail', 'message' => 'If an account exists for %s, an e-mail with instructions for resetting the password has been sent to it.'],
+    // Reached only when the address is malformed. It must not mention whether
+    // the address is known -- see 2000.
+    2001 => ['headline' => 'Error', 'message' => 'Please enter a valid e-mail address.'],
     2002 => ['headline' => 'Login Failed', 'message' => 'Your user name or password did not match.'],
     2003 => ['headline' => 'Error', 'message' => 'Your Account lacks the necessary privileges to access the requested resource.'],
     2004 => ['headline' => 'Error', 'message' => 'You must login to access the requested resource.'],
