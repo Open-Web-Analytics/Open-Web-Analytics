@@ -50,15 +50,17 @@ class PropertyEdit extends \OWA\Core\AdminController {
         $property->load( $this->getParam( 'propertyId' ) );
 
         $property->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
+        $property->set( 'domain', trim( (string) $this->getParam( 'domain' ) ) );
+        $property->set( 'description', (string) $this->getParam( 'description' ) );
         $property->update();
 
-        $this->setRedirectAction( 'base.properties' );
+        $this->setRedirectAction( 'base.propertyProfile' );
         $this->set( 'status_code', 3201 );
     }
 
     function errorAction() {
 
-        $this->setRedirectAction( 'base.properties' );
+        $this->setRedirectAction( 'base.propertyProfile' );
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
     }
 }

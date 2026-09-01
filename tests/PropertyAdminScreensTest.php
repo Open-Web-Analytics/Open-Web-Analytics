@@ -28,7 +28,8 @@ final class PropertyAdminScreensTest extends TestCase
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $actions = (array) $service->getMap( 'actions' );
 
-        foreach ( array( 'base.properties', 'base.propertyEdit', 'base.organizationEdit' ) as $action ) {
+        foreach ( array( 'base.propertyProfile', 'base.propertyEdit',
+                         'base.organizationProfile', 'base.organizationEdit' ) as $action ) {
 
             $this->assertArrayHasKey(
                 $action, $actions,
@@ -82,70 +83,7 @@ final class PropertyAdminScreensTest extends TestCase
             'name', $names, 'The name is not validated, so a Property can be renamed to nothing.' );
     }
 
-    public function testTheRosterListsProfilesUnderTheirPropertyAndLosesNone(): void
-    {
-        if ( ! owa_test_db_available() ) {
-            $this->markTestSkipped( 'OWA database not reachable.' );
-        }
 
-        $controller = new \OWA\Module\Base\Controller\Properties( array() );
-        $controller->action();
-
-        $data = $this->data( $controller );
-
-        $this->assertArrayHasKey( 'properties', $data );
-        $this->assertArrayHasKey(
-            'unassigned_profiles', $data,
-            'A Profile with no Property must have somewhere to appear, or the roster '
-            . 'reports a tracked site as absent.' );
-
-        $listed = count( (array) $data['unassigned_profiles'] );
-
-        foreach ( (array) $data['properties'] as $property ) {
-
-            $this->assertArrayHasKey( 'profiles', $property );
-            $listed += count( $property['profiles'] );
-        }
-
-        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
-        $method->setAccessible( true );
-
-        $this->assertSame(
-            count( (array) $method->invoke( $controller ) ), $listed,
-            'Every Profile the user may see appears exactly once on the roster.' );
-    }
-
-    /**
-     * Pinned by reading the template: nothing in PHP references these names, so
-     * a rename of either side breaks the screen silently.
-     */
-    public function testTheTemplateRendersWhatTheControllerSets(): void
-    {
-        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/properties.php' );
-
-        foreach ( array( 'properties', 'unassigned_profiles', 'profiles' ) as $key ) {
-
-            $this->assertStringContainsString(
-                $key, $template, "The roster no longer renders $key." );
-        }
-
-        $this->assertStringContainsString(
-            'base.propertyEdit', $template, 'The roster offers no way to rename.' );
-
-        /*
-         * PropertyEdit is setNonceRequired(), so without a nonce every rename
-         * fails the check and the screen looks simply broken.
-         *
-         * createNonceFormField() is how every other admin form does this --
-         * sites_addoredit, users_addoredit, options_general, custom_report_edit.
-         * Asserted by name so this form cannot drift onto a different mechanism
-         * than the rest of the admin screens.
-         */
-        $this->assertStringContainsString(
-            "createNonceFormField( 'base.propertyEdit' )",
-            $template,
-            'The rename form does not carry a nonce, so every rename is refused.' );
-    }
     /**
      * The Organization is the one tier a user could not name.
      *
@@ -175,16 +113,6 @@ final class PropertyAdminScreensTest extends TestCase
             'A blank Organization name would leave the roster headed by nothing.' );
     }
 
-    public function testTheRosterOffersTheOrganizationRename(): void
-    {
-        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/properties.php' );
-
-        $this->assertStringContainsString( 'base.organizationEdit', $template );
-        $this->assertStringContainsString(
-            "createNonceFormField( 'base.organizationEdit' )", $template,
-            'Without a nonce the rename is refused and the form looks broken.' );
-        $this->assertStringContainsString( 'organization_name', $template );
-    }
 
     /**
      * The selector is enhanced with chosen, as the dimension pickers are.
@@ -193,26 +121,48 @@ final class PropertyAdminScreensTest extends TestCase
      * line, which on a long list is easy to miss and impossible to search --
      * so the grouping is there but does not read as grouping.
      */
-    public function testTheSiteSelectorIsEnhanced(): void
+    public function testTheSiteControlReplacesTheOldSelect(): void
     {
         $js = (string) file_get_contents(
             OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
 
-        $this->assertStringContainsString( '.chosen(', $js );
-
-        $this->assertStringContainsString(
-            "width: '100%'", $js,
-            'chosen-js 1.x measures the select at enhancement time and reads 0 inside a '
-            . 'hidden parent, collapsing the control to a sliver.' );
+        $this->assertStringContainsString( '#owa_siteControl', $js );
 
         /*
-         * SINGLE quoted. In a double-quoted PHP string "$select" interpolates
-         * to nothing, so the needle silently became ".change(" and the
-         * assertion passed no matter what the file said.
+         * The CALL, not the name. The name still appears in a comment
+         * explaining why the lookup went -- asserting on the bare name made
+         * this test trip over its own documentation.
+         */
+        $this->assertStringNotContainsString(
+            'jQuery("#owa_reportSiteFilterSelect', $js,
+            'reload() still reads the select the site control replaced. That lookup returns '
+            . 'undefined and the guard around it skips silently, so the report would keep '
+            . 'loading while ignoring the site.' );
+
+        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
+
+        foreach ( array( 'owa_siteControlOrgs', 'owa_siteControlProperties',
+                         'owa_siteControlProfiles' ) as $column ) {
+
+            $this->assertStringContainsString(
+                $column, $template, "The control is missing its $column column." );
+        }
+
+        /*
+         * The tracker id is shown beside each Profile because it is what
+         * someone opens this control to find -- it is the value that goes in a
+         * tag, and having to open an edit screen to read it was the gap.
          */
         $this->assertStringContainsString(
-            '$select.change(', $js,
-            'The change handler must stay on the SELECT -- chosen fires a native change on '
-            . 'it, so binding there works enhanced or not.' );
+            'owa_siteControlId', $template,
+            'A Profile is listed without its tracking id.' );
+
+        $this->assertStringContainsString(
+            "'do' => 'base.propertyProfile'", $template,
+            'The Properties column offers no way to edit a Property.' );
+
+        $this->assertStringContainsString(
+            "'do' => 'base.sitesProfile'", $template,
+            'The Profiles column offers no way to edit a Profile.' );
     }
 }

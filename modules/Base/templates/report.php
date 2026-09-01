@@ -57,6 +57,16 @@ jQuery(document).ready(function(){
             <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
             <TD valign="top" class="owa_reportLeftNavColumn">
                 <div>
+                    <?php
+                        /*
+                         * The site control sits ABOVE the nav because it scopes
+                         * it: every report in the menu below is a report of the
+                         * Profile named here.
+                         */
+                    ?>
+                    <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
+                    <?php include('site_control.php');?>
+                    <?php endif;?>
                     <div id="owa_reportNavPanel">
                         <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params ?? array());?>
                     </div>
@@ -65,11 +75,6 @@ jQuery(document).ready(function(){
             <?php endif;?>
             <TD valign="top" width="*">
 
-                <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
-                <div class="reportSectionContainer reportSiteFilter" style="margin-bottom:20px;">
-                <?php include('filter_site.php');?>
-                </div>
-                <?php endif;?>
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
                     <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>

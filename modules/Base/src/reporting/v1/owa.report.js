@@ -313,51 +313,80 @@ OWA.report.prototype = {
     
     showSiteFilter : function(dom_id) {
         
-        // create dom elements
-        // ...
-        
-        // bind event handlers
         var that = this;
-        var $select = jQuery('#owa_reportSiteFilterSelect');
+        var $control = jQuery('#owa_siteControl');
 
-        /*
-         * Enhance with chosen, the same control the dimension pickers use.
-         *
-         * The options are grouped in OPTGROUPs by Property, and a native select
-         * renders a group heading only as a greyed, unselectable line -- on a
-         * long list it is easy to miss which heading a profile sits under, and
-         * there is no way to search. chosen renders the group as a real heading
-         * and filters across both.
-         *
-         * width is explicit for the reason documented in
-         * owa.resultSetExplorer.js: chosen-js 1.x sizes its container from the
-         * select's offsetWidth AT ENHANCEMENT TIME, which is 0 whenever the
-         * select is inside a hidden parent, and the control collapses to a
-         * sliver. '100%' lets the CSS decide so it shrinks with the bar.
-         *
-         * Guarded, because the site filter is rendered on report pages only and
-         * this file also loads where the select is absent.
-         */
-        if ( $select.length && jQuery.fn.chosen ) {
-
-            $select.chosen( {
-                width: '100%',
-                no_results_text: 'No matching site.',
-                /*
-                 * A single-property install has one heading and nothing to
-                 * search for, so the box would be noise. Above that it is the
-                 * point of enhancing at all.
-                 */
-                disable_search_threshold: 8
-            } );
+        if ( ! $control.length ) {
+            return;
         }
 
+        var $summary = jQuery('#owa_siteControlSummary');
+        var $panel   = jQuery('#owa_siteControlPanel');
+
+        function close() {
+            $panel.attr('hidden', 'hidden');
+            $control.removeClass('is-open');
+            $summary.attr('aria-expanded', 'false');
+        }
+
+        function open() {
+            $panel.removeAttr('hidden');
+            $control.addClass('is-open');
+            $summary.attr('aria-expanded', 'true');
+        }
+
+        $summary.on('click', function() {
+            $control.hasClass('is-open') ? close() : open();
+        });
+
+        // The summary is a div acting as a button, so it has to answer the keys
+        // a button would. Without this the control is unreachable by keyboard.
+        $summary.on('keydown', function(e) {
+            if ( e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' ) {
+                e.preventDefault();
+                $control.hasClass('is-open') ? close() : open();
+            }
+        });
+
+        jQuery(document).on('keydown', function(e) {
+            if ( e.key === 'Escape' && $control.hasClass('is-open') ) {
+                close();
+                $summary.focus();
+            }
+        });
+
+        // Clicking away closes it. Bound on document and filtered rather than
+        // on a backdrop element, so the panel does not need one covering the
+        // page -- a backdrop would swallow the first click on anything else.
+        jQuery(document).on('click', function(e) {
+            if ( $control.hasClass('is-open') && ! jQuery(e.target).closest('#owa_siteControl').length ) {
+                close();
+            }
+        });
+
         /*
-         * Bound on the SELECT, not the chosen widget. chosen keeps the original
-         * select in the DOM and fires a native change on it, so this handler
-         * works enhanced or not -- which is what makes the guard above safe.
+         * Column 2 -> column 3. Selecting a Property shows ITS Profiles; the
+         * lists are all rendered and toggled rather than fetched, because the
+         * whole hierarchy is already on the page and a request per click would
+         * make browsing it feel slower than the select it replaced.
+         *
+         * Not bound to the edit link: that is a navigation away, and swapping
+         * column 3 underneath someone on their way out is just a flicker.
          */
-        $select.change( function() { that.reload(); } );
+        jQuery('.owa_siteControlProperties .owa_siteControlItem').on('click', function(e) {
+
+            if ( jQuery(e.target).hasClass('owa_siteControlEdit') ) {
+                return;
+            }
+
+            var index = jQuery(this).data('property-index');
+
+            jQuery('.owa_siteControlProperties .owa_siteControlItem').removeClass('is-selected');
+            jQuery(this).addClass('is-selected');
+
+            jQuery('.owa_siteControlProfileList').attr('hidden', 'hidden');
+            jQuery('.owa_siteControlProfileList[data-property-index="' + index + '"]').removeAttr('hidden');
+        });
     },
     
     reportSetTimePeriod : function(period) {
@@ -368,13 +397,17 @@ OWA.report.prototype = {
     
     reload: function() {
     
-        // add new site_id to properties
-        var siteId = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
-        OWA.debug(this.properties['action']);
-        
-        if (siteId != undefined) {
-            this.properties['siteId'] = siteId;
-        }
+        /*
+         * siteId is NOT read from a control any more. Choosing a Profile is a
+         * link in the site control, so the browser navigates and the new siteId
+         * arrives in the URL -- reload() reloads whatever is current, which is
+         * what its other caller (the period picker) actually wants.
+         *
+         * It read '#owa_reportSiteFilterSelect option:selected' until the site
+         * control replaced that select. That lookup would now return undefined
+         * and the guard below would quietly skip it, so this would have kept
+         * "working" while silently ignoring the site.
+         */
         // reload report    
         var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
         window.location.href = url;

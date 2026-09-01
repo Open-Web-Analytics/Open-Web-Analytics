@@ -2893,3 +2893,196 @@ li.constraintRow {
     padding: 0;
     list-style: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Site control: Organization / Property / Observation Profile
+ *
+ * Sits above the left nav, inside a 200px column, so COLLAPSED it must fit that
+ * width and EXPANDED it must escape it -- the panel is absolutely positioned
+ * and overlays the report rather than widening the column and reflowing the
+ * page every time someone opens it.
+ *
+ * Colours are the ones already in this file: #505050 text, #666 secondary,
+ * #ccc borders, white ground, orange as the accent (the same left-rule idiom as
+ * .owa_visitSummaryInfobox).
+ * ------------------------------------------------------------------------ */
+
+.owa_siteControl {
+    position: relative;
+    margin-bottom: 15px;
+    font-size: 12px;
+}
+
+.owa_siteControlSummary {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-left: 5px solid orange;
+    padding: 8px 22px 8px 10px;
+    cursor: pointer;
+    position: relative;
+    line-height: 1.35;
+}
+
+.owa_siteControlSummary:hover,
+.owa_siteControlSummary:focus {
+    border-color: #a0a0a0;
+    border-left-color: orange;
+    outline: none;
+}
+
+/* The three tiers, weighted by how specific each is to where you are. */
+.owa_siteControlOrg {
+    color: #999999;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.owa_siteControlProperty {
+    color: #505050;
+    font-weight: bold;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.owa_siteControlProfile {
+    color: #666666;
+}
+
+/* A Property's domain, under its name in the fan-out. Grey and small: it is
+   there to tell two similarly named Properties apart, not to be read first. */
+.owa_siteControlDomain {
+    display: block;
+    color: #999999;
+    font-size: 11px;
+    word-break: break-all;
+}
+
+/* The tracker id is a value to be READ and copied, so it is monospaced and
+   allowed to break -- it is the thing people open this control to find. */
+.owa_siteControlId {
+    display: block;
+    font-family: monospace;
+    font-size: 10px;
+    color: #999999;
+    word-break: break-all;
+}
+
+.owa_siteControlCaret {
+    position: absolute;
+    right: 8px;
+    top: 10px;
+    color: #999999;
+    transition: transform 0.12s ease;
+}
+
+.owa_siteControl.is-open .owa_siteControlCaret {
+    transform: rotate(180deg);
+}
+
+/* --- the fan-out ------------------------------------------------------- */
+
+/*
+ * Opens to the RIGHT of the tile, not below it.
+ *
+ * Below, the panel covered the report nav -- the thing you are usually about to
+ * use next -- and pushed a 660px box down a 200px column so it hung over the
+ * report. Beside it, the tile stays readable while you browse, and the panel
+ * lands in the content area where there is room for three columns.
+ */
+.owa_siteControlPanel {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 6px;
+    z-index: 500;
+    display: flex;
+    width: 660px;
+    max-width: 90vw;
+    background-color: #ffffff;
+    border: 1px solid #a0a0a0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.owa_siteControlColumn {
+    flex: 1 1 0;
+    min-width: 0;
+    border-right: 1px solid #efefef;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.owa_siteControlColumn:last-child {
+    border-right: 0;
+}
+
+.owa_siteControlColumnHead {
+    color: #999999;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 10px;
+    border-bottom: 1px solid #efefef;
+    background-color: #fbfbfb;
+    position: sticky;
+    top: 0;
+}
+
+.owa_siteControlColumn ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa_siteControlItem {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 7px 10px;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid #f4f4f4;
+    cursor: pointer;
+}
+
+.owa_siteControlItem:hover {
+    background-color: #f7f7f7;
+}
+
+.owa_siteControlItem.is-selected {
+    border-left-color: orange;
+    background-color: #fbfbfb;
+}
+
+.owa_siteControlItemName {
+    color: #505050;
+    word-break: break-word;
+}
+
+.owa_siteControlProfiles .owa_siteControlItem .owa_siteControlId {
+    display: block;
+    margin-top: 2px;
+}
+
+.owa_siteControlSelect {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-decoration: none;
+}
+
+/* Edit is a secondary action: quiet until wanted, but always reachable by
+   keyboard -- revealed on focus as well as hover, not hover alone. */
+.owa_siteControlEdit {
+    flex: 0 0 auto;
+    color: #999999;
+    font-size: 11px;
+    text-decoration: none;
+    visibility: hidden;
+}
+
+.owa_siteControlItem:hover .owa_siteControlEdit,
+.owa_siteControlEdit:focus {
+    visibility: visible;
+    color: #666666;
+    text-decoration: underline;
+}

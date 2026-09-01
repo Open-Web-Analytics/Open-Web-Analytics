@@ -146,19 +146,25 @@ final class SiteListContractTest extends TestCase
          * already-deployed plugin without either consumer changing. Composing
          * it in the templates instead would fix only ours.
          *
+         * CORRECTED: this used to pin that both labelled with 'name'. The
+         * plugin labels with site_id and domain, and our control no longer
+         * labels with a single field at all -- it shows Property, Profile and
+         * the tracking id. What still matters is that it navigates by site_id.
+         *
          * Pinned by reading the template, because the coupling is invisible
-         * from PHP: nothing references filter_site.php's field names.
+         * from PHP: nothing references the control's field names.
          */
-        $template = file_get_contents( OWA_DIR . 'modules/Base/templates/filter_site.php' );
+        $template = file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
 
         $this->assertStringContainsString(
-            "get('site_id')", $template,
-            'The site filter no longer submits site_id as the option value.' );
+            '\'siteId\' => $owa_prof[\'site_id\']', $template,
+            'The site control no longer navigates by site_id, so choosing a Profile cannot '
+            . 'change what the report is of.' );
 
         $this->assertStringContainsString(
-            "get('name')", $template,
-            'The site filter no longer labels its options with name -- so a composed label built '
-            . 'for the plugin would no longer reach our own selector.' );
+            'owa_siteControlId', $template,
+            'The control no longer shows the tracking id -- the value someone opens it to find, '
+            . 'and the reason a flat list of "Observation Profile 1" was not enough.' );
     }
 
     public function testAdministratorsSeeEveryProfileAndOthersSeeOnlyGranted(): void

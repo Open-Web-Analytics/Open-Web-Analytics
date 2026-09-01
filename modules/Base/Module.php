@@ -199,7 +199,8 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
         $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
-        $this->registerAction( 'base.properties',                    'OWA\\Module\\Base\\Controller\\Properties',                   'Controller/Properties.php' );
+        $this->registerAction( 'base.propertyProfile',               'OWA\\Module\\Base\\Controller\\PropertyProfile',              'Controller/PropertyProfile.php' );
+        $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile',          'Controller/OrganizationProfile.php' );
         $this->registerAction( 'base.propertyEdit',                  'OWA\\Module\\Base\\Controller\\PropertyEdit',                  'Controller/PropertyEdit.php' );
         $this->registerAction( 'base.organizationEdit',              'OWA\\Module\\Base\\Controller\\OrganizationEdit',              'Controller/OrganizationEdit.php' );
         $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
@@ -392,13 +393,12 @@ class Module extends \OWA\Core\Module {
                 'group'            => 'General',
                 'order'            => 3)
         );
-        $this->addAdminPanel(array(
-                'do'             => 'base.properties',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Properties',
-                'group'            => 'General',
-                'order'            => 4)
-        );
+        /*
+         * No Properties panel. The hierarchy is navigated from the site control
+         * above the report nav, which is where someone is when they need it;
+         * an admin-menu roster was a second place to browse the same tree.
+         * The per-Property edit screen is reached from that control.
+         */
 
         $this->addAdminPanel(array(
                 'do'             => 'base.optionsModules',

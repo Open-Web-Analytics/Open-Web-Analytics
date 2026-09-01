@@ -40,13 +40,13 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $organization->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
         $organization->update();
 
-        $this->setRedirectAction( 'base.properties' );
+        $this->setRedirectAction( 'base.organizationProfile' );
         $this->set( 'status_code', 3201 );
     }
 
     function errorAction() {
 
-        $this->setRedirectAction( 'base.properties' );
+        $this->setRedirectAction( 'base.organizationProfile' );
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
     }
 }

@@ -865,80 +865,98 @@ class Controller extends \OWA\Core\Base {
      * @return array
      */
     /**
-     * Group Observation Profiles under the Property they belong to.
+     * The Organization / Property / Profile tree, for the site control.
      *
-     * A Property is the website; a Profile is one way of observing it, and it
-     * is the Profile that carries the tracker id. Several Profiles on one
-     * Property is the point of the hierarchy -- and it is also what makes a
-     * flat list unreadable, because two Profiles of the same site legitimately
-     * share a domain and differ only by an auto-assigned name:
+     * The control is the navigation for the hierarchy -- there is no separate
+     * roster screen -- so it needs the whole shape at once: the Organization
+     * heading it, every Property the user may see, and the Profiles under each.
+     * A Profile carries the tracker id, which is why the id travels with it and
+     * is shown: it is what someone came to the control to find.
      *
-     *     Observation Profile 1 | example.com
-     *     Observation Profile 2 | example.com
-     *
-     * Grouped, the Property name supplies the context those labels lack. This
-     * is presentation only -- the Profile's own name is untouched, so nothing
-     * that reads it (the /v1/sites payload, and the plugin picker built on it)
-     * changes shape or value.
-     *
-     * One query for the whole map, not a load per Profile.
-     *
-     * An earlier version resolved each Property through the entity cache -- a
-     * query per distinct Property, on a path that runs on every report render.
-     *
-     * It reads every Property rather than joining owa_site to owa_property,
-     * which is smaller (Properties are by definition fewer than Profiles) and,
-     * more importantly, keeps the relationship where the caller put it: the
-     * grouping uses the property_id on the entities it was HANDED. A join
-     * re-reads that column from the table, so it would silently ignore an
-     * entity whose parent had been set but not yet saved, and would drop any
-     * Profile not present in owa_site at all.
+     * Two queries regardless of size, not one per Property. This runs on every
+     * report render.
      *
      * @param array $sites site_id => base.site entity
-     * @return array property label => array of site entities, in the order given
+     * @return array
      */
-    protected function groupSitesByProperty( $sites ) {
+    protected function getSiteHierarchy( $sites ) {
 
         $sites = (array) $sites;
 
-        if ( ! $sites ) {
-
-            return array();
-        }
-
-        $property_entity = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+        $property     = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $property_entity->getTableName() );
+        $db->selectFrom( $organization->getTableName() );
         $db->selectColumn( 'id, name' );
 
-        $names = array();
+        $organizations = (array) $db->getAllRows();
+        $org           = $organizations ? $organizations[0] : array( 'id' => '', 'name' => '' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $property->getTableName() );
+        $db->selectColumn( 'id, name, domain' );
+        $db->orderBy( 'name' );
+
+        $properties = array();
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $names[ $row['id'] ] = $row['name'];
+            $row['profiles'] = array();
+            $properties[ $row['id'] ] = $row;
         }
 
-        $grouped = array();
+        /*
+         * Only Profiles the user may see. An admin sees all of them; anyone
+         * else sees what they were granted, and a Property none of whose
+         * Profiles they can see is dropped rather than shown empty.
+         */
+        $unassigned = array();
 
-        foreach ( $sites as $key => $site ) {
+        foreach ( $sites as $site ) {
 
-            /*
-             * A Profile with no Property is not dropped. It can exist -- a site
-             * created before the migration, or by a path that does not assign
-             * one -- and silently omitting it would remove a site from the
-             * selector, which is worse than showing it under a plain heading.
-             */
-            $property_name = $names[ $site->get( 'property_id' ) ] ?? '';
+            $entry = array(
+                'site_id' => $site->get( 'site_id' ),
+                'name'    => $site->get( 'name' ),
+                'domain'  => $site->get( 'domain' ),
+            );
 
-            $label = ( $property_name !== '' && $property_name !== null )
-                ? $property_name
-                : ( $site->get( 'domain' ) ?: 'Unassigned' );
+            $parent = $site->get( 'property_id' );
 
-            $grouped[ $label ][ $key ] = $site;
+            if ( $parent && isset( $properties[ $parent ] ) ) {
+
+                $properties[ $parent ]['profiles'][] = $entry;
+
+            } else {
+
+                /*
+                 * Never dropped: a Profile with no Property is still a site the
+                 * user is tracking, and omitting it from the control would make
+                 * it unreachable rather than merely unparented.
+                 */
+                $unassigned[] = $entry;
+            }
         }
 
-        return $grouped;
+        $properties = array_filter( $properties, function ( $p ) {
+
+            return (bool) $p['profiles'];
+        } );
+
+        if ( $unassigned ) {
+
+            $properties['__unassigned'] = array(
+                'id'       => '',
+                'name'     => 'Unassigned',
+                'domain'   => '',
+                'profiles' => $unassigned,
+            );
+        }
+
+        return array(
+            'organization' => $org,
+            'properties'   => array_values( $properties ),
+        );
     }
 
     protected function getSitesAllowedForCurrentUser() {
