@@ -45,6 +45,22 @@ class UsersResetPassword extends \OWA\Core\Controller {
         $auth = \OWA\Core\Auth::get_instance();
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('email_address', $event->get('email_address'));
+
+        /*
+         * An address with no account reaches here now, because the request form
+         * deliberately no longer reports whether one exists. Stop here rather
+         * than mint a passkey for nobody and run an UPDATE keyed on an empty id.
+         *
+         * Nothing is reported back either: the caller shows the same message
+         * whether or not this found anyone, which is the point.
+         */
+        if ( ! $u->get('id') ) {
+
+            $this->e->debug( 'Password reset requested for an address with no account.' );
+
+            return;
+        }
+
         $u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
         $status = $u->update();
         $this->e->debug('status: '.$status);

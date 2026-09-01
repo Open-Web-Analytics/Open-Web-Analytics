@@ -37,13 +37,18 @@ class PasswordResetRequest extends \OWA\Core\Controller {
     {
         $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress', ['stopOnError' => true]);
 
-        $useEmailAddressEntityConf = [
-            'entity'    => 'base.user',
-            'column'    => 'email_address',
-            'errorMsg'  => $this->getMsg(3010)
-        ];
-
-        $this->addValidation('email_address', trim((string) $this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
+        /*
+         * There is deliberately NO check that the address belongs to a user.
+         *
+         * This form is unauthenticated, and an entityExists validation here
+         * answered "A user with that email address does not exist" for an
+         * unknown address and "an e-mail has been sent to X" for a known one --
+         * which let anyone confirm whether an address is registered, one guess
+         * at a time.
+         *
+         * An unknown address now takes the same path and gets the same reply;
+         * UsersResetPassword simply finds no user and sends nothing.
+         */
     }
 
     function action() {

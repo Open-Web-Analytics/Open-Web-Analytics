@@ -50,18 +50,26 @@ final class MessageSubstitutionTest extends TestCase
     {
         $msg = $this->base->getMsg(2000, ['message' => ['user@example.com']]);
 
-        $this->assertSame('Success', $msg['headline']);
+        $this->assertSame('Check your e-mail', $msg['headline']);
         $this->assertStringContainsString('user@example.com', $msg['message']);
         $this->assertStringNotContainsString('%s', $msg['message']);
     }
 
-    /** The error branch of the same flow, message 2001. */
+    /**
+     * An error-headlined message substitutes the same way.
+     *
+     * This used 2001, the reset form's error. That message no longer takes a
+     * substitution at all -- it deliberately says nothing about the address it
+     * was given, because saying anything about it reported whether an account
+     * exists. 3008 is the same shape and still has a %s.
+     */
     public function testTheErrorMessageSubstitutesTheSameWay(): void
     {
-        $msg = $this->base->getMsg(2001, ['message' => ['nobody@example.com']]);
+        $msg = $this->base->getMsg(3008, ['message' => ['12']]);
 
         $this->assertSame('Error', $msg['headline']);
-        $this->assertStringContainsString('nobody@example.com', $msg['message']);
+        $this->assertStringContainsString('12', $msg['message']);
+        $this->assertStringNotContainsString('%s', $msg['message']);
     }
 
     /** A bare scalar is one argument, not a TypeError. */
