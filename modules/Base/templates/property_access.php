@@ -10,14 +10,15 @@
 ?>
 <DIV class="panel_headline">Property Access Management</DIV>
 <div id="panel">
+<div class="owa_panelIntro">Who can see this Property. Access is granted to the website, so it covers every Observation Profile beneath it. Administrators always have access and cannot be removed here.</div>
 <form method="post" name="owa-allowedusersform">
     <fieldset name="owa-allowedusers" class="options">
     <legend>Allowed Users</legend>
 
         <div class="description">
-            Users ticked here can see this site's reports. Access controls three
+            Users ticked here can see this Property's reports. Access controls three
             capabilities &mdash; viewing reports, viewing e-commerce reports, and
-            editing this site. Administrators always have access and cannot be
+            editing this Property. Administrators always have access and cannot be
             changed here.
         </div>
 
@@ -74,7 +75,7 @@
         <?php else: ?>
 
         <div class="description">
-            Save this site first, then choose which users can see its reports.
+            Save this Property first, then choose which users can see its reports.
         </div>
 
         <?php endif;?>

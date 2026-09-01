@@ -877,14 +877,43 @@ class Controller extends \OWA\Core\Base {
      * current, and the first allowed one is the only defensible choice without
      * asking.
      */
-    protected function resolveCurrentSiteId( $siteId = '' ) {
+    protected function resolveCurrentSiteId( $siteId = '', $propertyId = '' ) {
 
         if ( $siteId ) {
 
             return $siteId;
         }
 
-        foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
+        $sites = (array) $this->getSitesAllowedForCurrentUser();
+
+        /*
+         * A Property in context picks a Profile OF THAT PROPERTY.
+         *
+         * Arriving from the control's edit link on some other Property carries
+         * a propertyId and no siteId. Falling straight through to "the first
+         * site I can see" then left the tile and the Profile group describing
+         * whatever site happened to be first -- so the nav disagreed with the
+         * Property whose screen you were looking at.
+         */
+        if ( $propertyId ) {
+
+            foreach ( $sites as $site ) {
+
+                /*
+                 * Compared as strings. A property id reaches here from a URL
+                 * (string), from the database (string), and from a PHP array
+                 * key (which coerces a numeric id to an INT) -- so a strict
+                 * comparison silently fails on the last one and falls through
+                 * to the wrong site.
+                 */
+                if ( (string) $site->get( 'property_id' ) === (string) $propertyId ) {
+
+                    return $site->get( 'site_id' );
+                }
+            }
+        }
+
+        foreach ( $sites as $site ) {
 
             return $site->get( 'site_id' );
         }

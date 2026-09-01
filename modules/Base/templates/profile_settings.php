@@ -9,14 +9,14 @@
 ?>
 <DIV class="panel_headline">Observation Settings</DIV>
 <div id="panel">
+<div class="owa_panelIntro">How this Observation Profile watches its Property. A Profile is one way of observing a website &mdash; these settings define what it records and what it ignores. They apply to this Profile only; another Profile on the same Property can observe it differently.</div>
 <form method="post" name="owa_options">
 
     <fieldset name="owa-options" class="options">
-    <legend>Site Settings</legend>
 
         <div class="setting" id="p3p_policy">
             <div class="title">P3P Compact Privacy Policy</div>
-            <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="https://www.w3.org/P3P/">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
+            <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="https://www.w3.org/P3P/">here</a> for more information on compact privacy policies and choosing the right one for your website.</div>
             <div class="field"><input type="text" size="50" name="<?php echo $view->getNs();?>config[p3p_policy]" value="<?php $view->out( $view->config['p3p_policy'] ?? '' );?>"></div>
         </div>
 

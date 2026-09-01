@@ -3225,6 +3225,17 @@ li.constraintRow {
     padding: 0 0 6px 0;
 }
 
+/* The line under each headline saying what the screen is for. Secondary to the
+   title, ahead of the form -- so it reads before the first field, not as a
+   caption on one. */
+.owa_hierarchyContent #panel .owa_panelIntro {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+    max-width: 620px;
+    margin: -4px 0 22px 0;
+}
+
 .owa_hierarchyContent #panel .inline_h2 {
     color: #666666;
     font-size: 12px;

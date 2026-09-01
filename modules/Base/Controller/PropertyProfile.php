@@ -37,7 +37,8 @@ class PropertyProfile extends \OWA\Core\AdminController {
          * than the Organization over two blank lines -- and so the nav can
          * offer the Property and Profile groups at all.
          */
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $siteId = $this->resolveCurrentSiteId(
+            $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav(

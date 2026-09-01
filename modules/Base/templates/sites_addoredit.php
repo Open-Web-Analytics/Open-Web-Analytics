@@ -15,6 +15,9 @@
 ?>
 <DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
 <div id="panel">
+<div class="owa_panelIntro">An Observation Profile is one way of watching a Property.
+It carries its own tracking id, so a Property watched two ways has two Profiles and
+two tags.</div>
 <fieldset>
 
     <legend>Site Profile</legend>

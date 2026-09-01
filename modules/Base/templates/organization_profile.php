@@ -1,9 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <DIV class="panel_headline">Organization Details</DIV>
 <div id="panel">
+<div class="owa_panelIntro">The top of the hierarchy. Every Property and every user account belongs to this Organization.</div>
 <div style="width:550px;">
-    <div class="inline_h2" style="text-align:left;">Every Property and every user
-    account belongs to this Organization.</div><BR>
 
     <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.organizationEdit' ) );?>">
         <?php echo $view->createNonceFormField( 'base.organizationEdit' );?>

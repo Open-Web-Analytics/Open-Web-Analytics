@@ -1,10 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <DIV class="panel_headline">Property Details</DIV>
 <div id="panel">
+<div class="owa_panelIntro">A Property is the website or app being measured. The Observation Profiles beneath it are the ways it is watched, and each carries its own tracking id.</div>
 <div style="width:550px;">
-    <div class="inline_h2" style="text-align:left;">A Property is the website or app.
-    The Observation Profiles beneath it are the ways it is being watched, and each of
-    those carries its own tracking id.</div><BR>
 
     <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
@@ -19,7 +17,7 @@
         <div class="inline_h3">Domain</div>
         <input class="owa_largeFormField" type="text" size="52" maxlength="70"
                name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->property['domain'] ?? '' );?>">
-        <span class="form-instructions">Used to decide which Property a newly added site belongs to.</span>
+        <span class="form-instructions">Used to decide which Property a newly added Profile belongs to.</span>
         <BR><BR>
 
         <div class="inline_h3">Description</div>

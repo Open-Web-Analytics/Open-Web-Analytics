@@ -427,4 +427,95 @@ final class PropertyAdminScreensTest extends TestCase
             'given-one', $method->invoke( $controller, 'given-one' ),
             'A siteId already in context must win over the fallback.' );
     }
+    /**
+     * Arriving from the control's edit link on another Property must move the
+     * whole nav, not just the Property group.
+     *
+     * That link carries a propertyId and no siteId, so resolving "the current
+     * Profile" fell through to the first site the user could see -- and the
+     * tile and Profile group then described a different Property from the one
+     * whose screen was open.
+     */
+    public function testAPropertyInContextPicksAProfileOfThatProperty(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
+        }
+
+        $controller = new \OWA\Module\Base\Controller\PropertyProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
+        $method->setAccessible( true );
+
+        $allowed = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
+        $allowed->setAccessible( true );
+
+        /* Every Profile of each Property -- the requirement is MEMBERSHIP, not
+           a particular one, so recording only one per Property would assert
+           something stricter than the code promises. */
+        $byProperty = array();
+
+        foreach ( (array) $allowed->invoke( $controller ) as $site ) {
+
+            $parent = $site->get( 'property_id' );
+
+            if ( $parent ) {
+                $byProperty[ $parent ][] = $site->get( 'site_id' );
+            }
+        }
+
+        if ( count( $byProperty ) < 2 ) {
+            $this->markTestSkipped( 'Needs at least two parented Properties.' );
+        }
+
+        foreach ( $byProperty as $propertyId => $profiles ) {
+
+            /* (string) because a numeric array key comes back as an int -- the
+               same coercion that made the resolver's strict comparison miss. */
+            $propertyId = (string) $propertyId;
+
+            $this->assertContains(
+                $method->invoke( $controller, '', $propertyId ), $profiles,
+                'The Profile resolved does not belong to the Property in context, so the '
+                . 'tile and the nav would describe a different website.' );
+        }
+
+        /* A siteId already in hand still wins -- the Property is only a
+           fallback for arriving without one. */
+        $this->assertSame(
+            'explicit', $method->invoke( $controller, 'explicit', array_key_first( $byProperty ) ) );
+    }
+
+    /** Each screen says what it is for, in the hierarchy's words. */
+    public function testEveryHierarchyScreenExplainsItself(): void
+    {
+        $screens = array(
+            'organization_profile.php' => 'Organization',
+            'property_profile.php'     => 'Property',
+            'property_access.php'      => 'Property',
+            'profile_settings.php'     => 'Observation Profile',
+            'sites_addoredit.php'      => 'Observation Profile',
+        );
+
+        foreach ( $screens as $template => $term ) {
+
+            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+
+            $this->assertStringContainsString(
+                'owa_panelIntro', $body, "$template does not say what the screen is for." );
+
+            $this->assertStringContainsString(
+                $term, $body,
+                "$template does not name the tier it belongs to, so its wording predates "
+                . 'the hierarchy.' );
+
+            /*
+             * One headline. profile_settings carried the panel headline AND the
+             * old "Site Settings" legend, so the screen showed two titles.
+             */
+            $this->assertLessThanOrEqual(
+                1, substr_count( $body, '<legend>' ),
+                "$template still has a legend competing with its headline." );
+        }
+    }
 }
