@@ -83,6 +83,14 @@ final class LegacyClassNameContractTest extends TestCase
         'owa_sitesController',
         'owa_sitesView',
         /*
+         * RETIRED 2026-09-01: the old settings menu wrapper. Every settings
+         * screen -- Base's and the modules' -- renders in the hierarchy wrapper
+         * now, which carries the site control and one nav covering install,
+         * Organization, Property and Profile. Two settings menus was the thing
+         * to remove, not a second one to maintain.
+         */
+        'owa_optionsView',
+        /*
          * RETIRED 2026-08-31: 41 metric classes, deleted when metrics became
          * configuration.
          *

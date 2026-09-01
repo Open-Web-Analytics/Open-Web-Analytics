@@ -359,7 +359,6 @@ function owa_compat_class_map(): array
         'owa_moduleDeactivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',
         'owa_moduleInstallCliController' => 'OWA\\Module\\Base\\Controller\\ModuleInstallCli',
         'owa_notifyNewSessionPlainTextView' => 'OWA\\Module\\Base\\View\\NotifyNewSessionPlainText',
-        'owa_optionsView' => 'OWA\\Module\\Base\\View\\Options',
         'owa_optionsFlushCacheController' => 'OWA\\Module\\Base\\Controller\\OptionsFlushCache',
         'owa_optionsGoalEditController' => 'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',
         'owa_optionsResetController' => 'OWA\\Module\\Base\\Controller\\OptionsReset',

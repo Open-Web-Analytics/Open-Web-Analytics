@@ -988,4 +988,27 @@ final class PropertyAdminScreensTest extends TestCase
             '?: turns tier 0 into 3, putting a Property and a Profile above a screen whose '
             . 'settings apply to the whole install.' );
     }
+    /**
+     * There is one settings nav. The old menu is gone, not merely bypassed.
+     *
+     * Two menus was the thing to remove. Leaving base.options behind for the
+     * module screens would have meant a settings surface that looked like a
+     * different application depending on which link you followed.
+     */
+    public function testTheOldSettingsMenuIsGone(): void
+    {
+        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/View/Options.php' );
+        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/templates/options.php' );
+
+        /* Including the module screens -- they are settings like any other. */
+        foreach ( array( 'modules/MaxmindGeoip/Controller/OptionsGeoip.php',
+                         'modules/Hello/ExampleSettingsController.php' ) as $module ) {
+
+            $src = (string) file_get_contents( OWA_DIR . $module );
+
+            $this->assertStringContainsString(
+                'base.optionsHierarchy', $src,
+                "$module still renders in the retired settings menu." );
+        }
+    }
 }

@@ -159,7 +159,6 @@
     "owa_optionsModulesView",
     "owa_optionsResetController",
     "owa_optionsUpdateController",
-    "owa_optionsView",
     "owa_os",
     "owa_osHandlers",
     "owa_overlayLauncherController",
