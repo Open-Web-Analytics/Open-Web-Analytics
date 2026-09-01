@@ -96,6 +96,122 @@ class TrackingEventHelpers {
      *
      * @return array property name => true
      */
+    /** @var array|null the parsed config, read once per process */
+    private static $property_config;
+
+    /**
+     * The property definitions, read from modules/Base/config/tracking_properties.json.
+     *
+     * The file is the single enumeration of what a tracking event may carry:
+     * every property a handler expects by name, which of the three scopes owns
+     * it, and how the pipeline should treat it. Anything not named there is a
+     * custom property and is passed through without a contract.
+     *
+     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
+     * in the order they appear here, and a callback may read what earlier ones
+     * wrote -- the date parts read timestamp, the geo callbacks read
+     * ip_address, source and medium read session_referer. Reordering entries
+     * does not fail; the dependant silently derives from a value that has not
+     * been computed yet. TrackingPropertyOrderTest holds this.
+     *
+     * @param string $scope one of request, client, server
+     * @return array
+     */
+    private static function propertyConfig( $scope ) {
+
+        if ( self::$property_config === null ) {
+
+            $path = OWA_DIR . 'modules/Base/config/tracking_properties.json';
+            $config = json_decode( file_get_contents( $path ), true );
+
+            if ( ! is_array( $config ) ) {
+
+                throw new \RuntimeException(
+                    'Could not read the tracking property config at ' . $path . ': '
+                    . json_last_error_msg() );
+            }
+
+            /* 'note' documents the entry for whoever edits the file; it is not
+               part of the definition the pipeline consumes. */
+            foreach ( $config as $name => $properties ) {
+
+                foreach ( $properties as $property => $definition ) {
+
+                    unset( $config[ $name ][ $property ]['note'] );
+                }
+            }
+
+            self::$property_config = $config;
+        }
+
+        if ( ! isset( self::$property_config[ $scope ] ) ) {
+
+            throw new \InvalidArgumentException(
+                "There is no '$scope' scope in the tracking property config." );
+        }
+
+        return self::$property_config[ $scope ];
+    }
+
+    /**
+     * Properties the server reads off the HTTP request.
+     *
+     * The request is the source: the user agent, the host, the address it came
+     * from, and the moment it arrived. A tracking request cannot set these --
+     * it would be choosing what it is observed to be.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function requestProperties() {
+
+        return self::propertyConfig( 'request' );
+
+    }
+
+    /**
+     * Properties the tracker sends.
+     *
+     * The client is the source, so a request may set them. ORDER IS PART OF THE
+     * CONTRACT here: deriveSource, deriveMedium and extractSearchTerm all read
+     * session_referer, so those three must stay after it. Nothing enforces
+     * that ordering, which is why TrackingPropertyOrderTest exists.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function clientProperties() {
+
+        return self::propertyConfig( 'client' );
+
+    }
+
+    /**
+     * Properties the server computes from other properties.
+     *
+     * Date parts from the timestamp, geolocation from the address, browser from
+     * the user agent, and the dimension ids. A request cannot set these either:
+     * a supplied value would replace a derivation, which is exactly the defect
+     * that let a city name reach a boolean column.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function serverProperties() {
+
+        return self::propertyConfig( 'server' );
+
+    }
+
     public static function clientSettableProperties() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();

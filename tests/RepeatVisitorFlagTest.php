@@ -56,13 +56,20 @@ final class RepeatVisitorFlagTest extends TestCase
     /**
      * The property is REQUIRED, which is why a null return reached storage
      * rather than being skipped as an absent value.
+     *
+     * It also declares data_type boolean, which is the half of 8d24fc65 that
+     * lets the pipeline re-resolve the type when a callback returns nothing.
+     * Its three sibling flags -- is_browser, is_robot, is_entry_page -- still
+     * declare no data_type.
      */
     public function testTheFlagIsARequiredDerivedProperty(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/Module.php' );
+        $derived = Helpers::serverProperties();
 
-        $this->assertMatchesRegularExpression(
-            "/'is_repeat_visitor'\s*=>\s*array\(\s*'required'\s*=>\s*true/",
-            $src );
+        $this->assertArrayHasKey( 'is_repeat_visitor', $derived,
+            'The flag is derived by the server, not settable from the wire.' );
+
+        $this->assertTrue( $derived['is_repeat_visitor']['required'] );
+        $this->assertSame( 'boolean', $derived['is_repeat_visitor']['data_type'] );
     }
 }
