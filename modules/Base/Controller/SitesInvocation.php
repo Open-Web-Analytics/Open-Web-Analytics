@@ -55,6 +55,8 @@ class SitesInvocation extends \OWA\Core\AdminController {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        /* Tier 3: this screen is about an Observation Profile, so the context line stops there. */
+        $this->set( 'hierarchy_tier', 3 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
         $this->setView('base.optionsHierarchy');
     }

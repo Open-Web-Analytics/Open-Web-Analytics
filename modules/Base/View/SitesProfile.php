@@ -37,7 +37,7 @@ class SitesProfile extends \OWA\Core\View {
         $site = $this->get('site');
         if ($this->get('edit')) {
             $this->body->set('action', 'base.sitesEdit');
-            $this->body->set('headline', 'Edit Site Profile for: '. $site['domain'] );
+            $this->body->set('headline', 'Profile Details');
 
             $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
             $siteEntity->getByColumn('site_id', $this->get('siteId'));
@@ -45,14 +45,14 @@ class SitesProfile extends \OWA\Core\View {
 
         } else {
             $this->body->set('action', 'base.sitesAdd');
-            $this->body->set('headline', 'Add a New Tracked Site Profile');
+            $this->body->set('headline', 'New Observation Profile');
 
         }
         if (isset($site['domain'])) {
-            $this->t->set( 'page_title', 'Site Profile for: '.  $site['domain'] );
+            $this->t->set( 'page_title', 'Profile Details' );
         }
         else {
-            $this->t->set( 'page_title', 'Site Profile for new Site');
+            $this->t->set( 'page_title', 'New Observation Profile' );
         }
 
         $this->body->set('users', $this->getAllUserRows());

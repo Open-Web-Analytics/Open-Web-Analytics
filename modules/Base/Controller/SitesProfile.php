@@ -61,6 +61,8 @@ class SitesProfile extends \OWA\Core\AdminController {
         // The hierarchy wrapper: a Profile is a tier of the tree, not a
         // settings page. See OptionsHierarchy.
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        /* Tier 3: this screen is about an Observation Profile, so the context line stops there. */
+        $this->set( 'hierarchy_tier', 3 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $site_id ) );
         $this->setView('base.optionsHierarchy');
         $this->setSubview('base.sitesProfile');

@@ -29,6 +29,8 @@ class ProfileSettings extends \OWA\Core\AdminController {
         $this->set( 'config', $site->get( 'settings' ) );
         $this->set( 'siteId', $site_id );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        /* Tier 3: this screen is about an Observation Profile, so the context line stops there. */
+        $this->set( 'hierarchy_tier', 3 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $site_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.profileSettings' );

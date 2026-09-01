@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * Access is granted to a WEBSITE, not to one way of observing it, so this
+ * Access is granted to a PROPERTY, not to one way of observing it, so this
  * sits under the Property even though the grants are stored per Profile.
  * 
  * The submit REPLACES the whole grant set -- a user omitted from the form
@@ -10,17 +10,10 @@
 ?>
 <DIV class="panel_headline">Property Access Management</DIV>
 <div id="panel">
-<div class="owa_panelIntro">Who can see this Property. Access is granted to the website, so it covers every Observation Profile beneath it. Administrators always have access and cannot be removed here.</div>
+<div class="owa_panelIntro">Who can see this Property. A grant carries three capabilities &mdash; viewing reports, viewing e-commerce reports, and editing the Property &mdash; and covers every Observation Profile beneath it. Administrators always have access and cannot be changed here.</div>
 <form method="post" name="owa-allowedusersform">
     <fieldset name="owa-allowedusers" class="options">
     <legend>Allowed Users</legend>
-
-        <div class="description">
-            Users ticked here can see this Property's reports. Access controls three
-            capabilities &mdash; viewing reports, viewing e-commerce reports, and
-            editing this Property. Administrators always have access and cannot be
-            changed here.
-        </div>
 
         <?php if ( $view->edit ): ?>
 
@@ -71,12 +64,6 @@
         <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
         <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesEditAllowedUsers">
         <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Users" class="owa-button">
-
-        <?php else: ?>
-
-        <div class="description">
-            Save this Property first, then choose which users can see its reports.
-        </div>
 
         <?php endif;?>
 

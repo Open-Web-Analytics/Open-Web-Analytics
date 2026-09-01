@@ -20,14 +20,14 @@ It carries its own tracking id, so a Property watched two ways has two Profiles 
 two tags.</div>
 <fieldset>
 
-    <legend>Site Profile</legend>
+    <legend>Observation Profile</legend>
 
     <form method="POST">
 
     <table class="management">
         <?php if ($view->edit == true):?>
         <TR>
-            <TH>Site ID:</TH>
+            <TH>Tracking ID:</TH>
             <TD><?php $view->out( $view->site['site_id'] );?></TD>
             <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
 
@@ -47,9 +47,9 @@ two tags.</div>
             <?php endif;?>
         </TR>
         <TR>
-            <TH>Site Name:</TH>
+            <TH>Profile Name:</TH>
             <TD><input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
-				<span class="form-instructions">Example: My Website</span>            
+				<span class="form-instructions">Example: Main Profile</span>            
             </TD>
         </TR>
         <TR>

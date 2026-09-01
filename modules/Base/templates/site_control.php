@@ -58,7 +58,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
         </div>
 
         <div class="owa_siteControlColumn owa_siteControlProperties">
-            <div class="owa_siteControlColumnHead">Properties</div>
+            <div class="owa_siteControlColumnHead">Properties<?php if ( $view->getCurrentUser()->isCapable('edit_sites') ):?><a class="owa_siteControlAdd" href="<?php echo $view->makeLink( array( 'do' => 'base.propertyProfile' ) );?>">add new</a><?php endif;?></div>
             <ul>
             <?php foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ):?>
                 <li class="owa_siteControlItem<?php echo $owa_p['name'] === $owa_current['property'] ? ' is-selected' : '';?>"
@@ -78,7 +78,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
         </div>
 
         <div class="owa_siteControlColumn owa_siteControlProfiles">
-            <div class="owa_siteControlColumnHead">Observation Profiles</div>
+            <div class="owa_siteControlColumnHead">Observation Profiles<?php if ( $view->getCurrentUser()->isCapable('edit_sites') ):?><a class="owa_siteControlAdd" href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile' ) );?>">add new</a><?php endif;?></div>
             <?php foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ):?>
             <ul class="owa_siteControlProfileList" data-property-index="<?php echo (int) $owa_i;?>"
                 <?php echo $owa_p['name'] === $owa_current['property'] ? '' : 'hidden';?>>

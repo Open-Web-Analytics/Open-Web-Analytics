@@ -25,8 +25,6 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required' );
-
         /*
          * The name is required rather than allowed to be blank. A Property with
          * no name has nothing to head its group in the site selector, which
@@ -36,24 +34,60 @@ class PropertyEdit extends \OWA\Core\AdminController {
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             array( 'errorMsg' => 'A Property needs a name -- it is what the site selector groups by.' ) );
 
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
-            array(
-                'entity'   => 'base.property',
-                'column'   => 'id',
-                'errorMsg' => 'That Property no longer exists.',
-            ) );
+        /*
+         * Only checked when editing. An absent id means create, so requiring
+         * the row to exist would make adding a Property impossible.
+         */
+        if ( $this->getParam( 'propertyId' ) ) {
+
+            $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
+                array(
+                    'entity'   => 'base.property',
+                    'column'   => 'id',
+                    'errorMsg' => 'That Property no longer exists.',
+                ) );
+        }
     }
 
     function action() {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->load( $this->getParam( 'propertyId' ) );
 
-        $property->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
-        $property->set( 'domain', trim( (string) $this->getParam( 'domain' ) ) );
-        $property->set( 'description', (string) $this->getParam( 'description' ) );
-        $property->update();
+        $name        = trim( (string) $this->getParam( 'name' ) );
+        $domain      = trim( (string) $this->getParam( 'domain' ) );
+        $description = (string) $this->getParam( 'description' );
 
+        $propertyId = $this->getParam( 'propertyId' );
+
+        if ( $propertyId ) {
+
+            $property->load( $propertyId );
+            $property->set( 'name', $name );
+            $property->set( 'domain', $domain );
+            $property->set( 'description', $description );
+            $property->update();
+
+        } else {
+
+            /*
+             * A new Property joins the Organization every other one belongs to.
+             * ensureOrganization() creates it on first need, so this works on
+             * an install that has somehow never had one.
+             */
+            $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+
+            $propertyId = $property->generateId( 'property:' . $name . ':' . uniqid( '', true ) );
+
+            $property->set( 'id', $propertyId );
+            $property->set( 'organization_id', $sm->ensureOrganization() );
+            $property->set( 'name', $name );
+            $property->set( 'domain', $domain );
+            $property->set( 'description', $description );
+            $property->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+            $property->create();
+        }
+
+        $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.propertyProfile' );
         $this->set( 'status_code', 3201 );
     }

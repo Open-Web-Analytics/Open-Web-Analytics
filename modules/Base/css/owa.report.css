@@ -3202,10 +3202,20 @@ li.constraintRow {
     margin: 0 0 18px 0;
 }
 
+/*
+ * A width, so the pane does not shrink-wrap its content.
+ *
+ * #panel is a plain div in a table cell with no width of its own, so it
+ * collapsed to whatever the widest form field happened to be -- which made the
+ * intro paragraph wrap at an arbitrary column that changed from screen to
+ * screen. A max-width gives every screen the same measure.
+ */
 .owa_hierarchyContent #panel {
     background-color: #ffffff;
     border: 1px solid #cccccc;
     padding: 20px 24px 24px 24px;
+    max-width: 780px;
+    min-width: 480px;
 }
 
 /* The forms inside inherit owa.css's admin styling, which assumes the grey
@@ -3228,12 +3238,13 @@ li.constraintRow {
 /* The line under each headline saying what the screen is for. Secondary to the
    title, ahead of the form -- so it reads before the first field, not as a
    caption on one. */
+/* No max-width of its own: it wraps at the pane's measure, so the intro and the
+   form below it break on the same column. */
 .owa_hierarchyContent #panel .owa_panelIntro {
     color: #666666;
     font-size: 12px;
     line-height: 1.55;
-    max-width: 620px;
-    margin: -4px 0 22px 0;
+    margin: 0 0 22px 0;
 }
 
 .owa_hierarchyContent #panel .inline_h2 {
@@ -3280,4 +3291,117 @@ li.constraintRow {
 .owa_hierarchyContent #panel input[type="password"]:focus {
     border-color: #a0a0a0;
     outline: none;
+}
+
+/* The tile's contents on one line above the page heading. Context, not title:
+   grey, small, and it never wraps into a second line -- it truncates, because a
+   two-line breadcrumb competes with the heading it is meant to sit under. */
+
+.owa_hierarchyCrumb {
+    font-size: 11px;
+    color: #999999;
+    margin: 0 0 10px 0;
+    max-width: 780px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.owa_hierarchyCrumbSep {
+    margin: 0 6px;
+    color: #cccccc;
+}
+
+.owa_hierarchyCrumbNote {
+    color: #bbbbbb;
+}
+
+/* The control on a REPORT page.
+ *
+ * Scoped to .owa_reportContainer so it does not double up with the padding the
+ * hierarchy pages already put on their cells. The report's left column has no
+ * top padding of its own, so the tile sat flush against the header bar while
+ * the report beside it began 20px down. */
+
+.owa_reportContainer .owa_siteControl {
+    margin-top: 20px;
+}
+
+/* And separation from the nav it scopes -- they are different things and the
+   tile reads as the nav's first item without it. */
+.owa_reportContainer .owa_siteControl {
+    margin-bottom: 20px;
+}
+
+/* Grids inside the hierarchy pane.
+ *
+ * owa.admin.css gives .management a 1px #9f9f9f box, 14px cells and unsized
+ * headers -- so the column labels came out LARGER than the page heading above
+ * them, and the grid read as heavier than the screen containing it. Scoped
+ * here so the rest of the admin area keeps what it has. */
+
+.owa_hierarchyContent #panel table.management {
+    border: 1px solid #e4e4e4;
+    border-spacing: 0;
+}
+
+.owa_hierarchyContent #panel table.management th {
+    background-color: #fbfbfb;
+    color: #999999;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e4e4e4;
+    border-right: 0;
+}
+
+.owa_hierarchyContent #panel table.management td {
+    font-size: 12px;
+    color: #505050;
+    padding: 10px;
+    border: 0;
+    border-bottom: 1px solid #f4f4f4;
+}
+
+.owa_hierarchyContent #panel table.management tr:last-child td {
+    border-bottom: 0;
+}
+
+/* "optional" beside a field label. Quiet and lowercase: it qualifies the label
+   rather than competing with it. */
+.owa_hierarchyContent #panel .owa_optional {
+    font-weight: normal;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #bbbbbb;
+    margin-left: 4px;
+}
+
+/* "add new" beside a fan-out column heading. Right-aligned so the headings stay
+   the column's left edge, and quiet -- adding is rarer than choosing, which is
+   what the column is for. */
+.owa_siteControlColumnHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.owa_siteControlAdd {
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #999999;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.owa_siteControlAdd:hover,
+.owa_siteControlAdd:focus {
+    color: #666666;
+    text-decoration: underline;
 }

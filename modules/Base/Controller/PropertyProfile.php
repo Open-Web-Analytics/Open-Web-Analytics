@@ -22,7 +22,16 @@ class PropertyProfile extends \OWA\Core\AdminController {
     function action() {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->load( $this->getParam( 'propertyId' ) );
+
+        /*
+         * No propertyId means ADD. The same form serves both, as the Profile
+         * form does -- a separate add screen would duplicate every field and
+         * the two would drift.
+         */
+        if ( $this->getParam( 'propertyId' ) ) {
+
+            $property->load( $this->getParam( 'propertyId' ) );
+        }
 
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
@@ -41,6 +50,8 @@ class PropertyProfile extends \OWA\Core\AdminController {
             $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        /* Tier 2: this screen is about a Property, so the context line stops there. */
+        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav(
             $siteId, $this->getParam( 'propertyId' ) ) );
         $this->setView( 'base.optionsHierarchy' );

@@ -17,8 +17,23 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->t->set( 'page_title', 'OWA Options' );
         $this->body->set_template( 'options_hierarchy.php' );
         $this->body->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
-        $this->body->set( 'params', $this->get( 'params' ) );
+        /*
+         * The breadcrumb and the tile both read params['siteId'] to know which
+         * Profile is current. Not every screen sets 'params' -- most set only
+         * 'siteId' -- so fall back to that rather than requiring each
+         * controller to remember, which is the kind of thing that silently
+         * leaves one screen without its context line.
+         */
+        $params = (array) $this->get( 'params' );
+
+        if ( empty( $params['siteId'] ) && $this->get( 'siteId' ) ) {
+
+            $params['siteId'] = $this->get( 'siteId' );
+        }
+
+        $this->body->set( 'params', $params );
         $this->body->set( 'hierarchy_nav', $this->get( 'hierarchy_nav' ) );
+        $this->body->set( 'hierarchy_tier', $this->get( 'hierarchy_tier' ) ?: 3 );
 
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );

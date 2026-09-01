@@ -495,6 +495,7 @@ final class PropertyAdminScreensTest extends TestCase
             'property_access.php'      => 'Property',
             'profile_settings.php'     => 'Observation Profile',
             'sites_addoredit.php'      => 'Observation Profile',
+            'options_goals.php'        => 'Observation Profile',
         );
 
         foreach ( $screens as $template => $term ) {
@@ -517,5 +518,326 @@ final class PropertyAdminScreensTest extends TestCase
                 1, substr_count( $body, '<legend>' ),
                 "$template still has a legend competing with its headline." );
         }
+    }
+    /**
+     * The screens speak the hierarchy's language, not the flat one.
+     *
+     * These pages describe Organizations, Properties and Observation Profiles.
+     * Saying "website" or "site" in the prose leaves the old model showing
+     * through in the one place it is most confusing -- the screens that exist
+     * to teach the new one. "Access is granted to the website" was the example
+     * that prompted this: it named a thing the UI no longer has.
+     *
+     * Only visible prose. Identifiers -- siteId, base.site, owa_siteControl --
+     * are the wire and the code, and renaming those is a different change.
+     */
+    public function testTheScreensDoNotSpeakOfSitesOrWebsites(): void
+    {
+        $templates = array( 'organization_profile.php', 'property_profile.php',
+                            'property_access.php', 'profile_settings.php',
+                            'sites_addoredit.php' );
+
+        foreach ( $templates as $template ) {
+
+            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+
+            /* Visible text only: strip PHP, HTML tags and comments. */
+            $prose = preg_replace( '/<\?php.*?\?>/s', ' ', $body );
+            $prose = preg_replace( '/<!--.*?-->/s', ' ', $prose );
+            $prose = strip_tags( $prose );
+
+            /*
+             * One approved exception: naming the real-world thing a DOMAIN
+             * points at. The rule is about not using "site" as a stand-in for a
+             * Property or a Profile -- "access is granted to the website" named
+             * a thing the UI does not have. "the domain of the website or
+             * application being observed" names what a domain is, which is not
+             * the same mistake and is what a person actually calls it.
+             */
+            $prose = str_replace( 'website or application being observed', '', $prose );
+
+            $this->assertDoesNotMatchRegularExpression(
+                '/\bweb ?sites?\b/i', $prose,
+                "$template still says site or website in text a user reads. These screens "
+                . 'describe Properties and Observation Profiles.' );
+        }
+    }
+    /**
+     * Nothing sits after a screen's save button.
+     *
+     * The Organization screen carried a "Manage users" link below its submit,
+     * left over from before Users had a place in the nav. Anything after the
+     * button reads as part of the form you just chose not to fill in.
+     */
+    public function testNothingFollowsTheSaveButton(): void
+    {
+        $templates = array( 'organization_profile.php', 'property_profile.php' );
+
+        foreach ( $templates as $template ) {
+
+            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+
+            $after = substr( $body, strrpos( $body, 'type="submit"' ) );
+            $after = preg_replace( '/<\?php.*?\?>/s', ' ', $after );
+
+            $this->assertStringNotContainsString(
+                '<a ', $after,
+                "$template has a link after its save button. Navigation belongs in the "
+                . 'hierarchy nav, not trailing the form.' );
+        }
+    }
+
+    /**
+     * One measure per screen.
+     *
+     * #panel is a plain div in a table cell, so with no width it collapsed to
+     * whatever the widest field happened to be, and the intro wrapped at a
+     * column that changed from screen to screen. Inner width:550px wrappers
+     * then made the form narrower than the paragraph above it.
+     */
+    public function testThePaneSetsTheMeasureNotTheContent(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        $panel = substr( $css, strpos( $css, "\n.owa_hierarchyContent #panel {" ) );
+        $panel = substr( $panel, 0, strpos( $panel, "\n}" ) );
+
+        $this->assertStringContainsString(
+            'max-width', $panel,
+            'The pane shrink-wraps its content, so every screen wraps at a different column.' );
+
+        foreach ( array( 'organization_profile.php', 'property_profile.php' ) as $template ) {
+
+            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+
+            $this->assertStringNotContainsString(
+                'width:550px', $body,
+                "$template sets its own width inside the pane, making the form narrower "
+                . 'than the text above it.' );
+        }
+    }
+    /**
+     * Every settings screen states its full context on one line.
+     *
+     * The tile says where you are, but it is in the other column, and these
+     * forms change one Property or one Profile -- the tracking id is the only
+     * thing that tells two similarly named Profiles apart. Repeating it above
+     * the heading puts the answer in the same line of sight as the fields.
+     *
+     * It renders only when there is a Profile to name: with just an
+     * Organization there is no path to draw, and a one-item breadcrumb is
+     * noise.
+     */
+    public function testEachScreenStatesItsFullContext(): void
+    {
+        $crumb = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
+
+        foreach ( array( 'organization', 'properties', 'profiles' ) as $tier ) {
+
+            $this->assertStringContainsString(
+                $tier, $crumb, "The context line does not walk the $tier tier." );
+        }
+
+        /*
+         * Renders whenever there is anything to name. A single crumb is right
+         * at tier 1: on Organization Details the Organization IS the whole
+         * context, and suppressing it would leave that screen the only one
+         * without a context line.
+         */
+        $this->assertStringContainsString(
+            'if ( $owa_crumbs )', $crumb,
+            'The context line should render whenever there is a tier to name.' );
+
+        $wrapper = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+
+        $this->assertLessThan(
+            strpos( $wrapper, 'view->subview' ),
+            strpos( $wrapper, 'hierarchy_breadcrumb.php' ),
+            'The context line belongs ABOVE the page heading, not under the form.' );
+
+        /*
+         * Most screens set only 'siteId', not 'params'. Requiring each
+         * controller to remember both is how one screen ends up without its
+         * context line, so the wrapper falls back.
+         */
+        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
+
+        $this->assertStringContainsString(
+            "\$params['siteId'] = \$this->get( 'siteId' )", $view,
+            'A screen that sets only siteId would render no context line.' );
+    }
+
+    /** One description per screen. */
+    public function testNoScreenDescribesItselfTwice(): void
+    {
+        foreach ( array( 'organization_profile.php', 'property_profile.php',
+                         'property_access.php', 'profile_settings.php' ) as $template ) {
+
+            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+
+            $this->assertSame(
+                1, substr_count( $body, 'owa_panelIntro' ),
+                "$template has more than one intro." );
+
+            /*
+             * Counted only ABOVE the first form. A .description lower down can
+             * be a field's help text or an alternative branch, neither of which
+             * competes with the intro -- Property Access had exactly that in an
+             * else, and counting the whole file called it a duplicate.
+             */
+            $head = substr( $body, 0, strpos( $body, '<form' ) ?: strlen( $body ) );
+
+            $this->assertSame(
+                0, substr_count( $head, 'class="description"' ),
+                "$template describes itself twice before its first form -- Property Access "
+                . 'carried both the intro and the old inline description.' );
+        }
+    }
+    /**
+     * The context line stops at the tier its screen is about.
+     *
+     * Organization Details edits an Organization, so naming a Property and a
+     * Profile under it describes a scope the form does not touch. Property
+     * Access is worse: it edits grants covering EVERY Profile, so trailing one
+     * Profile's id says the opposite of what the screen does.
+     */
+    public function testTheContextLineStopsAtTheScreensTier(): void
+    {
+        $expected = array(
+            'OrganizationProfile' => 1, 'Users'           => 1,
+            'PropertyProfile'     => 2, 'PropertyAccess'  => 2,
+            'SitesProfile'        => 3, 'ProfileSettings' => 3,
+            'SitesInvocation'     => 3, 'OptionsGoals'    => 3,
+        );
+
+        foreach ( $expected as $controller => $tier ) {
+
+            $src = (string) file_get_contents(
+                OWA_DIR . "modules/Base/Controller/{$controller}.php" );
+
+            $this->assertStringContainsString(
+                "\$this->set( 'hierarchy_tier', {$tier} )", $src,
+                "$controller does not declare its tier, so its context line would claim a "
+                . 'scope its form does not edit.' );
+        }
+
+        $crumb = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
+
+        $this->assertStringContainsString( '$owa_tier >= 2', $crumb );
+        $this->assertStringContainsString( '$owa_tier >= 3', $crumb );
+
+        /*
+         * Defaulted rather than required. A screen that forgets to declare one
+         * should show the most specific line, not none -- an absent context
+         * line is harder to notice than an over-long one.
+         */
+        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
+
+        $this->assertStringContainsString( "hierarchy_tier' ) ?: 3", $view );
+    }
+    /**
+     * A grid inside the pane must not out-weigh the page it sits on.
+     *
+     * owa.admin.css gives .management a 1px #9f9f9f box, 14px cells and
+     * UNSIZED headers, so the column labels rendered larger than the heading
+     * above them and the grid read as heavier than its own screen.
+     */
+    public function testGridsAreQuieterThanTheHeadingAboveThem(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        $this->assertStringContainsString(
+            '.owa_hierarchyContent #panel table.management th', $css,
+            'Grid headers are unsized inside the pane, so they inherit larger than the '
+            . 'page heading.' );
+
+        $headline = substr( $css, strpos( $css, '.owa_hierarchyContent .panel_headline {' ) );
+        $headline = substr( $headline, 0, strpos( $headline, "\n}" ) );
+
+        preg_match( '/font-size:\s*(\d+)px/', $headline, $h );
+
+        $th = substr( $css, strpos( $css, '.owa_hierarchyContent #panel table.management th' ) );
+        $th = substr( $th, 0, strpos( $th, "\n}" ) );
+
+        preg_match( '/font-size:\s*(\d+)px/', $th, $t );
+
+        $this->assertNotEmpty( $h, 'the heading has no size to compare against' );
+        $this->assertNotEmpty( $t, 'the grid header has no size of its own' );
+
+        $this->assertLessThan(
+            (int) $h[1], (int) $t[1],
+            'A column label is larger than the page heading it sits under.' );
+    }
+
+    /** Goals renders in the pane like every other hierarchy screen. */
+    public function testGoalsUsesThePaneConvention(): void
+    {
+        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/options_goals.php' );
+
+        $this->assertStringContainsString(
+            '<div id="panel">', $body,
+            'Goals uses subview_content, so none of the pane styling reaches it and it '
+            . 'looks like a different application.' );
+
+        $this->assertStringNotContainsString( 'subview_content', $body );
+    }
+    /**
+     * The fan-out is where you add a tier, not just choose one.
+     *
+     * It replaced the Tracked Sites roster, which had an "Add New" link. With
+     * the roster gone and no link here, adding a Profile was reachable only by
+     * typing the action into the URL -- and adding a Property was not possible
+     * at all: PropertyProfile always loaded an existing row.
+     */
+    public function testTheFanOutCanAddAPropertyAndAProfile(): void
+    {
+        $template = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/site_control.php' );
+
+        $this->assertSame(
+            2, substr_count( $template, 'owa_siteControlAdd' ),
+            'Both the Properties and the Profiles column need a way to add one.' );
+
+        /* Add is a different route from edit: no id. */
+        $this->assertStringContainsString(
+            "array( 'do' => 'base.propertyProfile' )", $template,
+            'The Properties column has no add link, only per-row edit links.' );
+
+        $this->assertStringContainsString(
+            "array( 'do' => 'base.sitesProfile' )", $template,
+            'The Profiles column has no add link.' );
+    }
+
+    /**
+     * One form serves add and edit, so the two cannot drift.
+     *
+     * PropertyEdit must not require the row to exist when creating -- an
+     * entityExists check on an absent id makes adding impossible, which is the
+     * shape the screen shipped in.
+     */
+    public function testAPropertyCanBeAddedNotOnlyEdited(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\PropertyProfile( array() );
+        $controller->action();
+
+        $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
+        $data->setAccessible( true );
+
+        $this->assertEmpty(
+            ( (array) $data->getValue( $controller ) )['propertyId'] ?? null,
+            'The add form arrived carrying an id, so it would edit something.' );
+
+        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/Controller/PropertyEdit.php' );
+
+        $this->assertStringContainsString(
+            "if ( \$this->getParam( 'propertyId' ) ) {", $src,
+            'entityExists runs unconditionally, so a create can never validate.' );
+
+        $this->assertStringContainsString(
+            "ensureOrganization()", $src,
+            'A new Property with no Organization would sit outside the hierarchy.' );
     }
 }
