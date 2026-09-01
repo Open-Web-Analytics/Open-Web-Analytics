@@ -3163,3 +3163,98 @@ li.constraintRow {
     color: #505050;
     font-weight: bold;
 }
+
+/* ---------------------------------------------------------------------------
+ * The hierarchy's content pane.
+ *
+ * Scoped to .owa_hierarchyContent so the rest of the admin area keeps the
+ * treatment it has -- owa.css gives .panel_headline an 18px bold label on a
+ * grey block and #panel no ground at all, which beside the white tile and its
+ * nav read as two unrelated designs on one screen.
+ *
+ * Same materials as the left column: white ground, #cccccc rule, #505050 text,
+ * orange only where something is current.
+ * ------------------------------------------------------------------------ */
+
+.owa_hierarchyContent {
+    padding-left: 20px;
+}
+
+.owa_hierarchyContent .panel_headline {
+    font-size: 15px;
+    font-weight: bold;
+    color: #505050;
+    background-color: transparent;
+    border-bottom: 1px solid #cccccc;
+    padding: 0 0 10px 0;
+    margin: 0 0 18px 0;
+}
+
+.owa_hierarchyContent #panel {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding: 20px 24px 24px 24px;
+}
+
+/* The forms inside inherit owa.css's admin styling, which assumes the grey
+   block above it. These put the spacing back on a white ground. */
+.owa_hierarchyContent #panel fieldset {
+    border: 0;
+    margin: 0 0 24px 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel legend {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0 6px 0;
+}
+
+.owa_hierarchyContent #panel .inline_h2 {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.owa_hierarchyContent #panel .inline_h3,
+.owa_hierarchyContent #panel .setting .label {
+    color: #505050;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.owa_hierarchyContent #panel .form-instructions {
+    display: block;
+    color: #999999;
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+.owa_hierarchyContent #panel .setting {
+    margin-bottom: 16px;
+}
+
+/* A form's rows are the page's main rhythm, so they get the same hairline the
+   nav groups use rather than the heavier table borders owa.css sets. */
+.owa_hierarchyContent #panel table.management td {
+    border: 0;
+    border-bottom: 1px solid #f4f4f4;
+    padding: 8px 10px 8px 0;
+    min-width: 0;
+}
+
+.owa_hierarchyContent #panel input[type="text"],
+.owa_hierarchyContent #panel input[type="password"] {
+    border: 1px solid #cccccc;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.owa_hierarchyContent #panel input[type="text"]:focus,
+.owa_hierarchyContent #panel input[type="password"]:focus {
+    border-color: #a0a0a0;
+    outline: none;
+}

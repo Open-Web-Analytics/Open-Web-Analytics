@@ -18,6 +18,6 @@
             <?php include('site_control.php');?>
             <?php include('hierarchy_nav.php');?>
         </TD>
-        <TD class="layout_subview" valign="top"><?php echo $view->subview;?></TD>
+        <TD class="layout_subview owa_hierarchyContent" valign="top"><?php echo $view->subview;?></TD>
     </TR>
 </table>

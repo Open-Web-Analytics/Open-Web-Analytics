@@ -312,91 +312,14 @@ OWA.report.prototype = {
     },
     
     showSiteFilter : function(dom_id) {
-        
-        var that = this;
-        var $control = jQuery('#owa_siteControl');
-
-        if ( ! $control.length ) {
-            return;
-        }
-
-        var $summary = jQuery('#owa_siteControlSummary');
-        var $panel   = jQuery('#owa_siteControlPanel');
-
-        function close() {
-            $panel.attr('hidden', 'hidden');
-            $control.removeClass('is-open');
-            $summary.attr('aria-expanded', 'false');
-        }
-
-        function open() {
-            $panel.removeAttr('hidden');
-            $control.addClass('is-open');
-            $summary.attr('aria-expanded', 'true');
-        }
-
-        $summary.on('click', function() {
-            $control.hasClass('is-open') ? close() : open();
-        });
-
-        // The summary is a div acting as a button, so it has to answer the keys
-        // a button would. Without this the control is unreachable by keyboard.
-        $summary.on('keydown', function(e) {
-            if ( e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' ) {
-                e.preventDefault();
-                $control.hasClass('is-open') ? close() : open();
-            }
-        });
-
-        jQuery(document).on('keydown', function(e) {
-            if ( e.key === 'Escape' && $control.hasClass('is-open') ) {
-                close();
-                $summary.focus();
-            }
-        });
-
-        // Clicking away closes it. Bound on document and filtered rather than
-        // on a backdrop element, so the panel does not need one covering the
-        // page -- a backdrop would swallow the first click on anything else.
-        jQuery(document).on('click', function(e) {
-            if ( $control.hasClass('is-open') && ! jQuery(e.target).closest('#owa_siteControl').length ) {
-                close();
-            }
-        });
 
         /*
-         * A link inside the panel closes it too. The click navigates, so the
-         * panel would go anyway on the new page -- but not before the browser
-         * has spent a moment fetching it, and leaving an overlay open under a
-         * pending navigation reads as though the click missed.
+         * Kept so report.php's existing call still works. The wiring itself is
+         * OWA.initSiteControl(), which also runs on ready -- the control now
+         * appears on the settings screens too, and those have no report object
+         * to call this from.
          */
-        $panel.on('click', 'a', function() {
-            close();
-        });
-
-        /*
-         * Column 2 -> column 3. Selecting a Property shows ITS Profiles; the
-         * lists are all rendered and toggled rather than fetched, because the
-         * whole hierarchy is already on the page and a request per click would
-         * make browsing it feel slower than the select it replaced.
-         *
-         * Not bound to the edit link: that is a navigation away, and swapping
-         * column 3 underneath someone on their way out is just a flicker.
-         */
-        jQuery('.owa_siteControlProperties .owa_siteControlItem').on('click', function(e) {
-
-            if ( jQuery(e.target).hasClass('owa_siteControlEdit') ) {
-                return;
-            }
-
-            var index = jQuery(this).data('property-index');
-
-            jQuery('.owa_siteControlProperties .owa_siteControlItem').removeClass('is-selected');
-            jQuery(this).addClass('is-selected');
-
-            jQuery('.owa_siteControlProfileList').attr('hidden', 'hidden');
-            jQuery('.owa_siteControlProfileList[data-property-index="' + index + '"]').removeAttr('hidden');
-        });
+        OWA.initSiteControl();
     },
     
     reportSetTimePeriod : function(period) {
@@ -937,3 +860,109 @@ OWA.report.timePeriodControl.prototype = {
         }
     }
 };
+
+/*
+ * Wire the site control wherever it appears.
+ *
+ * It is on report pages AND on the Organization / Property / Profile settings
+ * screens, and those have no report object -- showSiteFilter() was only ever
+ * called from report.php, so on a settings page the tile rendered and did
+ * nothing when clicked.
+ *
+ * Idempotent: a page with both a report and the control would otherwise bind
+ * every handler twice, and the toggle would open and immediately close.
+ */
+OWA.initSiteControl = function() {
+
+    var $control = jQuery('#owa_siteControl');
+
+    if ( ! $control.length || $control.data('owaControlBound') ) {
+        return;
+    }
+
+    $control.data('owaControlBound', true);
+
+        
+
+        var $summary = jQuery('#owa_siteControlSummary');
+        var $panel   = jQuery('#owa_siteControlPanel');
+
+        function close() {
+            $panel.attr('hidden', 'hidden');
+            $control.removeClass('is-open');
+            $summary.attr('aria-expanded', 'false');
+        }
+
+        function open() {
+            $panel.removeAttr('hidden');
+            $control.addClass('is-open');
+            $summary.attr('aria-expanded', 'true');
+        }
+
+        $summary.on('click', function() {
+            $control.hasClass('is-open') ? close() : open();
+        });
+
+        // The summary is a div acting as a button, so it has to answer the keys
+        // a button would. Without this the control is unreachable by keyboard.
+        $summary.on('keydown', function(e) {
+            if ( e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' ) {
+                e.preventDefault();
+                $control.hasClass('is-open') ? close() : open();
+            }
+        });
+
+        jQuery(document).on('keydown', function(e) {
+            if ( e.key === 'Escape' && $control.hasClass('is-open') ) {
+                close();
+                $summary.focus();
+            }
+        });
+
+        // Clicking away closes it. Bound on document and filtered rather than
+        // on a backdrop element, so the panel does not need one covering the
+        // page -- a backdrop would swallow the first click on anything else.
+        jQuery(document).on('click', function(e) {
+            if ( $control.hasClass('is-open') && ! jQuery(e.target).closest('#owa_siteControl').length ) {
+                close();
+            }
+        });
+
+        /*
+         * A link inside the panel closes it too. The click navigates, so the
+         * panel would go anyway on the new page -- but not before the browser
+         * has spent a moment fetching it, and leaving an overlay open under a
+         * pending navigation reads as though the click missed.
+         */
+        $panel.on('click', 'a', function() {
+            close();
+        });
+
+        /*
+         * Column 2 -> column 3. Selecting a Property shows ITS Profiles; the
+         * lists are all rendered and toggled rather than fetched, because the
+         * whole hierarchy is already on the page and a request per click would
+         * make browsing it feel slower than the select it replaced.
+         *
+         * Not bound to the edit link: that is a navigation away, and swapping
+         * column 3 underneath someone on their way out is just a flicker.
+         */
+        jQuery('.owa_siteControlProperties .owa_siteControlItem').on('click', function(e) {
+
+            if ( jQuery(e.target).hasClass('owa_siteControlEdit') ) {
+                return;
+            }
+
+            var index = jQuery(this).data('property-index');
+
+            jQuery('.owa_siteControlProperties .owa_siteControlItem').removeClass('is-selected');
+            jQuery(this).addClass('is-selected');
+
+            jQuery('.owa_siteControlProfileList').attr('hidden', 'hidden');
+            jQuery('.owa_siteControlProfileList[data-property-index="' + index + '"]').removeAttr('hidden');
+        });
+};
+
+jQuery(document).ready(function() {
+    OWA.initSiteControl();
+});

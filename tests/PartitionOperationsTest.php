@@ -243,28 +243,49 @@ final class PartitionOperationsTest extends TestCase
         $today = date('Ymd');
         $month = substr($today, 0, 6) . '01';
 
-        // Monthly, with boundaries current through today.
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
-            date('Ymd', strtotime($month . ' -4 months')), $today, 'monthly'
+        /*
+         * Boundaries chosen so today falls STRICTLY INSIDE the last partition.
+         *
+         * 'straddling' means a partition that reaches past the cutoff AND
+         * holds older rows -- span['start'] < cutoff. Monthly boundaries fall
+         * on the 1st, so on the first of a month the current partition starts
+         * exactly at today, holds nothing older, and correctly does not
+         * straddle. The assertion below then failed one day in thirty while
+         * the clamping behaviour it checks was right throughout.
+         *
+         * Explicit day boundaries rather than makePartitionRanges, because the
+         * point is to place today away from an edge, and a monthly grid cannot
+         * do that on the 1st.
+         */
+        $older   = date('Ymd', strtotime('-40 days'));
+        $current = date('Ymd', strtotime('-10 days'));
+        $ahead   = date('Ymd', strtotime('+10 days'));
+
+        $db->partitionTable($t, 'yyyymmdd', array(
+            'p' . $older   => $current,
+            'p' . $current => $ahead,
         ));
 
         $db->query(sprintf(
             'INSERT INTO %s VALUES (1,%s),(2,%s)',
-            $t, date('Ymd', strtotime($month . ' -2 months')), $today
+            $t, date('Ymd', strtotime('-30 days')), $today
         ));
 
         $plan = $db->getDroppablePartitions($t, 29990101);
 
         $this->assertSame('29990101', $plan['requested'], 'the untouched request should be reported');
-        $this->assertNotContains('p' . $month, $plan['drop'], 'the current period must survive');
-        $this->assertSame('p' . $month, $plan['straddling']['name']);
+        $this->assertNotContains('p' . $current, $plan['drop'], 'the current period must survive');
+        $this->assertSame(
+            'p' . $current, $plan['straddling']['name'],
+            'The partition holding today reaches past the clamped cutoff and also holds '
+            . 'older rows, which is what straddling means.' );
 
         foreach ($plan['drop'] as $p) {
             $db->dropPartition($t, $p);
         }
 
         $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], "today's row must survive");
-        $this->assertContains('p' . $month, $this->partitionNames($t));
+        $this->assertContains('p' . $current, $this->partitionNames($t));
     }
 
     /** A cutoff in the past is taken at face value. */
