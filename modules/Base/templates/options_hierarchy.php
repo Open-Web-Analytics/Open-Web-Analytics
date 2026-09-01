@@ -12,7 +12,7 @@
  * The settings nav stays for install-wide settings, reached from the top nav.
  */
 ?>
-<table width="100%" cellpadding="0" cellspacing="0">
+<table width="100%" cellpadding="0" cellspacing="0" class="owa_hierarchyPage">
     <TR>
         <TD valign="top" class="owa_reportLeftNavColumn">
             <?php include('site_control.php');?>

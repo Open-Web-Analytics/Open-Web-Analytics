@@ -3176,6 +3176,18 @@ li.constraintRow {
  * orange only where something is current.
  * ------------------------------------------------------------------------ */
 
+/*
+ * Clears the top nav.
+ *
+ * BOTH columns, not just the content: the headline was butting straight into
+ * the nav bar above it, and padding only the content would have left the tile
+ * still touching -- fixing half of a symmetry looks more wrong than leaving
+ * both.
+ */
+.owa_hierarchyPage > tbody > tr > td {
+    padding-top: 24px;
+}
+
 .owa_hierarchyContent {
     padding-left: 20px;
 }
