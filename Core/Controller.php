@@ -270,8 +270,24 @@ class Controller extends \OWA\Core\Base {
         // set site_id
         $this->set('site_id', $this->get('site_id'));
 
-        // set status msg - NEEDED HERE? doesnt owa_ view handle this?
-        if (array_key_exists('status_code', $this->params)) {
+        /*
+         * A status_code on the query string reports the outcome of the action
+         * that redirected here, so it belongs to THAT action -- not to whatever
+         * the user does next from the same URL.
+         *
+         * Carrying it onto a POST showed two contradictory messages at once.
+         * A completed password reset redirects to
+         * '...do=base.loginForm&status_code=3006', the login form posts back to
+         * the URL it was served from, and so a failed login rendered "your
+         * password has been changed" beside "login failed" -- one describing the
+         * reset, one describing the login, with nothing to say which was which.
+         *
+         * A redirect always arrives as a GET, so every legitimate use still
+         * works; a POST is a new action and reports its own outcome.
+         */
+        if (array_key_exists('status_code', $this->params)
+            && \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() !== 'POST') {
+
             $this->set('status_code', $this->getParam('status_code'));
         }
 
