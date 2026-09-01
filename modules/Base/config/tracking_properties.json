@@ -423,6 +423,36 @@
             "data_type": "integer",
             "callbacks": [],
             "note": "Timestamp of the previous request, on the CLIENT clock. It is subtracted from a server clock downstream, so it is not interchangeable with timestamp."
+        },
+        "cv1": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Custom variable slot 1, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
+        },
+        "cv2": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Custom variable slot 2, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
+        },
+        "cv3": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Custom variable slot 3, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
+        },
+        "cv4": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Custom variable slot 4, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
+        },
+        "cv5": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Custom variable slot 5, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
         }
     },
     "server": {
@@ -712,6 +742,96 @@
         "referring_search_term_id": {
             "alternative_key": "search_terms",
             "callbacks": "owa_trackingEventHelpers::generateDimensionId"
+        },
+        "cv1_name": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The name half of custom variable 1, produced by splitting cv1. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv1_name directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv1_value": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The value half of custom variable 1, produced by splitting cv1. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv1_value directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv2_name": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The name half of custom variable 2, produced by splitting cv2. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv2_name directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv2_value": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The value half of custom variable 2, produced by splitting cv2. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv2_value directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv3_name": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The name half of custom variable 3, produced by splitting cv3. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv3_name directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv3_value": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The value half of custom variable 3, produced by splitting cv3. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv3_value directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv4_name": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The name half of custom variable 4, produced by splitting cv4. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv4_name directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv4_value": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The value half of custom variable 4, produced by splitting cv4. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv4_value directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv5_name": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The name half of custom variable 5, produced by splitting cv5. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv5_name directly used to survive the wire filter AND clobber the split result."
+        },
+        "cv5_value": {
+            "required": true,
+            "data_type": "string",
+            "default_value": "(not set)",
+            "callbacks": [
+                "owa_trackingEventHelpers::lowercaseString"
+            ],
+            "note": "The value half of custom variable 5, produced by splitting cv5. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv5_value directly used to survive the wire filter AND clobber the split result."
         }
     }
 }

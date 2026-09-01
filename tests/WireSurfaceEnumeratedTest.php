@@ -31,11 +31,6 @@ final class WireSurfaceEnumeratedTest extends TestCase
             . 'and sets it through setEventType(); it routes the event rather '
             . 'than describing it, and never comes out of the property bag.',
 
-        'cv1' => 'Custom variable slot, deleted before the property pass.',
-        'cv2' => 'Custom variable slot, deleted before the property pass.',
-        'cv3' => 'Custom variable slot, deleted before the property pass.',
-        'cv4' => 'Custom variable slot, deleted before the property pass.',
-        'cv5' => 'Custom variable slot, deleted before the property pass.',
     );
 
     /** @return array every name the tracker emits, across all event types */
@@ -108,12 +103,6 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
             $this->assertNotEmpty( $reason, "$name is excepted without a reason." );
 
-            /* cv4 and cv5 are real slots the fixture happens not to exercise. */
-            if ( strpos( $name, 'cv' ) === 0 ) {
-
-                continue;
-            }
-
             $this->assertContains(
                 $name, $emitted,
                 "$name is excepted but the tracker no longer sends it -- drop the exception." );
@@ -135,5 +124,104 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $this->assertGreaterThan( 100, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
+    }
+    /**
+     * The top-up, for slots the config does not declare.
+     *
+     * The pairs are in the config now, but how MANY of them there are is the
+     * maxCustomVars setting rather than a constant -- FactTable builds its cv
+     * columns from the same setting -- so an install that raises it would have
+     * columns with no property definition. This covers those, and must not
+     * overwrite what the config already says.
+     */
+    public function testTheGeneratedCustomVariablePropertiesKeepTheirShape(): void
+    {
+        $helpers = new Helpers();
+        $max     = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
+
+        $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
+
+        $generated = $helpers->addCustomVariableProperties( array() );
+
+        $this->assertCount(
+            $max * 2, $generated,
+            'Each slot needs a name and a value property.' );
+
+        /* The config is authoritative: a declared slot is left exactly alone. */
+        $declared = array( 'cv1_name' => array( 'required' => 'untouched' ) );
+
+        $this->assertSame(
+            array( 'required' => 'untouched' ),
+            $helpers->addCustomVariableProperties( $declared )['cv1_name'],
+            'The top-up overwrote a definition the config had already made.' );
+
+        for ( $slot = 1; $slot <= $max; $slot++ ) {
+
+            foreach ( array( 'name', 'value' ) as $half ) {
+
+                $property = $generated[ "cv{$slot}_{$half}" ] ?? null;
+
+                $this->assertIsArray( $property, "cv{$slot}_{$half} is not generated." );
+
+                $this->assertTrue( $property['required'] );
+                $this->assertSame( 'string', $property['data_type'] );
+                $this->assertSame( '(not set)', $property['default_value'],
+                    'An unset slot must read as (not set), not as empty.' );
+                $this->assertContains(
+                    'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
+                    "cv{$slot}_{$half} is lowercased so the same variable does not "
+                    . 'split into two dimensions by case.' );
+            }
+        }
+    }
+
+    /** The slot itself must not survive the split, or it would ride on as junk. */
+    public function testTheRawSlotIsConsumedBySplitting(): void
+    {
+        $helpers = new Helpers();
+        $event   = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+
+        $event->setProperties( array( 'cv1' => 'Color=Blue Widget' ) );
+
+        $helpers->translateCustomVariables( $event );
+
+        $this->assertSame( 'Color', $event->get( 'cv1_name' ) );
+        $this->assertSame( 'Blue Widget', $event->get( 'cv1_value' ) );
+        $this->assertFalse( $event->get( 'cv1' ), 'the raw slot should be gone' );
+    }
+    /**
+     * A custom variable is a claim the server unpacks, not two values a request
+     * may assert.
+     *
+     * cv{n}_name and cv{n}_value are produced by splitting the cv{n} slot the
+     * tracker sent, so they are server scope. While they were merged into the
+     * regular map instead, a request could post owa_cv1_name directly: it
+     * survived the wire filter, and ProcessEvent's sanitized-properties step
+     * then re-applied it OVER the value the split had just produced -- the same
+     * shape as the is_browser defect.
+     */
+    public function testTheSplitHalvesCannotBeSetFromTheWire(): void
+    {
+        $kept = Helpers::rejectServerOwnedParams( array(
+            'cv1'       => 'Color=Blue',
+            'cv1_name'  => 'forged',
+            'cv1_value' => 'forged',
+            'cv5_name'  => 'forged',
+        ) );
+
+        $this->assertSame(
+            array( 'cv1' => 'Color=Blue' ), $kept,
+            'A request set a custom variable half directly, bypassing the split.' );
+    }
+
+    public function testTheSlotItselfRemainsSettable(): void
+    {
+        /* The filter must not overreach: the slot IS what the tracker sends. */
+        $slots = array( 'cv1' => 'a=1', 'cv2' => 'b=2', 'cv3' => 'c=3',
+                        'cv4' => 'd=4', 'cv5' => 'e=5' );
+
+        $this->assertSame(
+            $slots, Helpers::rejectServerOwnedParams( $slots ),
+            'The filter rejected the slots the tracker actually sends.' );
     }
 }

@@ -95,14 +95,24 @@ final class ServerOwnedPropertyTest extends TestCase
          * This refuses to let a request OVERWRITE a derivation; it does not
          * restrict what a site may send. Custom variables and event parameters
          * are unaffected, and so is anything a module has not registered.
+         *
+         * The custom variable here is the SLOT. cv1_name is not a slot -- it is
+         * the half the server produces by splitting one, so it is server owned
+         * and rejected. Naming it here was the mistake this comment now
+         * prevents: the split halves were only ever settable because they had
+         * been merged into the regular map.
          */
         $kept = Helpers::rejectServerOwnedParams( array(
             'site_id'      => 'abc',
-            'cv1_name'     => 'plan',
+            'cv1'          => 'plan=pro',
             'anything_new' => 'value',
         ) );
 
         $this->assertCount( 3, $kept );
+
+        $this->assertSame(
+            array(), Helpers::rejectServerOwnedParams( array( 'cv1_name' => 'forged' ) ),
+            'The split half of a custom variable is derived, not settable.' );
     }
 
     public function testTheTwoEnforcementPointsShareOneDefinition(): void
