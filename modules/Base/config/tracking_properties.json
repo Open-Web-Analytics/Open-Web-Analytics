@@ -140,6 +140,24 @@
             "data_type": "boolean",
             "default_value": false
         },
+        "is_new_session": {
+            "required": true,
+            "data_type": "boolean",
+            "default_value": false,
+            "note": "PAGE scoped: every event from the page the session started on carries it. Decides is_entry_page, and is the fallback for is_new_session_start on trackers cached from before the two were split."
+        },
+        "is_new_session_start": {
+            "required": true,
+            "data_type": "boolean",
+            "default_value": false,
+            "note": "REQUEST scoped: rides exactly the one beacon that created the session, and is what SessionHandlers branches create-vs-update on."
+        },
+        "is_new_visitor_created": {
+            "required": true,
+            "data_type": "boolean",
+            "default_value": false,
+            "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
+        },
         "user_name": {
             "required": true,
             "callbacks": [
@@ -220,6 +238,191 @@
             "data_type": "json",
             "callbacks": "",
             "default_value": ""
+        },
+        "click_x": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "click_y": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_x": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_y": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "page_width": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "page_height": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_class": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_name": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_tag": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_text": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "dom_element_value": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by dom.click only. Column type from base.click."
+        },
+        "action_name": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by track.action only. Column type from base.action_fact."
+        },
+        "action_label": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by track.action only. Column type from base.action_fact."
+        },
+        "action_group": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by track.action only. Column type from base.action_fact."
+        },
+        "numeric_value": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by track.action only. Column type from base.action_fact."
+        },
+        "ct_order_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_order_source": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_gateway": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_city": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_state": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_country": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+        },
+        "ct_total": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        },
+        "ct_tax": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        },
+        "ct_shipping": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        },
+        "ct_line_items": {
+            "required": false,
+            "callbacks": [],
+            "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
+        },
+        "site_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "The tracked site. logEvent refuses an event naming a site this installation does not have. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+        },
+        "session_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Minted by the tracker. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+        },
+        "visitor_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+        },
+        "nps": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Number of prior sessions, carried from the visitor store."
+        },
+        "last_req": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Timestamp of the previous request, on the CLIENT clock. It is subtracted from a server clock downstream, so it is not interchangeable with timestamp."
         }
     },
     "server": {
