@@ -127,7 +127,7 @@ class RestApi extends \OWA\Core\View {
 
 	    if ( $data instanceof \OWA\Core\Entity ) {
 
-		    return $data->getPublicProperties();
+		    return self::toPropertyBag( $data );
 	    }
 
 	    if ( is_array( $data ) ) {
@@ -143,6 +143,39 @@ class RestApi extends \OWA\Core\View {
 	    }
 
 	    return $data;
+    }
+
+    /**
+     * An entity as { properties: { <column>: { value: ... } } }.
+     *
+     * This is the shape the REST API has always published, and #977 retired it
+     * without a deprecation path. It was right about the leak it found -- an
+     * entity handed to json_encode() emitted _tableProperties, wasPersisted,
+     * cache and dirty alongside the property bag -- but it fixed that by
+     * flattening the bag to bare values, which removed the leak AND the
+     * contract. Every deployed consumer reading properties.<col>.value broke,
+     * including the WordPress plugin, whose site picker collapses to a single
+     * empty option because the lookup yields null.
+     *
+     * Built FROM getPublicProperties() rather than from the raw property bag,
+     * so everything #977 was actually protecting still holds by construction:
+     * internals never enter, and a private column -- a user's password -- is
+     * dropped before this sees it. The nesting is restored; the leak is not.
+     *
+     * Only 'value' is emitted per column. The old shape carried whatever public
+     * members DbColumn happened to have, which meant schema details rode along
+     * in a public payload; consumers read .value, and that is what is promised.
+     */
+    protected static function toPropertyBag( \OWA\Core\Entity $entity ) {
+
+	    $properties = array();
+
+	    foreach ( (array) $entity->getPublicProperties() as $column => $value ) {
+
+		    $properties[ $column ] = array( 'value' => $value );
+	    }
+
+	    return array( 'properties' => $properties );
     }
     
     /**

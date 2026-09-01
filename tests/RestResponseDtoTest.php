@@ -53,8 +53,18 @@ final class RestResponseDtoTest extends TestCase
         $out = $this->reduce($site);
 
         $this->assertIsArray($out, 'an entity must reduce to an array');
-        $this->assertSame('https://dto.example.test', $out['domain']);
-        $this->assertSame('DTO Test Site', $out['name']);
+
+        /*
+         * The PUBLISHED shape: properties.<column>.value.
+         *
+         * Asserted explicitly because retiring it is what broke every deployed
+         * consumer -- the WordPress plugin reads
+         * $site['properties']['site_id']['value'] and got null for a month.
+         * A change here needs a deprecation path, not a flip.
+         */
+        $this->assertArrayHasKey('properties', $out);
+        $this->assertSame('https://dto.example.test', $out['properties']['domain']['value']);
+        $this->assertSame('DTO Test Site', $out['properties']['name']['value']);
     }
 
     /**
@@ -68,7 +78,12 @@ final class RestResponseDtoTest extends TestCase
 
         $out = $this->reduce($site);
 
-        foreach (['_tableProperties', 'wasPersisted', 'dirty', 'cache', 'properties'] as $internal) {
+        /*
+         * 'properties' is NOT on this list any more, and that was the mistake.
+         * The bag is the resource; the bookkeeping around it is the leak. #977
+         * removed both, which fixed the leak and retired the contract with it.
+         */
+        foreach (['_tableProperties', 'wasPersisted', 'dirty', 'cache'] as $internal) {
             $this->assertArrayNotHasKey(
                 $internal,
                 $out,
@@ -85,14 +100,14 @@ final class RestResponseDtoTest extends TestCase
         foreach (['password', 'temp_passkey', 'api_key'] as $secret) {
             $this->assertArrayNotHasKey(
                 $secret,
-                $out,
+                $out['properties'],
                 sprintf('%s must never appear in a response', $secret)
             );
         }
 
         // Still a usable representation of the user.
-        $this->assertSame('dto-test@example.test', $out['user_id']);
-        $this->assertSame('DTO Test', $out['real_name']);
+        $this->assertSame('dto-test@example.test', $out['properties']['user_id']['value']);
+        $this->assertSame('DTO Test', $out['properties']['real_name']['value']);
     }
 
     /** Collections are the common case -- every element has to be reduced. */
@@ -102,8 +117,8 @@ final class RestResponseDtoTest extends TestCase
 
         foreach (['a', 'b'] as $k) {
             $this->assertIsArray($out[$k]);
-            $this->assertArrayNotHasKey('password', $out[$k]);
-            $this->assertSame('dto-test@example.test', $out[$k]['user_id']);
+            $this->assertArrayNotHasKey('password', $out[$k]['properties']);
+            $this->assertSame('dto-test@example.test', $out[$k]['properties']['user_id']['value']);
         }
     }
 
