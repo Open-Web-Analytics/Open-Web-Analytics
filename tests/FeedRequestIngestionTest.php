@@ -28,7 +28,6 @@ final class FeedRequestIngestionTest extends IngestionTestCase
             'site_id'     => $site_id,
             'page_url'    => $page_url,
             'feed_format' => 'rss2',
-            'host'        => 'example.com',
         ]);
         $this->assertNotFalse(
             $result,
@@ -39,9 +38,30 @@ final class FeedRequestIngestionTest extends IngestionTestCase
 
         $this->assertSame($site_id, $row->get('site_id'));
         $this->assertSame('rss2', $row->get('feed_format'));
-        // document_id and host_id are content-hashed by the handler.
+        // document_id is content-hashed by the handler.
         // (loose compare: the hash is an int, the DB returns it as a string)
         $this->assertEquals(owa_lib::setStringGuid($page_url), $row->get('document_id'));
-        $this->assertEquals(owa_lib::setStringGuid('example.com'), $row->get('host_id'));
+
+        /*
+         * host_id is NOT asserted against the supplied host any more.
+         *
+         * This used to pass 'host' => 'example.com' and expect host_id to hash
+         * it, which only worked because a request could overwrite a derived
+         * property. It was testing that passthrough rather than any behaviour:
+         * `host` is not the site's host at all. getHostDomain() derives it from
+         * full_host -- a reverse-DNS lookup of the VISITOR's IP, resolved
+         * through the Public Suffix List -- so a supplied value was forging the
+         * visitor's hostname.
+         *
+         * Requests can no longer set it, so host_id now reflects whatever the
+         * derivation produced, which in a CLI test with no resolvable visitor
+         * is nothing.
+         */
+        $this->assertNotSame(
+            (string) owa_lib::setStringGuid('example.com'),
+            (string) $row->get('host_id'),
+            'A supplied host reached host_id, which means a request can still overwrite a '
+            . 'derived property.'
+        );
     }
 }

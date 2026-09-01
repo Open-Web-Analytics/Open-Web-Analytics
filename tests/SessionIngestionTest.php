@@ -397,7 +397,7 @@ final class SessionIngestionTest extends IngestionTestCase
     public function testNewSessionRecordsCampaignAttribution(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [
-            'session_id', 'is_new_session', 'campaign', 'source', 'medium', 'attribs',
+            'session_id', 'is_new_session', 'tagged_campaign', 'tagged_source', 'tagged_medium', 'attribs',
         ]);
 
         $site_id    = md5('owa-test-site');
@@ -416,9 +416,9 @@ final class SessionIngestionTest extends IngestionTestCase
         $this->setServerTime(1700000000);
         $this->firePageRequest($site_id, $session_id, [
             'is_new_session' => true,
-            'campaign'       => $campaign,
-            'source'         => $source,
-            'medium'         => 'cpc',
+            'tagged_campaign' => $campaign,
+            'tagged_source'  => $source,
+            'tagged_medium'  => 'cpc',
             'attribs'        => $attribs,
         ]);
 
@@ -469,9 +469,9 @@ final class SessionIngestionTest extends IngestionTestCase
         $this->setServerTime(1700000000);
         $this->firePageRequest($site_id, $session_id, [
             'is_new_session' => true,
-            'campaign'       => $campaign1,
-            'source'         => $source1,
-            'medium'         => 'email',
+            'tagged_campaign' => $campaign1,
+            'tagged_source'  => $source1,
+            'tagged_medium'  => 'email',
         ]);
 
         $opened = $this->assertRowPersisted('base.session', $session_id, 'id');
@@ -487,9 +487,9 @@ final class SessionIngestionTest extends IngestionTestCase
 
         $this->setServerTime(1700000060);
         $this->firePageRequest($site_id, $session_id, [
-            'campaign' => $campaign2,
-            'source'   => $source2,
-            'medium'   => 'cpc',
+            'tagged_campaign' => $campaign2,
+            'tagged_source' => $source2,
+            'tagged_medium' => 'cpc',
             'attribs'  => $attribs2,
         ]);
 

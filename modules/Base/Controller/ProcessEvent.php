@@ -83,16 +83,31 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         $properties = $s->getMap( 'tracking_properties_regular' );
 
-        // add custom var properties
-        $properties = $teh->addCustomVariableProperties( $properties );
-
         // there is no global input sanitization on tracking requests
         // because each module needs to register tracking properties and
         // their data types. Therefor we need to sanitize unregistered input
         // here before we pass it along to any handlers.
 
         // get a list of properties that we do not know the data type of
-        $unsanitized_properties = array_diff_key( $this->event->getProperties(), $properties );
+        /*
+         * Everything the event carries that NO module has registered.
+         *
+         * Diffed against every registered map, not just the regular one. It
+         * used to diff against `regular` alone, which left all 39 derived
+         * properties and the environmental ones in this set -- so a value a
+         * client sent for a SERVER-COMPUTED property was captured here, and the
+         * re-apply at the end of this method put it back on top of the value
+         * the derivation had just computed.
+         *
+         * That is how a tracking request carrying owa_is_browser=ludhiana ended
+         * up writing 'ludhiana' into a boolean column: the derivation ran
+         * correctly and was then undone. Environmental properties -- ip_address,
+         * timestamp -- were overwritable the same way, which is the more
+         * serious half.
+         */
+        $protected = $properties + $teh->serverOwnedProperties();
+
+        $unsanitized_properties = array_diff_key( $this->event->getProperties(), $protected );
 
         // santize them genericly. we will apply them back to the event later
         $sanitized_properties = \OWA\Module\Base\Classes\Sanitize::cleanInput( $unsanitized_properties, array('remove_html' => true) );
@@ -106,6 +121,16 @@ class ProcessEvent extends \OWA\Core\Controller {
         // STAGE 3 - derived properties
 
         $derived_properties = $s->getMap( 'tracking_properties_derived' );
+
+        /*
+         * The cv{n}_name / cv{n}_value pairs are DERIVED -- the server makes
+         * them by splitting the cv{n} slot the tracker sent. They used to be
+         * merged into the regular map, which made them settable from the wire:
+         * a request posting owa_cv1_name survived the filter and was then
+         * re-applied over the split result by the sanitized-properties step
+         * below.
+         */
+        $derived_properties = $teh->addCustomVariableProperties( $derived_properties );
         $teh->setTrackerProperties( $this->event, $derived_properties );
 
         // re-apply sanitized properties to event.

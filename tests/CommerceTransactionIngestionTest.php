@@ -44,7 +44,7 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
         // The transaction beacon is the one place the buyer's location arrives
         // on the wire (country/city/state), so it is the honest home for a
         // location_dim assertion. Guard that those really are contracted fields.
-        $this->assertFieldsInContract('ecommerce.transaction', ['country', 'city', 'state']);
+        $this->assertFieldsInContract('ecommerce.transaction', ['ct_country', 'ct_city', 'ct_state']);
 
         $site_id  = md5('owa-test-site');
         // Unique order id so the PK (generateId(order_id)) is unique per run.
@@ -78,9 +78,13 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
             'ct_total'        => 42.50,
             'ct_tax'          => 2.50,
             'ct_shipping'     => 5.00,
-            'country'         => $country,
-            'city'            => 'Testville',
-            'state'           => 'TS',
+            // Billing address, under the ct_ prefix its sibling transaction
+            // fields use. Sending it as country/city/state made it overwrite the
+            // geolocation derived from the visitor's IP -- two different facts
+            // sharing three names.
+            'ct_country'      => $country,
+            'ct_city'         => 'Testville',
+            'ct_state'        => 'TS',
             'ct_line_items'   => [[
                 'li_order_id'     => $order_id,
                 'li_sku'          => $sku,
@@ -120,10 +124,17 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
         // location dimension: the transaction fan-out authored a real, unique
         // location_dim row keyed on the buyer's country (not the shared
         // '(not set)' default), proving the geo/location dimension gets logged.
-        $loc = $this->assertRowPersisted('base.location_dim', $country, 'country');
-        $this->assertSame($country, $loc->get('country'));
-        $this->assertSame('Testville', $loc->get('city'));
-        $this->assertSame('TS', $loc->get('state'));
+        /*
+         * The billing address is on the TRANSACTION now, not in the geolocation
+         * dimension. It used to be asserted against a location_dim row because
+         * it was sent under the geolocation property names and built this
+         * transaction's location_id -- so a buyer's billing address and a
+         * visitor's IP-derived location were the same column for one event type
+         * and different things for every other.
+         */
+        $this->assertSame($country, $txn->get('billing_country'));
+        $this->assertSame('Testville', $txn->get('billing_city'));
+        $this->assertSame('TS', $txn->get('billing_state'));
     }
 
     /**

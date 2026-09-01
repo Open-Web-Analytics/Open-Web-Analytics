@@ -81,7 +81,7 @@ describe('tracker referred pageview beacon contracts', () => {
         expect(actual).toEqual(expected.slice().sort());
         // Guard the mutually-exclusive invariant explicitly.
         expect(actual).toContain('session_referer');
-        expect(actual).not.toContain('campaign');
+        expect(actual).not.toContain('tagged_campaign');
     });
 
     test('campaign (owa_* URL params) emits its contracted property set', () => {
@@ -96,9 +96,11 @@ describe('tracker referred pageview beacon contracts', () => {
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
         // Campaign attribution suppresses referrer inference.
-        expect(actual).toContain('campaign');
-        expect(actual).toContain('source');
-        expect(actual).toContain('search_terms');
+        // The tracker reports the CLAIM the landing URL carried; the server
+        // resolves campaign/source/search_terms from it.
+        expect(actual).toContain('tagged_campaign');
+        expect(actual).toContain('tagged_source');
+        expect(actual).toContain('tagged_terms');
         expect(actual).not.toContain('session_referer');
     });
 });

@@ -74,6 +74,205 @@ class TrackingEventHelpers {
      */
     private $registeredCallbacks = array();
 
+    /**
+     * The properties a tracking request is allowed to set.
+     *
+     * A request reaches log.php with arbitrary owa_* parameters and they used
+     * to be copied onto the event wholesale, so anything whose name matched a
+     * column was written to that column -- owa_is_browser=ludhiana put a city
+     * name in a boolean, and owa_ip_address would have replaced the observed
+     * one.
+     *
+     * Membership is DECLARED, not inferred from which map a property lives in.
+     * `regular` is client-set by definition, but the classification is not a
+     * clean proxy in both directions: LocationHandlers deliberately accepts a
+     * client-supplied country and city and skips the IP lookup when it sees
+     * them, and those are registered as derived. So a derived property opts in
+     * with 'client_settable' => true rather than the endpoint guessing.
+     *
+     * Anything a module has not registered at all is still accepted -- it is
+     * sanitised in ProcessEvent and carried as a custom property, which is how
+     * custom variables and event parameters work.
+     *
+     * @return array property name => true
+     */
+    /** @var array|null the parsed config, read once per process */
+    private static $property_config;
+
+    /**
+     * The property definitions, read from modules/Base/config/tracking_properties.json.
+     *
+     * The file is the single enumeration of what a tracking event may carry:
+     * every property a handler expects by name, which of the three scopes owns
+     * it, and how the pipeline should treat it. Anything not named there is a
+     * custom property and is passed through without a contract.
+     *
+     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
+     * in the order they appear here, and a callback may read what earlier ones
+     * wrote -- the date parts read timestamp, the geo callbacks read
+     * ip_address, source and medium read session_referer. Reordering entries
+     * does not fail; the dependant silently derives from a value that has not
+     * been computed yet. TrackingPropertyOrderTest holds this.
+     *
+     * @param string $scope one of request, client, server
+     * @return array
+     */
+    private static function propertyConfig( $scope ) {
+
+        if ( self::$property_config === null ) {
+
+            $path = OWA_DIR . 'modules/Base/config/tracking_properties.json';
+            $config = json_decode( file_get_contents( $path ), true );
+
+            if ( ! is_array( $config ) ) {
+
+                throw new \RuntimeException(
+                    'Could not read the tracking property config at ' . $path . ': '
+                    . json_last_error_msg() );
+            }
+
+            /* 'note' documents the entry for whoever edits the file; it is not
+               part of the definition the pipeline consumes. */
+            foreach ( $config as $name => $properties ) {
+
+                foreach ( $properties as $property => $definition ) {
+
+                    unset( $config[ $name ][ $property ]['note'] );
+                }
+            }
+
+            self::$property_config = $config;
+        }
+
+        if ( ! isset( self::$property_config[ $scope ] ) ) {
+
+            throw new \InvalidArgumentException(
+                "There is no '$scope' scope in the tracking property config." );
+        }
+
+        return self::$property_config[ $scope ];
+    }
+
+    /**
+     * Properties the server reads off the HTTP request.
+     *
+     * The request is the source: the user agent, the host, the address it came
+     * from, and the moment it arrived. A tracking request cannot set these --
+     * it would be choosing what it is observed to be.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function requestProperties() {
+
+        return self::propertyConfig( 'request' );
+
+    }
+
+    /**
+     * Properties the tracker sends.
+     *
+     * The client is the source, so a request may set them. ORDER IS PART OF THE
+     * CONTRACT here: deriveSource, deriveMedium and extractSearchTerm all read
+     * session_referer, so those three must stay after it. Nothing enforces
+     * that ordering, which is why TrackingPropertyOrderTest exists.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function clientProperties() {
+
+        return self::propertyConfig( 'client' );
+
+    }
+
+    /**
+     * Properties the server computes from other properties.
+     *
+     * Date parts from the timestamp, geolocation from the address, browser from
+     * the user agent, and the dimension ids. A request cannot set these either:
+     * a supplied value would replace a derivation, which is exactly the defect
+     * that let a city name reach a boolean column.
+     *
+     * Moved here from Module::setupTrackingProperties(), because every
+     * callback these definitions name is a method of this class -- the
+     * declaration and the behaviour were about 440 lines apart in two files.
+     *
+     * @return array
+     */
+    public static function serverProperties() {
+
+        return self::propertyConfig( 'server' );
+
+    }
+
+    public static function clientSettableProperties() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $allowed = (array) $service->getMap( 'tracking_properties_regular' );
+
+        foreach ( array( 'tracking_properties_derived', 'tracking_properties_environmental' ) as $map ) {
+
+            foreach ( (array) $service->getMap( $map ) as $name => $property ) {
+
+                if ( ! empty( $property['client_settable'] ) ) {
+
+                    $allowed[ $name ] = $property;
+                }
+            }
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * Drop parameters naming a property the server computes for itself.
+     *
+     * Unregistered names pass through: this refuses to let a request OVERWRITE
+     * a derivation, it does not restrict what a site may send.
+     */
+    /**
+     * Properties only the server may set: derived and environmental, less
+     * anything that declared itself client-settable.
+     *
+     * One definition, used both to filter the wire and to decide what
+     * ProcessEvent may re-apply over a derivation. Two definitions would drift,
+     * and the symptom of drift is a value silently landing in the wrong column.
+     *
+     * @return array property name => definition
+     */
+    public static function serverOwnedProperties() {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        return array_diff_key(
+            (array) $service->getMap( 'tracking_properties_derived' )
+                + (array) $service->getMap( 'tracking_properties_environmental' ),
+            self::clientSettableProperties() );
+    }
+
+    public static function rejectServerOwnedParams( array $params ) {
+
+        $serverOwned = self::serverOwnedProperties();
+
+        $refused = array_intersect_key( $params, $serverOwned );
+
+        if ( $refused ) {
+
+            \OWA\Core\CoreAPI::debug( 'Refused client-supplied values for server-owned properties: '
+                . implode( ', ', array_keys( $refused ) ) );
+        }
+
+        return array_diff_key( $params, $serverOwned );
+    }
+
     public function registerCallbacks( $items, $priority = 0 ) {
 
         foreach ($items as $name => $item ) {
@@ -241,28 +440,40 @@ class TrackingEventHelpers {
         return $var;
     }
 
+    /**
+     * Top up the custom variable properties for any slot the config does not
+     * declare.
+     *
+     * The pairs live in tracking_properties.json like everything else, but the
+     * number of them is the maxCustomVars SETTING rather than a constant --
+     * FactTable builds its cv columns from the same setting -- so an install
+     * that raises it would otherwise have slots with columns and no property
+     * definition. The config covers the shipped slots; this covers the rest,
+     * and skips anything already declared so the config stays authoritative.
+     */
     function addCustomVariableProperties( $properties ) {
 
         $maxCustomVars = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
-        for ($i = 1; $i <= $maxCustomVars; $i++) {
+        for ( $i = 1; $i <= $maxCustomVars; $i++ ) {
 
-            $properties[ 'cv'.$i.'_name' ] = array(
+            foreach ( array( 'name', 'value' ) as $half ) {
 
-                'required'        => true,
-                'data_type'        => 'string',
-                'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString'),
-                'default_value'    => '(not set)'
-            );
+                $key = 'cv' . $i . '_' . $half;
 
-            $properties[ 'cv'.$i.'_value' ] = array(
+                if ( array_key_exists( $key, $properties ) ) {
 
-                'required'        => true,
-                'data_type'        => 'string',
-                'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'    => '(not set)'
-            );
+                    continue;
+                }
 
+                $properties[ $key ] = array(
+
+                    'required'        => true,
+                    'data_type'        => 'string',
+                    'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString' ),
+                    'default_value'    => '(not set)'
+                );
+            }
         }
 
         return $properties;
@@ -667,51 +878,6 @@ class TrackingEventHelpers {
         }
     }
     
-    static function deriveMedium( $medium, $event ) {
-	    
-	    // respect what was already set by the tracker
-	    if ( $medium ) {
-		    
-		    return $medium;
-	    }
-
-	    if ( $event->get( 'session_referer' ) ) {
-	    		    
-		    // check for referrer url
-		    $ref = $event->get('session_referer');
-		    
-		    if ( $ref ) {
-			    
-			    // parse the referrer url
-	            $uri = self::parse_url( $ref );
-	
-	            $host = $uri['host'];
-	            
-                $medium = 'referral';
-                
-                // check if referral is a search engine
-                $engine = self::isSearchEngine( $host );
-               
-                if ( $engine ) {
-                    
-                    $medium = 'organic-search';
-                }
-                
-                if ( ! $engine ) {
-	                
-	                // check if referral is a social network
-	                $network = self::isSocialNetwork( $host );
-	                
-	                if ( $network ) {
-		                
-		                $medium = 'social-network';
-	                }
-                }
-	        }
-	        
-	        return $medium;
-	    }
-    }
     
     /**
      *  Use this function to parse out the url and query array element from
@@ -750,29 +916,6 @@ class TrackingEventHelpers {
     }
 
     
-    static function deriveSource( $source, $event ) {
-	    
-	    // respect what was already set by the tracker
-	    if ( $source ) {
-		    
-		    return $source;
-	    }
-
-	    
-	    if ( $event->get( 'session_referer' ) ) {
-			
-			$ref = $event->get( 'session_referer' );
-			$uri = self::parse_url( $ref );
-			
-			$host = $uri['host'];
-			
-			if ($host) {
-			
-				$source = self::stripWwwFromDomain( $host );
-				return $source;
-			}
-		}
-    }
     
     static function stripWWWFromDomain( $domain ) {
 
@@ -823,52 +966,6 @@ class TrackingEventHelpers {
         }
     }
     
-    static function extractSearchTerm( $term, $event ) {
-	    
-	    if ( $term ) {
-			    
-			return $term;
-		}
-		    
-	    if ( $event->get( 'session_referer' ) ) {
-	    
-		    // check for referrer url
-		    $ref = $event->get( 'session_referer' );
-		    
-		    $uri = self::parse_url( $ref );
-		    \OWA\Core\CoreAPI::debug($uri);
-		    // check for query params, search engine might have sent them under https
-		    if ( array_key_exists('query_params', $uri) && ! empty( $uri['query_params'] ) ) {
-		    
-	            $host = $uri['host'];
-			    
-			    $organicSearchEngines = self::getSearchEngineList();
-			    
-			    foreach ( $organicSearchEngines as $engine ) {
-				    
-		            $domain = $engine['domain'];
-		
-		            if ( stripos( $host, $domain ) !== false ) {
-			            
-			            $query_param = $engine['query_param'];
-			            $term = '';
-			
-			            if (isset($uri['query_params'][$query_param])) {
-				            
-			                $term = $uri['query_params'][$query_param];
-			                \OWA\Core\CoreAPI::debug( 'Found search term: ' . $term);
-			                			                
-			            } else {
-				            
-				            $term = '(not provided)';
-			            }
-			            // need urldecode here ot clean up the "+" characters in the term
-			            return trim( urldecode( strtolower( $term ) ) );
-		            }
-		        }
-		    }
-	    }
-    }
     
     static function isSocialNetwork( $host ) {
 	    
@@ -1292,6 +1389,177 @@ class TrackingEventHelpers {
 
             return $email_address;
         }
+    }
+
+    /**
+     * Resolve the traffic source.
+     *
+     * The tracker reports what the landing URL was tagged with; the server
+     * decides what the source IS. Those used to be the same property name, so
+     * a value in the column recorded no trace of which half produced it and
+     * the callback had to open by respecting its own current value. Now the
+     * claim arrives as tagged_source and the answer is written here.
+     *
+     * Precedence: an explicit tag wins, else classify the referer.
+     */
+    static function resolveSource( $source, $event ) {
+
+        $tagged = $event->get( 'tagged_source' );
+
+        if ( $tagged ) {
+
+            return strtolower( trim( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $source;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['host'] ) ) {
+
+            return $source;
+        }
+
+        return strtolower( self::stripWwwFromDomain( $uri['host'] ) );
+    }
+
+    /**
+     * Resolve the medium. See resolveSource() for the claim/answer split.
+     *
+     * Precedence: an explicit tag wins, else classify the referer as a search
+     * engine, a social network or a plain referral, else leave the declared
+     * default of direct.
+     */
+    static function resolveMedium( $medium, $event ) {
+
+        $tagged = $event->get( 'tagged_medium' );
+
+        if ( $tagged ) {
+
+            return strtolower( trim( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $medium;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['host'] ) ) {
+
+            return $medium;
+        }
+
+        $host = $uri['host'];
+
+        if ( self::isSearchEngine( $host ) ) {
+
+            return 'organic-search';
+        }
+
+        if ( self::isSocialNetwork( $host ) ) {
+
+            return 'social-network';
+        }
+
+        return 'referral';
+    }
+
+    /**
+     * Resolve the campaign name.
+     *
+     * There is nothing to derive it from -- a campaign exists only because a
+     * URL was tagged with one -- so this is the claim, passed through. It is a
+     * callback rather than a bare property so that campaign is registered at
+     * all: it reached CampaignHandlers on the wire for years without appearing
+     * in any property map, which meant no declared type and no way for the
+     * wire filter to have an opinion about it.
+     */
+    static function resolveCampaign( $campaign, $event ) {
+
+        $tagged = $event->get( 'tagged_campaign' );
+
+        return $tagged ? trim( $tagged ) : $campaign;
+    }
+
+    /** As resolveCampaign(). Read by AdHandlers. */
+    static function resolveAd( $ad, $event ) {
+
+        $tagged = $event->get( 'tagged_ad' );
+
+        return $tagged ? trim( $tagged ) : $ad;
+    }
+
+    /** As resolveCampaign(). Read by AdHandlers beside ad. */
+    static function resolveAdType( $ad_type, $event ) {
+
+        $tagged = $event->get( 'tagged_ad_type' );
+
+        return $tagged ? trim( $tagged ) : $ad_type;
+    }
+
+    /**
+     * Resolve the search terms someone arrived on.
+     *
+     * Note this is acquisition, not site-internal search -- the v2 plan (§1.10)
+     * flags that those two facts share this one name and should not.
+     *
+     * Precedence: an explicit tag wins, else read the query param the
+     * referring search engine is known to use.
+     */
+    static function resolveSearchTerms( $terms, $event ) {
+
+        $tagged = $event->get( 'tagged_terms' );
+
+        if ( $tagged ) {
+
+            return trim( strtolower( $tagged ) );
+        }
+
+        $referer = $event->get( 'session_referer' );
+
+        if ( ! $referer ) {
+
+            return $terms;
+        }
+
+        $uri = self::parse_url( $referer );
+
+        if ( empty( $uri['query_params'] ) || empty( $uri['host'] ) ) {
+
+            return $terms;
+        }
+
+        foreach ( self::getSearchEngineList() as $engine ) {
+
+            if ( stripos( $uri['host'], $engine['domain'] ) === false ) {
+
+                continue;
+            }
+
+            $param = $engine['query_param'];
+
+            if ( ! isset( $uri['query_params'][ $param ] ) ) {
+
+                /* A known engine that sent no term: it withheld it (https
+                   referrers usually do), which is a different fact from never
+                   having searched. */
+                return '(not provided)';
+            }
+
+            // urldecode to turn the '+' separators back into spaces
+            return trim( urldecode( strtolower( $uri['query_params'][ $param ] ) ) );
+        }
+
+        return $terms;
     }
 
 }

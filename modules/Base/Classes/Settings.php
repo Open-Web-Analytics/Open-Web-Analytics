@@ -1215,13 +1215,6 @@ namespace OWA\Module\Base\Classes;
                 'nonce_expiration_period'            => 7200,
                 'max_prior_campaigns'                => 5, //sdk
                 'default_reporting_period'            => 'last_seven_days',
-                'campaign_params'                    => array(
-                        'campaign'        => 'owa_campaign',
-                        'medium'        => 'owa_medium',
-                        'source'        => 'owa_source',
-                        'search_terms'    => 'owa_search_terms',
-                        'ad'            => 'owa_ad',
-                        'ad_type'        => 'owa_ad_type'),
                 'trafficAttributionMode'            => 'direct', //sdk
                 'campaignAttributionWindow'            => 60, //sdk
                  //list of capabilities that require access to the site

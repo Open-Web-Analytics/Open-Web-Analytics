@@ -13,12 +13,12 @@ require_once __DIR__ . '/IngestionTestCase.php';
  *  - ad / ad_type -> ad_dim (a paid-click campaign), plus name/type lowercasing.
  *  - Server-derived medium from a REFERRER: a search-engine referrer yields
  *    medium 'organic-search' and the extracted search term; a plain referrer
- *    yields medium 'referral'. These prove deriveMedium/extractSearchTerm, which
+ *    yields medium 'referral'. These prove resolveMedium/resolveSearchTerms, which
  *    only run when the beacon did NOT already supply a medium/term.
  *  - The 'direct' medium default: a new-session pageview with neither campaign
  *    params nor a referrer falls to medium 'direct'.
  *
- * Server derivation (deriveSource/deriveMedium/extractSearchTerm) respects any
+ * Server derivation (resolveSource/resolveMedium/resolveSearchTerms) respects any
  * value the tracker already put on the beacon (campaign mode) and only
  * synthesizes from session_referer when the beacon left the field empty
  * (referral mode). Both branches are checked here.
@@ -40,7 +40,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
     public function testPaidClickPopulatesAdDimension(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [
-            'page_url', 'campaign', 'source', 'medium',
+            'page_url', 'tagged_campaign', 'tagged_source', 'tagged_medium',
             'visitor_id', 'is_new_session', 'is_new_visitor',
         ]);
 
@@ -73,16 +73,21 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
             'is_new_session'  => true,
             'is_new_visitor'  => true,
             'visitor_id'      => $visitor_id,
-            'campaign'        => $campaign,
-            'source'          => $source,
-            'medium'          => 'cpc',
-            'ad'              => $ad,
-            'ad_type'         => $ad_type,
+            // The tracker sends the CLAIM lifted off the landing URL; the
+            // server resolves each into the bare name below.
+            'tagged_campaign' => $campaign,
+            'tagged_source'   => $source,
+            'tagged_medium'   => 'cpc',
+            'tagged_ad'       => $ad,
+            'tagged_ad_type'  => $ad_type,
         ]);
         $this->assertNotFalse($result, 'paid-click page_request was dropped before persistence.');
 
-        // Beacon-supplied medium passes through deriveMedium untouched.
-        $this->assertSame('cpc', (string) $this->lastEvent()->get('medium'), 'beacon-supplied medium was not respected.');
+        // The tagged medium is what the server resolves the answer to.
+        $this->assertSame('cpc', (string) $this->lastEvent()->get('medium'),
+            'a tagged medium must win over any referer classification.');
+        $this->assertSame($source, (string) $this->lastEvent()->get('source'),
+            'a tagged source must win over any referer classification.');
 
         $this->assertRowPersisted('base.request', $guid, 'id');
         $this->assertRowPersisted('base.campaign_dim', $campaign, 'name');
@@ -143,7 +148,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
             (string) $event->get('medium'),
             'server did not derive medium=organic-search from a search-engine referrer.'
         );
-        // The term is urldecoded, trimmed and lowercased by extractSearchTerm.
+        // The term is urldecoded, trimmed and lowercased by resolveSearchTerms.
         $this->assertSame(
             strtolower($term),
             (string) $event->get('search_terms'),
@@ -160,7 +165,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
     /**
      * A search-engine referrer whose query string is present but does NOT carry
      * the engine's configured query param yields the '(not provided)' sentinel
-     * term (the extractSearchTerm fallback), while medium is still
+     * term (the resolveSearchTerms fallback), while medium is still
      * 'organic-search'. This mirrors the real world where search engines
      * increasingly withhold the query term (https referrals) but are still
      * identifiable as organic search.
@@ -174,7 +179,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
 
         $page_url   = 'https://example.com/camp-notprovided/' . $guid;
         $user_agent = 'OWA-DimTest/1.0 (+notprovided; run=' . $guid . ')';
-        // A google referrer that has SOME query string (so extractSearchTerm
+        // A google referrer that has SOME query string (so resolveSearchTerms
         // enters the engine loop) but not the 'q' param it looks for.
         $referer    = 'https://www.google.com/search?ref=' . $guid;
 
@@ -214,7 +219,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
 
     /**
      * A plain (non-search-engine, non-social) referrer derives medium
-     * 'referral' — the deriveMedium default branch when a referrer is present.
+     * 'referral' — the resolveMedium default branch when a referrer is present.
      */
     public function testPlainReferrerDerivesReferralMedium(): void
     {
@@ -256,7 +261,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
 
     /**
      * A social-network referrer (no campaign params, no beacon medium) derives
-     * medium 'social-network' — the third deriveMedium branch, via
+     * medium 'social-network' — the third resolveMedium branch, via
      * isSocialNetwork() matching the referrer host against conf/socialnetworks.php.
      */
     public function testSocialNetworkReferrerDerivesSocialNetworkMedium(): void
@@ -348,7 +353,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
 
     /**
      * A new-session pageview with neither campaign params nor a referrer falls
-     * to the 'direct' medium default (deriveMedium returns nothing, so the
+     * to the 'direct' medium default (resolveMedium returns nothing, so the
      * property default_value applies).
      */
     public function testDirectVisitDefaultsToDirectMedium(): void
