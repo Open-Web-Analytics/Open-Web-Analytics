@@ -1,6 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
+<DIV class="panel_headline">Organization Details</DIV>
+<div id="panel">
 <div style="width:550px;">
-    <div class="inline_h1" style="text-align:left;">Organization Details</div><BR>
     <div class="inline_h2" style="text-align:left;">Every Property and every user
     account belongs to this Organization.</div><BR>
 
@@ -29,4 +30,5 @@
     <span class="form-instructions">Everyone with an account in this Organization.</span><BR>
     <a href="<?php echo $view->makeLink( array( 'do' => 'base.users' ) );?>">Manage users</a>
     <?php endif;?>
+</div>
 </div>

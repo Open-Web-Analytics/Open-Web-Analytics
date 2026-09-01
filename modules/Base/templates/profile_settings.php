@@ -1,14 +1,14 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
-<div id="panel">
 <?php
 /*
- * Observation Settings: how this Profile watches its site.
- *
- * Split out of the old three-form site page. An Observation Profile IS a way of
- * observing, so these are the settings that define it.
+ * How this Profile watches its site.
+ * 
+ * An Observation Profile IS a way of observing, so these are the settings
+ * that define it. Split out of the old three-form site page.
  */
 ?>
+<DIV class="panel_headline">Observation Settings</DIV>
+<div id="panel">
 <form method="post" name="owa_options">
 
     <fieldset name="owa-options" class="options">
@@ -59,3 +59,4 @@
         <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Settings" class="owa-button">
     </fieldset>
 </form>
+</div>

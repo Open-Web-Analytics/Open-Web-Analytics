@@ -1,17 +1,20 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
-<div id="panel">
 <?php
 /*
  * The Profile's DETAILS only.
- *
- * This template used to carry three forms -- details, observation settings and
- * allowed users -- stacked on one page that saved in pieces, with nothing
- * saying which tier each belonged to. They are separate screens under the
- * hierarchy nav now, and the access one moved up to the Property, which is what
- * access is actually granted to.
+ * 
+ * This carried three forms -- details, observation settings and allowed
+ * users -- stacked on one page that saved in pieces. They are separate
+ * screens now, and the access one moved up to the Property.
+ * 
+ * It opens AND closes its own #panel. The original opened it here and
+ * closed it at the very end of the third form, so splitting the file left
+ * this one holding an unclosed div -- which swallows everything after it
+ * and makes the page look broken rather than merely short.
  */
 ?>
+<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
+<div id="panel">
 <fieldset>
 
     <legend>Site Profile</legend>
@@ -64,3 +67,4 @@
     </form>
 
 </fieldset>
+</div>

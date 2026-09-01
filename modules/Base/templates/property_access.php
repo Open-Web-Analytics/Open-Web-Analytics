@@ -1,18 +1,15 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
-<div id="panel">
 <?php
 /*
- * Property Access Management.
- *
- * Access is granted to a WEBSITE, not to one way of observing it, so this sits
- * under the Property even though the grants are still stored per Profile.
- *
- * NOTE the submit REPLACES the whole grant set rather than adding to it -- a
- * user omitted from the form is revoked. That is why the form must always be
- * rendered from the current grants and never from a partial list.
+ * Access is granted to a WEBSITE, not to one way of observing it, so this
+ * sits under the Property even though the grants are stored per Profile.
+ * 
+ * The submit REPLACES the whole grant set -- a user omitted from the form
+ * is revoked -- so it must always render every user, never a partial list.
  */
 ?>
+<DIV class="panel_headline">Property Access Management</DIV>
+<div id="panel">
 <form method="post" name="owa-allowedusersform">
     <fieldset name="owa-allowedusers" class="options">
     <legend>Allowed Users</legend>
