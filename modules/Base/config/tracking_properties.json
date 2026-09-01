@@ -331,10 +331,12 @@
         },
         "is_browser": {
             "required": true,
+            "data_type": "boolean",
             "callbacks": [
                 "owa_trackingEventHelpers::isBrowser"
             ],
-            "default_value": false
+            "default_value": false,
+            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
         },
         "browser": {
             "required": true,
@@ -345,10 +347,12 @@
         },
         "is_robot": {
             "required": true,
+            "data_type": "boolean",
             "callbacks": [
                 "owa_trackingEventHelpers::isRobot"
             ],
-            "default_value": false
+            "default_value": false,
+            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
         },
         "os": {
             "required": true,
@@ -359,10 +363,12 @@
         },
         "is_entry_page": {
             "required": true,
+            "data_type": "boolean",
             "callbacks": [
                 "owa_trackingEventHelpers::resolveEntryPage"
             ],
-            "default_value": false
+            "default_value": false,
+            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
         },
         "country": {
             "required": true,
