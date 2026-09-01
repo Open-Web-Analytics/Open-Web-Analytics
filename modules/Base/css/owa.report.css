@@ -2907,9 +2907,15 @@ li.constraintRow {
  * .owa_visitSummaryInfobox).
  * ------------------------------------------------------------------------ */
 
+/*
+ * The tile's vertical spacing lives HERE and nowhere else, so it is identical
+ * on a report page and on a settings page. It used to get a 20px margin in one
+ * context and sit under a 24px cell padding in the other, which put it at two
+ * different heights on screens a person moves between constantly.
+ */
 .owa_siteControl {
     position: relative;
-    margin-bottom: 15px;
+    margin: 20px 0;
     font-size: 12px;
 }
 
@@ -3179,13 +3185,12 @@ li.constraintRow {
 /*
  * Clears the top nav.
  *
- * BOTH columns, not just the content: the headline was butting straight into
- * the nav bar above it, and padding only the content would have left the tile
- * still touching -- fixing half of a symmetry looks more wrong than leaving
- * both.
+ * The CONTENT column only. The left column's clearance is the tile's own
+ * margin, which is shared with the report page -- padding the cell as well
+ * would stack the two and put the tile lower here than there.
  */
-.owa_hierarchyPage > tbody > tr > td {
-    padding-top: 24px;
+.owa_hierarchyPage > tbody > tr > td.owa_hierarchyContent {
+    padding-top: 20px;
 }
 
 .owa_hierarchyContent {
@@ -3260,15 +3265,36 @@ li.constraintRow {
     font-size: 12px;
 }
 
+/*
+ * owa.css sets .form-instructions to position:relative; left:150px -- an offset
+ * for a layout with the label in a left column. These forms stack label, field,
+ * then help text, so that 150px pushed the help text out past the field it
+ * describes. Reset, not overridden piecemeal: left alone would still leave the
+ * element positioned.
+ */
 .owa_hierarchyContent #panel .form-instructions {
     display: block;
+    position: static;
+    left: auto;
     color: #999999;
     font-size: 11px;
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
 .owa_hierarchyContent #panel .setting {
     margin-bottom: 16px;
+}
+
+/*
+ * The other two offset classes from the same left-column era. Unused by these
+ * screens today, but a subview added later would inherit a 120px or 380px shift
+ * and land beside its field for the same reason .form-instructions did --
+ * cheaper to neutralise here than to rediscover.
+ */
+.owa_hierarchyContent #panel .form-field,
+.owa_hierarchyContent #panel .form-value {
+    position: static;
+    left: auto;
 }
 
 /* A form's rows are the page's main rhythm, so they get the same hairline the
@@ -3316,22 +3342,6 @@ li.constraintRow {
     color: #bbbbbb;
 }
 
-/* The control on a REPORT page.
- *
- * Scoped to .owa_reportContainer so it does not double up with the padding the
- * hierarchy pages already put on their cells. The report's left column has no
- * top padding of its own, so the tile sat flush against the header bar while
- * the report beside it began 20px down. */
-
-.owa_reportContainer .owa_siteControl {
-    margin-top: 20px;
-}
-
-/* And separation from the nav it scopes -- they are different things and the
-   tile reads as the nav's first item without it. */
-.owa_reportContainer .owa_siteControl {
-    margin-bottom: 20px;
-}
 
 /* Grids inside the hierarchy pane.
  *

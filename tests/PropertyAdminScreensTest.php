@@ -588,6 +588,35 @@ final class PropertyAdminScreensTest extends TestCase
     }
 
     /**
+     * The tile sits at the same height on a report and on a settings screen.
+     *
+     * Its spacing was stated twice -- a 20px margin scoped to the report
+     * container, and a 24px cell padding on the settings page -- so it rendered
+     * at two different heights on screens a person moves between constantly.
+     * One rule owns it now, and the settings page pads only its content column.
+     */
+    public function testTheTileSitsAtTheSameHeightEverywhere(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        $this->assertSame(
+            0, substr_count( $css, '.owa_reportContainer .owa_siteControl' ),
+            'The report page states the tile spacing separately, so the two can drift.' );
+
+        $rule = substr( $css, strpos( $css, "\n.owa_siteControl {" ) );
+        $rule = substr( $rule, 0, strpos( $rule, "\n}" ) );
+
+        $this->assertMatchesRegularExpression(
+            '/margin:\s*\d+px 0/', $rule,
+            'The tile has no vertical margin of its own, so each context supplies one.' );
+
+        $this->assertStringContainsString(
+            'td.owa_hierarchyContent {', $css,
+            'The settings page pads both cells, stacking with the tile margin and putting '
+            . 'the tile lower there than on a report.' );
+    }
+
+    /**
      * One measure per screen.
      *
      * #panel is a plain div in a table cell, so with no width it collapsed to
@@ -839,5 +868,35 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertStringContainsString(
             "ensureOrganization()", $src,
             'A new Property with no Organization would sit outside the hierarchy.' );
+    }
+    /**
+     * Help text lines up with the field it describes.
+     *
+     * owa.css positions .form-instructions at left:150px -- an offset for a
+     * layout with labels in a left column. These forms stack label, field, help
+     * text, so that offset pushed the help text out past the field. Its two
+     * siblings, .form-field and .form-value, carry 120px and 380px from the
+     * same era.
+     *
+     * Reset rather than nudged: overriding only `left` leaves the element
+     * positioned, which is the half-fix that looks right until something moves.
+     */
+    public function testHelpTextIsNotOffsetFromItsField(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        $rule = substr( $css, strpos( $css, '.owa_hierarchyContent #panel .form-instructions {' ) );
+        $rule = substr( $rule, 0, strpos( $rule, "\n}" ) );
+
+        $this->assertStringContainsString( 'position: static', $rule,
+            'The help text is still positioned, so its inherited left offset applies.' );
+        $this->assertStringContainsString( 'left: auto', $rule );
+
+        foreach ( array( '.form-field', '.form-value' ) as $sibling ) {
+
+            $this->assertStringContainsString(
+                '.owa_hierarchyContent #panel ' . $sibling, $css,
+                "$sibling still inherits its left-column offset inside the pane." );
+        }
     }
 }
