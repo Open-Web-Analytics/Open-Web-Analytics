@@ -117,7 +117,7 @@ test.describe('reporting: goal funnel', () => {
 
         await expect(page.locator('.owa_reportControls #goalChooser')).toBeVisible();
         await expect(page.locator('#funnelScopeSwitch')).toBeVisible();
-        await expect(page.locator('.owa_reportControls a[href*="optionsGoalEntry"]')).toBeVisible();
+        await expect(page.locator('.owa_reportControls a[href*="goalEventEdit"]')).toBeVisible();
     });
 
     /**
@@ -205,7 +205,7 @@ test.describe('reporting: goal funnel', () => {
             goal:   '.owa_reportControls #goalChooser',
             scope:  '#funnelScopeSwitch .buttons',
             filter: '#funnelFilter .toggle-button',
-            edit:   '.owa_reportControls a[href*="optionsGoalEntry"]',
+            edit:   '.owa_reportControls a[href*="goalEventEdit"]',
         })) {
             const box = await page.locator(selector).first().boundingBox();
             expect(box, `${name} control has no box`).not.toBeNull();
@@ -232,12 +232,12 @@ test.describe('reporting: goal funnel', () => {
     test('opening the filter does not move the rest of the bar', async ({ page }) => {
         await openFunnel(page);
 
-        const before = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
+        const before = await page.locator('.owa_reportControls a[href*="goalEventEdit"]').boundingBox();
 
         await page.locator('#funnelFilter .toggle-button').click();
         await expect(page.locator('#owa_filterBuilder-funnelFilter')).toBeVisible();
 
-        const after = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
+        const after = await page.locator('.owa_reportControls a[href*="goalEventEdit"]').boundingBox();
 
         expect(Math.abs(after.y - before.y)).toBeLessThan(3);
     });

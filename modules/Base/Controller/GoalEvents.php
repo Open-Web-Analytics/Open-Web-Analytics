@@ -58,7 +58,8 @@ class GoalEvents extends \OWA\Core\AdminController {
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'site_id', $siteId );
-        $db->orderBy( 'name' );
+        // ASC explicitly: orderBy() with no direction is DESC.
+        $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
         $rows = (array) $db->getAllRows();
 

@@ -701,6 +701,56 @@ function unseedNotifications(): int
     return $removed;
 }
 
+/**
+ * The funnel that leads to the seeded goal event.
+ *
+ * A funnel NAMES its goal event rather than belonging to one, so it is written
+ * separately -- and it is the funnel, not the goal event, that the funnel
+ * report reads.
+ */
+function seedGoalFunnel(array $steps): void
+{
+    $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
+        E2E_SITE_ID, E2E_GOAL_NUMBER);
+
+    $funnel = owa_coreAPI::entityFactory('base.funnel');
+    $funnel->getByColumn('goal_event_id', $goalEventId);
+
+    if (!$funnel->wasPersisted()) {
+
+        $funnelId = $funnel->generateId('funnel:' . E2E_SITE_ID . ':' . E2E_GOAL_NUMBER);
+
+        $funnel->set('id', $funnelId);
+        $funnel->set('site_id', E2E_SITE_ID);
+        $funnel->set('name', E2E_GOAL_NAME);
+        $funnel->set('goal_event_id', $goalEventId);
+        $funnel->set('creation_date', owa_coreAPI::getRequestTimestamp());
+        $funnel->create();
+    }
+
+    $funnelId = $funnel->get('id');
+
+    $db = owa_coreAPI::dbSingleton();
+    $db->deleteFrom(owa_coreAPI::entityFactory('base.funnel_step')->getTableName());
+    $db->where('funnel_id', $funnelId);
+    $db->executeQuery();
+
+    foreach ($steps as $n => $step) {
+
+        $row = owa_coreAPI::entityFactory('base.funnel_step');
+
+        $row->set('id', $row->generateId('funnel_step:' . $funnelId . ':' . $n));
+        $row->set('funnel_id', $funnelId);
+        $row->set('step_number', $n);
+        $row->set('name', $step['name'] ?? '');
+        $row->set('condition_property', \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI);
+        $row->set('condition_operator', \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX);
+        $row->set('condition_value', $step['path'] ?? '');
+        $row->set('creation_date', owa_coreAPI::getRequestTimestamp());
+        $row->create();
+    }
+}
+
 function seedGoal(): array
 {
     $steps = [];
@@ -709,24 +759,34 @@ function seedGoal(): array
         $steps[$n] = $step + ['step_number' => $n];
     }
 
-    $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
+    /*
+     * Through GoalManager, not persistSiteSetting.
+     *
+     * Goals are rows in owa_goal_event now, and their funnels are rows in
+     * owa_funnel / owa_funnel_step. persistSiteSetting still WRITES a settings
+     * blob perfectly happily -- nothing reads it any more, so seeding that way
+     * succeeded and produced a site with no goals, which is how thirteen
+     * reporting specs came to fail at once.
+     */
+    $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', E2E_SITE_ID);
 
-    $goals[E2E_GOAL_NUMBER] = [
-        'goal_number' => E2E_GOAL_NUMBER,
+    $gm->saveGoal(E2E_GOAL_NUMBER, [
         'goal_name'   => E2E_GOAL_NAME,
         'goal_status' => 'active',
         'goal_group'  => E2E_GOAL_GROUP,
         'goal_type'   => 'url_destination',
         'details'     => [
-            'match_type'   => 'exact',
-            'goal_url'     => E2E_GOAL_URL,
-            'funnel_steps' => $steps,
+            'match_type' => 'exact',
+            'goal_url'   => E2E_GOAL_URL,
         ],
-    ];
+    ]);
 
-    owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
+    // The write happens on destruct, as the blob write used to.
+    unset($gm);
 
-    $stored = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
+    seedGoalFunnel($steps);
+
+    $stored = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals(E2E_SITE_ID);
     $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
 
     return [
@@ -785,21 +845,46 @@ function teardown(): array
         . ' fixture report(s) removed';
 
     /*
-     * The fixture goal. Goals are a per-site SETTING, not rows, so the table
-     * loop above cannot reach it -- and a goal left behind keeps converting
-     * against real traffic and keeps its group showing as a metric-set tab on
-     * every tabbed report.
+     * The fixture goal event and its funnel.
      *
-     * Only this goal number is removed: an install may have its own goals in
-     * other slots, and clearing the setting wholesale would take them too.
+     * Goals are ROWS now, in owa_goal_event -- the table loop above does not
+     * reach them because it clears fact tables, and a goal event left behind
+     * keeps converting against real traffic and keeps its group showing as a
+     * metric-set tab on every tabbed report.
+     *
+     * Only this one is removed, by its derived id: an install may have goal
+     * events of its own, and clearing the table wholesale would take them too.
      */
     try {
-        $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
+        $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
+            E2E_SITE_ID, E2E_GOAL_NUMBER);
 
-        if (array_key_exists(E2E_GOAL_NUMBER, $goals)) {
-            unset($goals[E2E_GOAL_NUMBER]);
-            owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
-            $removed['goal'] = 'fixture goal removed';
+        $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
+        $goalEvent->load($goalEventId);
+
+        if ($goalEvent->wasPersisted()) {
+
+            /*
+             * The funnel first. It NAMES the goal event rather than belonging
+             * to it, so removing the goal event does not take it -- and an
+             * orphaned funnel would still be listed with nothing behind it.
+             */
+            $funnel = owa_coreAPI::entityFactory('base.funnel');
+            $funnel->getByColumn('goal_event_id', $goalEventId);
+
+            if ($funnel->wasPersisted()) {
+
+                $db = owa_coreAPI::dbSingleton();
+                $db->deleteFrom(owa_coreAPI::entityFactory('base.funnel_step')->getTableName());
+                $db->where('funnel_id', $funnel->get('id'));
+                $db->executeQuery();
+
+                $funnel->delete($funnel->get('id'));
+            }
+
+            $goalEvent->delete($goalEventId);
+            $removed['goal'] = 'fixture goal event removed';
+
         } else {
             $removed['goal'] = 'none';
         }

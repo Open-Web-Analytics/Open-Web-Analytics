@@ -120,9 +120,15 @@ test.describe('goal events', () => {
             page.locator('table.management tbody tr', { hasText: renamed })
         ).toHaveCount(1);
 
-        // Edited, not duplicated. The stored id is derived, so saving twice has
-        // to update one row rather than leave two behind.
-        await expect(page.locator('table.management tbody tr')).toHaveCount(1);
+        // Edited, not duplicated: the id is carried through the form, so saving
+        // twice has to update one row rather than leave two behind.
+        //
+        // Counted by NAME rather than as every row on the screen -- the seeded
+        // fixture goal event is a real row on this Profile, so "one row" would
+        // be asserting the fixture away.
+        await expect(
+            page.locator('table.management tbody tr', { hasText: name })
+        ).toHaveCount(1);
 
         // --- DELETE ------------------------------------------------------------
         await gotoAction(page, 'base.goalEventEdit',

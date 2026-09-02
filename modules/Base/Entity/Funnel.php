@@ -77,7 +77,13 @@ class Funnel extends \OWA\Core\Entity {
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'funnel_id', $this->get( 'id' ) );
-        $db->orderBy( 'step_number' );
+        /*
+         * ASC explicitly, and this one is not cosmetic: orderBy() with no
+         * direction is DESC, so the funnel came back last step first -- the
+         * report drew Pricing before Home and checkGoalStart tested the wrong
+         * end of the path. An ORDERED list is the whole point of this table.
+         */
+        $db->orderBy( 'step_number', OWA_SQL_ASCENDING );
 
         $steps = array();
 

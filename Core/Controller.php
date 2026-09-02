@@ -1083,7 +1083,14 @@ class Controller extends \OWA\Core\Base {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $property->getTableName() );
         $db->selectColumn( 'id, name, domain, archived_date' );
-        $db->orderBy( 'name' );
+        /*
+         * ASC explicitly: orderBy() with no direction is DESC.
+         *
+         * getDefaultSortDirection() returns OWA_SQL_DESCENDING, so every
+         * directionless orderBy() in this codebase sorts backwards -- which for
+         * a picker means the Properties list reads Z to A.
+         */
+        $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
         $properties = array();
 
