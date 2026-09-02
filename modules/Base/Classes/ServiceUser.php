@@ -315,6 +315,20 @@ class ServiceUser extends \OWA\Core\Base {
             foreach ($site_ids as $row) {
                 $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $siteEntity->load($row['site_id']);
+
+                /*
+                 * Archived Profiles drop out here, which also settles
+                 * AUTHORISATION and not just listing: isSiteAllowed() reads
+                 * this map, so an archived Profile cannot be reported on by
+                 * URL either. The grant row is deliberately left in place --
+                 * archiving keeps what hangs off a Profile so a restore brings
+                 * its access back with it.
+                 */
+                if ( $siteEntity->isArchived() ) {
+
+                    continue;
+                }
+
                 $list[ $siteEntity->get('site_id') ] = $siteEntity;
             }
         }

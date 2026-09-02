@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 20;
+        $this->required_schema_version = 24;
         return parent::__construct();
     }
 
@@ -198,7 +198,14 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
-        $this->registerAction( 'base.sites',                         'OWA\\Module\\Base\\Controller\\Sites',                        'Controller/Sites.php' );
+        $this->registerAction( 'base.reportingHome',                 'OWA\\Module\\Base\\Controller\\ReportingHome',                 'Controller/ReportingHome.php' );
+        $this->registerAction( 'base.propertyProfile',               'OWA\\Module\\Base\\Controller\\PropertyProfile',              'Controller/PropertyProfile.php' );
+        $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile',          'Controller/OrganizationProfile.php' );
+        $this->registerAction( 'base.profileSettings',               'OWA\\Module\\Base\\Controller\\ProfileSettings',              'Controller/ProfileSettings.php' );
+        $this->registerAction( 'base.propertyAccess',                'OWA\\Module\\Base\\Controller\\PropertyAccess',               'Controller/PropertyAccess.php' );
+        $this->registerAction( 'base.propertyDelete',                'OWA\\Module\\Base\\Controller\\PropertyDelete',                'Controller/PropertyDelete.php' );
+        $this->registerAction( 'base.propertyEdit',                  'OWA\\Module\\Base\\Controller\\PropertyEdit',                  'Controller/PropertyEdit.php' );
+        $this->registerAction( 'base.organizationEdit',              'OWA\\Module\\Base\\Controller\\OrganizationEdit',              'Controller/OrganizationEdit.php' );
         $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
         $this->registerAction( 'base.customReportEdit',              'OWA\\Module\\Base\\Controller\\CustomReportEdit',             'Controller/CustomReportEdit.php' );
         $this->registerAction( 'base.customReportSave',              'OWA\\Module\\Base\\Controller\\CustomReportSave',             'Controller/CustomReportSave.php' );
@@ -372,24 +379,35 @@ class Module extends \OWA\Core\Module {
                 'order'            => 1)
         );
 
-        $this->addAdminPanel(array(
-                'do'             => 'base.users',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'User Management',
-                'group'            => 'General',
-                'order'            => 2)
-        );
 
 
 
-        $this->addAdminPanel(array(
-                'do'             => 'base.sites',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Tracked Sites',
-                'group'            => 'General',
-                'order'            => 3)
-        );
+        /*
+         * No Properties panel. The hierarchy is navigated from the site control
+         * above the report nav, which is where someone is when they need it;
+         * an admin-menu roster was a second place to browse the same tree.
+         * The per-Property edit screen is reached from that control.
+         */
 
+        /*
+         * The settings nav is for INSTALL-WIDE configuration only.
+         *
+         * Everything else now hangs off the Organization / Property / Profile
+         * hierarchy and is reached from the site control, which is where
+         * someone is when they need it:
+         *
+         *   - User Management -> the Organization, because that is where user
+         *     accounts live.
+         *   - Tracked Sites   -> the control itself replaced that roster.
+         *   - Goal Settings   -> a Profile, since goals are per site.
+         *
+         * What is left here is genuinely install-scoped: the modules that are
+         * active, and the timezone -- which cannot move down, because yyyymmdd
+         * and nine other date parts are baked into every fact row at collection
+         * in the configured zone, so it is not retroactive and two profiles
+         * disagreeing about it would put rows of different meanings in one
+         * table with nothing recording which.
+         */
         $this->addAdminPanel(array(
                 'do'             => 'base.optionsModules',
                 'priviledge'     => 'admin',
@@ -399,13 +417,6 @@ class Module extends \OWA\Core\Module {
         );
 
         /*
-        $this->addAdminPanel(array(
-                'do'             => 'base.optionsGoals',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Goal Settings',
-                'group'            => 'General',
-                'order'            => 3)
-        );
         */
     }
 
@@ -2369,13 +2380,16 @@ class Module extends \OWA\Core\Module {
             'conversionHandlers'
         );
 
-        // Nofifcation handler
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'announce_visitors' )
-            && \OWA\Core\CoreAPI::getSetting( 'base', 'notice_email' )
-            //&& ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' )
-            && ! defined('OWA_CLI')
-            
-        ) {
+        /*
+         * Notification handler.
+         *
+         * announce_visitors and notice_email are per-Profile now, and this
+         * runs at module-registration time -- there is no event and no site
+         * here to ask about. So the handler registers unconditionally and
+         * makes the decision itself, where it has a site_id. The only test
+         * left that is knowable this early is the CLI one.
+         */
+        if ( ! defined('OWA_CLI') ) {
 
             $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
         }
@@ -2406,11 +2420,14 @@ class Module extends \OWA\Core\Module {
                 'ua',
                 'referer',
                 'site',
+                'organization',
+                'property',
                 'visitor',
                 'host',
                 'os',
                 'impression',
                 'configuration',
+            'setting',
                 'user',
                 'domstream',
                 'action_fact',

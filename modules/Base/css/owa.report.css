@@ -2893,3 +2893,673 @@ li.constraintRow {
     padding: 0;
     list-style: none;
 }
+
+/* ---------------------------------------------------------------------------
+ * Site control: Organization / Property / Observation Profile
+ *
+ * Sits above the left nav, inside a 200px column, so COLLAPSED it must fit that
+ * width and EXPANDED it must escape it -- the panel is absolutely positioned
+ * and overlays the report rather than widening the column and reflowing the
+ * page every time someone opens it.
+ *
+ * Colours are the ones already in this file: #505050 text, #666 secondary,
+ * #ccc borders, white ground, orange as the accent (the same left-rule idiom as
+ * .owa_visitSummaryInfobox).
+ * ------------------------------------------------------------------------ */
+
+/*
+ * The tile's vertical spacing lives HERE and nowhere else, so it is identical
+ * on a report page and on a settings page. It used to get a 20px margin in one
+ * context and sit under a 24px cell padding in the other, which put it at two
+ * different heights on screens a person moves between constantly.
+ */
+.owa_siteControl {
+    position: relative;
+    margin: 20px 0;
+    font-size: 12px;
+}
+
+.owa_siteControlSummary {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-left: 5px solid orange;
+    padding: 8px 22px 8px 10px;
+    cursor: pointer;
+    position: relative;
+    line-height: 1.35;
+}
+
+.owa_siteControlSummary:hover,
+.owa_siteControlSummary:focus {
+    border-color: #a0a0a0;
+    border-left-color: orange;
+    outline: none;
+}
+
+/* The three tiers, weighted by how specific each is to where you are. */
+.owa_siteControlOrg {
+    color: #999999;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.owa_siteControlProperty {
+    color: #505050;
+    font-weight: bold;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.owa_siteControlProfile {
+    color: #666666;
+}
+
+/* A Property's domain, under its name in the fan-out. Grey and small: it is
+   there to tell two similarly named Properties apart, not to be read first. */
+.owa_siteControlDomain {
+    display: block;
+    color: #999999;
+    font-size: 11px;
+    word-break: break-all;
+}
+
+/* The tracker id is a value to be READ and copied, so it is monospaced and
+   allowed to break -- it is the thing people open this control to find. */
+.owa_siteControlId {
+    display: block;
+    font-family: monospace;
+    font-size: 10px;
+    color: #999999;
+    word-break: break-all;
+}
+
+.owa_siteControlCaret {
+    position: absolute;
+    right: 8px;
+    top: 10px;
+    color: #999999;
+    transition: transform 0.12s ease;
+}
+
+.owa_siteControl.is-open .owa_siteControlCaret {
+    transform: rotate(180deg);
+}
+
+.owa_siteControl.is-open .owa_siteControlPanel {
+    display: flex;
+}
+
+/* --- the fan-out ------------------------------------------------------- */
+
+/*
+ * Opens to the RIGHT of the tile, not below it.
+ *
+ * Below, the panel covered the report nav -- the thing you are usually about to
+ * use next -- and pushed a 660px box down a 200px column so it hung over the
+ * report. Beside it, the tile stays readable while you browse, and the panel
+ * lands in the content area where there is room for three columns.
+ */
+.owa_siteControlPanel {
+    /*
+     * display:none, NOT the hidden attribute alone.
+     *
+     * A class rule setting display:flex outranks the UA stylesheet's
+     * [hidden]{display:none}, so the panel rendered open on every page load
+     * even though the markup said hidden. The attribute stays for assistive
+     * technology; the class is what actually shows it.
+     */
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 6px;
+    z-index: 500;
+    width: 660px;
+    max-width: 90vw;
+    background-color: #ffffff;
+    border: 1px solid #a0a0a0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.owa_siteControlColumn {
+    flex: 1 1 0;
+    min-width: 0;
+    border-right: 1px solid #efefef;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.owa_siteControlColumn:last-child {
+    border-right: 0;
+}
+
+.owa_siteControlColumnHead {
+    color: #999999;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 10px;
+    border-bottom: 1px solid #efefef;
+    background-color: #fbfbfb;
+    position: sticky;
+    top: 0;
+}
+
+.owa_siteControlColumn ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa_siteControlItem {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 7px 10px;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid #f4f4f4;
+    cursor: pointer;
+}
+
+.owa_siteControlItem:hover {
+    background-color: #f7f7f7;
+}
+
+.owa_siteControlItem.is-selected {
+    border-left-color: orange;
+    background-color: #fbfbfb;
+}
+
+.owa_siteControlItemName {
+    color: #505050;
+    word-break: break-word;
+}
+
+.owa_siteControlProfiles .owa_siteControlItem .owa_siteControlId {
+    display: block;
+    margin-top: 2px;
+}
+
+.owa_siteControlSelect {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-decoration: none;
+}
+
+/* Edit is a secondary action: quiet until wanted, but always reachable by
+   keyboard -- revealed on focus as well as hover, not hover alone. */
+.owa_siteControlEdit {
+    flex: 0 0 auto;
+    color: #999999;
+    font-size: 11px;
+    text-decoration: none;
+    visibility: hidden;
+}
+
+.owa_siteControlItem:hover .owa_siteControlEdit,
+.owa_siteControlEdit:focus {
+    visibility: visible;
+    color: #666666;
+    text-decoration: underline;
+}
+
+/* The hierarchy's settings nav, under the site control. One group per tier, so
+   each screen sits under a heading that says which thing it is about. */
+
+.owa_hierarchyNav {
+    font-size: 12px;
+    /* Matches the tile's own inset, so the two read as one column rather than
+       a card with a list floating beside it. */
+    padding: 0 2px;
+}
+
+.owa_hierarchyNavGroup {
+    margin-bottom: 16px;
+}
+
+.owa_hierarchyNavGroup:last-child {
+    margin-bottom: 0;
+}
+
+.owa_hierarchyNavHead {
+    color: #999999;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0 5px 8px;
+    border-bottom: 1px solid #efefef;
+    margin-bottom: 2px;
+}
+
+.owa_hierarchyNav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* 6px vertical, and the left inset lines the label up with its heading. A
+   4px strip was a cramped hit area for a link people use to move between
+   screens. */
+.owa_hierarchyNav li {
+    padding: 6px 6px 6px 8px;
+    border-left: 3px solid transparent;
+    line-height: 1.3;
+}
+
+.owa_hierarchyNav li a {
+    color: #666666;
+    text-decoration: none;
+}
+
+.owa_hierarchyNav li:hover a {
+    color: #505050;
+}
+
+/* Current is marked by the accent rule, the same idiom the site control uses
+   for a selected Property or Profile. */
+/* The accent rule replaces the transparent one, so the label must not shift by
+   the 3px when it becomes current. */
+.owa_hierarchyNav li.is-current {
+    border-left-color: orange;
+}
+
+.owa_hierarchyNav li.is-current a {
+    color: #505050;
+    font-weight: bold;
+}
+
+/* ---------------------------------------------------------------------------
+ * The hierarchy's content pane.
+ *
+ * Scoped to .owa_hierarchyContent so the rest of the admin area keeps the
+ * treatment it has -- owa.css gives .panel_headline an 18px bold label on a
+ * grey block and #panel no ground at all, which beside the white tile and its
+ * nav read as two unrelated designs on one screen.
+ *
+ * Same materials as the left column: white ground, #cccccc rule, #505050 text,
+ * orange only where something is current.
+ * ------------------------------------------------------------------------ */
+
+/*
+ * Clears the top nav.
+ *
+ * The CONTENT column only. The left column's clearance is the tile's own
+ * margin, which is shared with the report page -- padding the cell as well
+ * would stack the two and put the tile lower here than there.
+ */
+.owa_hierarchyPage > tbody > tr > td.owa_hierarchyContent {
+    padding-top: 20px;
+}
+
+.owa_hierarchyContent {
+    padding-left: 20px;
+}
+
+.owa_hierarchyContent .panel_headline {
+    font-size: 15px;
+    font-weight: bold;
+    color: #505050;
+    background-color: transparent;
+    border-bottom: 1px solid #cccccc;
+    padding: 0 0 10px 0;
+    margin: 0 0 18px 0;
+}
+
+/*
+ * A width, so the pane does not shrink-wrap its content.
+ *
+ * #panel is a plain div in a table cell with no width of its own, so it
+ * collapsed to whatever the widest form field happened to be -- which made the
+ * intro paragraph wrap at an arbitrary column that changed from screen to
+ * screen. A max-width gives every screen the same measure.
+ */
+.owa_hierarchyContent #panel {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding: 20px 24px 24px 24px;
+    max-width: 780px;
+    min-width: 480px;
+}
+
+/* The forms inside inherit owa.css's admin styling, which assumes the grey
+   block above it. These put the spacing back on a white ground. */
+.owa_hierarchyContent #panel fieldset {
+    border: 0;
+    margin: 0 0 24px 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel legend {
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0 6px 0;
+}
+
+/* The line under each headline saying what the screen is for. Secondary to the
+   title, ahead of the form -- so it reads before the first field, not as a
+   caption on one. */
+/* No max-width of its own: it wraps at the pane's measure, so the intro and the
+   form below it break on the same column. */
+.owa_hierarchyContent #panel .owa_panelIntro {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+    margin: 0 0 22px 0;
+}
+
+.owa_hierarchyContent #panel .inline_h2 {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.owa_hierarchyContent #panel .inline_h3,
+.owa_hierarchyContent #panel .setting .label {
+    color: #505050;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/*
+ * owa.css sets .form-instructions to position:relative; left:150px -- an offset
+ * for a layout with the label in a left column. These forms stack label, field,
+ * then help text, so that 150px pushed the help text out past the field it
+ * describes. Reset, not overridden piecemeal: left alone would still leave the
+ * element positioned.
+ */
+.owa_hierarchyContent #panel .form-instructions {
+    display: block;
+    position: static;
+    left: auto;
+    color: #999999;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.owa_hierarchyContent #panel .setting {
+    margin-bottom: 16px;
+}
+
+/*
+ * The other two offset classes from the same left-column era. Unused by these
+ * screens today, but a subview added later would inherit a 120px or 380px shift
+ * and land beside its field for the same reason .form-instructions did --
+ * cheaper to neutralise here than to rediscover.
+ */
+.owa_hierarchyContent #panel .form-field,
+.owa_hierarchyContent #panel .form-value {
+    position: static;
+    left: auto;
+}
+
+/* A form's rows are the page's main rhythm, so they get the same hairline the
+   nav groups use rather than the heavier table borders owa.css sets. */
+.owa_hierarchyContent #panel table.management td {
+    border: 0;
+    border-bottom: 1px solid #f4f4f4;
+    padding: 8px 10px 8px 0;
+    min-width: 0;
+}
+
+.owa_hierarchyContent #panel input[type="text"],
+.owa_hierarchyContent #panel input[type="password"] {
+    border: 1px solid #cccccc;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.owa_hierarchyContent #panel input[type="text"]:focus,
+.owa_hierarchyContent #panel input[type="password"]:focus {
+    border-color: #a0a0a0;
+    outline: none;
+}
+
+/* The tile's contents on one line above the page heading. Context, not title:
+   grey, small, and it never wraps into a second line -- it truncates, because a
+   two-line breadcrumb competes with the heading it is meant to sit under. */
+
+.owa_hierarchyCrumb {
+    font-size: 11px;
+    color: #999999;
+    margin: 0 0 10px 0;
+    max-width: 780px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.owa_hierarchyCrumbSep {
+    margin: 0 6px;
+    color: #cccccc;
+}
+
+.owa_hierarchyCrumbNote {
+    color: #bbbbbb;
+}
+
+
+/* Grids inside the hierarchy pane.
+ *
+ * owa.admin.css gives .management a 1px #9f9f9f box, 14px cells and unsized
+ * headers -- so the column labels came out LARGER than the page heading above
+ * them, and the grid read as heavier than the screen containing it. Scoped
+ * here so the rest of the admin area keeps what it has. */
+
+.owa_hierarchyContent #panel table.management {
+    border: 1px solid #e4e4e4;
+    border-spacing: 0;
+}
+
+.owa_hierarchyContent #panel table.management th {
+    background-color: #fbfbfb;
+    color: #999999;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e4e4e4;
+    border-right: 0;
+}
+
+.owa_hierarchyContent #panel table.management td {
+    font-size: 12px;
+    color: #505050;
+    padding: 10px;
+    border: 0;
+    border-bottom: 1px solid #f4f4f4;
+}
+
+.owa_hierarchyContent #panel table.management tr:last-child td {
+    border-bottom: 0;
+}
+
+/* "optional" beside a field label. Quiet and lowercase: it qualifies the label
+   rather than competing with it. */
+.owa_hierarchyContent #panel .owa_optional {
+    font-weight: normal;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #bbbbbb;
+    margin-left: 4px;
+}
+
+/* "add new" beside a fan-out column heading. Right-aligned so the headings stay
+   the column's left edge, and quiet -- adding is rarer than choosing, which is
+   what the column is for. */
+.owa_siteControlColumnHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.owa_siteControlAdd {
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #999999;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.owa_siteControlAdd:hover,
+.owa_siteControlAdd:focus {
+    color: #666666;
+    text-decoration: underline;
+}
+
+
+/* The destructive action at the foot of a hierarchy screen.
+ *
+ * Set off from the form above it rather than sitting in the same run of
+ * fields: deleting a Profile is not another setting, and it should not read as
+ * one. The rule and the muted body do that work; the button carries the only
+ * strong colour on the screen.
+ *
+ * .owa-button is orange at 18px with 15px/30px padding -- the affirmative
+ * action's weight. The danger variant is deliberately SMALLER, because the
+ * button you want people to reach for here is not this one. */
+.owa_dangerZone {
+    margin: 40px 0 0 0;
+    padding: 20px 0 0 0;
+    border-top: 1px solid #e3e3e3;
+    max-width: 780px;
+}
+
+.owa_dangerZoneTitle {
+    font-size: 13px;
+    font-weight: bold;
+    color: #99321f;
+    margin: 0 0 6px 0;
+}
+
+.owa_dangerZoneBody {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+    margin: 0 0 4px 0;
+}
+
+.owa_dangerZone form {
+    margin: 0;
+}
+
+.owa-button.owa-button-danger {
+    background-color: #ffffff;
+    color: #99321f;
+    border: 1px solid #d9b8b1;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 16px;
+    margin: 14px 0 0 0;
+}
+
+.owa-button.owa-button-danger:hover {
+    background-color: #99321f;
+    border-color: #99321f;
+    color: #ffffff;
+    box-shadow: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+}
+
+
+/* The confirmation an irreversible action gets.
+ *
+ * jQuery UI supplies the overlay and the frame; this is the part that has to
+ * read like the rest of the admin rather than like a jQuery UI demo. Quiet
+ * frame, ordinary body copy, and the only strong colour on the proceed button
+ * -- which sits second, because the default answer to a destructive question
+ * should be no. */
+.owa_confirmDialogFrame.ui-dialog {
+    /*
+     * Above its own modal overlay.
+     *
+     * jQuery UI gives BOTH the dialog and the overlay .ui-front, which is
+     * z-index:100 -- so which one wins comes down to DOM order, and the overlay
+     * was landing on top. The buttons rendered, looked clickable, and swallowed
+     * every click. 101 puts the dialog one step up; the overlay keeps 100 and
+     * still covers the page behind it.
+     */
+    z-index: 101;
+    border: 1px solid #d5d5d5;
+    border-radius: 5px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
+    background: #ffffff;
+    padding: 0;
+}
+
+.owa_confirmDialogFrame .ui-dialog-titlebar {
+    background: none;
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    border-radius: 5px 5px 0 0;
+    padding: 16px 20px;
+}
+
+.owa_confirmDialogFrame .ui-dialog-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333333;
+    float: none;
+}
+
+.owa_confirmDialogFrame .ui-dialog-titlebar-close {
+    display: none;
+}
+
+.owa_confirmDialogFrame .ui-dialog-content {
+    padding: 18px 20px 4px 20px;
+}
+
+.owa_confirmDialog .owa_confirmBody {
+    margin: 0;
+    color: #555555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.owa_confirmDialogFrame .ui-dialog-buttonpane {
+    border: 0;
+    background: none;
+    margin: 0;
+    padding: 6px 20px 18px 20px;
+}
+
+.owa_confirmDialogFrame .ui-dialog-buttonset {
+    float: right;
+}
+
+/* Overriding .owa-button's 25px top margin and 18px type: these sit in a
+   button pane, not at the foot of a form. */
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button {
+    margin: 0 0 0 8px;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 16px;
+}
+
+/* The cancel button. Deliberately the plainest thing on the dialog -- it is
+   the safe answer, so it needs to be easy to hit, not easy to notice. */
+.owa-button.owa-button-quiet,
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet {
+    background-color: #ffffff;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
+.owa-button.owa-button-quiet:hover,
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet:hover {
+    background-color: #f4f4f4;
+    color: #333333;
+    border-color: #b5b5b5;
+    box-shadow: none;
+}

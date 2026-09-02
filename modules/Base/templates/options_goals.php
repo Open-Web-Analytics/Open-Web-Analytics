@@ -1,7 +1,10 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="panel_headline"><?php echo $view->headline?></div>
 
-<div class="subview_content">
+<div id="panel">
+<div class="owa_panelIntro">Goals belong to this Observation Profile. Each one names a
+condition worth counting &mdash; a page reached, an action taken &mdash; and is measured
+only by this Profile.</div>
 
     <table class="management">
         <thead>

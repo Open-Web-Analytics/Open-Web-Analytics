@@ -68,6 +68,29 @@ final class LegacyClassNameContractTest extends TestCase
 
     private const RETIRED = [
         /*
+         * RETIRED 2026-09-01: base.sites, the flat roster of every tracked site.
+         *
+         * It was the landing page, the "Reporting" link and the redirect after
+         * every save, and it carried a thumbnail, trend metrics and five
+         * management links per row. Those five links belong to the hierarchy's
+         * tier nav now and its navigation job belongs to the site control, so
+         * it was the last screen still offering the old flat route to them.
+         * Reporting lands on the last Profile viewed instead.
+         *
+         * Listed here rather than left aliased so anything still asking for it
+         * gets "class not found" rather than a controller with no view.
+         */
+        'owa_sitesController',
+        'owa_sitesView',
+        /*
+         * RETIRED 2026-09-01: the old settings menu wrapper. Every settings
+         * screen -- Base's and the modules' -- renders in the hierarchy wrapper
+         * now, which carries the site control and one nav covering install,
+         * Organization, Property and Profile. Two settings menus was the thing
+         * to remove, not a second one to maintain.
+         */
+        'owa_optionsView',
+        /*
          * RETIRED 2026-08-31: 41 metric classes, deleted when metrics became
          * configuration.
          *

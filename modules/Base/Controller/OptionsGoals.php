@@ -48,7 +48,18 @@ class OptionsGoals extends \OWA\Core\AdminController {
         $goal_groups = $gm->getAllGoalGroupLabels();
         $this->set('goals', $goals);
         $this->set('goal_groups', $goal_groups);
-        $this->setView('base.options');
+        /*
+         * The hierarchy wrapper: this is a Profile screen, reached from the site
+         * control's nav. The install settings nav beside it would offer a way
+         * out that has nothing to do with where you are.
+         */
+        $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        /* Tier 3: this screen is about an Observation Profile, so the context line stops there. */
+        $this->set( 'hierarchy_tier', 3 );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+        $this->setView('base.optionsHierarchy');
         $this->setSubView('base.optionsGoals');
         $this->set('siteId', $siteId);
     }

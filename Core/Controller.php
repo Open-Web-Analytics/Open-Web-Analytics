@@ -864,6 +864,311 @@ class Controller extends \OWA\Core\Base {
      * Returns array of owa_site entities where the current user has access to, taken the current controller cap into account
      * @return array
      */
+    /**
+     * The Profile the hierarchy screens show as current.
+     *
+     * The tile names all three tiers, so a screen reached without a siteId --
+     * editing the Organization, say -- would draw it with two of the three
+     * blank, which reads as though nothing is selected rather than as though
+     * this screen is simply about a higher tier.
+     *
+     * Falls back to the first Profile the user may see. Same reasoning the
+     * report controller uses when a request names no site: something has to be
+     * current, and the first allowed one is the only defensible choice without
+     * asking.
+     */
+    protected function resolveCurrentSiteId( $siteId = '', $propertyId = '' ) {
+
+        if ( $siteId ) {
+
+            return $siteId;
+        }
+
+        $sites = (array) $this->getSitesAllowedForCurrentUser();
+
+        /*
+         * A Property in context picks a Profile OF THAT PROPERTY.
+         *
+         * Arriving from the control's edit link on some other Property carries
+         * a propertyId and no siteId. Falling straight through to "the first
+         * site I can see" then left the tile and the Profile group describing
+         * whatever site happened to be first -- so the nav disagreed with the
+         * Property whose screen you were looking at.
+         */
+        if ( $propertyId ) {
+
+            foreach ( $sites as $site ) {
+
+                /*
+                 * Compared as strings. A property id reaches here from a URL
+                 * (string), from the database (string), and from a PHP array
+                 * key (which coerces a numeric id to an INT) -- so a strict
+                 * comparison silently fails on the last one and falls through
+                 * to the wrong site.
+                 */
+                if ( (string) $site->get( 'property_id' ) === (string) $propertyId ) {
+
+                    return $site->get( 'site_id' );
+                }
+            }
+        }
+
+        foreach ( $sites as $site ) {
+
+            return $site->get( 'site_id' );
+        }
+
+        return '';
+    }
+
+    /**
+     * The settings nav for the hierarchy, shown under the site control.
+     *
+     * One group per tier, each holding that tier's screens. This is why the
+     * tiers do not need one page carrying several forms: a Property's name and
+     * a Profile's goals are different screens under different headings, rather
+     * than sections of one long page that saves in pieces.
+     *
+     * Only the install-wide options live in the settings nav proper now, so
+     * this is the whole of what hangs off the hierarchy.
+     *
+     * @param string $siteId     the Profile in context, if any
+     * @param string $propertyId the Property in context; derived from the
+     *                           Profile when not given, because most screens
+     *                           know which site they are on and not which
+     *                           Property that implies
+     * @return array group label => array of items
+     */
+    protected function getHierarchyNav( $siteId = '', $propertyId = '' ) {
+
+        if ( ! $propertyId && $siteId ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $site->getByColumn( 'site_id', $siteId );
+            $propertyId = $site->get( 'property_id' );
+        }
+
+        $nav = array();
+
+        /*
+         * Install-wide options head the SAME nav now.
+         *
+         * They were split into a separate settings menu because the hierarchy
+         * screens had no reliable context -- a screen reached without a Profile
+         * drew a tile with two blank lines. Landing every session on a Profile
+         * settled that: the tile is always populated, so one nav can carry both
+         * without either half looking broken.
+         *
+         * First, because they are the widest scope: the install contains the
+         * Organization contains the Property contains the Profile, and the nav
+         * reads in that order.
+         */
+        /*
+         * Built from the registered admin panels rather than listed here, so a
+         * module that adds one still appears -- Hello and MaxmindGeoip both
+         * register into that map, and hardcoding Base's two entries would have
+         * left theirs unreachable when the old settings menu went.
+         */
+        $installation = array();
+
+        foreach ( (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() as $items ) {
+
+            foreach ( (array) $items as $item ) {
+
+                $installation[] = array(
+                    'do'         => $item['do'],
+                    'label'      => $item['anchortext'],
+                    'params'     => array(),
+                    'capability' => 'edit_settings',
+                );
+            }
+        }
+
+        if ( $installation ) {
+
+            $nav['Installation'] = $installation;
+        }
+
+        $nav['Organization'] = array(
+            array( 'do' => 'base.organizationProfile', 'label' => 'Details', 'params' => array(),
+                   'capability' => 'edit_settings' ),
+            /*
+             * User accounts live in the Organization, which is why Users is
+             * here and not in the install settings nav -- that put the people
+             * belonging to an Organization somewhere that never named one.
+             */
+            array( 'do' => 'base.users', 'label' => 'Users', 'params' => array(),
+                   'capability' => 'edit_users' ),
+        );
+
+        if ( $propertyId ) {
+
+            $nav['Property'] = array(
+                array( 'do' => 'base.propertyProfile', 'label' => 'Details',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_sites' ),
+            );
+
+            /*
+             * Access is granted to a WEBSITE, not to one way of observing it,
+             * so it belongs to the Property. The grants are still stored per
+             * Profile, which is why this needs a siteId to render -- moving the
+             * storage is a migration and a change to how sitesEditAllowedUsers
+             * resolves them.
+             */
+            if ( $siteId ) {
+
+                $nav['Property'][] = array(
+                    'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
+                    'params' => array( 'siteId' => $siteId ),
+                    'capability' => 'edit_sites' );
+            }
+        }
+
+        if ( $siteId ) {
+
+            $nav['Observation Profile'] = array(
+                array( 'do' => 'base.sitesProfile', 'label' => 'Details',
+                       'params' => array( 'siteId' => $siteId, 'edit' => true ),
+                       'capability' => 'edit_sites' ),
+                /*
+                 * An Observation Profile IS a way of observing, so how it
+                 * watches the site is its own screen rather than a second form
+                 * stacked under its name.
+                 */
+                array( 'do' => 'base.profileSettings', 'label' => 'Observation Settings',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_sites' ),
+                array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_sites' ),
+                array( 'do' => 'base.optionsGoals', 'label' => 'Goals',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
+            );
+        }
+
+        return $nav;
+    }
+
+    /**
+     * The Organization / Property / Profile tree, for the site control.
+     *
+     * The control is the navigation for the hierarchy -- there is no separate
+     * roster screen -- so it needs the whole shape at once: the Organization
+     * heading it, every Property the user may see, and the Profiles under each.
+     * A Profile carries the tracker id, which is why the id travels with it and
+     * is shown: it is what someone came to the control to find.
+     *
+     * Two queries regardless of size, not one per Property. This runs on every
+     * report render.
+     *
+     * @param array $sites site_id => base.site entity
+     * @return array
+     */
+    protected function getSiteHierarchy( $sites ) {
+
+        $sites = (array) $sites;
+
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+        $property     = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $organization->getTableName() );
+        $db->selectColumn( 'id, name' );
+
+        $organizations = (array) $db->getAllRows();
+        $org           = $organizations ? $organizations[0] : array( 'id' => '', 'name' => '' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $property->getTableName() );
+        $db->selectColumn( 'id, name, domain, archived_date' );
+        $db->orderBy( 'name' );
+
+        $properties = array();
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            // Archived Properties are removed Properties.
+            if ( ! empty( $row['archived_date'] ) ) {
+
+                continue;
+            }
+
+            $row['profiles'] = array();
+            $properties[ $row['id'] ] = $row;
+        }
+
+        /*
+         * Only Profiles the user may see. An admin sees all of them; anyone
+         * else sees what they were granted, and a Property none of whose
+         * Profiles they can see is dropped rather than shown empty.
+         */
+        $unassigned = array();
+
+        foreach ( $sites as $site ) {
+
+            $entry = array(
+                'site_id' => $site->get( 'site_id' ),
+                'name'    => $site->get( 'name' ),
+                'domain'  => $site->get( 'domain' ),
+            );
+
+            $parent = $site->get( 'property_id' );
+
+            if ( $parent && isset( $properties[ $parent ] ) ) {
+
+                $properties[ $parent ]['profiles'][] = $entry;
+
+            } else {
+
+                /*
+                 * Never dropped: a Profile with no Property is still a site the
+                 * user is tracking, and omitting it from the control would make
+                 * it unreachable rather than merely unparented.
+                 */
+                $unassigned[] = $entry;
+            }
+        }
+
+        /*
+         * A Property with no Profiles is dropped -- unless the viewer can see
+         * every Profile there is, in which case it is genuinely empty rather
+         * than merely opaque to them.
+         *
+         * Those are two different facts that the profile count alone cannot
+         * tell apart. For someone with granted access, an empty Property means
+         * "none of its Profiles are yours" and showing it would leak that the
+         * website exists. For an admin it means the Property really has none,
+         * and that is a state worth being in: archiving a Property's last
+         * Profile leaves it empty so it can be repopulated. Dropping it there
+         * made the Property unreachable -- no screen could get back to it --
+         * which is also what happened to a Property created from the fan-out
+         * before it had a Profile.
+         */
+        $seesEveryProfile = \OWA\Core\CoreAPI::getCurrentUser()->isAdmin();
+
+        $properties = array_filter( $properties, function ( $p ) use ( $seesEveryProfile ) {
+
+            return $p['profiles'] || $seesEveryProfile;
+        } );
+
+        if ( $unassigned ) {
+
+            $properties['__unassigned'] = array(
+                'id'       => '',
+                'name'     => 'Unassigned',
+                'domain'   => '',
+                'profiles' => $unassigned,
+            );
+        }
+
+        return array(
+            'organization' => $org,
+            'properties'   => array_values( $properties ),
+        );
+    }
+
     protected function getSitesAllowedForCurrentUser() {
    
         $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
@@ -877,6 +1182,15 @@ class Controller extends \OWA\Core\Base {
 
                 $site = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $site->load($siteRow['id']);
+
+                // Archived Profiles are removed Profiles. getSitesList() is the
+                // raw table -- migrations need that -- so the filtering happens
+                // at the product-facing callers.
+                if ( $site->isArchived() ) {
+
+                    continue;
+                }
+
                 $result[$siteRow['site_id']] = $site;
             }
  

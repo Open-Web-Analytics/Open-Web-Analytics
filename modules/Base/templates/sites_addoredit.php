@@ -1,40 +1,137 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
+<?php
+/*
+ * The Profile's DETAILS only.
+ * 
+ * This carried three forms -- details, observation settings and allowed
+ * users -- stacked on one page that saved in pieces. They are separate
+ * screens now, and the access one moved up to the Property.
+ * 
+ * It opens AND closes its own #panel. The original opened it here and
+ * closed it at the very end of the third form, so splitting the file left
+ * this one holding an unclosed div -- which swallows everything after it
+ * and makes the page look broken rather than merely short.
+ */
+?>
 <DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
 <div id="panel">
+<div class="owa_panelIntro">An Observation Profile is one way of watching a Property.
+It carries its own tracking id, so a Property watched two ways has two Profiles and
+two tags.</div>
 <fieldset>
 
-    <legend>Site Profile</legend>
+    <legend>Observation Profile</legend>
 
     <form method="POST">
 
     <table class="management">
         <?php if ($view->edit == true):?>
         <TR>
-            <TH>Site ID:</TH>
+            <TH>Tracking ID:</TH>
             <TD><?php $view->out( $view->site['site_id'] );?></TD>
             <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
 
         </TR>
         <?php endif;?>
+        <?php if ($view->edit == true):?>
         <TR>
+            <TH>Property:</TH>
+            <TD>
+                <?php $view->out( $view->propertyName ?? '' );?>
+                <?php $owa_ident = ( $view->site['stream_type'] ?? 'web' ) === 'app'
+                        ? ( $view->site['app_id'] ?? '' )
+                        : ( $view->site['domain'] ?? '' );?>
+                <?php if ( $owa_ident ):?>
+                <span class="owa_siteControlDomain"><?php $view->out( $owa_ident );?></span>
+                <?php endif;?>
+                <span class="form-instructions">The Property this Profile belongs to, and
+                what this Profile observes.</span>
+            </TD>
+        </TR>
+        <?php else:?>
+        <?php
+        /*
+         * WHICH Property, rather than "what domain".
+         *
+         * The old form asked for a domain and derived a Property from it, which
+         * made the domain the Property's key: adding a second Profile to a
+         * website meant retyping its domain, and a Property with no domain (an
+         * app) could never be chosen at all. Choosing is also what makes an
+         * empty Property usable -- there was previously no way to put a Profile
+         * back into one.
+         */
+        ?>
+        <TR>
+            <TH>Property:</TH>
+            <TD>
+                <select name="<?php echo $view->getNs();?>propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
+                    <option value="">&mdash; a new Property &mdash;</option>
+                    <?php foreach ( (array) ( $view->properties ?? array() ) as $owa_prop ):?>
+                    <option value="<?php $view->out( $owa_prop['id'] );?>"
+                        <?php echo ( ( $view->propertyId ?? '' ) === (string) $owa_prop['id'] ) ? 'selected' : '';?>>
+                        <?php $view->out( $owa_prop['name'] );?><?php if ( $owa_prop['domain'] ):?> (<?php $view->out( $owa_prop['domain'] );?>)<?php endif;?>
+                    </option>
+                    <?php endforeach;?>
+                </select>
+                <span class="form-instructions">The Property this Profile belongs to. Pick
+                an existing one to add another way of observing it, or create a new one.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['propertyId'] ?? '' );?></span>
+            </TD>
+        </TR>
+        <TR id="owa_newPropertyFields">
+            <TH>New Property Name:</TH>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+                <span class="form-instructions">What the website or product is called. Only
+                used when creating a new Property.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
+            </TD>
+        </TR>
+        <?php
+        /*
+         * What this Profile observes, and therefore which identifier it needs.
+         *
+         * On the Profile rather than the Property because the answer differs
+         * per Profile: one Property can hold a website and its app, and there
+         * is no single identifier that describes both.
+         */
+        $owa_stream = $view->site['stream_type'] ?? \OWA\Module\Base\Entity\Site::STREAM_WEB;
+        ?>
+        <TR>
+            <TH>This Profile observes:</TH>
+            <TD>
+                <select name="<?php echo $view->getNs();?>streamType" id="owa_streamType" class="owa_largeFormField">
+                    <option value="web" <?php echo $owa_stream === 'app' ? '' : 'selected';?>>A website</option>
+                    <option value="app" <?php echo $owa_stream === 'app' ? 'selected' : '';?>>An app</option>
+                </select>
+            </TD>
+        </TR>
+        <TR id="owa_streamWebFields">
             <TH>Domain:</TH>
-            <?php if ($view->edit == true):?>
-            <input type="hidden" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->site['domain'] );?>">
-            <TD><?php $view->out( $view->site['domain'] );?></TD>
-            <?php else:?>
-            <TD>  
-                <input type="text" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>"><BR>
-                Example: http://some.domain.com<BR>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
+                <span class="form-instructions">The domain of the website being observed.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['domain'] ?? '' );?></span>
             </TD>
-            <?php endif;?>
         </TR>
-        <TR>
-            <TH>Site Name:</TH>
-            <TD><input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
-				<span class="form-instructions">Example: My Website</span>            
+        <TR id="owa_streamAppFields">
+            <TH>App ID:</TH>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
+                <span class="form-instructions">The bundle id or package name, for example
+                com.example.myapp.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['appId'] ?? '' );?></span>
             </TD>
         </TR>
+        <?php endif;?>
+        <?php if ($view->edit == true):?>
+        <TR>
+            <TH>Profile Name:</TH>
+            <TD><input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+				<span class="form-instructions">Example: Main Profile</span>            
+            </TD>
+        </TR>
+        <?php endif;?>
         <TR>
             <TH>Description:</TH>
             <TD>
@@ -52,145 +149,42 @@
 
     </form>
 
+<?php if ( $view->edit == true && $view->getCurrentUser()->isCapable('edit_sites') ):?>
+<?php
+/*
+ * Deleting an Observation Profile.
+ *
+ * This lived on the base.sites roster, which is gone -- so the action was
+ * still registered and still worked, but nothing linked it and there was no
+ * way to delete a Profile at all. It belongs here: this is the screen that
+ * already owns this one Profile.
+ *
+ * Its own form, not a second submit on the one above, so a stray Enter in a
+ * text field cannot reach it. The nonce is minted for base.sitesDelete
+ * specifically -- one action, one nonce.
+ */
+?>
+<div class="owa_dangerZone">
+    <div class="owa_dangerZoneTitle">Delete this Observation Profile</div>
+    <div class="owa_dangerZoneBody">
+        This Profile stops observing and disappears from reporting. The Property
+        it observes is not affected, and neither is any other Profile of that
+        Property &mdash; if this is the last one, the Property is left empty and
+        you can add new Profiles to it.
+    </div>
+    <form method="post">
+        <?php echo $view->createNonceFormField('base.sitesDelete');?>
+        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesDelete">
+        <input class="owa-button owa-button-danger" type="submit"
+               name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile"
+               data-owa-confirm
+               data-owa-confirm-title="Delete this Observation Profile?"
+               data-owa-confirm-body="&ldquo;<?php $view->out( $view->site['name'] ?? '' );?>&rdquo; will stop recording immediately and will no longer appear in reporting. Everything it has already collected is kept, and an administrator can restore it."
+               data-owa-confirm-proceed="Delete Profile">
+    </form>
+</div>
+<?php endif;?>
+
 </fieldset>
-
-
-<form method="post" name="owa_options">
-
-    <fieldset name="owa-options" class="options">
-    <legend>Site Settings</legend>
-
-        <div class="setting" id="p3p_policy">
-            <div class="title">P3P Compact Privacy Policy</div>
-            <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="https://www.w3.org/P3P/">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
-            <div class="field"><input type="text" size="50" name="<?php echo $view->getNs();?>config[p3p_policy]" value="<?php $view->out( $view->config['p3p_policy'] ?? '' );?>"></div>
-        </div>
-
-        <div class="setting" id="domain_aliases">
-            <div class="title">Domain Aliases</div>
-            <div class="description">This setting allows you to specify additional domain names that you want OWA to treat as the same as the one you are using for this tracked website. For example, if the domain of your website is "www.mydomain.com" you could add an alias here for "mydomain.com". Aliases should be separated by comma.</div>
-            <div class="field"><input type="text" size="50" name="<?php echo $view->getNs();?>config[domain_aliases]" value="<?php $view->out( $view->config['domain_aliases'] ?? '' );?>"></div>
-        </div>
-
-
-        <div class="setting" id="url_params">
-            <div class="title">URL Parameters</div>
-            <div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
-            <div class="field"><input type="text" size="50" name="<?php echo $view->getNs();?>config[query_string_filters]" value="<?php $view->out( $view->config['query_string_filters'] ?? '' );?>"></div>
-        </div>
-
-        <div class="setting" id="default_page">
-            <div class="title">Default Page</div>
-            <div class="description">This is the page that your web server defaults to when there is no page specified in your URL (e.g. index.html). Use this setting to combine page views for www.domain.com and www.domain.com/index.html.</div>
-            <div class="field"><input type="text" size="50" name="<?php echo $view->getNs();?>config[default_page]" value="<?php $view->out( $view->config['default_page'] ?? '' );?>"></div>
-        </div>
-
-        <div class="setting" id="ecommerce_reporting">
-            <div class="title">e-commerce Reporting</div>
-            <div class="description">Adds e-commerce metrics/statistics to reports.</div>
-            <div class="field">
-                <select name="<?php echo $view->getNs();?>config[enableEcommerceReporting]">
-                    <option value="0" <?php if ( ! $view->getValue( 'enableEcommerceReporting', $view->config ) ):?>SELECTED<?php endif;?>>Off</option>
-                    <option value="1" <?php if ( $view->getValue( 'enableEcommerceReporting', $view->config ) ):?>SELECTED<?php endif;?>>On</option>
-                </select>
-            </div>
-        </div>
-
-        <BR>
-
-        <?php echo $view->createNonceFormField('base.sitesEditSettings');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesEditSettings">
-        <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Settings" class="owa-button">
-    </fieldset>
-</form>
-<form method="post" name="owa-allowedusersform">
-    <fieldset name="owa-allowedusers" class="options">
-    <legend>Allowed Users</legend>
-
-        <div class="description">
-            Users ticked here can see this site's reports. Access controls three
-            capabilities &mdash; viewing reports, viewing e-commerce reports, and
-            editing this site. Administrators always have access and cannot be
-            changed here.
-        </div>
-
-        <?php if ( $view->edit ): ?>
-
-        <div class="field">
-            <input type="text" id="owa-user-filter" class="owa-user-filter"
-                placeholder="Filter by name, login or role" autocomplete="off">
-        </div>
-
-        <table class="management owa-allowed-users">
-            <tr>
-                <th style="width:1%"></th>
-                <th>Login</th>
-                <th>Name</th>
-                <th>Role</th>
-            </tr>
-            <?php foreach ($view->users as $user):
-                $isAdmin   = ( $user['role'] ?? '' ) === 'admin';
-                $isAllowed = $view->siteEntity->isUserAssigned( $user['id'] );
-            ?>
-            <tr class="owa-user-row">
-                <td>
-                    <?php if ( $isAdmin ): ?>
-                        <input type="checkbox" checked disabled title="Administrators always have access">
-                    <?php else: ?>
-                        <input type="checkbox"
-                            name="<?php echo $view->getNs();?>allowed_users[]"
-                            value="<?php $view->out( $user['id'] );?>"
-                            id="owa-user-<?php $view->out( $user['id'] );?>"
-                            <?php if ( $isAllowed ): ?>checked<?php endif;?>>
-                        <input type="hidden"
-                            name="<?php echo $view->getNs();?>rendered_users[]"
-                            value="<?php $view->out( $user['id'] );?>">
-                    <?php endif;?>
-                </td>
-                <td><label for="owa-user-<?php $view->out( $user['id'] );?>"><?php $view->out( $user['user_id'] );?></label></td>
-                <td><?php $view->out( $user['real_name'] );?></td>
-                <td>
-                    <?php $view->out( $user['role'] );?>
-                    <?php if ( $isAdmin ): ?><span class="owa-always">always has access</span><?php endif;?>
-                </td>
-            </tr>
-            <?php endforeach;?>
-        </table>
-
-        <br>
-        <?php echo $view->createNonceFormField('base.sitesEditAllowedUsers');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesEditAllowedUsers">
-        <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Users" class="owa-button">
-
-        <?php else: ?>
-
-        <div class="description">
-            Save this site first, then choose which users can see its reports.
-        </div>
-
-        <?php endif;?>
-
-    </fieldset>
-</form>
-
-<style>
-.owa-allowed-users td { vertical-align: middle; }
-.owa-user-filter { width: 22em; }
-.owa-always { color: #767676; font-size: 0.9em; margin-left: 0.5em; }
-</style>
-
-<script>
-jQuery(document).ready(function() {
-    jQuery('#owa-user-filter').on('keyup', function() {
-        var needle = jQuery(this).val().toLowerCase();
-        jQuery('.owa-allowed-users tr.owa-user-row').each(function() {
-            jQuery(this).toggle( jQuery(this).text().toLowerCase().indexOf( needle ) !== -1 );
-        });
-    });
-});
-</script>
 </div>

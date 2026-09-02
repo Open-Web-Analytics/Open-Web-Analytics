@@ -59,7 +59,13 @@ final class LoginRedirectNonceTest extends TestCase
     /** Run notAuthenticatedAction() on a controller and report whether 'go' was set. */
     private function setsGo(bool $nonceRequired): bool
     {
-        $controller = new \OWA\Module\Base\Controller\Sites([]);
+        /*
+         * ReportingHome stands in for "any ordinary controller". It used to be
+         * base.sites, the roster screen, which was retired when reporting
+         * started landing on the last Profile viewed -- nothing here depends on
+         * which controller it is, only that it is one.
+         */
+        $controller = new \OWA\Module\Base\Controller\ReportingHome([]);
 
         if ($nonceRequired) {
             $controller->setNonceRequired();

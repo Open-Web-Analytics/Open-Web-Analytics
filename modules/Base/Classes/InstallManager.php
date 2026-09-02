@@ -71,6 +71,21 @@ class InstallManager extends \OWA\Core\Base {
                 }
 
                 $ret = $u->createNewUser($user_id, \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE, $password, $email_address, \OWA\Module\Base\Entity\User::ADMIN_USER_REAL_NAME);
+
+                /*
+                 * Users live in the Organization -- that is the whole reason
+                 * the top tier exists. Set after creation rather than through
+                 * createNewUser(), whose signature is a public seam this does
+                 * not need to widen.
+                 */
+                $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+                $u->getByColumn( 'user_id', $user_id );
+
+                if ( $u->get( 'id' ) ) {
+
+                    $u->set( 'organization_id', $sm->ensureOrganization() );
+                    $u->update();
+                }
                 \OWA\Core\CoreAPI::debug("Admin user created successfully.");
                 return $password;
 
@@ -126,9 +141,21 @@ class InstallManager extends \OWA\Core\Base {
             $site_id = $site->mintSiteId();
         }
 
+        /*
+         * The first site is a Profile like any other, and gets a Property like
+         * any other. Without this a fresh install has the hierarchy TABLES but
+         * nothing in them, so its one site shows under "Unassigned" in both the
+         * site selector and the Property roster -- while a migrated install of
+         * the same age looks correct. The two must not differ.
+         */
+        $sm          = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $property_id = $sm->ensurePropertyFor( $domain, $name, $description );
+
         $site->set('id', $site->generateId($site_id));
         $site->set('site_id', $site_id);
-        $site->set('name', $name);
+        $site->set('property_id', $property_id);
+        // The given name describes the website, so it went to the Property.
+        $site->set('name', $property_id ? $sm->nextProfileName( $property_id ) : $name);
         $site->set('description', $description);
         $site->set('domain', $domain);
         $site->set('site_family', $site_family);

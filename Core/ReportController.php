@@ -158,6 +158,31 @@ class ReportController extends \OWA\Core\AdminController {
         $this->set('sites', $sites);
 
         /*
+         * The Organization / Property / Profile tree the site control draws.
+         * Set ALONGSIDE 'sites' rather than replacing it: the flat list is what
+         * the rest of the report machinery resolves a siteId against, and the
+         * tree is only for how the control is drawn.
+         */
+        $this->set('site_hierarchy', $this->getSiteHierarchy( $sites ));
+
+        /*
+         * Remember the Profile, so reporting resumes where it left off rather
+         * than on a roster. Written on every report render -- the last one
+         * looked at is the one to come back to, which is only knowable here.
+         *
+         * A cookie, not a user column: it is a per-browser convenience, and
+         * making it account state would mean a write to the user table on every
+         * report view and two machines fighting over one value.
+         */
+        if ( $this->getParam( 'siteId' ) ) {
+
+            \OWA\Core\CoreAPI::createCookie(
+                \OWA\Module\Base\Controller\ReportingHome::LAST_PROFILE_COOKIE,
+                $this->getParam( 'siteId' ),
+                time() + ( 3600 * 24 * 365 ) );
+        }
+
+        /*
          * A REPORT IS ALWAYS OF A SITE, so one is resolved when the request
          * names none.
          *

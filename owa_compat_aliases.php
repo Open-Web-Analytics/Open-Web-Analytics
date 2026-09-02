@@ -173,6 +173,18 @@ function owa_compat_class_map(): array
         'owa_search_term_dim' => 'OWA\\Module\\Base\\Entity\\SearchTermDim',
         'owa_session' => 'OWA\\Module\\Base\\Entity\\Session',
         'owa_site' => 'OWA\\Module\\Base\\Entity\\Site',
+        /*
+         * Not legacy names -- nothing ever called these. The entity factory
+         * resolves 'base.organization' by checking class_exists('owa_organization'),
+         * so an entity is unreachable without an entry here whatever its age.
+         * Same reason owa_custom_report appears below despite postdating the
+         * namespace migration, and the same reason neither belongs in
+         * tests/fixtures/legacy_class_names.json: that fixture lists names the
+         * project promises to keep resolving, which is a different claim.
+         */
+        'owa_organization' => 'OWA\\Module\\Base\\Entity\\Organization',
+        'owa_property' => 'OWA\\Module\\Base\\Entity\\Property',
+        'owa_setting' => 'OWA\\Module\\Base\\Entity\\Setting',
         'owa_site_user' => 'OWA\\Module\\Base\\Entity\\SiteUser',
         'owa_source_dim' => 'OWA\\Module\\Base\\Entity\\SourceDim',
         'owa_ua' => 'OWA\\Module\\Base\\Entity\\Ua',
@@ -348,7 +360,6 @@ function owa_compat_class_map(): array
         'owa_moduleDeactivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',
         'owa_moduleInstallCliController' => 'OWA\\Module\\Base\\Controller\\ModuleInstallCli',
         'owa_notifyNewSessionPlainTextView' => 'OWA\\Module\\Base\\View\\NotifyNewSessionPlainText',
-        'owa_optionsView' => 'OWA\\Module\\Base\\View\\Options',
         'owa_optionsFlushCacheController' => 'OWA\\Module\\Base\\Controller\\OptionsFlushCache',
         'owa_optionsGoalEditController' => 'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',
         'owa_optionsResetController' => 'OWA\\Module\\Base\\Controller\\OptionsReset',
@@ -405,8 +416,6 @@ function owa_compat_class_map(): array
         'owa_reportDomstreamsView' => 'OWA\\Module\\Base\\View\\ReportDomstreams',
         'owa_reportGoalFunnelController' => 'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',
         'owa_reportGoalFunnelView' => 'OWA\\Module\\Base\\View\\ReportGoalFunnel',
-        'owa_sitesController' => 'OWA\\Module\\Base\\Controller\\Sites',
-        'owa_sitesView' => 'OWA\\Module\\Base\\View\\Sites',
         'owa_sitesAddController' => 'OWA\\Module\\Base\\Controller\\SitesAdd',
         'owa_sitesAddView' => 'OWA\\Module\\Base\\View\\SitesAdd',
         'owa_sitesAddCliController' => 'OWA\\Module\\Base\\Controller\\SitesAddCli',

@@ -981,7 +981,8 @@ final class ReportDefinitionFormatTest extends TestCase
         $html = $this->renderedWith( $definition, self::threeSets() );
 
         foreach ( \OWA\Tests\ReportRenderHarness::queriesIn( $html ) as $q ) {
-            $this->assertSame( '', (string) $q['query']['metrics'] );
+            /* Absent and empty are the same answer here: it asked for no metrics. */
+            $this->assertSame( '', (string) ( $q['query']['metrics'] ?? '' ) );
         }
     }
 

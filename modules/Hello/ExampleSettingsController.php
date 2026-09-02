@@ -43,7 +43,17 @@ class ExampleSettingsController extends \OWA\Core\AdminController {
     function action() {
 
         // add data to container
-        $this->setView('base.options');
+        /*
+         * The hierarchy wrapper. There is one settings nav now -- the old
+         * base.options menu is gone -- so every settings screen carries the tile
+         * and the tier groups, module screens included.
+         */
+        $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+        $this->set( 'hierarchy_tier', 0 );
+        $this->setView('base.optionsHierarchy');
         $this->setSubview('base.exampleSettings');
     }
 

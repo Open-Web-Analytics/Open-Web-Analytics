@@ -34,8 +34,8 @@ class SitesAdd extends \OWA\Core\View {
     function render($data) {
 
         //page title
-        $this->t->set('page_title', 'Add Web Site');
-        $this->body->set('headline', 'Add Web Site Profile');
+        $this->t->set('page_title', 'New Observation Profile');
+        $this->body->set('headline', 'New Observation Profile');
         // load body template
         $this->body->set_template('sites_addoredit.php');
 

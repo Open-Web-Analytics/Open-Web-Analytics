@@ -86,7 +86,10 @@ $_owa_messages = [
     3201 => ['headline' => 'Success', 'message' => 'Site Profile Updated.'],
     3202 => ['headline' => 'Success', 'message' => 'Site Added.'],
     3203 => ['headline' => 'Error', 'message' => 'Site Could not be added'],
-    3204 => ['headline' => 'Success', 'message' => 'Site Deleted.'],
+    // Archived, not deleted: nothing is destroyed, so the wording should not
+    // promise that it was. 3205 is free and says what happened to a Property.
+    3204 => ['headline' => 'Success', 'message' => 'Observation Profile deleted. Its data is retained and can be restored by an administrator.'],
+    3205 => ['headline' => 'Success', 'message' => 'Property deleted, along with its Observation Profiles. Their data is retained and can be restored by an administrator.'],
     3206 => ['headline' => 'Error', 'message' => 'A site with that domain already exists.'],
     3207 => ['headline' => 'Error', 'message' => 'You must enter a domain when adding a web site.'],
     // Same duplication as 2504: 'That site does not exist.' was shadowed and

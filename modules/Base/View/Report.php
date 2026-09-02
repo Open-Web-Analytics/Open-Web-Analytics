@@ -60,6 +60,7 @@ class Report extends \OWA\Core\View {
 
         // set site filter list
         $this->body->set('sites', $this->get('sites') );
+        $this->body->set('site_hierarchy', $this->get('site_hierarchy') );
 
         $this->body->set('dom_id', $this->get( 'dom_id' ) );
         // add if here

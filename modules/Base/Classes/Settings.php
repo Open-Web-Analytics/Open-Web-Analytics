@@ -497,6 +497,26 @@ namespace OWA\Module\Base\Classes;
       * @param string $module The name of module whose configuration values you want to fetch
       * @return array Config values
       */
+     /**
+      * One module's whole settings map, or an empty array when it has none.
+      *
+      * fetch() indexes $v[$module] unguarded, so asking it about a module that
+      * has never stored a setting is an undefined-key warning rather than an
+      * empty answer. Callers that iterate a map -- the scoped settings screens
+      * -- need the empty answer.
+      */
+     public function getModuleSettings( $module = 'base' ) {
+
+         $v = $this->config->get('settings');
+
+         if ( is_array( $v ) && isset( $v[ $module ] ) && is_array( $v[ $module ] ) ) {
+
+             return $v[ $module ];
+         }
+
+         return array();
+     }
+
      function fetch($module = '') {
         
         $v = $this->config->get('settings');
@@ -1052,7 +1072,7 @@ namespace OWA\Module\Base\Classes;
                  * 'app_ns' is the namespace for OWA's OWN admin and reporting
                  * URLs and form fields, where OWA owns the whole query string
                  * and has nothing to collide with. It is empty: those URLs read
-                 * 'do=base.sites', not 'owa_do=base.sites'.
+                 * 'do=base.reportingHome', not 'owa_do=base.reportingHome'.
                  *
                  * The two were one setting until the surfaces were separated.
                  * Prefixed admin URLs are still accepted on the way in -- see
@@ -1208,7 +1228,7 @@ namespace OWA\Module\Base\Classes;
                 'reserved_words'                    => array('do' => 'action'),
                 'login_view'                        => 'base.login',
                 'not_capable_view'                    => 'base.error',
-                'start_page'                        => 'base.sites',
+                'start_page'                        => 'base.reportingHome',
                 'default_action'                    => 'base.loginForm',
                 'default_page'                        => '', // move to site settings
                 'default_cache_expiration_period'    => 604800,

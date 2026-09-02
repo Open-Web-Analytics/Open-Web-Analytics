@@ -120,7 +120,10 @@ $owa_max        = (int) $view->get('max_widgets');
             'do'             => 'base.customReportDelete',
             'customReportId' => $owa_id,
         ), false, '', false, true ); ?>"
-           onclick="return confirm('Delete this report? There is no other copy of it.');">Delete</a>
+           data-owa-confirm
+           data-owa-confirm-title="Delete this report?"
+           data-owa-confirm-body="There is no other copy of it. Unlike a Profile, a custom report is not archived &mdash; deleting it is final."
+           data-owa-confirm-proceed="Delete report">Delete</a>
         <?php endif; ?>
     </div>
 </form>

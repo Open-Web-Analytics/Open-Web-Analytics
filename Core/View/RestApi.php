@@ -221,6 +221,30 @@ class RestApi extends \OWA\Core\View {
                 continue;
             }
 
+            /*
+             * Only WEB Profiles grant an origin.
+             *
+             * An app Profile is identified by a bundle id, not a host, and has
+             * no domain -- so it contributes nothing here and is skipped before
+             * its identifier can be parsed as one. Falsy stream_type is web:
+             * every Profile that predates the column is a website.
+             */
+            $streamType = is_array( $site ) ? ( $site['stream_type'] ?? '' ) : '';
+
+            if ( $streamType && $streamType !== 'web' ) {
+
+                continue;
+            }
+
+            /*
+             * And only LIVE ones. An archived Profile has stopped observing, so
+             * its origin should stop being allowed with it.
+             */
+            if ( ! empty( $site['archived_date'] ) ) {
+
+                continue;
+            }
+
             // A stored domain may carry a scheme or not. Without one parse_url
             // reads the whole value as a path, so give it something to parse --
             // and a value with no host at all ('owa-test-site' exists on a real

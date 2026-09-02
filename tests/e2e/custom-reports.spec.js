@@ -546,7 +546,10 @@ test.describe('custom reports', () => {
             await buildOne(page, 'Chrome');
 
             await expect(page.locator('#owa_reportPeriodLabelContainer')).toHaveCount(1);
-            await expect(page.locator('#owa_reportSiteFilter')).toHaveCount(1);
+            // The site filter used to be a select in the content column. It is
+            // the site control above the left nav now -- same job, and still
+            // part of the chrome every report gets for free.
+            await expect(page.locator('#owa_siteControl')).toHaveCount(1);
         });
 
         /**

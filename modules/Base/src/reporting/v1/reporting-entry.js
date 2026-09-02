@@ -81,6 +81,11 @@ import './owa.sparkline.js';
 import './owa.areachart.js';
 import './owa.piechart.js';
 import './owa.kpibox.js';
+// The confirmation an irreversible action gets. Imported after owa.js like the
+// rest; it augments OWA and delegates one document-level handler.
+import './owa.confirm.js';
+// The add-a-Profile form: shows only the fields the answers make relevant.
+import './owa.profileform.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.js itself.

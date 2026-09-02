@@ -58,23 +58,36 @@ class SitesEditSettings extends \OWA\Core\AdminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $site_id ) );
-        $settings = $site->get( 'settings' );
-
-        if ( ! is_array($settings) ) {
-
-            $settings = array();
-        }
 
         $new_settings = $this->getParam( 'config' );
 
         if ($new_settings) {
-            $site->set('settings', array_merge( $settings, $new_settings ) );
 
-            $ret = $site->update();
+            /*
+             * One scoped row per key, rather than one merged blob on owa_site.
+             *
+             * The merge was load-bearing when everything lived in one column:
+             * a form posting three keys had to not erase the other twenty.
+             * Per-key rows give that for free, and give two things the blob
+             * could not -- a stored false that survives (the blob's writer
+             * prunes a value equal to the code default) and inheritance from
+             * the Property above.
+             */
+            $saved = true;
 
-            if ($ret) {
+            foreach ( $new_settings as $name => $value ) {
+
+                if ( ! \OWA\Core\CoreAPI::setScopedSetting(
+                          'profile', $site_id, 'base', $name, $value ) ) {
+
+                    $saved = false;
+                }
+            }
+
+            // Only on a clean write, as before: the success message used to be
+            // conditional on $site->update() returning true.
+            if ( $saved ) {
+
                 $this->setStatusCode( 3201 );
             }
 
@@ -86,7 +99,17 @@ class SitesEditSettings extends \OWA\Core\AdminController {
 
     function errorAction() {
 
-        $this->setView('base.options');
+        /*
+         * The hierarchy wrapper. There is one settings nav now -- the old
+         * base.options menu is gone -- so every settings screen carries the tile
+         * and the tier groups, module screens included.
+         */
+        $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+        $this->set( 'hierarchy_tier', 3 );
+        $this->setView('base.optionsHierarchy');
         $this->setSubview('base.sitesProfile');
         /*
          * 3002 -- "the form had errors" -- not 3311.

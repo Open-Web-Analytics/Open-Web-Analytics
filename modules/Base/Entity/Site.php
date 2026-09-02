@@ -35,7 +35,34 @@ namespace OWA\Module\Base\Entity;
 
 class Site extends \OWA\Core\Entity {
 
+    /*
+     * Kept out of GET /v1/sites.
+     *
+     * The payload is a published contract the WordPress plugin reads, and
+     * whether a Profile has been archived is an internal fact about removal --
+     * an archived Profile is filtered out of that listing entirely, so the
+     * field would be present, always falsy, and meaningless to a client.
+     *
+     * Declared rather than left to chance: getPublicProperties() emits every
+     * column by default, so any column added to this entity joins a public API
+     * unless someone says otherwise.
+     */
+    protected $private_properties = [ 'archived_date', 'stream_type', 'app_id' ];
+
     private static $cachedAssignedUsers = array();
+
+    /**
+     * Forget which users are assigned to which sites.
+     *
+     * The cache is keyed by site, and the two places that maintain it evict a
+     * single site because they change a single site. Deleting a USER revokes
+     * their access across every site at once, which no per-site eviction can
+     * express -- so it clears the lot.
+     */
+    public static function forgetAssignedUsers() {
+
+        self::$cachedAssignedUsers = array();
+    }
 
     function __construct() {
 
@@ -53,10 +80,109 @@ class Site extends \OWA\Core\Entity {
         $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['description'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['description']->setDataType(OWA_DTD_TEXT);
+        /*
+         * The property this profile observes.
+         *
+         * Nullable until the migration backfills it, and nullable afterwards
+         * for a profile created before its property exists -- the resolution
+         * treats an unparented profile as belonging to no property rather than
+         * guessing one.
+         */
+        $this->properties['property_id'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['property_id']->setDataType(OWA_DTD_BIGINT);
+
+        /*
+         * SUPERSEDED by property_id, which does this job properly, but kept:
+         * it is emitted by GET /v1/sites, and that payload is a contract the
+         * WordPress plugin reads. Removing the column would remove a field from
+         * a public API to save a column nothing reads.
+         */
         $this->properties['site_family'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['settings'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
+
+        /*
+         * When this was archived. FALSY means live.
+         *
+         * A timestamp rather than a boolean flag, because a restore wants to
+         * know when -- and because a tinyint in this schema holds 1, 0 and
+         * NULL, which group as three distinct things.
+         *
+         * Read it as FALSY, never as `IS NULL`. The column genuinely holds
+         * three values: NULL for a row that has never been archived, a stamp
+         * for one that is, and 0 for one that was restored. Restoring cannot
+         * write NULL back through the entity layer -- setting '' on a numeric
+         * column is treated as "no value given" and skipped, so 0 is what
+         * lands. All three are answered correctly by empty()/(bool); an
+         * `IS NULL` test would quietly classify every restored row as archived.
+         */
+        $this->properties['archived_date'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['archived_date']->setDataType(OWA_DTD_BIGINT);
+
+        /*
+         * What KIND of thing this Profile observes: 'web' or 'app'.
+         *
+         * The identifier a Profile needs depends on this, which is why the type
+         * lives here and not on the Property. GA4 reaches the same place from
+         * the same problem: a Property carries no URL, and each data stream
+         * under it declares web / Android / iOS and supplies the identifier
+         * that kind requires. Universal Analytics DID put a website URL on the
+         * property, and Google moved it down when a property stopped being able
+         * to assume it was a website.
+         *
+         * Two values, not four. OWA has no app SDK -- log.php will take events
+         * from anything that can make an HTTP request, but there is no client
+         * library and no documented app ingestion, so splitting 'app' into ios
+         * and android would be schema for something with no way to send. It can
+         * split later; nothing here assumes there are only two.
+         *
+         * Everything that exists is a website, which is what the default says.
+         */
+        $this->properties['stream_type'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['stream_type']->setDataType(OWA_DTD_VARCHAR255);
+
+        /*
+         * The identifier an APP Profile is known by -- a bundle id or package
+         * name. Empty for a web Profile, which is identified by its domain.
+         */
+        $this->properties['app_id'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['app_id']->setDataType(OWA_DTD_VARCHAR255);
+    }
+
+    /** Web is the default: every Profile that existed before types did is one. */
+    const STREAM_WEB = 'web';
+    const STREAM_APP = 'app';
+
+    /**
+     * What kind of thing this Profile observes.
+     *
+     * Falsy means web. The column is added by a migration and defaults to
+     * NULL on rows that predate it, and every one of those is a website.
+     */
+    public function getStreamType() {
+
+        $type = (string) $this->get('stream_type');
+
+        return $type !== '' ? $type : self::STREAM_WEB;
+    }
+
+    /** Does this Profile observe a website? */
+    public function isWebStream() {
+
+        return $this->getStreamType() === self::STREAM_WEB;
+    }
+
+    /**
+     * Has this Profile been archived?
+     *
+     * Archiving is how a Profile is removed: the row and everything hanging off
+     * it -- grants, scoped settings, collected data -- are kept, so a restore is
+     * possible. Every listing and the tracking gate ask this.
+     */
+    public function isArchived() {
+
+        return (bool) $this->get('archived_date');
     }
 
     /**
@@ -115,28 +241,54 @@ class Site extends \OWA\Core\Entity {
      * @param string $name the name of the setting
      * @return mixed
      */
+    /**
+     * This Profile's effective value for one setting.
+     *
+     * Reads the scoped store rather than this row's own settings blob. The
+     * blob is legacy: Update022 copied it into scoped rows and the screens
+     * write there, so reading it here would answer with a stale copy and
+     * could never inherit from the Property or Organization.
+     */
     public function getSiteSetting($name) {
 
-        $settings = $this->get('settings');
-
-        if ( ! empty( $settings ) ) {
-
-            if ( array_key_exists( $name, $settings ) ) {
-
-                return $settings[$name];
-            }
-        }
+        return \OWA\Core\CoreAPI::getSetting(
+            'base', $name, 'profile', $this->get('site_id') );
     }
 
+    /**
+     * The bare host, whether or not one was stored with a scheme.
+     *
+     * Returned unconditionally. It used to be guarded by
+     * `strpos( $domain, '://' )` and fall off the end when there was no scheme
+     * -- returning NULL for a domain stored bare, which the table already
+     * contains. The one caller uses the result to build `'://' . $domain` when
+     * checking domain aliases, so a null turned that test into a search for
+     * '://' alone, which matches any absolute URL and skipped alias resolution
+     * entirely.
+     *
+     * Schemes are on their way out of this column: a domain is not a URL, and
+     * storing one was only load-bearing while a site's identity was
+     * md5( domain ), where http:// and https:// produced two unrelated sites for
+     * one website. This method therefore has to cope with both shapes for as
+     * long as both exist.
+     */
     public function getDomainName() {
 
-        $domain = $this->get('domain');
+        $domain = trim( (string) $this->get('domain') );
 
-        if ( $domain && strpos( $domain, '://' ) ) {
-            list( $protocol, $domain ) = explode( '://', $domain );
+        if ( $domain === '' ) {
 
-            return rtrim( trim( $domain ), '/' );
+            return '';
         }
+
+        $separator = strpos( $domain, '://' );
+
+        if ( $separator !== false ) {
+
+            $domain = substr( $domain, $separator + 3 );
+        }
+
+        return rtrim( trim( $domain ), '/' );
     }
 
     /**

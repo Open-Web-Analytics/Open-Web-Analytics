@@ -524,7 +524,13 @@ class TrackingEventHelpers {
         return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
     }
 
-    static function ipAddressDefault() {
+    /*
+     * Registered as a FILTER, so the dispatcher hands it ( $value, $event )
+     * even though the old signature named neither. $event is named now
+     * because anonymisation is a per-Profile decision; $value stays ignored,
+     * as this callback always recomputes the address from the request.
+     */
+    static function ipAddressDefault( $value = '', $event = null ) {
 
         $ip = '';
         $chosen_ip = '';
@@ -591,7 +597,10 @@ class TrackingEventHelpers {
          }
 
         // Anonymize IP if needed.
-        if ( $chosen_ip && \OWA\Core\CoreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+        $site_id = $event ? $event->get('site_id') : '';
+
+        if ( $chosen_ip && \OWA\Core\CoreAPI::getSetting(
+                 'base', 'anonymize_ips', 'profile', $site_id ) ) {
 			
 			$chosen_ip = \OWA\Core\Lib::anonymizeIp( $chosen_ip );
 			\OWA\Core\CoreAPI::debug("IP address was anonymized.");
@@ -1140,7 +1149,8 @@ class TrackingEventHelpers {
         if (
         		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' )
 				&& $event->get( 'ip_address' )
-				&& \OWA\Core\CoreAPI::getSetting('base', 'resolve_hosts')
+				&& \OWA\Core\CoreAPI::getSetting(
+						'base', 'resolve_hosts', 'profile', $event->get('site_id') )
 
         ) {
 			

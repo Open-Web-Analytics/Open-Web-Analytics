@@ -55,7 +55,19 @@ class Users extends \OWA\Core\AdminController {
     
     function success() {
 	    
-	    $this->setView('base.options');
+	    /*
+	     * The hierarchy wrapper: user accounts live in the Organization, so this
+	     * is an Organization screen reached from the site control's nav. The
+	     * install settings nav beside it would offer a way out that has nothing
+	     * to do with where you are.
+	     */
+	    $owa_site_id = $this->resolveCurrentSiteId();
+	    $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
+	    $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+	    /* Tier 1: this screen is about an Organization, so the context line stops there. */
+	    $this->set( 'hierarchy_tier', 1 );
+	    $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+	    $this->setView('base.optionsHierarchy');
         $this->setSubview('base.users');
     }
 }

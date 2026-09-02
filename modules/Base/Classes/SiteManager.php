@@ -82,7 +82,169 @@ class SiteManager extends \OWA\Core\Base {
      * is one" and "make another" -- separable and testable before anything
      * depends on the distinction.
      */
-    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    /*
+     * The hierarchy defaults, duplicated from Update021 ON PURPOSE.
+     *
+     * A migration must stay self-contained -- it runs against a schema and a
+     * codebase that may be older than itself -- so it cannot reach in here, and
+     * this must not reach into it. The values are the contract between them:
+     * a freshly installed OWA and a migrated one have to be indistinguishable,
+     * or "Observation Profile 1" means one thing on one install and another
+     * elsewhere.
+     */
+    const DEFAULT_ORGANIZATION_NAME = 'My Organization';
+
+    /*
+     * The key the default Organization's id is derived from -- a fixed string,
+     * not the name. Same value Update021 uses, so an install that migrated and
+     * one installed fresh mint the same id.
+     */
+    const DEFAULT_ORGANIZATION_KEY  = 'organization:default';
+    const PROFILE_NAME_PREFIX       = 'Observation Profile ';
+
+    /**
+     * The Organization every Property hangs from, created on first need.
+     *
+     * There is exactly one until someone builds a screen to make more, which is
+     * why this looks one up rather than taking a name. Installing does not have
+     * to know about it, and neither does adding a site.
+     *
+     * @return string|null organization id
+     */
+    public function ensureOrganization() {
+
+        $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
+
+        /*
+         * Found by EXISTENCE, not by name.
+         *
+         * This matched on DEFAULT_ORGANIZATION_NAME, which quietly made the
+         * name a key -- and there is a screen for renaming an Organization.
+         * Renaming the only one made this stop finding it and mint a second,
+         * so the rename appeared to revert, OrganizationProfile showed the new
+         * empty row, and every Property added afterwards hung from that one
+         * instead.
+         *
+         * There is exactly one Organization until someone builds a screen to
+         * make more, so the first row IS the answer -- and looking for it this
+         * way is indifferent to how its id was derived, which matters because
+         * installs made before this fix derived it from the name.
+         */
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $organization->getTableName() );
+        $db->selectColumn( 'id' );
+
+        $existing = (array) $db->getOneRow();
+
+        if ( ! empty( $existing['id'] ) ) {
+
+            return $existing['id'];
+        }
+
+        $id = $organization->generateId( self::DEFAULT_ORGANIZATION_KEY );
+
+        $organization->set( 'id', $id );
+        $organization->set( 'name', self::DEFAULT_ORGANIZATION_NAME );
+        $organization->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        if ( $organization->create() ) {
+
+            return $id;
+        }
+    }
+
+    /**
+     * The Property a new Profile belongs to, found by domain or created.
+     *
+     * Keyed on the domain, matching Update021's planner: two Profiles of one
+     * website share a Property, and that is what makes adding a second way of
+     * tracking a site produce a second Profile rather than a second website.
+     *
+     * The NAME given here lands on the Property, not the Profile. That is the
+     * migration's rule too -- the human name describes the website, and the
+     * Profile is only one way of watching it.
+     *
+     * @return string|null property id
+     */
+    public function ensurePropertyFor( $domain, $name = '', $description = '' ) {
+
+        $domain = \OWA\Module\Base\Update\Update021::normaliseDomain( $domain );
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        if ( $domain !== '' ) {
+
+            $property->getByColumn( 'domain', $domain );
+
+            $existing = $property->get( 'id' );
+
+            if ( $existing ) {
+
+                return $existing;
+            }
+        }
+
+        /*
+         * The id encodes nothing about the Property.
+         *
+         * A Property is an artificial grouping. Its domain is OPTIONAL -- an
+         * app has none -- and editable where it exists, so it is not an
+         * identity. This derived the id from 'domain:' . $domain, which made a
+         * mutable, absent-able attribute the primary key: move a Property from
+         * a.com to b.com and its id stays derived from a.com, so the next
+         * Property for a.com derived an id that was already taken, the insert
+         * failed, and this handed back null -- the Profile being added would
+         * have been created with no Property at all.
+         *
+         * Grouping still happens by the domain COLUMN, looked up above. It is
+         * just no longer what the row is CALLED. PropertyEdit already minted
+         * ids this way; the two paths agree now.
+         */
+        $id = $property->generateId(
+            'property:' . ( $name !== '' ? $name : $domain ) . ':' . uniqid( '', true ) );
+
+        $property->set( 'id', $id );
+        $property->set( 'organization_id', $this->ensureOrganization() );
+        $property->set( 'name', $name !== '' ? $name : ( $domain !== '' ? $domain : 'Untitled' ) );
+        $property->set( 'domain', $domain );
+        $property->set( 'description', $description );
+        $property->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        if ( $property->create() ) {
+
+            return $id;
+        }
+    }
+
+    /**
+     * "Observation Profile N", numbered within its Property.
+     *
+     * Counts what is already there rather than tracking a sequence, so it is
+     * correct after a migration, after a delete, and on an install whose
+     * Profiles arrived by several different routes.
+     */
+    public function nextProfileName( $property_id ) {
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $site->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'property_id', $property_id );
+
+        $existing = count( (array) $db->getAllRows() );
+
+        return self::PROFILE_NAME_PREFIX . ( $existing + 1 );
+    }
+
+    /**
+     * @param string $property_id  Put the Profile in THIS Property, instead of
+     *                             deriving one from the domain. This is how a
+     *                             second Profile is added to a website, and the
+     *                             only way to add one to a Property that has no
+     *                             domain to be found by.
+     */
+    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
 
@@ -113,10 +275,64 @@ class SiteManager extends \OWA\Core\Base {
             $name = $domain;
         }
 
+        /*
+         * A Property named by the caller wins over one derived from the domain.
+         *
+         * Deriving was the only way in, which made the domain the Property's
+         * key -- so a second Profile for a website meant retyping its domain,
+         * and a Property with no domain (an app) could never be chosen at all.
+         */
+        if ( $property_id ) {
+
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+            $property->load( $property_id );
+
+            if ( ! $property->wasPersisted() ) {
+
+                \OWA\Core\CoreAPI::debug( "No such property: $property_id." );
+
+                return;
+            }
+
+        } else {
+
+            /*
+             * The name the caller gave describes the WEBSITE, so it goes on the
+             * Property; the Profile takes the generated "Observation Profile N".
+             * That is the same split Update021 applies to existing sites, and
+             * the two have to agree -- a fresh install and a migrated one must
+             * not be distinguishable.
+             */
+            $property_id = $this->ensurePropertyFor( $domain, $name, $description );
+        }
+
         $site->set( 'id', $id );
         $site->set( 'site_id', $site_id );
-        $site->set( 'name', $name );
-        $site->set( 'domain', $domain );
+        $site->set( 'property_id', $property_id );
+        $site->set( 'name', $property_id ? $this->nextProfileName( $property_id ) : $name );
+
+        /*
+         * The identifier belongs to the PROFILE, and which one it needs depends
+         * on what it observes.
+         *
+         * A web Profile is known by its domain -- read off this row by CORS
+         * origin matching, by makeUrlCanonical's alias rewrite, and by
+         * GET /v1/sites, which the WordPress plugin labels its picker with. An
+         * app Profile is known by a bundle id or package name and has no domain
+         * at all, which is the case that could not be expressed before.
+         */
+        $stream_type = $stream_type ?: \OWA\Module\Base\Entity\Site::STREAM_WEB;
+
+        $site->set( 'stream_type', $stream_type );
+
+        if ( $stream_type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+
+            $site->set( 'domain', $domain );
+
+        } else {
+
+            $site->set( 'app_id', $app_id );
+        }
         $site->set( 'description', $description );
         $site->set( 'site_family', $site_family );
 

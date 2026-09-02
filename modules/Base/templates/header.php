@@ -6,7 +6,7 @@
     <span class="owa_navigation">
         <UL>
             <?php if ($view->getCurrentUser()->isCapable('view_site_list')): ?>
-                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.sites'));?>">Reporting</a></LI>
+                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.reportingHome'));?>">Reporting</a></LI>
             <?php endif; ?>
             <?php if ($view->getCurrentUser()->isCapable('edit_settings')): ?>
                 <LI><a href="<?php echo $view->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>

@@ -115,7 +115,27 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->assertTrue($this->siteDomainExists($domain), 'The site should have been persisted.');
     }
 
-    public function testPostSitesRejectsDuplicateDomain(): void
+    /**
+     * A repeated domain is a SECOND Observation Profile of the same website,
+     * not an error.
+     *
+     * This returned 422. The rule behind it dated to 2009, when a site's
+     * identity was md5( domain ) and two sites for one domain were literally
+     * the same row -- so the domain had to be unique. Identity is minted now,
+     * and the uniqueness check had outlived its reason into forbidding exactly
+     * what Properties were introduced to allow: nextProfileName() numbers
+     * Profiles "Observation Profile 1", "2", "3", and that counter could never
+     * reach 2 while this rejected the request.
+     *
+     * It also did not exclude ARCHIVED Profiles, so archiving one made its
+     * domain permanently unusable -- the row kept to make deletion recoverable
+     * was what blocked starting over.
+     *
+     * Deliberate contract change, and a safe one to make: the endpoint has no
+     * known consumer. The WordPress plugin only LISTS sites -- its own settings
+     * text says new websites are added through the OWA admin interface.
+     */
+    public function testPostSitesAcceptsARepeatedDomainAsAnotherProfile(): void
     {
         $site = $this->makeSite('dup');
         $this->authenticateAs('admin');
@@ -123,12 +143,16 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             'owa_addSiteRestController',
             'addSiteRestController.php',
-            ['protocol' => '', 'domain' => $site['domain'], 'name' => 'dup attempt']
+            ['protocol' => '', 'domain' => $site['domain'], 'name' => 'second profile']
         );
 
-        $this->assertSame(422, $resp['status'],
-            'A duplicate domain should fail entityDoesNotExist validation with 422.');
-        $this->assertNotEquals(201, $resp['status']);
+        $this->assertSame(201, $resp['status'],
+            'A second Observation Profile for a website was refused, which is the case '
+            . 'the Property tier exists to support.');
+
+        $this->assertNotSame(
+            $site['site_id'], $resp['data']['site_id'] ?? $site['site_id'],
+            'The second Profile reused the first one\'s identifier.');
     }
 
     // ------------------------------------------------------------------
