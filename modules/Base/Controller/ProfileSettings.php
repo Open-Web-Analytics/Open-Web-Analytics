@@ -26,7 +26,13 @@ class ProfileSettings extends \OWA\Core\AdminController {
         $site->getByColumn( 'site_id', $site_id );
 
         $this->set( 'site', $site->_getProperties() );
-        $this->set( 'config', $site->get( 'settings' ) );
+        /*
+         * Effective values, not this row's blob: a key the Profile does not
+         * set shows the Property's, Organization's or install's value, which
+         * is what the Profile will actually observe with.
+         */
+        $this->set( 'config', \OWA\Core\CoreAPI::getEffectiveSettings(
+            'profile', $site_id, 'base' ) );
         $this->set( 'siteId', $site_id );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         /* Tier 3: this screen is about an Observation Profile, so the context line stops there. */

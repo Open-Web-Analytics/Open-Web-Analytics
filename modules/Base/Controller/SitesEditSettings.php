@@ -58,23 +58,36 @@ class SitesEditSettings extends \OWA\Core\AdminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $site_id ) );
-        $settings = $site->get( 'settings' );
-
-        if ( ! is_array($settings) ) {
-
-            $settings = array();
-        }
 
         $new_settings = $this->getParam( 'config' );
 
         if ($new_settings) {
-            $site->set('settings', array_merge( $settings, $new_settings ) );
 
-            $ret = $site->update();
+            /*
+             * One scoped row per key, rather than one merged blob on owa_site.
+             *
+             * The merge was load-bearing when everything lived in one column:
+             * a form posting three keys had to not erase the other twenty.
+             * Per-key rows give that for free, and give two things the blob
+             * could not -- a stored false that survives (the blob's writer
+             * prunes a value equal to the code default) and inheritance from
+             * the Property above.
+             */
+            $saved = true;
 
-            if ($ret) {
+            foreach ( $new_settings as $name => $value ) {
+
+                if ( ! \OWA\Core\CoreAPI::setScopedSetting(
+                          'profile', $site_id, 'base', $name, $value ) ) {
+
+                    $saved = false;
+                }
+            }
+
+            // Only on a clean write, as before: the success message used to be
+            // conditional on $site->update() returning true.
+            if ( $saved ) {
+
                 $this->setStatusCode( 3201 );
             }
 

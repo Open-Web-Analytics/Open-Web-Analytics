@@ -36,6 +36,12 @@ class CoreAPI {
     /** @var array  site id => is it registered. See isSiteRegistered(). */
     protected static $registered_sites = array();
 
+    /** @var array  "scope:id:module:name" => resolved value, null for no row. */
+    protected static $setting_row_cache = array();
+
+    /** @var array  "scope:id" => the scope chain to walk. */
+    protected static $setting_chain_cache = array();
+
 
 
     // @depricated
@@ -331,6 +337,20 @@ class CoreAPI {
      */
     public static function settingScopeChain( $scopeType, $scopeId ) {
 
+        /*
+         * Memoized because the tracking path now reads several scoped settings
+         * per event, and each read would otherwise re-walk the hierarchy --
+         * loading a site row and a property row every time. A request cannot
+         * see the hierarchy change under it, so caching for its lifetime is
+         * safe. See settingCacheFlush() for the write side.
+         */
+        $key = $scopeType . ':' . $scopeId;
+
+        if ( isset( self::$setting_chain_cache[ $key ] ) ) {
+
+            return self::$setting_chain_cache[ $key ];
+        }
+
         $chain = array( array( 'type' => $scopeType, 'id' => $scopeId ) );
 
         if ( $scopeType === 'profile' ) {
@@ -343,6 +363,7 @@ class CoreAPI {
 
             if ( ! $scopeId ) {
 
+                self::$setting_chain_cache[ $key ] = $chain;
                 return $chain;
             }
 
@@ -362,6 +383,8 @@ class CoreAPI {
             }
         }
 
+        self::$setting_chain_cache[ $key ] = $chain;
+
         return $chain;
     }
 
@@ -373,15 +396,42 @@ class CoreAPI {
      */
     public static function getScopedSettingRow( $scopeType, $scopeId, $module, $name ) {
 
+        $id = $scopeType . ':' . $scopeId . ':' . $module . ':' . $name;
+
+        /*
+         * array_key_exists, not isset: a stored null and a missing row are
+         * different answers here and isset() cannot tell them apart. A MISS is
+         * cached too -- on the tracking path most lookups miss all the way up
+         * the chain, and re-querying for a row known not to exist is the cost
+         * worth avoiding.
+         */
+        if ( array_key_exists( $id, self::$setting_row_cache ) ) {
+
+            return self::$setting_row_cache[ $id ];
+        }
+
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
         $setting->load( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
 
         if ( ! $setting->wasPersisted() ) {
 
-            return null;
+            return self::$setting_row_cache[ $id ] = null;
         }
 
-        return unserialize( $setting->get( 'value' ) );
+        return self::$setting_row_cache[ $id ] = unserialize( $setting->get( 'value' ) );
+    }
+
+    /**
+     * Drop the scoped-setting caches.
+     *
+     * Called on every scoped write. Blunt on purpose: a write is rare and a
+     * stale read is a wrong answer, so the whole map goes rather than trying
+     * to reason about which inheriting scopes an edit could have changed.
+     */
+    public static function settingCacheFlush() {
+
+        self::$setting_row_cache   = array();
+        self::$setting_chain_cache = array();
     }
 
     /**
@@ -409,11 +459,15 @@ class CoreAPI {
 
         if ( $setting->wasPersisted() ) {
 
+            \OWA\Core\CoreAPI::settingCacheFlush();
+
             return $setting->update();
         }
 
         $setting->set( 'id', $id );
         $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        \OWA\Core\CoreAPI::settingCacheFlush();
 
         return $setting->create();
     }
@@ -428,6 +482,8 @@ class CoreAPI {
     public static function clearScopedSetting( $scopeType, $scopeId, $module, $name ) {
 
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        \OWA\Core\CoreAPI::settingCacheFlush();
 
         return $setting->delete( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
     }
@@ -480,10 +536,31 @@ class CoreAPI {
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
-        if ( $site->wasPersisted() ) {
+        /*
+         * A site id that names no site still answers "no setting", not the
+         * install-wide value. Without this guard the scope walk would find no
+         * row anywhere and fall through to the install default, so an event
+         * naming an unknown site would silently pick up install settings.
+         */
+        if ( ! $site->wasPersisted() ) {
 
-            return $site->getSiteSetting($name);
+            return;
         }
+
+        /*
+         * Reads the scoped store, NOT owa_site.settings.
+         *
+         * Update022 copied the blob into profile-scoped rows, and the screens
+         * write there now. Leaving this reader on the blob would have meant
+         * two sources of truth: an edit saved on the Profile screen would not
+         * be visible to any caller of this function.
+         *
+         * It also inherits, which the blob could not: a Profile with no value
+         * of its own now takes its Property's, then its Organization's, then
+         * the install's. That is the point of the tier -- and it makes the
+         * install-wide controls for these settings mean what they say.
+         */
+        return \OWA\Core\CoreAPI::getSetting( 'base', $name, 'profile', $site_id );
     }
 
     /**
@@ -548,18 +625,23 @@ class CoreAPI {
         return $psl->getRegisteredDomain( $full_domain );
     }
 
+    /**
+     * Store one setting on a Profile.
+     *
+     * Writes a scoped row rather than merging into owa_site.settings. The blob
+     * could not hold a false -- Settings::persistSetting prunes a value equal
+     * to the code default -- and could not be inherited from. A row can do
+     * both, so a Profile can now say "off" against a Property that says "on".
+     */
     public static function persistSiteSetting($site_id, $name, $value) {
 
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
+
         if ( $site->wasPersisted() ) {
-            $settings = $site->get('settings');
-            if ( ! $settings ) {
-                $settings = array();
-            }
-            $settings[$name] = $value;
-            $site->set('settings', $settings);
-            $site->update();
+
+            return \OWA\Core\CoreAPI::setScopedSetting(
+                'profile', $site_id, 'base', $name, $value );
         }
     }
 
@@ -578,6 +660,42 @@ class CoreAPI {
             }
         }
 
+    }
+
+    /**
+     * Every setting a scope answers with, most specific value winning.
+     *
+     * The settings FORMS need this: they render whatever key they render and
+     * cannot ask for values one at a time without the controller keeping a
+     * hardcoded list in step with the template. Built bottom-up so a Profile
+     * row overwrites its Property's, which overwrites the install's.
+     */
+    public static function getEffectiveSettings( $scopeType, $scopeId, $module = 'base' ) {
+
+        // start from the install-wide map for this module
+        $s      = \OWA\Core\CoreAPI::configSingleton();
+        $values = $s->getModuleSettings( $module );
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        // least specific first, so the nearer scope overwrites
+        foreach ( array_reverse(
+                      \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId ) ) as $scope ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $setting->getTableName() );
+            $db->selectColumn( 'name, value' );
+            $db->where( 'scope_type', $scope['type'] );
+            $db->where( 'scope_id', $scope['id'] );
+            $db->where( 'module', $module );
+
+            foreach ( (array) $db->getAllRows() as $row ) {
+
+                $values[ $row['name'] ] = unserialize( $row['value'] );
+            }
+        }
+
+        return $values;
     }
 
     public static function getAllRoles() {
@@ -1484,17 +1602,6 @@ class CoreAPI {
             return false;
         }
         
-        // Check to see if named users should be logged
-        if (\OWA\Core\CoreAPI::getSetting('base', 'log_named_users') != true) {
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-            $cu_user_id = $cu->getUserData('user_id');
-
-            if( ! empty( $cu_user_id ) ) {
-				\OWA\Core\CoreAPI::debug("Not logging named user.");
-                return false;
-            }
-        }
-        
 		// backwards compatibility with old style messages
 		// @todo is this needed anymore?
         $class = \OWA\Module\Base\Classes\Event::class;
@@ -1508,6 +1615,28 @@ class CoreAPI {
         } else {
 	        
             $event = $message;
+        }
+        
+        /*
+         * Named-user logging is a per-Profile decision, so this check runs
+         * AFTER the event is built: it needs a site_id, and before this point
+         * there is only $message, which may still be a raw array.
+         *
+         * It used to sit above that construction, reading the install-wide
+         * value. Moving it down keeps it an early bail -- nothing is stored
+         * between the two points -- while letting one Profile log named users
+         * and another not.
+         */
+        // Check to see if named users should be logged
+        if ( \OWA\Core\CoreAPI::getSetting(
+                 'base', 'log_named_users', 'profile', $event->get('site_id') ) != true ) {
+            $cu = \OWA\Core\CoreAPI::getCurrentUser();
+            $cu_user_id = $cu->getUserData('user_id');
+
+            if( ! empty( $cu_user_id ) ) {
+				\OWA\Core\CoreAPI::debug("Not logging named user.");
+                return false;
+            }
         }
         
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -1541,7 +1670,7 @@ class CoreAPI {
         }
 
         // check to see if IP should be excluded
-        if ( \OWA\Core\CoreAPI::isIpAddressExcluded( $event->get('ip_address') ) ) {
+        if ( \OWA\Core\CoreAPI::isIpAddressExcluded( $event->get('ip_address'), $event->get('site_id') ) ) {
 	        
             \OWA\Core\CoreAPI::debug("Not logging event. IP address found in exclusion list.");
             
@@ -2512,10 +2641,16 @@ class CoreAPI {
         return $r->getCurrentUrl();
     }
 
-    public static function isIpAddressExcluded( $ip_address ) {
+    /**
+     * $siteId is a Profile id. Passing it lets one Profile exclude an
+     * office IP that another Profile still wants to record; omitting it
+     * falls back to the install-wide list, which is what every existing
+     * caller got before the setting became scopeable.
+     */
+    public static function isIpAddressExcluded( $ip_address, $siteId = '' ) {
 
         // do not log if ip address is on the do not log list
-        $ips = \OWA\Core\CoreAPI::getSetting( 'base', 'excluded_ips' );
+        $ips = \OWA\Core\CoreAPI::getSetting( 'base', 'excluded_ips', 'profile', $siteId );
         
         if ( $ips ) {
 	        

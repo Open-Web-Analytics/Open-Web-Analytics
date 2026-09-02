@@ -497,6 +497,26 @@ namespace OWA\Module\Base\Classes;
       * @param string $module The name of module whose configuration values you want to fetch
       * @return array Config values
       */
+     /**
+      * One module's whole settings map, or an empty array when it has none.
+      *
+      * fetch() indexes $v[$module] unguarded, so asking it about a module that
+      * has never stored a setting is an undefined-key warning rather than an
+      * empty answer. Callers that iterate a map -- the scoped settings screens
+      * -- need the empty answer.
+      */
+     public function getModuleSettings( $module = 'base' ) {
+
+         $v = $this->config->get('settings');
+
+         if ( is_array( $v ) && isset( $v[ $module ] ) && is_array( $v[ $module ] ) ) {
+
+             return $v[ $module ];
+         }
+
+         return array();
+     }
+
      function fetch($module = '') {
         
         $v = $this->config->get('settings');

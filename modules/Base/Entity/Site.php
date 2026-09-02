@@ -132,17 +132,18 @@ class Site extends \OWA\Core\Entity {
      * @param string $name the name of the setting
      * @return mixed
      */
+    /**
+     * This Profile's effective value for one setting.
+     *
+     * Reads the scoped store rather than this row's own settings blob. The
+     * blob is legacy: Update022 copied it into scoped rows and the screens
+     * write there, so reading it here would answer with a stale copy and
+     * could never inherit from the Property or Organization.
+     */
     public function getSiteSetting($name) {
 
-        $settings = $this->get('settings');
-
-        if ( ! empty( $settings ) ) {
-
-            if ( array_key_exists( $name, $settings ) ) {
-
-                return $settings[$name];
-            }
-        }
+        return \OWA\Core\CoreAPI::getSetting(
+            'base', $name, 'profile', $this->get('site_id') );
     }
 
     /**

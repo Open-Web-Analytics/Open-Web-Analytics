@@ -41,7 +41,29 @@ class NotifyHandlers extends \OWA\Core\Observer {
     function notify( $event ) {
         
         if ( $event->getSiteId() ) {
-            
+
+            /*
+             * Was tested in Module::_registerEventHandlers, which runs before
+             * any event exists and so could only ever read the install-wide
+             * value. Both settings are per-Profile now, so the decision has
+             * moved to the first point that knows which Profile this is.
+             */
+            $siteId = $event->getSiteId();
+
+            $announce = \OWA\Core\CoreAPI::getSetting(
+                'base', 'announce_visitors', 'profile', $siteId );
+
+            $address = \OWA\Core\CoreAPI::getSetting(
+                'base', 'notice_email', 'profile', $siteId );
+
+            if ( ! $announce || ! $address ) {
+
+                \OWA\Core\CoreAPI::debug(
+                    'New session notify skipped: announcements are off for site_id ' . $siteId );
+
+                return OWA_EHS_EVENT_HANDLED;
+            }
+
             $s = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
             
             $s->load( $s->generateId( $event->getSiteId() ) );
