@@ -56,6 +56,10 @@ class GoalEvent extends \OWA\Core\Entity {
     const MATCH_ALL = 'all';
     const MATCH_ANY = 'any';
 
+    /** What a condition is for. See GoalEventCondition. */
+    const ROLE_MATCH = 'match';
+    const ROLE_START = 'start';
+
     /**
      * The comparisons an author can choose, in the order they are offered.
      *
@@ -338,7 +342,7 @@ class GoalEvent extends \OWA\Core\Entity {
      *
      * @return array of \OWA\Module\Base\Entity\GoalEventCondition
      */
-    public function loadConditions() {
+    public function loadConditions( $role = self::ROLE_MATCH ) {
 
         if ( ! $this->get( 'id' ) ) {
 
@@ -360,10 +364,51 @@ class GoalEvent extends \OWA\Core\Entity {
             $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
             $condition->setProperties( $row );
 
+            /*
+             * Filtered here rather than in the query: role is falsy on every
+             * condition that predates it, and Db::where() drops an empty value
+             * rather than matching it -- so where( 'role', 'match' ) would
+             * return everything, and where( 'role', '' ) would too.
+             */
+            if ( $condition->role() !== $role ) {
+
+                continue;
+            }
+
             $conditions[] = $condition;
         }
 
         return $conditions;
+    }
+
+    /**
+     * Did this event BEGIN the goal event?
+     *
+     * Separate from matchesEvent() because starting and completing are
+     * different questions with different answers, and 1.x records both.
+     *
+     * No start condition means no start -- the same rule as matching, and for
+     * the same reason: a vacuously true rule would mark every event as
+     * beginning every goal event on the site.
+     */
+    public function startedByEvent( $event ) {
+
+        $conditions = $this->loadConditions( self::ROLE_START );
+
+        if ( ! $conditions ) {
+
+            return false;
+        }
+
+        foreach ( $conditions as $condition ) {
+
+            if ( ! $condition->matches( $event->get( $condition->get( 'condition_property' ) ) ) ) {
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

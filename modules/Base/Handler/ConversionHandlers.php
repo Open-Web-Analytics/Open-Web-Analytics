@@ -228,7 +228,7 @@ class ConversionHandlers extends \OWA\Core\Observer {
                      * describes the event in front of us or it does not.
                      */
                     $match = $this->checkGoalEventConditions( $event, $siteId, $num );
-                    $start = $this->checkGoalStart($event, $goal);
+                    $start = $this->checkGoalEventStart( $event, $siteId, $num );
 
                     if ($start) {
                         $goal_info['start'] = $start;
@@ -285,6 +285,33 @@ class ConversionHandlers extends \OWA\Core\Observer {
         return $goalEvent->matchesEvent( $event ) ? $number : '';
     }
 
+    /**
+     * Did this event BEGIN the goal event in one slot?
+     *
+     * From the goal event's own START condition, not from the first step of its
+     * funnel.
+     *
+     * Reading funnel step 1 tied an ingest-time decision to a reporting
+     * artefact: goal_N_start is written at collection, so a funnel could not
+     * become a read-time report widget without silently taking the seven
+     * goalNStarts metrics with it. "Began this" is a fact about the goal event,
+     * and is stated as one.
+     *
+     * @return string  the slot number when it started, '' otherwise.
+     */
+    protected function checkGoalEventStart( $event, $siteId, $number ) {
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $number ) );
+
+        if ( ! $goalEvent->wasPersisted() ) {
+
+            return '';
+        }
+
+        return $goalEvent->startedByEvent( $event ) ? $number : '';
+    }
+
     function checkUrlDestinationGoal($event, $goal) {
         $match = '';
         $page_uri = $event->get('page_uri');
@@ -318,20 +345,6 @@ class ConversionHandlers extends \OWA\Core\Observer {
         }
 
         return $match;
-    }
-    
-    function checkGoalStart($event, $goal) {
-        $page_uri = $event->get('page_uri');
-        // check for goal start
-        if ( array_key_exists( 'funnel_steps', $goal['details'] ) ) {
-            // check the first step
-            $step = $goal['details']['funnel_steps'][1];
-            $pattern = sprintf('@%s@i', $step['path']);
-            $check = preg_match($pattern, $page_uri );
-            if ($check > 0) {
-                return $goal['goal_number'];
-            }
-        }
     }
     
     function countGoalConversions($session) {

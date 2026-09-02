@@ -41,6 +41,29 @@ class GoalEventCondition extends \OWA\Core\Entity {
         $sort_order = new \OWA\Module\Base\Classes\DbColumn( 'sort_order', OWA_DTD_INT );
         $this->setProperty( $sort_order );
 
+        /*
+         * What this condition is FOR: 'match' or 'start'.
+         *
+         * A match condition decides whether the goal event happened. A START
+         * condition decides whether someone BEGAN it -- which is what feeds
+         * goal_N_start on the session, and through it the seven registered
+         * goalNStarts metrics.
+         *
+         * Its own role rather than its own table, because it is the same shape
+         * being asked a different question, and one mechanism is easier to keep
+         * honest than two.
+         *
+         * "Began it" used to be inferred from the first step of the goal's
+         * FUNNEL, which tied an ingest-time decision to a reporting artefact --
+         * so a funnel could not become a read-time report widget without
+         * silently taking goal starts with it. It is stated directly now.
+         *
+         * Falsy reads as 'match': every condition that predates this is one.
+         */
+        $role = new \OWA\Module\Base\Classes\DbColumn( 'role', OWA_DTD_VARCHAR255 );
+        $role->setIndex();
+        $this->setProperty( $role );
+
         /* Which property of the event to test. */
         $condition_property = new \OWA\Module\Base\Classes\DbColumn( 'condition_property', OWA_DTD_VARCHAR255 );
         $this->setProperty( $condition_property );
@@ -55,6 +78,13 @@ class GoalEventCondition extends \OWA\Core\Entity {
 
         $creation_date = new \OWA\Module\Base\Classes\DbColumn( 'creation_date', OWA_DTD_BIGINT );
         $this->setProperty( $creation_date );
+    }
+
+    /** 'match' or 'start'; falsy reads as match. */
+    public function role() {
+
+        return $this->get( 'role' ) === GoalEvent::ROLE_START
+            ? GoalEvent::ROLE_START : GoalEvent::ROLE_MATCH;
     }
 
     /**
