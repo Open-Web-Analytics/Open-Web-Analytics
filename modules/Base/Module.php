@@ -2430,6 +2430,7 @@ class Module extends \OWA\Core\Module {
                 'configuration',
             'setting',
             'goal_event',
+            'goal_event_condition',
             'funnel',
             'funnel_step',
                 'user',

@@ -24,9 +24,26 @@ class GoalEventSave extends \OWA\Core\AdminController {
          * has no case for and no URL -- silently never firing since it was
          * made. Refusing it here is the cheapest place to notice.
          */
-        $this->addValidation( 'conditionValue', trim( (string) $this->getParam( 'conditionValue' ) ),
-            'required',
-            array( 'errorMsg' => 'Without something to compare against, this would count nothing.' ) );
+        /*
+         * At least ONE condition with something to compare against.
+         *
+         * A goal event with none deliberately matches nothing -- an empty rule
+         * is vacuously true, and counting every event on the site is the worse
+         * direction to be wrong in -- so saving one is refused rather than
+         * stored inert.
+         */
+        $values = array_filter( array_map( 'trim',
+            array_map( 'strval', (array) $this->getParam( 'conditionValue' ) ) ),
+            static function ( $value ) {
+
+                return $value !== '';
+            } );
+
+        if ( ! $values ) {
+
+            $this->addValidation( 'conditionValue', '', 'required', array(
+                'errorMsg' => 'Without something to compare against, this would count nothing.' ) );
+        }
 
         /*
          * A renamed group must be given an actual name.
@@ -42,6 +59,30 @@ class GoalEventSave extends \OWA\Core\AdminController {
         if ( $newGroupName !== '' && trim( $newGroupName ) === '' ) {
 
             $this->addValidation( 'newGoalGroupName', '', 'required' );
+        }
+
+        /*
+         * A regex that does not compile matches nothing, for ever, silently.
+         *
+         * Caught here rather than left to the comparison, which suppresses the
+         * warning so a broken pattern does not shout once per tracked event.
+         * Suppressing it there is right; letting someone save it is not.
+         */
+        foreach ( (array) $this->getParam( 'conditionOperator' ) as $i => $operator ) {
+
+            if ( $operator !== \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX ) {
+
+                continue;
+            }
+
+            $pattern = trim( (string) ( ( (array) $this->getParam( 'conditionValue' ) )[ $i ] ?? '' ) );
+
+            if ( $pattern !== '' && @preg_match( '@' . $pattern . '@i', '' ) === false ) {
+
+                $this->addValidation( 'conditionValue', '', 'required', array(
+                    'errorMsg' => 'That is not a valid regular expression, so it would never match.',
+                ) );
+            }
         }
 
         $this->validateFunnelSteps();
@@ -143,9 +184,15 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $goalEvent->set( 'property_id',
             \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId ) );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
-        $goalEvent->set( 'condition_property', $this->getParam( 'conditionProperty' ) );
-        $goalEvent->set( 'condition_operator', $this->getParam( 'conditionOperator' ) );
-        $goalEvent->set( 'condition_value', trim( (string) $this->getParam( 'conditionValue' ) ) );
+        $goalEvent->set( 'count_mode',
+            $this->getParam( 'countMode' ) === \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_EVENT
+                ? \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_EVENT
+                : \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_SESSION );
+
+        $goalEvent->set( 'condition_match',
+            $this->getParam( 'conditionMatch' ) === \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY
+                ? \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY
+                : \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL );
         $goalEvent->set( 'value', $cents === null ? 0 : $cents );
         $goalEvent->set( 'is_active', $this->getParam( 'isActive' ) ? 1 : 0 );
         $goalEvent->set( 'goal_group', (string) $this->getParam( 'goalGroup' ) );
@@ -186,6 +233,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         $this->saveGroupRename( $siteId );
+        $this->saveConditions( $goalEvent->get( 'id' ) );
         $this->saveFunnel( $goalEvent->get( 'id' ) );
 
         $this->set( 'siteId', $siteId );
@@ -297,6 +345,77 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
     }
 
+    /**
+     * Replace this goal event's conditions with what was submitted.
+     *
+     * Delete-then-write, for the same reason as the funnel: a condition has no
+     * stable key of its own, so a diff would have to invent one, and removing a
+     * middle row renumbers everything after it.
+     */
+    private function saveConditions( $goalEventId ) {
+
+        if ( ! $goalEventId ) {
+
+            return;
+        }
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->deleteFrom( $entity->getTableName() );
+        $db->where( 'goal_event_id', $goalEventId );
+        $db->executeQuery();
+
+        $properties = (array) $this->getParam( 'conditionProperty' );
+        $operators  = (array) $this->getParam( 'conditionOperator' );
+        $values     = (array) $this->getParam( 'conditionValue' );
+
+        $number = 0;
+
+        foreach ( $values as $i => $value ) {
+
+            $value = trim( (string) $value );
+
+            /*
+             * A row with nothing to compare against is one someone added and
+             * left alone. Skipped without advancing the number, so the stored
+             * conditions are 1..n with no gaps.
+             */
+            if ( $value === '' ) {
+
+                continue;
+            }
+
+            $number++;
+
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+            $condition->set( 'id', $condition->generateId(
+                'goal_event_condition:' . $goalEventId . ':' . $number ) );
+            $condition->set( 'goal_event_id', $goalEventId );
+            $condition->set( 'sort_order', $number );
+            $condition->set( 'condition_property', $properties[ $i ] ?? '' );
+            $condition->set( 'condition_operator', $operators[ $i ] ?? '' );
+            $condition->set( 'condition_value', $value );
+            $condition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+            $condition->create();
+        }
+    }
+
+    /** The funnel steps as submitted, for re-rendering a refused form. */
+    private function submittedSteps() {
+
+        $names = (array) $this->getParam( 'stepName' );
+        $steps = array();
+
+        foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
+
+            $steps[] = array( 'name' => $names[ $i ] ?? '', 'path' => $path );
+        }
+
+        return $steps;
+    }
+
     /** Every step of one funnel. */
     private function deleteSteps( $funnelId ) {
 
@@ -342,15 +461,42 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         /* Re-render the form with what was typed, rather than losing it. */
         $this->set( 'goalEvent', array(
-            'id'                 => $this->getParam( 'goalEventId' ),
-            'name'               => $this->getParam( 'name' ),
-            'condition_property' => $this->getParam( 'conditionProperty' ),
-            'condition_operator' => $this->getParam( 'conditionOperator' ),
-            'condition_value'    => $this->getParam( 'conditionValue' ),
-            'value'              => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(
-                                        $this->getParam( 'value' ) ) ?: 0,
-            'is_active'          => $this->getParam( 'isActive' ) ? 1 : 0,
+            'id'              => $this->getParam( 'goalEventId' ),
+            'name'            => $this->getParam( 'name' ),
+            'condition_match' => $this->getParam( 'conditionMatch' ),
+            'count_mode'      => $this->getParam( 'countMode' ),
+            'goal_group'      => $this->getParam( 'goalGroup' ),
+            'value'           => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(
+                                     $this->getParam( 'value' ) ) ?: 0,
+            'is_active'       => $this->getParam( 'isActive' ) ? 1 : 0,
         ) );
+
+        /*
+         * The conditions as SUBMITTED, so a refused form comes back carrying
+         * what was typed. Rebuilt from the parallel arrays the form posts --
+         * reading them back from the database would show what was there before
+         * the edit, which is the opposite of helpful.
+         */
+        $properties = (array) $this->getParam( 'conditionProperty' );
+        $operators  = (array) $this->getParam( 'conditionOperator' );
+
+        $conditions = array();
+
+        foreach ( (array) $this->getParam( 'conditionValue' ) as $i => $value ) {
+
+            $conditions[] = array(
+                'condition_property' => $properties[ $i ] ?? '',
+                'condition_operator' => $operators[ $i ] ?? '',
+                'condition_value'    => $value,
+            );
+        }
+
+        $this->set( 'conditions', $conditions );
+
+        $this->set( 'funnelSteps', $this->submittedSteps() );
+
+        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
+        $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
 
         $this->set( 'goalEventId', $this->getParam( 'goalEventId' ) );
         $this->set( 'siteId', $siteId );

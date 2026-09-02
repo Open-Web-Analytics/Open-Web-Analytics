@@ -3602,6 +3602,14 @@ li.constraintRow {
     font-weight: bold;
 }
 
+/* The word between two conditions in the list summary. Lowercase and quiet:
+   it is punctuation between the parts, not one of them. */
+.owa_goalEventJoin {
+    color: #b5b5b5;
+    font-size: 11px;
+    margin: 0 4px;
+}
+
 .owa_goalEventOperator {
     color: #999999;
     margin: 0 3px;

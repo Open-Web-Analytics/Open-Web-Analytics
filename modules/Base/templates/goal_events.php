@@ -43,10 +43,16 @@ Profile of the same Property can count different things.</div>
             <tr>
                 <td><?php $view->out( $owa_ke['name'] );?></td>
                 <td class="owa_goalEventCondition">
-                    <?php if ( $owa_ke['condition_value'] !== '' && $owa_ke['condition_value'] !== null ):?>
-                    <span class="owa_goalEventProperty"><?php $view->out( $owa_ke['condition_property'] );?></span>
-                    <span class="owa_goalEventOperator"><?php $view->out( $owa_ke['condition_operator'] );?></span>
-                    <span class="owa_goalEventValue"><?php $view->out( $owa_ke['condition_value'] );?></span>
+                    <?php if ( ! empty( $owa_ke['conditions'] ) ):?>
+                    <?php foreach ( $owa_ke['conditions'] as $owa_i => $owa_cond ):?>
+                        <?php if ( $owa_i ):?>
+                        <span class="owa_goalEventJoin"><?php $view->out( $owa_ke['condition_match'] === 'any' ? 'or' : 'and' );?></span>
+                        <?php endif;?>
+                        <span class="owa_goalEventProperty"><?php $view->out( $owa_cond['property'] );?></span>
+                        <span class="owa_goalEventOperator"><?php $view->out(
+                            \OWA\Module\Base\Entity\GoalEvent::operators()[ $owa_cond['operator'] ] ?? $owa_cond['operator'] );?></span>
+                        <span class="owa_goalEventValue"><?php $view->out( $owa_cond['value'] );?></span>
+                    <?php endforeach;?>
                     <?php else:?>
                     <?php
                         /*

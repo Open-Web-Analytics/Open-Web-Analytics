@@ -189,6 +189,7 @@ function owa_compat_class_map(): array
         'owa_goal_event' => 'OWA\\Module\\Base\\Entity\\GoalEvent',
         'owa_funnel' => 'OWA\\Module\\Base\\Entity\\Funnel',
         'owa_funnel_step' => 'OWA\\Module\\Base\\Entity\\FunnelStep',
+        'owa_goal_event_condition' => 'OWA\\Module\\Base\\Entity\\GoalEventCondition',
         'owa_goalEventsController' => 'OWA\\Module\\Base\\Controller\\GoalEvents',
         'owa_goalEventsView' => 'OWA\\Module\\Base\\View\\GoalEvents',
         'owa_goalEventEditController' => 'OWA\\Module\\Base\\Controller\\GoalEventEdit',

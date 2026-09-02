@@ -31,10 +31,114 @@ namespace OWA\Module\Base\Entity;
  */
 class GoalEvent extends \OWA\Core\Entity {
 
-    /** How a condition compares. The vocabulary 1.x already offered. */
-    const MATCH_EXACT  = 'exact';
-    const MATCH_BEGINS = 'begins';
-    const MATCH_REGEX  = 'regex';
+    /*
+     * How a condition compares.
+     *
+     * The first three are 1.x's goal match types, kept verbatim so migrated
+     * goals mean exactly what they meant. The rest close the gaps that made
+     * this vocabulary too small to describe a behaviour: you could not say "not
+     * this page", "contains", or anything numeric at all.
+     *
+     * Named rather than symbolic (== and =@ in the report builder's
+     * constraints) because these are stored and read back by a UI, where a name
+     * survives being looked at. The LABELS match the constraint builder's, so
+     * the same comparison reads the same wherever it appears.
+     */
+    const MATCH_EXACT    = 'exact';
+    const MATCH_BEGINS   = 'begins';
+    const MATCH_REGEX    = 'regex';
+    const MATCH_NOT      = 'not';
+    const MATCH_CONTAINS = 'contains';
+    const MATCH_GT       = 'gt';
+    const MATCH_LT       = 'lt';
+
+    /** How several conditions combine. */
+    const MATCH_ALL = 'all';
+    const MATCH_ANY = 'any';
+
+    /**
+     * The comparisons an author can choose, in the order they are offered.
+     *
+     * @return array  operator => label
+     */
+    public static function operators() {
+
+        return array(
+            self::MATCH_EXACT    => 'Exactly matching',
+            self::MATCH_NOT      => 'Not matching',
+            self::MATCH_CONTAINS => 'Contains',
+            self::MATCH_BEGINS   => 'Begins with',
+            self::MATCH_REGEX    => 'Matches regex',
+            self::MATCH_GT       => 'Greater than',
+            self::MATCH_LT       => 'Less than',
+        );
+    }
+
+    /**
+     * Does one value satisfy one comparison?
+     *
+     * The single place a condition is decided, so the goal event's own test,
+     * its funnel steps and anything added later agree about what "contains"
+     * means.
+     *
+     * @param  mixed  $value     the property's value on the event
+     * @param  string $operator  one of the MATCH_ constants
+     * @param  mixed  $target    what the author typed
+     * @return bool
+     */
+    public static function compare( $value, $operator, $target ) {
+
+        $value  = (string) $value;
+        $target = (string) $target;
+
+        switch ( $operator ) {
+
+            case self::MATCH_EXACT:
+                return $value === $target;
+
+            case self::MATCH_NOT:
+                return $value !== $target;
+
+            case self::MATCH_CONTAINS:
+                /*
+                 * strpos() !== false, not a truthy test: a match at position 0
+                 * returns 0, which is falsy, so "/thanks contains /" would read
+                 * as no match. That trap has been found in this codebase before.
+                 */
+                return $target !== '' && strpos( $value, $target ) !== false;
+
+            case self::MATCH_BEGINS:
+                return $target !== '' && strpos( $value, $target ) === 0;
+
+            case self::MATCH_REGEX:
+                /*
+                 * Delimited and quiet. An author's pattern is not trusted to be
+                 * well formed, and a warning on every tracked event would be
+                 * worse than the condition simply not matching.
+                 */
+                return $target !== ''
+                    && @preg_match( '@' . $target . '@i', $value ) === 1;
+
+            case self::MATCH_GT:
+            case self::MATCH_LT:
+                /*
+                 * NUMERIC, and only when both sides are numbers. PHP would
+                 * happily compare two strings here and answer something -- but
+                 * "greater than" on a page URL is not a question anyone asked,
+                 * and a silent lexicographic answer is worse than no match.
+                 */
+                if ( ! is_numeric( $value ) || ! is_numeric( $target ) ) {
+
+                    return false;
+                }
+
+                return $operator === self::MATCH_GT
+                    ? ( (float) $value > (float) $target )
+                    : ( (float) $value < (float) $target );
+        }
+
+        return false;
+    }
 
     /** What 1.x's single implemented goal type watches. */
     const TRIGGER_PAGE_VIEW = 'base.page_request';
@@ -80,15 +184,37 @@ class GoalEvent extends \OWA\Core\Entity {
         $trigger = new \OWA\Module\Base\Classes\DbColumn( 'trigger_event_type', OWA_DTD_VARCHAR255 );
         $this->setProperty( $trigger );
 
-        /* The condition, as a property / operator / value triple. */
-        $condition_property = new \OWA\Module\Base\Classes\DbColumn( 'condition_property', OWA_DTD_VARCHAR255 );
-        $this->setProperty( $condition_property );
+        /*
+         * How often a match counts: once per session, or once per event.
+         *
+         * RECORDED HERE, NOT HONOURED IN 1.x. A 1.x conversion is a TINYINT on
+         * the session row -- goal_N -- so "this session did or did not convert"
+         * is the only thing the storage can say. Once-per-event is not a
+         * handler choice there, it is not representable.
+         *
+         * It is stored anyway because v2 is the other way round: v2
+         * materialises a row per match, so once-per-event is the natural
+         * behaviour and once-per-session is the one needing suppression. The
+         * column carries the author's intent across, so the v2 migration reads
+         * it rather than guessing.
+         *
+         * Falsy reads as once per session, which is what every 1.x goal is.
+         */
+        $count_mode = new \OWA\Module\Base\Classes\DbColumn( 'count_mode', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $count_mode );
 
-        $condition_operator = new \OWA\Module\Base\Classes\DbColumn( 'condition_operator', OWA_DTD_VARCHAR255 );
-        $this->setProperty( $condition_operator );
-
-        $condition_value = new \OWA\Module\Base\Classes\DbColumn( 'condition_value', OWA_DTD_VARCHAR255 );
-        $this->setProperty( $condition_value );
+        /*
+         * How several conditions combine: 'all' or 'any'.
+         *
+         * On the goal event rather than on each condition, because it is a fact
+         * about the SET. A row that carried its own conjunction would let two
+         * disagree, and there would be no answer to what the third one meant.
+         *
+         * Falsy reads as ALL -- the safer reading, and what a single-condition
+         * goal event means either way.
+         */
+        $condition_match = new \OWA\Module\Base\Classes\DbColumn( 'condition_match', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $condition_match );
 
         /*
          * CENTS, matching v2's revenue column, so the value does not have to be
@@ -148,6 +274,9 @@ class GoalEvent extends \OWA\Core\Entity {
      */
     public function toGoalArray() {
 
+        $conditions = $this->loadConditions();
+        $first      = $conditions ? $conditions[0] : null;
+
         return array(
             'goal_number' => $this->get( 'goal_number' ),
             'goal_name'   => $this->get( 'name' ),
@@ -156,8 +285,17 @@ class GoalEvent extends \OWA\Core\Entity {
             'goal_value'  => self::centsToDecimal( $this->get( 'value' ) ),
             'goal_type'   => 'url_destination',
             'details'     => array_filter( array(
-                'match_type'   => $this->get( 'condition_operator' ),
-                'goal_url'     => $this->get( 'condition_value' ),
+                /*
+                 * The FIRST condition only.
+                 *
+                 * The 1.x goal shape holds one match_type and one goal_url, so
+                 * a goal event with several conditions cannot be described in
+                 * it. Everything that evaluates a conversion reads the
+                 * conditions directly now; this shape is what the goals REPORTS
+                 * still speak, and they show a single rule.
+                 */
+                'match_type'   => $first ? $first->get( 'condition_operator' ) : '',
+                'goal_url'     => $first ? $first->get( 'condition_value' ) : '',
                 /*
                  * Only when there are some. The evaluator tests
                  * array_key_exists( 'funnel_steps', ... ) and then indexes
@@ -170,6 +308,107 @@ class GoalEvent extends \OWA\Core\Entity {
                 return $value !== array() && $value !== null;
             } ),
         );
+    }
+
+    /** Once per session (1.x's only behaviour) or once per event. */
+    const COUNT_PER_SESSION = 'once_per_session';
+    const COUNT_PER_EVENT   = 'once_per_event';
+
+    /**
+     * How often a match counts.
+     *
+     * Falsy reads as once per session: every 1.x goal is one, and the storage
+     * there cannot express the alternative.
+     */
+    public function countMode() {
+
+        return $this->get( 'count_mode' ) === self::COUNT_PER_EVENT
+            ? self::COUNT_PER_EVENT : self::COUNT_PER_SESSION;
+    }
+
+    /** 'all' or 'any'; falsy reads as all. */
+    public function conditionMatch() {
+
+        return $this->get( 'condition_match' ) === self::MATCH_ANY
+            ? self::MATCH_ANY : self::MATCH_ALL;
+    }
+
+    /**
+     * This goal event's conditions, in the order they were written.
+     *
+     * @return array of \OWA\Module\Base\Entity\GoalEventCondition
+     */
+    public function loadConditions() {
+
+        if ( ! $this->get( 'id' ) ) {
+
+            return array();
+        }
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $entity->getTableName() );
+        $db->selectColumn( '*' );
+        $db->where( 'goal_event_id', $this->get( 'id' ) );
+        $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
+
+        $conditions = array();
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition->setProperties( $row );
+
+            $conditions[] = $condition;
+        }
+
+        return $conditions;
+    }
+
+    /**
+     * Does this event satisfy the goal event?
+     *
+     * @param  object $event  the tracking event
+     * @return bool
+     */
+    public function matchesEvent( $event ) {
+
+        $conditions = $this->loadConditions();
+
+        /*
+         * NO conditions means no match, not every match.
+         *
+         * An empty rule is vacuously true, and treating it that way would make
+         * a half-written goal event count every single event on the site --
+         * loudly wrong, and only after it had already happened. This install
+         * already had a goal that could never fire; one that fires for
+         * everything is the worse direction to be wrong in.
+         */
+        if ( ! $conditions ) {
+
+            return false;
+        }
+
+        $any = $this->conditionMatch() === self::MATCH_ANY;
+
+        foreach ( $conditions as $condition ) {
+
+            $matched = $condition->matches( $event->get( $condition->get( 'condition_property' ) ) );
+
+            if ( $any && $matched ) {
+
+                return true;
+            }
+
+            if ( ! $any && ! $matched ) {
+
+                return false;
+            }
+        }
+
+        // Fell through: every one matched under ALL, or none did under ANY.
+        return ! $any;
     }
 
     /**

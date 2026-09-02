@@ -2,7 +2,8 @@ import $ from 'jquery';
 import { OWA } from './owa.js';
 
 /**
- * Add and remove funnel steps on the goal event screen.
+ * Add and remove rows in a repeatable list -- a goal event's conditions and
+ * its funnel steps.
  *
  * The rows are .constraintRow, the same markup the report builder uses, so they
  * arrive already styled -- including the + and X buttons. Those buttons are
@@ -19,7 +20,14 @@ import { OWA } from './owa.js';
  * keeps, so nothing here decides anything.
  */
 
-var STEP_SELECTOR = '#owa_goalEventFunnel .constraintRow';
+/*
+ * Any list that opts in, not just the funnel.
+ *
+ * A goal event's conditions are a repeatable list for the same reason its
+ * funnel is, and they were built twice before this was generalised. The list
+ * declares itself with data-owa-repeatable so a third one needs no JS at all.
+ */
+var LIST_SELECTOR = '[data-owa-repeatable]';
 
 OWA.funnelBuilder = {
 
@@ -43,7 +51,7 @@ OWA.funnelBuilder = {
      */
     remove: function ( $row ) {
 
-        if ( $( STEP_SELECTOR ).length <= 1 ) {
+        if ( $row.siblings( '.constraintRow' ).length < 1 ) {
 
             $row.find( 'input' ).val( '' );
 
@@ -56,7 +64,7 @@ OWA.funnelBuilder = {
 
 $( function () {
 
-    $( document ).on( 'click keypress', '#owa_goalEventFunnel .constraintAddButton',
+    $( document ).on( 'click keypress', LIST_SELECTOR + ' .constraintAddButton',
         function ( event ) {
 
             // Space and Enter, because these are spans rather than buttons.
@@ -72,7 +80,7 @@ $( function () {
             OWA.funnelBuilder.blankCopy( $row ).insertAfter( $row );
         } );
 
-    $( document ).on( 'click keypress', '#owa_goalEventFunnel .constraintRemoveButton',
+    $( document ).on( 'click keypress', LIST_SELECTOR + ' .constraintRemoveButton',
         function ( event ) {
 
             if ( event.type === 'keypress' && event.which !== 13 && event.which !== 32 ) {

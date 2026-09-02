@@ -39,7 +39,7 @@ class Update025 extends \OWA\Core\Update {
             return false;
         }
 
-        foreach ( array( 'base.funnel', 'base.funnel_step' ) as $name ) {
+        foreach ( array( 'base.goal_event_condition', 'base.funnel', 'base.funnel_step' ) as $name ) {
 
             $table = \OWA\Core\CoreAPI::entityFactory( $name );
 
@@ -82,7 +82,15 @@ class Update025 extends \OWA\Core\Update {
 
                 foreach ( $planned as $column => $value ) {
 
-                    if ( $column === 'steps' || $column === 'site_id' ) {
+                    /*
+                     * The condition triple is not on the goal event any more --
+                     * conditions are rows -- and site_id was replaced by the
+                     * Property. Written below rather than set here.
+                     */
+                    if ( in_array( $column, array(
+                             'steps', 'site_id',
+                             'condition_property', 'condition_operator', 'condition_value' ),
+                         true ) ) {
 
                         continue;
                     }
@@ -95,6 +103,30 @@ class Update025 extends \OWA\Core\Update {
                 if ( $goalEvent->create() ) {
 
                     $migrated++;
+                }
+
+                /*
+                 * The condition, as its own row.
+                 *
+                 * A 1.x goal had exactly one -- one URL, one match type -- and
+                 * that is not enough to describe a behaviour: "a purchase over
+                 * 50 from the pricing page" is two conditions and could not be
+                 * written. So the triple became rows, and the migration writes
+                 * the one it has.
+                 */
+                if ( $planned['condition_value'] !== '' ) {
+
+                    $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+                    $condition->set( 'id', $condition->generateId(
+                        'goal_event_condition:' . $goalEvent->get( 'id' ) . ':1' ) );
+                    $condition->set( 'goal_event_id', $goalEvent->get( 'id' ) );
+                    $condition->set( 'sort_order', 1 );
+                    $condition->set( 'condition_property', $planned['condition_property'] );
+                    $condition->set( 'condition_operator', $planned['condition_operator'] );
+                    $condition->set( 'condition_value', $planned['condition_value'] );
+                    $condition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+                    $condition->create();
                 }
 
                 /*

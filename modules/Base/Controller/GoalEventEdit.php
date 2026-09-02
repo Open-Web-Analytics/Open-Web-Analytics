@@ -43,6 +43,15 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         $this->set( 'goalEvent', $goalEvent->_getProperties() );
         $this->set( 'funnelSteps', $goalEvent->get( 'id' ) ? $goalEvent->loadSteps() : array() );
+
+        $conditions = array();
+
+        foreach ( $goalEvent->get( 'id' ) ? $goalEvent->loadConditions() : array() as $condition ) {
+
+            $conditions[] = $condition->_getProperties();
+        }
+
+        $this->set( 'conditions', $conditions );
         /* Whatever it resolved to, so the form saves the row it opened. */
         $this->set( 'goalEventId', $goalEvent->get( 'id' ) );
         $this->set( 'siteId', $siteId );

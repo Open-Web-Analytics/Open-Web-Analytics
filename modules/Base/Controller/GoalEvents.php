@@ -99,6 +99,25 @@ class GoalEvents extends \OWA\Core\AdminController {
             $goalEvent->setProperties( $row );
 
             $rows[ $i ]['step_count'] = count( $goalEvent->loadSteps() );
+
+            /*
+             * The conditions, summarised for the list. Conditions are rows now,
+             * so the goal event row itself carries none -- reading one off it
+             * showed an empty cell for every goal event.
+             */
+            $summary = array();
+
+            foreach ( $goalEvent->loadConditions() as $condition ) {
+
+                $summary[] = array(
+                    'property' => $condition->get( 'condition_property' ),
+                    'operator' => $condition->get( 'condition_operator' ),
+                    'value'    => $condition->get( 'condition_value' ),
+                );
+            }
+
+            $rows[ $i ]['conditions']       = $summary;
+            $rows[ $i ]['condition_match']  = $goalEvent->conditionMatch();
         }
 
         return $rows;

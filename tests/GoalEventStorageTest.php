@@ -79,6 +79,14 @@ final class GoalEventStorageTest extends TestCase
             $e->delete( $id );
         }
 
+        foreach ( $this->createdConditions as $id ) {
+
+            $e = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $e->delete( $id );
+        }
+
+        $this->createdConditions = [];
+
         $this->created = [];
     }
 
@@ -149,6 +157,219 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( array(),
             \OWA\Module\Base\Update\Update025::planForProfile(
                 array( 'scope_id' => 'OWA-probe', 'value' => 'not-serialized-at-all' ) ) );
+    }
+
+    /* ---------------- conditions ---------------- */
+
+    /**
+     * The comparisons, including the ones 1.x could not express.
+     *
+     * 1.x offered exact, begins and regex against one URL. There was no way to
+     * say "not this page", "contains", or anything numeric -- so a goal event
+     * describing "a purchase over 50" could not be written at all.
+     */
+    public function testTheComparisons(): void
+    {
+        $ge = '\OWA\Module\Base\Entity\GoalEvent';
+
+        $this->assertTrue(  $ge::compare( '/thanks', 'exact', '/thanks' ) );
+        $this->assertFalse( $ge::compare( '/thanks', 'exact', '/other' ) );
+
+        $this->assertTrue(  $ge::compare( '/thanks', 'not', '/other' ) );
+        $this->assertFalse( $ge::compare( '/thanks', 'not', '/thanks' ) );
+
+        $this->assertTrue(  $ge::compare( '/a/thanks', 'contains', 'thanks' ) );
+        $this->assertTrue(  $ge::compare( '/thanks', 'begins', '/thanks' ) );
+        $this->assertFalse( $ge::compare( '/a/thanks', 'begins', 'thanks' ) );
+
+        $this->assertTrue(  $ge::compare( '/thanks/2', 'regex', 'thanks' ) );
+
+        $this->assertTrue(  $ge::compare( '60', 'gt', '50' ) );
+        $this->assertFalse( $ge::compare( '40', 'gt', '50' ) );
+        $this->assertTrue(  $ge::compare( '40', 'lt', '50' ) );
+    }
+
+    /**
+     * A match at position zero is a match.
+     *
+     * strpos() answers 0 there, which is falsy -- so a truthy test reads
+     * "/thanks contains /" as no match. That exact trap has been found in this
+     * codebase before.
+     */
+    public function testContainsMatchesAtPositionZero(): void
+    {
+        $this->assertTrue(
+            \OWA\Module\Base\Entity\GoalEvent::compare( '/thanks', 'contains', '/' ) );
+    }
+
+    /**
+     * Greater/less than are NUMERIC, and answer no when either side is not.
+     *
+     * PHP would happily compare two strings and return something, but "greater
+     * than" on a page URL is not a question anyone asked, and a silent
+     * lexicographic answer is worse than no match.
+     */
+    public function testNumericComparisonsRefuseNonNumbers(): void
+    {
+        $ge = '\OWA\Module\Base\Entity\GoalEvent';
+
+        $this->assertFalse( $ge::compare( '/pricing', 'gt', '50' ) );
+        $this->assertFalse( $ge::compare( '60', 'gt', 'fifty' ) );
+    }
+
+    /**
+     * A malformed pattern does not match, and is suppressed at compare time.
+     *
+     * Suppressed there because the alternative is a warning per tracked event.
+     * It is REFUSED at save time instead -- see GoalEventSave -- so nobody
+     * stores a pattern that can never match.
+     *
+     * The handler respects error_reporting(), which @ sets to 0: a handler that
+     * throws regardless would report the suppression working as a failure.
+     */
+    public function testABrokenRegexDoesNotMatchAndIsSuppressed(): void
+    {
+        $seen = false;
+
+        $previous = set_error_handler(
+            static function ( $no, $str ) use ( &$seen ) {
+
+                if ( ! ( error_reporting() & $no ) ) {
+
+                    return true;   // suppressed at the call site
+                }
+
+                $seen = true;
+
+                return true;
+            } );
+
+        try {
+            $this->assertFalse(
+                \OWA\Module\Base\Entity\GoalEvent::compare( '/thanks', 'regex', '(' ) );
+
+            $this->assertFalse( $seen,
+                'A broken pattern warns on every tracked event.' );
+
+        } finally {
+            set_error_handler( $previous );
+        }
+    }
+
+    /** And the form refuses it, rather than storing something inert. */
+    public function testABrokenRegexIsRefusedOnSave(): void
+    {
+        $src = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/GoalEventSave.php' );
+
+        $this->assertStringContainsString( 'not a valid regular expression', $src,
+            'A pattern that cannot compile can be saved, and then matches nothing '
+            . 'for ever without saying so.' );
+    }
+
+    /** Several conditions, combined with all or any. */
+    public function testConditionsCombineWithAllOrAny(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'begins', '/checkout' ),
+            array( 'ct_total', 'gt',     '50' ),
+        ) );
+
+        $over  = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '60' ) );
+        $under = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '40' ) );
+
+        $this->assertTrue(  $goalEvent->matchesEvent( $over ) );
+        $this->assertFalse( $goalEvent->matchesEvent( $under ),
+            'Under ALL, one failing condition must fail the whole rule.' );
+
+        $goalEvent->set( 'condition_match', 'any' );
+
+        $this->assertTrue( $goalEvent->matchesEvent( $under ),
+            'Under ANY, one matching condition is enough.' );
+    }
+
+    /**
+     * A goal event with NO conditions matches nothing.
+     *
+     * An empty rule is vacuously true, and treating it that way would count
+     * every event on the site. This install already had a goal that could never
+     * fire; one that fires for everything is the worse direction to be wrong in.
+     */
+    public function testAGoalEventWithNoConditionsMatchesNothing(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array() );
+
+        $this->assertFalse( $goalEvent->matchesEvent(
+            $this->fakeEvent( array( 'page_uri' => '/anything' ) ) ) );
+    }
+
+    /** The migration writes the 1.x triple as a condition row. */
+    public function testTheMigratedConditionBecomesARow(): void
+    {
+        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
+            'scope_id' => $this->siteId,
+            'value'    => serialize( array( 1 => array(
+                'goal_name'   => 'Migrated',
+                'goal_number' => '1',
+                'goal_status' => 'active',
+                'goal_type'   => 'url_destination',
+                'details'     => array( 'match_type' => 'begins', 'goal_url' => '/thanks' ),
+            ) ) ),
+        ) );
+
+        $this->assertSame( 'begins', $planned[0]['condition_operator'] );
+        $this->assertSame( '/thanks', $planned[0]['condition_value'] );
+        $this->assertSame( 'page_uri', $planned[0]['condition_property'] );
+    }
+
+    /** A goal event carrying the given conditions, cleaned up afterwards. */
+    private function makeGoalEventWithConditions( array $conditions )
+    {
+        $id = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )
+            ->generateId( 'goal_event:cond-probe:' . uniqid( '', true ) );
+
+        $this->created[] = $id;
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->set( 'id', $id );
+        $goalEvent->set( 'property_id', $this->propertyId );
+        $goalEvent->set( 'name', 'Condition probe' );
+        $goalEvent->set( 'is_active', 1 );
+        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $goalEvent->create();
+
+        $n = 0;
+
+        foreach ( $conditions as $c ) {
+
+            $n++;
+
+            $row = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $row->set( 'id', $row->generateId( 'goal_event_condition:' . $id . ':' . $n ) );
+            $row->set( 'goal_event_id', $id );
+            $row->set( 'sort_order', $n );
+            $row->set( 'condition_property', $c[0] );
+            $row->set( 'condition_operator', $c[1] );
+            $row->set( 'condition_value', $c[2] );
+            $row->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+            $row->create();
+
+            $this->createdConditions[] = $row->get( 'id' );
+        }
+
+        return $goalEvent;
+    }
+
+    /** @var array ids to clean up */
+    private array $createdConditions = [];
+
+    /** Something with ->get(), which is all matchesEvent() asks of an event. */
+    private function fakeEvent( array $properties )
+    {
+        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+        $event->setProperties( $properties );
+
+        return $event;
     }
 
     /* ---------------- funnels ---------------- */

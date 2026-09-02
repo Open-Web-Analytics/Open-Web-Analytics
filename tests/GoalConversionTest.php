@@ -65,6 +65,46 @@ final class GoalConversionTest extends TestCase
             {
                 return $this->stubGoals;
             }
+
+            /*
+             * Matching moved OUT of this class.
+             *
+             * A goal event's conditions are rows now, and there can be several
+             * combined with all or any -- so the handler asks whether goal N
+             * matched rather than deciding it from a url_destination triple.
+             * That decision has its own tests (GoalEventStorageTest); what is
+             * under test HERE is the orchestration around it: which goal owns
+             * the value, that an inactive one contributes nothing, and that one
+             * goal's result does not leak into the next.
+             *
+             * Stubbed from the same goal array the rest of the harness uses, so
+             * these tests still describe the scenarios they always did.
+             */
+            protected function checkGoalEventConditions($event, $siteId, $number)
+            {
+                $goal = $this->stubGoals[$number] ?? null;
+
+                if (!is_array($goal)) {
+                    return '';
+                }
+
+                $url = $goal['details']['goal_url'] ?? null;
+
+                if ($url === null) {
+                    return '';
+                }
+
+                /*
+                 * The REAL comparison, not a re-implementation of it. One
+                 * definition of what "begins" means, exercised from both the
+                 * handler's level and the entity's own tests.
+                 */
+                return \OWA\Module\Base\Entity\GoalEvent::compare(
+                    $event->get('page_uri'),
+                    $goal['details']['match_type'] ?? 'exact',
+                    $url
+                ) ? $number : '';
+            }
         };
     }
 

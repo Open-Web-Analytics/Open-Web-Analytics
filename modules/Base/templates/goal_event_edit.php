@@ -45,35 +45,61 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Counts when</div>
-        <div class="description">An event matching this condition is counted as a goal
+        <div class="description">An event matching these conditions is counted as a goal
         event.</div>
         <div class="field">
-            <ul class="constraintList owa_goalEventCondition">
+            <?php if ( count( (array) $view->conditions ) > 1 || true ):?>
+            <div class="owa_conditionMatch">
+                Match
+                <select name="<?php echo $view->getNs();?>conditionMatch">
+                    <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>>all</option>
+                    <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>>any</option>
+                </select>
+                of the following:
+            </div>
+            <?php endif;?>
+            <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
+            <?php
+            /*
+             * At least one row, always. An empty list would render a condition
+             * builder with nothing to build in, and a goal event with no
+             * conditions deliberately matches NOTHING -- so there has to be
+             * somewhere to type the first one.
+             */
+            $owa_conditions = $view->conditions ?: array( array(
+                'condition_property' => '', 'condition_operator' => '', 'condition_value' => '' ) );
+            ?>
+            <?php foreach ( $owa_conditions as $owa_cond ):?>
                 <li class="constraintRow">
                     <span class="constraintDimensionPicker">
-                        <select class="dim-list" name="<?php echo $view->getNs();?>conditionProperty">
+                        <select class="dim-list" name="<?php echo $view->getNs();?>conditionProperty[]">
                         <?php foreach ( (array) $view->conditionProperties as $owa_prop ):?>
                             <option value="<?php $view->out( $owa_prop['name'] );?>"
-                                <?php echo ( ( $owa_ke['condition_property'] ?? '' ) === $owa_prop['name'] ) ? 'selected' : '';?>>
+                                <?php echo ( ( $owa_cond['condition_property'] ?? '' ) === $owa_prop['name'] ) ? 'selected' : '';?>>
                                 <?php $view->out( $owa_prop['label'] );?> (<?php $view->out( $owa_prop['name'] );?>)
                             </option>
                         <?php endforeach;?>
                         </select>
                     </span>
                     <span class="constraintOperatorPicker">
-                        <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator">
-                        <?php foreach ( $owa_operators as $owa_value => $owa_label ):?>
+                        <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator[]">
+                        <?php foreach ( \OWA\Module\Base\Entity\GoalEvent::operators() as $owa_value => $owa_label ):?>
                             <option value="<?php $view->out( $owa_value );?>"
-                                <?php echo ( ( $owa_ke['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
+                                <?php echo ( ( $owa_cond['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
                                 <?php $view->out( $owa_label );?>
                             </option>
                         <?php endforeach;?>
                         </select>
                     </span>
                     <input class="constraintValueField" type="text"
-                           name="<?php echo $view->getNs();?>conditionValue"
-                           value="<?php $view->out( $owa_ke['condition_value'] ?? '' );?>">
+                           name="<?php echo $view->getNs();?>conditionValue[]"
+                           value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
+                    <span class="constraintAddButton" role="button" tabindex="0"
+                          title="Add another condition" aria-label="Add another condition">+</span>
+                    <span class="constraintRemoveButton" role="button" tabindex="0"
+                          title="Remove this condition" aria-label="Remove this condition">X</span>
                 </li>
+            <?php endforeach;?>
             </ul>
             <span class="validation_error"><?php $view->out( $view->validation_errors['conditionValue'] ?? '' );?></span>
         </div>
@@ -107,7 +133,7 @@ the event, how to compare it, and what to compare it to.</div>
         lets a report show where people leave. Each step is matched as a regular expression
         against the page URL. Leave it empty if there is no path to describe.</div>
         <div class="field">
-            <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel">
+            <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel" data-owa-repeatable>
             <?php
             /*
              * The add and remove buttons belong HERE and not on the condition
@@ -150,6 +176,19 @@ the event, how to compare it, and what to compare it to.</div>
                        ? \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ?? 0 )
                        : '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['value'] ?? '' );?></span>
+        </div>
+    </div>
+
+    <div class="setting">
+        <div class="title">Count</div>
+        <div class="description">How often a match counts. A conversion is currently recorded
+        against the <em>session</em>, so once per session is what this release can measure &mdash;
+        once per event is stored and takes effect when per-event recording lands.</div>
+        <div class="field">
+            <select name="<?php echo $view->getNs();?>countMode">
+                <option value="once_per_session" <?php echo ( $owa_ke['count_mode'] ?? '' ) !== 'once_per_event' ? 'selected' : '';?>>Once per session</option>
+                <option value="once_per_event" <?php echo ( $owa_ke['count_mode'] ?? '' ) === 'once_per_event' ? 'selected' : '';?>>Once per event</option>
+            </select>
         </div>
     </div>
 

@@ -62,6 +62,17 @@ test.describe('goal events', () => {
             page.locator('.owa_goalEventFunnel li.constraintRow')
         ).toHaveCount(1);
 
+        // Conditions are a LIST: "a purchase over 50 from the pricing page" is
+        // two conditions, and one triple could not express it.
+        await page.locator('.owa_goalEventCondition .constraintAddButton').first().click();
+        await expect(condition).toHaveCount(2);
+
+        await page.locator('.owa_goalEventCondition .constraintRemoveButton').first().click();
+        await expect(condition).toHaveCount(1);
+
+        // How several combine is asked once, about the set.
+        await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
+
         // The + and X are bound PER ROW inside the report builder, so reusing
         // its markup does not reuse its behaviour -- these rendered and did
         // nothing until they were wired.
@@ -77,9 +88,9 @@ test.describe('goal events', () => {
         await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(1);
 
         await page.fill('input[name="name"]', name);
-        await page.selectOption('select[name="conditionProperty"]', 'page_uri');
-        await page.selectOption('select[name="conditionOperator"]', 'begins');
-        await page.fill('input[name="conditionValue"]', '/thanks');
+        await page.selectOption('select[name="conditionProperty[]"]', 'page_uri');
+        await page.selectOption('select[name="conditionOperator[]"]', 'begins');
+        await page.fill('input[name="conditionValue[]"]', '/thanks');
         await page.fill('input[name="value"]', '2.50');
 
         // A new goal event defaults to Active. Defaulting to Inactive means
@@ -112,7 +123,7 @@ test.describe('goal events', () => {
 
         // It came back carrying what was saved, not a blank form.
         await expect(page.locator('input[name="name"]')).toHaveValue(name);
-        await expect(page.locator('input[name="conditionValue"]')).toHaveValue('/thanks');
+        await expect(page.locator('input[name="conditionValue[]"]')).toHaveValue('/thanks');
 
         await page.fill('input[name="name"]', renamed);
 
@@ -156,7 +167,7 @@ test.describe('goal events', () => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E No Condition');
-        await page.fill('input[name="conditionValue"]', '');
+        await page.fill('input[name="conditionValue[]"]', '');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -181,7 +192,7 @@ test.describe('goal events', () => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Funnel');
-        await page.fill('input[name="conditionValue"]', '/done');
+        await page.fill('input[name="conditionValue[]"]', '/done');
         await page.fill('input[name="stepName[]"]', 'Basket');
         await page.fill('input[name="stepPath[]"]', 'https://example.test/basket');
 

@@ -363,14 +363,13 @@ class GoalManager extends \OWA\Core\Base {
         $goalEvent->set( 'value', $cents === null ? 0 : $cents );
         $goalEvent->set( 'trigger_event_type',
             \OWA\Module\Base\Entity\GoalEvent::TRIGGER_PAGE_VIEW );
-        $goalEvent->set( 'condition_property',
-            \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI );
-        $goalEvent->set( 'condition_operator', (string) ( $details['match_type'] ?? '' ) );
-        $goalEvent->set( 'condition_value', (string) ( $details['goal_url'] ?? '' ) );
+
+
 
         if ( $goalEvent->wasPersisted() ) {
 
             $goalEvent->update();
+            $this->persistCondition( $id, $details );
 
             return;
         }
@@ -378,6 +377,45 @@ class GoalManager extends \OWA\Core\Base {
         $goalEvent->set( 'id', $id );
         $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
         $goalEvent->create();
+
+        $this->persistCondition( $id, $details );
+    }
+
+    /**
+     * The 1.x goal's single condition, as a row.
+     *
+     * saveGoal() speaks the old shape -- one match_type and one goal_url -- so
+     * this writes the one condition it can describe. The goal event screen
+     * writes several directly and does not come through here.
+     */
+    private function persistCondition( $goalEventId, $details ) {
+
+        $value = trim( (string) ( $details['goal_url'] ?? '' ) );
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->deleteFrom( $entity->getTableName() );
+        $db->where( 'goal_event_id', $goalEventId );
+        $db->executeQuery();
+
+        if ( $value === '' ) {
+
+            return;
+        }
+
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+        $condition->set( 'id', $condition->generateId(
+            'goal_event_condition:' . $goalEventId . ':1' ) );
+        $condition->set( 'goal_event_id', $goalEventId );
+        $condition->set( 'sort_order', 1 );
+        $condition->set( 'condition_property',
+            \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI );
+        $condition->set( 'condition_operator', (string) ( $details['match_type'] ?? '' ) );
+        $condition->set( 'condition_value', $value );
+        $condition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $condition->create();
     }
 
     function saveGoalGroupLabel($number, $goal_group) {
