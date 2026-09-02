@@ -559,14 +559,25 @@ final class PropertyAdminScreensTest extends TestCase
             $prose = strip_tags( $prose );
 
             /*
-             * One approved exception: naming the real-world thing a DOMAIN
-             * points at. The rule is about not using "site" as a stand-in for a
-             * Property or a Profile -- "access is granted to the website" named
-             * a thing the UI does not have. "the domain of the website or
-             * application being observed" names what a domain is, which is not
-             * the same mistake and is what a person actually calls it.
+             * Approved exceptions, all of one kind: naming the real-world thing
+             * being observed, rather than using "site" as a stand-in for a
+             * Property or an Observation Profile.
+             *
+             * "Access is granted to the website" was the mistake -- it named a
+             * thing the UI does not have. "A website" as the ANSWER to what a
+             * Profile observes is not: a Profile is typed web or app, that type
+             * decides which identifier it needs, and there is no other word for
+             * the web one. Same for naming what a domain points at.
              */
-            $prose = str_replace( 'website or application being observed', '', $prose );
+            foreach ( array(
+                'website or application being observed',
+                'domain of the website being observed',
+                'website or product is called',
+                'A website',
+            ) as $approved ) {
+
+                $prose = str_replace( $approved, '', $prose );
+            }
 
             $this->assertDoesNotMatchRegularExpression(
                 '/\bweb ?sites?\b/i', $prose,

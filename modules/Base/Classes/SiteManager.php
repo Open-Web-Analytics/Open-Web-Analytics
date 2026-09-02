@@ -237,7 +237,14 @@ class SiteManager extends \OWA\Core\Base {
         return self::PROFILE_NAME_PREFIX . ( $existing + 1 );
     }
 
-    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    /**
+     * @param string $property_id  Put the Profile in THIS Property, instead of
+     *                             deriving one from the domain. This is how a
+     *                             second Profile is added to a website, and the
+     *                             only way to add one to a Property that has no
+     *                             domain to be found by.
+     */
+    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
 
@@ -269,19 +276,63 @@ class SiteManager extends \OWA\Core\Base {
         }
 
         /*
-         * The name the caller gave describes the WEBSITE, so it goes on the
-         * Property; the Profile takes the generated "Observation Profile N".
-         * That is the same split Update021 applies to existing sites, and the
-         * two have to agree -- a fresh install and a migrated one must not be
-         * distinguishable.
+         * A Property named by the caller wins over one derived from the domain.
+         *
+         * Deriving was the only way in, which made the domain the Property's
+         * key -- so a second Profile for a website meant retyping its domain,
+         * and a Property with no domain (an app) could never be chosen at all.
          */
-        $property_id = $this->ensurePropertyFor( $domain, $name, $description );
+        if ( $property_id ) {
+
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+            $property->load( $property_id );
+
+            if ( ! $property->wasPersisted() ) {
+
+                \OWA\Core\CoreAPI::debug( "No such property: $property_id." );
+
+                return;
+            }
+
+        } else {
+
+            /*
+             * The name the caller gave describes the WEBSITE, so it goes on the
+             * Property; the Profile takes the generated "Observation Profile N".
+             * That is the same split Update021 applies to existing sites, and
+             * the two have to agree -- a fresh install and a migrated one must
+             * not be distinguishable.
+             */
+            $property_id = $this->ensurePropertyFor( $domain, $name, $description );
+        }
 
         $site->set( 'id', $id );
         $site->set( 'site_id', $site_id );
         $site->set( 'property_id', $property_id );
         $site->set( 'name', $property_id ? $this->nextProfileName( $property_id ) : $name );
-        $site->set( 'domain', $domain );
+
+        /*
+         * The identifier belongs to the PROFILE, and which one it needs depends
+         * on what it observes.
+         *
+         * A web Profile is known by its domain -- read off this row by CORS
+         * origin matching, by makeUrlCanonical's alias rewrite, and by
+         * GET /v1/sites, which the WordPress plugin labels its picker with. An
+         * app Profile is known by a bundle id or package name and has no domain
+         * at all, which is the case that could not be expressed before.
+         */
+        $stream_type = $stream_type ?: \OWA\Module\Base\Entity\Site::STREAM_WEB;
+
+        $site->set( 'stream_type', $stream_type );
+
+        if ( $stream_type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+
+            $site->set( 'domain', $domain );
+
+        } else {
+
+            $site->set( 'app_id', $app_id );
+        }
         $site->set( 'description', $description );
         $site->set( 'site_family', $site_family );
 

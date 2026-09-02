@@ -55,10 +55,23 @@ class SitesAdd extends \OWA\Core\AdminController {
 
         $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
 
-        $site = $sm->createNewSite( $this->getParam( 'domain' ),
+        /*
+         * createSite(), not createNewSite().
+         *
+         * createNewSite() refuses a domain that already has a site -- which
+         * made a SECOND Observation Profile for a website impossible, the very
+         * thing Properties exist to allow. nextProfileName() numbers them
+         * "Observation Profile 1", "2", "3"; that counter could never reach 2
+         * through this screen.
+         */
+        $site = $sm->createSite( $this->getParam( 'domain' ),
                             $this->getParam( 'name' ),
                             $this->getParam( 'description' ),
-                            $this->getParam( 'site_family' )
+                            $this->getParam( 'site_family' ),
+                            '',
+                            $this->getParam( 'propertyId' ),
+                            $this->getParam( 'streamType' ),
+                            $this->getParam( 'appId' )
         );
         
         if ( $site ) {
@@ -70,29 +83,77 @@ class SitesAdd extends \OWA\Core\AdminController {
         
     }
     
+    /**
+     * The domain is NOT validated here any more, because it is not set here.
+     *
+     * Three rules used to guard it, all of them from 2009, when a site WAS a
+     * domain: site_id was md5( domain ), so the domain was the primary-key
+     * material. It had to be present, it had to carry a scheme, and it had to
+     * be unique. Identifiers are minted now, and every one of those reasons is
+     * gone -- but the rules outlived them into preventing two things this
+     * hierarchy was built to allow:
+     *
+     *   - the uniqueness check refused a second Observation Profile for a
+     *     website you already track, which is exactly what a Property is for;
+     *   - and it did not exclude ARCHIVED Profiles, so archiving one made its
+     *     domain permanently unusable -- the row kept to make the deletion
+     *     recoverable was what blocked starting over.
+     *
+     * `required` had to go for its own reason: a Property's domain is optional
+     * -- an app has none -- so requiring one to create a Profile meant an app
+     * could be a Property and never be observed.
+     *
+     * The domain belongs to the Property and is validated on the Property
+     * screen. What this screen needs is to know WHICH Property, and that is
+     * only required when it is not creating one.
+     */
     function validate() {
-	    
-	    // Config for the domain validation
-        $domain_conf = array(
-        	'substring' => 'http',
-        	'position' => 0,
-        	'operator' => '=',
-        	'errorMsg' => 'Please add the "http://" or "https://" to the beginning of your domain.'
-        );
 
-        // Add validations to the run
-        $this->addValidation('domain', $this->getParam('domain'), 'subStringPosition', $domain_conf);
-        
-        $this->addValidation('domain', $this->getParam('domain'), 'required', array('stopOnError'	=> true));
+        $this->validateStreamIdentity();
 
-        $siteEntityConf = [
+        if ( $this->getParam( 'propertyId' ) ) {
 
-             'entity'    => 'base.site',
-             'column'    => 'domain',
-             'errorMsg'  => $this->getMsg(3206)
-         ];
+            $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
+                array(
+                    'entity'   => 'base.property',
+                    'column'   => 'id',
+                    'errorMsg' => 'That Property no longer exists.',
+                ) );
 
-         $this->addValidation('domain', $this->getParam('protocol').$this->getParam('domain'), 'entityDoesNotExist', $siteEntityConf);
+            return;
+        }
+
+        /*
+         * Creating a Property as well as a Profile. The name describes the
+         * website, so it is what the new Property will be called -- and a
+         * Property with no name has nothing to head its group in the site
+         * selector.
+         */
+        $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
+            array( 'errorMsg' => 'A name is needed -- it is what the new Property will be called.' ) );
+    }
+
+    /**
+     * The identifier a Profile needs depends on what it observes.
+     *
+     * Called from validate() on both paths, because the type is a fact about
+     * the Profile and is asked for whether or not a Property is being created
+     * alongside it.
+     */
+    protected function validateStreamIdentity() {
+
+        $type = $this->getParam( 'streamType' ) ?: \OWA\Module\Base\Entity\Site::STREAM_WEB;
+
+        if ( $type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+
+            $this->addValidation( 'domain', trim( (string) $this->getParam( 'domain' ) ), 'required',
+                array( 'errorMsg' => 'A website Profile needs the domain of the site it observes.' ) );
+
+            return;
+        }
+
+        $this->addValidation( 'appId', trim( (string) $this->getParam( 'appId' ) ), 'required',
+            array( 'errorMsg' => 'An app Profile needs its bundle id or package name.' ) );
     }
     
     function success() {

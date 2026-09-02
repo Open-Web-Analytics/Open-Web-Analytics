@@ -47,7 +47,7 @@ class Site extends \OWA\Core\Entity {
      * column by default, so any column added to this entity joins a public API
      * unless someone says otherwise.
      */
-    protected $private_properties = [ 'archived_date' ];
+    protected $private_properties = [ 'archived_date', 'stream_type', 'app_id' ];
 
     private static $cachedAssignedUsers = array();
 
@@ -119,6 +119,58 @@ class Site extends \OWA\Core\Entity {
          */
         $this->properties['archived_date'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['archived_date']->setDataType(OWA_DTD_BIGINT);
+
+        /*
+         * What KIND of thing this Profile observes: 'web' or 'app'.
+         *
+         * The identifier a Profile needs depends on this, which is why the type
+         * lives here and not on the Property. GA4 reaches the same place from
+         * the same problem: a Property carries no URL, and each data stream
+         * under it declares web / Android / iOS and supplies the identifier
+         * that kind requires. Universal Analytics DID put a website URL on the
+         * property, and Google moved it down when a property stopped being able
+         * to assume it was a website.
+         *
+         * Two values, not four. OWA has no app SDK -- log.php will take events
+         * from anything that can make an HTTP request, but there is no client
+         * library and no documented app ingestion, so splitting 'app' into ios
+         * and android would be schema for something with no way to send. It can
+         * split later; nothing here assumes there are only two.
+         *
+         * Everything that exists is a website, which is what the default says.
+         */
+        $this->properties['stream_type'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['stream_type']->setDataType(OWA_DTD_VARCHAR255);
+
+        /*
+         * The identifier an APP Profile is known by -- a bundle id or package
+         * name. Empty for a web Profile, which is identified by its domain.
+         */
+        $this->properties['app_id'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['app_id']->setDataType(OWA_DTD_VARCHAR255);
+    }
+
+    /** Web is the default: every Profile that existed before types did is one. */
+    const STREAM_WEB = 'web';
+    const STREAM_APP = 'app';
+
+    /**
+     * What kind of thing this Profile observes.
+     *
+     * Falsy means web. The column is added by a migration and defaults to
+     * NULL on rows that predate it, and every one of those is a website.
+     */
+    public function getStreamType() {
+
+        $type = (string) $this->get('stream_type');
+
+        return $type !== '' ? $type : self::STREAM_WEB;
+    }
+
+    /** Does this Profile observe a website? */
+    public function isWebStream() {
+
+        return $this->getStreamType() === self::STREAM_WEB;
     }
 
     /**

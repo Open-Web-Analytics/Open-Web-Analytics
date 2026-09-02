@@ -33,25 +33,105 @@ two tags.</div>
 
         </TR>
         <?php endif;?>
+        <?php if ($view->edit == true):?>
         <TR>
+            <TH>Property:</TH>
+            <TD>
+                <?php $view->out( $view->propertyName ?? '' );?>
+                <?php $owa_ident = ( $view->site['stream_type'] ?? 'web' ) === 'app'
+                        ? ( $view->site['app_id'] ?? '' )
+                        : ( $view->site['domain'] ?? '' );?>
+                <?php if ( $owa_ident ):?>
+                <span class="owa_siteControlDomain"><?php $view->out( $owa_ident );?></span>
+                <?php endif;?>
+                <span class="form-instructions">The Property this Profile belongs to, and
+                what this Profile observes.</span>
+            </TD>
+        </TR>
+        <?php else:?>
+        <?php
+        /*
+         * WHICH Property, rather than "what domain".
+         *
+         * The old form asked for a domain and derived a Property from it, which
+         * made the domain the Property's key: adding a second Profile to a
+         * website meant retyping its domain, and a Property with no domain (an
+         * app) could never be chosen at all. Choosing is also what makes an
+         * empty Property usable -- there was previously no way to put a Profile
+         * back into one.
+         */
+        ?>
+        <TR>
+            <TH>Property:</TH>
+            <TD>
+                <select name="<?php echo $view->getNs();?>propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
+                    <option value="">&mdash; a new Property &mdash;</option>
+                    <?php foreach ( (array) ( $view->properties ?? array() ) as $owa_prop ):?>
+                    <option value="<?php $view->out( $owa_prop['id'] );?>"
+                        <?php echo ( ( $view->propertyId ?? '' ) === (string) $owa_prop['id'] ) ? 'selected' : '';?>>
+                        <?php $view->out( $owa_prop['name'] );?><?php if ( $owa_prop['domain'] ):?> (<?php $view->out( $owa_prop['domain'] );?>)<?php endif;?>
+                    </option>
+                    <?php endforeach;?>
+                </select>
+                <span class="form-instructions">The Property this Profile belongs to. Pick
+                an existing one to add another way of observing it, or create a new one.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['propertyId'] ?? '' );?></span>
+            </TD>
+        </TR>
+        <TR id="owa_newPropertyFields">
+            <TH>New Property Name:</TH>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+                <span class="form-instructions">What the website or product is called. Only
+                used when creating a new Property.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
+            </TD>
+        </TR>
+        <?php
+        /*
+         * What this Profile observes, and therefore which identifier it needs.
+         *
+         * On the Profile rather than the Property because the answer differs
+         * per Profile: one Property can hold a website and its app, and there
+         * is no single identifier that describes both.
+         */
+        $owa_stream = $view->site['stream_type'] ?? \OWA\Module\Base\Entity\Site::STREAM_WEB;
+        ?>
+        <TR>
+            <TH>This Profile observes:</TH>
+            <TD>
+                <select name="<?php echo $view->getNs();?>streamType" id="owa_streamType" class="owa_largeFormField">
+                    <option value="web" <?php echo $owa_stream === 'app' ? '' : 'selected';?>>A website</option>
+                    <option value="app" <?php echo $owa_stream === 'app' ? 'selected' : '';?>>An app</option>
+                </select>
+            </TD>
+        </TR>
+        <TR id="owa_streamWebFields">
             <TH>Domain:</TH>
-            <?php if ($view->edit == true):?>
-            <input type="hidden" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->site['domain'] );?>">
-            <TD><?php $view->out( $view->site['domain'] );?></TD>
-            <?php else:?>
-            <TD>  
-                <input type="text" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>"><BR>
-                Example: http://some.domain.com<BR>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
+                <span class="form-instructions">The domain of the website being observed.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['domain'] ?? '' );?></span>
             </TD>
-            <?php endif;?>
         </TR>
+        <TR id="owa_streamAppFields">
+            <TH>App ID:</TH>
+            <TD>
+                <input type="text" name="<?php echo $view->getNs();?>appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
+                <span class="form-instructions">The bundle id or package name, for example
+                com.example.myapp.</span>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['appId'] ?? '' );?></span>
+            </TD>
+        </TR>
+        <?php endif;?>
+        <?php if ($view->edit == true):?>
         <TR>
             <TH>Profile Name:</TH>
             <TD><input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
 				<span class="form-instructions">Example: Main Profile</span>            
             </TD>
         </TR>
+        <?php endif;?>
         <TR>
             <TH>Description:</TH>
             <TD>
