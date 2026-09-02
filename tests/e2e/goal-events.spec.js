@@ -62,6 +62,20 @@ test.describe('goal events', () => {
             page.locator('.owa_goalEventFunnel li.constraintRow')
         ).toHaveCount(1);
 
+        // The + and X are bound PER ROW inside the report builder, so reusing
+        // its markup does not reuse its behaviour -- these rendered and did
+        // nothing until they were wired.
+        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
+        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(2);
+
+        await page.locator('#owa_goalEventFunnel .constraintRemoveButton').first().click();
+        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(1);
+
+        // The last row is never removed -- it is cleared instead, or there
+        // would be no way to add a funnel back without reloading.
+        await page.locator('#owa_goalEventFunnel .constraintRemoveButton').first().click();
+        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(1);
+
         await page.fill('input[name="name"]', name);
         await page.selectOption('select[name="conditionProperty"]', 'page_uri');
         await page.selectOption('select[name="conditionOperator"]', 'begins');

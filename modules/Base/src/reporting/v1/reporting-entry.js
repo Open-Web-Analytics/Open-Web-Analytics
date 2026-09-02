@@ -86,6 +86,10 @@ import './owa.kpibox.js';
 import './owa.confirm.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
 import './owa.profileform.js';
+// Funnel steps on the goal event screen: the constraint rows' + and X are
+// bound per row inside the report builder, so reusing the markup does not
+// reuse the behaviour.
+import './owa.funnelbuilder.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.js itself.

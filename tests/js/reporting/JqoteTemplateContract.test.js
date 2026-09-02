@@ -83,9 +83,29 @@ function fetched() {
 
 describe('jqote template contract', () => {
 
-    test('there are templates to check', () => {
-        expect(defined().size).toBeGreaterThan(0);
-        expect(fetched().size).toBeGreaterThan(0);
+    /**
+     * There are currently NONE, and that is a fact worth asserting rather than
+     * a reason to delete this file.
+     *
+     * This guards the PHP-side form: <script type="text/x-jqote-template"
+     * id="..."> in a template, fetched by id from JavaScript. The last one lived
+     * in options_goal_entry.php, which was retired when goals became goal
+     * events -- its funnel-step rows are ordinary markup now, so they work
+     * without JavaScript rather than being rendered by it.
+     *
+     * jQote2 itself is still used and still bundled: owa.report.js and
+     * owa.resultSetExplorer.js render templates defined as JS STRINGS, which
+     * this contract has never covered because a string cannot go missing the
+     * way an element id can.
+     *
+     * So the pair below is asserted to be EQUAL rather than non-empty. Zero and
+     * zero agree; the moment someone adds a PHP-side template the two checks
+     * that follow start guarding it again. Asserting non-empty would mean
+     * deleting this file today and rediscovering the contract later.
+     */
+    test('the defined and fetched sets are both accounted for', () => {
+        expect(defined().size).toBe(0);
+        expect(fetched().size).toBe(0);
     });
 
     test('every fetched template id is defined somewhere', () => {
