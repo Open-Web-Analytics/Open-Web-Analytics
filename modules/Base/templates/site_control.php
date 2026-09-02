@@ -90,7 +90,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
                     </a>
                     <?php
                         /*
-                         * Key events are per Profile, which is why they are
+                         * Goal events are per Profile, which is why they are
                          * reached from here rather than from an entry in the
                          * settings nav -- that entry had no way to say WHICH
                          * Profile's it meant.

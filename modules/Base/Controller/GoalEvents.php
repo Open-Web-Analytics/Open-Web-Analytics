@@ -8,9 +8,13 @@ namespace OWA\Module\Base\Controller;
  * anyone had filled them in -- because the storage was a fixed-length array and
  * the screen showed the storage. This lists what exists.
  *
- * "Key event" rather than "goal" is v2's name for the same idea, and GA's:
- * conversions were renamed goal events in 2024. Naming it that here means the
- * screen does not have to be relearned when v2 lands.
+ * "Goal event" rather than "goal": these are events now, created when a
+ * behaviour pattern matches, rather than twenty slots belonging to a site.
+ *
+ * GA and the v2 plan call the same idea a KEY event -- GA renamed conversions
+ * to key events in 2024, and PLAN.html follows it. Keeping "goal" is
+ * deliberate: it is the word 1.x users already have, and it survives the
+ * change.
  */
 class GoalEvents extends \OWA\Core\AdminController {
 

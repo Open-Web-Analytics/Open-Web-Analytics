@@ -12,7 +12,7 @@
 <div id="panel">
 <div class="owa_panelIntro">A goal event is something worth counting &mdash; a page
 reached, an action taken. Each one names a condition, and every event matching it is
-counted for this Observation Profile. Key events belong to this Profile only; another
+counted for this Observation Profile. Goal events belong to this Profile only; another
 Profile of the same Property can count different things.</div>
 
 <?php if ( empty( $view->goalEvents ) ):?>

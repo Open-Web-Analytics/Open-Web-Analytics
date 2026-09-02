@@ -24,9 +24,9 @@ $owa_operators = array(
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
-<div class="owa_panelIntro">A goal event names something worth counting. Give it a name,
-then say which events count: pick a property of the event, how to compare it, and what to
-compare it to.</div>
+<div class="owa_panelIntro">Goal events are custom events that are created when OWA observes
+a behavior pattern you specify. Give it a name, then say which events count: pick a property of
+the event, how to compare it, and what to compare it to.</div>
 
 <form method="post" name="owa_goalEvent">
 
@@ -36,7 +36,7 @@ compare it to.</div>
         event's own name, so it is worth choosing something you would want to see in a
         report &mdash; "Signup Completed" rather than "Goal 3".</div>
         <div class="field">
-            <input class="owa_largeFormField" type="text" size="52" maxlength="255"
+            <input class="owa_largeFormField" type="text" maxlength="255"
                    name="<?php echo $view->getNs();?>name"
                    value="<?php $view->out( $owa_ke['name'] ?? '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
@@ -45,7 +45,7 @@ compare it to.</div>
 
     <div class="setting">
         <div class="title">Counts when</div>
-        <div class="description">An event matching this condition is counted as a key
+        <div class="description">An event matching this condition is counted as a goal
         event.</div>
         <div class="field">
             <ul class="constraintList owa_goalEventCondition">
@@ -81,7 +81,7 @@ compare it to.</div>
 
     <div class="setting">
         <div class="title">Group</div>
-        <div class="description">Key events are grouped, and every group with an active key
+        <div class="description">Goal events are grouped, and every group with an active goal
         event becomes a tab on the tabbed reports. Renaming a group renames that tab
         everywhere.</div>
         <div class="field">
@@ -93,7 +93,7 @@ compare it to.</div>
                 </option>
             <?php endforeach;?>
             </select>
-            <input type="text" size="26" placeholder="Rename this group"
+            <input class="owa_mediumFormField" type="text" placeholder="Rename this group"
                    name="<?php echo $view->getNs();?>newGoalGroupName" value="">
             <span class="form-instructions">Leave the rename empty to keep the group's
             current name.</span>
@@ -144,9 +144,11 @@ compare it to.</div>
         <div class="description">What one of these is worth. Left blank it counts without
         a value.</div>
         <div class="field">
-            <input type="text" size="12"
+            <input class="owa_shortFormField" type="text"
                    name="<?php echo $view->getNs();?>value"
-                   value="<?php $view->out( \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ?? 0 ) );?>">
+                   value="<?php $view->out( isset( $owa_ke['id'] )
+                       ? \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ?? 0 )
+                       : '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['value'] ?? '' );?></span>
         </div>
     </div>
@@ -156,9 +158,21 @@ compare it to.</div>
         <div class="description">An inactive goal event keeps its definition and stops
         counting.</div>
         <div class="field">
+            <?php
+            /*
+             * A NEW goal event defaults to Active.
+             *
+             * The stored default is falsy, deliberately -- a row half-written
+             * by anything other than this form must not start counting on its
+             * own. But someone filling this in has said what they want counted,
+             * and defaulting the control to Inactive means they save it and it
+             * silently never fires. Existing rows show what they actually are.
+             */
+            $owa_active = isset( $owa_ke['id'] ) ? ! empty( $owa_ke['is_active'] ) : true;
+            ?>
             <select name="<?php echo $view->getNs();?>isActive">
-                <option value="1" <?php echo ! empty( $owa_ke['is_active'] ) ? 'selected' : '';?>>Active</option>
-                <option value="0" <?php echo empty( $owa_ke['is_active'] ) ? 'selected' : '';?>>Inactive</option>
+                <option value="1" <?php echo $owa_active ? 'selected' : '';?>>Active</option>
+                <option value="0" <?php echo $owa_active ? '' : 'selected';?>>Inactive</option>
             </select>
         </div>
     </div>

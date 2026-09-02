@@ -82,6 +82,10 @@ test.describe('goal events', () => {
         await page.fill('input[name="conditionValue"]', '/thanks');
         await page.fill('input[name="value"]', '2.50');
 
+        // A new goal event defaults to Active. Defaulting to Inactive means
+        // someone saves what they just described and it silently never fires.
+        await expect(page.locator('select[name="isActive"]')).toHaveValue('1');
+
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.locator('input[value="Save Goal Event"]').click(),
@@ -93,6 +97,7 @@ test.describe('goal events', () => {
         // The condition shows, and the value survived the trip through cents.
         await expect(row).toContainText('/thanks');
         await expect(row).toContainText('2.50');
+        await expect(row).toContainText('Active');
 
         // --- EDIT --------------------------------------------------------------
         const editHref = await row.locator('a[href*="base.goalEventEdit"]').first()

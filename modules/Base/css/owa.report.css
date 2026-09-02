@@ -3623,6 +3623,54 @@ li.constraintRow {
     font-style: italic;
 }
 
+/* Field widths, so a form reads as one column rather than a ragged edge.
+ *
+ * The sibling settings screens get theirs from size="50" attributes, which give
+ * every input the same measure. These are sized here instead: the goal event
+ * form mixes long text, a short money field and a rename box, and an attribute
+ * per input is how they drifted apart in the first place. */
+.owa_hierarchyContent #panel .owa_largeFormField {
+    width: 400px;
+    max-width: 100%;
+}
+
+.owa_hierarchyContent #panel .owa_mediumFormField {
+    width: 220px;
+}
+
+.owa_hierarchyContent #panel .owa_shortFormField {
+    width: 90px;
+}
+
+/* The condition row.
+ *
+ * .constraintRow was written for the report builder's dialog, which is narrow
+ * and dark-on-light. In a settings pane it needs its own measure or the value
+ * field takes whatever is left and the row reads as three unrelated controls. */
+.owa_hierarchyContent #panel .constraintList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel .constraintRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel .constraintRow select {
+    max-width: 220px;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintValueField {
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: 320px;
+}
+
 /* The funnel builder. .constraintRow gives the row its shape; this is only the
    parts a funnel step has and a constraint does not -- two text fields of
    different weight, and the word between them. */
@@ -3632,14 +3680,53 @@ li.constraintRow {
     padding: 0;
 }
 
-.owa .constraintRow .owa_funnelStepName {
-    width: 180px;
+.owa_hierarchyContent #panel .constraintRow .owa_funnelStepName {
+    flex: 0 0 auto;
+    width: 190px;
+    max-width: 190px;
 }
 
-.owa .constraintRow .owa_funnelStepPath {
-    width: 260px;
+.owa_hierarchyContent #panel .constraintRow .owa_funnelStepPath {
+    flex: 1 1 auto;
+    max-width: 280px;
     font-family: Menlo, Consolas, monospace;
     font-size: 12px;
+}
+
+/* The add and remove controls.
+ *
+ * The report builder styles these inside its own dialog; in the settings pane
+ * they inherited nothing and rendered as two bare characters floating at the
+ * end of a wide row. Given a target worth clicking, and pushed to the end of
+ * the flex row rather than left wherever the text ran out. */
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton,
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton {
+    flex: 0 0 auto;
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border: 1px solid #d5d5d5;
+    border-radius: 3px;
+    background: #fbfbfb;
+    color: #666666;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton:hover,
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton:focus {
+    border-color: #9f9f9f;
+    color: #333333;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton:hover,
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton:focus {
+    border-color: #d9b8b1;
+    background: #99321f;
+    color: #ffffff;
 }
 
 /* Not a picker: a funnel step always matches on the path, so the word sits
