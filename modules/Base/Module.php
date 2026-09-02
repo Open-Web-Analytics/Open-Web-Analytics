@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 24;
+        $this->required_schema_version = 25;
         return parent::__construct();
     }
 
@@ -2428,6 +2428,7 @@ class Module extends \OWA\Core\Module {
                 'impression',
                 'configuration',
             'setting',
+            'key_event',
                 'user',
                 'domstream',
                 'action_fact',
