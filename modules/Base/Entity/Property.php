@@ -51,6 +51,36 @@ class Property extends \OWA\Core\Entity {
 
         $creation_date = new \OWA\Module\Base\Classes\DbColumn( 'creation_date', OWA_DTD_BIGINT );
         $this->setProperty( $creation_date );
+
+        /*
+         * When this was archived. FALSY means live.
+         *
+         * A timestamp rather than a boolean flag, because a restore wants to
+         * know when -- and because a tinyint in this schema holds 1, 0 and
+         * NULL, which group as three distinct things.
+         *
+         * Read it as FALSY, never as `IS NULL`. The column genuinely holds
+         * three values: NULL for a row that has never been archived, a stamp
+         * for one that is, and 0 for one that was restored. Restoring cannot
+         * write NULL back through the entity layer -- setting '' on a numeric
+         * column is treated as "no value given" and skipped, so 0 is what
+         * lands. All three are answered correctly by empty()/(bool); an
+         * `IS NULL` test would quietly classify every restored row as archived.
+         */
+        $archived_date = new \OWA\Module\Base\Classes\DbColumn( 'archived_date', OWA_DTD_BIGINT );
+        $this->setProperty( $archived_date );
+    }
+
+    /**
+     * Has this Property been archived?
+     *
+     * See Site::isArchived(). Archiving a Property archives its Profiles too,
+     * because a Property is how a person says "this website" and removing it
+     * means removing the ways it was being watched.
+     */
+    public function isArchived() {
+
+        return (bool) $this->get('archived_date');
     }
 }
 

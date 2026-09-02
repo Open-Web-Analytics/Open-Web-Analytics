@@ -35,7 +35,34 @@ namespace OWA\Module\Base\Entity;
 
 class Site extends \OWA\Core\Entity {
 
+    /*
+     * Kept out of GET /v1/sites.
+     *
+     * The payload is a published contract the WordPress plugin reads, and
+     * whether a Profile has been archived is an internal fact about removal --
+     * an archived Profile is filtered out of that listing entirely, so the
+     * field would be present, always falsy, and meaningless to a client.
+     *
+     * Declared rather than left to chance: getPublicProperties() emits every
+     * column by default, so any column added to this entity joins a public API
+     * unless someone says otherwise.
+     */
+    protected $private_properties = [ 'archived_date' ];
+
     private static $cachedAssignedUsers = array();
+
+    /**
+     * Forget which users are assigned to which sites.
+     *
+     * The cache is keyed by site, and the two places that maintain it evict a
+     * single site because they change a single site. Deleting a USER revokes
+     * their access across every site at once, which no per-site eviction can
+     * express -- so it clears the lot.
+     */
+    public static function forgetAssignedUsers() {
+
+        self::$cachedAssignedUsers = array();
+    }
 
     function __construct() {
 
@@ -74,6 +101,36 @@ class Site extends \OWA\Core\Entity {
         $this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['settings'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
+
+        /*
+         * When this was archived. FALSY means live.
+         *
+         * A timestamp rather than a boolean flag, because a restore wants to
+         * know when -- and because a tinyint in this schema holds 1, 0 and
+         * NULL, which group as three distinct things.
+         *
+         * Read it as FALSY, never as `IS NULL`. The column genuinely holds
+         * three values: NULL for a row that has never been archived, a stamp
+         * for one that is, and 0 for one that was restored. Restoring cannot
+         * write NULL back through the entity layer -- setting '' on a numeric
+         * column is treated as "no value given" and skipped, so 0 is what
+         * lands. All three are answered correctly by empty()/(bool); an
+         * `IS NULL` test would quietly classify every restored row as archived.
+         */
+        $this->properties['archived_date'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['archived_date']->setDataType(OWA_DTD_BIGINT);
+    }
+
+    /**
+     * Has this Profile been archived?
+     *
+     * Archiving is how a Profile is removed: the row and everything hanging off
+     * it -- grants, scoped settings, collected data -- are kept, so a restore is
+     * possible. Every listing and the tracking gate ask this.
+     */
+    public function isArchived() {
+
+        return (bool) $this->get('archived_date');
     }
 
     /**

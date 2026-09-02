@@ -35,6 +35,14 @@ class PropertyProfile extends \OWA\Core\AdminController {
 
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
+
+        /*
+         * How many Profiles the delete would take with it, so the confirmation
+         * can say a number rather than "and its Profiles". Counted live: a
+         * Property gains and loses Profiles from other screens, and a stale
+         * number in a destructive confirmation is worse than none.
+         */
+        $this->set( 'profileCount', $this->countLiveProfiles( $this->getParam( 'propertyId' ) ) );
         /*
          * The hierarchy wrapper, not base.options: the left column is the site
          * control, because that is what these screens are reached from and what
@@ -56,6 +64,36 @@ class PropertyProfile extends \OWA\Core\AdminController {
             $siteId, $this->getParam( 'propertyId' ) ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyProfile' );
+    }
+
+    /**
+     * Profiles this Property still has, archived ones excluded.
+     */
+    private function countLiveProfiles( $propertyId ) {
+
+        if ( ! $propertyId ) {
+
+            return 0;
+        }
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $site->getTableName() );
+        $db->selectColumn( 'id, archived_date' );
+        $db->where( 'property_id', $propertyId );
+
+        $live = 0;
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( empty( $row['archived_date'] ) ) {
+
+                $live++;
+            }
+        }
+
+        return $live;
     }
 }
 

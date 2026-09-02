@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 22;
+        $this->required_schema_version = 23;
         return parent::__construct();
     }
 
@@ -203,6 +203,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile',          'Controller/OrganizationProfile.php' );
         $this->registerAction( 'base.profileSettings',               'OWA\\Module\\Base\\Controller\\ProfileSettings',              'Controller/ProfileSettings.php' );
         $this->registerAction( 'base.propertyAccess',                'OWA\\Module\\Base\\Controller\\PropertyAccess',               'Controller/PropertyAccess.php' );
+        $this->registerAction( 'base.propertyDelete',                'OWA\\Module\\Base\\Controller\\PropertyDelete',                'Controller/PropertyDelete.php' );
         $this->registerAction( 'base.propertyEdit',                  'OWA\\Module\\Base\\Controller\\PropertyEdit',                  'Controller/PropertyEdit.php' );
         $this->registerAction( 'base.organizationEdit',              'OWA\\Module\\Base\\Controller\\OrganizationEdit',              'Controller/OrganizationEdit.php' );
         $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );

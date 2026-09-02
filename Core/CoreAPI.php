@@ -598,7 +598,18 @@ class CoreAPI {
             $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
             $site->load( $site->generateId( $site_id ) );
 
-            self::$registered_sites[ $site_id ] = (bool) $site->wasPersisted();
+            /*
+             * An ARCHIVED Profile is not registered.
+             *
+             * Archiving is how a Profile is removed, and removing it has to
+             * mean it stops observing -- the tag is still on the page and will
+             * keep firing, so anything short of rejecting here would leave a
+             * site quietly collecting after someone had deleted it. Same gate
+             * as an unknown site, for the same reason: nothing downstream
+             * should have to know.
+             */
+            self::$registered_sites[ $site_id ] =
+                $site->wasPersisted() && ! $site->isArchived();
         }
 
         return self::$registered_sites[ $site_id ];

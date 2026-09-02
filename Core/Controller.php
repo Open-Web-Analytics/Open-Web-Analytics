@@ -1082,12 +1082,18 @@ class Controller extends \OWA\Core\Base {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $property->getTableName() );
-        $db->selectColumn( 'id, name, domain' );
+        $db->selectColumn( 'id, name, domain, archived_date' );
         $db->orderBy( 'name' );
 
         $properties = array();
 
         foreach ( (array) $db->getAllRows() as $row ) {
+
+            // Archived Properties are removed Properties.
+            if ( ! empty( $row['archived_date'] ) ) {
+
+                continue;
+            }
 
             $row['profiles'] = array();
             $properties[ $row['id'] ] = $row;
@@ -1125,9 +1131,26 @@ class Controller extends \OWA\Core\Base {
             }
         }
 
-        $properties = array_filter( $properties, function ( $p ) {
+        /*
+         * A Property with no Profiles is dropped -- unless the viewer can see
+         * every Profile there is, in which case it is genuinely empty rather
+         * than merely opaque to them.
+         *
+         * Those are two different facts that the profile count alone cannot
+         * tell apart. For someone with granted access, an empty Property means
+         * "none of its Profiles are yours" and showing it would leak that the
+         * website exists. For an admin it means the Property really has none,
+         * and that is a state worth being in: archiving a Property's last
+         * Profile leaves it empty so it can be repopulated. Dropping it there
+         * made the Property unreachable -- no screen could get back to it --
+         * which is also what happened to a Property created from the fan-out
+         * before it had a Profile.
+         */
+        $seesEveryProfile = \OWA\Core\CoreAPI::getCurrentUser()->isAdmin();
 
-            return (bool) $p['profiles'];
+        $properties = array_filter( $properties, function ( $p ) use ( $seesEveryProfile ) {
+
+            return $p['profiles'] || $seesEveryProfile;
         } );
 
         if ( $unassigned ) {
@@ -1159,6 +1182,15 @@ class Controller extends \OWA\Core\Base {
 
                 $site = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $site->load($siteRow['id']);
+
+                // Archived Profiles are removed Profiles. getSitesList() is the
+                // raw table -- migrations need that -- so the filtering happens
+                // at the product-facing callers.
+                if ( $site->isArchived() ) {
+
+                    continue;
+                }
+
                 $result[$siteRow['site_id']] = $site;
             }
  

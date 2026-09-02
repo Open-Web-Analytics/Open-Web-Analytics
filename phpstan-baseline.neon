@@ -31,6 +31,12 @@ parameters:
 			path: Core/Controller.php
 
 		-
+			message: '#^Call to method isArchived\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Core/Controller.php
+
+		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
@@ -76,6 +82,12 @@ parameters:
 			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 2
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Call to method isArchived\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
 			path: Core/CoreAPI.php
 
 		-

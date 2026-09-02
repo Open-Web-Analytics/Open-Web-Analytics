@@ -39,10 +39,29 @@ class SitesDelete extends \OWA\Core\AdminController {
         $this->setNonceRequired();
     }
 
+    /**
+     * Archives the Profile rather than destroying it.
+     *
+     * The row deletion left everything hanging off it behind -- the access
+     * grants in owa_site_user, the scoped settings rows, and every fact row
+     * ever collected under that site_id -- as orphans that a re-minted
+     * identifier could have inherited. It was also unrecoverable.
+     *
+     * Archiving stamps a date and stops the Profile being listed, reported on,
+     * or collected for. Everything it owns stays exactly where it is, which is
+     * what makes a restore possible.
+     */
     function action() {
 
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
+        $site->load( $site->generateId( $this->getParam( 'siteId' ) ) );
+
+        if ( $site->wasPersisted() ) {
+
+            $site->set( 'archived_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+            $site->update();
+        }
+
         $this->setRedirectAction('base.reportingHome');
         $this->set('status_code', 3204);
     }

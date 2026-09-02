@@ -83,7 +83,19 @@ final class SiteListContractTest extends TestCase
          */
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
 
-        $fields = array_keys( (array) $site->_getProperties() );
+        /*
+         * getPublicProperties(), which is what RestApi::toResponseData()
+         * actually serialises -- not _getProperties(), which is every column.
+         *
+         * The two differ once a column is declared private, and asserting on
+         * the raw set made an INTERNAL column read as a contract change. The
+         * point of this test is the published shape, so it should read the
+         * thing that gets published. What stops a column slipping out
+         * unnoticed is that private_properties has to be written down: a new
+         * column is public unless someone says otherwise, and then it fails
+         * here.
+         */
+        $fields = array_keys( (array) $site->getPublicProperties() );
 
         sort( $fields );
 
@@ -94,6 +106,25 @@ final class SiteListContractTest extends TestCase
             $expected, $fields,
             'The GET /v1/sites payload changed. If a field moved to the Property it must still be '
             . 'enriched onto the entry, not dropped; if a field was added, approve it here.' );
+    }
+
+    /**
+     * An internal column stays internal.
+     *
+     * archived_date exists so removal is recoverable. It is not something a
+     * client can act on -- an archived Profile is filtered out of this listing
+     * entirely -- so it would be a permanently falsy field in a published
+     * payload.
+     */
+    public function testInternalColumnsAreNotPublished(): void
+    {
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        $this->assertArrayHasKey( 'archived_date', (array) $site->_getProperties(),
+            'The column is gone, so this test is checking nothing.' );
+
+        $this->assertArrayNotHasKey( 'archived_date', (array) $site->getPublicProperties(),
+            'archived_date reached the published payload.' );
     }
 
     public function testTheTrackingIdFieldIsNamedSiteId(): void
