@@ -93,6 +93,13 @@ class SiteManager extends \OWA\Core\Base {
      * elsewhere.
      */
     const DEFAULT_ORGANIZATION_NAME = 'My Organization';
+
+    /*
+     * The key the default Organization's id is derived from -- a fixed string,
+     * not the name. Same value Update021 uses, so an install that migrated and
+     * one installed fresh mint the same id.
+     */
+    const DEFAULT_ORGANIZATION_KEY  = 'organization:default';
     const PROFILE_NAME_PREFIX       = 'Observation Profile ';
 
     /**
@@ -107,16 +114,34 @@ class SiteManager extends \OWA\Core\Base {
     public function ensureOrganization() {
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
-        $organization->getByColumn( 'name', self::DEFAULT_ORGANIZATION_NAME );
 
-        $id = $organization->get( 'id' );
+        /*
+         * Found by EXISTENCE, not by name.
+         *
+         * This matched on DEFAULT_ORGANIZATION_NAME, which quietly made the
+         * name a key -- and there is a screen for renaming an Organization.
+         * Renaming the only one made this stop finding it and mint a second,
+         * so the rename appeared to revert, OrganizationProfile showed the new
+         * empty row, and every Property added afterwards hung from that one
+         * instead.
+         *
+         * There is exactly one Organization until someone builds a screen to
+         * make more, so the first row IS the answer -- and looking for it this
+         * way is indifferent to how its id was derived, which matters because
+         * installs made before this fix derived it from the name.
+         */
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $organization->getTableName() );
+        $db->selectColumn( 'id' );
 
-        if ( $id ) {
+        $existing = (array) $db->getOneRow();
 
-            return $id;
+        if ( ! empty( $existing['id'] ) ) {
+
+            return $existing['id'];
         }
 
-        $id = $organization->generateId( self::DEFAULT_ORGANIZATION_NAME );
+        $id = $organization->generateId( self::DEFAULT_ORGANIZATION_KEY );
 
         $organization->set( 'id', $id );
         $organization->set( 'name', self::DEFAULT_ORGANIZATION_NAME );
@@ -166,6 +191,24 @@ class SiteManager extends \OWA\Core\Base {
          */
         $seed = $domain !== '' ? 'domain:' . $domain : 'site:' . uniqid( '', true );
         $id   = $property->generateId( $seed );
+
+        /*
+         * The domain-derived id is only free while no OTHER Property still
+         * holds it, and a Property's domain is editable.
+         *
+         * Move a Property from a.com to b.com and its id stays derived from
+         * a.com. The lookup above then misses for a.com -- the column really
+         * did change -- so we come here and derive that same id again, the
+         * insert fails on the primary key, create() returns false, and this
+         * hands back null. The new Profile would be created with no Property.
+         */
+        $taken = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $taken->load( $id );
+
+        if ( $taken->wasPersisted() ) {
+
+            $id = $property->generateId( $seed . ':' . uniqid( '', true ) );
+        }
 
         $property->set( 'id', $id );
         $property->set( 'organization_id', $this->ensureOrganization() );
