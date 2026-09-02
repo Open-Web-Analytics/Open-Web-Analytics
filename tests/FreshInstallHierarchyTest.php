@@ -256,6 +256,45 @@ final class FreshInstallHierarchyTest extends TestCase
     }
 
     /**
+     * A Property does not need a domain.
+     *
+     * Think an app: there is no domain to name it by, and the Property is a
+     * purely artificial grouping. Two of them must be two Properties -- not one
+     * shared row keyed on the empty string, which is what a domain lookup with
+     * an empty needle would collapse them into.
+     */
+    public function testTwoDomainlessPropertiesAreTwoProperties(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
+        }
+
+        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+
+        $created = array();
+
+        try {
+            $first  = $sm->ensurePropertyFor( '', 'App One' );
+            $second = $sm->ensurePropertyFor( '', 'App Two' );
+
+            $created = array_filter( array( $first, $second ) );
+
+            $this->assertNotEmpty( $first );
+            $this->assertNotEmpty( $second );
+
+            $this->assertNotSame( $first, $second,
+                'Both apps landed in one Property, so they would report as one thing.' );
+
+        } finally {
+
+            foreach ( $created as $id ) {
+                $p = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+                $p->delete( $id );
+            }
+        }
+    }
+
+    /**
      * The default id must not be derived from the name.
      *
      * Two reasons. It has to match what Update021 mints, so a migrated install

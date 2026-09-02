@@ -16,7 +16,7 @@ class OrganizationProfile extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability( 'edit_settings' );
 
-        return parent::__construct( $params );
+        parent::__construct( $params );
     }
 
     function action() {

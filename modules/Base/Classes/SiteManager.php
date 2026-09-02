@@ -185,30 +185,23 @@ class SiteManager extends \OWA\Core\Base {
         }
 
         /*
-         * A site with no domain gets its own Property rather than sharing one
-         * keyed on the empty string -- otherwise every domainless site on the
-         * install would collapse into a single website.
-         */
-        $seed = $domain !== '' ? 'domain:' . $domain : 'site:' . uniqid( '', true );
-        $id   = $property->generateId( $seed );
-
-        /*
-         * The domain-derived id is only free while no OTHER Property still
-         * holds it, and a Property's domain is editable.
+         * The id encodes nothing about the Property.
          *
-         * Move a Property from a.com to b.com and its id stays derived from
-         * a.com. The lookup above then misses for a.com -- the column really
-         * did change -- so we come here and derive that same id again, the
-         * insert fails on the primary key, create() returns false, and this
-         * hands back null. The new Profile would be created with no Property.
+         * A Property is an artificial grouping. Its domain is OPTIONAL -- an
+         * app has none -- and editable where it exists, so it is not an
+         * identity. This derived the id from 'domain:' . $domain, which made a
+         * mutable, absent-able attribute the primary key: move a Property from
+         * a.com to b.com and its id stays derived from a.com, so the next
+         * Property for a.com derived an id that was already taken, the insert
+         * failed, and this handed back null -- the Profile being added would
+         * have been created with no Property at all.
+         *
+         * Grouping still happens by the domain COLUMN, looked up above. It is
+         * just no longer what the row is CALLED. PropertyEdit already minted
+         * ids this way; the two paths agree now.
          */
-        $taken = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $taken->load( $id );
-
-        if ( $taken->wasPersisted() ) {
-
-            $id = $property->generateId( $seed . ':' . uniqid( '', true ) );
-        }
+        $id = $property->generateId(
+            'property:' . ( $name !== '' ? $name : $domain ) . ':' . uniqid( '', true ) );
 
         $property->set( 'id', $id );
         $property->set( 'organization_id', $this->ensureOrganization() );
