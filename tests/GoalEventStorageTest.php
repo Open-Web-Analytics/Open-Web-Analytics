@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Goals are rows now, and the row is shaped for v2 key events.
+ * Goals are rows now, and the row is shaped for v2 goal events.
  *
  * Twenty numbered slots lived inside ONE serialized array -- all twenty present
  * whether used or not -- in a single settings row per Profile. A live install
@@ -14,11 +14,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * wholesale, and put a RECORD inside a settings blob.
  *
  * The columns are what v2 needs, not what 1.x had, so the v2 migration reads
- * this table rather than reinterpreting it: an author names a key event, gives
+ * this table rather than reinterpreting it: an author names a goal event, gives
  * it an event type and a condition, and the server materialises a row whose
  * event_type IS that name (PLAN.html §7.14).
  */
-final class KeyEventStorageTest extends TestCase
+final class GoalEventStorageTest extends TestCase
 {
     private array $created = [];
 
@@ -33,7 +33,7 @@ final class KeyEventStorageTest extends TestCase
     {
         foreach ( $this->created as $id ) {
 
-            $e = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+            $e = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
             $e->delete( $id );
         }
 
@@ -169,31 +169,31 @@ final class KeyEventStorageTest extends TestCase
     }
 
     /**
-     * A key event with no funnel must not report an EMPTY one.
+     * A goal event with no funnel must not report an EMPTY one.
      *
      * checkGoalStart() tests array_key_exists( 'funnel_steps', ... ) and then
      * indexes [1] unconditionally -- so an empty array is a fatal on every
      * event, not "this goal has no funnel".
      */
-    public function testAKeyEventWithNoFunnelOmitsTheKeyEntirely(): void
+    public function testAGoalEventWithNoFunnelOmitsTheKeyEntirely(): void
     {
         $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
-        $id = \OWA\Module\Base\Classes\GoalManager::keyEventIdFor( $siteId, 1 );
+        $id = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 1 );
 
         $this->created[] = $id;
 
-        $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
-        $keyEvent->set( 'id', $id );
-        $keyEvent->set( 'site_id', $siteId );
-        $keyEvent->set( 'name', 'No funnel' );
-        $keyEvent->set( 'goal_number', 1 );
-        $keyEvent->set( 'is_active', 1 );
-        $keyEvent->set( 'condition_operator', 'exact' );
-        $keyEvent->set( 'condition_value', '/x' );
-        $keyEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $keyEvent->create();
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->set( 'id', $id );
+        $goalEvent->set( 'site_id', $siteId );
+        $goalEvent->set( 'name', 'No funnel' );
+        $goalEvent->set( 'goal_number', 1 );
+        $goalEvent->set( 'is_active', 1 );
+        $goalEvent->set( 'condition_operator', 'exact' );
+        $goalEvent->set( 'condition_value', '/x' );
+        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $goalEvent->create();
 
-        $goal = $keyEvent->toGoalArray();
+        $goal = $goalEvent->toGoalArray();
 
         $this->assertArrayNotHasKey( 'funnel_steps', $goal['details'],
             'A goal with no funnel reports an empty funnel_steps, which the conversion '
@@ -211,7 +211,7 @@ final class KeyEventStorageTest extends TestCase
      */
     public function testDecimalValuesBecomeWholeCents(): void
     {
-        $ke = '\OWA\Module\Base\Entity\KeyEvent';
+        $ke = '\OWA\Module\Base\Entity\GoalEvent';
 
         $this->assertSame( 200, $ke::decimalToCents( '2' ) );
         $this->assertSame( 250, $ke::decimalToCents( '2.50' ) );
@@ -223,7 +223,7 @@ final class KeyEventStorageTest extends TestCase
     /** A value nobody can convert is reported, not silently zeroed. */
     public function testANonNumericValueIsDistinguishableFromZero(): void
     {
-        $ke = '\OWA\Module\Base\Entity\KeyEvent';
+        $ke = '\OWA\Module\Base\Entity\GoalEvent';
 
         $this->assertNull( $ke::decimalToCents( 'about five pounds' ),
             'A non-numeric value is indistinguishable from a real zero, so the migration '
@@ -235,7 +235,7 @@ final class KeyEventStorageTest extends TestCase
     /** And back, because 1.x reporting reads a decimal string. */
     public function testCentsRoundTripBackToTheDecimalFormReportingExpects(): void
     {
-        $ke = '\OWA\Module\Base\Entity\KeyEvent';
+        $ke = '\OWA\Module\Base\Entity\GoalEvent';
 
         $this->assertSame( '2.00', $ke::centsToDecimal( 200 ) );
         $this->assertSame( '0.29', $ke::centsToDecimal( 29 ) );
@@ -252,7 +252,7 @@ final class KeyEventStorageTest extends TestCase
     {
         $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
-        $this->created[] = \OWA\Module\Base\Classes\GoalManager::keyEventIdFor( $siteId, 4 );
+        $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 4 );
 
         $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
         $gm->saveGoal( 4, array(
@@ -267,7 +267,7 @@ final class KeyEventStorageTest extends TestCase
         // The write happens on destruct, which is where the blob write lived too.
         unset( $gm );
 
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadKeyEventsAsGoals( $siteId );
+        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
 
         $this->assertArrayHasKey( 4, $goals, 'The saved goal did not reach the table.' );
         $this->assertSame( 'Probe Goal', $goals[4]['goal_name'] );
@@ -289,7 +289,7 @@ final class KeyEventStorageTest extends TestCase
         $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
         foreach ( array( 1, 2 ) as $n ) {
-            $this->created[] = \OWA\Module\Base\Classes\GoalManager::keyEventIdFor( $siteId, $n );
+            $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $n );
         }
 
         $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
@@ -305,7 +305,7 @@ final class KeyEventStorageTest extends TestCase
                                     'details' => array( 'match_type' => 'exact', 'goal_url' => '/one' ) ) );
         unset( $other );
 
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadKeyEventsAsGoals( $siteId );
+        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
 
         $this->assertSame( 'First renamed', $goals[1]['goal_name'] ?? null );
         $this->assertSame( 'Second', $goals[2]['goal_name'] ?? null,
@@ -313,32 +313,32 @@ final class KeyEventStorageTest extends TestCase
     }
 
     /**
-     * A key event with no slot is a real key event with no NUMBERED metric.
+     * A goal event with no slot is a real goal event with no NUMBERED metric.
      *
-     * The 45 goal{N} metrics resolve by number, so a key event beyond the
+     * The 45 goal{N} metrics resolve by number, so a goal event beyond the
      * twentieth has nothing to report through in 1.x -- but it must not corrupt
      * the numbered view by appearing under slot 0.
      */
-    public function testAKeyEventWithNoSlotIsNotGivenOne(): void
+    public function testAGoalEventWithNoSlotIsNotGivenOne(): void
     {
         $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
-        $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
-        $id = $keyEvent->generateId( 'key_event:unslotted:' . $siteId );
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $id = $goalEvent->generateId( 'goal_event:unslotted:' . $siteId );
 
         $this->created[] = $id;
 
-        $keyEvent->set( 'id', $id );
-        $keyEvent->set( 'site_id', $siteId );
-        $keyEvent->set( 'name', 'Unslotted' );
-        $keyEvent->set( 'is_active', 1 );
-        $keyEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $keyEvent->create();
+        $goalEvent->set( 'id', $id );
+        $goalEvent->set( 'site_id', $siteId );
+        $goalEvent->set( 'name', 'Unslotted' );
+        $goalEvent->set( 'is_active', 1 );
+        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $goalEvent->create();
 
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadKeyEventsAsGoals( $siteId );
+        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
 
         $this->assertArrayNotHasKey( 0, $goals,
-            'An unnumbered key event was given slot 0, which the goal metrics would then '
+            'An unnumbered goal event was given slot 0, which the goal metrics would then '
             . 'report under a goal that does not exist.' );
 
         $this->assertSame( array(), $goals );
@@ -349,7 +349,7 @@ final class KeyEventStorageTest extends TestCase
     {
         $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
-        $this->created[] = \OWA\Module\Base\Classes\GoalManager::keyEventIdFor( $siteId, 7 );
+        $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 7 );
 
         foreach ( array( 'One', 'Two' ) as $name ) {
 
@@ -359,7 +359,7 @@ final class KeyEventStorageTest extends TestCase
             unset( $gm );
         }
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -369,7 +369,7 @@ final class KeyEventStorageTest extends TestCase
         $this->assertCount( 1, (array) $db->getAllRows(),
             'Editing a goal created a second row, so the numbered slot now names two.' );
 
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadKeyEventsAsGoals( $siteId );
+        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
         $this->assertSame( 'Two', $goals[7]['goal_name'] );
     }
 }

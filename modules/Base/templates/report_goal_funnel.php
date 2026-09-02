@@ -78,7 +78,7 @@ foreach ( $owa_steps as $owa_s ) {
 
     <span class="owa_reportControl owa_reportControlRight">
         <a href="<?php echo $view->makeLink( array(
-            'do'          => 'base.optionsGoalEntry',
+            'do'          => 'base.goalEventEdit',
             'goal_number' => $view->goal_number,
             'siteId'      => $view->get('siteId'),
         ) ); ?>">Edit this funnel</a>
@@ -160,7 +160,7 @@ foreach ( $owa_steps as $owa_s ) {
 <div class="owa_reportSectionContent">
     This goal has no funnel steps configured.
     <a href="<?php echo $view->makeLink( array(
-        'do'          => 'base.optionsGoalEntry',
+        'do'          => 'base.goalEventEdit',
         'goal_number' => $view->goal_number,
         'siteId'      => $view->get('siteId'),
     ) ); ?>">Add some</a>.

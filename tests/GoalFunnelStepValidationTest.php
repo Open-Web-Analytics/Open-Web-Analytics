@@ -25,21 +25,34 @@ final class GoalFunnelStepValidationTest extends TestCase
     /** @param array<int, array<string, string>> $steps */
     private function refuses( array $steps ): bool
     {
-        $controller = new \OWA\Module\Base\Controller\OptionsGoalEdit( array(
-            'goal' => array(
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_group'  => '1',
-                'goal_type'   => 'url_destination',
-                'details'     => array(
-                    'match_type'   => 'begins',
-                    'goal_url'     => '/thanks',
-                    'funnel_steps' => $steps,
-                ),
-            ),
+        /*
+         * Goals became goal events, so these rules moved with the screen that
+         * enforced them -- GoalEventSave rather than OptionsGoalEdit. Every rule
+         * below was earned by a bug, so they are re-pointed rather than
+         * retired.
+         *
+         * The submission shape changed too: steps arrive as parallel stepName[]
+         * / stepPath[] arrays, because the funnel is edited as a list of rows
+         * like the report builder's constraints rather than as a nested array.
+         */
+        $names = array();
+        $paths = array();
+
+        foreach ( $steps as $step ) {
+
+            $names[] = $step['name'] ?? '';
+            $paths[] = $step['path'] ?? '';
+        }
+
+        $controller = new \OWA\Module\Base\Controller\GoalEventSave( array(
+            'name'             => 'Probe',
+            'conditionValue'   => '/thanks',
+            'conditionOperator'=> 'begins',
+            'stepName'         => $names,
+            'stepPath'         => $paths,
         ) );
 
-        $controller->validate();
+        $controller->validateFunnelSteps();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
         $v->setAccessible( true );

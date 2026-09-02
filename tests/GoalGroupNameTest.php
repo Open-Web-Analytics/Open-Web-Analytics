@@ -21,14 +21,19 @@ final class GoalGroupNameTest extends TestCase
     /** Run the controller's own validate() and report whether it objected. */
     private function refuses( $newName ): bool
     {
-        $controller = new \OWA\Module\Base\Controller\OptionsGoalEdit( array(
-            'goal' => array(
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_group'  => '1',
-                'goal_type'   => 'pages_per_visit',
-            ),
-            'new_goal_group_name' => $newName,
+        /*
+         * Goals became goal events, so the rule moved with the screen that
+         * enforced it -- GoalEventSave rather than OptionsGoalEdit.
+         *
+         * The other required fields are filled in so this isolates the group
+         * name. Without them validate() objects to every case and the test
+         * would pass while proving nothing.
+         */
+        $controller = new \OWA\Module\Base\Controller\GoalEventSave( array(
+            'name'             => 'Probe',
+            'conditionValue'   => '/thanks',
+            'goalGroup'        => '1',
+            'newGoalGroupName' => $newName,
         ) );
 
         $controller->validate();
@@ -86,39 +91,53 @@ final class GoalGroupNameTest extends TestCase
      * funnel steps are effectively unvalidated either way -- worth its own fix,
      * not this one.
      */
+    /**
+     * A goal event with no funnel validates cleanly.
+     *
+     * Having no funnel is the normal case -- most goal events are a single
+     * condition -- so it must not be mistaken for an incomplete one.
+     */
     public function testAGoalWithNoFunnelStepsValidatesCleanly(): void
     {
-        $this->assertFalse( $this->refuses( 'Signups' ),
-            'an ordinary goal has no steps, and that is not an error' );
+        $this->assertFalse( $this->objects( array(
+            'name'           => 'Probe',
+            'conditionValue' => '/thanks',
+            'goalGroup'      => '1',
+        ) ) );
     }
 
+    /** And one whose steps are all complete validates cleanly too. */
     public function testAFunnelGoalWithCompleteStepsValidatesCleanly(): void
     {
-        $controller = new \OWA\Module\Base\Controller\OptionsGoalEdit( array(
-            'goal' => array(
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_group'  => '1',
-                'goal_type'   => 'url_destination',
-                'details'     => array(
-                    'match_type'   => 'begins',
-                    'goal_url'     => '/thanks',
-                    'funnel_steps' => array(
-                        1 => array( 'name' => 'Step one', 'path' => '/a' ),
-                    ),
-                ),
-            ),
-        ) );
+        $this->assertFalse( $this->objects( array(
+            'name'           => 'Probe',
+            'conditionValue' => '/thanks',
+            'goalGroup'      => '1',
+            'stepName'       => array( 'Step one' ),
+            'stepPath'       => array( '/a' ),
+        ) ) );
+    }
+
+    /** Run validate() over a whole submission and report whether it objected. */
+    private function objects( array $params ): bool
+    {
+        $controller = new \OWA\Module\Base\Controller\GoalEventSave( $params );
 
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
         $v->setAccessible( true );
         $validator = $v->getValue( $controller );
+
+        if ( ! $validator ) {
+            return false;
+        }
+
         $validator->doValidations();
 
-        $this->assertFalse( (bool) $validator->hasErrors );
+        return (bool) $validator->hasErrors;
     }
+
 
     public function testAnOrdinaryNameIsAccepted(): void
     {

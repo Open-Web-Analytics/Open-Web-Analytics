@@ -192,7 +192,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( array( 'base.users'        => 'the Organization',
                          'base.sites'        => 'the site control',
-                         'base.optionsGoals' => 'a Profile' ) as $gone => $where ) {
+                         'base.goalEvents' => 'a Profile' ) as $gone => $where ) {
 
             $this->assertNotContains(
                 $gone, $actions,
@@ -222,7 +222,7 @@ final class PropertyAdminScreensTest extends TestCase
         foreach ( array( 'base.organizationProfile' => 'the Organization',
                          'base.propertyProfile'     => 'a Property',
                          'base.sitesProfile'        => 'a Profile',
-                         'base.optionsGoals'        => "a Profile's goals" ) as $action => $what ) {
+                         'base.goalEvents'        => "a Profile's goals" ) as $action => $what ) {
 
             $this->assertStringContainsString(
                 $action, $template,
@@ -400,7 +400,7 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'Details', $profile['base.sitesProfile'] ?? null );
         $this->assertSame( 'Observation Settings', $profile['base.profileSettings'] ?? null );
         $this->assertSame( 'Tracking Tag', $profile['base.sitesInvocation'] ?? null );
-        $this->assertSame( 'Goals', $profile['base.optionsGoals'] ?? null );
+        $this->assertSame( 'Goal Events', $profile['base.goalEvents'] ?? null );
 
         $property = array_column( $nav['Property'], 'label', 'do' );
 
@@ -507,7 +507,7 @@ final class PropertyAdminScreensTest extends TestCase
             'property_access.php'      => 'Property',
             'profile_settings.php'     => 'Observation Profile',
             'sites_addoredit.php'      => 'Observation Profile',
-            'options_goals.php'        => 'Observation Profile',
+            'goal_events.php'        => 'Observation Profile',
         );
 
         foreach ( $screens as $template => $term ) {
@@ -761,7 +761,7 @@ final class PropertyAdminScreensTest extends TestCase
             'OrganizationProfile' => 1, 'Users'           => 1,
             'PropertyProfile'     => 2, 'PropertyAccess'  => 2,
             'SitesProfile'        => 3, 'ProfileSettings' => 3,
-            'SitesInvocation'     => 3, 'OptionsGoals'    => 3,
+            'SitesInvocation'     => 3, 'GoalEvents'    => 3,
         );
 
         foreach ( $expected as $controller => $tier ) {
@@ -830,14 +830,14 @@ final class PropertyAdminScreensTest extends TestCase
             'A column label is larger than the page heading it sits under.' );
     }
 
-    /** Goals renders in the pane like every other hierarchy screen. */
-    public function testGoalsUsesThePaneConvention(): void
+    /** Goal Events renders in the pane like every other hierarchy screen. */
+    public function testGoalEventsUsesThePaneConvention(): void
     {
-        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/options_goals.php' );
+        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/goal_events.php' );
 
         $this->assertStringContainsString(
             '<div id="panel">', $body,
-            'Goals uses subview_content, so none of the pane styling reaches it and it '
+            'Goal Events uses subview_content, so none of the pane styling reaches it and it '
             . 'looks like a different application.' );
 
         $this->assertStringNotContainsString( 'subview_content', $body );

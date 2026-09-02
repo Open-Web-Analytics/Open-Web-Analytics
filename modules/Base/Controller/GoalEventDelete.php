@@ -2,14 +2,14 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Remove one key event.
+ * Remove one goal event.
  *
- * A real delete, not an archive. Unlike a Profile, a key event owns no
+ * A real delete, not an archive. Unlike a Profile, a goal event owns no
  * collected data: the events it counted are ordinary rows that stay exactly as
  * they are, and what is removed is only the instruction to count them. There is
  * nothing to restore that deleting it destroys.
  */
-class KeyEventDelete extends \OWA\Core\AdminController {
+class GoalEventDelete extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -20,16 +20,16 @@ class KeyEventDelete extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        $this->addValidation( 'keyEventId', $this->getParam( 'keyEventId' ), 'required' );
+        $this->addValidation( 'goalEventId', $this->getParam( 'goalEventId' ), 'required' );
     }
 
     function action() {
 
-        $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
-        $keyEvent->delete( $this->getParam( 'keyEventId' ) );
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->delete( $this->getParam( 'goalEventId' ) );
 
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
-        $this->setRedirectAction( 'base.keyEvents' );
+        $this->setRedirectAction( 'base.goalEvents' );
         $this->set( 'status_code', 3204 );
     }
 }

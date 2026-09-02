@@ -3,15 +3,15 @@
 namespace OWA\Module\Base\Entity;
 
 /**
- * One step of a key event's funnel.
+ * One step of a funnel.
  *
- * A funnel is an ORDERED list of conditions leading to a key event, and 1.x
+ * A funnel is an ORDERED list of conditions leading to a goal event, and 1.x
  * kept it as `details.funnel_steps` -- a nested array inside the goal, inside
  * the goals array, inside a settings blob. Three levels of nesting to say "and
  * then this page".
  *
  * A step IS a condition, so it carries the same property / operator / value
- * triple the key event itself does. That is what makes it v2-shaped rather than
+ * triple a goal event's own condition does. That is what makes it v2-shaped rather than
  * a 1.x leftover: v2 evaluates conditions against event properties, and a
  * funnel step is one of those evaluated in sequence.
  *
@@ -19,20 +19,20 @@ namespace OWA\Module\Base\Entity;
  * page_uri -- preg_match( '@<path>@i', $page_uri ) -- so the migration is exact
  * rather than interpretive: property page_uri, operator regex, value path.
  */
-class KeyEventStep extends \OWA\Core\Entity {
+class FunnelStep extends \OWA\Core\Entity {
 
     function __construct() {
 
-        $this->setTableName( 'key_event_step' );
+        $this->setTableName( 'funnel_step' );
         $this->setCachable();
 
         $id = new \OWA\Module\Base\Classes\DbColumn( 'id', OWA_DTD_BIGINT );
         $id->setPrimaryKey();
         $this->setProperty( $id );
 
-        $key_event_id = new \OWA\Module\Base\Classes\DbColumn( 'key_event_id', OWA_DTD_BIGINT );
-        $key_event_id->setIndex();
-        $this->setProperty( $key_event_id );
+        $funnel_id = new \OWA\Module\Base\Classes\DbColumn( 'funnel_id', OWA_DTD_BIGINT );
+        $funnel_id->setIndex();
+        $this->setProperty( $funnel_id );
 
         /* 1-based, and the order IS the funnel -- step 1 is where it starts. */
         $step_number = new \OWA\Module\Base\Classes\DbColumn( 'step_number', OWA_DTD_INT );

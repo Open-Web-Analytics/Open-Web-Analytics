@@ -102,7 +102,7 @@ async function chooseInChosen(page, selectId, name) {
     /*
      * pressSequentially, NOT fill.
      *
-     * Chosen filters on key events. fill() sets the value and fires `input`,
+     * Chosen filters on goal events. fill() sets the value and fires `input`,
      * which Chosen does not listen for -- so the list stayed unfiltered and
      * clicking "the first result" picked whatever came first alphabetically.
      * Typing "pageViews" selected "actions", and every assertion here counted

@@ -288,13 +288,22 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="user_id"', 'name="email_address"'],
             ],
-            'options_goal_entry (add)' => [
-                'options_goal_entry.php',
+            'goal_event_edit (add)' => [
+                'goal_event_edit.php',
                 [
-                    'headline' => 'New Goal', 'goal_number' => 1, 'siteId' => 'abc123',
-                    'goal' => [], 'goal_groups' => [],
+                    /*
+                     * Exactly what View\GoalEventEdit sets on the ADD path --
+                     * goalEvent is an empty array there, not absent, and this
+                     * test exists because a template reading a var nobody set
+                     * used to render blank rather than fail.
+                     */
+                    'headline' => 'New Goal Event', 'siteId' => 'abc123',
+                    'goalEvent' => [], 'goalEventId' => '',
+                    'conditionProperties' => [ [ 'name' => 'page_uri', 'label' => 'Page URL' ] ],
+                    'funnelSteps' => [], 'goalGroups' => [ 1 => 'Goal Group 1' ],
+                    'validation_errors' => [],
                 ],
-                ['name="goal[goal_name]"', 'name="goal[goal_value]"'],
+                ['name="name"', 'name="conditionValue"', 'name="stepPath[]"'],
             ],
         ];
     }

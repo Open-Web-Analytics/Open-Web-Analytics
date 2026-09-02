@@ -3,7 +3,7 @@
 namespace OWA\Module\Base\Entity;
 
 /**
- * One key event: an author-named thing worth counting.
+ * One goal event: an author-named thing worth counting.
  *
  * This replaces the twenty numbered goal slots that lived, all twenty of them
  * whether used or not, inside one serialized array in a settings row. That
@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Entity;
  * happened being worth counting -- inside a settings blob, which is not what a
  * setting is.
  *
- * MODELLED FOR v2, DELIBERATELY. In v2 an author names a key event, gives it an
+ * MODELLED FOR v2, DELIBERATELY. In v2 an author names a goal event, gives it an
  * event type and a condition, and when the condition matches the server
  * materialises an additional row whose event_type IS that name (PLAN.html
  * §7.14). The columns here are exactly what that needs, so the v2 migration is
@@ -29,7 +29,7 @@ namespace OWA\Module\Base\Entity;
  * implemented goal type, url_destination, is the same row with property
  * 'page_uri'. One shape, both eras, no translation.
  */
-class KeyEvent extends \OWA\Core\Entity {
+class GoalEvent extends \OWA\Core\Entity {
 
     /** How a condition compares. The vocabulary 1.x already offered. */
     const MATCH_EXACT  = 'exact';
@@ -42,7 +42,7 @@ class KeyEvent extends \OWA\Core\Entity {
 
     function __construct() {
 
-        $this->setTableName( 'key_event' );
+        $this->setTableName( 'goal_event' );
         $this->setCachable();
 
         $id = new \OWA\Module\Base\Classes\DbColumn( 'id', OWA_DTD_BIGINT );
@@ -50,7 +50,7 @@ class KeyEvent extends \OWA\Core\Entity {
         $this->setProperty( $id );
 
         /*
-         * The Observation Profile this key event belongs to, as the TRACKING
+         * The Observation Profile this goal event belongs to, as the TRACKING
          * site_id string -- not owa_site.id.
          *
          * The schema has both conventions: owa_site_user.site_id is the BIGINT
@@ -96,16 +96,16 @@ class KeyEvent extends \OWA\Core\Entity {
         $this->setProperty( $value );
 
         /*
-         * The legacy slot, 1 to 20, or NULL for a key event created after the
+         * The legacy slot, 1 to 20, or NULL for a goal event created after the
          * slots stopped existing.
          *
          * Kept because 45 registered metrics -- goal{N}Completions, Starts and
          * Value -- resolve by NUMBER, and a saved custom report or an API
          * client naming goal3Completions has to keep working through a 1.x
          * release. v2 drops both the column and those metrics for
-         * sessionKeyEventRate:<name>, parameterised by name and unlimited.
+         * sessionGoalEventRate:<name>, parameterised by name and unlimited.
          *
-         * A key event beyond the twentieth simply has no numbered metric.
+         * A goal event beyond the twentieth simply has no numbered metric.
          */
         $goal_number = new \OWA\Module\Base\Classes\DbColumn( 'goal_number', OWA_DTD_INT );
         $goal_number->setIndex();
@@ -128,7 +128,7 @@ class KeyEvent extends \OWA\Core\Entity {
         $this->setProperty( $creation_date );
     }
 
-    /** Does this key event count right now? */
+    /** Does this goal event count right now? */
     public function isActive() {
 
         return (bool) $this->get( 'is_active' );
@@ -171,7 +171,11 @@ class KeyEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * This key event's funnel, in the 1.x shape, keyed from 1.
+     * The funnel that leads to this goal event, in the 1.x shape.
+     *
+     * Looked UP rather than owned. A funnel names its goal event, not the other
+     * way round -- so a goal event usually has none, two funnels can lead to the
+     * same one, and a funnel is worth having with no goal event at all.
      *
      * @return array
      */
@@ -182,30 +186,9 @@ class KeyEvent extends \OWA\Core\Entity {
             return array();
         }
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+        $funnel = \OWA\Module\Base\Entity\Funnel::forGoalEvent( $this->get( 'id' ) );
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $entity->getTableName() );
-        $db->selectColumn( '*' );
-        $db->where( 'key_event_id', $this->get( 'id' ) );
-        $db->orderBy( 'step_number' );
-
-        $steps = array();
-
-        foreach ( (array) $db->getAllRows() as $row ) {
-
-            $step = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
-            $step->setProperties( $row );
-
-            /*
-             * Keyed by the STORED step number, not by position. checkGoalStart()
-             * indexes funnel_steps[1] directly, so renumbering from 0 would make
-             * every funnel's first step the second one.
-             */
-            $steps[ (int) $row['step_number'] ] = $step->toStepArray();
-        }
-
-        return $steps;
+        return $funnel->wasPersisted() ? $funnel->loadSteps() : array();
     }
 
     /**

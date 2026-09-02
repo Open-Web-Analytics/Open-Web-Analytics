@@ -2,13 +2,13 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Create or edit one key event.
+ * Create or edit one goal event.
  *
  * Replaces the goal entry screen, which edited a numbered SLOT -- so creating a
  * goal meant picking an unused number out of twenty, and there was no
- * twenty-first. A key event is a row: it is created, not claimed.
+ * twenty-first. A goal event is a row: it is created, not claimed.
  */
-class KeyEventEdit extends \OWA\Core\AdminController {
+class GoalEventEdit extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -21,24 +21,46 @@ class KeyEventEdit extends \OWA\Core\AdminController {
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
-        $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
-        if ( $this->getParam( 'keyEventId' ) ) {
+        if ( $this->getParam( 'goalEventId' ) ) {
 
-            $keyEvent->load( $this->getParam( 'keyEventId' ) );
+            $goalEvent->load( $this->getParam( 'goalEventId' ) );
+
+        } elseif ( $this->getParam( 'goal_number' ) ) {
+
+            /*
+             * By SLOT, for the funnel report's "edit this funnel" links.
+             *
+             * That report addresses a goal by number -- it has no id to pass --
+             * so this resolves one, rather than those links being repointed at
+             * a screen that would silently open a blank form and create a
+             * second goal event on save.
+             */
+            $goalEvent->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
+                $siteId, $this->getParam( 'goal_number' ) ) );
         }
 
-        $this->set( 'keyEvent', $keyEvent->_getProperties() );
-        $this->set( 'keyEventId', $this->getParam( 'keyEventId' ) );
+        $this->set( 'goalEvent', $goalEvent->_getProperties() );
+        $this->set( 'funnelSteps', $goalEvent->get( 'id' ) ? $goalEvent->loadSteps() : array() );
+        /* Whatever it resolved to, so the form saves the row it opened. */
+        $this->set( 'goalEventId', $goalEvent->get( 'id' ) );
         $this->set( 'siteId', $siteId );
         $this->set( 'conditionProperties', self::conditionProperties() );
+
+        /*
+         * Group labels still live in settings -- they are labels, not records,
+         * and there are five of them. Only the goal events themselves moved.
+         */
+        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
+        $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 3 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
         $this->setView( 'base.optionsHierarchy' );
-        $this->setSubview( 'base.keyEventEdit' );
+        $this->setSubview( 'base.goalEventEdit' );
     }
 
     /**
@@ -77,12 +99,12 @@ class KeyEventEdit extends \OWA\Core\AdminController {
          * -- otherwise editing a migrated goal would silently offer no property
          * that matches the one it has.
          */
-        unset( $names[ \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI ] );
+        unset( $names[ \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI ] );
 
         ksort( $names );
 
         $out = array( array(
-            'name'  => \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI,
+            'name'  => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
             'label' => 'Page URL',
         ) );
 

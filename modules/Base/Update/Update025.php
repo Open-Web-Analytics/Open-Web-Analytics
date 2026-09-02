@@ -3,7 +3,7 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Goals become key events, and get a table of their own.
+ * Goals become goal events, and get a table of their own.
  *
  * Twenty numbered slots lived inside ONE serialized array, all twenty present
  * whether used or not, in a single settings row per Profile. A live install
@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Update;
  * column.
  *
  * The new table is modelled on what v2 needs, not on what 1.x had, so the v2
- * migration reads it rather than reinterpreting it. See KeyEvent.
+ * migration reads it rather than reinterpreting it. See GoalEvent.
  *
  * COPIES, does not move. owa_setting keeps its goals rows, so a rollback to the
  * previous release still reads its own goals. They stop being written, not
@@ -30,22 +30,25 @@ class Update025 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
         if ( ! $entity->createTable() ) {
 
-            $this->e->notice( 'Creating owa_key_event failed' );
+            $this->e->notice( 'Creating owa_goal_event failed' );
 
             return false;
         }
 
-        $step = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+        foreach ( array( 'base.funnel', 'base.funnel_step' ) as $name ) {
 
-        if ( ! $step->createTable() ) {
+            $table = \OWA\Core\CoreAPI::entityFactory( $name );
 
-            $this->e->notice( 'Creating owa_key_event_step failed' );
+            if ( ! $table->createTable() ) {
 
-            return false;
+                $this->e->notice( "Creating $name failed" );
+
+                return false;
+            }
         }
 
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
@@ -66,7 +69,7 @@ class Update025 extends \OWA\Core\Update {
 
             foreach ( self::planForProfile( $row ) as $planned ) {
 
-                $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+                $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
                 /*
                  * A content-derived id, so re-running this migration updates
@@ -74,8 +77,8 @@ class Update025 extends \OWA\Core\Update {
                  * number is part of it because that is what made a goal unique
                  * within a Profile.
                  */
-                $keyEvent->set( 'id', $keyEvent->generateId(
-                    'key_event:' . $planned['site_id'] . ':' . $planned['goal_number'] ) );
+                $goalEvent->set( 'id', $goalEvent->generateId(
+                    'goal_event:' . $planned['site_id'] . ':' . $planned['goal_number'] ) );
 
                 foreach ( $planned as $column => $value ) {
 
@@ -84,12 +87,12 @@ class Update025 extends \OWA\Core\Update {
                         continue;
                     }
 
-                    $keyEvent->set( $column, $value );
+                    $goalEvent->set( $column, $value );
                 }
 
-                $keyEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+                $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
 
-                if ( $keyEvent->create() ) {
+                if ( $goalEvent->create() ) {
 
                     $migrated++;
                 }
@@ -97,40 +100,58 @@ class Update025 extends \OWA\Core\Update {
                 /*
                  * The funnel, if it has one.
                  *
-                 * A funnel is an ORDERED list of conditions and 1.x kept it
-                 * three levels deep -- details.funnel_steps, inside the goal,
-                 * inside the goals array, inside a settings blob. Dropping it
-                 * would have been silent: this install has no funnel goals, so
-                 * nothing here would have failed.
+                 * 1.x kept it three levels deep -- details.funnel_steps, inside
+                 * the goal, inside the goals array, inside a settings blob.
+                 * Dropping it would have been silent: this install has no
+                 * funnel goals, so nothing here would have failed.
+                 *
+                 * It becomes a funnel of its own that NAMES this goal event,
+                 * rather than a child of it. A 1.x goal conflated the two, so
+                 * the migration is where they separate: the funnel takes the
+                 * goal's name because that is what the goal called the path.
                  */
-                foreach ( $planned['steps'] as $plannedStep ) {
+                if ( $planned['steps'] ) {
 
-                    $row = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+                    $funnel = \OWA\Core\CoreAPI::entityFactory( 'base.funnel' );
 
-                    $row->set( 'id', $row->generateId(
-                        'key_event_step:' . $planned['site_id'] . ':'
-                        . $planned['goal_number'] . ':' . $plannedStep['step_number'] ) );
+                    $funnelId = $funnel->generateId(
+                        'funnel:' . $planned['site_id'] . ':' . $planned['goal_number'] );
 
-                    $row->set( 'key_event_id', $keyEvent->get( 'id' ) );
+                    $funnel->set( 'id', $funnelId );
+                    $funnel->set( 'site_id', $planned['site_id'] );
+                    $funnel->set( 'name', $planned['name'] );
+                    $funnel->set( 'goal_event_id', $goalEvent->get( 'id' ) );
+                    $funnel->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+                    $funnel->create();
 
-                    foreach ( $plannedStep as $column => $value ) {
+                    foreach ( $planned['steps'] as $plannedStep ) {
 
-                        $row->set( $column, $value );
+                        $row = \OWA\Core\CoreAPI::entityFactory( 'base.funnel_step' );
+
+                        $row->set( 'id', $row->generateId(
+                            'funnel_step:' . $funnelId . ':' . $plannedStep['step_number'] ) );
+
+                        $row->set( 'funnel_id', $funnelId );
+
+                        foreach ( $plannedStep as $column => $value ) {
+
+                            $row->set( $column, $value );
+                        }
+
+                        $row->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+                        $row->create();
                     }
-
-                    $row->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-                    $row->create();
                 }
             }
         }
 
-        $this->e->notice( "Migrated $migrated goal(s) into owa_key_event." );
+        $this->e->notice( "Migrated $migrated goal(s) into owa_goal_event." );
 
         return true;
     }
 
     /**
-     * The key events one Profile's goals blob describes.
+     * The goal events one Profile's goals blob describes.
      *
      * Pure so it can be tested without a database, and so the rules below are
      * stated once rather than inferred from what the loop happened to do.
@@ -183,8 +204,8 @@ class Update025 extends \OWA\Core\Update {
                 'goal_group'         => (string) ( $goal['goal_group'] ?? '' ),
                 'is_active'          => ( ( $goal['goal_status'] ?? '' ) === 'active' ) ? 1 : 0,
                 'value'              => self::valueInCents( $goal ),
-                'trigger_event_type' => \OWA\Module\Base\Entity\KeyEvent::TRIGGER_PAGE_VIEW,
-                'condition_property' => \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI,
+                'trigger_event_type' => \OWA\Module\Base\Entity\GoalEvent::TRIGGER_PAGE_VIEW,
+                'condition_property' => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
                 'condition_operator' => (string) ( $details['match_type'] ?? '' ),
                 'condition_value'    => (string) ( $details['goal_url'] ?? '' ),
                 'steps'              => self::planSteps( $details ),
@@ -227,8 +248,8 @@ class Update025 extends \OWA\Core\Update {
             $steps[] = array(
                 'step_number'        => (int) $number,
                 'name'               => (string) ( $step['name'] ?? '' ),
-                'condition_property' => \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI,
-                'condition_operator' => \OWA\Module\Base\Entity\KeyEvent::MATCH_REGEX,
+                'condition_property' => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
+                'condition_operator' => \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX,
                 'condition_value'    => (string) $step['path'],
             );
         }
@@ -247,7 +268,7 @@ class Update025 extends \OWA\Core\Update {
      */
     private static function valueInCents( $goal ) {
 
-        $cents = \OWA\Module\Base\Entity\KeyEvent::decimalToCents( $goal['goal_value'] ?? '' );
+        $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $goal['goal_value'] ?? '' );
 
         if ( $cents === null ) {
 

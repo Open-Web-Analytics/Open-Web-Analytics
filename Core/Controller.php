@@ -1042,7 +1042,7 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
-                array( 'do' => 'base.optionsGoals', 'label' => 'Goals',
+                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_settings' ),
             );

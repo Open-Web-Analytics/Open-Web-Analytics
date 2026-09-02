@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * One key event.
+ * One goal event.
  *
  * The condition is presented as a constraint row -- the same markup and the
  * same class names the report builder uses (li.constraintRow >
@@ -14,21 +14,21 @@
  * condition). Whether several conditions can combine is a v2 question, and
  * rendering an add button that cannot be saved would answer it in the UI first.
  */
-$owa_ke = (array) $view->keyEvent;
+$owa_ke = (array) $view->goalEvent;
 
 $owa_operators = array(
-    \OWA\Module\Base\Entity\KeyEvent::MATCH_EXACT  => 'Exactly Matching',
-    \OWA\Module\Base\Entity\KeyEvent::MATCH_BEGINS => 'Begins With',
-    \OWA\Module\Base\Entity\KeyEvent::MATCH_REGEX  => 'Matches Regex',
+    \OWA\Module\Base\Entity\GoalEvent::MATCH_EXACT  => 'Exactly Matching',
+    \OWA\Module\Base\Entity\GoalEvent::MATCH_BEGINS => 'Begins With',
+    \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX  => 'Matches Regex',
 );
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
-<div class="owa_panelIntro">A key event names something worth counting. Give it a name,
+<div class="owa_panelIntro">A goal event names something worth counting. Give it a name,
 then say which events count: pick a property of the event, how to compare it, and what to
 compare it to.</div>
 
-<form method="post" name="owa_keyEvent">
+<form method="post" name="owa_goalEvent">
 
     <div class="setting">
         <div class="title">Name</div>
@@ -48,7 +48,7 @@ compare it to.</div>
         <div class="description">An event matching this condition is counted as a key
         event.</div>
         <div class="field">
-            <ul class="constraintList owa_keyEventCondition">
+            <ul class="constraintList owa_goalEventCondition">
                 <li class="constraintRow">
                     <span class="constraintDimensionPicker">
                         <select class="dim-list" name="<?php echo $view->getNs();?>conditionProperty">
@@ -80,20 +80,80 @@ compare it to.</div>
     </div>
 
     <div class="setting">
+        <div class="title">Group</div>
+        <div class="description">Key events are grouped, and every group with an active key
+        event becomes a tab on the tabbed reports. Renaming a group renames that tab
+        everywhere.</div>
+        <div class="field">
+            <select name="<?php echo $view->getNs();?>goalGroup">
+            <?php foreach ( (array) $view->goalGroups as $owa_num => $owa_label ):?>
+                <option value="<?php $view->out( $owa_num );?>"
+                    <?php echo ( (string) ( $owa_ke['goal_group'] ?? '' ) === (string) $owa_num ) ? 'selected' : '';?>>
+                    <?php $view->out( $owa_label );?>
+                </option>
+            <?php endforeach;?>
+            </select>
+            <input type="text" size="26" placeholder="Rename this group"
+                   name="<?php echo $view->getNs();?>newGoalGroupName" value="">
+            <span class="form-instructions">Leave the rename empty to keep the group's
+            current name.</span>
+            <span class="validation_error"><?php $view->out( $view->validation_errors['newGoalGroupName'] ?? '' );?></span>
+        </div>
+    </div>
+
+    <div class="setting">
+        <div class="title">Funnel <span class="owa_optional">optional</span></div>
+        <div class="description">The steps leading to this goal event, in order. A funnel
+        lets a report show where people leave. Each step is matched as a regular expression
+        against the page URL. Leave it empty if there is no path to describe.</div>
+        <div class="field">
+            <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel">
+            <?php
+            /*
+             * The add and remove buttons belong HERE and not on the condition
+             * above: a funnel really is a list, and the condition really is one
+             * triple. Same markup and class names as the report builder's
+             * constraint rows, so the pill styling applies to both.
+             */
+            $owa_steps = $view->funnelSteps ?: array( 1 => array( 'name' => '', 'path' => '' ) );
+            ?>
+            <?php foreach ( $owa_steps as $owa_num => $owa_step ):?>
+                <li class="constraintRow owa_funnelStep">
+                    <input class="constraintValueField owa_funnelStepName" type="text"
+                           placeholder="Step name"
+                           name="<?php echo $view->getNs();?>stepName[]"
+                           value="<?php $view->out( $owa_step['name'] ?? '' );?>">
+                    <span class="constraintOperatorPicker owa_funnelStepMatches">matches</span>
+                    <input class="constraintValueField owa_funnelStepPath" type="text"
+                           placeholder="/path"
+                           name="<?php echo $view->getNs();?>stepPath[]"
+                           value="<?php $view->out( $owa_step['path'] ?? '' );?>">
+                    <span class="constraintAddButton" role="button" tabindex="0"
+                          title="Add another step" aria-label="Add another step">+</span>
+                    <span class="constraintRemoveButton" role="button" tabindex="0"
+                          title="Remove this step" aria-label="Remove this step">X</span>
+                </li>
+            <?php endforeach;?>
+            </ul>
+            <span class="validation_error"><?php $view->out( $view->validation_errors['funnel'] ?? '' );?></span>
+        </div>
+    </div>
+
+    <div class="setting">
         <div class="title">Value <span class="owa_optional">optional</span></div>
         <div class="description">What one of these is worth. Left blank it counts without
         a value.</div>
         <div class="field">
             <input type="text" size="12"
                    name="<?php echo $view->getNs();?>value"
-                   value="<?php $view->out( \OWA\Module\Base\Entity\KeyEvent::centsToDecimal( $owa_ke['value'] ?? 0 ) );?>">
+                   value="<?php $view->out( \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ?? 0 ) );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['value'] ?? '' );?></span>
         </div>
     </div>
 
     <div class="setting">
         <div class="title">Status</div>
-        <div class="description">An inactive key event keeps its definition and stops
+        <div class="description">An inactive goal event keeps its definition and stops
         counting.</div>
         <div class="field">
             <select name="<?php echo $view->getNs();?>isActive">
@@ -103,31 +163,31 @@ compare it to.</div>
         </div>
     </div>
 
-    <?php echo $view->createNonceFormField('base.keyEventSave');?>
+    <?php echo $view->createNonceFormField('base.goalEventSave');?>
     <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->siteId );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>keyEventId" value="<?php $view->out( $view->keyEventId ?? '' );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.keyEventSave">
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Key Event">
+    <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $view->goalEventId ?? '' );?>">
+    <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventSave">
+    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Goal Event">
 </form>
 
 <?php if ( ! empty( $owa_ke['id'] ) ):?>
 <div class="owa_dangerZone">
-    <div class="owa_dangerZoneTitle">Delete this key event</div>
+    <div class="owa_dangerZoneTitle">Delete this goal event</div>
     <div class="owa_dangerZoneBody">
         It stops counting and disappears from reports. Events already counted under it are
         not removed &mdash; what was recorded stays recorded.
     </div>
     <form method="post">
-        <?php echo $view->createNonceFormField('base.keyEventDelete');?>
+        <?php echo $view->createNonceFormField('base.goalEventDelete');?>
         <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->siteId );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>keyEventId" value="<?php $view->out( $owa_ke['id'] );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.keyEventDelete">
+        <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $owa_ke['id'] );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Key Event"
+               name="<?php echo $view->getNs();?>submit_btn" value="Delete Goal Event"
                data-owa-confirm
-               data-owa-confirm-title="Delete this key event?"
+               data-owa-confirm-title="Delete this goal event?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and disappears from reports. Events already counted under it are not removed."
-               data-owa-confirm-proceed="Delete key event">
+               data-owa-confirm-proceed="Delete goal event">
     </form>
 </div>
 <?php endif;?>
