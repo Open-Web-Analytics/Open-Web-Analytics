@@ -44,13 +44,15 @@ test.describe('admin: authentication (login / logout)', () => {
 
     test('the admin fixture user can authenticate and reach the admin UI', async ({ page }) => {
         await adminLogin(page);
-        // Post-login lands on base.sites; the admin (edit_sites) sees the
-        // "Add New" affordance the analyst never gets.
+        // Post-login lands on base.reportingHome, which redirects to the last
+        // Profile's dashboard. base.sites is gone -- the roster of Profiles is
+        // the site control's fan-out now, and its "add new" is the affordance
+        // an admin (edit_sites) gets and an analyst never does.
         await expect(page.locator('text=Logout').first()).toBeVisible();
-        await gotoAction(page, 'base.sites');
+        await expect(page.locator('#owa_siteControl')).toBeVisible();
         await expect(
-            page.locator('a', { hasText: 'Add New' }).first()
-        ).toBeVisible();
+            page.locator('#owa_siteControlPanel a.owa_siteControlAdd').first()
+        ).toHaveCount(1);
     });
 
     test('bad credentials do not authenticate', async ({ page }) => {
@@ -155,19 +157,31 @@ test.describe('admin: site CRUD', () => {
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
-        // sitesAdd redirects to base.sites; the new site must appear in the list.
-        await gotoAction(page, 'base.sites');
-        await expect(page.locator(`text=${FIXTURE.newSiteName}`).first()).toBeVisible();
-        await expect(page.locator(`text=${FIXTURE.newSiteDomain}`).first()).toBeVisible();
+        // sitesAdd redirects to base.reportingHome now. The roster of Profiles
+        // is the site control's fan-out -- base.sites is gone -- so that is
+        // where the new Profile has to show up.
+        //
+        // Matched without asserting visibility on purpose: the fan-out only
+        // un-hides the profile list of the CURRENT Property, and a site added
+        // on a new domain gets a Property of its own.
+        await page.goto('?', { waitUntil: 'networkidle' });
+
+        const createdRow = page.locator('li.owa_siteControlItem', {
+            hasText: FIXTURE.newSiteName,
+        });
+        await expect(createdRow).toHaveCount(1);
+
+        // The domain landed on the PROPERTY, not the Profile -- that split is
+        // the whole point of the hierarchy, so assert it where it belongs.
+        await expect(
+            page.locator('.owa_siteControlDomain', { hasText: FIXTURE.newSiteDomain })
+        ).toHaveCount(1);
 
         // --- EDIT --------------------------------------------------------------
-        // Read the identifier off the list rather than deriving it. site_id used
-        // to be md5(domain-as-typed), so the spec could compute what the admin UI
-        // would store; identifiers are minted now, so the only thing that knows
-        // this site's id is the page that just listed it.
-        const createdRow = page.locator('div.owa_reportSectionContent', {
-            hasText: FIXTURE.newSiteDomain,
-        });
+        // Read the identifier off the control rather than deriving it. site_id
+        // used to be md5(domain-as-typed), so the spec could compute what the
+        // admin UI would store; identifiers are minted now, so the only thing
+        // that knows this site's id is the page that just rendered it.
         const editHref = await createdRow
             .locator('a[href*="base.sitesProfile"]')
             .first()
@@ -176,7 +190,8 @@ test.describe('admin: site CRUD', () => {
         // The link is built by makeLink(), which prefixes params with the app
         // namespace when one is configured -- so accept either spelling.
         const createdSiteId = editParams.get('owa_siteId') || editParams.get('siteId');
-        expect(createdSiteId, 'the sites list must expose the new site id').toBeTruthy();
+        expect(createdSiteId, 'the site control must expose the new site id').toBeTruthy();
+
         const newName = 'OWA E2E Renamed Site';
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
         // On the edit form the domain is fixed (hidden) and only name/description
@@ -187,23 +202,44 @@ test.describe('admin: site CRUD', () => {
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
-        await gotoAction(page, 'base.sites');
-        await expect(page.locator(`text=${newName}`).first()).toBeVisible();
+        await page.goto('?', { waitUntil: 'networkidle' });
+        await expect(
+            page.locator('li.owa_siteControlItem', { hasText: newName })
+        ).toHaveCount(1);
 
         // --- DELETE ------------------------------------------------------------
-        // The Delete link carries the &nonce=... minted by the list page (the
-        // admin URL namespace is empty; the prefixed spelling is still accepted).
-        await gotoAction(page, 'base.sites');
-        const deleteLink = page
-            .locator(`a[href*="base.sitesDelete"][href*="${createdSiteId}"]`)
-            .first();
-        await expect(deleteLink).toBeVisible();
-        await clickAndWait(page, deleteLink);
+        // Deleting a Profile lives on Profile Details now. It was on the
+        // base.sites roster, and removing that screen left base.sitesDelete
+        // registered but linked from nowhere -- so there was no way to delete a
+        // Profile at all.
+        await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
 
-        // Gone from the list.
-        await gotoAction(page, 'base.sites');
-        expect(await page.locator(`text=${newName}`).count()).toBe(0);
-        expect(await page.locator(`text=${FIXTURE.newSiteDomain}`).count()).toBe(0);
+        const deleteButton = page.locator('input[value="Delete Profile"]');
+        await expect(deleteButton).toBeVisible();
+
+        // The form confirms first, and Playwright DISMISSES dialogs by default --
+        // which cancels the submit and would make this pass while deleting
+        // nothing.
+        page.once('dialog', (dialog) => dialog.accept());
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            deleteButton.click(),
+        ]);
+
+        // Gone from the fan-out.
+        await page.goto('?', { waitUntil: 'networkidle' });
+        await expect(
+            page.locator('li.owa_siteControlItem', { hasText: newName })
+        ).toHaveCount(0);
+
+        // Its Property is NOT removed with it. Deliberate: a Property can have
+        // several Profiles and outlives any one of them. There is no Property
+        // delete yet, so this one is left behind -- asserted so the day that
+        // changes, this says so rather than silently starting to pass.
+        await expect(
+            page.locator('.owa_siteControlDomain', { hasText: FIXTURE.newSiteDomain })
+        ).toHaveCount(1);
     });
 });
 
@@ -245,7 +281,9 @@ test.describe('admin: user CRUD + site association', () => {
         // submit the UNION of every existing grant plus the new one, because the
         // controller replaced the whole set and posting just one user would
         // silently revoke the reporter fixture and break every downstream report.
-        await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
+        // The grant form is its own screen now -- Property Access Management --
+        // rather than a third form on the Profile page.
+        await gotoAction(page, 'base.propertyAccess', `&owa_siteId=${FIXTURE.siteId}`);
 
         const userRow = () => page.locator('table.owa-allowed-users tr.owa-user-row', {
             hasText: FIXTURE.newUserId,
@@ -454,35 +492,47 @@ test.describe('admin: start_page default action', () => {
         expect(body).not.toMatch(/Fatal error|Uncaught Exception|Invalid action/i);
     });
 
-    test('the bare request and an explicit base.sites render the same screen', async ({ page }) => {
+    test('the bare request and an explicit start_page render the same screen', async ({ page }) => {
         await login(page);
 
-        await page.goto('?owa_do=base.sites', { waitUntil: 'networkidle' });
+        // start_page is base.reportingHome now, not the base.sites roster --
+        // that screen is gone and you land on the last Profile you looked at.
+        // Read the setting rather than hardcoding it, so this stays honest if
+        // the default is repointed again.
+        await page.goto('?owa_do=base.reportingHome', { waitUntil: 'networkidle' });
         const explicitTitle = await page.title();
+        const explicitUrl = page.url();
 
         await page.goto('?', { waitUntil: 'networkidle' });
         const defaultTitle = await page.title();
 
-        // start_page defaults to base.sites (Settings.php), so the two must agree.
-        // Comparing rendered titles rather than asserting a literal keeps this
-        // honest if the default is ever repointed at a different report.
         expect(defaultTitle, 'the default action should land on the start_page report')
             .toBe(explicitTitle);
+
+        // Both resolve the redirect to the same report, not just the same shell.
+        expect(page.url()).toBe(explicitUrl);
     });
 
     /**
      * The start_page report itself -- reached by default, so a break here takes
      * out the admin UI's front door and every post-login redirect with it.
      */
-    test('the start_page report lists the fixture site', async ({ page }) => {
+    test('the start_page lands on a report scoped to a Profile', async ({ page }) => {
         await login(page);
         await page.goto('?', { waitUntil: 'networkidle' });
 
         const body = await page.content();
 
-        // The roster has to actually render its rows, not just a chrome shell.
-        expect(body, 'the sites report should list the fixture site')
-            .toContain(FIXTURE.siteDomain);
+        // It used to be the base.sites roster and the assertion was that the
+        // fixture site appeared as a ROW. The front door is a report now, so
+        // what has to be true is that it arrived scoped to a Profile: no
+        // siteId means makeNavigationMenu() returns false and there is no left
+        // nav at all, which is the failure this guards.
+        expect(page.url(), 'the front door must resolve to a Profile')
+            .toMatch(/siteId=/);
+
+        expect(body, 'the report chrome should carry the site control')
+            .toContain('owa_siteControl');
 
         // And it must be the report, not a bounce back to the login form.
         expect(body).not.toMatch(/input[^>]+name="password"/);

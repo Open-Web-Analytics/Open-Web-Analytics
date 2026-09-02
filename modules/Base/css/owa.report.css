@@ -3415,3 +3415,58 @@ li.constraintRow {
     color: #666666;
     text-decoration: underline;
 }
+
+
+/* The destructive action at the foot of a hierarchy screen.
+ *
+ * Set off from the form above it rather than sitting in the same run of
+ * fields: deleting a Profile is not another setting, and it should not read as
+ * one. The rule and the muted body do that work; the button carries the only
+ * strong colour on the screen.
+ *
+ * .owa-button is orange at 18px with 15px/30px padding -- the affirmative
+ * action's weight. The danger variant is deliberately SMALLER, because the
+ * button you want people to reach for here is not this one. */
+.owa_dangerZone {
+    margin: 40px 0 0 0;
+    padding: 20px 0 0 0;
+    border-top: 1px solid #e3e3e3;
+    max-width: 780px;
+}
+
+.owa_dangerZoneTitle {
+    font-size: 13px;
+    font-weight: bold;
+    color: #99321f;
+    margin: 0 0 6px 0;
+}
+
+.owa_dangerZoneBody {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+    margin: 0 0 4px 0;
+}
+
+.owa_dangerZone form {
+    margin: 0;
+}
+
+.owa-button.owa-button-danger {
+    background-color: #ffffff;
+    color: #99321f;
+    border: 1px solid #d9b8b1;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 16px;
+    margin: 14px 0 0 0;
+}
+
+.owa-button.owa-button-danger:hover {
+    background-color: #99321f;
+    border-color: #99321f;
+    color: #ffffff;
+    box-shadow: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+}

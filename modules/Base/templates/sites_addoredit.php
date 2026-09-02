@@ -69,5 +69,36 @@ two tags.</div>
 
     </form>
 
+<?php if ( $view->edit == true && $view->getCurrentUser()->isCapable('edit_sites') ):?>
+<?php
+/*
+ * Deleting an Observation Profile.
+ *
+ * This lived on the base.sites roster, which is gone -- so the action was
+ * still registered and still worked, but nothing linked it and there was no
+ * way to delete a Profile at all. It belongs here: this is the screen that
+ * already owns this one Profile.
+ *
+ * Its own form, not a second submit on the one above, so a stray Enter in a
+ * text field cannot reach it. The nonce is minted for base.sitesDelete
+ * specifically -- one action, one nonce.
+ */
+?>
+<div class="owa_dangerZone">
+    <div class="owa_dangerZoneTitle">Delete this Observation Profile</div>
+    <div class="owa_dangerZoneBody">
+        This removes the Profile and stops it being reported on. The Property it
+        observes is not affected, and neither is any other Profile of that
+        Property. This cannot be undone.
+    </div>
+    <form method="post" onsubmit="return confirm('Delete this Observation Profile? This cannot be undone.');">
+        <?php echo $view->createNonceFormField('base.sitesDelete');?>
+        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesDelete">
+        <input class="owa-button owa-button-danger" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile">
+    </form>
+</div>
+<?php endif;?>
+
 </fieldset>
 </div>
