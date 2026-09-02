@@ -22,11 +22,53 @@ final class GoalEventStorageTest extends TestCase
 {
     private array $created = [];
 
+    /** A real Profile with a Property -- goal events hang off the Property. */
+    private string $siteId = '';
+
+    /** Its Property. Resolved once, and asserted, for the reason below. */
+    private string $propertyId = '';
+
     protected function setUp(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
+
+        /*
+         * A REAL Profile, not an invented id.
+         *
+         * Goal events belong to the Property, so a made-up site id resolves to
+         * no Property and the manager correctly answers with nothing -- these
+         * tests would then pass by measuring an empty list.
+         */
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'site_id, property_id' );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            if ( ! empty( $row['property_id'] ) ) {
+
+                $this->siteId     = $row['site_id'];
+                $this->propertyId = $row['property_id'];
+                break;
+            }
+        }
+
+        if ( ! $this->siteId ) {
+            $this->markTestSkipped( 'Needs a Profile with a Property.' );
+        }
+
+        /*
+         * Held and asserted rather than re-resolved per query.
+         *
+         * Db::where() DROPS a clause whose value is empty instead of matching
+         * nothing, so a query filtered on an empty property id silently widens
+         * to every Property on the install. A test that does that does not fail
+         * -- it counts other people's rows and reports a number that looks like
+         * a bug in the code under test.
+         */
+        $this->assertNotSame( '', $this->propertyId );
     }
 
     protected function tearDown(): void
@@ -177,14 +219,14 @@ final class GoalEventStorageTest extends TestCase
      */
     public function testAGoalEventWithNoFunnelOmitsTheKeyEntirely(): void
     {
-        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $siteId = $this->siteId;
         $id = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 1 );
 
         $this->created[] = $id;
 
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $goalEvent->set( 'id', $id );
-        $goalEvent->set( 'site_id', $siteId );
+        $goalEvent->set( 'property_id', $this->propertyId );
         $goalEvent->set( 'name', 'No funnel' );
         $goalEvent->set( 'goal_number', 1 );
         $goalEvent->set( 'is_active', 1 );
@@ -250,7 +292,7 @@ final class GoalEventStorageTest extends TestCase
      */
     public function testAGoalSavedThroughTheManagerReadsBackFromTheTable(): void
     {
-        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $siteId = $this->siteId;
 
         $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 4 );
 
@@ -264,8 +306,12 @@ final class GoalEventStorageTest extends TestCase
             'details'     => array( 'match_type' => 'begins', 'goal_url' => '/probe' ),
         ) );
 
-        // The write happens on destruct, which is where the blob write lived too.
-        unset( $gm );
+        /*
+         * Flushed, not unset. supportClassFactory() caches the instance, so
+         * unset() does not destruct it and the write would land at shutdown --
+         * after every assertion below.
+         */
+        $gm->flush();
 
         $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
 
@@ -286,29 +332,35 @@ final class GoalEventStorageTest extends TestCase
      */
     public function testSavingOneGoalLeavesTheOthersAlone(): void
     {
-        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $siteId = $this->siteId;
 
-        foreach ( array( 1, 2 ) as $n ) {
+        foreach ( array( 13, 14 ) as $n ) {
             $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $n );
         }
 
         $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $gm->saveGoal( 1, array( 'goal_name' => 'First', 'goal_status' => 'active',
+        $gm->saveGoal( 13, array( 'goal_name' => 'First', 'goal_status' => 'active',
                                  'details' => array( 'match_type' => 'exact', 'goal_url' => '/one' ) ) );
-        $gm->saveGoal( 2, array( 'goal_name' => 'Second', 'goal_status' => 'active',
+        $gm->saveGoal( 14, array( 'goal_name' => 'Second', 'goal_status' => 'active',
                                  'details' => array( 'match_type' => 'exact', 'goal_url' => '/two' ) ) );
-        unset( $gm );
+        $gm->flush();
 
-        /* A second manager that only touches goal 1. */
+        /*
+         * A second manager touching only ONE of them.
+         *
+         * Slots within numGoals (15 here): saveGoal() silently ignores a number
+         * above it, so a test using 17 saves nothing and then measures an empty
+         * list.
+         */
         $other = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $other->saveGoal( 1, array( 'goal_name' => 'First renamed', 'goal_status' => 'active',
+        $other->saveGoal( 13, array( 'goal_name' => 'First renamed', 'goal_status' => 'active',
                                     'details' => array( 'match_type' => 'exact', 'goal_url' => '/one' ) ) );
-        unset( $other );
+        $other->flush();
 
         $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
 
-        $this->assertSame( 'First renamed', $goals[1]['goal_name'] ?? null );
-        $this->assertSame( 'Second', $goals[2]['goal_name'] ?? null,
+        $this->assertSame( 'First renamed', $goals[13]['goal_name'] ?? null );
+        $this->assertSame( 'Second', $goals[14]['goal_name'] ?? null,
             'Saving one goal rewrote another, which is the blob behaviour this replaces.' );
     }
 
@@ -321,7 +373,7 @@ final class GoalEventStorageTest extends TestCase
      */
     public function testAGoalEventWithNoSlotIsNotGivenOne(): void
     {
-        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $siteId = $this->siteId;
 
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $id = $goalEvent->generateId( 'goal_event:unslotted:' . $siteId );
@@ -329,7 +381,7 @@ final class GoalEventStorageTest extends TestCase
         $this->created[] = $id;
 
         $goalEvent->set( 'id', $id );
-        $goalEvent->set( 'site_id', $siteId );
+        $goalEvent->set( 'property_id', $this->propertyId );
         $goalEvent->set( 'name', 'Unslotted' );
         $goalEvent->set( 'is_active', 1 );
         $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
@@ -347,7 +399,7 @@ final class GoalEventStorageTest extends TestCase
     /** The id is derived, so saving twice updates one row rather than making two. */
     public function testSavingTheSameSlotTwiceUpdatesOneRow(): void
     {
-        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $siteId = $this->siteId;
 
         $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 7 );
 
@@ -356,7 +408,7 @@ final class GoalEventStorageTest extends TestCase
             $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
             $gm->saveGoal( 7, array( 'goal_name' => $name, 'goal_status' => 'active',
                                      'details' => array( 'match_type' => 'exact', 'goal_url' => '/x' ) ) );
-            unset( $gm );
+        $gm->flush();
         }
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
@@ -364,12 +416,21 @@ final class GoalEventStorageTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( 'id' );
-        $db->where( 'site_id', $siteId );
+        /*
+         * This SLOT, not every row on the Property.
+         *
+         * Goal events belong to the Property now, so a Property with other goal
+         * events -- including whatever the install already had -- shares this
+         * table with the probe. Counting all of them would fail for a reason
+         * that has nothing to do with what is being tested.
+         */
+        $db->where( 'property_id', $this->propertyId );
+        $db->where( 'goal_number', 7 );
 
         $this->assertCount( 1, (array) $db->getAllRows(),
             'Editing a goal created a second row, so the numbered slot now names two.' );
 
         $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
-        $this->assertSame( 'Two', $goals[7]['goal_name'] );
+        $this->assertSame( 'Two', $goals[7]['goal_name'] ?? null );
     }
 }

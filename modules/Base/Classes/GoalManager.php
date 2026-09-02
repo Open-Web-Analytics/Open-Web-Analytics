@@ -145,12 +145,30 @@ class GoalManager extends \OWA\Core\Base {
             return array();
         }
 
+        $propertyId = self::propertyFor( $site_id );
+
+        /*
+         * No Property means NO goal events, and this guard is the difference
+         * between that and every goal event on the installation.
+         *
+         * Db::where() silently drops a clause whose value is empty, so
+         * where( 'property_id', null ) does not narrow the query -- it removes
+         * the filter. An unparented Profile would have been handed every other
+         * Property's goal events, which is a cross-Property leak rather than an
+         * empty list. Same shape as the constraint that gets dropped and
+         * returns unfiltered data.
+         */
+        if ( ! $propertyId ) {
+
+            return array();
+        }
+
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
-        $db->where( 'site_id', $site_id );
+        $db->where( 'property_id', $propertyId );
 
         $goals = array();
 
@@ -180,6 +198,57 @@ class GoalManager extends \OWA\Core\Base {
     }
 
     /**
+     * The Property a Profile observes.
+     *
+     * Goal events belong to the Property -- the website -- and every Profile of
+     * it inherits them. Callers hold a Profile id because that is what the
+     * request carries and what a session belongs to, so the hop happens here
+     * rather than at each of them.
+     *
+     * Memoized: the conversion evaluator asks per event.
+     *
+     * @return string|null
+     */
+    public static function propertyFor( $site_id ) {
+
+        static $cache = array();
+
+        if ( ! $site_id ) {
+
+            return null;
+        }
+
+        if ( ! array_key_exists( $site_id, $cache ) ) {
+
+            /*
+             * Read the column, not the entity.
+             *
+             * base.site is cachable and getByColumn() answers from that cache,
+             * which is populated by whatever loaded the site first -- so this
+             * could be handed a Site object that predates its property_id being
+             * set, and return a different Property than the row actually has.
+             * Measured: the write and the read resolved two different
+             * Properties in the same process.
+             *
+             * A column read cannot be stale, and this is on the conversion
+             * path, where it is asked once per event.
+             */
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $site->getTableName() );
+            $db->selectColumn( 'property_id' );
+            $db->where( 'site_id', $site_id );
+
+            $row = $db->getOneRow();
+
+            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
+        }
+
+        return $cache[ $site_id ];
+    }
+
+    /**
      * The stable id for one Profile's slot.
      *
      * Derived rather than minted so the migration, this class and the admin
@@ -190,7 +259,8 @@ class GoalManager extends \OWA\Core\Base {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
-        return $entity->generateId( 'goal_event:' . $site_id . ':' . (int) $number );
+        return $entity->generateId(
+            'goal_event:' . self::propertyFor( $site_id ) . ':' . (int) $number );
     }
 
     function getActiveGoals() {
@@ -285,7 +355,7 @@ class GoalManager extends \OWA\Core\Base {
 
         $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $goal['goal_value'] ?? '' );
 
-        $goalEvent->set( 'site_id', $this->site_id );
+        $goalEvent->set( 'property_id', self::propertyFor( $this->site_id ) );
         $goalEvent->set( 'name', (string) ( $goal['goal_name'] ?? '' ) );
         $goalEvent->set( 'goal_number', $number );
         $goalEvent->set( 'goal_group', (string) ( $goal['goal_group'] ?? '' ) );
@@ -316,7 +386,19 @@ class GoalManager extends \OWA\Core\Base {
         $this->isDirtyGoalGroups = true;
     }
 
-    function __destruct() {
+    /**
+     * Write whatever has changed.
+     *
+     * Public and callable, not only reachable through __destruct.
+     *
+     * supportClassFactory() hands back a CACHED instance, so unset()ing a
+     * manager does not destruct it -- the factory still holds a reference, and
+     * the write happens at script shutdown if at all. Anything that needs the
+     * goal it just saved to be readable has to be able to say so.
+     *
+     * Idempotent: flushing twice writes once, because the dirty marks clear.
+     */
+    public function flush() {
 
         if ( $this->isDirtyGoals ) {
 
@@ -324,12 +406,23 @@ class GoalManager extends \OWA\Core\Base {
 
                 $this->persistGoal( $number );
             }
+
+            $this->dirtyGoalNumbers = array();
+            $this->isDirtyGoals     = false;
         }
 
         if ( $this->isDirtyGoalGroups ) {
 
-            \OWA\Core\CoreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
+            \OWA\Core\CoreAPI::persistSiteSetting(
+                $this->site_id, 'goal_groups', $this->goal_group_labels );
+
+            $this->isDirtyGoalGroups = false;
         }
+    }
+
+    function __destruct() {
+
+        $this->flush();
     }
 
     function getGoalFunnel($goal_number) {

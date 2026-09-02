@@ -1007,6 +1007,19 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.propertyProfile', 'label' => 'Details',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
+                /*
+                 * Goal events describe a behaviour on the WEBSITE, so they
+                 * belong here and every Profile of it inherits them -- the same
+                 * place GA puts key events, and for the same reason. Counting
+                 * still happens per Profile, because a conversion is a flag on
+                 * a session and a session belongs to one.
+                 *
+                 * Addressed by siteId even so: the screen is reached from a
+                 * Profile in the nav, and it resolves the Property itself.
+                 */
+                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
             );
 
             /*
@@ -1042,9 +1055,6 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
-                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_settings' ),
             );
         }
 

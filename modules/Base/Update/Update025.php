@@ -78,11 +78,11 @@ class Update025 extends \OWA\Core\Update {
                  * within a Profile.
                  */
                 $goalEvent->set( 'id', $goalEvent->generateId(
-                    'goal_event:' . $planned['site_id'] . ':' . $planned['goal_number'] ) );
+                    'goal_event:' . $planned['property_id'] . ':' . $planned['goal_number'] ) );
 
                 foreach ( $planned as $column => $value ) {
 
-                    if ( $column === 'steps' ) {
+                    if ( $column === 'steps' || $column === 'site_id' ) {
 
                         continue;
                     }
@@ -115,10 +115,10 @@ class Update025 extends \OWA\Core\Update {
                     $funnel = \OWA\Core\CoreAPI::entityFactory( 'base.funnel' );
 
                     $funnelId = $funnel->generateId(
-                        'funnel:' . $planned['site_id'] . ':' . $planned['goal_number'] );
+                        'funnel:' . $planned['property_id'] . ':' . $planned['goal_number'] );
 
                     $funnel->set( 'id', $funnelId );
-                    $funnel->set( 'site_id', $planned['site_id'] );
+                    $funnel->set( 'property_id', $planned['property_id'] );
                     $funnel->set( 'name', $planned['name'] );
                     $funnel->set( 'goal_event_id', $goalEvent->get( 'id' ) );
                     $funnel->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
@@ -199,6 +199,7 @@ class Update025 extends \OWA\Core\Update {
 
             $planned[] = array(
                 'site_id'            => $row['scope_id'],
+                'property_id'        => self::propertyFor( $row['scope_id'] ),
                 'name'               => (string) $goal['goal_name'],
                 'goal_number'        => (int) ( $goal['goal_number'] ?: $number ),
                 'goal_group'         => (string) ( $goal['goal_group'] ?? '' ),
@@ -213,6 +214,23 @@ class Update025 extends \OWA\Core\Update {
         }
 
         return $planned;
+    }
+
+    /**
+     * The Property a Profile observes.
+     *
+     * Goals were per site; goal events are per Property, so the migration makes
+     * that hop. Self-contained rather than calling GoalManager: a migration
+     * runs against a codebase that may be older than itself.
+     *
+     * @return string|null
+     */
+    public static function propertyFor( $site_id ) {
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->getByColumn( 'site_id', $site_id );
+
+        return $site->get( 'property_id' );
     }
 
     /**

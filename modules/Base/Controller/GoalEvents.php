@@ -56,12 +56,28 @@ class GoalEvents extends \OWA\Core\AdminController {
             return array();
         }
 
+        /*
+         * By PROPERTY: goal events describe the website, and every Profile of
+         * it sees the same list. The request carries a Profile because that is
+         * what the nav is scoped to.
+         *
+         * Guarded, because Db::where() drops an empty value rather than
+         * matching nothing -- an unparented Profile would list every goal event
+         * on the installation.
+         */
+        $propertyId = \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId );
+
+        if ( ! $propertyId ) {
+
+            return array();
+        }
+
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
-        $db->where( 'site_id', $siteId );
+        $db->where( 'property_id', $propertyId );
         // ASC explicitly: orderBy() with no direction is DESC.
         $db->orderBy( 'name', OWA_SQL_ASCENDING );
 

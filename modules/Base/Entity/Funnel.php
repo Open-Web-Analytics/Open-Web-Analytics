@@ -35,10 +35,15 @@ class Funnel extends \OWA\Core\Entity {
         $id->setPrimaryKey();
         $this->setProperty( $id );
 
-        /* The Observation Profile, as the tracking site_id string. See GoalEvent. */
-        $site_id = new \OWA\Module\Base\Classes\DbColumn( 'site_id', OWA_DTD_VARCHAR255 );
-        $site_id->setIndex();
-        $this->setProperty( $site_id );
+        /*
+         * The PROPERTY, matching the goal event it names -- see GoalEvent. A
+         * funnel describes a path through a website, which is the same kind of
+         * fact, and a funnel on a narrower tier than the goal event it points
+         * at could name one it cannot see.
+         */
+        $property_id = new \OWA\Module\Base\Classes\DbColumn( 'property_id', OWA_DTD_BIGINT );
+        $property_id->setIndex();
+        $this->setProperty( $property_id );
 
         $name = new \OWA\Module\Base\Classes\DbColumn( 'name', OWA_DTD_VARCHAR255 );
         $this->setProperty( $name );

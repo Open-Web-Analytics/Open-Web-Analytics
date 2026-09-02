@@ -50,21 +50,23 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $id );
 
         /*
-         * The Observation Profile this goal event belongs to, as the TRACKING
-         * site_id string -- not owa_site.id.
+         * The PROPERTY this goal event belongs to -- the website, not one way
+         * of watching it.
          *
-         * The schema has both conventions: owa_site_user.site_id is the BIGINT
-         * row id, owa_setting.scope_id is the tracking string. This follows the
-         * settings row it replaces, and for a practical reason -- every caller
-         * already holds the string. The conversion handler reads it off the
-         * event, the admin controllers take it as a request param, and
-         * GoalManager is constructed with it. Storing the BIGINT would mean a
-         * site lookup at each of those points to convert something nobody
-         * asked for.
+         * A behaviour worth counting is a fact about the product: two Profiles
+         * of one website both want to count the same signup, and defining it
+         * twice is how the two definitions drift. GA puts key events on the
+         * property for the same reason and applies them across every data
+         * stream under it.
+         *
+         * COUNTING stays per Profile regardless, because in 1.x a conversion is
+         * a flag on the session row and a session belongs to a Profile. So the
+         * definition is inherited downward and the counting happens where it
+         * always did.
          */
-        $site_id = new \OWA\Module\Base\Classes\DbColumn( 'site_id', OWA_DTD_VARCHAR255 );
-        $site_id->setIndex();
-        $this->setProperty( $site_id );
+        $property_id = new \OWA\Module\Base\Classes\DbColumn( 'property_id', OWA_DTD_BIGINT );
+        $property_id->setIndex();
+        $this->setProperty( $property_id );
 
         /*
          * What the author called it. In v2 this becomes the event_type of the

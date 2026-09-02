@@ -400,11 +400,23 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'Details', $profile['base.sitesProfile'] ?? null );
         $this->assertSame( 'Observation Settings', $profile['base.profileSettings'] ?? null );
         $this->assertSame( 'Tracking Tag', $profile['base.sitesInvocation'] ?? null );
-        $this->assertSame( 'Goal Events', $profile['base.goalEvents'] ?? null );
 
         $property = array_column( $nav['Property'], 'label', 'do' );
 
         $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
+        /*
+         * Goal events sit under the PROPERTY, not the Profile.
+         *
+         * A behaviour worth counting is a fact about the website: two Profiles
+         * of one Property both want the same signup counted, and defining it
+         * twice is how the two drift. GA puts key events on the property for
+         * the same reason. Counting still happens per Profile, because a
+         * conversion is a flag on a session.
+         */
+        $this->assertSame( 'Goal Events', $property['base.goalEvents'] ?? null );
+        $this->assertArrayNotHasKey( 'base.goalEvents', $profile,
+            'Goal events are listed under the Observation Profile as well, so the same '
+            . 'list appears twice and it is unclear which tier owns it.' );
         $this->assertSame(
             'Property Access Management', $property['base.propertyAccess'] ?? null,
             'Access is granted to a website, so it belongs under the Property.' );

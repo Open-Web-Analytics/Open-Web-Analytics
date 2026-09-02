@@ -893,10 +893,50 @@ OWA.initSiteControl = function() {
             $summary.attr('aria-expanded', 'false');
         }
 
+        /*
+         * Bring each column's selection into view.
+         *
+         * The columns scroll at 320px, and an install with many Properties or
+         * many Profiles opens the panel showing the TOP of each list -- so the
+         * one row that says where you are is below the fold, and the control
+         * that exists to answer "where am I" does not.
+         *
+         * Scrolled rather than pinned: the selected row keeps its place in the
+         * list, so its neighbours still say what is either side of it. Done on
+         * open rather than once at load because the column has no height while
+         * the panel is hidden, and scrollTop on a zero-height element is a
+         * no-op.
+         */
+        function revealSelections() {
+
+            $panel.find('.owa_siteControlColumn').each(function() {
+
+                var column = this;
+                var selected = column.querySelector('.owa_siteControlItem.is-selected');
+
+                if ( ! selected ) {
+                    return;
+                }
+
+                // Only when it is actually out of view: a short list is already
+                // showing its selection, and scrolling it would move a list
+                // that had no need to move.
+                var top = selected.offsetTop - column.offsetTop;
+                var bottom = top + selected.offsetHeight;
+
+                if ( top < column.scrollTop ) {
+                    column.scrollTop = top;
+                } else if ( bottom > column.scrollTop + column.clientHeight ) {
+                    column.scrollTop = bottom - column.clientHeight;
+                }
+            });
+        }
+
         function open() {
             $panel.removeAttr('hidden');
             $control.addClass('is-open');
             $summary.attr('aria-expanded', 'true');
+            revealSelections();
         }
 
         $summary.on('click', function() {

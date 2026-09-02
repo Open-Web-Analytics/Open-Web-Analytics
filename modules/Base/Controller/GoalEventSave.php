@@ -140,7 +140,8 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $this->getParam( 'value' ) );
 
-        $goalEvent->set( 'site_id', $siteId );
+        $goalEvent->set( 'property_id',
+            \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId ) );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
         $goalEvent->set( 'condition_property', $this->getParam( 'conditionProperty' ) );
         $goalEvent->set( 'condition_operator', $this->getParam( 'conditionOperator' ) );
@@ -256,7 +257,8 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
             $funnel->set( 'id', $funnel->generateId(
                 'funnel:' . $this->getParam( 'siteId' ) . ':' . $goalEventId ) );
-            $funnel->set( 'site_id', $this->getParam( 'siteId' ) );
+            $funnel->set( 'property_id',
+                \OWA\Module\Base\Classes\GoalManager::propertyFor( $this->getParam( 'siteId' ) ) );
             $funnel->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
             $funnel->set( 'goal_event_id', $goalEventId );
             $funnel->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
