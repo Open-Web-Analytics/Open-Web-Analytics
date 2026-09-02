@@ -249,10 +249,187 @@ class CoreAPI {
         return $e;
     }
 
-    public static function getSetting($module, $name) {
+    /**
+     * A setting's value, optionally resolved from a scope upwards.
+     *
+     * With no scope it means exactly what it has always meant: the install-wide
+     * value, or the code default. Every existing call site keeps that.
+     *
+     * With a scope it walks
+     *
+     *     profile -> property -> organization -> install -> code default
+     *
+     * and stops at the first level holding a ROW. A row is the answer even when
+     * its value is false; only a MISSING row means "ask my parent". That
+     * distinction is the whole reason the scoped values are rows rather than
+     * another serialized blob -- a blob says "not set" by omitting a key, so it
+     * cannot tell "inherit" from "override to off".
+     *
+     * $inherit = false reads one level and stops. The Property and Profile
+     * settings screens need it to show whether a value is set HERE or coming
+     * from above, and to offer clearing it back to inherited; without it every
+     * field shows a value and none of them can be unset.
+     *
+     * The tail delegates to the install path rather than reimplementing it, so
+     * install semantics -- including its deliberate default-equivalence pruning
+     * -- cannot drift between the two.
+     *
+     * @param string $module
+     * @param string $name
+     * @param string $scopeType organization, property or profile
+     * @param string $scopeId
+     * @param bool   $inherit   walk upwards, or read this level only
+     * @return mixed
+     */
+    public static function getSetting($module, $name, $scopeType = '', $scopeId = '', $inherit = true) {
+
+        if ( ! $scopeType || ! $scopeId ) {
+
+            $s = \OWA\Core\CoreAPI::configSingleton();
+            return $s->get($module, $name);
+        }
+
+        foreach ( \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId ) as $scope ) {
+
+            $row = \OWA\Core\CoreAPI::getScopedSettingRow(
+                $scope['type'], $scope['id'], $module, $name );
+
+            if ( $row !== null ) {
+
+                return $row;
+            }
+
+            if ( ! $inherit ) {
+
+                /*
+                 * One level, and it had nothing. Returning null rather than
+                 * falling through is the point: the caller is asking whether
+                 * this scope owns a value, not what the effective value is.
+                 */
+                return null;
+            }
+        }
+
+        if ( ! $inherit ) {
+
+            return null;
+        }
 
         $s = \OWA\Core\CoreAPI::configSingleton();
         return $s->get($module, $name);
+    }
+
+    /**
+     * The scopes to consult, most specific first.
+     *
+     * A missing ancestor is SKIPPED, not an error. An unparented Profile is a
+     * real thing -- one created before the hierarchy migration, or by a path
+     * that assigns no Property -- so the walk has to tolerate gaps rather than
+     * assume every Profile has a Property and every Property an Organization.
+     *
+     * @return array of array{type: string, id: string}
+     */
+    public static function settingScopeChain( $scopeType, $scopeId ) {
+
+        $chain = array( array( 'type' => $scopeType, 'id' => $scopeId ) );
+
+        if ( $scopeType === 'profile' ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $site->getByColumn( 'site_id', $scopeId );
+
+            $scopeId   = $site->get( 'property_id' );
+            $scopeType = 'property';
+
+            if ( ! $scopeId ) {
+
+                return $chain;
+            }
+
+            $chain[] = array( 'type' => 'property', 'id' => $scopeId );
+        }
+
+        if ( $scopeType === 'property' ) {
+
+            $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+            $property->load( $scopeId );
+
+            $organizationId = $property->get( 'organization_id' );
+
+            if ( $organizationId ) {
+
+                $chain[] = array( 'type' => 'organization', 'id' => $organizationId );
+            }
+        }
+
+        return $chain;
+    }
+
+    /**
+     * One scope's stored value, or null when it holds none.
+     *
+     * null means NO ROW. A stored false comes back as false, which is the
+     * distinction the blob could not make.
+     */
+    public static function getScopedSettingRow( $scopeType, $scopeId, $module, $name ) {
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $setting->load( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
+
+        if ( ! $setting->wasPersisted() ) {
+
+            return null;
+        }
+
+        return unserialize( $setting->get( 'value' ) );
+    }
+
+    /**
+     * Store one setting at one scope.
+     *
+     * Deliberately does NOT apply the default-equivalence pruning that
+     * persistSetting() applies install-wide. That rule keeps an install
+     * tracking code defaults, and it is right there. At a scoped level it is
+     * wrong and silently so: a Profile set to false, where false is also the
+     * code default, would have its row dropped and would then INHERIT whatever
+     * its Property says -- so the override would appear to save and not take.
+     */
+    public static function setScopedSetting( $scopeType, $scopeId, $module, $name, $value ) {
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $id      = $setting->makeId( $scopeType, $scopeId, $module, $name );
+
+        $setting->load( $id );
+
+        $setting->set( 'scope_type', $scopeType );
+        $setting->set( 'scope_id', $scopeId );
+        $setting->set( 'module', $module );
+        $setting->set( 'name', $name );
+        $setting->set( 'value', serialize( $value ) );
+
+        if ( $setting->wasPersisted() ) {
+
+            return $setting->update();
+        }
+
+        $setting->set( 'id', $id );
+        $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        return $setting->create();
+    }
+
+    /**
+     * Clear a scope's own value, so it inherits again.
+     *
+     * The counterpart to setScopedSetting: without a way to REMOVE a row there
+     * is no way back to inheriting once a value has been set here, and the
+     * screens could only ever add overrides.
+     */
+    public static function clearScopedSetting( $scopeType, $scopeId, $module, $name ) {
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        return $setting->delete( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
     }
 
     /**

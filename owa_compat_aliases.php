@@ -184,6 +184,7 @@ function owa_compat_class_map(): array
          */
         'owa_organization' => 'OWA\\Module\\Base\\Entity\\Organization',
         'owa_property' => 'OWA\\Module\\Base\\Entity\\Property',
+        'owa_setting' => 'OWA\\Module\\Base\\Entity\\Setting',
         'owa_site_user' => 'OWA\\Module\\Base\\Entity\\SiteUser',
         'owa_source_dim' => 'OWA\\Module\\Base\\Entity\\SourceDim',
         'owa_ua' => 'OWA\\Module\\Base\\Entity\\Ua',
