@@ -40,6 +40,26 @@ async function gotoAction(page, doName, extra = '') {
     await page.goto(`?owa_do=${doName}${extra}`, { waitUntil: 'networkidle' });
 }
 
+/**
+ * Click something destructive and confirm it.
+ *
+ * Anything carrying data-owa-confirm opens a modal instead of acting, so a
+ * plain click-and-wait-for-navigation hangs: the navigation only happens after
+ * Proceed. Used for both shapes -- a link (users) and a submit button (Profile,
+ * Property).
+ */
+async function confirmAndWait(page, locator) {
+    await locator.click();
+
+    const dialog = page.locator('#owa_confirmDialog');
+    await expect(dialog).toBeVisible();
+
+    await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        page.locator('.owa_confirmProceed').click(),
+    ]);
+}
+
 test.describe('admin: authentication (login / logout)', () => {
 
     test('the admin fixture user can authenticate and reach the admin UI', async ({ page }) => {
@@ -235,14 +255,30 @@ test.describe('admin: site CRUD', () => {
         const deleteButton = page.locator('input[value="Delete Profile"]');
         await expect(deleteButton).toBeVisible();
 
-        // The form confirms first, and Playwright DISMISSES dialogs by default --
-        // which cancels the submit and would leave this passing while deleting
-        // nothing.
-        page.once('dialog', (dialog) => dialog.accept());
+        // A real modal now, not window.confirm(). The old alert could not say
+        // what was kept as opposed to destroyed -- and Playwright DISMISSES
+        // native dialogs by default, so a test driving the delete passed while
+        // deleting nothing.
+        await deleteButton.click();
+
+        const confirmDialog = page.locator('#owa_confirmDialog');
+        await expect(confirmDialog).toBeVisible();
+
+        // It has to say what actually happens: this is archived, not destroyed.
+        await expect(confirmDialog).toContainText('restore');
+
+        // Cancel is the default answer to a destructive question, so it must
+        // really cancel.
+        await page.locator('.owa_confirmCancel').click();
+        await expect(confirmDialog).toBeHidden();
+        await expect(page.locator('input[value="Delete Profile"]')).toBeVisible();
+
+        await deleteButton.click();
+        await expect(page.locator('#owa_confirmDialog')).toBeVisible();
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            deleteButton.click(),
+            page.locator('.owa_confirmProceed').click(),
         ]);
 
         // Gone from the fan-out.
@@ -251,19 +287,26 @@ test.describe('admin: site CRUD', () => {
             page.locator('.owa_siteControlProfiles li.owa_siteControlItem', { hasText: newName })
         ).toHaveCount(0);
 
-        // And its Property goes with it FROM THE FAN-OUT -- though not from the
-        // database.
+        // Its Property SURVIVES, empty and still reachable.
         //
-        // The hierarchy is built from the Profiles a user may see, so a Property
-        // with none has nothing to hang off and stops being rendered. The row
-        // itself survives: nothing deletes a Property, and there is no Property
-        // delete screen, so it is left orphaned -- present, unreachable, and
-        // invisible.
+        // The cascade runs downward only: deleting a Property takes its Profiles,
+        // but deleting a Profile never takes its Property. An empty Property is a
+        // legitimate state -- it is how you start a website's Profiles over --
+        // and that only works if you can still get to it.
         //
-        // Asserted as it behaves today rather than as it should. If a Property
-        // ever starts being cleaned up with its last Profile, or empty ones
-        // start showing in the control, this says so instead of quietly passing.
-        await expect(propertyRow).toHaveCount(0);
+        // It used to be filtered out of the fan-out for having no Profiles, which
+        // made it unreachable: present in the database, invisible everywhere, with
+        // no screen that could bring it back.
+        await expect(propertyRow, 'the empty Property must stay reachable')
+            .toHaveCount(1);
+
+        // And it really is empty -- the Profile went, the Property did not.
+        const emptyIndex = await propertyRow.getAttribute('data-property-index');
+        await expect(
+            page.locator(
+                `.owa_siteControlProfiles ul[data-property-index="${emptyIndex}"] li.owa_siteControlItem`
+            )
+        ).toHaveCount(0);
     });
 });
 
@@ -371,7 +414,9 @@ test.describe('admin: user CRUD + site association', () => {
             .locator(`table.management tbody tr:has-text("${FIXTURE.newUserId}") a[href*="base.usersDelete"]`)
             .first();
         await expect(deleteLink).toBeVisible();
-        await clickAndWait(page, deleteLink);
+        // Deleting a user is confirmed too -- and unlike a Profile it is not
+        // archived, so the modal is the only thing standing in front of it.
+        await confirmAndWait(page, deleteLink);
 
         await gotoAction(page, 'base.users');
         expect(await page.locator(`text=${FIXTURE.newUserId}`).count()).toBe(0);

@@ -87,15 +87,21 @@ two tags.</div>
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle">Delete this Observation Profile</div>
     <div class="owa_dangerZoneBody">
-        This removes the Profile and stops it being reported on. The Property it
-        observes is not affected, and neither is any other Profile of that
-        Property. This cannot be undone.
+        This Profile stops observing and disappears from reporting. The Property
+        it observes is not affected, and neither is any other Profile of that
+        Property &mdash; if this is the last one, the Property is left empty and
+        you can add new Profiles to it.
     </div>
-    <form method="post" onsubmit="return confirm('Delete this Observation Profile? This cannot be undone.');">
+    <form method="post">
         <?php echo $view->createNonceFormField('base.sitesDelete');?>
         <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
         <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesDelete">
-        <input class="owa-button owa-button-danger" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile">
+        <input class="owa-button owa-button-danger" type="submit"
+               name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile"
+               data-owa-confirm
+               data-owa-confirm-title="Delete this Observation Profile?"
+               data-owa-confirm-body="&ldquo;<?php $view->out( $view->site['name'] ?? '' );?>&rdquo; will stop recording immediately and will no longer appear in reporting. Everything it has already collected is kept, and an administrator can restore it."
+               data-owa-confirm-proceed="Delete Profile">
     </form>
 </div>
 <?php endif;?>

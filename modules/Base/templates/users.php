@@ -26,7 +26,11 @@
                 <TD><?php $view->out( $value['role'] );?></TD>
                 <TD><a href="<?php echo $view->makeLink(array('do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']));?>">Edit</a>
                 <?php if ($value['id'] != 1):?>
-                | <a href="<?php echo $view->makeLink( array( 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ), false, false, false, true );?>">Delete</a></TD>
+                | <a href="<?php echo $view->makeLink( array( 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ), false, false, false, true );?>"
+                     data-owa-confirm
+                     data-owa-confirm-title="Delete this user?"
+                     data-owa-confirm-body="&ldquo;<?php $view->out( $value['user_id'] );?>&rdquo; loses access immediately. This cannot be undone."
+                     data-owa-confirm-proceed="Delete user">Delete</a></TD>
                 <?php endif;?>
             </TR>
             <?php endforeach;?>

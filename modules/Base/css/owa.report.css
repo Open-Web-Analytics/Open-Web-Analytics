@@ -3470,3 +3470,96 @@ li.constraintRow {
     -moz-box-shadow: none;
     -webkit-box-shadow: none;
 }
+
+
+/* The confirmation an irreversible action gets.
+ *
+ * jQuery UI supplies the overlay and the frame; this is the part that has to
+ * read like the rest of the admin rather than like a jQuery UI demo. Quiet
+ * frame, ordinary body copy, and the only strong colour on the proceed button
+ * -- which sits second, because the default answer to a destructive question
+ * should be no. */
+.owa_confirmDialogFrame.ui-dialog {
+    /*
+     * Above its own modal overlay.
+     *
+     * jQuery UI gives BOTH the dialog and the overlay .ui-front, which is
+     * z-index:100 -- so which one wins comes down to DOM order, and the overlay
+     * was landing on top. The buttons rendered, looked clickable, and swallowed
+     * every click. 101 puts the dialog one step up; the overlay keeps 100 and
+     * still covers the page behind it.
+     */
+    z-index: 101;
+    border: 1px solid #d5d5d5;
+    border-radius: 5px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
+    background: #ffffff;
+    padding: 0;
+}
+
+.owa_confirmDialogFrame .ui-dialog-titlebar {
+    background: none;
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    border-radius: 5px 5px 0 0;
+    padding: 16px 20px;
+}
+
+.owa_confirmDialogFrame .ui-dialog-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333333;
+    float: none;
+}
+
+.owa_confirmDialogFrame .ui-dialog-titlebar-close {
+    display: none;
+}
+
+.owa_confirmDialogFrame .ui-dialog-content {
+    padding: 18px 20px 4px 20px;
+}
+
+.owa_confirmDialog .owa_confirmBody {
+    margin: 0;
+    color: #555555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.owa_confirmDialogFrame .ui-dialog-buttonpane {
+    border: 0;
+    background: none;
+    margin: 0;
+    padding: 6px 20px 18px 20px;
+}
+
+.owa_confirmDialogFrame .ui-dialog-buttonset {
+    float: right;
+}
+
+/* Overriding .owa-button's 25px top margin and 18px type: these sit in a
+   button pane, not at the foot of a form. */
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button {
+    margin: 0 0 0 8px;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 16px;
+}
+
+/* The cancel button. Deliberately the plainest thing on the dialog -- it is
+   the safe answer, so it needs to be easy to hit, not easy to notice. */
+.owa-button.owa-button-quiet,
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet {
+    background-color: #ffffff;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
+.owa-button.owa-button-quiet:hover,
+.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet:hover {
+    background-color: #f4f4f4;
+    color: #333333;
+    border-color: #b5b5b5;
+    box-shadow: none;
+}
