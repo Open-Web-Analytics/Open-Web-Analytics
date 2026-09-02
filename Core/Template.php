@@ -827,7 +827,12 @@ class Template extends TemplateEngine {
         endif;
 
         // add state params into request params
-        if ($add_state === true):
+        //
+        // The key is checked, not just $add_state. A caller asking for state on
+        // a template that was never given any read an undefined key -- and
+        // array_merge()'s second argument being null is a TypeError on PHP 8,
+        // so this was a fatal waiting for the first such caller, not a notice.
+        if ($add_state === true && ! empty($this->caller_params['link_state'])):
             $final_params = array_merge($final_params, $this->caller_params['link_state']);
         endif;
 
@@ -1019,7 +1024,14 @@ class Template extends TemplateEngine {
             $t->set('links', $links);
             $t->set('currentSiteId', $currentSiteId);
 			$t->set('params', $params);
-            $t->caller_params['link_state'] = $this->caller_params['link_state'];
+            // Only when there is some: the nav is built on screens that carry no
+            // link state, and propagating an absent key is an undefined-key
+            // warning -- which CI treats as a failure.
+            if ( isset( $this->caller_params['link_state'] ) ) {
+
+                $t->caller_params['link_state'] = $this->caller_params['link_state'];
+            }
+
             $t->set_template('report_nav.php');
             return $t->fetch();
         } else {
