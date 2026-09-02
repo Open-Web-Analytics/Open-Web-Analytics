@@ -157,32 +157,48 @@ test.describe('admin: site CRUD', () => {
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
-        // sitesAdd redirects to base.reportingHome now. The roster of Profiles
-        // is the site control's fan-out -- base.sites is gone -- so that is
-        // where the new Profile has to show up.
+        // sitesAdd redirects to base.reportingHome now. The roster is the site
+        // control's fan-out -- base.sites is gone -- so that is where what was
+        // just created has to show up.
         //
         // Matched without asserting visibility on purpose: the fan-out only
         // un-hides the profile list of the CURRENT Property, and a site added
         // on a new domain gets a Property of its own.
         await page.goto('?', { waitUntil: 'networkidle' });
 
-        const createdRow = page.locator('li.owa_siteControlItem', {
-            hasText: FIXTURE.newSiteName,
-        });
-        await expect(createdRow).toHaveCount(1);
+        // The typed name and domain land on the PROPERTY. The Profile is named
+        // for its position under it ('Observation Profile 1'), because the human
+        // name describes the website and a Profile is only one way of watching
+        // it. That split is the point of the hierarchy, so each half is asserted
+        // where it belongs rather than anywhere on the page -- an unscoped match
+        // finds the Property and reads as though it had found the Profile.
+        const propertyRow = page.locator(
+            '.owa_siteControlProperties li.owa_siteControlItem',
+            { hasText: FIXTURE.newSiteName },
+        );
+        await expect(propertyRow).toHaveCount(1);
 
-        // The domain landed on the PROPERTY, not the Profile -- that split is
-        // the whole point of the hierarchy, so assert it where it belongs.
-        await expect(
-            page.locator('.owa_siteControlDomain', { hasText: FIXTURE.newSiteDomain })
-        ).toHaveCount(1);
+        // Normalised, so the fixture's scheme is not part of what is stored:
+        // normaliseDomain() strips it precisely so http://x and https://x are
+        // one website rather than two Properties.
+        const newSiteHost = FIXTURE.newSiteDomain.replace(/^[a-z]+:\/\//, '');
+        await expect(propertyRow.locator('.owa_siteControlDomain'))
+            .toContainText(newSiteHost);
+
+        // Its Profiles hang off the list keyed on the same index.
+        const propertyIndex = await propertyRow.getAttribute('data-property-index');
+        const profileRow = page.locator(
+            `.owa_siteControlProfiles ul[data-property-index="${propertyIndex}"] li.owa_siteControlItem`,
+        );
+        await expect(profileRow, 'the new Property should have exactly one Profile')
+            .toHaveCount(1);
 
         // --- EDIT --------------------------------------------------------------
         // Read the identifier off the control rather than deriving it. site_id
         // used to be md5(domain-as-typed), so the spec could compute what the
         // admin UI would store; identifiers are minted now, so the only thing
         // that knows this site's id is the page that just rendered it.
-        const editHref = await createdRow
+        const editHref = await profileRow
             .locator('a[href*="base.sitesProfile"]')
             .first()
             .getAttribute('href');
@@ -192,7 +208,7 @@ test.describe('admin: site CRUD', () => {
         const createdSiteId = editParams.get('owa_siteId') || editParams.get('siteId');
         expect(createdSiteId, 'the site control must expose the new site id').toBeTruthy();
 
-        const newName = 'OWA E2E Renamed Site';
+        const newName = 'OWA E2E Renamed Profile';
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
         // On the edit form the domain is fixed (hidden) and only name/description
         // are editable; base.sitesEdit persists name.
@@ -204,8 +220,10 @@ test.describe('admin: site CRUD', () => {
 
         await page.goto('?', { waitUntil: 'networkidle' });
         await expect(
-            page.locator('li.owa_siteControlItem', { hasText: newName })
+            page.locator('.owa_siteControlProfiles li.owa_siteControlItem', { hasText: newName }),
+            'renaming a Profile must not rename its Property',
         ).toHaveCount(1);
+        await expect(propertyRow, 'the Property keeps its own name').toHaveCount(1);
 
         // --- DELETE ------------------------------------------------------------
         // Deleting a Profile lives on Profile Details now. It was on the
@@ -218,7 +236,7 @@ test.describe('admin: site CRUD', () => {
         await expect(deleteButton).toBeVisible();
 
         // The form confirms first, and Playwright DISMISSES dialogs by default --
-        // which cancels the submit and would make this pass while deleting
+        // which cancels the submit and would leave this passing while deleting
         // nothing.
         page.once('dialog', (dialog) => dialog.accept());
 
@@ -230,16 +248,22 @@ test.describe('admin: site CRUD', () => {
         // Gone from the fan-out.
         await page.goto('?', { waitUntil: 'networkidle' });
         await expect(
-            page.locator('li.owa_siteControlItem', { hasText: newName })
+            page.locator('.owa_siteControlProfiles li.owa_siteControlItem', { hasText: newName })
         ).toHaveCount(0);
 
-        // Its Property is NOT removed with it. Deliberate: a Property can have
-        // several Profiles and outlives any one of them. There is no Property
-        // delete yet, so this one is left behind -- asserted so the day that
-        // changes, this says so rather than silently starting to pass.
-        await expect(
-            page.locator('.owa_siteControlDomain', { hasText: FIXTURE.newSiteDomain })
-        ).toHaveCount(1);
+        // And its Property goes with it FROM THE FAN-OUT -- though not from the
+        // database.
+        //
+        // The hierarchy is built from the Profiles a user may see, so a Property
+        // with none has nothing to hang off and stops being rendered. The row
+        // itself survives: nothing deletes a Property, and there is no Property
+        // delete screen, so it is left orphaned -- present, unreachable, and
+        // invisible.
+        //
+        // Asserted as it behaves today rather than as it should. If a Property
+        // ever starts being cleaned up with its last Profile, or empty ones
+        // start showing in the control, this says so instead of quietly passing.
+        await expect(propertyRow).toHaveCount(0);
     });
 });
 
@@ -309,7 +333,7 @@ test.describe('admin: user CRUD + site association', () => {
         // owa_site_user relation), and every grant that existed beforehand
         // survives -- the property that a user the form did not target is never
         // affected, which the replace-everything version could not offer.
-        await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
+        await gotoAction(page, 'base.propertyAccess', `&owa_siteId=${FIXTURE.siteId}`);
         await expect(userRow().locator('input[name="allowed_users[]"]')).toBeChecked();
 
         const grantsAfter = await page.evaluate(() =>
@@ -336,7 +360,7 @@ test.describe('admin: user CRUD + site association', () => {
         // Now that they are an admin, the site form stops offering a choice it
         // would not honour: the row renders a disabled, ticked box and says so,
         // with no submittable field to send.
-        await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${FIXTURE.siteId}&owa_edit=1`);
+        await gotoAction(page, 'base.propertyAccess', `&owa_siteId=${FIXTURE.siteId}`);
         await expect(userRow()).toContainText('always has access');
         await expect(userRow().locator('input[type="checkbox"]')).toBeDisabled();
         expect(await userRow().locator('input[name="allowed_users[]"]').count()).toBe(0);
