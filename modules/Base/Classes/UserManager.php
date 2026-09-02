@@ -92,9 +92,35 @@ class UserManager extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Delete a user, and the site access that only meant anything for them.
+     *
+     * The grants in owa_site_user were left behind, keyed on a user row that
+     * no longer existed. Nothing reads them -- every screen lists users and
+     * looks their grants up, never the reverse -- so they accumulated
+     * invisibly, and Property Access Management could not clear them either:
+     * it submits a delta of the users it RENDERED, and a deleted user is never
+     * rendered, so its row survived every save forever.
+     *
+     * They are also not quite inert. User ids are auto-increment rather than
+     * derived from the username, so re-creating a deleted username does NOT
+     * inherit its access -- but a restore from backup can reset the counter to
+     * MAX(id)+1, and then a new user can be minted onto a deleted user's id and
+     * pick up whatever it was granted.
+     *
+     * Grants first: if that succeeds and the user delete then fails, the user
+     * keeps their account and loses their site access, which is recoverable by
+     * re-granting. The other order can leave access attached to nothing.
+     */
     public function deleteUser($user_id) {
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
+        $u->load( $user_id, 'user_id' );
+
+        if ( $u->wasPersisted() ) {
+
+            $this->deleteSiteAccessFor( $u->get('id') );
+        }
 
         $ret = $u->delete($user_id, 'user_id');
 
@@ -103,6 +129,30 @@ class UserManager extends \OWA\Core\Base {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Remove every site grant held by one user row.
+     *
+     * @param  int|string $id  the user's own row id, not their user_id
+     */
+    private function deleteSiteAccessFor( $id ) {
+
+        if ( ! $id ) {
+
+            return;
+        }
+
+        $siteUser = \OWA\Core\CoreAPI::entityFactory('base.site_user');
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->deleteFrom( $siteUser->getTableName() );
+        $db->where( 'user_id', $id );
+        $db->executeQuery();
+
+        // The assigned-users cache is keyed by SITE, and this revoked across
+        // all of them at once, so there is no single key to evict.
+        \OWA\Module\Base\Entity\Site::forgetAssignedUsers();
     }
 }
 
