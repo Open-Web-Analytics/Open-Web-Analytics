@@ -109,6 +109,97 @@ final class KeyEventStorageTest extends TestCase
                 array( 'scope_id' => 'OWA-probe', 'value' => 'not-serialized-at-all' ) ) );
     }
 
+    /* ---------------- funnels ---------------- */
+
+    /**
+     * A funnel is ORDERED conditions, and dropping it would have been silent.
+     *
+     * 1.x kept it as details.funnel_steps -- inside the goal, inside the goals
+     * array, inside a settings blob. This install has no funnel goals, so a
+     * migration that dropped them would have passed every test and lost data on
+     * somebody else's install.
+     */
+    public function testFunnelStepsAreMigratedNotDropped(): void
+    {
+        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
+            'scope_id' => 'OWA-probe',
+            'value'    => serialize( array( 1 => array(
+                'goal_name'   => 'Checkout',
+                'goal_number' => '1',
+                'goal_status' => 'active',
+                'goal_type'   => 'url_destination',
+                'details'     => array(
+                    'match_type'   => 'exact',
+                    'goal_url'     => '/done',
+                    'funnel_steps' => array(
+                        1 => array( 'name' => 'Cart',    'path' => '/cart' ),
+                        2 => array( 'name' => 'Payment', 'path' => '/pay' ),
+                    ),
+                ),
+            ) ) ),
+        ) );
+
+        $this->assertCount( 2, $planned[0]['steps'],
+            'The funnel was dropped, so a funnel goal silently becomes a plain one.' );
+
+        $this->assertSame( 1, $planned[0]['steps'][0]['step_number'] );
+        $this->assertSame( 'Cart', $planned[0]['steps'][0]['name'] );
+
+        /*
+         * 1.x applies a step path as preg_match( '@<path>@i', $page_uri ), so
+         * the operator is regex. Recording it as 'exact' would change what
+         * every migrated funnel matches.
+         */
+        $this->assertSame( 'regex', $planned[0]['steps'][0]['condition_operator'] );
+        $this->assertSame( '/cart', $planned[0]['steps'][0]['condition_value'] );
+        $this->assertSame( 'page_uri', $planned[0]['steps'][0]['condition_property'] );
+    }
+
+    /** A step someone added and left blank is not migrated as a blank step. */
+    public function testEmptyFunnelStepsAreDropped(): void
+    {
+        $steps = \OWA\Module\Base\Update\Update025::planSteps( array(
+            'funnel_steps' => array(
+                1 => array( 'name' => 'Cart', 'path' => '/cart' ),
+                2 => array( 'name' => '',     'path' => '' ),
+            ),
+        ) );
+
+        $this->assertCount( 1, $steps );
+    }
+
+    /**
+     * A key event with no funnel must not report an EMPTY one.
+     *
+     * checkGoalStart() tests array_key_exists( 'funnel_steps', ... ) and then
+     * indexes [1] unconditionally -- so an empty array is a fatal on every
+     * event, not "this goal has no funnel".
+     */
+    public function testAKeyEventWithNoFunnelOmitsTheKeyEntirely(): void
+    {
+        $siteId = 'OWA-keyevent-probe-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $id = \OWA\Module\Base\Classes\GoalManager::keyEventIdFor( $siteId, 1 );
+
+        $this->created[] = $id;
+
+        $keyEvent = \OWA\Core\CoreAPI::entityFactory( 'base.key_event' );
+        $keyEvent->set( 'id', $id );
+        $keyEvent->set( 'site_id', $siteId );
+        $keyEvent->set( 'name', 'No funnel' );
+        $keyEvent->set( 'goal_number', 1 );
+        $keyEvent->set( 'is_active', 1 );
+        $keyEvent->set( 'condition_operator', 'exact' );
+        $keyEvent->set( 'condition_value', '/x' );
+        $keyEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $keyEvent->create();
+
+        $goal = $keyEvent->toGoalArray();
+
+        $this->assertArrayNotHasKey( 'funnel_steps', $goal['details'],
+            'A goal with no funnel reports an empty funnel_steps, which the conversion '
+            . 'evaluator indexes into and fatals on.' );
+    }
+
     /* ---------------- money ---------------- */
 
     /**

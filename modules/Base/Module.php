@@ -170,6 +170,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.notifyNewSession',              'OWA\\Module\\Base\\Controller\\NotifyNewSession',             'Controller/NotifyNewSession.php' );
         $this->registerAction( 'base.optionsFlushCache',             'OWA\\Module\\Base\\Controller\\OptionsFlushCache',            'Controller/OptionsFlushCache.php' );
         $this->registerAction( 'base.optionsGeneral',                'OWA\\Module\\Base\\Controller\\OptionsGeneral',               'Controller/OptionsGeneral.php' );
+        $this->registerAction( 'base.keyEvents',                     'OWA\\Module\\Base\\Controller\\KeyEvents',                    'Controller/KeyEvents.php' );
+        $this->registerAction( 'base.keyEventEdit',                  'OWA\\Module\\Base\\Controller\\KeyEventEdit',                 'Controller/KeyEventEdit.php' );
+        $this->registerAction( 'base.keyEventSave',                  'OWA\\Module\\Base\\Controller\\KeyEventSave',                 'Controller/KeyEventSave.php' );
+        $this->registerAction( 'base.keyEventDelete',                'OWA\\Module\\Base\\Controller\\KeyEventDelete',               'Controller/KeyEventDelete.php' );
         $this->registerAction( 'base.optionsGoalEdit',               'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',              'Controller/OptionsGoalEdit.php' );
         $this->registerAction( 'base.optionsGoalEntry',              'OWA\\Module\\Base\\Controller\\OptionsGoalEntry',             'Controller/OptionsGoalEntry.php' );
         $this->registerAction( 'base.optionsGoals',                  'OWA\\Module\\Base\\Controller\\OptionsGoals',                 'Controller/OptionsGoals.php' );
@@ -2429,6 +2433,7 @@ class Module extends \OWA\Core\Module {
                 'configuration',
             'setting',
             'key_event',
+            'key_event_step',
                 'user',
                 'domstream',
                 'action_fact',

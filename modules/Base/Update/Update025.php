@@ -39,6 +39,15 @@ class Update025 extends \OWA\Core\Update {
             return false;
         }
 
+        $step = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+
+        if ( ! $step->createTable() ) {
+
+            $this->e->notice( 'Creating owa_key_event_step failed' );
+
+            return false;
+        }
+
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -70,6 +79,11 @@ class Update025 extends \OWA\Core\Update {
 
                 foreach ( $planned as $column => $value ) {
 
+                    if ( $column === 'steps' ) {
+
+                        continue;
+                    }
+
                     $keyEvent->set( $column, $value );
                 }
 
@@ -78,6 +92,34 @@ class Update025 extends \OWA\Core\Update {
                 if ( $keyEvent->create() ) {
 
                     $migrated++;
+                }
+
+                /*
+                 * The funnel, if it has one.
+                 *
+                 * A funnel is an ORDERED list of conditions and 1.x kept it
+                 * three levels deep -- details.funnel_steps, inside the goal,
+                 * inside the goals array, inside a settings blob. Dropping it
+                 * would have been silent: this install has no funnel goals, so
+                 * nothing here would have failed.
+                 */
+                foreach ( $planned['steps'] as $plannedStep ) {
+
+                    $row = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+
+                    $row->set( 'id', $row->generateId(
+                        'key_event_step:' . $planned['site_id'] . ':'
+                        . $planned['goal_number'] . ':' . $plannedStep['step_number'] ) );
+
+                    $row->set( 'key_event_id', $keyEvent->get( 'id' ) );
+
+                    foreach ( $plannedStep as $column => $value ) {
+
+                        $row->set( $column, $value );
+                    }
+
+                    $row->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+                    $row->create();
                 }
             }
         }
@@ -145,10 +187,53 @@ class Update025 extends \OWA\Core\Update {
                 'condition_property' => \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI,
                 'condition_operator' => (string) ( $details['match_type'] ?? '' ),
                 'condition_value'    => (string) ( $details['goal_url'] ?? '' ),
+                'steps'              => self::planSteps( $details ),
             );
         }
 
         return $planned;
+    }
+
+    /**
+     * A funnel's steps, in order.
+     *
+     * 1.x stored a step as { name, path } and applied the path as a REGEX
+     * against page_uri -- preg_match( '@<path>@i', $page_uri ). So the
+     * condition is exact rather than interpretive: page_uri, regex, path.
+     *
+     * @return array
+     */
+    public static function planSteps( $details ) {
+
+        if ( empty( $details['funnel_steps'] ) || ! is_array( $details['funnel_steps'] ) ) {
+
+            return array();
+        }
+
+        $steps = array();
+
+        foreach ( $details['funnel_steps'] as $number => $step ) {
+
+            if ( ! is_array( $step ) || trim( (string) ( $step['path'] ?? '' ) ) === '' ) {
+
+                /*
+                 * A step with no path is a row someone added and left alone.
+                 * The edit screen already drops those rather than treating them
+                 * as a mistake; carrying them over would migrate a blank.
+                 */
+                continue;
+            }
+
+            $steps[] = array(
+                'step_number'        => (int) $number,
+                'name'               => (string) ( $step['name'] ?? '' ),
+                'condition_property' => \OWA\Module\Base\Entity\KeyEvent::PROPERTY_PAGE_URI,
+                'condition_operator' => \OWA\Module\Base\Entity\KeyEvent::MATCH_REGEX,
+                'condition_value'    => (string) $step['path'],
+            );
+        }
+
+        return $steps;
     }
 
     /**

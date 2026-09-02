@@ -153,11 +153,59 @@ class KeyEvent extends \OWA\Core\Entity {
             'goal_status' => $this->isActive() ? 'active' : 'disabled',
             'goal_value'  => self::centsToDecimal( $this->get( 'value' ) ),
             'goal_type'   => 'url_destination',
-            'details'     => array(
-                'match_type' => $this->get( 'condition_operator' ),
-                'goal_url'   => $this->get( 'condition_value' ),
-            ),
+            'details'     => array_filter( array(
+                'match_type'   => $this->get( 'condition_operator' ),
+                'goal_url'     => $this->get( 'condition_value' ),
+                /*
+                 * Only when there are some. The evaluator tests
+                 * array_key_exists( 'funnel_steps', ... ) and then indexes
+                 * [1] unconditionally, so an empty array here would be a
+                 * fatal on every event rather than "this goal has no funnel".
+                 */
+                'funnel_steps' => $this->loadSteps(),
+            ), static function ( $value ) {
+
+                return $value !== array() && $value !== null;
+            } ),
         );
+    }
+
+    /**
+     * This key event's funnel, in the 1.x shape, keyed from 1.
+     *
+     * @return array
+     */
+    public function loadSteps() {
+
+        if ( ! $this->get( 'id' ) ) {
+
+            return array();
+        }
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $entity->getTableName() );
+        $db->selectColumn( '*' );
+        $db->where( 'key_event_id', $this->get( 'id' ) );
+        $db->orderBy( 'step_number' );
+
+        $steps = array();
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $step = \OWA\Core\CoreAPI::entityFactory( 'base.key_event_step' );
+            $step->setProperties( $row );
+
+            /*
+             * Keyed by the STORED step number, not by position. checkGoalStart()
+             * indexes funnel_steps[1] directly, so renumbering from 0 would make
+             * every funnel's first step the second one.
+             */
+            $steps[ (int) $row['step_number'] ] = $step->toStepArray();
+        }
+
+        return $steps;
     }
 
     /**
