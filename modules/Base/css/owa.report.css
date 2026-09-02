@@ -3563,3 +3563,93 @@ li.constraintRow {
     border-color: #b5b5b5;
     box-shadow: none;
 }
+
+
+/* ------------------------------------------------------------------
+ * Goal events
+ * ------------------------------------------------------------------
+ *
+ * The condition rows reuse .constraintRow wholesale -- same markup, same class
+ * names as the report builder -- so nothing here restyles them. Naming a
+ * condition is the same act in both places and it should look the same.
+ * These rules cover only what the report builder has no equivalent of.
+ */
+
+/* A Profile that counts nothing yet. Said, rather than shown as an empty grid
+   with headers and no rows -- which reads as broken rather than as new. */
+.owa_emptyState {
+    padding: 26px 0 10px 0;
+    max-width: 780px;
+}
+
+.owa_emptyState p {
+    color: #666666;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 4px 0;
+}
+
+/* The condition, summarised in the list. Reads as one phrase, so the parts are
+   spaced rather than boxed -- a full pill per part would out-weigh the name
+   beside it, which is what someone is actually scanning for. */
+.owa_goalEventCondition {
+    font-size: 12px;
+    color: #555555;
+}
+
+.owa_goalEventProperty {
+    color: #333333;
+    font-weight: bold;
+}
+
+.owa_goalEventOperator {
+    color: #999999;
+    margin: 0 3px;
+}
+
+.owa_goalEventValue {
+    font-family: Menlo, Consolas, monospace;
+    font-size: 11px;
+    background: #f4f4f4;
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+/* A goal event with no condition counts nothing. Coloured like a warning
+   because it is one: this install had a goal in exactly that state and nothing
+   anywhere said it would never fire. */
+.owa_goalEventIncomplete {
+    color: #99321f;
+    font-style: italic;
+}
+
+/* The funnel builder. .constraintRow gives the row its shape; this is only the
+   parts a funnel step has and a constraint does not -- two text fields of
+   different weight, and the word between them. */
+.owa_goalEventFunnel {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa .constraintRow .owa_funnelStepName {
+    width: 180px;
+}
+
+.owa .constraintRow .owa_funnelStepPath {
+    width: 260px;
+    font-family: Menlo, Consolas, monospace;
+    font-size: 12px;
+}
+
+/* Not a picker: a funnel step always matches on the path, so the word sits
+   where the operator dropdown does but is not one. Styled to match the picker's
+   height so the row does not jump. */
+.owa_funnelStepMatches {
+    display: inline-block;
+    color: #999999;
+    font-size: 12px;
+    padding: 0 8px;
+    line-height: 28px;
+    vertical-align: middle;
+}
