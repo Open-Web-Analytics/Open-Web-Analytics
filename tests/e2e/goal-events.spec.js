@@ -56,12 +56,6 @@ test.describe('goal events', () => {
         await expect(condition.locator('.constraintDimensionPicker')).toBeVisible();
         await expect(condition.locator('.constraintOperatorPicker')).toBeVisible();
 
-        // And the funnel really does reuse them, rather than looking like a
-        // different application two fields further down the same form.
-        await expect(
-            page.locator('.owa_goalEventFunnel li.constraintRow')
-        ).toHaveCount(1);
-
         // Conditions are a LIST: "a purchase over 50 from the pricing page" is
         // two conditions, and one triple could not express it.
         await page.locator('.owa_goalEventCondition .constraintAddButton').first().click();
@@ -72,20 +66,6 @@ test.describe('goal events', () => {
 
         // How several combine is asked once, about the set.
         await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
-
-        // The + and X are bound PER ROW inside the report builder, so reusing
-        // its markup does not reuse its behaviour -- these rendered and did
-        // nothing until they were wired.
-        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
-        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(2);
-
-        await page.locator('#owa_goalEventFunnel .constraintRemoveButton').first().click();
-        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(1);
-
-        // The last row is never removed -- it is cleared instead, or there
-        // would be no way to add a funnel back without reloading.
-        await page.locator('#owa_goalEventFunnel .constraintRemoveButton').first().click();
-        await expect(page.locator('#owa_goalEventFunnel .constraintRow')).toHaveCount(1);
 
         await page.fill('input[name="name"]', name);
         await page.selectOption('select[name="conditionProperty[]"]', 'page_uri');
@@ -178,29 +158,4 @@ test.describe('goal events', () => {
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E No Condition');
     });
 
-    /**
-     * A funnel step is a PATH.
-     *
-     * Every consumer matches on the path alone -- the funnel report builds
-     * `pagePath == <this>` and checkGoalStart matches it against page_uri -- so
-     * a full web address matches nothing: the funnel reports zero and the goal
-     * event never starts, with nothing logged. Refused rather than silently
-     * trimmed, because quietly rewriting what someone typed is how they end up
-     * not knowing what is stored.
-     */
-    test('a funnel step given a full web address is refused', async ({ page }) => {
-        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
-
-        await page.fill('input[name="name"]', 'E2E Funnel');
-        await page.fill('input[name="conditionValue[]"]', '/done');
-        await page.fill('input[name="stepName[]"]', 'Basket');
-        await page.fill('input[name="stepPath[]"]', 'https://example.test/basket');
-
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Goal Event"]').click(),
-        ]);
-
-        await expect(page.locator('input[name="name"]')).toHaveValue('E2E Funnel');
-    });
 });

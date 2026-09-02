@@ -288,6 +288,16 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="user_id"', 'name="email_address"'],
             ],
+            /* The funnel has its own screen now, so it gets its own case. */
+            'funnel_edit (add)' => [
+                'funnel_edit.php',
+                [
+                    'headline' => 'New Funnel', 'siteId' => 'abc123',
+                    'funnel' => [], 'funnelId' => '', 'steps' => [],
+                    'goalEvents' => [], 'validation_errors' => [],
+                ],
+                ['name="name"', 'name="stepPath[]"', 'name="goalEventId"'],
+            ],
             'goal_event_edit (add)' => [
                 'goal_event_edit.php',
                 [
@@ -303,7 +313,7 @@ final class TemplateLatentVarTest extends TestCase
                     'funnelSteps' => [], 'goalGroups' => [ 1 => 'Goal Group 1' ],
                     'conditions' => [], 'validation_errors' => [],
                 ],
-                ['name="name"', 'name="conditionValue[]"', 'name="stepPath[]"'],
+                ['name="name"', 'name="conditionValue[]"'],
             ],
         ];
     }

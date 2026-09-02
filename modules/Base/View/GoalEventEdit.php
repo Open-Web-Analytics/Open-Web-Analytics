@@ -16,7 +16,6 @@ class GoalEventEdit extends \OWA\Core\View {
         $this->body->set( 'goalEventId', $this->get( 'goalEventId' ) );
         $this->body->set( 'siteId', $this->get( 'siteId' ) );
         $this->body->set( 'conditionProperties', $this->get( 'conditionProperties' ) );
-        $this->body->set( 'funnelSteps', (array) $this->get( 'funnelSteps' ) );
         $this->body->set( 'goalGroups', (array) $this->get( 'goalGroups' ) );
         $this->body->set( 'conditions', (array) $this->get( 'conditions' ) );
         $this->body->set( 'validation_errors', $this->get( 'validation_errors' ) ?? array() );

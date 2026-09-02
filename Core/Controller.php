@@ -1020,6 +1020,15 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_settings' ),
+                /*
+                 * Its own entry, because a funnel is its own thing. It was a
+                 * section on the goal event form, which said a funnel belongs
+                 * to a goal event and cannot exist without one -- and a path
+                 * analysis with nothing to count is a legitimate thing to want.
+                 */
+                array( 'do' => 'base.funnels', 'label' => 'Funnels',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
             );
 
             /*

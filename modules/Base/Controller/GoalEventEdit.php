@@ -42,7 +42,6 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         }
 
         $this->set( 'goalEvent', $goalEvent->_getProperties() );
-        $this->set( 'funnelSteps', $goalEvent->get( 'id' ) ? $goalEvent->loadSteps() : array() );
 
         $conditions = array();
 

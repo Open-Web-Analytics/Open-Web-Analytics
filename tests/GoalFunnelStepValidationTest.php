@@ -27,7 +27,7 @@ final class GoalFunnelStepValidationTest extends TestCase
     {
         /*
          * Goals became goal events, so these rules moved with the screen that
-         * enforced them -- GoalEventSave rather than OptionsGoalEdit. Every rule
+         * enforced them -- FunnelSave rather than OptionsGoalEdit. Every rule
          * below was earned by a bug, so they are re-pointed rather than
          * retired.
          *
@@ -44,15 +44,19 @@ final class GoalFunnelStepValidationTest extends TestCase
             $paths[] = $step['path'] ?? '';
         }
 
-        $controller = new \OWA\Module\Base\Controller\GoalEventSave( array(
-            'name'             => 'Probe',
-            'conditionValue'   => '/thanks',
-            'conditionOperator'=> 'begins',
-            'stepName'         => $names,
-            'stepPath'         => $paths,
+        /*
+         * A funnel is its own screen now, so its rules live with it -- they
+         * moved from the goal screen to GoalEventSave and then here, with the
+         * section they govern. The rules themselves are unchanged, which is
+         * what these tests check.
+         */
+        $controller = new \OWA\Module\Base\Controller\FunnelSave( array(
+            'name'     => 'Probe',
+            'stepName' => $names,
+            'stepPath' => $paths,
         ) );
 
-        $controller->validateFunnelSteps();
+        $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
         $v->setAccessible( true );
@@ -148,8 +152,26 @@ final class GoalFunnelStepValidationTest extends TestCase
         ) ), 'an untouched step row is removed before validation, not reported' );
     }
 
-    public function testAGoalWithNoStepsAtAllIsFine(): void
+    /**
+     * A FUNNEL with no steps is refused, where a GOAL with none was fine.
+     *
+     * The premise moved with the screen. Most goals never had a funnel, so
+     * having no steps had to be the normal case. A funnel is created
+     * deliberately and is nothing but its steps -- one with none describes no
+     * path and would sit in the list with nothing to show.
+     */
+    public function testAFunnelWithNoStepsAtAllIsRefused(): void
     {
-        $this->assertFalse( $this->refuses( array() ) );
+        $this->assertTrue( $this->refuses( array() ),
+            'A funnel with no steps can be saved, and then describes nothing.' );
+    }
+
+    /** And a funnel of wholly blank rows is the same thing. */
+    public function testAFunnelOfBlankRowsIsRefused(): void
+    {
+        $this->assertTrue( $this->refuses( array(
+            1 => $this->step( '', '' ),
+            2 => $this->step( '', '' ),
+        ) ) );
     }
 }

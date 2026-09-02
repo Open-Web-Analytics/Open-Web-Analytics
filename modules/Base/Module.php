@@ -170,6 +170,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.notifyNewSession',              'OWA\\Module\\Base\\Controller\\NotifyNewSession',             'Controller/NotifyNewSession.php' );
         $this->registerAction( 'base.optionsFlushCache',             'OWA\\Module\\Base\\Controller\\OptionsFlushCache',            'Controller/OptionsFlushCache.php' );
         $this->registerAction( 'base.optionsGeneral',                'OWA\\Module\\Base\\Controller\\OptionsGeneral',               'Controller/OptionsGeneral.php' );
+        $this->registerAction( 'base.funnels',                       'OWA\\Module\\Base\\Controller\\Funnels',                     'Controller/Funnels.php' );
+        $this->registerAction( 'base.funnelEdit',                    'OWA\\Module\\Base\\Controller\\FunnelEdit',                  'Controller/FunnelEdit.php' );
+        $this->registerAction( 'base.funnelSave',                    'OWA\\Module\\Base\\Controller\\FunnelSave',                  'Controller/FunnelSave.php' );
+        $this->registerAction( 'base.funnelDelete',                  'OWA\\Module\\Base\\Controller\\FunnelDelete',                'Controller/FunnelDelete.php' );
         $this->registerAction( 'base.goalEvents',                     'OWA\\Module\\Base\\Controller\\GoalEvents',                    'Controller/GoalEvents.php' );
         $this->registerAction( 'base.goalEventEdit',                  'OWA\\Module\\Base\\Controller\\GoalEventEdit',                 'Controller/GoalEventEdit.php' );
         $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );

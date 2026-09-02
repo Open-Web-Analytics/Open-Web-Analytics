@@ -128,44 +128,6 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
-        <div class="title">Funnel <span class="owa_optional">optional</span></div>
-        <div class="description">The steps leading to this goal event, in order. A funnel
-        lets a report show where people leave. Each step is matched as a regular expression
-        against the page URL. Leave it empty if there is no path to describe.</div>
-        <div class="field">
-            <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel" data-owa-repeatable>
-            <?php
-            /*
-             * The add and remove buttons belong HERE and not on the condition
-             * above: a funnel really is a list, and the condition really is one
-             * triple. Same markup and class names as the report builder's
-             * constraint rows, so the pill styling applies to both.
-             */
-            $owa_steps = $view->funnelSteps ?: array( 1 => array( 'name' => '', 'path' => '' ) );
-            ?>
-            <?php foreach ( $owa_steps as $owa_num => $owa_step ):?>
-                <li class="constraintRow owa_funnelStep">
-                    <input class="constraintValueField owa_funnelStepName" type="text"
-                           placeholder="Step name"
-                           name="<?php echo $view->getNs();?>stepName[]"
-                           value="<?php $view->out( $owa_step['name'] ?? '' );?>">
-                    <span class="constraintOperatorPicker owa_funnelStepMatches">matches</span>
-                    <input class="constraintValueField owa_funnelStepPath" type="text"
-                           placeholder="/path"
-                           name="<?php echo $view->getNs();?>stepPath[]"
-                           value="<?php $view->out( $owa_step['path'] ?? '' );?>">
-                    <span class="constraintAddButton" role="button" tabindex="0"
-                          title="Add another step" aria-label="Add another step">+</span>
-                    <span class="constraintRemoveButton" role="button" tabindex="0"
-                          title="Remove this step" aria-label="Remove this step">X</span>
-                </li>
-            <?php endforeach;?>
-            </ul>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['funnel'] ?? '' );?></span>
-        </div>
-    </div>
-
-    <div class="setting">
         <div class="title">Value <span class="owa_optional">optional</span></div>
         <div class="description">What one of these is worth. Left blank it counts without
         a value.</div>

@@ -85,7 +85,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             }
         }
 
-        $this->validateFunnelSteps();
     }
 
     /** Apply a group rename, if one was typed. */
@@ -102,71 +101,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $gm->saveGoalGroupLabel( (int) $this->getParam( 'goalGroup' ), $newGroupName );
         unset( $gm );
     }
-
-    /**
-     * The funnel's steps.
-     *
-     * Carried over from the goal screen this replaces rather than rewritten:
-     * every rule below was earned by a bug, and retiring the screen without
-     * them would have dropped the lot silently.
-     */
-    public function validateFunnelSteps() {
-
-        $names = (array) $this->getParam( 'stepName' );
-        $paths = (array) $this->getParam( 'stepPath' );
-
-        foreach ( $paths as $i => $path ) {
-
-            $name = trim( (string) ( $names[ $i ] ?? '' ) );
-            $path = trim( (string) $path );
-
-            $number = $i + 1;
-
-            /*
-             * A step with nothing in it is a row someone added and left alone,
-             * not a mistake. Dropped rather than refused.
-             */
-            if ( $name === '' && $path === '' ) {
-
-                continue;
-            }
-
-            /*
-             * Anything else has at least one value, so a missing name or path
-             * is a HALF-FILLED step -- a mistake worth reporting. Each step is
-             * checked; an earlier bad one used to abandon validation and hide
-             * every later step along with the rest of the rules.
-             */
-            $this->addValidation( 'stepName' . $number, $name, 'required',
-                array( 'errorMsg' => sprintf( 'Step %s needs a name.', $number ) ) );
-
-            $this->addValidation( 'stepPath' . $number, $path, 'required',
-                array( 'errorMsg' => sprintf( 'Step %s needs a path.', $number ) ) );
-
-            /*
-             * A path, not a URL, and said so rather than left to fail quietly.
-             *
-             * Every consumer treats this as a path: the funnel report builds
-             * `pagePath == <this>` and checkGoalStart matches it against the
-             * event's page_uri. A full URL therefore matches nothing -- the
-             * funnel reports zero and the goal event never starts, with nothing
-             * logged.
-             *
-             * Refused rather than silently trimmed to its path: quietly
-             * rewriting what someone typed is how they end up not knowing what
-             * is stored.
-             */
-            if ( $path !== '' && preg_match( '~^[a-z][a-z0-9+.\-]*://~i', $path ) ) {
-
-                $this->addValidation( 'stepPath' . $number, '', 'required', array(
-                    'errorMsg' => sprintf(
-                        'Step %s: enter the page PATH, such as /basket -- not a full web address. '
-                        . 'Funnel steps are matched on the path alone.', $number ),
-                ) );
-            }
-        }
-    }
-
     function action() {
 
         $siteId = $this->getParam( 'siteId' );
@@ -234,124 +168,11 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $this->saveGroupRename( $siteId );
         $this->saveConditions( $goalEvent->get( 'id' ) );
-        $this->saveFunnel( $goalEvent->get( 'id' ) );
 
         $this->set( 'siteId', $siteId );
         $this->setRedirectAction( 'base.goalEvents' );
         $this->set( 'status_code', 3201 );
     }
-
-    /**
-     * Replace this goal event's funnel with what was submitted.
-     *
-     * Delete-then-write rather than a diff. A funnel is ORDERED and short, and
-     * its identity is its position -- there is no stable key to match a
-     * submitted step against a stored one, so a diff would have to invent one.
-     * Removing a middle step renumbers everything after it, which a diff would
-     * see as several edits rather than one removal.
-     *
-     * Safe here in a way it is not for grants: nothing else references a step,
-     * and the whole list is always submitted by the form that owns it.
-     */
-    private function saveFunnel( $goalEventId ) {
-
-        if ( ! $goalEventId ) {
-
-            return;
-        }
-
-        $paths = (array) $this->getParam( 'stepPath' );
-        $names = (array) $this->getParam( 'stepName' );
-
-        $funnel = \OWA\Module\Base\Entity\Funnel::forGoalEvent( $goalEventId );
-
-        $kept = array();
-
-        foreach ( $paths as $i => $path ) {
-
-            $path = trim( (string) $path );
-
-            /*
-             * A step with no path is a row someone added and left alone, not a
-             * mistake -- the same rule the old goal screen applied. Numbering
-             * only advances for steps that are kept, so the stored funnel is
-             * 1..n with no gaps.
-             */
-            if ( $path === '' ) {
-
-                continue;
-            }
-
-            $kept[] = array( 'name' => trim( (string) ( $names[ $i ] ?? '' ) ), 'path' => $path );
-        }
-
-        if ( ! $kept ) {
-
-            /*
-             * Emptying the funnel removes it. A funnel with no steps describes
-             * no path, and leaving one behind would put an empty entry in the
-             * funnel list that nothing could be done with.
-             */
-            if ( $funnel->wasPersisted() ) {
-
-                $this->deleteSteps( $funnel->get( 'id' ) );
-                $funnel->delete( $funnel->get( 'id' ) );
-            }
-
-            return;
-        }
-
-        if ( ! $funnel->wasPersisted() ) {
-
-            $funnel->set( 'id', $funnel->generateId(
-                'funnel:' . $this->getParam( 'siteId' ) . ':' . $goalEventId ) );
-            $funnel->set( 'property_id',
-                \OWA\Module\Base\Classes\GoalManager::propertyFor( $this->getParam( 'siteId' ) ) );
-            $funnel->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
-            $funnel->set( 'goal_event_id', $goalEventId );
-            $funnel->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-            $funnel->create();
-        }
-
-        /*
-         * Delete-then-write rather than a diff. A funnel is ORDERED and short,
-         * and its identity is its position -- there is no stable key to match a
-         * submitted step against a stored one, so a diff would have to invent
-         * one. Removing a middle step renumbers everything after it, which a
-         * diff would read as several edits rather than one removal.
-         */
-        $this->deleteSteps( $funnel->get( 'id' ) );
-
-        $number = 0;
-
-        foreach ( $kept as $keptStep ) {
-
-            $number++;
-
-            $step = \OWA\Core\CoreAPI::entityFactory( 'base.funnel_step' );
-
-            $step->set( 'id', $step->generateId(
-                'funnel_step:' . $funnel->get( 'id' ) . ':' . $number ) );
-            $step->set( 'funnel_id', $funnel->get( 'id' ) );
-            $step->set( 'step_number', $number );
-            $step->set( 'name', $keptStep['name'] );
-            $step->set( 'condition_property',
-                \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI );
-            $step->set( 'condition_operator',
-                \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX );
-            $step->set( 'condition_value', $keptStep['path'] );
-            $step->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-            $step->create();
-        }
-    }
-
-    /**
-     * Replace this goal event's conditions with what was submitted.
-     *
-     * Delete-then-write, for the same reason as the funnel: a condition has no
-     * stable key of its own, so a diff would have to invent one, and removing a
-     * middle row renumbers everything after it.
-     */
     private function saveConditions( $goalEventId ) {
 
         if ( ! $goalEventId ) {
@@ -401,37 +222,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             $condition->create();
         }
     }
-
-    /** The funnel steps as submitted, for re-rendering a refused form. */
-    private function submittedSteps() {
-
-        $names = (array) $this->getParam( 'stepName' );
-        $steps = array();
-
-        foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
-
-            $steps[] = array( 'name' => $names[ $i ] ?? '', 'path' => $path );
-        }
-
-        return $steps;
-    }
-
-    /** Every step of one funnel. */
-    private function deleteSteps( $funnelId ) {
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.funnel_step' );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->deleteFrom( $entity->getTableName() );
-        $db->where( 'funnel_id', $funnelId );
-        $db->executeQuery();
-    }
-
-    /**
-     * The lowest numbered slot this Profile is not using, or null past twenty.
-     *
-     * @return int|null
-     */
     public static function nextFreeSlot( $siteId ) {
 
         $taken = array();
@@ -492,8 +282,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         $this->set( 'conditions', $conditions );
-
-        $this->set( 'funnelSteps', $this->submittedSteps() );
 
         $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
         $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
