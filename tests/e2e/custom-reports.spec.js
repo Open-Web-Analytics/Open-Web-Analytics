@@ -1544,9 +1544,19 @@ test.describe('custom reports', () => {
             // The rendered report honours it.
             await expect(page.locator('.owa_reportGridItem.owa_span-3').first()).toHaveCount(1);
 
+            /*
+             * Back in through the ROSTER and then the report, because that is
+             * the only way in now: the roster row links to the report, and the
+             * report carries the pencil. There was an Edit link in the row as
+             * well, which meant two links to two screens on every row and an
+             * empty cell for anyone who may not edit.
+             */
             await openRoster(page);
             await page.locator('table.management tr').filter({ hasText: name })
-                .locator('a', { hasText: 'Edit' }).click();
+                .locator('a').first().click();
+            await page.waitForLoadState('networkidle');
+
+            await page.locator('.owa_reportTitle a[href*="customReportEdit"]').click();
             await page.waitForSelector('#customReportCanvas');
 
             await expect(page.locator('.owa_builderBlockSpan').first()).toHaveText('3 × 2');

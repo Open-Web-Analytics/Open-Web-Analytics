@@ -117,9 +117,28 @@ test.describe('every configured report renders in a browser', () => {
                 .toBeVisible({ timeout: 20_000 });
         });
 
-        test('the related reports link to the funnel', async ({ page }) => {
-            await expect(page.locator('a', { hasText: 'Conversion Funnels' }).first())
-                .toBeVisible();
+        /**
+         * The way to a funnel is the nav, not a link on this report.
+         *
+         * The goals report used to carry a Related Reports widget pointing at
+         * goal-funnel. A funnel is not a report any more -- it is a
+         * visualization, one somebody made, and there is no single one to
+         * point at. So the route is the Visualizations group in the left-hand
+         * nav, which lists the ones that exist.
+         *
+         * Asserted rather than left as an absence: a reader looking at goal
+         * performance and wanting to see the path to it must still have
+         * somewhere to go from here.
+         */
+        test('funnels are reachable from the goals report, through the nav', async ({ page }) => {
+            await expect(
+                page.locator('a', { hasText: 'Conversion Funnels' }),
+                'the goals report still links to a funnel REPORT, which no longer exists'
+            ).toHaveCount(0);
+
+            await expect(
+                page.locator('.owa_admin_nav_topmenu', { hasText: 'Visualizations' })
+            ).toHaveCount(1);
         });
     });
 
