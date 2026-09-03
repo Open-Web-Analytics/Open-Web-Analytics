@@ -175,4 +175,160 @@ test.describe('visualizations', () => {
 
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Bad Step');
     });
+
+    /**
+     * A STEP CAN BE A GOAL EVENT, AND IT MEANS THE SAME THING.
+     *
+     * A funnel step is a condition; a goal event is a condition somebody named.
+     * So naming one in a step has to count exactly what writing its conditions
+     * into the step by hand would count -- and the fixture is built so that can
+     * be checked rather than asserted: the seeded goal event's condition is
+     * page_uri exactly /docs, and the seeded funnel's last step is the path
+     * /docs. Two ways of saying one thing.
+     *
+     * Building the second one HERE rather than seeding it, because that also
+     * proves the builder stores a goal-event step in a shape the counting
+     * reads -- which is where the last four bugs in this feature were.
+     */
+    test('a goal event step counts what its conditions count', async ({ page }) => {
+        const name = 'E2E Goal Step Funnel ' + Date.now();
+
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', name);
+
+        // Two path steps, then a third naming the goal event.
+        await page.locator('input[name="stepName[]"]').first().fill('Home');
+        await page.locator('input[name="stepPath[]"]').first().fill('/');
+
+        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
+        await page.locator('input[name="stepName[]"]').nth(1).fill('Pricing');
+        await page.locator('input[name="stepPath[]"]').nth(1).fill('/pricing');
+
+        await page.locator('#owa_goalEventFunnel .constraintRow').nth(1)
+            .locator('.constraintAddButton').click();
+
+        const third = page.locator('#owa_goalEventFunnel .constraintRow').nth(2);
+
+        await third.locator('input[name="stepName[]"]').fill('Signed up');
+        await third.locator('select[name="stepKind[]"]').selectOption('goal_event');
+
+        // The picker offers this Property's goal events, and the fixture's is
+        // one of them.
+        const goalPicker = third.locator('select[name="stepGoalEventId[]"]');
+        await expect(goalPicker).toBeVisible();
+        /*
+         * By the id behind the label, not by the label -- selectOption takes a
+         * literal label, and the option carries an "(inactive)" suffix when it
+         * has one, so a label match is a thing that breaks on a fixture change
+         * rather than on a real one.
+         */
+        const goalValue = await goalPicker.locator('option', { hasText: FIXTURE.goal.name })
+            .first().getAttribute('value');
+
+        expect(goalValue, 'the fixture goal event is not offered as a step').toBeTruthy();
+
+        await goalPicker.selectOption(goalValue);
+
+        // The path field is not asked for once the kind is a goal event.
+        await expect(third.locator('input[name="stepPath[]"]')).toBeHidden();
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Visualization"]').click(),
+        ]);
+
+        await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+
+        const mine = (await page.locator('.funnelStepCount').allTextContents())
+            .map((c) => parseInt(c.trim(), 10));
+
+        expect(mine).toHaveLength(3);
+
+        // It computed something, rather than a goal-event step quietly matching
+        // nothing -- which is what every wrong version of this looked like.
+        expect(mine[2], 'the goal event step counted nobody').toBeGreaterThan(0);
+
+        // --- and it is the SAME funnel as the path version ---------------------
+        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('table.management tbody tr', { hasText: FIXTURE.funnelVisualization.name })
+                .locator('a').first().click(),
+        ]);
+
+        await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+
+        const byPath = (await page.locator('.funnelStepCount').allTextContents())
+            .map((c) => parseInt(c.trim(), 10));
+
+        expect(mine,
+            'naming the goal event counts something different from writing its condition out'
+        ).toEqual(byPath);
+    });
+
+    /**
+     * A goal event the funnel cannot count against is refused AT THE BUILDER.
+     *
+     * A goal event may test any tracking property; a funnel step is matched
+     * against the page, because that is what the funnel's query joins. Told
+     * here, the author can choose another; told at render time, they have saved
+     * something that refuses to draw every time it is opened.
+     *
+     * Skipped when the fixture Property has no such goal event -- the fixture's
+     * own is on page_uri, which compiles.
+     */
+    test('a goal event a funnel cannot count is refused when it is chosen', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const name = 'E2E Unfunnelable ' + Date.now();
+
+        await page.fill('input[name="name"]', name);
+
+        // A condition on something that is not the page. `medium` is a real
+        // tracking property and a real dimension -- it is simply not one the
+        // funnel's join can reach.
+        const property = page.locator('select[name="conditionProperty[]"]');
+
+        if (await property.locator('option[value="medium"]').count() === 0) {
+            test.skip(true, 'this install offers no non-page condition property');
+        }
+
+        await property.selectOption('medium');
+        await page.fill('input[name="conditionValue[]"]', 'organic-search');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        // Now try to use it as a funnel step.
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', 'E2E Refused Step');
+
+        const row = page.locator('#owa_goalEventFunnel .constraintRow').first();
+
+        await row.locator('input[name="stepName[]"]').fill('Nope');
+        await row.locator('select[name="stepKind[]"]').selectOption('goal_event');
+        const picker = row.locator('select[name="stepGoalEventId[]"]');
+        const value = await picker.locator('option', { hasText: name }).first()
+            .getAttribute('value');
+
+        expect(value, 'the goal event just created is not offered as a step').toBeTruthy();
+
+        await picker.selectOption(value);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Visualization"]').click(),
+        ]);
+
+        // Back on the form, saying which property is the problem -- not saved
+        // and not silently counting the conditions it COULD express, which
+        // would report a wider number than the goal event means.
+        await expect(page.locator('input[name="name"]')).toHaveValue('E2E Refused Step');
+        await expect(page.locator('body')).toContainText('medium');
+    });
 });

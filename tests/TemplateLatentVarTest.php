@@ -307,6 +307,12 @@ final class TemplateLatentVarTest extends TestCase
                     'visualizationTypeLabel' => 'Funnel',
                     'visualizationTypeHint' => 'How many people reached each step of a path.',
                     'visualizationTypeIcon' => 'fas fa-filter',
+                    // The goal events a step may name. EMPTY on purpose: a
+                    // Property with none must still render the builder, and an
+                    // empty picker is the case a foreach over an unset var
+                    // would not distinguish from a missing one.
+                    'goalEvents' => [],
+                    'siteId' => 'owa-e2e',
                     'validation_errors' => [],
                 ],
                 ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],

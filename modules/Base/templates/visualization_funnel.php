@@ -92,6 +92,18 @@ foreach ( $owa_steps as $owa_s ) {
 <div class="notice" role="status"><?php $view->out( $view->get('funnel_segment_error') ); ?></div>
 <?php endif; ?>
 
+<?php if ( $view->get('funnel_step_error') ): ?>
+<?php
+    /*
+     * A step names a goal event that is gone, or one whose conditions a funnel
+     * cannot count against. Nothing is drawn below, on purpose: a funnel with a
+     * stage quietly missing still looks like a funnel, and every percentage
+     * after the gap would be a plausible number against the wrong denominator.
+     */
+?>
+<div class="notice" role="status"><?php $view->out( $view->get('funnel_step_error') ); ?></div>
+<?php endif; ?>
+
 <?php if ( $owa_steps ):?>
 
 <div class="owa_reportSectionContent">

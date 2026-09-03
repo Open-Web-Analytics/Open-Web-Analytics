@@ -74,9 +74,10 @@ and where they left.</div>
 
     <div class="setting">
         <div class="title">Steps</div>
-        <div class="description">In order, first to last. Each step is matched as a regular
-        expression against the page URL. A step with no path is ignored, so a row left blank
-        costs nothing.</div>
+        <div class="description">In order, first to last. A step is either a page &mdash; matched
+        on its path &mdash; or one of this Property's goal events, which counts a step exactly
+        where that goal event would have counted a conversion. A step with nothing chosen is
+        ignored, so a row left blank costs nothing.</div>
         <div class="field">
             <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel" data-owa-repeatable>
             <?php
@@ -84,16 +85,49 @@ and where they left.</div>
             $owa_steps = $view->steps ?: array( array( 'name' => '', 'path' => '' ) );
             ?>
             <?php foreach ( $owa_steps as $owa_step ):?>
+            <?php $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );?>
                 <li class="constraintRow owa_funnelStep">
                     <input class="constraintValueField owa_funnelStepName" type="text"
                            placeholder="Step name"
                            name="<?php echo $view->getNs();?>stepName[]"
                            value="<?php $view->out( $owa_step['name'] ?? '' );?>">
-                    <span class="constraintOperatorPicker owa_funnelStepMatches">matches</span>
+                    <?php
+                        /*
+                         * WHAT the step is, then the value it needs.
+                         *
+                         * A step is a condition, and a goal event is a
+                         * condition somebody already named -- so naming one
+                         * here means exactly what writing its conditions into
+                         * the step by hand would mean. The counting compiles
+                         * both to the same predicate; see GoalEventPredicate.
+                         *
+                         * It reads as the operator slot of a constraint row
+                         * because that is what it is: the same three-part
+                         * sentence the report builder writes, subject / verb /
+                         * value.
+                         */
+                    ?>
+                    <span class="constraintOperatorPicker owa_funnelStepMatches">
+                        <select class="owa_funnelStepKind" name="<?php echo $view->getNs();?>stepKind[]">
+                            <option value="path" <?php echo $owa_stepGoal === '' ? 'selected' : '';?>>is the page</option>
+                            <option value="goal_event" <?php echo $owa_stepGoal !== '' ? 'selected' : '';?>>is the goal event</option>
+                        </select>
+                    </span>
                     <input class="constraintValueField owa_funnelStepPath" type="text"
                            placeholder="/path"
                            name="<?php echo $view->getNs();?>stepPath[]"
                            value="<?php $view->out( $owa_step['path'] ?? '' );?>">
+                    <select class="constraintValueField owa_funnelStepGoal"
+                            name="<?php echo $view->getNs();?>stepGoalEventId[]">
+                        <option value="">Choose a goal event&hellip;</option>
+                        <?php foreach ( (array) $view->goalEvents as $owa_ge ):?>
+                            <option value="<?php $view->out( $owa_ge['id'] );?>"
+                                <?php echo $owa_stepGoal === (string) $owa_ge['id'] ? 'selected' : '';?>>
+                                <?php $view->out( $owa_ge['name'] );?><?php
+                                    echo empty( $owa_ge['is_active'] ) ? ' (inactive)' : '';?>
+                            </option>
+                        <?php endforeach;?>
+                    </select>
                     <span class="constraintAddButton" role="button" tabindex="0"
                           title="Add another step" aria-label="Add another step">+</span>
                     <span class="constraintRemoveButton" role="button" tabindex="0"
@@ -103,11 +137,26 @@ and where they left.</div>
             </ul>
             <span class="validation_error"><?php $view->out( $view->validation_errors['stepPath1'] ?? '' );?></span>
             <span class="validation_error"><?php $view->out( $view->validation_errors['stepName1'] ?? '' );?></span>
+            <span class="validation_error"><?php $view->out( $view->validation_errors['stepGoalEvent1'] ?? '' );?></span>
         </div>
     </div>
 
     <?php echo $view->createNonceFormField('base.visualizationSave');?>
     <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
+    <?php
+        /*
+         * WHICH SITE, carried by the form.
+         *
+         * The action is built with makeLink(), which does not add state unless
+         * asked -- so without this the save receives no siteId, redirects to
+         * the funnel without one, and the funnel counts against site_id = ''.
+         * It draws perfectly: right stages, right names, nought visitors.
+         *
+         * Unprefixed, like the custom report builder's, because that is the
+         * name its save reads.
+         */
+    ?>
+    <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') );?>">
     <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Visualization">
 </form>
 
@@ -122,6 +171,9 @@ and where they left.</div>
           action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">
         <?php echo $view->createNonceFormField('base.customReportDelete');?>
         <input type="hidden" name="<?php echo $view->getNs();?>customReportId" value="<?php $view->out( $owa_v['id'] );?>">
+        <?php /* And the same for delete, which redirects to a roster -- and a
+                 roster with no site has no left-hand nav at all. */ ?>
+        <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') );?>">
         <input class="owa-button owa-button-danger" type="submit"
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Visualization"
                data-owa-confirm
@@ -131,3 +183,50 @@ and where they left.</div>
     </form>
 </div>
 <?php endif;?>
+
+<script type="text/javascript">
+jQuery( function () {
+
+    /*
+     * Show the field the chosen kind needs, and only that one.
+     *
+     * Both are rendered so the form works with no JavaScript at all -- the save
+     * reads the KIND and ignores the other field, so a browser that runs none
+     * of this still saves the right thing. This only stops the reader being
+     * asked for two answers when one is wanted.
+     */
+    function syncStep( row ) {
+
+        var kind = jQuery( row ).find( '.owa_funnelStepKind' ).val();
+
+        jQuery( row ).find( '.owa_funnelStepPath' ).toggle( kind !== 'goal_event' );
+        jQuery( row ).find( '.owa_funnelStepGoal' ).toggle( kind === 'goal_event' );
+    }
+
+    // Delegated, because the + button clones a row at runtime and a per-row
+    // binding would cover only the rows present at load.
+    jQuery( document ).on( 'change', '.owa_funnelStepKind', function () {
+
+        syncStep( jQuery( this ).closest( '.constraintRow' ) );
+    } );
+
+    jQuery( document ).on( 'click keypress', '#owa_goalEventFunnel .constraintAddButton',
+        function () {
+
+            // After the clone, not before: the new row is inserted by the
+            // repeatable-list handler bound on the same event.
+            window.setTimeout( function () {
+
+                jQuery( '#owa_goalEventFunnel .constraintRow' ).each( function () {
+
+                    syncStep( this );
+                } );
+            }, 0 );
+        } );
+
+    jQuery( '#owa_goalEventFunnel .constraintRow' ).each( function () {
+
+        syncStep( this );
+    } );
+} );
+</script>

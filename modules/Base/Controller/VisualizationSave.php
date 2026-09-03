@@ -26,20 +26,30 @@ class VisualizationSave extends \OWA\Core\AdminController {
             array( 'errorMsg' => 'A visualization needs a name.' ) );
 
         /*
-         * The step rules, unchanged from the screen that used to own them.
-         * Every one was earned by a bug.
+         * The step rules. Every one was earned by a bug.
+         *
+         * A step is either a PAGE or a GOAL EVENT, and the kind decides which
+         * of the two fields has to be filled in. Both fields are posted -- the
+         * form renders both so it works without JavaScript -- so the kind is
+         * what says which one to read, and reading the wrong one would refuse a
+         * perfectly complete step.
          */
         $names = (array) $this->getParam( 'stepName' );
+        $kinds = (array) $this->getParam( 'stepKind' );
+        $goals = (array) $this->getParam( 'stepGoalEventId' );
         $kept  = 0;
 
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
 
             $name   = trim( (string) ( $names[ $i ] ?? '' ) );
             $path   = trim( (string) $path );
+            $goal   = trim( (string) ( $goals[ $i ] ?? '' ) );
             $number = $i + 1;
 
+            $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
+
             /* A row someone added and left alone is not a mistake. */
-            if ( $name === '' && $path === '' ) {
+            if ( $name === '' && ( $isGoal ? $goal === '' : $path === '' ) ) {
 
                 continue;
             }
@@ -48,6 +58,35 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
             $this->addValidation( 'stepName' . $number, $name, 'required',
                 array( 'errorMsg' => sprintf( 'Step %s needs a name.', $number ) ) );
+
+            if ( $isGoal ) {
+
+                $this->addValidation( 'stepGoalEvent' . $number, $goal, 'required',
+                    array( 'errorMsg' => sprintf(
+                        'Step %s needs a goal event chosen.', $number ) ) );
+
+                /*
+                 * And it has to be one a funnel can actually count.
+                 *
+                 * A goal event may test any tracking property; a funnel step is
+                 * matched against the page, because that is what its query
+                 * joins. Refusing HERE means the author is told while they can
+                 * still choose another -- rather than saving something that
+                 * refuses to draw every time it is opened.
+                 */
+                if ( $goal !== '' ) {
+
+                    $error = $this->goalEventStepError( $goal );
+
+                    if ( $error !== '' ) {
+
+                        $this->addValidation( 'stepGoalEvent' . $number, '', 'required',
+                            array( 'errorMsg' => sprintf( 'Step %s: %s', $number, $error ) ) );
+                    }
+                }
+
+                continue;
+            }
 
             $this->addValidation( 'stepPath' . $number, $path, 'required',
                 array( 'errorMsg' => sprintf( 'Step %s needs a path.', $number ) ) );
@@ -74,6 +113,39 @@ class VisualizationSave extends \OWA\Core\AdminController {
         }
     }
 
+    /**
+     * Why this goal event cannot be a funnel step, or '' if it can.
+     *
+     * Asked of the SAME compiler the funnel uses, not of a second list of
+     * acceptable properties written here -- two lists is how a screen comes to
+     * accept something the report then refuses.
+     *
+     * @param  string $goalEventId
+     * @return string
+     */
+    private function goalEventStepError( $goalEventId ) {
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( $goalEventId );
+
+        if ( ! $goalEvent->wasPersisted() ) {
+
+            return 'that goal event no longer exists.';
+        }
+
+        $predicate = new \OWA\Module\Base\Classes\GoalEventPredicate;
+
+        if ( $predicate->compile( $goalEvent ) !== null ) {
+
+            return '';
+        }
+
+        return sprintf(
+            '"%s" tests %s. A funnel step is matched against the page -- its URL, its title '
+            . 'or its type -- so this one cannot be counted as a stage.',
+            (string) $goalEvent->get( 'name' ), $predicate->getError() );
+    }
+
     function action() {
 
         $id   = (string) $this->getParam( 'visualizationId' );
@@ -87,22 +159,43 @@ class VisualizationSave extends \OWA\Core\AdminController {
         }
 
         $names = (array) $this->getParam( 'stepName' );
+        $kinds = (array) $this->getParam( 'stepKind' );
+        $goals = (array) $this->getParam( 'stepGoalEventId' );
         $steps = array();
 
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
 
-            $path = trim( (string) $path );
+            $path   = trim( (string) $path );
+            $goal   = trim( (string) ( $goals[ $i ] ?? '' ) );
+            $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
 
-            if ( $path === '' ) {
+            if ( $isGoal ? $goal === '' : $path === '' ) {
 
                 continue;
             }
 
-            $steps[] = array(
-                'name'        => trim( (string) ( $names[ $i ] ?? '' ) ),
-                'path'        => $path,
-                'step_number' => count( $steps ) + 1,
-            );
+            /*
+             * ONE of the two, never both.
+             *
+             * The form posts both fields whatever the kind, because both are
+             * rendered so it works with no JavaScript. Storing the unused one
+             * as well would leave a step carrying a stale path beside its goal
+             * event, and the next reader could not tell which the funnel
+             * actually counts. The counting reads goal_event_id first, so a
+             * leftover path would be silent rather than wrong -- which is worse
+             * to find later, not better.
+             */
+            $steps[] = $isGoal
+                ? array(
+                    'name'          => trim( (string) ( $names[ $i ] ?? '' ) ),
+                    'goal_event_id' => $goal,
+                    'step_number'   => count( $steps ) + 1,
+                  )
+                : array(
+                    'name'        => trim( (string) ( $names[ $i ] ?? '' ) ),
+                    'path'        => $path,
+                    'step_number' => count( $steps ) + 1,
+                  );
         }
 
         $report->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
@@ -180,14 +273,45 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * has typed several steps into.
          */
         $names = (array) $this->getParam( 'stepName' );
+        $goals = (array) $this->getParam( 'stepGoalEventId' );
         $steps = array();
 
+        /*
+         * EVERY field, including the one the kind did not use.
+         *
+         * This is the refusal path, so it is carrying back what somebody typed
+         * rather than what will be stored -- a step refused for naming an
+         * unusable goal event must come back still showing that goal event, or
+         * the message explains a choice the form no longer displays.
+         */
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
 
-            $steps[] = array( 'name' => $names[ $i ] ?? '', 'path' => $path );
+            $steps[] = array(
+                'name'          => $names[ $i ] ?? '',
+                'path'          => $path,
+                'goal_event_id' => $goals[ $i ] ?? '',
+            );
         }
 
         $this->set( 'submittedSteps', json_encode( $steps ) );
+
+        /*
+         * The REASONS, carried the same way the steps are.
+         *
+         * A redirect keeps nothing the controller set on itself, so every
+         * per-field message this save writes was being dropped and the author
+         * saw only the chrome's generic "the form data contained one or more
+         * errors". For a path that is survivable -- the field is right there
+         * and its problem is usually obvious. For a goal event it is not: "this
+         * one tests medium, which a funnel cannot count against" is the whole
+         * of what the author needs, and without it there is nothing on the
+         * screen to explain why a perfectly ordinary-looking choice was
+         * refused.
+         *
+         * Encoded together, because a redirect turns an array into the literal
+         * "Array" -- the same reason the steps travel that way.
+         */
+        $this->set( 'validationErrors', json_encode( (array) $this->getValidationErrorMsgs() ) );
 
         $siteId = (string) $this->getParam( 'siteId' );
 

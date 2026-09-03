@@ -137,6 +137,24 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
             $counted = $this->countFunnel( $steps, $scope );
 
+            if ( $counted === null ) {
+
+                /*
+                 * REFUSED, and stepPredicate() has already said why.
+                 *
+                 * Not drawn with the offending step left out: a funnel missing
+                 * a stage still looks like a funnel, and every percentage after
+                 * the gap would be a real-looking number computed against the
+                 * wrong denominator.
+                 */
+                $this->set( 'funnel', array() );
+                $this->setSubview( 'base.visualizationFunnel' );
+                $this->setTitle( (string) $visualization['name'] );
+                $this->set( 'visualization_id', $this->visualizationId() );
+
+                return;
+            }
+
             $previous = null;
 
             foreach ( $steps as $i => $step ) {
@@ -310,6 +328,109 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * @param string $scope visitor|session
      * @return array step index => count
      */
+    /**
+     * One predicate per step, whatever the step is made of.
+     *
+     * A step is a CONDITION. A path step is the condition "this page"; a goal
+     * event step is the condition somebody already named and saved. Compiling
+     * both to the same shape is what makes them interchangeable in the walk
+     * below -- the counting never learns which kind it is looking at.
+     *
+     * @param  array  $step
+     * @param  string $alias  the document table's alias in the funnel query
+     * @return array|null     array( 'sql', 'params' ), or null if refused
+     */
+    private function stepPredicate( array $step, $alias = 'd' ) {
+
+        $goalEventId = (string) ( $step['goal_event_id'] ?? '' );
+
+        if ( $goalEventId === '' ) {
+
+            return array(
+                'sql'    => $alias . '.uri = ?',
+                'params' => array( (string) ( $step['path'] ?? '' ) ),
+            );
+        }
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( $goalEventId );
+
+        if ( ! $goalEvent->wasPersisted() ) {
+
+            /*
+             * Named, not drawn as an empty stage.
+             *
+             * A goal event can be deleted while a funnel still points at it,
+             * and a stage that silently reports zero is indistinguishable from
+             * a stage nobody reached -- which is the number somebody would then
+             * go and investigate.
+             */
+            $this->set( 'funnel_step_error', sprintf(
+                'A step of this funnel names a goal event that no longer exists. '
+                . 'Edit the funnel and choose another, or remove the step.' ) );
+
+            return null;
+        }
+
+        $predicate = new \OWA\Module\Base\Classes\GoalEventPredicate;
+
+        $compiled = $predicate->compile( $goalEvent, $alias );
+
+        if ( $compiled === null ) {
+
+            $this->set( 'funnel_step_error', sprintf(
+                'The goal event "%s" tests %s, which a funnel cannot count against. '
+                . 'A funnel step can test the page: its URL, its title or its type. '
+                . 'The funnel is not drawn rather than drawn with that condition ignored, '
+                . 'which would report a larger number than the goal event means.',
+                (string) $goalEvent->get( 'name' ), $predicate->getError() ) );
+
+            return null;
+        }
+
+        return $compiled;
+    }
+
+    /**
+     * How many subjects reached each step, in order.
+     *
+     * THE MATH, AND WHY IT IS A WALK RATHER THAN A MIN PER STEP
+     *
+     * This is a CLOSED funnel with INDIRECTLY-followed steps, counted per
+     * subject -- GA's defaults, and the only ones OWA offers. Closed: everybody
+     * enters at step 1. Indirect: other things may happen in between, the next
+     * step only has to come later. Per subject: a subject enters the funnel
+     * once in the period, and it is their FIRST run through it that is counted.
+     *
+     * That last clause is the whole reason for the shape of this. The obvious
+     * implementation -- MIN(timestamp) per step, then check the timestamps come
+     * out in order -- is what this used to do, and it is wrong whenever a
+     * step's page is also visited BEFORE the funnel starts. Take a funnel
+     * / -> /pricing -> /docs and a visitor who reads the docs, comes back to
+     * the home page, goes to pricing, and reads the docs again:
+     *
+     *     /docs 10:00   / 11:00   /pricing 12:00   /docs 13:00
+     *
+     * MIN per step gives 11:00, 12:00, 10:00 -- out of order, so the visitor is
+     * dropped at the last step. They completed the funnel. GA counts them,
+     * because it looks for the first occurrence of each step AFTER the one
+     * before it, not the first occurrence overall.
+     *
+     * And it is not an edge case: funnels start on home pages and pricing
+     * pages, which are exactly the pages people also visit at other times. The
+     * error is always an UNDERCOUNT, always at the later steps, and always
+     * looks like a conversion problem.
+     *
+     * So the rows come back in time order per subject and are walked forward,
+     * advancing a stage each time the current step's condition is met. One row
+     * per matching event rather than one per subject -- the WHERE only admits
+     * events that satisfy some step, and the segment and the date bounds are
+     * what keep that set to a size worth walking.
+     *
+     * @param  array  $steps
+     * @param  string $scope
+     * @return array  a count per step, positionally
+     */
     private function countFunnel( array $steps, $scope ) {
 
         if ( ! $steps ) {
@@ -320,18 +441,45 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         $db      = \OWA\Core\CoreAPI::dbSingleton();
         $subject = self::SCOPES[ $scope ];
 
+        $zeroes = array_fill( 0, count( $steps ), 0 );
+
         $params = array();
         $select = array();
+        $any    = array();
 
         foreach ( $steps as $i => $step ) {
 
-            // The first time this subject reached the step. MIN, because a page
-            // hit twice must not read as two different positions in the order.
-            $select[] = sprintf( 'MIN(CASE WHEN d.uri = ? THEN r.timestamp END) AS t%d', $i );
-            $params[] = (string) $step['path'];
+            $predicate = $this->stepPredicate( $step );
+
+            if ( $predicate === null ) {
+
+                // Refused, and stepPredicate() has said why. Not drawn with the
+                // step ignored: a funnel missing a stage still looks like a
+                // funnel.
+                return null;
+            }
+
+            $select[] = sprintf( 'CASE WHEN %s THEN 1 ELSE 0 END AS s%d',
+                $predicate['sql'], $i );
+
+            $any[] = $predicate['sql'];
+
+            foreach ( $predicate['params'] as $p ) {
+
+                $params[] = $p;
+            }
         }
 
-        $where  = array( 'r.site_id = ?' );
+        /*
+         * The step predicates appear TWICE -- once as the CASE columns above
+         * and once as the WHERE that admits only rows matching some step -- so
+         * their parameters are bound twice, in the same order. Kept as one list
+         * built in one pass rather than two, because the two orders having to
+         * agree is precisely the kind of thing that drifts.
+         */
+        $params = array_merge( $params, $params );
+
+        $where   = array( '( ' . implode( ' OR ', $any ) . ' )', 'r.site_id = ?' );
         $params[] = (string) $this->getParam( 'siteId' );
 
         $bounds = $this->dateBounds();
@@ -366,7 +514,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
             // A segment that matches nobody is a funnel nobody entered, not an
             // unsegmented funnel.
-            return array_fill( 0, count( $steps ), 0 );
+            return $zeroes;
         }
 
         if ( is_array( $segment ) ) {
@@ -379,11 +527,12 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             }
         }
 
-        $sql = 'SELECT ' . implode( ', ', $select )
+        $sql = 'SELECT r.' . $subject . ' AS subj, r.timestamp AS ts, '
+             . implode( ', ', $select )
              . ' FROM owa_request r'
              . ' INNER JOIN owa_document d ON d.id = r.document_id'
              . ' WHERE ' . implode( ' AND ', $where )
-             . ' GROUP BY r.' . $subject;
+             . ' ORDER BY r.' . $subject . ', r.timestamp';
 
         /*
          * get_results(), NOT query()->fetchAll().
@@ -400,30 +549,78 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             // Null covers a failed query AND an empty result, so this is not
             // an error worth a notice -- a funnel nobody entered is a real
             // answer, and it is the same zeroes either way.
-            return array_fill( 0, count( $steps ), 0 );
+            return $zeroes;
         }
 
-        $counts = array_fill( 0, count( $steps ), 0 );
+        return self::walk( $rows, count( $steps ) );
+    }
 
+    /**
+     * Walk each subject's events forward, advancing a stage at a time.
+     *
+     * The rows arrive grouped by subject and ordered by time, so one pass is
+     * enough: hold the stage this subject has reached, and advance it whenever
+     * the row satisfies the step they are waiting for. A subject who reaches
+     * stage N counts in every step up to N, which is what makes a funnel
+     * monotonic by construction rather than by a guard.
+     *
+     * A subject is counted ONCE however many times they run the funnel, and it
+     * is the first run that counts -- the walk never restarts.
+     *
+     * PUBLIC AND STATIC because it is the arithmetic, and arithmetic is worth
+     * being able to test directly. It reads nothing but its arguments -- the
+     * query above decides who is in the funnel, and this decides how far each
+     * of them got.
+     *
+     * @param  array $rows   subject, timestamp-ordered, with an s{N} flag per step
+     * @param  int   $count  how many steps
+     * @return array
+     */
+    public static function walk( $rows, $count ) {
+
+        $counts  = array_fill( 0, $count, 0 );
+        $current = null;
+        $stage   = 0;
+
+        /*
+         * The tally happens when the SUBJECT CHANGES, not per row, which is why
+         * there is a flush after the loop as well. Counting inside the loop
+         * would need the stage of a subject whose last row has not been read
+         * yet.
+         */
         foreach ( $rows as $row ) {
 
-            $previous = null;
+            if ( $current !== $row['subj'] ) {
 
-            foreach ( $steps as $i => $step ) {
+                for ( $i = 0; $i < $stage; $i++ ) {
 
-                $at = $row[ 't' . $i ];
-
-                // Never reached, or reached before the step in front of it:
-                // this subject leaves the funnel here and counts in no step
-                // beyond it.
-                if ( $at === null || ( $previous !== null && $at < $previous ) ) {
-
-                    break;
+                    $counts[ $i ]++;
                 }
 
-                $counts[ $i ]++;
-                $previous = $at;
+                $current = $row['subj'];
+                $stage   = 0;
             }
+
+            /*
+             * Only ever the step being waited for, and at most ONE stage per
+             * event.
+             *
+             * A row satisfying a later step is not a shortcut -- a closed
+             * funnel is reached in order. And two steps satisfied by the same
+             * event is not two steps: a step is something the subject DID, so
+             * the next one needs an event of its own. Two steps written with
+             * overlapping conditions therefore need two visits, which is what
+             * they say.
+             */
+            if ( $stage < $count && (int) $row[ 's' . $stage ] === 1 ) {
+
+                $stage++;
+            }
+        }
+
+        for ( $i = 0; $i < $stage; $i++ ) {
+
+            $counts[ $i ]++;
         }
 
         return $counts;

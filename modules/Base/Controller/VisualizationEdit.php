@@ -67,6 +67,14 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          */
         $submitted = $this->submittedSteps();
 
+        /*
+         * The messages from a refused save, which arrive encoded for the same
+         * reason the steps do. Set here rather than left to the framework: the
+         * framework fills validation_errors for the controller that refused,
+         * and that controller redirected to this one.
+         */
+        $this->set( 'validation_errors', $this->submittedErrors() );
+
         $type = $this->resolveType( $report );
 
         $this->set( 'visualizationId', $id );
@@ -86,6 +94,37 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $this->set( 'visualizationTypeIcon',
             \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $type ] ?? '' );
 
+        /*
+         * The goal events a step may name.
+         *
+         * The SAME list the Goal Events screen shows, from the same method, so
+         * a funnel cannot offer one the admin screen does not have. They are
+         * the Property's, and this screen is reached with a Profile on the
+         * request -- listFor() resolves the one to the other.
+         *
+         * Inactive ones are offered too, and labelled. A funnel counts from the
+         * facts rather than from stored conversions, so an inactive goal event
+         * still has a meaningful answer: it is a condition, and the condition
+         * held or it did not.
+         */
+        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+
+        /*
+         * The site, so the FORM can carry it.
+         *
+         * makeLink() does not add state unless it is asked to, so a form action
+         * built from it posts to a URL with no siteId on it -- and the save
+         * then redirects to the funnel without one. Everything drew: the right
+         * stages, the right names, and `r.site_id = ''` behind them, so every
+         * stage reported zero visitors and looked like a site nobody had used.
+         *
+         * A hidden field rather than makeLink(..., true), because that is what
+         * the custom report builder does and one pattern is easier to keep
+         * right than two.
+         */
+        $this->set( 'siteId', $siteId );
+
+        $this->set( 'goalEvents', \OWA\Module\Base\Controller\GoalEvents::listFor( $siteId ) );
     }
 
     /**
@@ -122,6 +161,25 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         }
 
         return (string) key( $types );
+    }
+
+    /**
+     * The per-field messages from a refused save.
+     *
+     * @return array
+     */
+    private function submittedErrors() {
+
+        $encoded = (string) $this->getParam( 'validationErrors' );
+
+        if ( $encoded === '' ) {
+
+            return array();
+        }
+
+        $errors = json_decode( $encoded, true );
+
+        return is_array( $errors ) ? $errors : array();
     }
 
     /**
