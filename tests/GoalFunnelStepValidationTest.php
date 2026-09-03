@@ -45,12 +45,16 @@ final class GoalFunnelStepValidationTest extends TestCase
         }
 
         /*
-         * A funnel is its own screen now, so its rules live with it -- they
-         * moved from the goal screen to GoalEventSave and then here, with the
-         * section they govern. The rules themselves are unchanged, which is
-         * what these tests check.
+         * A funnel is a VISUALIZATION now -- a row on owa_custom_report drawn
+         * by its own controller -- so its rules live with the screen that
+         * builds one. They have moved three times: from the goal screen, to the
+         * goal event save, to here, following the section they govern.
+         *
+         * The rules themselves are unchanged, which is exactly what these tests
+         * check. They were each earned by a bug and none of them stopped being
+         * true when the thing they guard moved.
          */
-        $controller = new \OWA\Module\Base\Controller\FunnelSave( array(
+        $controller = new \OWA\Module\Base\Controller\VisualizationSave( array(
             'name'     => 'Probe',
             'stepName' => $names,
             'stepPath' => $paths,

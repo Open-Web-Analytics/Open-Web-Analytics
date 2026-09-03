@@ -375,9 +375,16 @@ class ReportController extends \OWA\Core\AdminController {
             return $nav;
         }
 
+        /*
+         * REPORTS only. Visualizations live on this table too and get their own
+         * group below -- a list mixing "Pages by source" with "Checkout funnel"
+         * invites the reader to expect the same controls on both, and a
+         * visualization does not have them.
+         */
         $reports = \OWA\Module\Base\Classes\CustomReports::recent(
             (string) $user->getUserData( 'user_id' ),
-            (bool) $user->isCapable( 'edit_users' )
+            (bool) $user->isCapable( 'edit_users' ),
+            \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT
         );
 
         $links = array();
@@ -420,7 +427,67 @@ class ReportController extends \OWA\Core\AdminController {
             'subgroup'   => $links,
         );
 
+        $nav['Visualizations'] = $this->visualizationsNavGroup( $user );
+
         return $nav;
+    }
+
+    /**
+     * The Visualizations group.
+     *
+     * Its own group rather than an entry in Custom Reports, deliberately. The
+     * two behave identically in every other way -- same ownership, same access
+     * control, same editable titles, same delete -- but one CONFIGURES a query
+     * and the other COMPUTES, and the controls differ accordingly. Listing them
+     * together would teach the reader they are the same thing.
+     *
+     * Always present, including when there are none: the roster is where one
+     * gets built, so an empty group still has somewhere to send a reader. Same
+     * rule the Custom Reports group already follows.
+     *
+     * @return array
+     */
+    protected function visualizationsNavGroup( $user ) {
+
+        $links = array();
+
+        $visualizations = \OWA\Module\Base\Classes\CustomReports::recent(
+            (string) $user->getUserData( 'user_id' ),
+            (bool) $user->isCapable( 'edit_users' ),
+            \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION
+        );
+
+        foreach ( $visualizations as $i => $visualization ) {
+
+            $links[] = array(
+                'ref' => array(
+                    'do'       => 'base.report',
+                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX
+                                  . $visualization['id'],
+                ),
+                'anchortext' => $visualization['name'],
+                'order'      => $i,
+                'priviledge' => 'view_reports',
+                'icon_class' => '',
+            );
+        }
+
+        $links[] = array(
+            'ref'        => array( 'do' => 'base.visualizations' ),
+            'anchortext' => 'See more...',
+            'order'      => count( $links ),
+            'priviledge' => 'view_site_list',
+            'icon_class' => '',
+        );
+
+        return array(
+            'ref'        => array( 'do' => 'base.visualizations' ),
+            'anchortext' => 'Visualizations',
+            'order'      => 1000,
+            'priviledge' => 'view_site_list',
+            'icon_class' => 'fa fa-filter',
+            'subgroup'   => $links,
+        );
     }
 
     protected function hideReportingNavigation() {

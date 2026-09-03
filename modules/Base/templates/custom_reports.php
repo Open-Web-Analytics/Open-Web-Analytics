@@ -107,9 +107,20 @@ $owa_me        = (string) $view->get('current_user_id');
 
 <?php else: ?>
 <div class="owa_reportSectionContent">
+    <?php
+    /*
+     * This roster serves both kinds. A visualization is not a custom report --
+     * it computes rather than configures, and they are listed separately for
+     * exactly that reason -- so the empty state has to say which one is empty,
+     * and point at the right builder.
+     */
+    $owa_isViz  = ( $view->roster_type ?? '' ) === 'visualization';
+    $owa_noun   = $owa_isViz ? 'visualizations' : 'custom reports';
+    $owa_builder = $owa_isViz ? 'base.visualizationEdit' : 'base.customReportEdit';
+    ?>
     <?php if ( $owa_author ): ?>
-        No custom reports yet.
-        <a href="<?php echo $view->makeLink( array( 'do' => 'base.customReportEdit' ) ); ?>">Build one</a>.
+        No <?php $view->out( $owa_noun );?> yet.
+        <a href="<?php echo $view->makeLink( array( 'do' => $owa_builder ) ); ?>">Build one</a>.
     <?php else: ?>
         <?php
             /*
@@ -117,7 +128,7 @@ $owa_me        = (string) $view->get('current_user_id');
              * would point at a screen they are not allowed to open.
              */
         ?>
-        No custom reports have been shared with you yet.
+        No <?php $view->out( $owa_noun );?> have been shared with you yet.
     <?php endif; ?>
 </div>
 <?php endif; ?>

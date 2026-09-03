@@ -29,16 +29,16 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class ReportGoalFunnel extends \OWA\Core\View {
+class VisualizationFunnel extends \OWA\Core\View {
 
     function render() {
 
-        $this->body->set_template('report_goal_funnel.php');
+        $this->body->set_template('visualization_funnel.php');
         $this->body->set('funnel', $this->get('funnel'));
         $this->body->set('funnel_json', json_encode($this->get('funnel')));
         $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
         $this->body->set('numGoals', \OWA\Core\CoreAPI::getSetting('base', 'numGoals') );
-        $this->body->set('goal_number',  $this->get('goal_number') );
+        $this->body->set( 'visualization_id', $this->get( 'visualization_id' ) );
 
         /*
          * The scope toggle and any segment complaint.

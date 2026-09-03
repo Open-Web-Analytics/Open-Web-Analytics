@@ -180,8 +180,6 @@
     "owa_reportDimensionView",
     "owa_reportDomstreamsController",
     "owa_reportDomstreamsView",
-    "owa_reportGoalFunnelController",
-    "owa_reportGoalFunnelView",
     "owa_reportView",
     "owa_reportsRestController",
     "owa_reportsRestView",

@@ -71,23 +71,6 @@ Profile of the same Property can count different things.</div>
                 <td>
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventEdit',
                         'siteId' => $view->siteId, 'goalEventId' => $owa_ke['id'] ) );?>">Edit</a>
-                    <?php if ( ! empty( $owa_ke['step_count'] ) && $owa_ke['goal_number'] ):?>
-                    <?php
-                        /*
-                         * Only where there IS a funnel, and only where the key
-                         * event still has a numbered slot -- the funnel report
-                         * addresses goals by number, so one created past the
-                         * twentieth has no way to be named to it yet. That is a
-                         * v2 boundary, not something to paper over with a link
-                         * that opens the wrong funnel.
-                         */
-                    ?>
-                    | <a href="<?php echo $view->makeLink( array(
-                        'do'         => 'base.report',
-                        'reportId'   => 'goal-funnel',
-                        'goalNumber' => $owa_ke['goal_number'],
-                        'siteId'     => $view->siteId ), true );?>">Funnel</a>
-                    <?php endif;?>
                 </td>
             </tr>
         <?php endforeach;?>

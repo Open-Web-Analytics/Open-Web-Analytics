@@ -30,14 +30,7 @@ foreach ( $owa_steps as $owa_s ) {
 
 <div class="owa_reportControls">
 
-    <span class="owa_reportControl">
-        <label for="goalChooser">Goal</label>
-        <select id="goalChooser">
-            <?php for ($i = 1; $i <= $view->numGoals; $i++):?>
-            <option <?php if ($i == $view->goal_number): echo 'SELECTED'; endif;?> value="<?php $view->out($i, false); ?>">Goal <?php $view->out($i, false); ?></option>
-            <?php endfor; ?>
-        </select>
-    </span>
+    
 
     <?php
         /*
@@ -77,11 +70,7 @@ foreach ( $owa_steps as $owa_s ) {
     </span>
 
     <span class="owa_reportControl owa_reportControlRight">
-        <a href="<?php echo $view->makeLink( array(
-            'do'          => 'base.goalEventEdit',
-            'goal_number' => $view->goal_number,
-            'siteId'      => $view->get('siteId'),
-        ) ); ?>">Edit this funnel</a>
+        <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id, 'siteId' => $view->get('siteId') ) ); ?>">Edit this funnel</a>
     </span>
 
     <div style="clear:both;"></div>
@@ -158,12 +147,8 @@ foreach ( $owa_steps as $owa_s ) {
 
 <?php else:?>
 <div class="owa_reportSectionContent">
-    This goal has no funnel steps configured.
-    <a href="<?php echo $view->makeLink( array(
-        'do'          => 'base.goalEventEdit',
-        'goal_number' => $view->goal_number,
-        'siteId'      => $view->get('siteId'),
-    ) ); ?>">Add some</a>.
+    This visualization has no steps yet.
+    <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id, 'siteId' => $view->get('siteId') ) ); ?>">Add some</a>.
 </div>
 <?php endif;?>
 
@@ -213,10 +198,6 @@ foreach ( $owa_steps as $owa_s ) {
             goTo( { 'owa_constraints': constraints } );
         } );
     }
-
-    jQuery( '#goalChooser' ).change( function () {
-        goTo( { 'owa_goalNumber': jQuery( this ).val() } );
-    } );
 
     /*
      * Same two-segment switch the Live View control draws. checkboxradio with

@@ -142,13 +142,21 @@ final class ReportRegistryTest extends TestCase
 
     public static function sampleReportProvider(): array
     {
-        // The bespoke reports, which are the only ones still implemented by a
-        // controller -- and, by decision, always will be. They prefetch result
-        // sets, so they are also the ones the characterization harness cannot
-        // snapshot; this is the coverage they get instead.
+        /*
+         * The bespoke report -- singular now.
+         *
+         * The funnel was the other one. It is not a registered report any more:
+         * it became a VISUALIZATION, which is a row on owa_custom_report drawn
+         * by its own controller, reached as custom-<id> rather than by a
+         * registered id. So there is no registry route to compare a direct
+         * route against.
+         *
+         * domstreams prefetches result sets, so it is also the one the
+         * characterization harness cannot snapshot; this is the coverage it
+         * gets instead.
+         */
         return array(
             'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
-            'prefetching'    => array( 'goal-funnel', '\OWA\Module\Base\Controller\ReportGoalFunnel' ),
         );
     }
 

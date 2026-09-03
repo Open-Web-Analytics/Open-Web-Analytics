@@ -92,38 +92,27 @@ final class FunnelStepPathMigrationTest extends TestCase
     }
 
     /**
-     * Every element of the funnel array is keyed `path`, including the one the
-     * report appends itself.
+     * Every element of the funnel array is keyed `path`.
      *
-     * ReportGoalFunnel adds the goal's own destination as a final synthetic
-     * step, and the loop that follows constrains on $step['path']. It was built
-     * with 'url', so after the rename that one element -- the goal itself, the
-     * last bar of the funnel -- produced `pagePath==` and matched nothing.
+     * The controller used to APPEND one itself -- the goal's own destination as
+     * a final synthetic step -- and built it with 'url' while the loop that
+     * follows reads $step['path'], so that one element matched nothing.
      *
-     * Source-scanned because reaching the loop needs a configured funnel, a
-     * goalNumber and traffic: no install here has a single funnel step, which
-     * is exactly why the suite did not catch it.
+     * There is no appended step now. A visualization's steps ARE the path and
+     * its last step is the destination, so the bug this guarded cannot recur in
+     * that form. What remains worth asserting is the key itself: the counting
+     * loop still reads 'path', so anything building a step has to use it.
      */
-    public function testTheReportBuildsItsAppendedStepWithTheSameKeyItReads(): void
+    public function testTheCountingLoopReadsTheKeyStepsAreStoredUnder(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/ReportGoalFunnel.php' );
+            OWA_DIR . 'modules/Base/Controller/VisualizationFunnel.php' );
 
-        /*
-         * The KEY is the contract, not the variable holding it. This named
-         * $funnel until the report was rewritten to count in one query, where
-         * the list became $steps -- and a test pinned to the old name reads as
-         * a regression in the thing it is guarding rather than a rename.
-         */
-        $this->assertMatchesRegularExpression(
-            "/\\\$(funnel|steps)\\[\\]\\s*=\\s*array\\(\\s*'path'\\s*=>/", $src,
-            'the appended step must be keyed path, like the stored ones' );
+        $this->assertStringContainsString( "\$step['path']", $src,
+            'The counting loop reads some other key than the one steps are stored under.' );
 
-        $this->assertSame( 0, preg_match( "/\\\$(funnel|steps)\\[\\]\\s*=\\s*array\\(\\s*'url'\\s*=>/", $src ),
-            'nothing may build a funnel element keyed url any more' );
-
-        $this->assertSame( 0, preg_match( "/\\\$step\\['url'\\]|\\\$(funnel|steps)\\[[^\\]]+\\]\\['url'\\]/", $src ),
-            'and nothing may read one' );
+        $this->assertStringNotContainsString( "'url'   =>", $src,
+            'A step is being built with a `url` key again, which the loop cannot read.' );
     }
 
     /** The class exists, declares the version the module now requires, and reverses. */

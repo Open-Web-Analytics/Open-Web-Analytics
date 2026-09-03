@@ -159,7 +159,7 @@ final class GoalFunnelOrderTest extends TestCase
     {
         $this->seed();
 
-        $controller = new \OWA\Module\Base\Controller\ReportGoalFunnel(array(
+        $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(array(
             'siteId' => self::SITE,
             'period' => 'today',
         ));
@@ -246,7 +246,7 @@ final class GoalFunnelOrderTest extends TestCase
         foreach (array('' => 'visitor', 'visitor' => 'visitor',
                        'session' => 'session', 'nonsense' => 'visitor') as $asked => $expected) {
 
-            $controller = new \OWA\Module\Base\Controller\ReportGoalFunnel(
+            $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(
                 array('siteId' => self::SITE) + ($asked === '' ? array() : array('funnelScope' => $asked))
             );
 

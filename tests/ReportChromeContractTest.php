@@ -60,7 +60,7 @@ final class ReportChromeContractTest extends TestCase
      *
      * It used to fill every parameter a report reads with one sentinel, and
      * named the single report that tolerated it. Neither of the two now left
-     * does. ReportGoalFunnel reads `period`, `startDate` and `endDate`, so a
+     * does. VisualizationFunnel reads `period`, `startDate` and `endDate`, so a
      * sentinel in those overwrites the very date picker under test; and
      * ReportDomstreams pages its results, so a sentinel in `page` reaches
      * arithmetic and raises a TypeError before doAction() returns.
@@ -76,7 +76,7 @@ final class ReportChromeContractTest extends TestCase
     {
         return array(
             // Resolves an id: which goal's funnel to draw.
-            'ReportGoalFunnel' => array( 'ReportGoalFunnel', array( 'goalNumber' => 1 ) ),
+            'VisualizationFunnel' => array( 'VisualizationFunnel', array( 'goalNumber' => 1 ) ),
 
             // Paged, and reached without a document -- its "latest domstreams"
             // mode, which is the one that needs no fixture.
@@ -205,18 +205,17 @@ final class ReportChromeContractTest extends TestCase
      */
     public function testTheTwoRoutesAgreeAboutTheChrome(): void
     {
-        // A bespoke report, which is the only kind that still HAS both routes
+        // The bespoke report, which is the only kind that still HAS both routes
         // to compare -- every configured report has only the one.
         //
-        // goalNumber goes to BOTH sides, because the question is whether the
-        // extra hop preserves what the direct route provides. Giving the routes
-        // different inputs would make them differ for a reason that has nothing
-        // to do with the dispatcher.
-        $params = array( 'goalNumber' => 1 );
+        // domstreams, not the funnel: the funnel is a VISUALIZATION now, a row
+        // reached as custom-<id> rather than a registered report id, so it has
+        // no registry route for a direct route to be compared against.
+        $params = array();
 
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportGoalFunnel( $params ) )->doAction();
+        $direct = (array) ( new \OWA\Module\Base\Controller\ReportDomstreams( $params ) )->doAction();
         $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'goal-funnel' ) + $params ) )->doAction();
+            array( 'reportId' => 'domstreams' ) + $params ) )->doAction();
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );

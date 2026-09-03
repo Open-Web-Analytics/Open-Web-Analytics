@@ -39,7 +39,7 @@ class Update025 extends \OWA\Core\Update {
             return false;
         }
 
-        foreach ( array( 'base.goal_event_condition', 'base.funnel', 'base.funnel_step' ) as $name ) {
+        foreach ( array( 'base.goal_event_condition' ) as $name ) {
 
             $table = \OWA\Core\CoreAPI::entityFactory( $name );
 
@@ -130,50 +130,25 @@ class Update025 extends \OWA\Core\Update {
                 }
 
                 /*
-                 * The funnel, if it has one.
+                 * The funnel is NOT migrated here.
                  *
-                 * 1.x kept it three levels deep -- details.funnel_steps, inside
-                 * the goal, inside the goals array, inside a settings blob.
-                 * Dropping it would have been silent: this install has no
-                 * funnel goals, so nothing here would have failed.
+                 * A funnel stopped being configuration attached to a goal. It
+                 * is a VISUALIZATION now -- a row on owa_custom_report drawn by
+                 * its own controller, defined where it is looked at -- so there
+                 * is no goal-owned funnel table for this to write into.
                  *
-                 * It becomes a funnel of its own that NAMES this goal event,
-                 * rather than a child of it. A 1.x goal conflated the two, so
-                 * the migration is where they separate: the funnel takes the
-                 * goal's name because that is what the goal called the path.
+                 * Which leaves 1.x funnel steps behind, and that is stated here
+                 * rather than left to be discovered. Nothing is lost: Update022
+                 * COPIED the site blobs rather than moving them, so the steps
+                 * are still in owa_setting. But a funnel goal becomes a goal
+                 * event with no funnel, and its owner rebuilds the path as a
+                 * visualization.
+                 *
+                 * Migrating them automatically would mean inventing a
+                 * visualization per funnel goal -- named and owned by nobody in
+                 * particular, in a list that is meant to hold what someone
+                 * deliberately made.
                  */
-                if ( $planned['steps'] ) {
-
-                    $funnel = \OWA\Core\CoreAPI::entityFactory( 'base.funnel' );
-
-                    $funnelId = $funnel->generateId(
-                        'funnel:' . $planned['property_id'] . ':' . $planned['goal_number'] );
-
-                    $funnel->set( 'id', $funnelId );
-                    $funnel->set( 'property_id', $planned['property_id'] );
-                    $funnel->set( 'name', $planned['name'] );
-                    $funnel->set( 'goal_event_id', $goalEvent->get( 'id' ) );
-                    $funnel->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-                    $funnel->create();
-
-                    foreach ( $planned['steps'] as $plannedStep ) {
-
-                        $row = \OWA\Core\CoreAPI::entityFactory( 'base.funnel_step' );
-
-                        $row->set( 'id', $row->generateId(
-                            'funnel_step:' . $funnelId . ':' . $plannedStep['step_number'] ) );
-
-                        $row->set( 'funnel_id', $funnelId );
-
-                        foreach ( $plannedStep as $column => $value ) {
-
-                            $row->set( $column, $value );
-                        }
-
-                        $row->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-                        $row->create();
-                    }
-                }
             }
         }
 
@@ -241,7 +216,6 @@ class Update025 extends \OWA\Core\Update {
                 'condition_property' => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
                 'condition_operator' => (string) ( $details['match_type'] ?? '' ),
                 'condition_value'    => (string) ( $details['goal_url'] ?? '' ),
-                'steps'              => self::planSteps( $details ),
             );
         }
 
@@ -265,47 +239,7 @@ class Update025 extends \OWA\Core\Update {
         return $site->get( 'property_id' );
     }
 
-    /**
-     * A funnel's steps, in order.
-     *
-     * 1.x stored a step as { name, path } and applied the path as a REGEX
-     * against page_uri -- preg_match( '@<path>@i', $page_uri ). So the
-     * condition is exact rather than interpretive: page_uri, regex, path.
-     *
-     * @return array
-     */
-    public static function planSteps( $details ) {
 
-        if ( empty( $details['funnel_steps'] ) || ! is_array( $details['funnel_steps'] ) ) {
-
-            return array();
-        }
-
-        $steps = array();
-
-        foreach ( $details['funnel_steps'] as $number => $step ) {
-
-            if ( ! is_array( $step ) || trim( (string) ( $step['path'] ?? '' ) ) === '' ) {
-
-                /*
-                 * A step with no path is a row someone added and left alone.
-                 * The edit screen already drops those rather than treating them
-                 * as a mistake; carrying them over would migrate a blank.
-                 */
-                continue;
-            }
-
-            $steps[] = array(
-                'step_number'        => (int) $number,
-                'name'               => (string) ( $step['name'] ?? '' ),
-                'condition_property' => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
-                'condition_operator' => \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX,
-                'condition_value'    => (string) $step['path'],
-            );
-        }
-
-        return $steps;
-    }
 
     /**
      * A goal's value as whole cents.

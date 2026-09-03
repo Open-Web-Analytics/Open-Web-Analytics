@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.4.0
  */
 
-class ReportGoalFunnel extends \OWA\Core\ReportController {
+class VisualizationFunnel extends \OWA\Core\ReportController {
 
     /**
      * How the funnel is counted: one visitor's whole history, or one visit.
@@ -59,18 +59,47 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
         'session' => 'session_id',
     );
 
+    /**
+     * The row this is drawing, from the reportId on the request.
+     *
+     * The dispatcher builds this controller from the REQUEST params, so nothing
+     * it looked up reaches here -- the id is on the URL and is read again.
+     *
+     * @return string
+     */
+    protected function visualizationId() {
+
+        $reportId = (string) $this->getParam( 'reportId' );
+        $prefix   = \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX;
+
+        return strpos( $reportId, $prefix ) === 0
+            ? substr( $reportId, strlen( $prefix ) ) : '';
+    }
+
     function action() {
 
-        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
+        /*
+         * The steps come from the VISUALIZATION's own definition.
+         *
+         * They used to come from a goal's funnel config, which made a report
+         * depend on admin configuration and tied goal_N_start -- an ingest-time
+         * stamp -- to a reporting artefact. A goal event says what starts it
+         * directly now, so this is free to be what it always was: an analysis
+         * of a path, defined where it is looked at.
+         */
+        $visualization = \OWA\Module\Base\Classes\CustomReports::load( $this->visualizationId() );
 
-        $goal_number = $this->getParam('goalNumber');
+        if ( ! $visualization ) {
 
-        if ( ! $goal_number ) {
-            $goal_number = 1;
+            $this->set( 'funnel', array() );
+            $this->setSubview( 'base.visualizationFunnel' );
+            $this->setTitle( 'Funnel' );
+
+            return;
         }
 
-        $goal   = $gm->getGoal($goal_number);
-        $funnel = $gm->getGoalFunnel($goal_number);
+        $definition = (array) $visualization['definition'];
+        $funnel     = isset( $definition['steps'] ) ? (array) $definition['steps'] : array();
 
         $scope = $this->scope();
 
@@ -99,12 +128,12 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
              * the stored steps carry that key since the rename. Built with
              * 'url' it was the one element the loop could not read.
              */
+            /*
+             * The steps ARE the path. The old report appended the goal's
+             * destination as a final step because its steps described the route
+             * TO a goal; a visualization's last step is the destination.
+             */
             $steps = array_values( $funnel );
-            $steps[] = array(
-                'path'        => $goal['details']['goal_url'],
-                'name'        => $goal['goal_name'],
-                'step_number' => count( $steps ) + 1,
-            );
 
             $counted = $this->countFunnel( $steps, $scope );
 
@@ -178,9 +207,9 @@ class ReportGoalFunnel extends \OWA\Core\ReportController {
         }
 
         // set view stuff
-        $this->setSubview('base.reportGoalFunnel');
-        $this->setTitle('Funnel Visualization:', 'Goal ' . $goal_number);
-        $this->set('goal_number', $goal_number);
+        $this->setSubview( 'base.visualizationFunnel' );
+        $this->setTitle( (string) $visualization['name'] );
+        $this->set( 'visualization_id', $this->visualizationId() );
     }
 
     /**

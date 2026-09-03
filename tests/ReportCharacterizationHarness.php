@@ -28,7 +28,7 @@ final class ReportCharacterizationHarness
      */
     private const PREFETCHING = array(
         'ReportDomstreams',
-        'ReportGoalFunnel',
+        'VisualizationFunnel',
     );
 
     /**

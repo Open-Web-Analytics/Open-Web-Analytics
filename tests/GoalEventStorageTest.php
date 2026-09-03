@@ -375,17 +375,26 @@ final class GoalEventStorageTest extends TestCase
     /* ---------------- funnels ---------------- */
 
     /**
-     * A funnel is ORDERED conditions, and dropping it would have been silent.
+     * 1.x funnel steps are deliberately NOT migrated.
      *
-     * 1.x kept it as details.funnel_steps -- inside the goal, inside the goals
-     * array, inside a settings blob. This install has no funnel goals, so a
-     * migration that dropped them would have passed every test and lost data on
-     * somebody else's install.
+     * A funnel stopped being configuration attached to a goal: it is a
+     * visualization now, defined where it is looked at. So there is nothing for
+     * a goal-owned funnel to migrate INTO, and inventing a visualization per
+     * funnel goal would put rows named and owned by nobody in particular into a
+     * list meant to hold what someone deliberately made.
+     *
+     * Nothing is lost. Update022 COPIED the site blobs rather than moving them,
+     * so the steps are still in owa_setting for anyone rebuilding the path.
+     *
+     * Asserted rather than left as an absence, because "the migration silently
+     * dropped the funnels" and "the migration deliberately leaves them" look
+     * identical from the outside -- and the first of those was a real bug on
+     * this branch, found only because someone went looking.
      */
-    public function testFunnelStepsAreMigratedNotDropped(): void
+    public function testFunnelStepsAreNotMigrated(): void
     {
         $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-            'scope_id' => 'OWA-probe',
+            'scope_id' => $this->siteId,
             'value'    => serialize( array( 1 => array(
                 'goal_name'   => 'Checkout',
                 'goal_number' => '1',
@@ -395,40 +404,21 @@ final class GoalEventStorageTest extends TestCase
                     'match_type'   => 'exact',
                     'goal_url'     => '/done',
                     'funnel_steps' => array(
-                        1 => array( 'name' => 'Cart',    'path' => '/cart' ),
-                        2 => array( 'name' => 'Payment', 'path' => '/pay' ),
+                        1 => array( 'name' => 'Cart', 'path' => '/cart' ),
                     ),
                 ),
             ) ) ),
         ) );
 
-        $this->assertCount( 2, $planned[0]['steps'],
-            'The funnel was dropped, so a funnel goal silently becomes a plain one.' );
+        $this->assertCount( 1, $planned, 'the goal itself must still migrate' );
 
-        $this->assertSame( 1, $planned[0]['steps'][0]['step_number'] );
-        $this->assertSame( 'Cart', $planned[0]['steps'][0]['name'] );
+        $this->assertArrayNotHasKey( 'steps', $planned[0],
+            'The migration plans funnel steps, which nothing consumes -- a funnel is a '
+            . 'visualization now and has no goal-owned table to be written into.' );
 
-        /*
-         * 1.x applies a step path as preg_match( '@<path>@i', $page_uri ), so
-         * the operator is regex. Recording it as 'exact' would change what
-         * every migrated funnel matches.
-         */
-        $this->assertSame( 'regex', $planned[0]['steps'][0]['condition_operator'] );
-        $this->assertSame( '/cart', $planned[0]['steps'][0]['condition_value'] );
-        $this->assertSame( 'page_uri', $planned[0]['steps'][0]['condition_property'] );
-    }
-
-    /** A step someone added and left blank is not migrated as a blank step. */
-    public function testEmptyFunnelStepsAreDropped(): void
-    {
-        $steps = \OWA\Module\Base\Update\Update025::planSteps( array(
-            'funnel_steps' => array(
-                1 => array( 'name' => 'Cart', 'path' => '/cart' ),
-                2 => array( 'name' => '',     'path' => '' ),
-            ),
-        ) );
-
-        $this->assertCount( 1, $steps );
+        /* And the goal event itself is unaffected by having had one. */
+        $this->assertSame( 'Checkout', $planned[0]['name'] );
+        $this->assertSame( '/done', $planned[0]['condition_value'] );
     }
 
     /**

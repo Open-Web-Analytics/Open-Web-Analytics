@@ -288,15 +288,18 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="user_id"', 'name="email_address"'],
             ],
-            /* The funnel has its own screen now, so it gets its own case. */
-            'funnel_edit (add)' => [
-                'funnel_edit.php',
+            /*
+             * A funnel is a VISUALIZATION now, built on the reporting side, so
+             * this is the screen that owns its steps.
+             */
+            'visualization_edit (add)' => [
+                'visualization_edit.php',
                 [
-                    'headline' => 'New Funnel', 'siteId' => 'abc123',
-                    'funnel' => [], 'funnelId' => '', 'steps' => [],
-                    'goalEvents' => [], 'validation_errors' => [],
+                    'visualization' => [], 'visualizationId' => '', 'steps' => [],
+                    'visualizationTypes' => ['funnel' => 'Funnel'],
+                    'validation_errors' => [],
                 ],
-                ['name="name"', 'name="stepPath[]"', 'name="goalEventId"'],
+                ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],
             ],
             'goal_event_edit (add)' => [
                 'goal_event_edit.php',

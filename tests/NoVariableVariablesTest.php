@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * No source file uses a variable variable.
  *
- * This exists because of a real, long-lived defect. ReportGoalFunnel read a
+ * This exists because of a real, long-lived defect. VisualizationFunnel read a
  * result set as a doubled dollar sign -- PHP took the object's value as the
  * NAME of a variable to look up, and fatalled converting stdClass to string.
  * The report returned a 500 for any goal that had a funnel, and because no

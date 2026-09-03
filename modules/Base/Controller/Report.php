@@ -186,6 +186,39 @@ class Report extends \OWA\Core\Controller {
      * its metrics with it -- and a row can be edited by something that is not
      * the builder.
      */
+    /**
+     * Hand a visualization to the controller its type names.
+     *
+     * The type resolves through a map rather than a switch, so the second
+     * visualization needs no change here.
+     */
+    private function renderVisualization( $id, $report ) {
+
+        $type = (string) ( $report['visualization_type'] ?? '' );
+
+        $controllers = array(
+            'funnel' => 'base.visualizationFunnel',
+        );
+
+        if ( ! isset( $controllers[ $type ] ) ) {
+
+            /*
+             * Named rather than rendered blank. A visualization whose type no
+             * longer resolves is the same class of problem as a report naming a
+             * metric a deactivated module took with it.
+             */
+            return $this->reportNotResolved(
+                $id, sprintf( 'names visualization type "%s", which is not registered', $type ),
+                500 );
+        }
+
+        /*
+         * The target is built from the REQUEST params, so nothing set here
+         * reaches it -- it loads the row itself from reportId.
+         */
+        return $this->delegateTo( $controllers[ $type ] );
+    }
+
     private function renderCustom( $id ) {
 
         $report = \OWA\Module\Base\Classes\CustomReports::load(
@@ -194,6 +227,24 @@ class Report extends \OWA\Core\Controller {
         if ( ! $report ) {
 
             return $this->reportNotResolved( $id, 'not found', 404 );
+        }
+
+        /*
+         * A VISUALIZATION brings its own controller.
+         *
+         * Reports and visualizations share this table because everything around
+         * them is the same -- ownership, access control, editable titles,
+         * delete. What differs is that a report CONFIGURES a query and a
+         * visualization COMPUTES: a funnel counts ordered stages over the event
+         * stream, which no arrangement of metrics and dimensions expresses.
+         *
+         * So the definition below is never validated as a widget list for one
+         * of these; the visualization's own controller reads it.
+         */
+        if ( ( $report['report_type'] ?? '' )
+             === \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION ) {
+
+            return $this->renderVisualization( $id, $report );
         }
 
         $definition = (array) $report['definition'];

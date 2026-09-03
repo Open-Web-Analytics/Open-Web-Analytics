@@ -98,8 +98,6 @@ class GoalEvents extends \OWA\Core\AdminController {
             $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
             $goalEvent->setProperties( $row );
 
-            $rows[ $i ]['step_count'] = count( $goalEvent->loadSteps() );
-
             /*
              * The conditions, summarised for the list. Conditions are rows now,
              * so the goal event row itself carries none -- reading one off it

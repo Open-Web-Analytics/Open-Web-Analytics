@@ -300,13 +300,6 @@ class GoalEvent extends \OWA\Core\Entity {
                  */
                 'match_type'   => $first ? $first->get( 'condition_operator' ) : '',
                 'goal_url'     => $first ? $first->get( 'condition_value' ) : '',
-                /*
-                 * Only when there are some. The evaluator tests
-                 * array_key_exists( 'funnel_steps', ... ) and then indexes
-                 * [1] unconditionally, so an empty array here would be a
-                 * fatal on every event rather than "this goal has no funnel".
-                 */
-                'funnel_steps' => $this->loadSteps(),
             ), static function ( $value ) {
 
                 return $value !== array() && $value !== null;
@@ -456,26 +449,7 @@ class GoalEvent extends \OWA\Core\Entity {
         return ! $any;
     }
 
-    /**
-     * The funnel that leads to this goal event, in the 1.x shape.
-     *
-     * Looked UP rather than owned. A funnel names its goal event, not the other
-     * way round -- so a goal event usually has none, two funnels can lead to the
-     * same one, and a funnel is worth having with no goal event at all.
-     *
-     * @return array
-     */
-    public function loadSteps() {
 
-        if ( ! $this->get( 'id' ) ) {
-
-            return array();
-        }
-
-        $funnel = \OWA\Module\Base\Entity\Funnel::forGoalEvent( $this->get( 'id' ) );
-
-        return $funnel->wasPersisted() ? $funnel->loadSteps() : array();
-    }
 
     /**
      * A 1.x decimal goal value as whole cents.
