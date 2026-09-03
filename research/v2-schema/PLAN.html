@@ -131,6 +131,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s23">2.3 Tracker-additive</a>
   <a href="#s24">2.4 Not additive</a>
   <a href="#s25">2.5 Order of operations</a>
+  <a href="#s26">2.6 Goals became goal events</a>
   <a class="r-part" href="#p3">III · Migration</a>
   <a href="#s31">3.1 One tracker</a>
   <a href="#s32">3.2 Early cutover</a>
@@ -155,7 +156,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -233,8 +234,8 @@ beacon — with the server materializing the row, duplicates collapsing at the t
 <code>SUM(engagement_msec)</code> across the session vs the threshold. Final-page dwell keeps the
 one irreducible lossy attempt, and is the thing 1.x structurally cannot measure at all.</li>
 <li><strong>Engaged is derived, not stored</strong> — classification at read time:
-<code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR key event</code>. An earlier draft carried a
-sticky client-set flag; it was removed — the pageview and key-event disjuncts are already
+<code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR goal event</code>. An earlier draft carried a
+sticky client-set flag; it was removed — the pageview and goal-event disjuncts are already
 loss-tolerant rows, threshold-crossing single-page sessions emit delta-carrying scroll events
 anyway, and in the worst case the flag rode the same lossy terminal beacon as the delta. No
 stored classification means nothing to disagree with.</li>
@@ -242,7 +243,7 @@ stored classification means nothing to disagree with.</li>
 the single-pageview definition is retired. Measured: on a photo/blog install it marks
 <strong>73.6%</strong> of sessions as bounces regardless of dwell, because 1.x cannot see
 final-page time — the exact thing engagement deltas measure. v1 history keeps the old definition
-in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and key events — the sole authority,
+in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and goal events — the sole authority,
 with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). Engaged as a
 <strong>dimension is punted for v2.0</strong> — the question installs actually ask, &ldquo;which
 URLs have the most engagement&rdquo;, is a one-pass <code>SUM(msec) GROUP BY page_ref</code> over
@@ -295,7 +296,7 @@ what GA4 emits that v2 deliberately will not.</p>
 <em>grain</em>, not merely for payload. A metric and a dimension combine only where a row exists at
 their shared grain — which is the entire job <code>owa_session</code>'s 121 columns do in 1.x, and
 why removing the session-grain table would make “sessions by landing page” not slow but
-<em>unavailable</em>. They are also the natural thing to mark as a key event, and they carry the
+<em>unavailable</em>. They are also the natural thing to mark as a goal event, and they carry the
 attribution the client knows at that instant.<br><br>
 What they must <em>not</em> be is the basis of a count. GA4 emits <code>session_start</code> yet
 counts sessions by estimating distinct session ids, precisely because the marker goes missing
@@ -415,32 +416,54 @@ be built. The GA4 recommended set fills it in.</p>
 their samples — to events would swamp the table: one measured corpus held 229,663 chunks
 carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
 
-<h4>Key events are author-named events <span class="chip c-dec">Decided</span></h4>
-<p>1.x has twenty numbered goal slots. v2 has none: an author names a key event and gives it an
+<h4>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
+<p class="note"><strong>They are called <em>goal events</em>, not key events</strong>
+<span class="chip c-dec">Decided</span> &mdash; 3&nbsp;Sep&nbsp;2026. GA renamed its
+conversions to <em>key events</em> in 2024, and this section was written in GA's
+vocabulary. OWA keeps its own word: a 1.x installation has <em>goals</em>, the people
+using it say goals, and &ldquo;key event&rdquo; would make every existing user translate
+before they could find the screen. The mechanism below is unchanged and is still GA's
+shape &mdash; only the noun is ours. Where this document describes what <em>GA</em> does,
+it still says key event, because that is what GA calls it.</p>
+<p>1.x had twenty numbered goal slots. v2 has none: an author names a goal event and gives it an
 event type and a condition &mdash; &ldquo;a click whose target is <em>x</em>&rdquo; &mdash; and when
 the condition matches, the server <strong>materialises an additional row whose
 <code>event_type</code> is that name</strong>. The same mechanism as <code>session_start</code>
 above, and the same shape as GA, where a key event is an event whose <em>name</em> is marked as
 key.</p>
-<p>Chosen over annotating the triggering event with a key-event-name column because it needs
+<p class="note"><strong>The numbered slots are already gone in 1.x</strong>
+<span class="chip c-done">Shipped</span> &mdash; see &sect;2.6. A goal event is a row in
+<code>owa_goal_event</code> with its conditions in <code>owa_goal_event_condition</code>,
+which is this shape a schema early. So v2 inherits authored goal events rather than
+introducing them, and the migration is a re-home rather than a redesign.</p>
+<p>Chosen over annotating the triggering event with a goal-event-name column because it needs
 <strong>no schema change</strong>: <code>event_type</code> already carries the name, so the table
-stays at 40 columns and per-key-event reporting is an ordinary <code>GROUP BY</code>. Three rules
+stays at 40 columns and per-goal-event reporting is an ordinary <code>GROUP BY</code>. Three rules
 come with it, stated here rather than left to whichever code is written first:</p>
 <ul>
 <li>The materialised row is <strong>never counted</strong> as an ordinary event &mdash; the rule
 already set for <code>session_start</code>, for the same reason.</li>
-<li>The triggering event stays an ordinary <code>page_view</code> with <code>is_key_event = 0</code>.
+<li>The triggering event stays an ordinary <code>page_view</code> with <code>is_goal_event = 0</code>.
 Flagging both would double-count and blur which row <em>is</em> the conversion.</li>
 <li>The <code>event_type</code> vocabulary therefore <strong>stops being closed</strong>. Intended,
-given the site-opt-in group above &mdash; but stated so nobody discovers it by naming a key event
+given the site-opt-in group above &mdash; but stated so nobody discovers it by naming a goal event
 <code>page_view</code>.</li>
 </ul>
-<p>Counting them is one metric plus one dimension, and <code>isKeyEvent</code> is registered as a
+<p>Counting them is one metric plus one dimension, and <code>isGoalEvent</code> is registered as a
 dimension so it can be <em>constrained</em> on &mdash; in this engine a constraint name resolves
-through the dimension registry, so unregistered means unfilterable. Per-key-event metrics follow
-GA's <code>sessionKeyEventRate:&lt;name&gt;</code> shape, <strong>parameterised rather than
-pre-registered</strong>, because the set of key events is per-site while the catalog is built once
+through the dimension registry, so unregistered means unfilterable. Per-goal-event metrics follow
+GA's <code>sessionKeyEventRate:&lt;name&gt;</code> shape spelled in our noun &mdash;
+<code>sessionGoalEventRate:&lt;name&gt;</code> &mdash; <strong>parameterised rather than
+pre-registered</strong>, because the set of goal events is per-site while the catalog is built once
 per process. Full reasoning in EVENTS.html &sect;7.14.</p>
+<p class="note"><strong>Counted once per session, for now</strong>
+<span class="chip c-done">Shipped</span> &mdash; 1.x offers <em>once per session</em> and
+nothing else, and the save clamps to it whatever a request asks for. A conversion in 1.x is
+a column on the session row, so a second match in the same session has nowhere to go:
+once-per-event is a setting the storage can hold and the handler cannot honour, which is
+the quietest kind of wrong. <strong>v2 removes the constraint rather than the setting</strong>
+&mdash; a materialised row per match is per-event by construction &mdash; so the choice becomes
+real at cutover and the clamp is what should be deleted then.</p>
 
 <h3 id="s15"><span class="num">1.5</span>Visitor identity <span class="chip c-dec">Decided</span></h3>
 <p>The one dimension that cannot be content-derived — everything else in v2 hashes from its own
@@ -643,7 +666,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">34</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td></tr>
 <tr><td class="n">35</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percent bucket</td></tr>
 <tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>on <em>every</em> row: time accrued on the current page since the last report; <code>user_engagement</code> rows carry the hide-time residue. Must not pay JSON extraction</td></tr>
-<tr><td class="n">37</td><td><code>is_key_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>stamped at collection; the third engaged disjunct. Set on the <em>materialised</em> key-event row only, never on the event that triggered it (EVENTS.html &sect;7.14). Not nullable, per &sect;1.12: it is 0 on almost every row, so a three-valued variant would stay invisible and then be wrong</td></tr>
+<tr><td class="n">37</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>stamped at collection; the third engaged disjunct. Set on the <em>materialised</em> goal-event row only, never on the event that triggered it (EVENTS.html &sect;7.14). Not nullable, per &sect;1.12: it is 0 on almost every row, so a three-valued variant would stay invisible and then be wrong</td></tr>
 <tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
 <tr><td class="n">39</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>on every row, behind a dedicated <code>store_raw_ua</code> setting (default on; not coupled to debug mode). Debugging is a reader — and retrospective forensics cannot be captured after the fact, hence the default; reporting never touches it</td></tr>
 <tr><td class="n">40</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>
@@ -665,7 +688,7 @@ travels with the queue item</em>, which is what keeps at-least-once redelivery o
 nothing else: <code>events</code>, <code>pageviews</code>, <code>sessions</code> (the reconciliation
 authority), <code>engaged_sessions</code> (threshold applied at build; a change rebuilds, ~50&nbsp;s
 measured, UI-annotated), <code>visitors</code>, <code>new_visitors</code>,
-<code>engagement_msec</code>, <code>key_events</code>, <code>revenue</code>, and
+<code>engagement_msec</code>, <code>goal_events</code>, <code>revenue</code>, and
 <code>built_at</code> — the as-of value the API freshness envelope reports. Bounce rate is
 <code>1 − engaged_sessions/sessions</code> and earns no column.</p>
 <div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
@@ -674,7 +697,7 @@ abstracted away. The reporting tables (<code>owa_event</code>, <code>owa_rollup_
 payload store) default to the same connection but accept a <em>separate</em> store via a second
 DSN — a dedicated MySQL or the columnar path. The rule that makes the split real: <strong>no
 reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
-literal, key events are stamped at ingest — so the two stores are never assumed co-located.
+literal, goal events are stamped at ingest — so the two stores are never assumed co-located.
 Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
 with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives
 beside what it derives from</strong>: <code>owa_rollup_day</code> and any later materialization go
@@ -697,9 +720,9 @@ breaks only if it names something that fell out.</p>
 <div class="scroll"><table>
 <thead><tr><th>Change</th><th>Detail</th></tr></thead>
 <tbody>
-<tr><td><strong>Falls out — metrics</strong></td><td>the 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers (replaced by key-event metrics parameterised by <em>name</em>, unlimited); 9 duplicate commerce definitions collapse to one each</td></tr>
+<tr><td><strong>Falls out — metrics</strong></td><td>the 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers (replaced by goal-event metrics parameterised by <em>name</em>, unlimited); 9 duplicate commerce definitions collapse to one each</td></tr>
 <tr><td><strong>Falls out — dimensions</strong></td><td>the 11 dead <code>*InVisit</code> dimensions (770 of 5,493 valid pairs, zero references); the 4 referral-enrichment dimensions (<code>referralPageTitle</code>, <code>referralLinkText</code>, <code>referralWebSite</code>, enriched <code>isSearchEngine</code>) — the one knowing capability loss, traded with the 589× enrichment property</td></tr>
-<tr><td><strong>New — metrics</strong></td><td><code>engagementTime</code> (incl. final-page dwell, unmeasurable in 1.x), <code>engagementRate</code>/new <code>bounceRate</code>, scroll/download/outbound/form/site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates — 1.x has only the completed transaction), unlimited named key events</td></tr>
+<tr><td><strong>New — metrics</strong></td><td><code>engagementTime</code> (incl. final-page dwell, unmeasurable in 1.x), <code>engagementRate</code>/new <code>bounceRate</code>, scroll/download/outbound/form/site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates — 1.x has only the completed transaction), unlimited named goal events</td></tr>
 <tr><td><strong>New — dimensions</strong></td><td><code>eventName</code> itself, <code>keyEvent</code>, <code>userId</code>, element path / click target, scroll-depth bucket — and <strong>any <code>params</code> path, unregistered</strong> (<code>params.author</code>), the API face of unlimited custom variables</td></tr>
 <tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_rollup_day.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
 <tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
@@ -771,7 +794,7 @@ while the query builder emits upper.</p>
 classes (which read the <code>siteId</code> request param to build per-site labels),
 <code>repeatVisitors</code> (the one composite expression), one unregistered class a parity test
 names by literal, and <code>ConfigurableMetric</code> itself. <strong>Every one is gone in
-v2</strong> &mdash; the numbered goal slots become named key events with a parameterised metric, and
+v2</strong> &mdash; the numbered goal slots become named goal events with a parameterised metric, and
 <code>repeatVisitors</code> becomes the <code>newVsReturning</code> dimension (EVENTS.html
 &sect;7.7, &sect;7.14). They are artefacts of numbered slots and stored booleans, which v2 removes
 for unrelated reasons, so <strong>v2's metrics are entirely configuration</strong>.</p>
@@ -980,7 +1003,13 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     result — a PDOStatement on PDO, a mysqli_result on mysqli — so
     <code>-&gt;fetchAll()</code> is fatal under mysqli. Use <code>get_results()</code> /
     <code>get_row()</code>. Both database CI jobs exist for exactly this: a green run on a PDO
-    box proves nothing about the other driver.</span></li>
+    box proves nothing about the other driver. A third member joined the seam in September:
+    <code>get_result_iterator()</code>, which yields rows one at a time for callers whose rows
+    are the <em>work</em> rather than the answer &mdash; <code>get_results()</code> builds one
+    PHP array per row first, measured at 46&nbsp;MB per 100,000 rows, which is fine for an
+    answer and not for a scan. It carries the same obligation: the mysqli driver puts rows
+    through <code>stringifyRow()</code> on the way out, so an iterator skipping it would hand
+    back native ints where the rest of OWA expects strings.</span></li>
     <li>CORS replacing JSONP — also unblocks the API contract work
     <span class="chip c-done">Shipped</span> <span class="dash">— PR&nbsp;#1019</span></li>
     <li>Query builder emits a closed partition-key range whenever a time bound is given (§1.6)
@@ -1041,7 +1070,8 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     <span class="chip c-done">Shipped</span> <span class="dash">&mdash; and it closes this
     phase. Landed in three parts: <strong>#1044</strong> converted the reports (62 of 64 are
     JSON now; <code>goal-funnel</code> and <code>domstreams</code> stay controllers because they
-    compute rather than configure), <strong>#1047</strong> added the widget vocabulary a builder
+    compute rather than configure &mdash; <em>and goal-funnel has since stopped being a report
+    at all, see &sect;2.6</em>), <strong>#1047</strong> added the widget vocabulary a builder
     can offer &mdash; <code>trend-card</code>, <code>grid-card</code>, <code>pie</code>,
     <code>metric-boxes</code>, with panel chrome and a width floor &mdash; and user-authored
     reports on top of it, and <strong>#1048</strong> retired the conversion scaffolding once it
@@ -1072,6 +1102,21 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   <p class="phase-why">First code that is v2-shaped, still landing in a 1.x release.</p>
   <ul>
     <li>Event table and rollup created by one CLI-mode update (§4.1)</li>
+    <li><strong><code>msec</code> carries a real fraction of a second</strong>
+    <span class="chip c-dec">Decided</span> <span class="dash">&mdash; 3&nbsp;Sep&nbsp;2026,
+    for v2 and deliberately <em>not</em> for 1.x. <code>owa_request.msec</code> is declared
+    <code>INT</code> and fed the fractional part of <code>microtime()</code> as a string, so
+    MySQL rounds it: the column holds 0 or 1 and nothing else (597 and 560 on the test
+    install), and the entity carries a <code>// wrong data type</code> comment beside the
+    declaration. Request ids cannot stand in &mdash; they are the tracker's random GUID, unique
+    but unordered &mdash; so <strong>the 1.x fact table has no sub-second ordering at all</strong>.
+    Fixing it in 1.x would be worse than leaving it: existing rows stay 0/1, so old and new
+    rows would order differently inside one report, and a funnel spanning the cutover would be
+    wrong in a way nobody could see. The v2 event table takes the fraction properly at
+    creation, which is why this is groundwork rather than a bug fix. What depends on it:
+    <code>VisualizationFunnel::walk()</code> resolves same-second events as a set rather than
+    comparing them, and two tests pin that assumption &mdash; they should be <em>retired</em>
+    when this lands, not re-baselined.</span></li>
     <li>Rollup job registered against the existing scheduler</li>
     <li>Fan-out dispatcher, defaulting to v1-only until switched on</li>
     <li>Parity harness as a command (§3.3)</li>
@@ -1095,7 +1140,15 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   both by shipping. The <strong>PDO driver</strong> merged, closing Phase 2. <strong>Report
   config as JSON</strong> merged in three parts — #1044, #1047, #1048 — closing Phase 4.
   <strong>Phase 5, v2 groundwork, is now the whole of the remaining plan</strong>, and none of
-  it has started.</p>
+  it has started. It gained one item on 3&nbsp;Sep &mdash; <code>msec</code> carrying a real
+  fraction of a second &mdash; which is a 1.x defect deliberately deferred rather than new
+  scope; see the entry for why fixing it in 1.x would be worse than leaving it.</p>
+
+  <p><strong>Unplanned work landed in September that is not a phase item.</strong> Goals
+  became goal events and funnels stopped being configuration (&sect;2.6). It is recorded
+  because it moved &sect;1.4 from a v2 decision to a 1.x fact, and because it retires a
+  migration hazard: nothing in reporting reads <code>owa_session</code>'s goal columns any
+  more, so they can go without taking the funnel with them.</p>
 
   <p><strong>What the report work changed about v2, beyond ticking a box.</strong> The item
   asked for a widget format retrofitted into v1. What shipped also made that format
@@ -1161,6 +1214,64 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   browser that cannot load the file holding the decision is not compatibility.</p>
 </div>
 
+
+<h3 id="s26"><span class="num">2.6</span>Goals became goal events, and funnels stopped being configuration <span class="chip c-done">Shipped</span></h3>
+<p class="meta">3&nbsp;Sep&nbsp;2026 &mdash; branch <code>feat/key-events</code>, PR&nbsp;#1064.</p>
+
+<p>Unplanned work, recorded here because it moved a v2 decision into 1.x rather than
+merely preparing for one. &sect;1.4 says v2 has no numbered goal slots and that an author
+names a goal event and gives it a condition. <strong>That is now true in 1.x.</strong></p>
+
+<ul>
+<li><strong>Goal events are rows.</strong> <code>owa_goal_event</code> with its conditions
+in <code>owa_goal_event_condition</code>, replacing twenty numbered slots in a serialised
+settings blob. The old screen listed twenty rows whether or not anybody had filled them in,
+because the storage was a fixed-length array and the screen showed the storage; the new one
+lists what exists, so &ldquo;counts nothing yet&rdquo; became a state the UI can represent.</li>
+<li><strong>A goal event takes several conditions</strong>, combined with ALL or ANY, over
+any tracking property, with seven comparisons. 1.x had one URL and one match type, which
+could not express &ldquo;a purchase over 50 from the pricing page&rdquo;.</li>
+<li><strong>They belong to the Property</strong>, not the Observation Profile, so every
+Profile beneath one counts the same things &mdash; which is what makes a conversion
+comparable across the site and the app reporting into one Property.</li>
+<li><strong>Counted once per session, clamped.</strong> See the note in &sect;1.4: v2 removes
+the constraint rather than the setting.</li>
+</ul>
+
+<p><strong>The funnel is the part that matters to v2.</strong> A funnel was configuration
+&mdash; rows hanging off a goal, read by a report. It is a <em>visualization</em> now: a saved
+analysis of a path, computed at read time from the fact rows, listed beside custom reports
+but on its own surface because it computes rather than configures. Two consequences this
+plan should carry:</p>
+
+<ul>
+<li><strong>Nothing in reporting reads <code>owa_session</code>'s goal columns.</strong> The
+45 numbered <code>goal{N}</code> identifiers in &sect;1.11's &ldquo;falls out&rdquo; row can
+retire without taking the funnel with them, because the funnel never consulted them. It
+reads the events. That was not true a fortnight ago and it removes a migration hazard
+nobody had costed.</li>
+<li><strong>A funnel step can name a goal event</strong>, and it means what writing that
+goal event's conditions into the step by hand would mean &mdash; the conditions are compiled
+into a row predicate and matched against the facts. Deliberately <em>not</em> a lookup of the
+stored conversion: a flag on the session has no timestamp, so there is nothing to order, and
+it is stamped forward-only, so a goal event created this morning would draw an empty funnel
+over last month. This is also how GA does it, and it is the same read-time evaluation v2
+assumes throughout.</li>
+</ul>
+
+<p class="note"><strong>One measurement worth keeping.</strong> The funnel counts a closed,
+indirectly-followed sequence per subject &mdash; GA's defaults. Three ways of doing the
+sequencing in SQL were built and benchmarked against scratch tables carrying
+<code>owa_request</code>'s real schema, with a realistic drop-off over three steps at 262,144
+rows: nested derived tables 3.87s, a temporary table per step 3.06s, window functions 3.01s,
+against <strong>1.11s for one flat scan walked in the application</strong>. All four agree on
+the counts. Every SQL formulation reads the fact table once per <em>step</em>; the scan reads
+it once, and narrowing does not rescue them &mdash; the variant that genuinely shrinks its
+input at each level is still three times slower, and the composite index those joins want made
+the worst of them worse. <strong>v2 should not assume that moving a per-subject sequence into
+SQL is the faster choice</strong>; on this shape of question it is not, and the memory problem
+that suggested it was actually <code>get_results()</code> materialising the scan rather than
+the scan itself.</p>
 
 <!-- ============ PART III ============ -->
 <section class="part" id="p3">
