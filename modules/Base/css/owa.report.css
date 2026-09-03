@@ -3064,6 +3064,9 @@ li.constraintRow {
     border-left: 3px solid transparent;
     border-bottom: 1px solid #f4f4f4;
     cursor: pointer;
+    /* The anchor below is stretched over this box, which needs a positioned
+       ancestor to stretch to. */
+    position: relative;
 }
 
 .owa_siteControlItem:hover {
@@ -3085,10 +3088,39 @@ li.constraintRow {
     margin-top: 2px;
 }
 
+/*
+ * THE WHOLE ROW PICKS THE PROFILE, not just the words.
+ *
+ * The row is a flex box holding the name and, at its right, one or two
+ * secondary links -- so the anchor was as wide as the text and no wider: 105px
+ * of a 219px row. Everything else was bare <li>, which carries no handler and
+ * no href, so a click on the padding, on the gap, or anywhere right of the name
+ * did nothing at all. With cursor:pointer on the row, it looked live for its
+ * whole width and answered on half of it.
+ *
+ * The Properties column never had this: it has no anchor and its <li> carries a
+ * JavaScript click handler, so it always responded across the full row. The two
+ * columns sit side by side and behaved differently, which is the part a reader
+ * notices before they work out why.
+ *
+ * Stretched with a pseudo-element rather than by making the anchor a block:
+ * the flex layout that puts the secondary links on the right is worth keeping,
+ * and this leaves the anchor a real anchor -- focusable, keyboard-activatable,
+ * and still the thing the status bar shows on hover.
+ */
 .owa_siteControlSelect {
     flex: 1 1 auto;
     min-width: 0;
     text-decoration: none;
+}
+
+.owa_siteControlSelect::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
 }
 
 /* Edit is a secondary action: quiet until wanted, but always reachable by
@@ -3099,6 +3131,13 @@ li.constraintRow {
     font-size: 11px;
     text-decoration: none;
     visibility: hidden;
+    /*
+     * ABOVE the stretched select, or the row's own link would swallow it --
+     * "goal events" and "edit" sit inside the area that now picks the Profile,
+     * and a secondary action you cannot reach is worse than one that is hidden.
+     */
+    position: relative;
+    z-index: 1;
 }
 
 .owa_siteControlItem:hover .owa_siteControlEdit,

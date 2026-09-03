@@ -546,6 +546,116 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
  * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
  * so the asymmetry is pinned rather than incidental.
  */
+/**
+ * THE FAN-OUT'S ROWS ARE CLICKABLE ACROSS THEIR WHOLE WIDTH.
+ *
+ * The row is a flex box: the name on the left, one or two secondary links on
+ * the right. So the Profile's own link was as wide as its text -- 105px of a
+ * 219px row -- and everything else was bare <li>, which carries no handler and
+ * no href. A click on the padding, on the gap, or right of the name did
+ * nothing, while cursor:pointer on the row said the whole width was live.
+ *
+ * The Properties column beside it never had the problem: it has no anchor and
+ * its <li> carries a JavaScript handler, so it always answered everywhere. Two
+ * columns side by side behaving differently is the part somebody notices before
+ * they work out why, so both are asserted here.
+ */
+test.describe('admin: the site control fan-out', () => {
+
+    test.beforeEach(async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(`?owa_do=base.goalEvents&owa_siteId=${FIXTURE.siteId}`,
+            { waitUntil: 'networkidle' });
+        await page.locator('#owa_siteControlSummary').click();
+        await expect(page.locator('#owa_siteControlPanel')).toBeVisible();
+    });
+
+    /** Where a point lands: the Profile's link, the bare row, or nothing. */
+    async function hitAt(page, columnClass, fraction) {
+        return page.evaluate(([col, f]) => {
+            const li = document.querySelector('.' + col + ' .owa_siteControlItem.is-selected')
+                    || document.querySelector('.' + col + ' .owa_siteControlItem');
+
+            if (!li) { return 'no row'; }
+
+            li.scrollIntoView({ block: 'center' });
+
+            const r = li.getBoundingClientRect();
+            const x = f === 0 ? r.left + 3 : (f === 1 ? r.right - 6 : r.left + r.width * f);
+
+            let n = document.elementFromPoint(x, r.top + r.height / 2);
+
+            while (n) {
+                if (n.classList && n.classList.contains('owa_siteControlSelect')) { return 'link'; }
+                if (n.classList && n.classList.contains('owa_siteControlItem')) { return 'row only'; }
+                n = n.parentElement;
+            }
+
+            return 'nothing';
+        }, [columnClass, fraction]);
+    }
+
+    test('a Profile row activates its link from edge to edge', async ({ page }) => {
+        for (const [where, fraction] of [['left edge', 0], ['middle', 0.5], ['right edge', 1]]) {
+
+            expect(await hitAt(page, 'owa_siteControlProfiles', fraction),
+                `the ${where} of a Profile row does not reach its link`).toBe('link');
+        }
+    });
+
+    /**
+     * And the secondary links still win inside that area.
+     *
+     * "goal events" and "edit" sit within the region the row's own link now
+     * covers, so they need to sit above it -- a secondary action you cannot
+     * click is a worse bug than the one being fixed. They are revealed on
+     * hover, so the row is hovered first.
+     */
+    test('the secondary links stay reachable inside the stretched row', async ({ page }) => {
+        /*
+         * The SELECTED row, and scoped to the list that is actually on screen.
+         * The column holds one list per Property and all but one carry the
+         * hidden attribute, so an unscoped .first() picks a row in a hidden
+         * list -- which is not somewhere a person can hover.
+         */
+        const row = page.locator(
+            '.owa_siteControlProfiles .owa_siteControlProfileList:not([hidden]) '
+            + '.owa_siteControlItem').first();
+
+        await expect(row).toBeVisible();
+        await row.hover();
+
+        const edit = row.locator('a.owa_siteControlEdit').first();
+        await expect(edit).toBeVisible();
+
+        const onTop = await edit.evaluate((a) => {
+            const r = a.getBoundingClientRect();
+            let n = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+
+            while (n) {
+                if (n === a) { return true; }
+                if (n.classList && n.classList.contains('owa_siteControlSelect')) { return false; }
+                n = n.parentElement;
+            }
+
+            return false;
+        });
+
+        expect(onTop, "the row's own link is covering a secondary action").toBe(true);
+    });
+
+    /** The Properties column answers across its whole row too, via its handler. */
+    test('a Property row answers from edge to edge', async ({ page }) => {
+        for (const [where, fraction] of [['left edge', 0], ['middle', 0.5], ['right edge', 1]]) {
+
+            // 'row only' is the right answer here: the column has no anchor,
+            // and the <li> itself is what carries the click handler.
+            expect(await hitAt(page, 'owa_siteControlProperties', fraction),
+                `the ${where} of a Property row reaches nothing at all`).toBe('row only');
+        }
+    });
+});
+
 test.describe('admin: start_page default action', () => {
 
     test('a bare request renders the start_page report, not an error', async ({ page }) => {
