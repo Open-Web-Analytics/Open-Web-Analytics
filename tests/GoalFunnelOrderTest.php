@@ -28,30 +28,32 @@ use PHPUnit\Framework\TestCase;
  * odd one -- and the error is always an undercount at the later steps, which
  * reads as a conversion problem rather than as a bug.
  *
- * It walks each subject's events forward now, advancing one stage at a time:
- * GA's closed funnel with indirectly-followed steps, where a subject enters
- * once in the period and it is their first run through that counts. The
- * arithmetic itself is tested without a database in FunnelMathTest; this file
- * is about the query underneath it -- that the right rows come back, grouped by
- * the right subject, in the right order.
+ * The sequencing happens in SQL now: one derived table per step, each carrying
+ * every subject and the time they reached each step so far, left-joined so a
+ * subject who stops is kept with a null rather than dropped. GA's closed funnel
+ * with indirectly-followed steps, where a subject enters once in the period and
+ * it is their first run through that counts.
+ *
+ * It was briefly a flat scan walked in PHP -- right answer, wrong cost: a row
+ * per matching EVENT, materialised whole before the walk began. These tests are
+ * unchanged in what they assert across all three implementations, which is the
+ * useful thing about them: they pin the SEMANTICS, not the mechanism.
  *
  * THE FIXTURE IS ASYMMETRIC ON PURPOSE
  *
- * Five visitors over two steps, /a then /b:
+ * Seven visitors over two steps, /a then /b. Every one of them exists to make a
+ * different wrong implementation visible:
  *
- *   v1  /a then /b                   -- passed through, in order
+ *   v1  /a, /c, /b                   -- passed through, with something between
  *   v2  /b then /a                   -- saw both, never /b after /a
  *   v3  /a only                      -- entered and stopped
  *   v4  /b, then later /a then /b    -- passed through, with a false start
- *   v5  /a in one visit, /b in the next
+ *   v5  /a in one visit, /b the next -- passed as a person, not as a visit
+ *   v6  /b only                      -- never entered a closed funnel
+ *   v7  /a and /b in the SAME SECOND -- the known limitation, below
  *
- * v4 is the one that separates the two implementations: MIN says their first
- * /b precedes their first /a and drops them, and they plainly went / a -> /b.
- *
- * v5 is the one that separates the two SCOPES. As a person they went through;
- * as a visit neither half did, because the visit holding /b never saw /a. A
- * fixture where every visitor behaves scores the same under both and proves
- * nothing about the toggle.
+ * A fixture where everybody behaves scores the same under every implementation
+ * and proves none of them.
  */
 final class GoalFunnelOrderTest extends TestCase
 {
@@ -96,7 +98,7 @@ final class GoalFunnelOrderTest extends TestCase
         $db = owa_coreAPI::dbSingleton();
         $db->query('DELETE FROM owa_request WHERE site_id = ?', array(self::SITE));
 
-        $paths = array('/a' => null, '/b' => null);
+        $paths = array('/a' => null, '/b' => null, '/c' => null);
 
         foreach (array_keys($paths) as $path) {
 
@@ -128,46 +130,77 @@ final class GoalFunnelOrderTest extends TestCase
          */
         $v1 = '9200000000000000101'; $v2 = '9200000000000000102';
         $v3 = '9200000000000000103'; $v4 = '9200000000000000104';
-        $v5 = '9200000000000000105';
+        $v5 = '9200000000000000105'; $v6 = '9200000000000000106';
+        $v7 = '9200000000000000107';
         $s1 = '9200000000000000201'; $s2 = '9200000000000000202';
         $s3 = '9200000000000000203';
         $s4a = '9200000000000000204'; $s4b = '9200000000000000205';
         $s5a = '9200000000000000206'; $s5b = '9200000000000000207';
+        $s6 = '9200000000000000208'; $s7 = '9200000000000000209';
 
         $hits = array(
+            /*
+             * v1 goes through with something in between. INDIRECTLY followed:
+             * the next step has to come later, not next. A funnel that demanded
+             * the very next event would report almost nobody on a real site.
+             */
             array($v1, $s1, '/a', 0),
-            array($v1, $s1, '/b', 10),   // in order
+            array($v1, $s1, '/c', 5),
+            array($v1, $s1, '/b', 10),
+
+            /* Saw both, never /b AFTER /a. Not a pass. */
             array($v2, $s2, '/b', 0),
-            array($v2, $s2, '/a', 10),   // reversed
-            array($v3, $s3, '/a', 0),    // entered only
+            array($v2, $s2, '/a', 10),
+
+            /* Entered and stopped. */
+            array($v3, $s3, '/a', 0),
 
             /*
-             * v4 is the visitor MIN-per-step gets wrong.
+             * v4 is the visitor a MIN-per-step implementation gets wrong.
              *
              * A visit that only saw /b, then a later visit that did /a and then
              * /b properly. Their first /b comes before their first /a, so MIN
              * reads the funnel as out of order and drops them -- and they went
-             * through it: /a at 10, /b at 20. Both scopes count them.
-             *
-             * It also separates the first /b from the last: taking MAX rather
-             * than MIN would be a different wrong answer that happens to be
-             * right about v4.
+             * through it: /a at 10, /b at 20.
              */
             array($v4, $s4a, '/b', 0),
             array($v4, $s4b, '/a', 10),
             array($v4, $s4b, '/b', 20),
 
             /*
-             * v5 separates the two SCOPES, which is what v4 used to do before
-             * the ordering was fixed.
+             * v5 separates the two SCOPES.
              *
              * /a in one visit and /b in the next. As a PERSON they went through
              * the funnel; as a VISIT neither half did -- the second visit never
-             * saw /a, and a closed funnel is entered at step one. So visitor
-             * scope must count them and session scope must not.
+             * saw /a, and a closed funnel is entered at step one.
              */
             array($v5, $s5a, '/a', 0),
             array($v5, $s5b, '/b', 30),
+
+            /*
+             * v6 never entered. A CLOSED funnel does not count somebody who
+             * arrived at the last step and never saw the first -- they are not
+             * counted in step 2 and then dropped, they are simply not in it.
+             */
+            array($v6, $s6, '/b', 0),
+
+            /*
+             * v7 is the KNOWN LIMITATION, seeded so it is visible rather than
+             * discovered.
+             *
+             * Both steps inside one second. owa_request records whole seconds
+             * -- msec is declared INT and fed the fractional part of
+             * microtime() as a string, so it rounds to 0 or 1 and carries
+             * nothing -- and request ids are the tracker's random GUID, so they
+             * are unique but unordered. SQL therefore has nothing to tell these
+             * two events apart in time, and v7 does not count as a pass.
+             *
+             * Narrow: it takes two consecutive funnel steps within the same
+             * second, which mostly means a redirect. Fixing msec would remove
+             * it without changing the query.
+             */
+            array($v7, $s7, '/a', 40),
+            array($v7, $s7, '/b', 40),
         );
 
         foreach ($hits as $i => $hit) {
@@ -215,11 +248,12 @@ final class GoalFunnelOrderTest extends TestCase
     {
         $counts = $this->funnel($this->steps(), 'visitor');
 
-        $this->assertSame(5, $counts[0], 'every visitor reached /a');
+        // Everyone who saw /a: v6 never did, so six of the seven entered.
+        $this->assertSame(6, $counts[0], 'v6 never saw /a, so never entered');
 
         /*
          * v1, v4 and v5. Not v2, who saw /b only before /a and never after;
-         * not v3, who stopped.
+         * not v3, who stopped; not v7, whose two steps fell in one second.
          *
          * This said ONE while the counting took MIN per step, because v4's
          * earlier /b was read as their position in the funnel. They visited /a
@@ -249,7 +283,7 @@ final class GoalFunnelOrderTest extends TestCase
 
         $counts = $this->funnel($reversed, 'visitor');
 
-        $this->assertSame(4, $counts[0], 'v1, v2, v4 and v5 reached /b');
+        $this->assertSame(6, $counts[0], 'everyone except v3 reached /b');
         $this->assertSame(2, $counts[1], 'only v2 and v4 reached /a after a /b');
     }
 
@@ -270,6 +304,8 @@ final class GoalFunnelOrderTest extends TestCase
         $this->assertSame(3, $byVisitor[1], 'as people: v1, v4 and v5');
         $this->assertSame(2, $bySession[1], "as visits: v1's visit and v4's second");
 
+        $this->assertNotSame($byVisitor, $bySession);
+
         $this->assertNotSame($byVisitor, $bySession,
             'the scope must change the answer, or it is not selecting anything');
     }
@@ -289,7 +325,7 @@ final class GoalFunnelOrderTest extends TestCase
     {
         $counts = $this->funnel(array(array('path' => '/a'), array('path' => '/a')), 'visitor');
 
-        $this->assertSame(5, $counts[0], 'everyone saw /a at least once');
+        $this->assertSame(6, $counts[0], 'everyone who saw /a at least once');
 
         $this->assertSame(0, $counts[1],
             'nobody in the fixture visited /a twice, so nobody completed /a then /a');
@@ -305,8 +341,80 @@ final class GoalFunnelOrderTest extends TestCase
     {
         $counts = $this->funnel(array(array('path' => '/b'), array('path' => '/b')), 'visitor');
 
-        $this->assertSame(4, $counts[0], 'v1, v2, v4 and v5 saw /b');
+        $this->assertSame(6, $counts[0], 'everyone except v3 saw /b');
         $this->assertSame(1, $counts[1], 'only v4 saw /b twice');
+    }
+
+    /**
+     * CLOSED: somebody who never reached step one is not in the funnel at all.
+     *
+     * v6 saw /b and nothing else. They are not counted in step 2 and then
+     * dropped -- they are absent from step 1, so they were never in it. An OPEN
+     * funnel would count them, and OWA does not offer one.
+     */
+    public function testSomebodyWhoNeverEnteredIsNotInTheFunnel(): void
+    {
+        $counts = $this->funnel($this->steps(), 'visitor');
+
+        // Six of the seven fixture visitors saw /a. v6 is the seventh.
+        $this->assertSame(6, $counts[0],
+            'a visitor who only ever saw the LAST step is being counted as an entrant');
+    }
+
+    /**
+     * INDIRECT: other things may happen in between.
+     *
+     * v1 goes /a, /c, /b. The next step has to come LATER, not next -- a funnel
+     * demanding the very next event would report almost nobody on a real site,
+     * and would make this fixture's only clean pass fail.
+     */
+    public function testAnEventBetweenTheStepsDoesNotBreakTheSequence(): void
+    {
+        $counts = $this->funnel($this->steps(), 'visitor');
+
+        $this->assertGreaterThanOrEqual(1, $counts[1],
+            'v1 saw /c between /a and /b and stopped counting as a pass, so the funnel is '
+            . 'demanding directly-followed steps rather than indirectly-followed ones');
+    }
+
+    /**
+     * THE KNOWN LIMITATION, asserted so it is visible rather than discovered.
+     *
+     * v7 did /a and /b inside one second. owa_request records whole seconds --
+     * msec is declared INT and fed the fractional part of microtime() as a
+     * string, so it rounds to 0 or 1 and carries nothing, and request ids are
+     * the tracker's random GUID, so they are unique but unordered. SQL has
+     * nothing to order these two events by, so they are not counted as a
+     * sequence.
+     *
+     * This is an UNDERCOUNT and it is deliberate: the alternative is treating
+     * "same second" as "later", which would let one event satisfy two steps and
+     * report a completed funnel for a single page view.
+     *
+     * Fixing msec would remove the limitation without changing the query, and
+     * this test is where that would show up as a failure worth celebrating.
+     */
+    public function testTwoStepsInsideOneSecondAreNotCountedAsASequence(): void
+    {
+        $counts = $this->funnel($this->steps(), 'visitor');
+
+        /*
+         * Pinned by the total rather than by naming v7: six entered and three
+         * passed, and v7 is the difference between three and four.
+         */
+        $this->assertSame(3, $counts[1],
+            'v7 completed /a then /b within one second and is now being counted -- if that is '
+            . 'deliberate, msec was fixed and this test should be retired, not adjusted');
+    }
+
+    /** A funnel nobody has walked is zeroes, not an error and not an empty list. */
+    public function testAFunnelNobodyWalkedIsZeroAtEveryStep(): void
+    {
+        $counts = $this->funnel(
+            array(array('path' => '/nobody-has-been-here'), array('path' => '/nor-here')),
+            'visitor');
+
+        $this->assertSame(array(0, 0), $counts);
     }
 
     public function testAnEmptyFunnelCountsNothingRatherThanThrowing(): void

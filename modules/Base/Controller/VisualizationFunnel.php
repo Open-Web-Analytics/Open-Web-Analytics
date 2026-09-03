@@ -394,42 +394,71 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     /**
      * How many subjects reached each step, in order.
      *
-     * THE MATH, AND WHY IT IS A WALK RATHER THAN A MIN PER STEP
+     * THE MATH
      *
-     * This is a CLOSED funnel with INDIRECTLY-followed steps, counted per
-     * subject -- GA's defaults, and the only ones OWA offers. Closed: everybody
-     * enters at step 1. Indirect: other things may happen in between, the next
-     * step only has to come later. Per subject: a subject enters the funnel
-     * once in the period, and it is their FIRST run through it that is counted.
+     * A CLOSED funnel with INDIRECTLY-followed steps, counted per subject --
+     * GA's defaults, and the only ones OWA offers. Closed: everybody enters at
+     * step 1, so somebody who lands on step 2 first is not in the funnel at
+     * all. Indirect: other things may happen in between, the next step only has
+     * to come later. Per subject: a subject enters once in the period, and it
+     * is their FIRST run through that is counted.
      *
-     * That last clause is the whole reason for the shape of this. The obvious
-     * implementation -- MIN(timestamp) per step, then check the timestamps come
-     * out in order -- is what this used to do, and it is wrong whenever a
-     * step's page is also visited BEFORE the funnel starts. Take a funnel
-     * / -> /pricing -> /docs and a visitor who reads the docs, comes back to
-     * the home page, goes to pricing, and reads the docs again:
+     * THE SHAPE, AND WHY IT IS NOT ONE FLAT QUERY
      *
-     *     /docs 10:00   / 11:00   /pricing 12:00   /docs 13:00
+     * This tagged every matching event with which step it satisfied, ordered
+     * the lot by subject and time, and walked it in PHP. The arithmetic was
+     * right and the cost was not: one row came back per matching EVENT, and
+     * get_results() materialises the whole set before the first row is read --
+     * measured at 46MB per 100k rows, so a busy site over a long period is
+     * hundreds of megabytes of PHP array to answer with half a dozen integers.
+     * The work scaled with the data instead of with the answer.
      *
-     * MIN per step gives 11:00, 12:00, 10:00 -- out of order, so the visitor is
-     * dropped at the last step. They completed the funnel. GA counts them,
-     * because it looks for the first occurrence of each step AFTER the one
-     * before it, not the first occurrence overall.
+     * So the sequencing happens where the data is. Each step is a derived table
+     * over the one before it, carrying every subject and the time they reached
+     * each step so far:
      *
-     * And it is not an edge case: funnels start on home pages and pricing
-     * pages, which are exactly the pages people also visit at other times. The
-     * error is always an UNDERCOUNT, always at the later steps, and always
-     * looks like a conversion problem.
+     *     level 0    subj, MIN(time) among events matching step 1
+     *     level 1    subj, t0, MIN(time) among events matching step 2 AFTER t0
+     *     level 2    subj, t0, t1, MIN(time) matching step 3 AFTER t1
      *
-     * So the rows come back in time order per subject and are walked forward,
-     * advancing a stage each time the current step's condition is met. One row
-     * per matching event rather than one per subject -- the WHERE only admits
-     * events that satisfy some step, and the segment and the date bounds are
-     * what keep that set to a size worth walking.
+     * LEFT JOIN rather than INNER, and that is the load-bearing choice: a
+     * subject who stops is KEPT, with a null time from there on. Nulls
+     * propagate -- comparing against a null t gives null, so every later step
+     * is null too -- which is what lets one statement answer for every step at
+     * once. An inner join would shrink to the completers and lose the counts
+     * for the steps before.
+     *
+     * COUNT() ignores nulls, so the final SELECT is the whole answer: N
+     * integers, one round trip, and nothing but those integers crosses the
+     * wire.
+     *
+     * WHAT IT COSTS, SAID PLAINLY
+     *
+     * Nesting depth is the step count, which is why steps are capped. On MySQL
+     * 5.x each level materialises rather than merging, so a deep funnel is a
+     * stack of temporary result sets -- each one smaller than the last, because
+     * a subject who never entered is not in level 0 to begin with.
+     *
+     * THE ONE THING THE WALK DID THAT THIS CANNOT
+     *
+     * The walk ordered rows and took them one at a time, so two events in the
+     * same SECOND were still two events and could satisfy two steps. SQL has
+     * only the timestamp to compare, and owa_request records whole seconds --
+     * msec is declared INT and fed the fractional part of microtime() as a
+     * string, so it rounds to 0 or 1 and carries no information (there is a
+     * "wrong data type" comment beside it in the entity). Request ids cannot
+     * stand in either: they are the tracker's random GUID, so they are unique
+     * but not ordered.
+     *
+     * So two steps completed within one second are not counted as a sequence.
+     * It is a real undercount, it is narrow -- it needs two consecutive funnel
+     * steps inside the same second, which mostly means a redirect -- and it is
+     * asserted in GoalFunnelOrderTest rather than left to be rediscovered.
+     * Fixing msec would remove the limitation without changing this code.
      *
      * @param  array  $steps
      * @param  string $scope
-     * @return array  a count per step, positionally
+     * @return array|null  a count per step, or null when a step was refused
      */
     private function countFunnel( array $steps, $scope ) {
 
@@ -438,14 +467,24 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             return array();
         }
 
-        $db      = \OWA\Core\CoreAPI::dbSingleton();
         $subject = self::SCOPES[ $scope ];
 
-        $zeroes = array_fill( 0, count( $steps ), 0 );
+        /*
+         * The parts every level shares: which site, which days, and which
+         * subjects the segment allows. Applied at EVERY level rather than only
+         * the first -- a later step must be reached inside the period too, or
+         * a funnel over last week would count a conversion from today.
+         */
+        $common = $this->commonRestriction( $subject, $scope );
 
-        $params = array();
-        $select = array();
-        $any    = array();
+        if ( $common === null ) {
+
+            // A segment that matches nobody is a funnel nobody entered, not an
+            // unsegmented funnel.
+            return array_fill( 0, count( $steps ), 0 );
+        }
+
+        $level = null;
 
         foreach ( $steps as $i => $step ) {
 
@@ -454,33 +493,29 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             if ( $predicate === null ) {
 
                 // Refused, and stepPredicate() has said why. Not drawn with the
-                // step ignored: a funnel missing a stage still looks like a
-                // funnel.
+                // step ignored: a funnel missing a stage still looks like one.
                 return null;
             }
 
-            $select[] = sprintf( 'CASE WHEN %s THEN 1 ELSE 0 END AS s%d',
-                $predicate['sql'], $i );
-
-            $any[] = $predicate['sql'];
-
-            foreach ( $predicate['params'] as $p ) {
-
-                $params[] = $p;
-            }
+            $level = $level === null
+                ? $this->entryLevel( $subject, $predicate, $common )
+                : $this->nextLevel( $subject, $predicate, $common, $level, $i );
         }
 
-        /*
-         * The step predicates appear TWICE -- once as the CASE columns above
-         * and once as the WHERE that admits only rows matching some step -- so
-         * their parameters are bound twice, in the same order. Kept as one list
-         * built in one pass rather than two, because the two orders having to
-         * agree is precisely the kind of thing that drifts.
-         */
-        $params = array_merge( $params, $params );
+        return $this->countLevels( $level, count( $steps ) );
+    }
 
-        $where   = array( '( ' . implode( ' OR ', $any ) . ' )', 'r.site_id = ?' );
-        $params[] = (string) $this->getParam( 'siteId' );
+    /**
+     * Site, days and segment -- the restriction every level carries.
+     *
+     * @param  string $subject
+     * @param  string $scope
+     * @return array|null  array( 'sql', 'params' ), or null if nobody qualifies
+     */
+    private function commonRestriction( $subject, $scope ) {
+
+        $where   = array( 'r.site_id = ?' );
+        $params  = array( (string) $this->getParam( 'siteId' ) );
 
         $bounds = $this->dateBounds();
 
@@ -501,25 +536,24 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * validated against the registry, resolved through the same joins, and
          * refused the same way when a name does not exist.
          *
-         * Deliberately not folded into the WHERE below. Constraining the funnel
-         * query itself would filter the ROWS -- `medium==organic-search` would
-         * drop every step the subject reached on some other medium and the
-         * funnel would collapse for reasons that have nothing to do with the
-         * funnel. GA's segments pick the users and then count all of their
+         * Deliberately not folded in as an ordinary condition. Constraining the
+         * funnel query itself would filter the ROWS -- `medium==organic-search`
+         * would drop every step the subject reached on some other medium and
+         * the funnel would collapse for reasons that have nothing to do with
+         * the funnel. GA's segments pick the users and then count all of their
          * events; this does the same.
          */
         $segment = $this->segmentSubjects( $scope );
 
         if ( $segment === array() ) {
 
-            // A segment that matches nobody is a funnel nobody entered, not an
-            // unsegmented funnel.
-            return $zeroes;
+            return null;
         }
 
         if ( is_array( $segment ) ) {
 
-            $where[] = 'r.' . $subject . ' IN (' . implode( ',', array_fill( 0, count( $segment ), '?' ) ) . ')';
+            $where[] = 'r.' . $subject . ' IN ('
+                     . implode( ',', array_fill( 0, count( $segment ), '?' ) ) . ')';
 
             foreach ( $segment as $id ) {
 
@@ -527,12 +561,104 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             }
         }
 
-        $sql = 'SELECT r.' . $subject . ' AS subj, r.timestamp AS ts, '
-             . implode( ', ', $select )
+        return array( 'sql' => implode( ' AND ', $where ), 'params' => $params );
+    }
+
+    /**
+     * Level 0: who entered, and when.
+     *
+     * An INNER join to the document here, and the step's condition in the
+     * WHERE, because a subject who never matched step 1 is not in the funnel --
+     * that is what closed means, and it is what keeps every later level to the
+     * entry population rather than to everyone on the site.
+     *
+     * @return array array( 'sql', 'params' )
+     */
+    private function entryLevel( $subject, array $predicate, array $common ) {
+
+        $sql = 'SELECT r.' . $subject . ' AS subj, '
+             . sprintf( OWA_SQL_MIN, 'r.timestamp' ) . ' AS t0'
              . ' FROM owa_request r'
-             . ' INNER JOIN owa_document d ON d.id = r.document_id'
-             . ' WHERE ' . implode( ' AND ', $where )
-             . ' ORDER BY r.' . $subject . ', r.timestamp';
+             . ' INNER ' . OWA_SQL_JOIN . ' owa_document d ON d.id = r.document_id'
+             . ' WHERE ' . $common['sql'] . ' AND ' . $predicate['sql']
+             . ' GROUP BY r.' . $subject;
+
+        return array(
+            'sql'    => $sql,
+            'params' => array_merge( $common['params'], $predicate['params'] ),
+        );
+    }
+
+    /**
+     * Level k: the first time each subject met step k AFTER meeting step k-1.
+     *
+     * The previous level is the FROM, so the subjects are already the ones who
+     * entered. Everything they did is left-joined back on, and the CASE records
+     * a time only for rows that satisfy this step and fall after the previous
+     * one -- so a subject who stopped keeps their row and gains a null.
+     *
+     * PARAMETER ORDER IS TEXTUAL. The CASE sits in the SELECT list, ahead of
+     * the FROM that holds the level below it, so this step's parameters bind
+     * before every parameter of every level beneath. Assembled here in exactly
+     * that order rather than gathered up afterwards, because two orders that
+     * have to agree is the kind of thing that silently stops agreeing.
+     *
+     * @return array array( 'sql', 'params' )
+     */
+    private function nextLevel( $subject, array $predicate, array $common, array $previous, $k ) {
+
+        $carried = array( 'p.subj AS subj' );
+
+        // Every earlier step's time, carried forward so the final SELECT can
+        // count them. Through MIN() rather than named in the GROUP BY: they are
+        // constant within the group either way, and this does not depend on how
+        // strictly the server reads a grouped query.
+        for ( $j = 0; $j < $k; $j++ ) {
+
+            $carried[] = sprintf( OWA_SQL_MIN, 'p.t' . $j ) . ' AS t' . $j;
+        }
+
+        $reached = sprintf( OWA_SQL_CASE_WHEN,
+            $predicate['sql'] . ' AND r.timestamp > p.t' . ( $k - 1 ),
+            'r.timestamp' );
+
+        $carried[] = sprintf( OWA_SQL_MIN, $reached ) . ' AS t' . $k;
+
+        $sql = 'SELECT ' . implode( ', ', $carried )
+             . ' FROM ( ' . $previous['sql'] . ' ) p'
+             . ' ' . OWA_SQL_LEFT_JOIN . ' owa_request r'
+             . ' ON r.' . $subject . ' = p.subj AND ' . $common['sql']
+             . ' ' . OWA_SQL_LEFT_JOIN . ' owa_document d ON d.id = r.document_id'
+             . ' GROUP BY p.subj';
+
+        return array(
+            'sql'    => $sql,
+            'params' => array_merge(
+                $predicate['params'], $previous['params'], $common['params'] ),
+        );
+    }
+
+    /**
+     * One count per step, from the finished chain.
+     *
+     * COUNT( t{n} ) skips nulls, and a null is exactly "did not get this far",
+     * so this is the cumulative count at each step -- everyone who reached AT
+     * LEAST that far. Monotonic by construction: t{n} can only be non-null
+     * where t{n-1} was.
+     *
+     * @return array
+     */
+    private function countLevels( array $level, $count ) {
+
+        $columns = array();
+
+        for ( $i = 0; $i < $count; $i++ ) {
+
+            $columns[] = sprintf( OWA_SQL_COUNT, 'f.t' . $i ) . ' AS c' . $i;
+        }
+
+        $sql = 'SELECT ' . implode( ', ', $columns )
+             . ' FROM ( ' . $level['sql'] . ' ) f';
 
         /*
          * get_results(), NOT query()->fetchAll().
@@ -540,87 +666,25 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * query() hands back the DRIVER's own result -- a PDOStatement under
          * pdo, a mysqli_result under mysqli -- and only one of those has
          * fetchAll(). get_results() is the pair's common contract: assoc rows,
-         * or NULL for both "no rows" and "the query failed".
+         * or NULL for both "no rows" and "the query failed". It returns exactly
+         * one row here, whatever the size of the funnel.
          */
-        $rows = $db->get_results( $sql, $params );
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $level['params'] );
 
         if ( $rows === null ) {
 
-            // Null covers a failed query AND an empty result, so this is not
-            // an error worth a notice -- a funnel nobody entered is a real
-            // answer, and it is the same zeroes either way.
-            return $zeroes;
+            // Null covers a failed query AND an empty result, so this is not an
+            // error worth a notice -- a funnel nobody entered is a real answer,
+            // and it is the same zeroes either way.
+            return array_fill( 0, $count, 0 );
         }
 
-        return self::walk( $rows, count( $steps ) );
-    }
+        $row    = (array) $rows[0];
+        $counts = array();
 
-    /**
-     * Walk each subject's events forward, advancing a stage at a time.
-     *
-     * The rows arrive grouped by subject and ordered by time, so one pass is
-     * enough: hold the stage this subject has reached, and advance it whenever
-     * the row satisfies the step they are waiting for. A subject who reaches
-     * stage N counts in every step up to N, which is what makes a funnel
-     * monotonic by construction rather than by a guard.
-     *
-     * A subject is counted ONCE however many times they run the funnel, and it
-     * is the first run that counts -- the walk never restarts.
-     *
-     * PUBLIC AND STATIC because it is the arithmetic, and arithmetic is worth
-     * being able to test directly. It reads nothing but its arguments -- the
-     * query above decides who is in the funnel, and this decides how far each
-     * of them got.
-     *
-     * @param  array $rows   subject, timestamp-ordered, with an s{N} flag per step
-     * @param  int   $count  how many steps
-     * @return array
-     */
-    public static function walk( $rows, $count ) {
+        for ( $i = 0; $i < $count; $i++ ) {
 
-        $counts  = array_fill( 0, $count, 0 );
-        $current = null;
-        $stage   = 0;
-
-        /*
-         * The tally happens when the SUBJECT CHANGES, not per row, which is why
-         * there is a flush after the loop as well. Counting inside the loop
-         * would need the stage of a subject whose last row has not been read
-         * yet.
-         */
-        foreach ( $rows as $row ) {
-
-            if ( $current !== $row['subj'] ) {
-
-                for ( $i = 0; $i < $stage; $i++ ) {
-
-                    $counts[ $i ]++;
-                }
-
-                $current = $row['subj'];
-                $stage   = 0;
-            }
-
-            /*
-             * Only ever the step being waited for, and at most ONE stage per
-             * event.
-             *
-             * A row satisfying a later step is not a shortcut -- a closed
-             * funnel is reached in order. And two steps satisfied by the same
-             * event is not two steps: a step is something the subject DID, so
-             * the next one needs an event of its own. Two steps written with
-             * overlapping conditions therefore need two visits, which is what
-             * they say.
-             */
-            if ( $stage < $count && (int) $row[ 's' . $stage ] === 1 ) {
-
-                $stage++;
-            }
-        }
-
-        for ( $i = 0; $i < $stage; $i++ ) {
-
-            $counts[ $i ]++;
+            $counts[] = (int) ( $row[ 'c' . $i ] ?? 0 );
         }
 
         return $counts;

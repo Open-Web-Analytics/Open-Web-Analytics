@@ -20,6 +20,14 @@ class VisualizationSave extends \OWA\Core\AdminController {
         $this->setNonceRequired();
     }
 
+    /**
+     * How many steps one funnel may have.
+     *
+     * Structural: each step is a derived table nested inside the next, so this
+     * is the nesting depth of the counting query. Ten is also GA's cap.
+     */
+    const MAX_STEPS = 10;
+
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
@@ -110,6 +118,30 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
             $this->addValidation( 'stepPath1', '', 'required',
                 array( 'errorMsg' => 'A funnel needs at least one step.' ) );
+        }
+
+        /*
+         * A CEILING, and it is structural rather than an opinion about how long
+         * a funnel ought to be.
+         *
+         * Each step becomes a derived table nested inside the one after it, so
+         * the step count IS the nesting depth of the counting query -- see
+         * VisualizationFunnel::countFunnel(). Unbounded, a funnel somebody
+         * pasted fifty steps into becomes a fifty-deep statement that MySQL 5.x
+         * materialises level by level.
+         *
+         * Ten, which is also where GA caps a funnel exploration. A path with
+         * more stages than that has stopped being readable as a chart well
+         * before it becomes a problem for the database.
+         */
+        if ( $kept > self::MAX_STEPS ) {
+
+            $this->addValidation( 'stepPath1', '', 'required', array(
+                'errorMsg' => sprintf(
+                    'A funnel can have at most %d steps, and this one has %d. Each step is '
+                    . 'another layer of the query that counts it.',
+                    self::MAX_STEPS, $kept ),
+            ) );
         }
     }
 

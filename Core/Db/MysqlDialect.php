@@ -109,6 +109,21 @@ if ( ! defined( 'OWA_SQL_ADD_INDEX' ) ) { define('OWA_SQL_ADD_INDEX', 'ALTER TAB
 // yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.
 if ( ! defined( 'OWA_SQL_ADD_NAMED_INDEX' ) ) { define('OWA_SQL_ADD_NAMED_INDEX', 'ALTER TABLE %s ADD INDEX %s (%s) %s'); }
 if ( ! defined( 'OWA_SQL_COUNT' ) ) { define('OWA_SQL_COUNT', 'COUNT(%s)'); }
+// The earliest value in a group. Used by the funnel to find the first time a
+// subject reached a step; spelled the same everywhere, but it belongs beside
+// its siblings rather than inline so the lint has one place to look.
+if ( ! defined( 'OWA_SQL_MIN' ) ) { define('OWA_SQL_MIN', 'MIN(%s)'); }
+// Keep the left side and null the right when it does not match. The funnel
+// chains one of these per step so a subject who stops is RETAINED with a null
+// time rather than dropped -- which is what lets a single statement report the
+// count at every step instead of only the last.
+if ( ! defined( 'OWA_SQL_LEFT_JOIN' ) ) { define('OWA_SQL_LEFT_JOIN', 'LEFT JOIN'); }
+// The first non-null of its arguments. Standard, but named here for the same
+// reason as MIN: the lint should not have to know which bare words are safe.
+if ( ! defined( 'OWA_SQL_COALESCE' ) ) { define('OWA_SQL_COALESCE', 'COALESCE(%s, %s)'); }
+// A conditional value: the funnel uses it to record a timestamp only when the
+// row satisfies the step being waited for, and NULL otherwise.
+if ( ! defined( 'OWA_SQL_CASE_WHEN' ) ) { define('OWA_SQL_CASE_WHEN', 'CASE WHEN %s THEN %s END'); }
 if ( ! defined( 'OWA_SQL_SUM' ) ) { define('OWA_SQL_SUM', 'SUM(%s)'); }
 if ( ! defined( 'OWA_SQL_ROUND' ) ) { define('OWA_SQL_ROUND', 'ROUND(%s)'); }
 if ( ! defined( 'OWA_SQL_AVERAGE' ) ) { define('OWA_SQL_AVERAGE', 'AVG(%s)'); }
