@@ -198,6 +198,10 @@ final class GoalFunnelOrderTest extends TestCase
              * consecutive funnel steps inside a second, that reading is the
              * only one worth having, and the alternative settles it by coin
              * flip. Each event is still spent once. So v7 PASSES.
+             *
+             * msec is fixed in V2, not 1.x. When it is, v7 stops being a tie
+             * and this fixture visitor should be retired along with the test
+             * that names them.
              */
             array($v7, $s7, '/a', 40),
             array($v7, $s7, '/b', 40),

@@ -634,6 +634,11 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
              *
              * Each event is still used at most once, so this cannot turn a
              * single page view into a completed funnel.
+             *
+             * The assumption becomes a real comparison when msec is fixed,
+             * which is DECIDED FOR V2 rather than 1.x -- fixing it here would
+             * change behaviour for new rows only, and leave old and new rows
+             * ordering differently in the same report.
              */
             if ( $tied && $tied[0]['ts'] !== $row['ts'] ) {
 

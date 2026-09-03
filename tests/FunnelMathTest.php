@@ -165,6 +165,9 @@ final class FunnelMathTest extends TestCase
      * having.
      *
      * Fixing msec would make this a real comparison rather than an assumption.
+     * That is DECIDED FOR V2, not 1.x -- so when it lands, RETIRE this test
+     * rather than adjusting its numbers: the behaviour it pins stops being the
+     * behaviour anybody wants.
      */
     public function testTwoEventsInOneSecondCanSatisfyTwoSteps(): void
     {
