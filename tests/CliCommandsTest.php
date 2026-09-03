@@ -89,6 +89,25 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNotEmpty($site->get('id'),
             'add-site should have persisted a site row keyed by domain.');
         $this->trackForCleanup('base.site', $site->get('id'), 'id');
+
+        /*
+         * AND THE PROPERTY IT MINTED.
+         *
+         * Adding a site creates the Property above it -- a site is an
+         * Observation Profile now, and a Profile has to hang off something.
+         * This cleanup predates the hierarchy and only ever removed the
+         * Profile, so every run of this test left one parentless Property
+         * behind. The test install had accumulated 2,295 of them against 165
+         * sites, and each one is a row in the fan-out's Properties column:
+         * a picker nobody could use, from a defect in a test rather than in
+         * the product.
+         */
+        $propertyId = $site->get('property_id');
+
+        $this->assertNotEmpty($propertyId,
+            'add-site should have given the new Profile a Property to hang off.');
+
+        $this->trackForCleanup('base.property', $propertyId, 'id');
     }
 
     public function testAddSiteRequiresDomain(): void
