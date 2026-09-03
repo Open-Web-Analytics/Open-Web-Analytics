@@ -108,9 +108,24 @@ const E2E_GOAL_NUMBER = 1;
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
 const E2E_GOAL_GROUP  = '1';
 const E2E_GOAL_URL    = '/docs';
-const E2E_GOAL_STEPS  = [
-    1 => ['name' => 'E2E Step Home',    'path' => '/',        'is_required' => true],
-    2 => ['name' => 'E2E Step Pricing', 'path' => '/pricing', 'is_required' => true],
+
+// The funnel VISUALIZATION.
+//
+// A funnel used to be configuration -- rows hanging off a goal -- and the goal
+// funnel report read them. It is a visualization now: a custom report of type
+// `visualization`, whose definition holds its own steps. So it is seeded the
+// way a custom report is, not the way a goal is, and nothing about it belongs
+// to the goal event above.
+//
+// The third step is the one the old report APPENDED from the goal's own
+// goal_url. It is an ordinary step here, which is the whole difference: the
+// path being analysed is stated where it is looked at, so there is no longer a
+// stage the report builds rather than reads.
+const E2E_FUNNEL_VIZ_NAME  = 'E2E Signup Funnel Visualization';
+const E2E_FUNNEL_VIZ_STEPS = [
+    ['name' => 'E2E Step Home',    'path' => '/'],
+    ['name' => 'E2E Step Pricing', 'path' => '/pricing'],
+    ['name' => 'E2E Step Docs',    'path' => '/docs'],
 ];
 
 // A second fixture user with the ADMIN role, so the admin-actions e2e suite
@@ -355,6 +370,11 @@ function seed(): array
 
     // 9. A custom report with a broken-out trend, for the companion-grid specs.
     $out['breakdown_report_seeded'] = seedBreakdownReport();
+
+    // 10. The funnel visualization. Separate from the goal above and naming
+    //     nothing about it -- a funnel is an analysis of a path now, not part
+    //     of a goal's configuration.
+    $out['funnel_visualization_seeded'] = seedFunnelVisualization();
 
     $out['status']            = 'seeded';
     return $out;
@@ -702,71 +722,138 @@ function unseedNotifications(): int
 }
 
 /**
- * The funnel that leads to the seeded goal event.
+ * The funnel VISUALIZATION, and the id the specs address it by.
  *
- * A funnel NAMES its goal event rather than belonging to one, so it is written
- * separately -- and it is the funnel, not the goal event, that the funnel
- * report reads.
+ * Written through the entity rather than CustomReports::save(), because save()
+ * validates a REPORT: it requires widgets whose metrics and dimensions resolve
+ * through the registry, and a funnel has neither. A visualization's definition
+ * is its steps, and the controller that computes it is chosen by
+ * visualization_type -- so those two columns, and not the widget list, are what
+ * has to be right here.
+ *
+ * The step paths are ones the pageview fixture already walks, in order, so
+ * every stage counts somebody. A funnel whose stages are all zero would render
+ * and prove nothing about the counting.
+ *
+ * @return array  the seeded row's id and its steps, for the e2e fixture file
  */
-function seedGoalFunnel(array $steps): void
+function seedFunnelVisualization(): array
 {
-    $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
-        E2E_SITE_ID, E2E_GOAL_NUMBER);
+    $steps = [];
 
-    $funnel = owa_coreAPI::entityFactory('base.funnel');
-    $funnel->getByColumn('goal_event_id', $goalEventId);
-
-    if (!$funnel->wasPersisted()) {
-
-        $funnelId = $funnel->generateId('funnel:' . E2E_SITE_ID . ':' . E2E_GOAL_NUMBER);
-
-        $funnel->set('id', $funnelId);
-        $funnel->set('site_id', E2E_SITE_ID);
-        $funnel->set('name', E2E_GOAL_NAME);
-        $funnel->set('goal_event_id', $goalEventId);
-        $funnel->set('creation_date', owa_coreAPI::getRequestTimestamp());
-        $funnel->create();
+    foreach (E2E_FUNNEL_VIZ_STEPS as $i => $step) {
+        $steps[] = $step + ['step_number' => $i + 1];
     }
-
-    $funnelId = $funnel->get('id');
 
     $db = owa_coreAPI::dbSingleton();
-    $db->deleteFrom(owa_coreAPI::entityFactory('base.funnel_step')->getTableName());
-    $db->where('funnel_id', $funnelId);
-    $db->executeQuery();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
 
-    foreach ($steps as $n => $step) {
+    $id = '';
 
-        $row = owa_coreAPI::entityFactory('base.funnel_step');
+    foreach ((array) $db->getAllRows() as $row) {
 
-        $row->set('id', $row->generateId('funnel_step:' . $funnelId . ':' . $n));
-        $row->set('funnel_id', $funnelId);
-        $row->set('step_number', $n);
-        $row->set('name', $step['name'] ?? '');
-        $row->set('condition_property', \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI);
-        $row->set('condition_operator', \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX);
-        $row->set('condition_value', $step['path'] ?? '');
-        $row->set('creation_date', owa_coreAPI::getRequestTimestamp());
-        $row->create();
+        if (($row['name'] ?? '') === E2E_FUNNEL_VIZ_NAME) {
+
+            $id = (string) $row['id'];
+            break;
+        }
     }
+
+    $report = owa_coreAPI::entityFactory('base.custom_report');
+
+    if ($id !== '') {
+        $report->load($id);
+    }
+
+    $report->set('name', E2E_FUNNEL_VIZ_NAME);
+    $report->set('report_type', \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION);
+    $report->set('visualization_type', 'funnel');
+    // ENCODED: the column is a blob holding JSON, and handing it an array
+    // stores the string "Array" -- which renders as a funnel with no steps.
+    $report->set('definition', json_encode(['steps' => $steps]));
+    $report->set('last_updated_timestamp', owa_coreAPI::getRequestTimestamp());
+
+    if ($report->wasPersisted()) {
+
+        $report->update();
+
+    } else {
+
+        $id = $report->generateId('visualization:e2e:' . E2E_SITE_ID);
+
+        $report->set('id', $id);
+        /*
+         * Owned by the ANALYST, not the admin.
+         *
+         * Ownership decides what the roster LISTS -- an admin sees everyone's,
+         * everyone else sees their own -- and the reporting specs sign in as
+         * the analyst. Seeded under the admin it existed, opened fine by its
+         * URL, and was invisible on the roster the specs look it up on, which
+         * reads as "the funnel is missing" rather than "you cannot see it".
+         *
+         * It also makes the fixture the ordinary case: somebody's own
+         * visualization, not an administrator's.
+         */
+        $report->set('user_id', E2E_USER_ID);
+        $report->set('creation_timestamp', owa_coreAPI::getRequestTimestamp());
+        $report->create();
+    }
+
+    /*
+     * Read BACK, not returned from what was written.
+     *
+     * The definition survives a JSON round trip through a blob column, and the
+     * specs address the row by an id this function minted. Reporting what the
+     * database now holds is the only way the seed output can say the steps are
+     * really there -- the "Array" bug above wrote successfully and stored
+     * nothing readable.
+     */
+    $stored = \OWA\Module\Base\Classes\CustomReports::load($id);
+    $back   = isset($stored['definition']['steps']) ? (array) $stored['definition']['steps'] : [];
+
+    return [
+        'id'    => $id,
+        'name'  => E2E_FUNNEL_VIZ_NAME,
+        'steps' => count($back),
+        'paths' => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
+    ];
+}
+
+/** Remove the funnel visualization fixture, by name. */
+function unseedFunnelVisualization(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_FUNNEL_VIZ_NAME) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
+            $removed++;
+        }
+    }
+
+    return $removed;
 }
 
 function seedGoal(): array
 {
-    $steps = [];
-
-    foreach (E2E_GOAL_STEPS as $n => $step) {
-        $steps[$n] = $step + ['step_number' => $n];
-    }
-
     /*
      * Through GoalManager, not persistSiteSetting.
      *
-     * Goals are rows in owa_goal_event now, and their funnels are rows in
-     * owa_funnel / owa_funnel_step. persistSiteSetting still WRITES a settings
-     * blob perfectly happily -- nothing reads it any more, so seeding that way
-     * succeeded and produced a site with no goals, which is how thirteen
-     * reporting specs came to fail at once.
+     * Goals are rows in owa_goal_event now. persistSiteSetting still WRITES a
+     * settings blob perfectly happily -- nothing reads it any more, so seeding
+     * that way succeeded and produced a site with no goals, which is how
+     * thirteen reporting specs came to fail at once.
+     *
+     * No steps: a funnel is not part of a goal any more. See
+     * seedFunnelVisualization(), which seeds the path separately and does not
+     * name this goal at all.
      */
     $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', E2E_SITE_ID);
 
@@ -784,16 +871,16 @@ function seedGoal(): array
     // The write happens on destruct, as the blob write used to.
     unset($gm);
 
-    seedGoalFunnel($steps);
-
+    // Read back, so the seed output reports what the database holds rather than
+    // what was handed to it.
     $stored = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals(E2E_SITE_ID);
-    $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
+    $goal   = $stored[E2E_GOAL_NUMBER] ?? [];
 
     return [
         'goal_number' => E2E_GOAL_NUMBER,
-        'steps'       => count($back),
-        'paths'       => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
-        'goal_url'    => E2E_GOAL_URL,
+        'goal_name'   => $goal['goal_name'] ?? '',
+        'goal_status' => $goal['goal_status'] ?? '',
+        'goal_url'    => $goal['details']['goal_url'] ?? '',
     ];
 }
 
@@ -841,11 +928,11 @@ function teardown(): array
     $removed['owa_referer'] = 'fixture rows cleared';
 
     $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
-    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport() )
-        . ' fixture report(s) removed';
+    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport()
+        + unseedFunnelVisualization() ) . ' fixture report(s) removed';
 
     /*
-     * The fixture goal event and its funnel.
+     * The fixture goal event, and the conditions hanging off it.
      *
      * Goals are ROWS now, in owa_goal_event -- the table loop above does not
      * reach them because it clears fact tables, and a goal event left behind
@@ -854,6 +941,11 @@ function teardown(): array
      *
      * Only this one is removed, by its derived id: an install may have goal
      * events of its own, and clearing the table wholesale would take them too.
+     *
+     * Its conditions go first. They are separate rows keyed by goal_event_id
+     * and nothing cascades, so deleting only the goal event leaves conditions
+     * pointing at an id that no longer resolves -- and the next run's goal
+     * event, minted at the same derived id, would inherit them.
      */
     try {
         $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
@@ -864,23 +956,11 @@ function teardown(): array
 
         if ($goalEvent->wasPersisted()) {
 
-            /*
-             * The funnel first. It NAMES the goal event rather than belonging
-             * to it, so removing the goal event does not take it -- and an
-             * orphaned funnel would still be listed with nothing behind it.
-             */
-            $funnel = owa_coreAPI::entityFactory('base.funnel');
-            $funnel->getByColumn('goal_event_id', $goalEventId);
-
-            if ($funnel->wasPersisted()) {
-
-                $db = owa_coreAPI::dbSingleton();
-                $db->deleteFrom(owa_coreAPI::entityFactory('base.funnel_step')->getTableName());
-                $db->where('funnel_id', $funnel->get('id'));
-                $db->executeQuery();
-
-                $funnel->delete($funnel->get('id'));
-            }
+            $db = owa_coreAPI::dbSingleton();
+            $db->deleteFrom(
+                owa_coreAPI::entityFactory('base.goal_event_condition')->getTableName());
+            $db->where('goal_event_id', $goalEventId);
+            $db->executeQuery();
 
             $goalEvent->delete($goalEventId);
             $removed['goal'] = 'fixture goal event removed';

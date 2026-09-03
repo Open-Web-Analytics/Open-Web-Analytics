@@ -120,7 +120,19 @@ jQuery(document).ready(function(){
                     <?php if ( $owa_titleButtons ): ?>
                     <div class="owa_titleActions">
                         <?php foreach ( $owa_titleButtons as $owa_action ): ?>
-                        <a class="owa_button" href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
+                        <?php
+                            /*
+                             * An optional class, so an action can be HOOKED as
+                             * well as followed. The visualizations roster asks
+                             * which kind first, in a modal, and needs something
+                             * to bind to -- while the href stays a real link,
+                             * so the action still works with no JavaScript.
+                             */
+                        ?>
+                        <a class="owa_button<?php
+                            if ( ! empty( $owa_action['class'] ) ): ?> <?php
+                                $view->out( $owa_action['class'] ); endif; ?>"
+                           href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
                             if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
                                 $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
                             endif; ?><?php $view->out( $owa_action['label'] ); ?></a>

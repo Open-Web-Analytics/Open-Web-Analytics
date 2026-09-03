@@ -216,7 +216,10 @@ class Report extends \OWA\Core\Controller {
          * The target is built from the REQUEST params, so nothing set here
          * reaches it -- it loads the row itself from reportId.
          */
-        return $this->delegateTo( $controllers[ $type ] );
+        $data = (array) $this->delegateTo( $controllers[ $type ] );
+
+        // The same edit control a custom report gets, in the same place.
+        return $this->withEditAction( $data, $report );
     }
 
     private function renderCustom( $id ) {
@@ -293,17 +296,8 @@ class Report extends \OWA\Core\Controller {
         $data = (array) $target->doAction();
 
         /*
-         * "Edit report", beside the title.
-         *
-         * It acts on the WHOLE report, which is what the title's line is for --
-         * the same place the roster puts "New Custom Report".
-         *
-         * Offered only to someone who may actually edit. Viewing a custom
-         * report is deliberately wider than editing one -- that is what
-         * "shareable by url" means -- so an ungated control would be offering a
-         * reader a link that leads to a refusal. Asked of mayEdit() against the
-         * ROW, which is the same question CustomReportEdit asks when the link
-         * is followed, so the two cannot answer differently.
+         * "Edit", beside the title. See withEditAction() for what it is and on
+         * what terms it is offered.
          *
          * ASKED AFTER doAction(), AND THAT ORDER IS THE WHOLE POINT.
          *
@@ -324,17 +318,44 @@ class Report extends \OWA\Core\Controller {
          * enough. It took an admin opening a report created by someone else --
          * which is the ordinary case on any install with more than one author.
          */
-        /*
-         * Nothing to decorate unless a report was actually rendered. A refused
-         * request comes back as the controller's bare data, and an edit control
-         * on a refusal would be the second thing wrong with it.
-         *
-         * CoreAPI::isCurrentUserCapable() rather than reaching through
-         * getCurrentUser() for isCapable(): it is the house way to ask this,
-         * it always answers a bool, and it debug-logs the role and the
-         * authentication state -- which is the exact pair that made this
-         * ordering bug visible in the end.
-         */
+        return $this->withEditAction( $data, $report );
+    }
+
+    /**
+     * Put "Edit" beside the title, if this reader may edit this row.
+     *
+     * ONE place for both kinds. A visualization is edited on its own screen and
+     * a report on the builder, but the control is the same control -- so two
+     * copies would be two chances for the visualization's to drift into a text
+     * link in a control bar, which is where it started.
+     *
+     * It acts on the WHOLE thing, which is what the title's line is for -- the
+     * same place the roster puts "New Custom Report". On the funnel it sat
+     * among the scope switch and the filter, which are controls for HOW YOU ARE
+     * LOOKING at it; changing what it IS is a different kind of act.
+     *
+     * Offered only to someone who may actually edit. Viewing is deliberately
+     * wider than editing -- that is what "shareable by url" means -- so an
+     * ungated control would be offering a reader a link that leads to a
+     * refusal. Asked of mayEdit() against the ROW, which is the same question
+     * the edit screen asks when the link is followed, so the two cannot answer
+     * differently.
+     *
+     * CoreAPI::isCurrentUserCapable() rather than reaching through
+     * getCurrentUser() for isCapable(): it is the house way to ask this, it
+     * always answers a bool, and it debug-logs the role and the authentication
+     * state -- which is the exact pair that made an ordering bug here visible.
+     * See the call site in renderCustom() for what that ordering is.
+     *
+     * @param  array $data    what the target controller returned
+     * @param  array $report  the row being rendered
+     * @return array
+     */
+    private function withEditAction( array $data, array $report ) {
+
+        // Nothing to decorate unless a report was actually rendered. A refused
+        // request comes back as the controller's bare data, and an edit control
+        // on a refusal would be the second thing wrong with it.
         $may_edit = ! empty( $data['view'] )
             && \OWA\Module\Base\Classes\CustomReports::mayEdit(
                 $report,
@@ -342,23 +363,29 @@ class Report extends \OWA\Core\Controller {
                 (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' )
             );
 
-        if ( $may_edit ) {
+        if ( ! $may_edit ) {
 
-            $data['title_actions'] = array(
-                array(
-                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
-                                   ->makeLink( array(
-                                       'do'             => 'base.customReportEdit',
-                                       'customReportId' => $report['id'],
-                                   ), true ),
-                    'label' => 'Edit report',
-                    'icon'  => 'fa-pencil-alt',
-                    // An icon, not a labelled button: the label names the
-                    // report's own title, which is right beside it.
-                    'iconOnly' => true,
-                ),
-            );
+            return $data;
         }
+
+        $is_viz = ( $report['report_type'] ?? '' )
+                  === \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION;
+
+        $link = $is_viz
+            ? array( 'do' => 'base.visualizationEdit', 'visualizationId' => $report['id'] )
+            : array( 'do' => 'base.customReportEdit',  'customReportId'  => $report['id'] );
+
+        $data['title_actions'] = array(
+            array(
+                'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                               ->makeLink( $link, true ),
+                'label' => $is_viz ? 'Edit visualization' : 'Edit report',
+                'icon'  => 'fa-pencil-alt',
+                // An icon, not a labelled button: the label names the row's own
+                // title, which is right beside it.
+                'iconOnly' => true,
+            ),
+        );
 
         return $data;
     }

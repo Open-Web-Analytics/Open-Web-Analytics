@@ -107,6 +107,24 @@ class CustomReports {
         'funnel' => 'Funnel',
     );
 
+    /**
+     * One line about each visualization, shown where the kind is chosen.
+     *
+     * The kind is picked before anything else, and it decides what the builder
+     * asks for -- a funnel asks for a path, and the next one will ask for
+     * something else entirely. So this sentence is not decoration: with one
+     * choice it says what the choice IS, and with two it will be what separates
+     * them. Kept beside VISUALIZATION_TYPES so the two cannot drift.
+     */
+    const VISUALIZATION_TYPE_HINTS = array(
+        'funnel' => 'How many people reached each step of a path, in order, and where they left.',
+    );
+
+    /** A picture of each kind, in the Font Awesome 5 set the chrome loads. */
+    const VISUALIZATION_TYPE_ICONS = array(
+        'funnel' => 'fas fa-filter',
+    );
+
     const WIDGET_TYPES = array(
         'grid'          => 'Table',
         'grid-card'     => 'Table card',

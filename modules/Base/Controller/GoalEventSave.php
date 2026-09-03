@@ -118,10 +118,19 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $goalEvent->set( 'property_id',
             \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId ) );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
+        /*
+         * ALWAYS once per session, whatever was submitted.
+         *
+         * A conversion is a column on the session row, so a second match in the
+         * same session has nowhere to go -- once per event is a setting the
+         * storage can hold and the handler cannot honour. The form offers only
+         * the one choice; this is what makes that true of the row as well, so a
+         * hand-made request cannot store an intent nothing acts on.
+         *
+         * Delete this clamp, not the column, when per-event recording lands.
+         */
         $goalEvent->set( 'count_mode',
-            $this->getParam( 'countMode' ) === \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_EVENT
-                ? \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_EVENT
-                : \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_SESSION );
+            \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_SESSION );
 
         $goalEvent->set( 'condition_match',
             $this->getParam( 'conditionMatch' ) === \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY

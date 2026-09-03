@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * The goal events of one Observation Profile.
+ * The goal events of one Property.
  *
  * The goals screen listed twenty numbered rows whether or not anyone had filled
  * them in, because the storage was a fixed-length array and the screen showed
@@ -12,21 +12,36 @@
 <div id="panel">
 <div class="owa_panelIntro">A goal event is something worth counting &mdash; a page
 reached, an action taken. Each one names a condition, and every event matching it is
-counted for this Observation Profile. Goal events belong to this Profile only; another
-Profile of the same Property can count different things.</div>
+counted. Goal events belong to the <strong>Property</strong>, so every Observation Profile
+beneath it counts the same things &mdash; which is what makes a conversion comparable across
+the site and the app that report into one Property.</div>
+
+<?php
+/*
+ * The house shape for an admin list: a fieldset whose legend names the section
+ * and carries the way to add one, then the table. Same as the user roster and
+ * the allowed-users list.
+ *
+ * It was an orange .owa-button above the table -- which is the PRIMARY button,
+ * the one "Save" wears, so a list of things to read led with the loudest thing
+ * on the screen and looked like a different design from every other settings
+ * page.
+ */
+?>
+<fieldset>
+
+    <legend>
+        Goal Events <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
+            'do' => 'base.goalEventEdit', 'siteId' => $view->siteId ) );?>">Add New Goal Event</a>)</span>
+    </legend>
 
 <?php if ( empty( $view->goalEvents ) ):?>
 
     <div class="owa_emptyState">
-        <p>This Profile counts nothing yet.</p>
-        <p><a class="owa-button" href="<?php echo $view->makeLink( array(
-            'do' => 'base.goalEventEdit', 'siteId' => $view->siteId ) );?>">Create a goal event</a></p>
+        <p>This Property counts nothing yet.</p>
     </div>
 
 <?php else:?>
-
-    <p><a class="owa-button" href="<?php echo $view->makeLink( array(
-        'do' => 'base.goalEventEdit', 'siteId' => $view->siteId ) );?>">Create a goal event</a></p>
 
     <table class="management">
         <thead>
@@ -78,4 +93,6 @@ Profile of the same Property can count different things.</div>
     </table>
 
 <?php endif;?>
+
+</fieldset>
 </div>

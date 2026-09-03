@@ -29,8 +29,15 @@ test.describe('visualizations', () => {
 
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
-        // The type is asked first, because it decides what the rest asks for.
-        await expect(page.locator('select[name="visualizationType"]')).toBeVisible();
+        /*
+         * The kind was answered before this screen opened, so it is STATED
+         * here, not asked again -- and it is posted, so an unchanged edit
+         * cannot quietly fall back to the default and change what computes the
+         * row.
+         */
+        await expect(page.locator('.owa_statedValue')).toContainText('Funnel');
+        await expect(page.locator('input[type="hidden"][name="visualizationType"]'))
+            .toHaveValue('funnel');
 
         await page.fill('input[name="name"]', name);
         await page.locator('input[name="stepName[]"]').first().fill('Docs');
@@ -77,13 +84,62 @@ test.describe('visualizations', () => {
 
         // --- the roster lists it, and nothing else does ------------------------
         await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
-        await expect(page.locator('table.management tbody tr', { hasText: name })).toHaveCount(1);
+
+        const row = page.locator('table.management tbody tr', { hasText: name });
+        await expect(row).toHaveCount(1);
+
+        /*
+         * And no edit link in the row. Editing is the pencil on the thing
+         * itself, which is where it acts on something the reader is looking at;
+         * a second way in from the roster made every row carry two links to two
+         * screens and an empty cell for anyone who may not edit.
+         */
+        await expect(row.locator('a[href*="visualizationEdit"]')).toHaveCount(0);
 
         await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
         await expect(
             page.locator('table.management tbody tr', { hasText: name }),
             'a visualization appeared in the Custom Reports roster'
         ).toHaveCount(0);
+    });
+
+    /**
+     * WHICH KIND, before the builder opens.
+     *
+     * The same question in the same shape as the widget builder's type chooser,
+     * because the kind decides what the builder then asks for. There is only a
+     * funnel today and it is still asked: a single hardcoded kind would not
+     * need naming, and asking is what makes the second one cost a row in
+     * VISUALIZATION_TYPES rather than a new screen.
+     */
+    test('the New button asks which kind, in a modal', async ({ page }) => {
+        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const dialog = page.locator('#visualizationTypeDialog');
+
+        // Behind the button: it is not on the page until asked for.
+        await expect(dialog).toBeHidden();
+
+        await page.locator('.owa_newVisualization').first().click();
+        await expect(dialog).toBeVisible();
+
+        // One kind, and it is the funnel.
+        const tiles = dialog.locator('.owa_typeChoice');
+        await expect(tiles).toHaveCount(1);
+        await expect(tiles.first()).toContainText('Funnel');
+
+        /*
+         * Still a real link. With no JavaScript the modal never opens and the
+         * New button opens the builder directly, so picking a kind has to be a
+         * navigation rather than something only script can do.
+         */
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            tiles.first().click(),
+        ]);
+
+        expect(page.url()).toContain('visualizationType=funnel');
+        await expect(page.locator('input[name="stepName[]"]').first()).toBeVisible();
     });
 
     /** A funnel is nothing but its steps, so one with none describes no path. */

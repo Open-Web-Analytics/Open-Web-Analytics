@@ -69,18 +69,34 @@ const FIXTURE = {
         refererHost: 'news.ycombinator.com',
         mediums: { 'organic-search': 2, referral: 1, direct: 1 },
     },
-    // The goal + funnel seeded by seed_reporting_fixtures.php. Its step paths
-    // are ones the pageview fixture already visits, so every stage of the
-    // funnel has real visitors -- including `destination`, which the report
-    // appends as the funnel's last bar from the goal's own goal_url.
+    // The goal event seeded by seed_reporting_fixtures.php. It has no funnel:
+    // a funnel is not part of a goal any more, it is a visualization.
     goal: {
         number: 1,
         name: 'E2E Signup Funnel',
+        destination: '/docs',
+    },
+    /*
+     * The funnel VISUALIZATION, seeded separately and naming nothing about the
+     * goal above.
+     *
+     * The step paths are ones the pageview fixture already walks, in order, so
+     * every stage counts somebody -- a funnel whose stages are all zero would
+     * render and prove nothing about the counting. `/docs` is an ordinary step
+     * here; it used to be a bar the report appended from the goal's own
+     * goal_url, and appending it was the only stage a key mismatch could
+     * silently empty.
+     *
+     * The id is not written down: it is minted by the seeder, so the specs find
+     * it by NAME on the roster.
+     */
+    funnelVisualization: {
+        name: 'E2E Signup Funnel Visualization',
         steps: [
             { name: 'E2E Step Home', path: '/' },
             { name: 'E2E Step Pricing', path: '/pricing' },
+            { name: 'E2E Step Docs', path: '/docs' },
         ],
-        destination: '/docs',
     },
     /*
      * The DOM recordings seeded by seedDomstreams().

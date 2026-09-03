@@ -3,13 +3,17 @@
 /*
  * One visualization.
  *
- * The type is asked first, because it decides what the rest of the form asks
- * for -- the same order the widget builder puts the question in. Only the
- * funnel exists today, and the picker is still shown: a single hardcoded kind
- * would not need naming, and the reader should see that this is a choice.
+ * The KIND was answered before this screen opened -- in the modal on the
+ * roster, the same order the widget builder puts the question in, because the
+ * kind decides what this form then asks for. So it is STATED here, not asked
+ * again: two places to answer one question is a way for the two to disagree.
+ *
+ * And it cannot be changed. The definition a kind produces means nothing to
+ * another kind, so re-typing a funnel would leave steps that whatever computes
+ * it does not read. Building the other kind is how to get the other kind.
  */
 $owa_v     = (array) $view->visualization;
-$owa_type  = $owa_v['visualization_type'] ?? 'funnel';
+$owa_type  = (string) ( $view->visualizationType ?: 'funnel' );
 ?>
 <div class="owa_panelIntro">A visualization computes something a report cannot arrange from
 metrics and dimensions. A funnel counts how many people reached each step of a path, in order,
@@ -42,17 +46,29 @@ and where they left.</div>
 
     <div class="setting">
         <div class="title">Type</div>
-        <div class="description">What kind of visualization this is. Each type computes its own
-        numbers, so the type decides what it needs to know.</div>
+        <div class="description">What kind of visualization this is. Each kind computes its own
+        numbers, so it decides what this form asks for &mdash; which is why it is chosen before
+        the form opens and cannot be changed afterwards.</div>
         <div class="field">
-            <select name="<?php echo $view->getNs();?>visualizationType" class="owa_largeFormField">
-            <?php foreach ( (array) $view->visualizationTypes as $owa_key => $owa_label ):?>
-                <option value="<?php $view->out( $owa_key );?>"
-                    <?php echo $owa_type === $owa_key ? 'selected' : '';?>>
-                    <?php $view->out( $owa_label );?>
-                </option>
-            <?php endforeach;?>
-            </select>
+            <span class="owa_statedValue">
+                <i class="<?php $view->out( (string) $view->visualizationTypeIcon );?>"
+                   aria-hidden="true"></i>
+                <?php $view->out( (string) $view->visualizationTypeLabel );?>
+            </span>
+            <div class="owa_statedValueHint"><?php
+                $view->out( (string) $view->visualizationTypeHint );?></div>
+            <?php
+                /*
+                 * Posted as a hidden field, not inferred at the save.
+                 *
+                 * The save writes visualization_type, and a form that shows a
+                 * kind but does not send it would have the controller pick the
+                 * default -- so an unchanged edit could quietly change what
+                 * computes the row.
+                 */
+            ?>
+            <input type="hidden" name="<?php echo $view->getNs();?>visualizationType"
+                   value="<?php $view->out( $owa_type );?>">
         </div>
     </div>
 

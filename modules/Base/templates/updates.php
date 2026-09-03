@@ -1,5 +1,14 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div id="updates" style="width:800px; margin: 0px auto 20px auto;">
+<?php
+/*
+ * Clear of the top nav.
+ *
+ * The margin was 0 at the top, so the heading sat against the nav bar's lower
+ * edge with nothing between them -- on the one screen a person reaches when
+ * something is already wrong, which is a poor moment to look broken.
+ */
+?>
+<div id="updates" style="width:800px; margin: 30px auto 20px auto;">
     <div class="" style="text-align:center;">
         <h1>Open Web Analytics Updater</h1>
     </div>

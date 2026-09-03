@@ -644,4 +644,57 @@ final class GoalEventStorageTest extends TestCase
         $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
         $this->assertSame( 'Two', $goals[7]['goal_name'] ?? null );
     }
+    /**
+     * Counting is once per session, whatever was asked for.
+     *
+     * A conversion is a COLUMN on the session row -- goal_N -- so a second
+     * match in the same session has nowhere to go. Once per event is a setting
+     * the storage can hold and the handler cannot honour, which makes it the
+     * quietest kind of wrong: the row says one thing, the number means another,
+     * and nothing looks broken.
+     *
+     * So the form offers one choice and the save clamps to it. Asserted on the
+     * SAVE rather than the form, because the form is not the only way in.
+     */
+    public function testTheCountModeIsClampedToOncePerSession(): void
+    {
+        $body = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/GoalEventSave.php' );
+
+        $write = substr( $body, (int) strpos( $body, "set( 'count_mode'" ) );
+        $write = substr( $write, 0, (int) strpos( $write, ';' ) );
+
+        $this->assertStringContainsString( 'COUNT_PER_SESSION', $write,
+            'The save does not write once-per-session.' );
+
+        $this->assertStringNotContainsString( 'COUNT_PER_EVENT', $write,
+            'The save still writes once-per-event on request, so a hand-made post can store a '
+            . 'counting rule the handler cannot honour.' );
+
+        $this->assertStringNotContainsString( "getParam( 'countMode' )", $write,
+            'The save reads countMode from the request, so what is stored is not what is '
+            . 'counted.' );
+    }
+
+    /**
+     * And the form offers exactly the one choice.
+     *
+     * The field stays rather than disappearing: what a goal event counts is
+     * part of reading it, and a screen silent about it reads as though the
+     * question does not exist.
+     */
+    public function testTheFormOffersOnlyOncePerSession(): void
+    {
+        $body = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/goal_event_edit.php' );
+
+        $this->assertStringContainsString( 'countMode', $body,
+            'The form does not ask about counting at all, so a goal event does not say how '
+            . 'often it counts.' );
+
+        $this->assertSame( 1, substr_count( $body, 'value="once_per_session"' ) );
+
+        $this->assertStringNotContainsString( 'once_per_event', $body,
+            'The form still offers once per event, which the handler cannot honour.' );
+    }
 }

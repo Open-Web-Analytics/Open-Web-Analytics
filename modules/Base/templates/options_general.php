@@ -1,7 +1,18 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="panel_headline"><?php echo $view->headline?></div>
 
-<div class="subview_content">
+<?php
+/*
+ * #panel, like every other settings screen.
+ *
+ * This one alone used .subview_content, which is padding and nothing else --
+ * so the general options were the only settings screen with no white card
+ * under them, sitting straight on the page's grey with each `.setting` drawing
+ * its own box. See .owa_hierarchyContent #panel in owa.report.css, which is
+ * what gives these screens their ground.
+ */
+?>
+<div id="panel">
 
 <form method="post" name="owa_options">
 

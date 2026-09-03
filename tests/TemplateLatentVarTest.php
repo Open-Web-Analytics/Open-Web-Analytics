@@ -295,8 +295,18 @@ final class TemplateLatentVarTest extends TestCase
             'visualization_edit (add)' => [
                 'visualization_edit.php',
                 [
+                    /*
+                     * Exactly what View\VisualizationEdit sets. The KIND is no
+                     * longer a list to choose from -- it was answered in the
+                     * modal on the roster and arrives here settled, so the
+                     * screen is handed the one kind and its words rather than
+                     * every kind.
+                     */
                     'visualization' => [], 'visualizationId' => '', 'steps' => [],
-                    'visualizationTypes' => ['funnel' => 'Funnel'],
+                    'visualizationType' => 'funnel',
+                    'visualizationTypeLabel' => 'Funnel',
+                    'visualizationTypeHint' => 'How many people reached each step of a path.',
+                    'visualizationTypeIcon' => 'fas fa-filter',
                     'validation_errors' => [],
                 ],
                 ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],

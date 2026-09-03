@@ -1548,6 +1548,15 @@ li.constraintRow {
     background: #fff;
     cursor: pointer;
     font: inherit;
+
+    /*
+     * A tile is a <button> in the widget builder and an <a> in the
+     * visualization chooser -- picking a widget type stays on the page, picking
+     * a visualization kind navigates to its builder. Same tile either way, so
+     * the link colour and underline an <a> arrives with are taken back off.
+     */
+    text-decoration: none;
+    color: inherit;
 }
 
 /*
@@ -1887,20 +1896,14 @@ li.constraintRow {
  *
  * Values read left to right, because they are words -- a report name and a user
  * id are read from their first character, and centring them puts every row's
- * first character in a different place. Only the action column is centred: it
- * holds one short control, and centring keeps it away from the table edge.
+ * first character in a different place. Every column now: the roster carries no
+ * action column, because editing is the pencil on the thing itself.
  * ------------------------------------------------------------------------- */
 
 .owa table.owa_customReportRoster th,
 .owa table.owa_customReportRoster td {
     text-align: left;
     vertical-align: top;
-}
-
-.owa table.owa_customReportRoster td.owa_rosterAction,
-.owa table.owa_customReportRoster th:last-child {
-    text-align: center;
-    white-space: nowrap;
 }
 
 /* A sortable heading, and the arrow marking the one the order is actually by. */
@@ -3281,8 +3284,49 @@ li.constraintRow {
     margin-top: 4px;
 }
 
+/*
+ * A setting is a ROW, not a box.
+ *
+ * owa.css draws .setting with its own 1px border and a 10px margin -- a design
+ * for a screen with no card under it. Inside the panel that gives every other
+ * settings screen its white ground, that reads as boxes inside a box, and it
+ * was why the general options looked like a different application from the
+ * user roster and the access list.
+ *
+ * Separated by a hairline instead, in the same greys the panel uses. The last
+ * one drops it so the list does not end on a rule with nothing beneath it.
+ */
 .owa_hierarchyContent #panel .setting {
-    margin-bottom: 16px;
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    margin: 0;
+    padding: 14px 0;
+}
+
+.owa_hierarchyContent #panel .setting:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+/*
+ * 16px was the size of a heading on a screen with no headings above it. Here
+ * the legend and the panel headline are both smaller, so a setting's title
+ * outweighing both put the emphasis on the least important of the three.
+ */
+.owa_hierarchyContent #panel .setting .title {
+    font-size: 13px;
+    color: #505050;
+}
+
+.owa_hierarchyContent #panel .setting .description {
+    color: #999999;
+    font-size: 11px;
+    line-height: 1.55;
+    max-width: 620px;
+}
+
+.owa_hierarchyContent #panel .setting .field {
+    padding-top: 8px;
 }
 
 /*
@@ -3747,4 +3791,40 @@ li.constraintRow {
     padding: 0 8px;
     line-height: 28px;
     vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+ * A value the form STATES rather than asks for.
+ *
+ * A visualization's kind and a Property's kind are both chosen once, before or
+ * at creation, because each decides what everything under it was set up
+ * against. Showing them as a disabled control would say "you could change this,
+ * but not now"; showing them as text says what is true -- this is settled.
+ *
+ * Styled as a value, not as a label: it sits where a field would, so it has to
+ * read as the answer rather than as another heading.
+ * ------------------------------------------------------------------------ */
+
+.owa .owa_statedValue {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    background: #f7f7f7;
+    color: #505050;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.owa .owa_statedValue i {
+    margin-right: 7px;
+    color: #999999;
+}
+
+/* The sentence under it saying what the kind actually does. Secondary to the
+   value, so it is the same treatment .form-instructions gets. */
+.owa .owa_statedValueHint {
+    color: #999999;
+    font-size: 11px;
+    margin-top: 6px;
 }

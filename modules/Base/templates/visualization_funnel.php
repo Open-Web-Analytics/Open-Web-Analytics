@@ -69,10 +69,16 @@ foreach ( $owa_steps as $owa_s ) {
         <span id="funnelFilter" class="constraintPicker"></span>
     </span>
 
-    <span class="owa_reportControl owa_reportControlRight">
-        <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id, 'siteId' => $view->get('siteId') ) ); ?>">Edit this funnel</a>
-    </span>
-
+    <?php
+        /*
+         * No edit link here.
+         *
+         * It is the pencil beside the title, where every custom report puts it
+         * -- see Report::withEditAction(). This bar is for how you are LOOKING
+         * at the funnel; changing what it IS is a different kind of act, and
+         * having it in two shapes in two places said they were two things.
+         */
+    ?>
     <div style="clear:both;"></div>
 </div>
 

@@ -4,10 +4,20 @@ namespace OWA\Module\Base\Controller;
 /**
  * Build or edit one visualization.
  *
- * The type is chosen first, the way a widget's type is chosen when building a
- * custom report -- because it decides what the rest of the form asks for. Only
- * the funnel exists today, which is why the choice is offered at all: a single
- * hardcoded kind would not need naming.
+ * The KIND is decided before this screen opens -- in the modal on the roster,
+ * the way a widget's type is chosen before its settings are -- because the kind
+ * decides what this form asks for. It arrives on the URL and is shown here as a
+ * fact rather than asked again: two places to answer one question is a way for
+ * the two to disagree.
+ *
+ * It is fixed once saved. The definition a kind produces means nothing to
+ * another kind, so re-typing a funnel would leave a visualization holding steps
+ * that whatever computes it does not read. Building the other kind is the way
+ * to get the other kind.
+ *
+ * Only the funnel exists today, which is why the kind is named at all: a single
+ * hardcoded one would not need naming, and the map means the second costs a row
+ * in VISUALIZATION_TYPES rather than a dispatcher change.
  */
 class VisualizationEdit extends \OWA\Core\ReportController {
 
@@ -57,17 +67,61 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          */
         $submitted = $this->submittedSteps();
 
+        $type = $this->resolveType( $report );
+
         $this->set( 'visualizationId', $id );
         $this->set( 'visualization', $this->getParam( 'name' ) !== null
             ? array(
                 'id'                 => $id,
                 'name'               => $this->getParam( 'name' ),
-                'visualization_type' => $this->getParam( 'visualizationType' ),
+                'visualization_type' => $type,
               )
             : (array) $report );
         $this->set( 'steps', $submitted ?: $stored );
-        $this->set( 'visualizationTypes',
-            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES );
+        $this->set( 'visualizationType', $type );
+        $this->set( 'visualizationTypeLabel',
+            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES[ $type ] ?? $type );
+        $this->set( 'visualizationTypeHint',
+            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $type ] ?? '' );
+        $this->set( 'visualizationTypeIcon',
+            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $type ] ?? '' );
+
+    }
+
+    /**
+     * Which kind this is.
+     *
+     * A STORED kind wins over anything on the URL: the definition was written
+     * by that kind and is only meaningful to it, so a URL naming another would
+     * hand the wrong builder a funnel's steps. For a new one the URL is the
+     * answer the modal gave.
+     *
+     * Checked against the known kinds rather than trusted, because it decides
+     * which controller computes the result -- an unknown name is not an error
+     * worth a page for, it is simply not a kind, so it falls back to the first.
+     *
+     * @param  array|null $report
+     * @return string
+     */
+    private function resolveType( $report ) {
+
+        $types = \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES;
+
+        $stored = $report ? (string) ( $report['visualization_type'] ?? '' ) : '';
+
+        if ( $stored !== '' && isset( $types[ $stored ] ) ) {
+
+            return $stored;
+        }
+
+        $asked = (string) $this->getParam( 'visualizationType' );
+
+        if ( $asked !== '' && isset( $types[ $asked ] ) ) {
+
+            return $asked;
+        }
+
+        return (string) key( $types );
     }
 
     /**

@@ -143,13 +143,31 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Count</div>
-        <div class="description">How often a match counts. A conversion is currently recorded
-        against the <em>session</em>, so once per session is what this release can measure &mdash;
-        once per event is stored and takes effect when per-event recording lands.</div>
+        <div class="description">How often a match counts. A conversion is recorded against the
+        <em>session</em> &mdash; one column per goal on the session row &mdash; so once per session
+        is the only thing this release can actually measure. Once per event arrives with per-event
+        recording.</div>
         <div class="field">
+            <?php
+                /*
+                 * ONE choice, on purpose.
+                 *
+                 * Once per event is a real setting the storage can hold, and the
+                 * handler cannot honour it: a conversion is a column on the
+                 * session row, so a second match in the same session has nowhere
+                 * to go. Offering it would let someone save a rule that says one
+                 * thing and counts another -- the quietest kind of wrong, because
+                 * the number looks fine.
+                 *
+                 * The select stays rather than the field disappearing: what a
+                 * goal event counts is part of reading it, and a screen that says
+                 * nothing about it reads as if the question does not exist. The
+                 * save clamps to this too, so an out-of-band value cannot store
+                 * an intent nothing acts on.
+                 */
+            ?>
             <select name="<?php echo $view->getNs();?>countMode">
-                <option value="once_per_session" <?php echo ( $owa_ke['count_mode'] ?? '' ) !== 'once_per_event' ? 'selected' : '';?>>Once per session</option>
-                <option value="once_per_event" <?php echo ( $owa_ke['count_mode'] ?? '' ) === 'once_per_event' ? 'selected' : '';?>>Once per event</option>
+                <option value="once_per_session" selected>Once per session</option>
             </select>
         </div>
     </div>
