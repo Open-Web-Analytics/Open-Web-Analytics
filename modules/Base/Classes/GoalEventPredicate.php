@@ -203,7 +203,7 @@ class GoalEventPredicate {
          * to see it the same way. Without it `NOT` on a NULL column answers
          * NULL, which is not a match, while compare() answers true.
          */
-        $col = sprintf( 'COALESCE( %s, \'\' )', $column );
+        $col = sprintf( OWA_SQL_COALESCE, $column, "''" );
 
         switch ( $operator ) {
 

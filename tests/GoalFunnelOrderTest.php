@@ -185,19 +185,19 @@ final class GoalFunnelOrderTest extends TestCase
             array($v6, $s6, '/b', 0),
 
             /*
-             * v7 is the KNOWN LIMITATION, seeded so it is visible rather than
-             * discovered.
+             * v7 does both steps inside ONE SECOND.
              *
-             * Both steps inside one second. owa_request records whole seconds
-             * -- msec is declared INT and fed the fractional part of
-             * microtime() as a string, so it rounds to 0 or 1 and carries
-             * nothing -- and request ids are the tracker's random GUID, so they
-             * are unique but unordered. SQL therefore has nothing to tell these
-             * two events apart in time, and v7 does not count as a pass.
+             * owa_request records whole seconds -- msec is declared INT and fed
+             * the fractional part of microtime() as a string, so it rounds to 0
+             * or 1 and carries nothing -- and request ids are the tracker's
+             * random GUID. So there is no evidence about which of these two
+             * came first.
              *
-             * Narrow: it takes two consecutive funnel steps within the same
-             * second, which mostly means a redirect. Fixing msec would remove
-             * it without changing the query.
+             * They are resolved as a SET, in the funnel's own order, rather
+             * than by whichever happens to sort first: if somebody hit two
+             * consecutive funnel steps inside a second, that reading is the
+             * only one worth having, and the alternative settles it by coin
+             * flip. Each event is still spent once. So v7 PASSES.
              */
             array($v7, $s7, '/a', 40),
             array($v7, $s7, '/b', 40),
@@ -259,8 +259,8 @@ final class GoalFunnelOrderTest extends TestCase
          * earlier /b was read as their position in the funnel. They visited /a
          * and then visited /b, which is what the funnel asks.
          */
-        $this->assertSame(3, $counts[1],
-            'v1, v4 and v5 each reached /b after an /a; v2 only ever saw /b first');
+        $this->assertSame(4, $counts[1],
+            'v1, v4, v5 and v7 each reached /b after an /a; v2 only ever saw /b first');
     }
 
     /**
@@ -284,7 +284,18 @@ final class GoalFunnelOrderTest extends TestCase
         $counts = $this->funnel($reversed, 'visitor');
 
         $this->assertSame(6, $counts[0], 'everyone except v3 reached /b');
-        $this->assertSame(2, $counts[1], 'only v2 and v4 reached /a after a /b');
+
+        /*
+         * v2, v4 -- and v7, whose two events share a second and are therefore
+         * read in whichever order the funnel asks for.
+         *
+         * That is the honest consequence of resolving a tie as a set: v7
+         * satisfies /a then /b AND /b then /a, because nothing in the data says
+         * which came first. It is the same assumption stated twice, not a
+         * contradiction, and it is better than settling it by coin flip -- but
+         * it is worth seeing written down.
+         */
+        $this->assertSame(3, $counts[1], 'v2 and v4 reached /a after a /b; v7 ties');
     }
 
     public function testSessionScopeCountsVisitsRatherThanVisitors(): void
@@ -301,8 +312,8 @@ final class GoalFunnelOrderTest extends TestCase
          * show them agreeing. This used to be v4's job, which it could only do
          * while the ordering was computed from MIN.
          */
-        $this->assertSame(3, $byVisitor[1], 'as people: v1, v4 and v5');
-        $this->assertSame(2, $bySession[1], "as visits: v1's visit and v4's second");
+        $this->assertSame(4, $byVisitor[1], 'as people: v1, v4, v5 and v7');
+        $this->assertSame(3, $bySession[1], "as visits: v1's, v4's second, and v7's");
 
         $this->assertNotSame($byVisitor, $bySession);
 
@@ -378,33 +389,40 @@ final class GoalFunnelOrderTest extends TestCase
     }
 
     /**
-     * THE KNOWN LIMITATION, asserted so it is visible rather than discovered.
+     * TWO STEPS IN ONE SECOND STILL COUNT, and they count DETERMINISTICALLY.
      *
-     * v7 did /a and /b inside one second. owa_request records whole seconds --
-     * msec is declared INT and fed the fractional part of microtime() as a
-     * string, so it rounds to 0 or 1 and carries nothing, and request ids are
-     * the tracker's random GUID, so they are unique but unordered. SQL has
-     * nothing to order these two events by, so they are not counted as a
-     * sequence.
+     * v7 did /a and /b at the same timestamp. The fact table records whole
+     * seconds and request ids are random, so nothing says which came first --
+     * and the answer must not depend on which one the database happens to
+     * return first, or the same report gives different numbers on consecutive
+     * loads.
      *
-     * This is an UNDERCOUNT and it is deliberate: the alternative is treating
-     * "same second" as "later", which would let one event satisfy two steps and
-     * report a completed funnel for a single page view.
-     *
-     * Fixing msec would remove the limitation without changing the query, and
-     * this test is where that would show up as a failure worth celebrating.
+     * Events sharing a timestamp are therefore resolved as a set, in the
+     * funnel's own order, each spent at most once. Asserted against the total
+     * rather than by naming v7: four of the six entrants completed, and v7 is
+     * the difference between three and four.
      */
-    public function testTwoStepsInsideOneSecondAreNotCountedAsASequence(): void
+    public function testTwoStepsInsideOneSecondAreCountedAsASequence(): void
     {
         $counts = $this->funnel($this->steps(), 'visitor');
 
-        /*
-         * Pinned by the total rather than by naming v7: six entered and three
-         * passed, and v7 is the difference between three and four.
-         */
-        $this->assertSame(3, $counts[1],
-            'v7 completed /a then /b within one second and is now being counted -- if that is '
-            . 'deliberate, msec was fixed and this test should be retired, not adjusted');
+        $this->assertSame(4, $counts[1],
+            'v7 hit both steps within one second and was not counted -- the tie is being '
+            . 'settled by arrival order rather than resolved as a set');
+    }
+
+    /**
+     * And the answer does not depend on how the rows happen to arrive.
+     *
+     * Run twice: a funnel whose number moves between identical calls is worse
+     * than one that is slightly wrong, because nobody can tell which reading to
+     * believe.
+     */
+    public function testTheSameFunnelTwiceGivesTheSameNumbers(): void
+    {
+        $this->assertSame(
+            $this->funnel($this->steps(), 'visitor'),
+            $this->funnel($this->steps(), 'visitor'));
     }
 
     /** A funnel nobody has walked is zeroes, not an error and not an empty list. */

@@ -266,6 +266,36 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * The result set ONE ROW AT A TIME, as a generator.
+     *
+     * See the PDO driver for why this exists. Rows go through stringifyRow()
+     * exactly as get_results() sends them, so a caller that switches between
+     * the two sees the same values -- mysqlnd hands back native types where
+     * the rest of OWA expects strings.
+     *
+     * @param  string $sql
+     * @param  array  $params
+     * @return \Generator
+     */
+    function get_result_iterator( $sql, array $params = array() ) {
+
+        if ( $sql ) {
+
+            $this->query( $sql, $params );
+        }
+
+        if ( ! $this->new_result ) {
+
+            return;
+        }
+
+        while ( $row = mysqli_fetch_assoc( $this->new_result ) ) {
+
+            yield $this->stringifyRow( $row );
+        }
+    }
+
+    /**
      * Fetch result set array
      *
      * Null, not an empty array, when there is nothing to return -- no rows, or

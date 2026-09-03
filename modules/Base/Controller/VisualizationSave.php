@@ -23,8 +23,17 @@ class VisualizationSave extends \OWA\Core\AdminController {
     /**
      * How many steps one funnel may have.
      *
-     * Structural: each step is a derived table nested inside the next, so this
-     * is the nesting depth of the counting query. Ten is also GA's cap.
+     * Ten, which is where GA caps a funnel exploration too.
+     *
+     * This was briefly a structural limit -- each step was a derived table
+     * nested inside the next, so the count was the nesting depth of the query.
+     * That implementation is gone; the counting is one flat scan now, and
+     * another step costs one more CASE column and one more term in an OR. So
+     * the cap is no longer about the database.
+     *
+     * Kept anyway, because it is about the CHART. A funnel drawn with fifty
+     * stages is unreadable long before it is expensive, and a limit somebody
+     * meets while building is kinder than one they meet while reading.
      */
     const MAX_STEPS = 10;
 
@@ -120,26 +129,13 @@ class VisualizationSave extends \OWA\Core\AdminController {
                 array( 'errorMsg' => 'A funnel needs at least one step.' ) );
         }
 
-        /*
-         * A CEILING, and it is structural rather than an opinion about how long
-         * a funnel ought to be.
-         *
-         * Each step becomes a derived table nested inside the one after it, so
-         * the step count IS the nesting depth of the counting query -- see
-         * VisualizationFunnel::countFunnel(). Unbounded, a funnel somebody
-         * pasted fifty steps into becomes a fifty-deep statement that MySQL 5.x
-         * materialises level by level.
-         *
-         * Ten, which is also where GA caps a funnel exploration. A path with
-         * more stages than that has stopped being readable as a chart well
-         * before it becomes a problem for the database.
-         */
+        /* A ceiling on the CHART rather than on the query -- see MAX_STEPS. */
         if ( $kept > self::MAX_STEPS ) {
 
             $this->addValidation( 'stepPath1', '', 'required', array(
                 'errorMsg' => sprintf(
-                    'A funnel can have at most %d steps, and this one has %d. Each step is '
-                    . 'another layer of the query that counts it.',
+                    'A funnel can have at most %d steps, and this one has %d. Beyond that the '
+                    . 'chart stops being readable.',
                     self::MAX_STEPS, $kept ),
             ) );
         }
