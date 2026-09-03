@@ -160,7 +160,40 @@ class GoalEventPredicate {
      * @param  string $value
      * @return array  array( 'sql' => string, 'params' => array )
      */
+    /**
+     * Make sure the SQL vocabulary exists before anything reaches for it.
+     *
+     * OWA_SQL_CONTAINS and friends are defined at FILE SCOPE in the driver's
+     * dialect, so they come into being when a driver class is autoloaded --
+     * which happens when a connection is made, and not before. Every path that
+     * reaches this compiler in a running installation has one, so it worked
+     * everywhere except where it was tested alone: the file on its own, with no
+     * connection, fatalled on an undefined constant.
+     *
+     * That is worth fixing rather than working around in the test, because the
+     * compiler is otherwise pure -- it turns a goal event into a string and
+     * some parameters, and needing a live database to do that is a dependency
+     * it should not have.
+     *
+     * Loading the CLASS rather than requiring the file: the dialect is a trait,
+     * and the driver is what pulls it in. Falling back to MySQL's when there is
+     * no configuration to ask, which is the same assumption the test bootstrap
+     * makes about OWA_DB_TYPE -- there is one dialect today, and a second one
+     * would come with a driver this could name.
+     */
+    private static function ensureSqlVocabulary() {
+
+        if ( defined( 'OWA_SQL_CONTAINS' ) ) {
+
+            return;
+        }
+
+        class_exists( '\OWA\Core\Db\Mysql' );
+    }
+
     private function comparison( $column, $operator, $value ) {
+
+        self::ensureSqlVocabulary();
 
         $E = \OWA\Module\Base\Entity\GoalEvent::class;
 

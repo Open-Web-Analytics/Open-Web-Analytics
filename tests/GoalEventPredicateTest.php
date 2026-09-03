@@ -237,4 +237,28 @@ final class GoalEventPredicateTest extends TestCase
             $this->assertNotNull( $out, "$property is listed as accepted but does not compile." );
         }
     }
+
+    /**
+     * The compiler works with NO DATABASE CONNECTION.
+     *
+     * OWA_SQL_CONTAINS and friends are defined at file scope in the driver's
+     * dialect, so they exist once a driver has been autoloaded and not before.
+     * Every path that reaches this in a running installation has a connection,
+     * which is why the gap only showed up when this file was run on its own --
+     * CI's isolation sweep runs every file that way, and its unit job has no
+     * database at all.
+     *
+     * Asserted rather than left to the other tests: they would all fail
+     * together and the reason would be a fatal about an undefined constant, in
+     * whichever test happened to run first.
+     */
+    public function testItCompilesWithoutAConnection(): void
+    {
+        list( $out ) = $this->compile( array(
+            array( 'page_uri', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
+
+        $this->assertNotNull( $out );
+        $this->assertNotSame( '', $out['sql'] );
+        $this->assertSame( array( '/checkout' ), $out['params'] );
+    }
 }
