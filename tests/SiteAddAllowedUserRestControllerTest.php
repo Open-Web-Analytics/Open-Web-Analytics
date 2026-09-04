@@ -86,6 +86,11 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         if ($this->site && !empty($this->site['id'])) {
             $this->safeDelete('base.site', $this->site['id'], 'id');
         }
+        // The Property AFTER its Profile: a Property with a Profile still
+        // pointing at it is a worse thing to leave than either alone.
+        if ($this->site && !empty($this->site['property_id'])) {
+            $this->safeDelete('base.property', $this->site['property_id'], 'id');
+        }
         if ($this->targetUser && !empty($this->targetUser['id'])) {
             $this->safeDelete('base.user', $this->targetUser['id'], 'id');
         }
@@ -231,8 +236,13 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         $this->assertNotEmpty($site, 'Failed to create site fixture.');
 
         $this->site = [
-            'id'      => $site->get('id'),
-            'site_id' => $site->get('site_id'),
+            'id'          => $site->get('id'),
+            'site_id'     => $site->get('site_id'),
+            // The Property this site was given. Creating a site MINTS one -- a
+            // site is an Observation Profile now, and a Profile has to hang off
+            // something -- so a teardown that removes only the site leaves it
+            // behind, once per test.
+            'property_id' => $site->get('property_id'),
         ];
     }
 

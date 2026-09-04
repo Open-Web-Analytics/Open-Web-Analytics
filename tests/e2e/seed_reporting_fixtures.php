@@ -693,6 +693,40 @@ function seedNotifications(): array
     return ['created' => $created, 'source' => E2E_NOTIFICATION_SOURCE];
 }
 
+/**
+ * Remove a Property once nothing is left under it.
+ *
+ * Creating a site MINTS a Property -- a site is an Observation Profile, and a
+ * Profile has to hang off something -- so a teardown that removes only the site
+ * leaves a parentless Property behind on every run. This fixture's own was
+ * sitting in the development database as exactly that.
+ *
+ * Guarded on emptiness rather than deleted outright, because a Property can
+ * legitimately hold more than one Profile: two Observation Profiles of the same
+ * website share it, and taking it away would orphan the other one. Called AFTER
+ * the site is deleted, so "empty" is the question actually being asked.
+ */
+function unseedPropertyIfEmpty($propertyId): void
+{
+    // Db::where() DROPS an empty value rather than matching nothing, so an
+    // unguarded call here would count every Profile on the installation and
+    // conclude the Property is busy.
+    if (!$propertyId) {
+        return;
+    }
+
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_site');
+    $db->selectColumn('id');
+    $db->where('property_id', $propertyId);
+
+    if ($db->getAllRows()) {
+        return;
+    }
+
+    owa_coreAPI::entityFactory('base.property')->delete($propertyId, 'id');
+}
+
 /** Remove the fixture notifications and every per-user state row pointing at them. */
 function unseedNotifications(): int
 {
@@ -999,12 +1033,20 @@ function teardown(): array
         // Created through the admin UI, so its identifier is minted and cannot
         // be predicted here. The domain is what this cleanup actually knows.
         $cs->load(E2E_NEW_SITE_DOMAIN, 'domain');
-        if ($cs->get('id')) { $cs->delete($cs->get('id'), 'id'); }
+        if ($cs->get('id')) {
+            $property = $cs->get('property_id');
+            $cs->delete($cs->get('id'), 'id');
+            unseedPropertyIfEmpty($property);
+        }
     } catch (\Throwable $e) {}
     try {
         $s = owa_coreAPI::entityFactory('base.site');
         $s->load($site_id, 'site_id');
-        if ($s->get('id')) { $s->delete($s->get('id'), 'id'); }
+        if ($s->get('id')) {
+            $property = $s->get('property_id');
+            $s->delete($s->get('id'), 'id');
+            unseedPropertyIfEmpty($property);
+        }
     } catch (\Throwable $e) {}
 
     return ['status' => 'torn down', 'tables' => $removed];
