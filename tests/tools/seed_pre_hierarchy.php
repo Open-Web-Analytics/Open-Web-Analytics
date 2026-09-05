@@ -28,11 +28,11 @@ $db = owa_coreAPI::dbSingleton();
 
 $dbName = (string) owa_coreAPI::getSetting( 'base', 'db_name' );
 
-$looksScratch = ( stripos( $dbName, 'scratch' ) !== false )
-             || ( stripos( $dbName, 'owa_test' ) !== false )
-             || ( stripos( $dbName, 'tmp' ) !== false );
+// Shared with upgrade_cycle.php, which rewinds the schema the same way. Two
+// copies of a safety check is one copy that gets loosened on its own.
+require_once __DIR__ . '/scratch_guard.php';
 
-if ( ! $looksScratch && ! in_array( '--force', $argv, true ) ) {
+if ( ! owa_looks_like_scratch_db( $dbName ) && ! in_array( '--force', $argv, true ) ) {
 
     fwrite( STDERR,
         "refusing: '$dbName' does not look like a scratch database.\n"

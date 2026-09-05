@@ -46,7 +46,8 @@
         "test": "phpunit",
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",
-        "test:configless": "bash tests/tools/configless_run.sh"
+        "test:configless": "bash tests/tools/configless_run.sh",
+        "test:upgrade": "bash tests/tools/upgrade_cycle_run.sh"
     },
     "extra": {
         "merge-plugin": {
