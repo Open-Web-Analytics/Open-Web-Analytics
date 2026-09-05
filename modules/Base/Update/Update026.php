@@ -31,37 +31,14 @@ class Update026 extends \OWA\Core\Update {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
         foreach ( array( 'report_type', 'visualization_type' ) as $column ) {
 
             /*
              * Skipped when it is already there, rather than treated as a
-             * failure.
-             *
-             * addColumn() answers false both for "could not" and for "already
-             * exists", and a migration that stops on the second never completes
-             * -- so the schema version is never written, and every subsequent
-             * request refuses with "OWA Updates required" while the database is
-             * in fact correct. Measured here, on this install.
+             * failure -- see Update::addColumnIfMissing() for why that is the
+             * ordinary case and not a re-run guard.
              */
-            /*
-             * Interpolated, not bound: SHOW COLUMNS takes no parameters, and
-             * both values here are hardcoded -- the table from the entity and
-             * the column from the literal list above. Nothing from a request
-             * reaches this.
-             */
-            $existing = (array) $db->get_results( sprintf(
-                "SHOW COLUMNS FROM %s LIKE '%s'",
-                $entity->getTableName(),
-                $column ) );
-
-            if ( $existing ) {
-
-                continue;
-            }
-
-            if ( $entity->addColumn( $column ) === false ) {
+            if ( ! $this->addColumnIfMissing( $entity, $column ) ) {
 
                 $this->e->notice( "Adding $column to owa_custom_report failed" );
 
@@ -72,7 +49,31 @@ class Update026 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * Take the type columns back off owa_custom_report.
+     *
+     * Idempotent. VISUALIZATIONS BECOME REPORTS by doing this -- a row whose
+     * report_type said "visualization" loses the only thing distinguishing it,
+     * and the roster will list it as an ordinary custom report whose definition
+     * holds steps no widget renderer understands.
+     *
+     * Stated rather than guarded against: a rollback to a schema that has no
+     * visualizations cannot keep them, and the alternative is refusing to roll
+     * back at all.
+     */
     function down() {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
+
+        foreach ( array( 'visualization_type', 'report_type' ) as $column ) {
+
+            if ( ! $this->dropColumnIfPresent( $entity, $column ) ) {
+
+                $this->e->notice( "Dropping $column from owa_custom_report failed" );
+
+                return false;
+            }
+        }
 
         return true;
     }

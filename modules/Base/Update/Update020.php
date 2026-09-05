@@ -31,7 +31,10 @@ class Update020 extends \OWA\Core\Update {
 
         foreach ( array( 'billing_country', 'billing_state', 'billing_city' ) as $column ) {
 
-            if ( $entity->addColumn( $column ) === false ) {
+            // Skipped when already present -- see Update::addColumnIfMissing().
+            // Found latent here by the guard test rather than by an upgrade
+            // failing: this one has already run everywhere it was going to.
+            if ( ! $this->addColumnIfMissing( $entity, $column ) ) {
 
                 $this->e->notice( "Adding $column to commerce_transaction_fact failed" );
 

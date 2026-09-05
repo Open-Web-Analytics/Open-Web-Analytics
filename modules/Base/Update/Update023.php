@@ -39,7 +39,14 @@ class Update023 extends \OWA\Core\Update {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( $entityName );
 
-            if ( $entity->addColumn( 'archived_date' ) === false ) {
+            /*
+             * Skipped when it is already there. Update021 CREATES owa_property
+             * from the current entity definition, which already declares
+             * archived_date -- so on an install jumping from below 21 the
+             * column exists before this runs, and treating that as a failure
+             * stopped a live upgrade dead on a correct database.
+             */
+            if ( ! $this->addColumnIfMissing( $entity, 'archived_date' ) ) {
 
                 $this->e->notice( "Adding archived_date to $table failed" );
 
@@ -50,7 +57,35 @@ class Update023 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * Take archived_date back off both tables.
+     *
+     * Idempotent, like the up: dropColumnIfPresent() treats an already-absent
+     * column as done, so a rollback that got half way through can be finished
+     * rather than being stuck needing hand surgery.
+     *
+     * Archiving state is LOST by this, and that is the honest outcome -- the
+     * column is where it lived. Rolling back to a schema with no notion of
+     * archiving cannot keep a record of what was archived.
+     */
     function down() {
+
+        $targets = array(
+            'base.site'     => 'owa_site',
+            'base.property' => 'owa_property',
+        );
+
+        foreach ( $targets as $entityName => $table ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( $entityName );
+
+            if ( ! $this->dropColumnIfPresent( $entity, 'archived_date' ) ) {
+
+                $this->e->notice( "Dropping archived_date from $table failed" );
+
+                return false;
+            }
+        }
 
         return true;
     }

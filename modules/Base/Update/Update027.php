@@ -30,32 +30,8 @@ class Update027 extends \OWA\Core\Update {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        /*
-         * Skipped when it is already there, rather than treated as a failure.
-         *
-         * addColumn() answers false both for "could not" and for "already
-         * exists", and a migration that stops on the second never completes --
-         * so the schema version is never written and every subsequent request
-         * refuses with "OWA Updates required" while the database is in fact
-         * correct. Measured on this install, on Update026.
-         *
-         * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both
-         * values are hardcoded -- the table from the entity, the column from
-         * the literal below. Nothing from a request reaches this.
-         */
-        $existing = (array) $db->get_results( sprintf(
-            "SHOW COLUMNS FROM %s LIKE '%s'",
-            $entity->getTableName(),
-            'property_type' ) );
-
-        if ( $existing ) {
-
-            return true;
-        }
-
-        if ( $entity->addColumn( 'property_type' ) === false ) {
+        // Skipped when already present -- see Update::addColumnIfMissing().
+        if ( ! $this->addColumnIfMissing( $entity, 'property_type' ) ) {
 
             $this->e->notice( 'Adding property_type to owa_property failed' );
 
@@ -65,7 +41,23 @@ class Update027 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * Take property_type back off the Property.
+     *
+     * Idempotent. Every Property reads as a website again, which is what falsy
+     * already means -- see Property::getPropertyType() -- so nothing downstream
+     * changes behaviour beyond losing the ability to say otherwise.
+     */
     function down() {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        if ( ! $this->dropColumnIfPresent( $entity, 'property_type' ) ) {
+
+            $this->e->notice( 'Dropping property_type from owa_property failed' );
+
+            return false;
+        }
 
         return true;
     }

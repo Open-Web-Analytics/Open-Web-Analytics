@@ -208,6 +208,80 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
+    /**
+     * Add a column, treating "it is already there" as success.
+     *
+     * addColumn() answers FALSE both for "could not" and for "already exists",
+     * so a migration that stops on the second never writes its schema version --
+     * and every request afterwards refuses with "OWA Updates required" while
+     * the database is in fact correct.
+     *
+     * THIS IS NOT A RE-RUN GUARD. It is the ordinary case for any install that
+     * jumps several versions at once. A table CREATED by an earlier migration is
+     * built from the CURRENT entity definition, which already carries every
+     * column that LATER migrations add -- so the column exists before the
+     * migration that adds it ever runs.
+     *
+     * Found on a live deploy: an installation at schema 20 ran Update021, which
+     * created owa_property complete with the archived_date that Update023 then
+     * tried to add. The upgrade stopped dead at 23, on a database that was
+     * already correct.
+     *
+     * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
+     * come from the migration's own code rather than from a request.
+     *
+     * @param  object $entity a table entity
+     * @param  string $column
+     * @return bool   false only when the column is genuinely missing and could
+     *                not be added
+     */
+    protected function addColumnIfMissing( $entity, $column ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $existing = (array) $db->get_results( sprintf(
+            "SHOW COLUMNS FROM %s LIKE '%s'",
+            $entity->getTableName(),
+            $column ) );
+
+        if ( $existing ) {
+
+            return true;
+        }
+
+        return $entity->addColumn( $column ) !== false;
+    }
+
+    /**
+     * Drop a column, treating "it is already gone" as success.
+     *
+     * The mirror of addColumnIfMissing(), and it exists for the mirror reason:
+     * a down() has to be runnable twice. MySQL has no DROP COLUMN IF EXISTS, so
+     * the check is explicit -- and without it a rollback that got half way
+     * through cannot be finished, which is the worst moment to be unable to
+     * repeat a step.
+     *
+     * @param  object $entity
+     * @param  string $column
+     * @return bool   false only when the column is there and could not be dropped
+     */
+    protected function dropColumnIfPresent( $entity, $column ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $existing = (array) $db->get_results( sprintf(
+            "SHOW COLUMNS FROM %s LIKE '%s'",
+            $entity->getTableName(),
+            $column ) );
+
+        if ( ! $existing ) {
+
+            return true;
+        }
+
+        return $entity->dropColumn( $column ) !== false;
+    }
+
     function up() {
 
         return false;
