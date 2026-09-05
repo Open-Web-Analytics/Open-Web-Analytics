@@ -94,6 +94,7 @@ $db     = owa_coreAPI::dbSingleton();
 $dbName = (string) owa_coreAPI::getSetting( 'base', 'db_name' );
 
 require_once __DIR__ . '/scratch_guard.php';
+require_once __DIR__ . '/upgrade_cycle_fixture.php';
 
 owa_upgrade_cycle_guard( $dbName, $force );
 
@@ -129,6 +130,19 @@ if ( $phase === 'down' ) {
         fwrite( STDERR, "refusing: schema $installed leaves nothing to roll back.\n" );
         exit( 2 );
     }
+
+    /*
+     * The legacy DATA, before anything is rewound.
+     *
+     * Without it the cycle round-trips an empty database and every data
+     * migration runs against nothing -- which is how Update025's read path
+     * stayed unexecuted by any test while reporting "Migrated 0 goal(s)"
+     * as though that were a result.
+     */
+    $seeded = owa_upgrade_cycle_seed();
+
+    $note( sprintf( 'seeded 1.x goals on profile %s (property %s)',
+        $seeded['profile'], $seeded['property'] ) );
 
     $before = owa_schema_fingerprint( $db, $dbName );
 
@@ -168,6 +182,7 @@ if ( $phase === 'down' ) {
         'floor'     => $floor,
         'rolled'    => $rolled,
         'before'    => $before,
+        'seeded'    => $seeded,
     ) ) );
 
     if ( ! $rolled ) {
@@ -195,6 +210,7 @@ $installed = (int) $state['installed'];
 $floor     = (int) $state['floor'];
 $rolled    = (array) $state['rolled'];
 $before    = $state['before'];
+$seeded    = (array) ( $state['seeded'] ?? array() );
 
 // Read from a cold boot: this process did not write the version, so a value
 // that only exists in someone's config cache cannot be mistaken for a
@@ -234,6 +250,15 @@ foreach ( owa_fingerprint_diff( $before, $after ) as $problem ) {
     $fail[] = $problem;
 }
 
+/* ---- the DATA has to have come across too ---------------------------------- */
+
+$note( '--- checking what the data migrations produced ---' );
+
+foreach ( owa_upgrade_cycle_expect( $seeded ) as $problem ) {
+
+    $fail[] = "A DATA migration lost or mangled what it was carrying across.\n  " . $problem;
+}
+
 /* ---- and applying them again must not be a failure ------------------------ */
 
 $note( '--- re-applying each rolled update against the schema it just built ---' );
@@ -268,6 +293,19 @@ $final = owa_schema_fingerprint( $db, $dbName );
 foreach ( owa_fingerprint_diff( $after, $final, 're-application' ) as $problem ) {
 
     $fail[] = $problem;
+}
+
+/*
+ * And the DATA is still exactly what it was.
+ *
+ * A migration re-run must UPDATE the rows it made, not make them again --
+ * which is what the content-derived ids in Update025 are for. This is the
+ * assertion that notices when that derivation stops being deterministic:
+ * the count doubles and nothing else changes.
+ */
+foreach ( owa_upgrade_cycle_expect( $seeded ) as $problem ) {
+
+    $fail[] = "Re-running the migrations changed the migrated data.\n  " . $problem;
 }
 
 /* ---- verdict -------------------------------------------------------------- */

@@ -128,6 +128,60 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( 1, $planned[0]['is_active'] );
     }
 
+    /**
+     * A GOAL WITH NO goal_number AT ALL FALLS BACK TO ITS SLOT KEY.
+     *
+     * The fallback is deliberate -- the slot number is what made a goal unique
+     * within a Profile, so it stands in when the goal carries no number of its
+     * own. But the lookup was written `$goal['goal_number'] ?: $number`, which
+     * reaches the fallback only by way of an "Undefined array key" warning: the
+     * one path the code goes out of its way to support could not be taken
+     * cleanly.
+     *
+     * Every case above sets the key, most of them to ''. An EMPTY value takes
+     * the fallback silently; an ABSENT one warns. That is the whole difference,
+     * and it is why this went unnoticed -- found by seeding a blob without the
+     * key into the upgrade cycle, where PHP printed the warning mid-migration.
+     */
+    public function testAGoalWithNoNumberFallsBackToItsSlotKeyWithoutWarning(): void
+    {
+        $raised = null;
+
+        set_error_handler( static function ( $no, $str ) use ( &$raised ) {
+
+            $raised = $str;
+
+            return true;
+        } );
+
+        try {
+
+            $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
+                'scope_id' => 'OWA-probe',
+                'value'    => serialize( array( 7 => array(
+                    // No 'goal_number' key at all.
+                    'goal_name'   => 'Newsletter',
+                    'goal_status' => 'active',
+                    'goal_type'   => 'url_destination',
+                    'details'     => array( 'match_type' => 'exact', 'goal_url' => '/news' ),
+                ) ) ),
+            ) );
+
+        } finally {
+
+            restore_error_handler();
+        }
+
+        $this->assertNull( $raised,
+            'Migrating a goal that carries no number raised: ' . (string) $raised );
+
+        $this->assertCount( 1, $planned, 'the goal was dropped rather than numbered' );
+
+        $this->assertSame( 7, $planned[0]['goal_number'],
+            'The slot key is what stands in for a missing goal_number -- it is what made '
+            . 'a goal unique within a Profile.' );
+    }
+
     /** The condition becomes the property/operator/value triple v2 needs. */
     public function testTheConditionIsStoredAsATriple(): void
     {
