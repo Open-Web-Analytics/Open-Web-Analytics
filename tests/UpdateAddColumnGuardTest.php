@@ -117,6 +117,45 @@ final class UpdateAddColumnGuardTest extends TestCase
         }
     }
     /**
+     * THE UPGRADE SWEEP IS WIRED INTO CI.
+     *
+     * Everything above scans source or exercises one update. The thing that
+     * actually runs the migrations end to end is tests/tools/upgrade_cycle.php,
+     * and it only runs because a CI job invokes it -- no other environment
+     * upgrades anything, so if that job is deleted or renamed, the update path
+     * silently goes back to being untested and every test here still passes.
+     *
+     * That is the failure mode this repository has already had twice (see
+     * project_tests_that_never_run): coverage that reports green by not
+     * running. Cheap to assert, so it is asserted.
+     */
+    public function testTheUpgradeCycleIsReachableAndWiredIntoCi(): void
+    {
+        foreach ( array( 'tests/tools/upgrade_cycle.php',
+                         'tests/tools/upgrade_cycle_run.sh',
+                         'tests/tools/scratch_guard.php' ) as $file ) {
+
+            $this->assertFileExists( self::root() . $file,
+                "$file is gone. It is the only thing that runs the schema updates -- "
+                . 'every other environment installs at the current version and never '
+                . 'applies one.' );
+        }
+
+        $composer = json_decode(
+            (string) file_get_contents( self::root() . 'composer.json' ), true );
+
+        $this->assertArrayHasKey( 'test:upgrade', (array) $composer['scripts'],
+            'the composer script the CI job calls is gone' );
+
+        $workflow = (string) file_get_contents( self::root() . '.github/workflows/ci.yml' );
+
+        $this->assertStringContainsString( 'test:upgrade', $workflow,
+            'No CI job runs the upgrade cycle any more. Without it nothing in this '
+            . 'repository ever applies a migration, which is how two of them reached '
+            . 'production broken.' );
+    }
+
+    /**
      * AN UPDATE THAT BUILDS SOMETHING MUST BE ABLE TO UNBUILD IT.
      *
      * `down() { return true; }` is the worst of the three options: it claims

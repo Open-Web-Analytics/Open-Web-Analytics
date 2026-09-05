@@ -182,6 +182,89 @@ jobs:
         if: always()
         run: php tests/e2e/selfhost_harness.php down
 
+  upgrade:
+    name: Schema upgrade cycle (rewind, then upgrade)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # THE ONLY JOB IN WHICH THE UPDATES ACTUALLY RUN.
+    #
+    # Every other environment -- this workflow's unit job, the isolation sweep,
+    # the e2e runner, and a developer's own box -- INSTALLS. Module::install()
+    # builds every table from the current entity definitions and stamps
+    # schema_version at the latest, so applyUpdates() walks a range that is
+    # always empty and modules/*/Update/* is dead code under test.
+    #
+    # Two production failures came out of that hole in one week (Update023 and
+    # Update026, both of which stopped a live upgrade dead), and both are the
+    # same bug: a value that means two things, only distinguishable against a
+    # database that already has a history. This job makes one -- it installs,
+    # rewinds the schema through the rollbacks, and upgrades it forward again
+    # with the real `cli.php cmd=update`.
+    #
+    # See tests/tools/upgrade_cycle.php for what is asserted and why.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      OWA_E2E_DB_HOST: 127.0.0.1
+      OWA_E2E_DB_PORT: '3306'
+      OWA_E2E_DB_USER: root
+      OWA_E2E_DB_PASSWORD: ''
+      # Must read as a scratch name: the cycle rewinds the schema, which drops
+      # tables and columns, and refuses to run against anything that does not.
+      OWA_E2E_DB_NAME: owa_upgrade_cycle_scratch
+      OWA_E2E_DB_TYPE: mysql
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, json, mysqli, pdo_mysql, gd
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install, rewind, upgrade
+        id: cycle
+        run: |
+          set -o pipefail
+          composer run-script test:upgrade 2>&1 | tee upgrade.log
+
+      # The verdict on the run summary page, so a finding is readable without
+      # opening the log -- the interesting part is the last block, not the
+      # hundred NOTICE lines the updates print on the way past.
+      - name: Report the verdict
+        if: always()
+        run: |
+          {
+            echo "## Schema upgrade cycle"
+            echo
+            if [ "${{ steps.cycle.outcome }}" = "success" ]; then
+              echo "The schema rewinds and rebuilds to something identical."
+            else
+              echo "**The upgrade path is broken.** An install upgrading from an older"
+              echo "schema would hit this; a fresh install would not, which is why"
+              echo "nothing else in CI notices."
+              echo
+              echo '```'
+              sed -n '/the upgrade path is broken/,$p' upgrade.log | head -60
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   e2e:
     name: E2E (self-hosted, php -S + MySQL)
     runs-on: ubuntu-latest
