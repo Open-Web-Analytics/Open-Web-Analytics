@@ -442,19 +442,23 @@ $owa_max        = (int) $view->get('max_widgets');
              */
         ?>
         <div id="dlgConstraintRows" class="owa_builderConstraints"><ul></ul></div>
-        <?php
-            /*
-             * Why Done will not close. A half-filled row used to be dropped
-             * silently on the way out, which produced a widget with no filter
-             * and nothing to say one had been asked for.
-             */
-        ?>
-        <div id="dlgConstraintError" class="owa_builderRowError" style="display:none;"></div>
         <div class="owa_builderHelp">
             Rows are combined, e.g. <code>medium</code> is <code>organic-search</code>
             <em>and</em> <code>browserType</code> contains <code>Chrome</code>.
         </div>
     </div>
+
+    <?php
+        /*
+         * WHY DONE WILL NOT CLOSE.
+         *
+         * One message for the whole dialog rather than one per field. It names
+         * the field it is about -- "Choose at least one metric", "Constraint 1
+         * ... gives no value" -- and it sits at the foot, next to the button
+         * that just refused, which is where the eye is at that moment.
+         */
+    ?>
+    <div id="dlgError" class="owa_builderRowError" style="display:none;" role="alert"></div>
 </div>
 
 <script>
@@ -695,6 +699,19 @@ $owa_max        = (int) $view->get('max_widgets');
     var reportMetrics = ( definition && definition.metrics ) ? definition.metrics : '';
 
     var editing = null;   // index of the widget the dialog is open on
+
+    /*
+     * The widget the type chooser just added, which has never been applied.
+     *
+     * The chooser pushes a widget and draws it BEFORE the dialog opens, so
+     * backing out of that dialog has to undo the add -- otherwise Cancel is the
+     * way to create exactly the unconfigured block Done refuses to make, and
+     * the rule is decoration.
+     *
+     * Held here rather than as a flag ON the widget, because a flag would be
+     * copied into the posted definition by the submit handler and stored.
+     */
+    var pendingNew = null;
 
     /*
      * The report the widget's rows link to, as the dialog was opened.
@@ -1166,7 +1183,7 @@ $owa_max        = (int) $view->get('max_widgets');
         editing = index;
 
         // A refusal from last time is not about this widget.
-        jQuery( '#dlgConstraintError' ).text( '' ).hide();
+        jQuery( '#dlgError' ).text( '' ).hide();
 
         var widget = widgets[ index ];
         var query  = widget.query || {};
@@ -1695,12 +1712,116 @@ $owa_max        = (int) $view->get('max_widgets');
         return problem;
     }
 
+    /** Whether a name is one the reporting registry knows. */
+    function isKnownName( name ) {
+
+        var all = METRICS.concat( DIMENSIONS );
+
+        for ( var i = 0; i < all.length; i++ ) {
+
+            if ( all[ i ].name === name ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * What is wrong with the SORT, or '' if nothing is.
+     *
+     * The one field in this dialog an author types into freely, and so the one
+     * that could still reach the server as a name that does not resolve -- a
+     * refusal two steps later, on a page about a widget rather than showing
+     * them one. The registry is already in the page for the pickers, so the
+     * same answer is available here.
+     *
+     * A trailing '-' is the DIRECTION, not part of the name, and is stripped
+     * before the lookup: without that, every descending sort would be reported
+     * as unresolvable. Empty is fine -- a widget need not name a sort.
+     */
+    function sortProblem() {
+
+        var sort = jQuery.trim( jQuery( '#dlgSort' ).val() || '' );
+
+        if ( ! sort || ! picksDimensions( editingType() ) ) {
+            return '';
+        }
+
+        var name = sort.replace( /-$/, '' );
+
+        if ( ! name ) {
+            return 'The sort is only a direction. Name the metric or dimension to sort by.';
+        }
+
+        if ( ! isKnownName( name ) ) {
+            return '"' + name + '" is not a metric or a dimension, so the widget cannot '
+                 + 'be sorted by it. Use a name from the pickers above.';
+        }
+
+        return '';
+    }
+
+    /**
+     * EVERYTHING WRONG WITH THIS WIDGET, or '' if it is ready.
+     *
+     * WHY THE MODAL ENFORCES THIS AND NOT JUST THE CANVAS
+     *
+     * A widget used to be able to leave this dialog unconfigured: Done closed
+     * on anything, the block landed on the canvas marked unfinished, and Save
+     * explained it. That is a correct chain and a slow one -- the author is
+     * told about a widget two steps after the screen that was about that
+     * widget, and has to find it again to fix it.
+     *
+     * Asked here, the answer arrives while the fields are still open. The
+     * canvas marking and the Save gate stay, because a definition can also
+     * arrive already broken -- from a report saved before these rules, or from
+     * a refusal round-trip -- and those have to say so too.
+     *
+     * In the order the fields appear, so the message points DOWN the form the
+     * way the author reads it.
+     *
+     * @return string
+     */
+    function dialogProblem() {
+
+        var type = editingType();
+
+        /*
+         * Metrics, unless the report carries a set from before that control was
+         * withdrawn -- the one case the server still lets a widget inherit.
+         */
+        if ( ! reportMetrics && ! ( jQuery( '#dlgMetrics' ).val() || [] ).length ) {
+
+            return isSingleMetric( type )
+                ? 'Choose the metric this ' + ( TYPES[ type ] || type ).toLowerCase()
+                  + ' draws.'
+                : 'Choose at least one metric. A widget draws what it names, and '
+                  + 'nothing else.';
+        }
+
+        /*
+         * A dimension, on the types that draw exactly one and render nothing
+         * without it. SINGLE_FIELD_TYPES is the server's list, so this cannot
+         * come to disagree with the rule that enforces it.
+         */
+        if ( isSingleField( type ) && picksDimensions( type )
+             && ! ( jQuery( '#dlgDimensions' ).val() || [] ).length ) {
+
+            return 'Choose the dimension its rows are grouped by. A '
+                 + ( TYPES[ type ] || type ).toLowerCase() + ' draws one, and draws '
+                 + 'nothing without it.';
+        }
+
+        return sortProblem() || constraintRowProblem();
+    }
+
     /**
      * Write the dialog back onto the widget.
      *
      * Returns FALSE when it refused to, which is what stops Done closing on a
-     * half-filled constraint row -- the row is the thing that needs fixing and
-     * it is inside this dialog, so closing would hide it.
+     * widget that is not finished -- the fields that need filling are in this
+     * dialog, so closing would hide them.
      *
      * @return bool
      */
@@ -1710,9 +1831,9 @@ $owa_max        = (int) $view->get('max_widgets');
             return true;
         }
 
-        var problem = constraintRowProblem();
+        var problem = dialogProblem();
 
-        jQuery( '#dlgConstraintError' ).text( problem ).toggle( !! problem );
+        jQuery( '#dlgError' ).text( problem ).toggle( !! problem );
 
         if ( problem ) {
             return false;
@@ -1851,7 +1972,8 @@ $owa_max        = (int) $view->get('max_widgets');
             delete widget.more;
         }
 
-        editing = null;
+        editing    = null;
+        pendingNew = null;
 
         draw();
 
@@ -1932,15 +2054,45 @@ $owa_max        = (int) $view->get('max_widgets');
         buttons: [
             /*
              * Closed only if the dialog could be applied. A refused apply
-             * leaves the modal open with the reason on it: the row that needs
-             * fixing is in here, and closing would take the author away from
-             * the one control the message is about.
+             * leaves the modal open with the reason on it: the fields that need
+             * filling are in here, and closing would take the author away from
+             * the controls the message is about.
              */
             { text: 'Done', click: function () {
                 if ( applyDialog() ) { jQuery( this ).dialog( 'close' ); }
             } },
             { text: 'Cancel', click: function () { editing = null; jQuery( this ).dialog( 'close' ); } }
-        ]
+        ],
+
+        /*
+         * BACKING OUT OF A NEW WIDGET UNDOES THE ADD.
+         *
+         * The type chooser pushes the widget before this dialog opens, so
+         * without this Cancel leaves an unconfigured block on the canvas -- the
+         * very thing Done now refuses to produce, reachable by pressing the
+         * other button. At the moment it is offered, Cancel means "I did not
+         * mean to add this".
+         *
+         * On `close` rather than in the Cancel handler, so the titlebar X and
+         * the Escape key do the same thing. A successful Done has already
+         * cleared pendingNew by the time it closes, so this cannot undo a
+         * widget that was actually configured -- and re-opening a widget that
+         * WAS configured never sets pendingNew, so Cancel there reverts the
+         * edit and keeps the widget, which is what Cancel means then.
+         */
+        close: function () {
+
+            if ( pendingNew === null ) {
+                return;
+            }
+
+            widgets.splice( pendingNew, 1 );
+
+            pendingNew = null;
+            editing    = null;
+
+            draw();
+        }
     } );
 
     // ------------------------------------------------------------------
@@ -1998,7 +2150,11 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( '#typeDialog' ).dialog( 'close' );
 
         // Straight into configuring it: the type was a question about what to
-        // build, not a step of its own.
+        // build, not a step of its own. Recorded as pending, so backing out of
+        // that dialog undoes the add rather than leaving a block nobody chose
+        // to make.
+        pendingNew = widgets.length - 1;
+
         openDialog( widgets.length - 1 );
     } );
 

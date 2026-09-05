@@ -181,14 +181,6 @@ async function onlyWidget(page, type, opts = {}) {
     await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 }
 
-/** Open the FIRST block's modal, set some fields, and close it with Done. */
-async function configureFirstWidget(page, opts) {
-    await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-    await expect(page.locator('#widgetDialog')).toBeVisible();
-
-    await fillWidget(page, opts);
-}
-
 /** Fill the widget modal that is already open, and close it with Done. */
 async function fillWidget(page, opts) {
     if (opts.title !== undefined) { await page.fill('#dlgTitle', opts.title); }
@@ -555,7 +547,7 @@ test.describe('custom reports', () => {
             await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
             await expect(page.locator('#widgetDialog')).toBeVisible();
-            await expect(page.locator('#dlgConstraintError'))
+            await expect(page.locator('#dlgError'))
                 .toContainText('gives no value');
 
             // Filling it in lets the dialog close, and the constraint reaches
@@ -619,28 +611,148 @@ test.describe('custom reports', () => {
             await expect(page.locator('#customReportBlocker'))
                 .toContainText('Add at least one widget');
 
-            await startWidget(page, 'grid');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            // A configured widget -- the modal will not let an unconfigured one
+            // onto the canvas -- so the only rule left is the name.
+            await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
-            // A widget, still no name.
             await expect(page.locator('#customReportSubmit')).toBeDisabled();
             await expect(page.locator('#customReportBlocker')).toContainText('name');
 
             await page.fill('#customReportName', reportName('Gate'));
 
-            // Named, but the widget still measures nothing -- and it is marked
-            // ON THE CANVAS, because that is where the author is looking.
-            await expect(page.locator('#customReportSubmit')).toBeDisabled();
-            await expect(page.locator('#customReportBlocker'))
-                .toContainText('does not say what it measures');
-            await expect(page.locator('.owa_builderBlockIncomplete')).toHaveCount(1);
-
-            await configureFirstWidget(page, { metrics: ['pageViews'] });
-
             // ...and now it can go.
             await expect(page.locator('#customReportSubmit')).toBeEnabled();
             await expect(page.locator('#customReportBlocker')).toBeHidden();
             await expect(page.locator('.owa_builderBlockIncomplete')).toHaveCount(0);
+        });
+
+        /*
+         * ------------------------------------------------------------------
+         * THE MODAL IS WHERE A WIDGET IS FINISHED
+         * ------------------------------------------------------------------
+         *
+         * Done used to close on anything. The block landed on the canvas marked
+         * unfinished and Save explained it -- a correct chain, and a slow one:
+         * the author was told about a widget two steps after the screen that
+         * was about that widget, and had to find it again to fix it.
+         *
+         * The canvas marking and the Save gate STAY, because a definition can
+         * arrive already broken from a report saved before these rules or from
+         * a refusal round-trip. They are the backstop, not the first line.
+         */
+        test('done will not close on a widget that is not finished', async ({ page }) => {
+            await openBuilder(page);
+
+            await startWidget(page, 'grid');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(page.locator('#dlgError')).toContainText('at least one metric');
+
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+        });
+
+        /**
+         * ...and a type that draws exactly one dimension is not finished
+         * without it either. SINGLE_FIELD_TYPES, the server's own list.
+         */
+        test('a pie is not finished until it has a dimension too', async ({ page }) => {
+            await openBuilder(page);
+
+            await startWidget(page, 'pie');
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(page.locator('#dlgError')).toContainText('dimension');
+
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+        });
+
+        /**
+         * THE SORT IS THE ONE FIELD AN AUTHOR TYPES INTO FREELY.
+         *
+         * Everything else in this dialog is a picker fed from the registry, so
+         * the sort was the only way to reach the server with a name that does
+         * not resolve -- and the answer came back as a refusal two steps later,
+         * on a page about a widget rather than showing them one. The registry
+         * is already in the page for the pickers.
+         *
+         * A trailing '-' is the DIRECTION and is stripped before the lookup;
+         * without that every descending sort would be reported as unresolvable,
+         * which is the bug this check would otherwise introduce.
+         */
+        test('an unresolvable sort is caught in the modal, and a descending one is not',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await startWidget(page, 'grid');
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+
+            await page.fill('#dlgSort', 'notARealMetric-');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(page.locator('#dlgError')).toContainText('notARealMetric');
+
+            // A real metric, descending, is fine -- the '-' is not part of it.
+            await page.fill('#dlgSort', 'pageViews-');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+        });
+
+        /**
+         * BACKING OUT OF A NEW WIDGET UNDOES THE ADD.
+         *
+         * The type chooser pushes the widget onto the canvas before the modal
+         * opens, so without this Cancel leaves exactly the unconfigured block
+         * Done refuses to produce -- the rule would be reachable around, and so
+         * would be decoration.
+         *
+         * Asserted through the titlebar X as well, because that is the same
+         * decision made with a different control and it is the one that gets
+         * missed.
+         */
+        test('cancelling a widget that was never configured removes it', async ({ page }) => {
+            await openBuilder(page);
+
+            await startWidget(page, 'grid');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(page.locator('#customReportEmpty')).toBeVisible();
+
+            // The same, closed with the X rather than the button.
+            await startWidget(page, 'grid');
+            await page.locator('.owa_widgetDialogFrame .ui-dialog-titlebar-close').click();
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+        });
+
+        /**
+         * ...but cancelling an EDIT keeps the widget.
+         *
+         * Cancel means "I did not mean to add this" only at the moment a widget
+         * is being added. On one that already exists it means "leave it as it
+         * was", and dropping it there would delete work on a keystroke.
+         */
+        test('cancelling an edit of a configured widget keeps it', async ({ page }) => {
+            await openBuilder(page);
+
+            await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await page.fill('#dlgTitle', 'Should not stick');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            await expect(page.locator('.owa_builderBlockName').first()).toHaveText('Widget 1');
         });
 
         /**
@@ -667,14 +779,37 @@ test.describe('custom reports', () => {
                 metrics: ['pageViews'], dimensions: ['pagePath'],
             });
 
-            // A sort the registry cannot resolve, on the SECOND widget, so the
-            // refusal is about one block and the other is untouched.
             await addWidget(page, 'grid-card', {
-                metrics: ['pageViews'], dimensions: ['pagePath'], sort: 'notARealMetric-',
+                metrics: ['pageViews'], dimensions: ['pagePath'],
             });
 
-            await page.click('#customReportSubmit');
-            await page.waitForLoadState('networkidle');
+            /*
+             * A sort the registry cannot resolve, on the SECOND widget -- put
+             * there by POSTING it, not by typing it.
+             *
+             * The modal now resolves the sort against the registry, so this
+             * cannot be built in the builder any more; a save-time refusal is
+             * not reachable through the UI at all. It is still reachable from a
+             * stale tab, a direct post, or a report stored before these rules,
+             * which is exactly why the refusal page still has to work.
+             */
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'load' }),
+                page.evaluate(() => {
+                    const form = document.getElementById('customReportForm');
+                    form.dispatchEvent(new Event('submit'));
+
+                    const built = JSON.parse(
+                        document.getElementById('customReportDefinition').value);
+
+                    built.widgets[1].query.sort = 'notARealMetric-';
+
+                    document.getElementById('customReportDefinition').value =
+                        JSON.stringify(built);
+
+                    HTMLFormElement.prototype.submit.call(form);
+                }),
+            ]);
 
             await expect(page.locator('.notice')).toContainText('notARealMetric');
 
@@ -728,8 +863,11 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
 
+            // The widget is added but deliberately NOT finished -- the modal
+            // would refuse to close on it, which is the point: this test is
+            // about what the SERVER does with a post the builder would never
+            // make, the way a stale tab or a direct post can.
             await startWidget(page, 'grid');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
             await Promise.all([
                 page.waitForNavigation({ waitUntil: 'load' }),
@@ -794,8 +932,9 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
 
+            // Left unfinished on purpose; the modal would refuse to close on
+            // it. What is under test is the SERVER's answer to that shape.
             await startWidget(page, 'trend');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
             await Promise.all([
                 page.waitForNavigation({ waitUntil: 'load' }),
@@ -1017,7 +1156,7 @@ test.describe('custom reports', () => {
             // a click -- and the chooser is modal, so the next plus is behind
             // its overlay until it closes.
             for (let i = 0; i < 10; i++) {
-                await addWidget(page, 'grid');
+                await addWidget(page, 'grid', { metrics: ['pageViews'] });
             }
 
             await expect(page.locator('.owa_builderBlock')).toHaveCount(10);
@@ -1046,7 +1185,7 @@ test.describe('custom reports', () => {
             await openBuilder(page);
 
             // A block to look at: the canvas starts empty now.
-            await addWidget(page, 'grid');
+            await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
             const canvas = page.locator('#customReportCanvas');
 
@@ -1156,7 +1295,7 @@ test.describe('custom reports', () => {
         test('an added block has a default name and its type', async ({ page }) => {
             await openBuilder(page);
 
-            await addWidget(page, 'grid');
+            await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
             const block = page.locator('.owa_builderBlock').first();
 
@@ -1929,15 +2068,14 @@ test.describe('custom reports', () => {
             expect(after.total).toBe(after.parts.reduce((a, b) => a + b, 0));
         });
 
-        /** Cancel leaves the widget as it was. */
-        test('cancelling the modal changes nothing', async ({ page }) => {
-            await openBuilderOnGrid(page);
-
-            await page.fill('#dlgTitle', 'Should not stick');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
-
-            await expect(page.locator('.owa_builderBlockName').first()).toHaveText('Widget 1');
-        });
+        /*
+         * The test that used to sit here asserted that cancelling the modal
+         * left the widget as it was. It opened a BARE grid to do it, which now
+         * means something different: Cancel on a widget that was never
+         * configured removes it. Both halves of that distinction are covered
+         * above, by 'cancelling a widget that was never configured removes it'
+         * and 'cancelling an edit of a configured widget keeps it'.
+         */
 
         /**
          * A block can be removed, and removing the LAST one leaves the canvas
@@ -2245,15 +2383,38 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            // Reach past the pickers: a sort is free text, which is the field
-            // an author can put an unresolvable name into.
-            await addWidget(page, 'grid', {
-                metrics: ['pageViews'],
-                sort: 'notARealMetric-',
-            });
+            await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
-            await page.click('#customReportSubmit');
-            await page.waitForLoadState('networkidle');
+            /*
+             * POSTED, not typed.
+             *
+             * The sort used to be the way in: free text, so an author could put
+             * an unresolvable name in it and find out on save. The modal
+             * resolves it against the registry now, so that route is closed and
+             * a refusal cannot be built through the UI at all.
+             *
+             * The refusal still has to work, because a definition can arrive
+             * from a stale tab, a direct post, or a report stored before these
+             * rules -- and what it has to do is name the thing that did not
+             * resolve and keep the author's work.
+             */
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'load' }),
+                page.evaluate(() => {
+                    const form = document.getElementById('customReportForm');
+                    form.dispatchEvent(new Event('submit'));
+
+                    const built = JSON.parse(
+                        document.getElementById('customReportDefinition').value);
+
+                    built.widgets[0].query.sort = 'notARealMetric-';
+
+                    document.getElementById('customReportDefinition').value =
+                        JSON.stringify(built);
+
+                    HTMLFormElement.prototype.submit.call(form);
+                }),
+            ]);
 
             await expect(page.locator('.notice')).toContainText('notARealMetric');
 
