@@ -768,6 +768,218 @@ final class CustomReportsTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // Constraints, clause by clause
+    // ------------------------------------------------------------------
+
+    /**
+     * A constraint resolves through the registry, like every other name.
+     *
+     * It was the ONE thing in a definition that did not. Metrics, dimensions,
+     * sorts, chart metrics and link targets were all checked at save time and a
+     * constraint was not, and it failed two different ways depending on whether
+     * the engine could parse the clause at all.
+     *
+     * A clause it CAN parse but not resolve is refused by ResultSetManager at
+     * QUERY time -- the right answer at the wrong moment, told to every reader
+     * who opens the report rather than to the author who can fix it.
+     *
+     * A clause it cannot parse is worse: parseConstraintsString() finds no
+     * operator, contributes nothing, and the widget runs completely unfiltered
+     * with no error raised anywhere. A widget meant to show organic search
+     * shows the site total and nothing says so. Those are the last three cases
+     * below, and they are the reason this validation exists rather than being
+     * left to the query layer.
+     *
+     * @dataProvider badConstraintProvider
+     */
+    public function testAMalformedConstraintIsRefused(string $constraint, string $expected): void
+    {
+        $definition = $this->definition();
+
+        $definition['widgets'][1]['constraints'] = $constraint;
+
+        $error = CustomReports::validate($definition);
+
+        $this->assertNotSame('', $error,
+            sprintf('"%s" must be refused at save time', $constraint));
+        $this->assertStringContainsString('widget 2', $error,
+            'the message has to say which widget');
+        $this->assertStringContainsString($expected, $error);
+    }
+
+    public static function badConstraintProvider(): array
+    {
+        return array(
+            // Parseable, but the name resolves to nothing. Refused at query
+            // time already; refused here so the author hears it first.
+            'unknown name' => array(
+                'notADimension==direct', 'not a dimension or a metric'),
+
+            'unknown name beside a good one' => array(
+                'medium==organic-search,notADimension==x', 'notADimension'),
+
+            // Parseable, but no value. "A missing value is not a request for
+            // everything" -- ResultSetManager's own words.
+            'no value' => array(
+                'medium==', 'gives no value'),
+
+            /*
+             * NOT PARSEABLE AT ALL. Each of these contributes no constraint and
+             * raises no error, so the widget silently answers unfiltered.
+             */
+            'no operator' => array(
+                'medium', 'names no operator'),
+
+            'operator but no name' => array(
+                '==direct', 'names nothing to constrain on'),
+
+            'an operator that does not exist' => array(
+                'medium~~x', 'names no operator'),
+        );
+    }
+
+    /**
+     * ...and everything legitimate still passes.
+     *
+     * Including the operators the BUILDER does not offer. Its picker carries
+     * five; the engine runs ten, and a definition written by hand or carried
+     * over from an older report may use any of them. Validating against the
+     * picker's list rather than the engine's would refuse a report that runs
+     * perfectly well.
+     *
+     * @dataProvider goodConstraintProvider
+     */
+    public function testALegitimateConstraintIsAccepted(string $constraint): void
+    {
+        $definition = $this->definition();
+
+        $definition['widgets'][1]['constraints'] = $constraint;
+
+        $this->assertSame('', CustomReports::validate($definition),
+            sprintf('"%s" is a constraint the engine can run', $constraint));
+    }
+
+    public static function goodConstraintProvider(): array
+    {
+        return array(
+            'equality'                 => array('medium==organic-search'),
+            'a metric'                 => array('pageViews>5'),
+            'contains, not in the UI'  => array('medium=@news'),
+            'gte, not in the UI'       => array('pageViews>=5'),
+            'two of them'              => array('medium==organic-search,browserType=@Chrome'),
+            'a trailing comma'         => array('medium==organic-search,'),
+        );
+    }
+
+    /**
+     * The operator list comes from the ENGINE, not from a copy.
+     *
+     * ResultSetManager is what actually parses these strings. A list of our own
+     * would drift, and the symptom of drift is precisely the bug this checks
+     * for: a clause accepted here and then dropped there.
+     */
+    public function testTheOperatorsCheckedAreTheOnesTheEngineParses(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        foreach ((array) $rsm->constraint_operators as $operator) {
+
+            $definition = $this->definition();
+
+            $definition['widgets'][1]['constraints'] = 'medium' . $operator . 'organic-search';
+
+            $this->assertSame('', CustomReports::validate($definition),
+                sprintf('the engine parses "%s", so validation must accept it', $operator));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Every widget names its own metrics
+    // ------------------------------------------------------------------
+
+    /**
+     * A widget that names no metrics is refused, because there is no longer
+     * anything for it to inherit.
+     *
+     * The builder used to ask for a report metric set beside the report's name,
+     * and a widget that named none fell back to it. That is gone: a widget
+     * declares what it measures or it draws an empty panel, and an empty panel
+     * is not something an author can have meant.
+     *
+     * Asserted on a GRID, deliberately. A card, a pie and a trend card were
+     * always refused for this by rules of their own; the grid is the type that
+     * used to be legal with an empty list, so it is the one that shows the new
+     * rule is doing something.
+     */
+    public function testAWidgetThatNamesNoMetricsIsRefused(): void
+    {
+        $definition = $this->definition();
+
+        unset($definition['metrics']);
+
+        $definition['widgets'][0]['query']['metrics'] = 'visits';
+        $definition['widgets'][1]['query']['metrics'] = '';
+
+        $says = CustomReports::validate($definition);
+
+        $this->assertStringContainsString('widget 2', $says,
+            'the message has to say WHICH widget, or the author cannot find it');
+        $this->assertStringContainsString('names no metrics', $says);
+
+        $definition['widgets'][1]['query']['metrics'] = 'pageViews';
+
+        $this->assertSame('', CustomReports::validate($definition),
+            'naming one is all it takes');
+    }
+
+    /** A metrics key that is absent entirely reads the same as an empty one. */
+    public function testAWidgetWithNoMetricsKeyAtAllIsRefused(): void
+    {
+        $definition = $this->definition();
+
+        unset($definition['metrics']);
+
+        $definition['widgets'][0]['query']['metrics'] = 'visits';
+
+        unset($definition['widgets'][1]['query']['metrics']);
+
+        $this->assertStringContainsString('names no metrics',
+            CustomReports::validate($definition));
+    }
+
+    /**
+     * ...UNLESS the report carries a metric set, which is the case this rule
+     * deliberately does not break.
+     *
+     * validate() runs when a report is RENDERED as well as when it is saved, so
+     * a rule applied unconditionally would take down every report built while
+     * the builder still offered a set -- and leave the author no way to fix it,
+     * because the field they would have to fill no longer exists. The fallback
+     * therefore stays legal exactly where there is something to fall back to.
+     *
+     * The fixture definition is that shape already: a report metric set, and a
+     * trend that names nothing of its own.
+     */
+    public function testAWidgetMayStillInheritAReportMetricSetThatExists(): void
+    {
+        $definition = $this->definition();
+
+        $this->assertSame('visits,uniqueVisitors', $definition['metrics'],
+            'the fixture has to carry a set for this test to be about anything');
+        $this->assertArrayNotHasKey('metrics', $definition['widgets'][0]['query'],
+            '...and a widget that names none of its own');
+
+        $this->assertSame('', CustomReports::validate($definition));
+
+        // ...and the SAME definition without the set is refused, which is what
+        // makes the assertion above about the set rather than about the widget.
+        unset($definition['metrics']);
+
+        $this->assertStringContainsString('names no metrics',
+            CustomReports::validate($definition));
+    }
+
+    // ------------------------------------------------------------------
     // A widget that draws one metric must name it
     // ------------------------------------------------------------------
 

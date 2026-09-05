@@ -314,6 +314,9 @@ final class TemplateLatentVarTest extends TestCase
                     'goalEvents' => [],
                     'siteId' => 'owa-e2e',
                     'validation_errors' => [],
+                    // The step cap, read from VisualizationSave so the form
+                    // cannot offer a step the save then refuses.
+                    'maxSteps' => 10,
                 ],
                 ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],
             ],
