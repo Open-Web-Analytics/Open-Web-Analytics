@@ -267,7 +267,25 @@ class Update025 extends \OWA\Core\Update {
         return $cents;
     }
 
+    /**
+     * Drop the goal event tables.
+     *
+     * Safe BECAUSE the up() copied rather than moved: the goals it read are
+     * still in the settings blob, untouched, so dropping these tables returns
+     * the installation to reading them from there. If the up had emptied the
+     * blob this down would be destroying the only copy.
+     *
+     * Idempotent: DROP TABLE IF EXISTS, so a half-finished rollback finishes.
+     */
     function down() {
+
+        foreach ( array( 'base.goal_event_condition', 'base.goal_event' ) as $name ) {
+
+            // Conditions first. Nothing enforces the reference in SQL, but
+            // dropping the parent first would leave rows pointing at a table
+            // that is gone if the second drop then failed.
+            \OWA\Core\CoreAPI::entityFactory( $name )->dropTable();
+        }
 
         return true;
     }

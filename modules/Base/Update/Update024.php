@@ -40,7 +40,8 @@ class Update024 extends \OWA\Core\Update {
 
         foreach ( array( 'stream_type', 'app_id' ) as $column ) {
 
-            if ( $entity->addColumn( $column ) === false ) {
+            // Skipped when already present -- see Update::addColumnIfMissing().
+            if ( ! $this->addColumnIfMissing( $entity, $column ) ) {
 
                 $this->e->notice( "Adding $column to owa_site failed" );
 
@@ -51,7 +52,27 @@ class Update024 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * Take the stream type and app id back off the Profile.
+     *
+     * Idempotent: an already-absent column counts as dropped.
+     *
+     * Every Profile becomes a web Profile again by implication, which is what
+     * the schema meant before this update -- there was no other kind.
+     */
     function down() {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        foreach ( array( 'stream_type', 'app_id' ) as $column ) {
+
+            if ( ! $this->dropColumnIfPresent( $entity, $column ) ) {
+
+                $this->e->notice( "Dropping $column from owa_site failed" );
+
+                return false;
+            }
+        }
 
         return true;
     }
