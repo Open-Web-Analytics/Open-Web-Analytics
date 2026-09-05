@@ -136,6 +136,17 @@ async function chooseInChosen(page, selectId, name) {
         .toHaveJSProperty('selected', true);
 }
 
+/**
+ * The widget dialog's Save button.
+ *
+ * Built by jQuery UI in the frame outside #widgetDialog, so it cannot be
+ * reached through that id.
+ */
+function dialogSave(page) {
+    return page.locator('.owa_widgetDialogFrame .ui-dialog-buttonpane button',
+        { hasText: 'Save' });
+}
+
 /** The pills currently shown by a Chosen control. */
 function chosenPills(page, selectId) {
     return page.locator(`#${selectId}_chosen .search-choice`);
@@ -181,7 +192,7 @@ async function onlyWidget(page, type, opts = {}) {
     await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 }
 
-/** Fill the widget modal that is already open, and close it with Done. */
+/** Fill the widget modal that is already open, and close it with Save. */
 async function fillWidget(page, opts) {
     if (opts.title !== undefined) { await page.fill('#dlgTitle', opts.title); }
     if (opts.colspan)             { await page.selectOption('#dlgColspan', String(opts.colspan)); }
@@ -198,7 +209,7 @@ async function fillWidget(page, opts) {
 
     if (opts.sort !== undefined)  { await page.fill('#dlgSort', opts.sort); }
 
-    await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+    await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
     await expect(page.locator('#widgetDialog')).toBeHidden();
 }
 
@@ -414,7 +425,8 @@ test.describe('custom reports', () => {
             // ...beside a sentence saying what is missing. The plus alone is a
             // control, not an instruction.
             await expect(page.locator('#customReportEmpty')).toBeVisible();
-            await expect(page.locator('#customReportEmpty')).toContainText('at least one');
+            await expect(page.locator('#customReportEmpty'))
+                .toContainText('cannot be saved empty');
 
             await expect(page.locator('#customReportSubmit')).toBeDisabled();
 
@@ -544,16 +556,15 @@ test.describe('custom reports', () => {
             // A dimension, and deliberately no value.
             await fillConstraintRow(page, { dimension: '(medium)' });
 
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(dialogSave(page)).toBeDisabled();
+            await expect(page.locator('#dlgError')).toContainText('has no value');
 
-            await expect(page.locator('#widgetDialog')).toBeVisible();
-            await expect(page.locator('#dlgError'))
-                .toContainText('gives no value');
-
-            // Filling it in lets the dialog close, and the constraint reaches
-            // the definition rather than being dropped on the way out.
+            // Filling it in lets the widget be saved, and the constraint
+            // reaches the definition rather than being dropped on the way out.
             await fillConstraintRow(page, { value: 'organic-search' });
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(dialogSave(page)).toBeEnabled();
+            await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
 
             const definition = await page.evaluate(() => {
@@ -644,13 +655,18 @@ test.describe('custom reports', () => {
             await openBuilder(page);
 
             await startWidget(page, 'grid');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            // Not refused on click -- never clickable. The reason is on the
+            // dialog beside it.
+            await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('at least one metric');
 
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(dialogSave(page)).toBeEnabled();
+            await expect(page.locator('#dlgError')).toBeHidden();
+
+            await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
         });
 
@@ -663,13 +679,14 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'pie');
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('dimension');
 
             await chooseInChosen(page, 'dlgDimensions', 'pagePath');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(dialogSave(page)).toBeEnabled();
+            await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
         });
 
@@ -695,14 +712,15 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
             await page.fill('#dlgSort', 'notARealMetric-');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
 
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('notARealMetric');
 
             // A real metric, descending, is fine -- the '-' is not part of it.
             await page.fill('#dlgSort', 'pageViews-');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(dialogSave(page)).toBeEnabled();
+            await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
         });
 
@@ -831,7 +849,7 @@ test.describe('custom reports', () => {
             await page.locator('.owa_builderBlock').nth(1).locator('.owa_builderEdit').click();
             await expect(page.locator('#widgetDialog')).toBeVisible();
             await page.fill('#dlgSort', 'pageViews-');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
 
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
@@ -995,7 +1013,7 @@ test.describe('custom reports', () => {
             await fillConstraintRow(page,
                 { dimension: '(medium)', operator: 'Contains', value: 'organic' });
 
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
 
             await page.click('#customReportSubmit');

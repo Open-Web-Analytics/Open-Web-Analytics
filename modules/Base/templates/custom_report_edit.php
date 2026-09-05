@@ -120,8 +120,8 @@ $owa_max        = (int) $view->get('max_widgets');
     ?>
     <div id="customReportEmpty" class="owa_builderEmpty" style="display:none;">
         <span class="owa_builderEmptyTitle">Nothing in this report yet.</span>
-        <span class="owa_builderEmptyBody">A report is its widgets &mdash; a table,
-            a chart, a row of totals. Add at least one; it cannot be saved empty.</span>
+        <span class="owa_builderEmptyBody">Add a table, a chart, or a row of totals.
+            A report cannot be saved empty.</span>
     </div>
 
     <div id="customReportCanvas" class="owa_builderCanvas"></div>
@@ -450,12 +450,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
     <?php
         /*
-         * WHY DONE WILL NOT CLOSE.
-         *
-         * One message for the whole dialog rather than one per field. It names
-         * the field it is about -- "Choose at least one metric", "Constraint 1
-         * ... gives no value" -- and it sits at the foot, next to the button
-         * that just refused, which is where the eye is at that moment.
+         * One message for the whole dialog rather than one per field, at the
+         * foot next to the button that refused.
          */
     ?>
     <div id="dlgError" class="owa_builderRowError" style="display:none;" role="alert"></div>
@@ -701,15 +697,10 @@ $owa_max        = (int) $view->get('max_widgets');
     var editing = null;   // index of the widget the dialog is open on
 
     /*
-     * The widget the type chooser just added, which has never been applied.
+     * Index of a widget the type chooser added that has not been applied yet.
      *
-     * The chooser pushes a widget and draws it BEFORE the dialog opens, so
-     * backing out of that dialog has to undo the add -- otherwise Cancel is the
-     * way to create exactly the unconfigured block Done refuses to make, and
-     * the rule is decoration.
-     *
-     * Held here rather than as a flag ON the widget, because a flag would be
-     * copied into the posted definition by the submit handler and stored.
+     * Held here rather than as a flag on the widget: the submit handler copies
+     * the widget object into the posted definition, so a flag would be stored.
      */
     var pendingNew = null;
 
@@ -1078,17 +1069,9 @@ $owa_max        = (int) $view->get('max_widgets');
         }
 
         /*
-         * WHAT AN EMPTY CANVAS SAYS.
-         *
-         * The plus alone is a control, not an instruction: on a blank screen it
-         * reads as one option among others rather than as the only thing there
-         * is to do. So an empty canvas says what a report is made of and that
-         * it needs at least one, beside a plus that is now the obvious target.
-         *
-         * Drawn as a sibling of the plus rather than replacing it, because the
-         * plus is where the widget will appear -- moving it for the empty case
-         * would make the first widget land somewhere other than where it was
-         * added.
+         * An empty canvas gets a line of text above the plus saying what to
+         * add. The text is a sibling of the plus rather than a replacement for
+         * it, so the first widget lands where the plus is.
          */
         $canvas.toggleClass( 'owa_builderCanvasEmpty', ! widgets.length );
 
@@ -1102,14 +1085,12 @@ $owa_max        = (int) $view->get('max_widgets');
     /**
      * Why this report cannot be saved yet, or '' if it can.
      *
-     * THE SAME RULES THE SERVER APPLIES, asked before the round trip rather
-     * than instead of it. Every one of these is refused by
-     * CustomReports::validate() or by the save controller's own validate(); the
-     * point of asking here is that the author is told while the thing they have
-     * to fix is still in front of them.
+     * The same rules the server applies, checked before the round trip rather
+     * than instead of it: CustomReports::validate() and the save controller's
+     * validate() still refuse all of these.
      *
-     * In the order an author would fix them: something to save, a name for it,
-     * then whether each widget says what it measures.
+     * Ordered as an author would fix them: a widget, a name, then each widget's
+     * metrics.
      */
     function saveBlocker() {
 
@@ -1118,10 +1099,8 @@ $owa_max        = (int) $view->get('max_widgets');
         }
 
         /*
-         * The NAME. Required by CustomReportSave::validate(), and the field
-         * carries a placeholder -- "Untitled report" -- which reads as a value
-         * that is already there. Leaving it empty was the one refusal an author
-         * could hit without having done anything they would recognise as wrong.
+         * Required by CustomReportSave::validate(). The field's "Untitled
+         * report" placeholder makes an empty one look filled in.
          */
         if ( ! jQuery.trim( jQuery( '#customReportName' ).val() || '' ) ) {
             return 'Give the report a name before saving.';
@@ -1142,7 +1121,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 if ( ! widgetMetrics( widgets[ i ] ).length ) {
 
                     return ( widgets[ i ].title || ( 'Widget ' + ( i + 1 ) ) )
-                         + ' does not say what it measures. Open it and choose a metric.';
+                         + ' has no metrics.';
                 }
             }
         }
@@ -1157,11 +1136,8 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /**
-     * Save is available exactly when the report could actually be stored.
-     *
-     * Disabled rather than hidden: the button is where an author expects it,
-     * and the sentence beside it says why it will not go yet. A control that
-     * vanishes reads as a page that has not finished loading.
+     * Save is enabled exactly when the report could be stored. Disabled
+     * rather than hidden, with the reason beside it.
      */
     function refreshSaveState() {
 
@@ -1295,7 +1271,7 @@ $owa_max        = (int) $view->get('max_widgets');
          * would be refused on save -- so both halves go and the field says the
          * one thing that is now true of every type: it has to be answered.
          */
-        var required = ' Required: a widget draws what it names, and nothing else.';
+        var required = ' Required.';
 
         /*
          * ...and the mark beside the label says the same thing at a glance.
@@ -1371,6 +1347,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         refreshLinkControl();
         refreshMoreControl();
+        refreshDialogState();
     }
 
     /**
@@ -1665,19 +1642,12 @@ $owa_max        = (int) $view->get('max_widgets');
     /**
      * What is wrong with the constraint rows, or '' if nothing is.
      *
-     * A HALF-FILLED ROW USED TO VANISH.
-     *
      * readConstraintRows() keeps a row only when it has both a dimension and a
-     * value, and dropped anything else without a word. So an author who chose
-     * `medium`, chose an operator and then tabbed past the value -- or typed a
-     * value and never picked the dimension -- got a widget with no filter on
-     * it, no message, and no way to tell it apart from one they had never
-     * filtered. The query engine treats exactly this as an error worth refusing
-     * ("a missing value is not a request for everything"); the builder treated
-     * it as nothing.
+     * value, and used to drop anything else silently -- so a row with a
+     * dimension and no value produced an unfiltered widget with no message.
+     * ResultSetManager refuses the same thing at query time.
      *
-     * An entirely blank row is still nothing, because there is always one on
-     * the form and it does not mean the author left something out.
+     * An entirely blank row is still ignored: the form always carries one.
      */
     function constraintRowProblem() {
 
@@ -1697,15 +1667,13 @@ $owa_max        = (int) $view->get('max_widgets');
             }
 
             if ( ! part.name ) {
-                problem = 'Constraint ' + ( i + 1 ) + ' has a value but no dimension. '
-                        + 'Choose what to constrain on, or clear the value.';
+                problem = 'Constraint ' + ( i + 1 ) + ' has a value but no dimension.';
                 return;
             }
 
             if ( ! part.value ) {
-                problem = 'Constraint ' + ( i + 1 ) + ' constrains on ' + part.name
-                        + ' but gives no value. An empty value is not a request for '
-                        + 'everything -- fill it in, or remove the row.';
+                problem = 'Constraint ' + ( i + 1 ) + ' on ' + part.name
+                        + ' has no value.';
             }
         } );
 
@@ -1730,15 +1698,13 @@ $owa_max        = (int) $view->get('max_widgets');
     /**
      * What is wrong with the SORT, or '' if nothing is.
      *
-     * The one field in this dialog an author types into freely, and so the one
-     * that could still reach the server as a name that does not resolve -- a
-     * refusal two steps later, on a page about a widget rather than showing
-     * them one. The registry is already in the page for the pickers, so the
-     * same answer is available here.
+     * The only free-text field here, so the only one that could reach the
+     * server with a name that does not resolve. METRICS and DIMENSIONS are
+     * already in the page for the pickers.
      *
-     * A trailing '-' is the DIRECTION, not part of the name, and is stripped
-     * before the lookup: without that, every descending sort would be reported
-     * as unresolvable. Empty is fine -- a widget need not name a sort.
+     * A trailing '-' is the direction and is stripped before the lookup;
+     * without that every descending sort would be reported as unresolvable.
+     * An empty sort is allowed.
      */
     function sortProblem() {
 
@@ -1751,12 +1717,11 @@ $owa_max        = (int) $view->get('max_widgets');
         var name = sort.replace( /-$/, '' );
 
         if ( ! name ) {
-            return 'The sort is only a direction. Name the metric or dimension to sort by.';
+            return 'The sort names no field.';
         }
 
         if ( ! isKnownName( name ) ) {
-            return '"' + name + '" is not a metric or a dimension, so the widget cannot '
-                 + 'be sorted by it. Use a name from the pickers above.';
+            return '"' + name + '" is not a metric or a dimension.';
         }
 
         return '';
@@ -1765,21 +1730,15 @@ $owa_max        = (int) $view->get('max_widgets');
     /**
      * EVERYTHING WRONG WITH THIS WIDGET, or '' if it is ready.
      *
-     * WHY THE MODAL ENFORCES THIS AND NOT JUST THE CANVAS
+     * Done used to close on anything: the block landed on the canvas marked
+     * unfinished and Save reported it, which meant finding the widget again
+     * two screens later. Checked here, the fields are still open.
      *
-     * A widget used to be able to leave this dialog unconfigured: Done closed
-     * on anything, the block landed on the canvas marked unfinished, and Save
-     * explained it. That is a correct chain and a slow one -- the author is
-     * told about a widget two steps after the screen that was about that
-     * widget, and has to find it again to fix it.
+     * The canvas marking and the Save gate remain for definitions that arrive
+     * already broken, from a report stored before these rules or from a
+     * refusal round-trip.
      *
-     * Asked here, the answer arrives while the fields are still open. The
-     * canvas marking and the Save gate stay, because a definition can also
-     * arrive already broken -- from a report saved before these rules, or from
-     * a refusal round-trip -- and those have to say so too.
-     *
-     * In the order the fields appear, so the message points DOWN the form the
-     * way the author reads it.
+     * Ordered as the fields appear in the form.
      *
      * @return string
      */
@@ -1793,11 +1752,8 @@ $owa_max        = (int) $view->get('max_widgets');
          */
         if ( ! reportMetrics && ! ( jQuery( '#dlgMetrics' ).val() || [] ).length ) {
 
-            return isSingleMetric( type )
-                ? 'Choose the metric this ' + ( TYPES[ type ] || type ).toLowerCase()
-                  + ' draws.'
-                : 'Choose at least one metric. A widget draws what it names, and '
-                  + 'nothing else.';
+            return isSingleMetric( type ) ? 'Choose a metric.'
+                                          : 'Choose at least one metric.';
         }
 
         /*
@@ -1808,9 +1764,7 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( isSingleField( type ) && picksDimensions( type )
              && ! ( jQuery( '#dlgDimensions' ).val() || [] ).length ) {
 
-            return 'Choose the dimension its rows are grouped by. A '
-                 + ( TYPES[ type ] || type ).toLowerCase() + ' draws one, and draws '
-                 + 'nothing without it.';
+            return 'Choose a dimension.';
         }
 
         return sortProblem() || constraintRowProblem();
@@ -1990,13 +1944,24 @@ $owa_max        = (int) $view->get('max_widgets');
         narrowDimensions();
         refreshLinkControl();
         refreshMoreControl();
+        refreshDialogState();
     } );
     jQuery( '#dlgDimensions' ).on( 'change', function () {
         narrowDimensions();
         // Both link lists are per dimension, so they change with it.
         refreshLinkControl();
         refreshMoreControl();
+        refreshDialogState();
     } );
+
+    /*
+     * The sort is free text and the constraint rows are added and removed, so
+     * both are watched by delegation rather than by binding to the controls
+     * that exist right now.
+     */
+    jQuery( '#dlgSort' ).on( 'input', refreshDialogState );
+
+    jQuery( '#dlgConstraintRows' ).on( 'change input click', refreshDialogState );
 
     // Remembered, so rebuilding the select on a dimension change does not lose
     // a choice the author has already made.
@@ -2053,32 +2018,28 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogClass: 'owa_widgetDialogFrame',
         buttons: [
             /*
-             * Closed only if the dialog could be applied. A refused apply
-             * leaves the modal open with the reason on it: the fields that need
-             * filling are in here, and closing would take the author away from
-             * the controls the message is about.
+             * Disabled while the widget is unfinished -- refreshDialogState()
+             * keeps it in step with the fields, and #dlgError says what is
+             * missing. applyDialog() re-checks anyway, so a programmatic click
+             * cannot get past it.
              */
-            { text: 'Done', click: function () {
+            { text: 'Save', click: function () {
                 if ( applyDialog() ) { jQuery( this ).dialog( 'close' ); }
             } },
             { text: 'Cancel', click: function () { editing = null; jQuery( this ).dialog( 'close' ); } }
         ],
 
         /*
-         * BACKING OUT OF A NEW WIDGET UNDOES THE ADD.
+         * Backing out of a newly added widget removes it.
          *
          * The type chooser pushes the widget before this dialog opens, so
-         * without this Cancel leaves an unconfigured block on the canvas -- the
-         * very thing Done now refuses to produce, reachable by pressing the
-         * other button. At the moment it is offered, Cancel means "I did not
-         * mean to add this".
+         * without this Cancel leaves the unconfigured block Done refuses to
+         * produce.
          *
          * On `close` rather than in the Cancel handler, so the titlebar X and
-         * the Escape key do the same thing. A successful Done has already
-         * cleared pendingNew by the time it closes, so this cannot undo a
-         * widget that was actually configured -- and re-opening a widget that
-         * WAS configured never sets pendingNew, so Cancel there reverts the
-         * edit and keeps the widget, which is what Cancel means then.
+         * Escape behave the same. A successful Done clears pendingNew before
+         * closing, and re-opening an existing widget never sets it, so this
+         * only ever removes a widget that was just added and never applied.
          */
         close: function () {
 
@@ -2094,6 +2055,29 @@ $owa_max        = (int) $view->get('max_widgets');
             draw();
         }
     } );
+
+    /*
+     * The dialog's Save button, captured after jQuery UI builds the button
+     * pane. .dialog('widget') is the frame, which is where the pane lives.
+     */
+    var $dlgSaveButton = jQuery( '#widgetDialog' ).dialog( 'widget' )
+        .find( '.ui-dialog-buttonpane button' ).first();
+
+    /** Keep the dialog's Save button and message in step with its fields. */
+    function refreshDialogState() {
+
+        if ( editing === null ) {
+            return;
+        }
+
+        var problem = dialogProblem();
+
+        jQuery( '#dlgError' ).text( problem ).toggle( !! problem );
+
+        $dlgSaveButton
+            .prop( 'disabled', !! problem )
+            .toggleClass( 'ui-state-disabled', !! problem );
+    }
 
     // ------------------------------------------------------------------
     // Wiring

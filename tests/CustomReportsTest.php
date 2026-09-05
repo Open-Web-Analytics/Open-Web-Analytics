@@ -821,20 +821,20 @@ final class CustomReportsTest extends TestCase
             // Parseable, but no value. "A missing value is not a request for
             // everything" -- ResultSetManager's own words.
             'no value' => array(
-                'medium==', 'no value to compare it with'),
+                'medium==', 'gives no value'),
 
             /*
              * NOT PARSEABLE AT ALL. Each of these contributes no constraint and
              * raises no error, so the widget silently answers unfiltered.
              */
             'no operator' => array(
-                'medium', 'names no comparison'),
+                'medium', 'names no operator'),
 
             'operator but no name' => array(
                 '==direct', 'names nothing to constrain on'),
 
             'an operator that does not exist' => array(
-                'medium~~x', 'names no comparison'),
+                'medium~~x', 'names no operator'),
         );
     }
 

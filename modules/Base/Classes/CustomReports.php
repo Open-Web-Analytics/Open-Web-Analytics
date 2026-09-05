@@ -578,19 +578,15 @@ class CustomReports {
         /*
          * EVERY WIDGET NAMES ITS OWN METRICS.
          *
-         * A widget that named none used to inherit the report metric set, and
-         * the builder asked for that set beside the report's name. It no longer
-         * does -- see the note in custom_report_edit.php -- so a widget with an
-         * empty list has nothing to inherit and would draw an empty panel. That
-         * is not something an author can have meant, and it is not something
-         * they would see until after saving, so it is refused here.
+         * A widget naming none used to inherit the report metric set. The
+         * builder no longer asks for that set (see custom_report_edit.php), so
+         * an empty list now has nothing to inherit and the widget draws an
+         * empty panel.
          *
-         * The exception is a report that ALREADY HAS a set. Those were built
-         * while the control existed, they render correctly, and this check runs
-         * at render time as well as at save time -- refusing them would take
-         * down reports that are working, and leave their authors no way to fix
-         * it, because the field they would have to fill is gone. So the
-         * fallback stays legal exactly where there is something to fall back to.
+         * A report that already HAS a set is exempt. validate() runs at render
+         * time as well as at save time, so refusing those would break reports
+         * that work today, and their authors have no field left to fix them
+         * with.
          *
          * AFTER the single-field check, which says the same thing more
          * precisely for a card or a pie: "draws one metric, this one names 0"
@@ -598,7 +594,13 @@ class CustomReports {
          */
         if ( ! self::asNames( $query['metrics'] ?? '' ) ) {
 
-            if ( in_array( $type, self::OWN_METRIC_TYPES, true ) ) {
+            /*
+             * The metric-set wording only where there IS a set. The builder no
+             * longer offers one, so telling an author of a report that has none
+             * that this type "does not take the report metric set" names
+             * something they cannot see.
+             */
+            if ( $has_report_metrics && in_array( $type, self::OWN_METRIC_TYPES, true ) ) {
 
                 return sprintf(
                     '%s is a %s, which names its own metrics -- it does not take the '
@@ -608,10 +610,7 @@ class CustomReports {
 
             if ( ! $has_report_metrics ) {
 
-                return sprintf(
-                    '%s names no metrics, so it would draw nothing. Every widget has '
-                  . 'to say what it measures.',
-                    $where );
+                return sprintf( '%s names no metrics.', $where );
             }
         }
 
@@ -1412,15 +1411,12 @@ class CustomReports {
     /**
      * The operators a constraint may use.
      *
-     * READ FROM THE ENGINE, not listed here. ResultSetManager is what actually
-     * parses these strings, and a list of our own would eventually accept a
-     * clause it then drops -- which is the exact failure this validation
-     * exists to stop.
+     * Read from ResultSetManager, which parses these strings. A copy here
+     * would drift and start accepting clauses the engine drops.
      *
-     * Deliberately the FULL set rather than the five the builder offers. The
-     * builder's list is a choice about what is worth putting in a picker; this
-     * is a question about what the engine can run, and a definition written by
-     * hand or carried over from an older report may legitimately use the rest.
+     * The full set, not the five the builder's picker offers: a definition
+     * written by hand or carried over from an older report may use any operator
+     * the engine can run.
      *
      * @return array
      */
@@ -1448,27 +1444,16 @@ class CustomReports {
      * Every clause of a widget's constraints, checked the way every other name
      * in a definition is checked.
      *
-     * WHY THIS IS HERE AT ALL
+     * Constraints were not checked at save time, unlike metrics, dimensions,
+     * sorts, chart metrics and link targets. Two different failures followed.
      *
-     * Constraints were the one thing in a definition that reached the query
-     * builder without resolving through the registry at save time. Metrics,
-     * dimensions, sorts, chart metrics and link targets are all checked; a
-     * constraint was not, and the consequences split two ways.
+     * `notADimension==direct` and `medium==` parse, but do not resolve.
+     * ResultSetManager refuses them at query time, so the report fails for
+     * every reader every time it is opened, rather than for the author once.
      *
-     * A clause the engine CAN parse but not resolve -- `notADimension==direct`,
-     * or `medium==` with no value -- is refused by ResultSetManager at QUERY
-     * time. That is the right answer at the wrong moment: the author is told
-     * long after they could easily fix it, and everyone who opens the report is
-     * told as well, every time.
-     *
-     * A clause the engine cannot parse at all is worse. `medium` with no
-     * operator, `==direct` with no name, and `medium~~x` with an operator that
-     * does not exist all parse to NOTHING -- parseConstraintsString() finds no
-     * operator and contributes no constraint -- so the query runs completely
-     * unfiltered, with no error raised anywhere. A widget meant to show organic
-     * search shows the site total, and nothing says so.
-     *
-     * Both are refused here, where the author is looking at the row.
+     * `medium`, `==direct` and `medium~~x` do not parse at all.
+     * parseConstraintsString() finds no operator and contributes no constraint,
+     * so the query runs unfiltered and raises nothing.
      *
      * @param array  $widget
      * @param string $where human-readable position, for the message
@@ -1504,10 +1489,9 @@ class CustomReports {
 
                 /*
                  * `> 0`, not `!== false`: an operator at position 0 leaves no
-                 * name in front of it. That is a clause the engine drops
-                 * silently -- its own parser uses a truthy strpos and skips it
-                 * -- so it has to be caught as "names nothing" below rather
-                 * than accepted as a clause.
+                 * name in front of it. parseConstraintsString() uses a truthy
+                 * strpos and skips such a clause, so it is caught below as
+                 * naming nothing rather than accepted here.
                  */
                 if ( $at > 0 ) {
 
@@ -1521,31 +1505,24 @@ class CustomReports {
             if ( $operator === '' ) {
 
                 /*
-                 * An operator at position 0 is a different mistake from no
-                 * operator at all -- "==direct" has a comparison and nothing to
-                 * compare, "medium" has neither -- and telling an author to add
-                 * an operator to a clause that already has one sends them to
-                 * fix the wrong half. Both are dropped identically by the
-                 * engine, which is why both have to be caught, but they do not
-                 * get the same sentence.
+                 * "==direct" has an operator and no name; "medium" has
+                 * neither. The engine drops both, but they need different
+                 * messages: telling someone to add an operator to a clause
+                 * that has one points at the wrong half.
                  */
                 foreach ( $operators as $candidate ) {
 
                     if ( strpos( $clause, $candidate ) === 0 ) {
 
                         return sprintf(
-                            '%s has the constraint "%s", which names nothing to constrain '
-                          . 'on. A constraint reads name, operator, value -- for example '
-                          . 'medium==organic-search.',
+                            '%s has the constraint "%s", which names nothing to '
+                          . 'constrain on.',
                             $where, $clause );
                     }
                 }
 
                 return sprintf(
-                    '%s has the constraint "%s", which names no comparison. A constraint '
-                  . 'reads name, operator, value -- for example medium==organic-search. '
-                  . 'One the engine cannot read is dropped, and the widget shows '
-                  . 'everything instead of saying so. Operators: %s.',
+                    '%s has the constraint "%s", which names no operator. Use one of: %s.',
                     $where, $clause, implode( ' ', $operators ) );
             }
 
@@ -1558,15 +1535,10 @@ class CustomReports {
 
             if ( $value === '' ) {
 
-                /*
-                 * The same rule ResultSetManager states at query time: a
-                 * missing value is not a request for everything. Said here so
-                 * that a half-filled row is caught before it is stored.
-                 */
+                // ResultSetManager refuses this at query time; checked here so
+                // a half-filled row is caught before it is stored.
                 return sprintf(
-                    '%s constrains on "%s" but gives no value to compare it with. An '
-                  . 'empty value is not a request for everything.',
-                    $where, $name );
+                    '%s constrains on "%s" but gives no value.', $where, $name );
             }
         }
 
