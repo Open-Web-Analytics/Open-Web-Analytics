@@ -1260,7 +1260,22 @@ namespace OWA\Module\Base\Classes;
                                 // NOT in capabilitiesThatRequireSiteAccess: a
                                 // custom report is site-agnostic, so there is
                                 // no one site to check access against.
-                                'edit_reports'
+                                'edit_reports',
+                                // Changing the email address on your own
+                                // account. Admin-only by default; grant it to
+                                // another role in the config file to let people
+                                // change their own.
+                                //
+                                // Separate from edit_users, which is about
+                                // other people's accounts. The address is where
+                                // password resets are sent, so changing it
+                                // moves who can recover the account -- everyone
+                                // may edit their own name without that being
+                                // true of their address.
+                                //
+                                // Not site-scoped, so not in
+                                // capabilitiesThatRequireSiteAccess.
+                                'edit_own_email'
                         ),
                         'analyst' => array('install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce'),
                         'viewer' => array('install_schema', 'view_site_list', 'view_reports'),

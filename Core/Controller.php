@@ -1058,6 +1058,35 @@ class Controller extends \OWA\Core\Base {
             );
         }
 
+        /*
+         * YOUR OWN SETTINGS, in a group of their own, LAST.
+         *
+         * Not part of the Installation group: every entry there is gated on
+         * edit_settings and describes the installation, while this describes
+         * the person looking at it. An analyst has one of these and none of
+         * those.
+         *
+         * Last, not first. The groups above read widest scope to narrowest --
+         * install, Organization, Property, Profile -- and putting a group that
+         * is not a step in that chain at the head would make "install-wide
+         * options head the nav" false. After it, the ordering statement still
+         * holds and this reads as what it is: not a narrower scope, a different
+         * subject.
+         *
+         * One entry today. The group exists because user-level preferences land
+         * here as siblings of Profile rather than inside it.
+         */
+        $nav['My Preferences'] = array(
+            array(
+                'do'         => 'base.myProfile',
+                'label'      => 'Profile',
+                'params'     => array(),
+                // What admin, analyst and viewer all carry and nothing else
+                // does -- the capability that means "signed in".
+                'capability' => 'view_site_list',
+            ),
+        );
+
         return $nav;
     }
 

@@ -484,8 +484,10 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* Installation is always present -- it is install-wide and needs no
            context. What must NOT appear without a site is Property or Profile. */
+        /* My Preferences needs no context either -- it is about the person, not
+           about anything in the tree -- so it is present here too. */
         $this->assertSame(
-            array( 'Installation', 'Organization' ), array_keys( $bare ),
+            array( 'Installation', 'Organization', 'My Preferences' ), array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -499,7 +501,8 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'Installation', 'Organization', 'Property' ), array_keys( $withProperty ) );
+            array( 'Installation', 'Organization', 'Property', 'My Preferences' ),
+            array_keys( $withProperty ) );
     }
 
     /** Every item declares the capability that gates it. */
@@ -1159,9 +1162,20 @@ final class PropertyAdminScreensTest extends TestCase
             OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
 
         $this->assertStringContainsString( "hierarchy_tier === 0", $crumb );
-        $this->assertStringContainsString( "'label' => 'Installation'", $crumb );
+
+        /*
+         * The tier-0 crumb is NAMED by the screen rather than hardcoded, so
+         * base.myProfile -- tier 0 because it belongs to no Organization, but
+         * about the person rather than the install -- can say so. What matters
+         * here is still that tier 0 gets a root crumb of its own instead of an
+         * Organization name.
+         */
+        $this->assertStringContainsString( 'hierarchy_root_label', $crumb );
 
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
+
+        /* ...and it still says Installation for every screen that names none. */
+        $this->assertStringContainsString( "?: 'Installation'", $view );
 
         $this->assertStringNotContainsString(
             "hierarchy_tier' ) ?: 3", $view,

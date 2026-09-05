@@ -245,7 +245,18 @@
     </script>
 <?php endif; ?>
     <span class="user-greating" style="">
-        Hi, <?php $view->out( $cu->getUserData('user_id') );?> ! &bull;
+        <?php
+            /*
+             * The username is the way to your own account, which is where
+             * people reach for it. Only when signed in -- the greeting renders
+             * for an anonymous request too, and there is nothing to link to.
+             */
+        ?>
+        Hi, <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ):?><a
+            class="owa_myProfileLink"
+            href="<?php echo $view->makeLink( array( 'do' => 'base.myProfile' ), false );?>"
+            ><?php $view->out( $cu->getUserData('user_id') );?></a><?php
+            else: $view->out( $cu->getUserData('user_id') ); endif;?> ! &bull;
         <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 
                 <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ):?>

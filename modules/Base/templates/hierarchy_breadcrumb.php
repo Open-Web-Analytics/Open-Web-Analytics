@@ -27,10 +27,14 @@ $owa_crumbs = array();
  * installation rather than an Organization. Saying "My Organization" above a
  * screen whose settings apply to every Organization would be wrong in exactly
  * the way the tiering is meant to prevent.
+ *
+ * The label is not always "Installation": base.myProfile is tier 0 for the same
+ * reason -- it belongs to no Organization -- but is about the person, so it
+ * supplies its own. See OptionsHierarchy, which defaults it.
  */
 if ( (int) $view->hierarchy_tier === 0 ) {
 
-    $owa_crumbs[] = array( 'label' => 'Installation', 'note' => '' );
+    $owa_crumbs[] = array( 'label' => (string) $view->hierarchy_root_label, 'note' => '' );
 
 } elseif ( ! empty( $owa_h['organization']['name'] ) ) {
 

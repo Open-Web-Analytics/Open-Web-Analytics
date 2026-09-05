@@ -33,6 +33,16 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         $this->body->set( 'params', $params );
         $this->body->set( 'hierarchy_nav', $this->get( 'hierarchy_nav' ) );
+
+        /*
+         * What the root crumb says. Tier 0 means install-wide on every other
+         * screen, so 'Installation' is the default -- but base.myProfile is
+         * tier 0 and is about the person rather than the installation, so it
+         * names its own. get() answers false for a name nobody set, hence the
+         * ?: rather than a check.
+         */
+        $this->body->set( 'hierarchy_root_label',
+            $this->get( 'hierarchy_root_label' ) ?: 'Installation' );
         /*
  * Not ?: -- tier 0 (install-wide) is a legitimate value that ?: would turn
  * into 3, putting a Property and a Profile above Main Configuration.

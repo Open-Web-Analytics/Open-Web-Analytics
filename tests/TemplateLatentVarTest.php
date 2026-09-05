@@ -320,6 +320,26 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],
             ],
+            /*
+             * The signed-in user's own account. Rendered for somebody who may
+             * NOT change their address, because that branch renders a different
+             * field and is the one a fixture is most likely to miss.
+             */
+            'my_profile (no email capability)' => [
+                'my_profile.php',
+                [
+                    'user_id' => 'someone@example.test',
+                    'real_name' => 'Someone',
+                    'email_address' => 'someone@example.test',
+                    'role' => 'viewer',
+                    'may_edit_email' => false,
+                    'my_profile_error' => '',
+                    'my_profile_saved' => false,
+                    'siteId' => 'owa-e2e',
+                    'min_password_length' => 6,
+                ],
+                ['name="real_name"', 'name="current_password"', 'name="new_password"'],
+            ],
             'goal_event_edit (add)' => [
                 'goal_event_edit.php',
                 [
