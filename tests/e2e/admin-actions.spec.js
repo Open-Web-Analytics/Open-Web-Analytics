@@ -664,12 +664,23 @@ test.describe('admin: the site control fan-out', () => {
 
         const before = (await tileId()).trim();
 
-        await page.locator('.owa_siteControlProperties .owa_siteControlItem').nth(0).click();
-        await page.waitForTimeout(300);
-
+        /*
+         * Whatever Profile list is ALREADY showing, rather than clicking a
+         * Property first.
+         *
+         * Clicking one picks which list is revealed, and on an install where
+         * the first Property has no Profiles under it that hides the list that
+         * was showing and reveals an empty one -- which is how this failed in
+         * CI while passing here, where every Property has a Profile. The claim
+         * being tested is "clicking a Profile lands on that Profile", and it
+         * needs a Profile to click, not a particular one.
+         */
         const row = page.locator(
             '.owa_siteControlProfiles .owa_siteControlProfileList:not([hidden]) '
             + '.owa_siteControlItem').first();
+
+        await expect(row, 'no Profile list is showing, so there is nothing to click')
+            .toBeVisible();
 
         const href = await row.locator('a.owa_siteControlSelect').getAttribute('href');
         const wanted = href.match(/siteId=([^&]+)/)[1];
