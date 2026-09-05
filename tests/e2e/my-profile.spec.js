@@ -48,14 +48,15 @@ test.describe('my preferences', () => {
         /**
          * BOTH WAYS IN.
          *
-         * The username in the top bar is where people reach for their own
+         * The account menu in the top bar is where people reach for their own
          * account; the settings nav is where they look for it deliberately.
          * Asserted as links that actually arrive, not merely as present markup.
          */
-        test('the username and the settings nav both lead here', async ({ page }) => {
+        test('the account menu and the settings nav both lead here', async ({ page }) => {
             await page.goto(`?owa_do=base.reportingHome&owa_siteId=${FIXTURE.siteId}`,
                 { waitUntil: 'networkidle' });
 
+            await page.click('#owa_userMenuToggle');
             await page.locator('a.owa_myProfileLink').click();
             await page.waitForSelector('form[name=owa_myProfile]', { timeout: 20_000 });
 

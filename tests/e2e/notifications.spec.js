@@ -66,7 +66,7 @@ test.describe('notifications', () => {
             const glyph = btn.querySelector('i').getBoundingClientRect();
             const badge = document.querySelector('#owa_notificationBadge').getBoundingClientRect();
             const bell  = document.querySelector('.owa_notificationBell').getBoundingClientRect();
-            const greet = document.querySelector('.user-greating');
+            const menu = document.querySelector('.owa_userMenu');
 
             return {
                 // Overlap needs BOTH axes; the badge clears the glyph on x.
@@ -74,13 +74,21 @@ test.describe('notifications', () => {
                                  badge.bottom < glyph.top || badge.top > glyph.bottom),
                 clipped: badge.right > window.innerWidth,
                 bellRight: bell.right,
-                greetingRight: greet ? greet.getBoundingClientRect().right : 0,
+                /*
+                 * NOT `menu ? ... : 0`. A missing element falling back to 0
+                 * makes "the bell is right of it" true by default, so a
+                 * renamed class would leave this test green and checking
+                 * nothing. Absent is reported as absent.
+                 */
+                menuRight: menu ? menu.getBoundingClientRect().right : null,
             };
         });
 
         expect(geometry.overlapsGlyph, 'the badge must not cover the bell').toBe(false);
         expect(geometry.clipped, 'the badge overhangs, so it must not be cut off at the edge').toBe(false);
-        expect(geometry.bellRight).toBeGreaterThan(geometry.greetingRight);
+        expect(geometry.menuRight, 'the account menu must be in the bar to compare against')
+            .not.toBeNull();
+        expect(geometry.bellRight).toBeGreaterThan(geometry.menuRight);
     });
 
     test('the badge is always present, even at zero', async ({ page }) => {

@@ -37,20 +37,49 @@ div {margin:0;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
-.owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
-.owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
-.owa_navigation li {text-decoration: none; float:left; margin: 2px;}
-.owa_navigation li a {
-    background: url() #fff bottom left repeat-x;
-    height: 2em;
-    line-height: 2em;
+/* The top bar's links.
+ *
+ * Each link used to be a 9em box, floated, whatever its text: "Donate" sat in
+ * the middle of a wide empty box and "Documentation" filled its own to the
+ * edge, so the gaps between words were all different widths. They are sized by
+ * their text now, with one padding value between them, which is what makes the
+ * spacing even.
+ *
+ * A row rather than a set of floats, so the items share a baseline instead of
+ * each one setting its own line-height. */
+/* As tall as the bar, with its contents centred in it.
+ *
+ * Every item in this header is floated, and a float takes its own height and
+ * sits at the top of the content box -- so the logo (55px), the links (36px)
+ * and the bell (40px) each started at the same top edge and ended in three
+ * different places, none of them centred on any other. Giving each the bar's
+ * height and centring inside it puts them all on one line.
+ *
+ * 55px is the header's own line-height, which is what sets the bar's height. */
+.owa_navigation {
     float: left;
-    width: 9em;
+    display: flex;
+    align-items: center;
+    height: 55px;
+}
+.owa_navigation ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    margin: 0;
+}
+.owa_navigation li {margin: 0;}
+.owa_navigation li a {
     display: block;
-    border: 0 solid #efefef;
+    padding: 0 14px;
+    height: 36px;
+    line-height: 36px;
+    border-radius: 6px;
+    color: #1a5f8a;
     text-decoration: none;
-    text-align: center;
-    
+    white-space: nowrap;
 }
 
 #updates {
@@ -64,9 +93,12 @@ div {margin:0;}
 	font-size: 14px;
 }
 
+/* A filled hover rather than an underline that appears from nowhere: the link
+   is a box, so the box responds. The orange stays for the current item, where
+   it means something. */
 .owa_navigation li a:hover {
-	border-bottom: 2px solid orange;
-   
+	background-color: #f0f2f5;
+	color: #124a6b;
 }
 
 .owa_current{
