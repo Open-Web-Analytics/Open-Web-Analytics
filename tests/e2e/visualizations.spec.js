@@ -142,18 +142,31 @@ test.describe('visualizations', () => {
         await expect(page.locator('input[name="stepName[]"]').first()).toBeVisible();
     });
 
-    /** A funnel is nothing but its steps, so one with none describes no path. */
-    test('a visualization with no steps is refused', async ({ page }) => {
+    /**
+     * A funnel is nothing but its steps, so one with none describes no path.
+     *
+     * Stopped in the form now: Save is unavailable until the rules are met, so
+     * the button cannot post this. The server still refuses it -- the second
+     * half below posts past the button the way a stale tab would -- and keeps
+     * what was typed.
+     */
+    test('a visualization with no steps cannot be saved', async ({ page }) => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Empty Viz');
 
+        await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('at least one step');
+
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Visualization"]').click(),
+            page.evaluate(() => HTMLFormElement.prototype.submit.call(
+                document.forms.owa_visualization)),
         ]);
 
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Empty Viz');
+        await expect(page.locator('.validation_error').filter({ hasText: 'at least one step' }))
+            .toHaveCount(1);
     });
 
     /**
@@ -168,12 +181,86 @@ test.describe('visualizations', () => {
         await page.locator('input[name="stepName[]"]').first().fill('Basket');
         await page.locator('input[name="stepPath[]"]').first().fill('https://example.test/basket');
 
+        // Caught in the form, on the same rule the save applies.
+        await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
+        await expect(page.locator('#owa_visualizationBlocker'))
+            .toContainText('not a full web address');
+
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Visualization"]').click(),
+            page.evaluate(() => HTMLFormElement.prototype.submit.call(
+                document.forms.owa_visualization)),
         ]);
 
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Bad Step');
+        await expect(page.locator('.validation_error').filter({ hasText: 'page PATH' }))
+            .toHaveCount(1);
+    });
+
+    /**
+     * AN ERROR ABOUT STEP 2 WAS WRITTEN AND NEVER SHOWN.
+     *
+     * The template rendered three hardcoded keys -- stepPath1, stepName1,
+     * stepGoalEvent1 -- and validate() writes one per step number. So a problem
+     * with any step but the first refused the save and then appeared nowhere:
+     * the author got the form back, unchanged, with no reason on it.
+     *
+     * Driven past the button, because the form now stops this before it is
+     * posted; what is under test is the server's answer and where it is shown.
+     */
+    test('an error about a later step is shown, not swallowed', async ({ page }) => {
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', 'E2E Second Step');
+        await page.locator('input[name="stepName[]"]').first().fill('One');
+        await page.locator('input[name="stepPath[]"]').first().fill('/one');
+
+        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
+
+        // A second step with a name and no path.
+        await page.locator('input[name="stepName[]"]').nth(1).fill('Two');
+
+        await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('Step 2');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.evaluate(() => HTMLFormElement.prototype.submit.call(
+                document.forms.owa_visualization)),
+        ]);
+
+        // The message names the step it is about, and the work is still there.
+        await expect(page.locator('.validation_error').filter({ hasText: 'Step 2 needs a path' }))
+            .toHaveCount(1);
+        await expect(page.locator('input[name="stepName[]"]').nth(1)).toHaveValue('Two');
+    });
+
+    /**
+     * Save waits for the same rules the server applies, and says which one.
+     *
+     * The form used to offer Save from the moment it opened, so the first
+     * answer to an empty funnel was a round trip.
+     */
+    test('save waits for a name and a complete step', async ({ page }) => {
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        // Name and Steps both say they are required, rather than the author
+        // finding out on save.
+        await expect(page.locator('.owa_builderRequired')).toHaveCount(2);
+
+        await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('name');
+
+        await page.fill('input[name="name"]', 'E2E Gate ' + Date.now());
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('at least one step');
+
+        await page.locator('input[name="stepName[]"]').first().fill('Basket');
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('no path');
+
+        await page.locator('input[name="stepPath[]"]').first().fill('/basket');
+
+        await expect(page.locator('#owa_visualizationSubmit')).toBeEnabled();
+        await expect(page.locator('#owa_visualizationBlocker')).toBeHidden();
     });
 
     /**

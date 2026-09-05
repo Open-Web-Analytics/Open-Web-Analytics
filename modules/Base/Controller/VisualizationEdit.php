@@ -125,6 +125,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $this->set( 'siteId', $siteId );
 
         $this->set( 'goalEvents', \OWA\Module\Base\Controller\GoalEvents::listFor( $siteId ) );
+
+        /*
+         * The step cap, read from the controller that enforces it so the form
+         * cannot offer a step the save then refuses.
+         */
+        $this->set( 'maxSteps', \OWA\Module\Base\Controller\VisualizationSave::MAX_STEPS );
     }
 
     /**

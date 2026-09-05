@@ -33,7 +33,7 @@ and where they left.</div>
       action="<?php echo $view->makeLink( array( 'do' => 'base.visualizationSave' ) );?>">
 
     <div class="setting">
-        <div class="title">Name</div>
+        <div class="title">Name <span class="owa_builderRequired">Required</span></div>
         <div class="description">What this is called in the Visualizations list and its own
         heading.</div>
         <div class="field">
@@ -73,7 +73,7 @@ and where they left.</div>
     </div>
 
     <div class="setting">
-        <div class="title">Steps</div>
+        <div class="title">Steps <span class="owa_builderRequired">Required</span></div>
         <div class="description">In order, first to last. A step is either a page &mdash; matched
         on its path &mdash; or one of this Property's goal events, which counts a step exactly
         where that goal event would have counted a conversion. A step with nothing chosen is
@@ -84,8 +84,36 @@ and where they left.</div>
             /* Always one row, or there is nowhere to type the first step. */
             $owa_steps = $view->steps ?: array( array( 'name' => '', 'path' => '' ) );
             ?>
-            <?php foreach ( $owa_steps as $owa_step ):?>
-            <?php $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );?>
+            <?php
+                /*
+                 * Which error keys have been shown, so the catch-all below can
+                 * show anything left over.
+                 */
+                $owa_shownErrors = array( 'name' => true );
+            ?>
+            <?php foreach ( $owa_steps as $owa_stepIndex => $owa_step ):?>
+            <?php
+                $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );
+                $owa_stepNo   = (int) $owa_stepIndex + 1;
+
+                /*
+                 * This step's messages, keyed the way VisualizationSave::validate()
+                 * writes them.
+                 */
+                $owa_stepErrors = array();
+
+                foreach ( array( 'stepName', 'stepPath', 'stepGoalEvent' ) as $owa_key ) {
+
+                    $owa_field = $owa_key . $owa_stepNo;
+
+                    $owa_shownErrors[ $owa_field ] = true;
+
+                    if ( ! empty( $view->validation_errors[ $owa_field ] ) ) {
+
+                        $owa_stepErrors[] = $view->validation_errors[ $owa_field ];
+                    }
+                }
+            ?>
                 <li class="constraintRow owa_funnelStep">
                     <input class="constraintValueField owa_funnelStepName" type="text"
                            placeholder="Step name"
@@ -132,12 +160,31 @@ and where they left.</div>
                           title="Add another step" aria-label="Add another step">+</span>
                     <span class="constraintRemoveButton" role="button" tabindex="0"
                           title="Remove this step" aria-label="Remove this step">X</span>
+                    <?php foreach ( $owa_stepErrors as $owa_stepError ):?>
+                    <span class="validation_error owa_funnelStepError"><?php
+                        $view->out( $owa_stepError );?></span>
+                    <?php endforeach;?>
                 </li>
             <?php endforeach;?>
             </ul>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['stepPath1'] ?? '' );?></span>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['stepName1'] ?? '' );?></span>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['stepGoalEvent1'] ?? '' );?></span>
+            <?php
+                /*
+                 * Anything the rows did not show.
+                 *
+                 * This used to be three hardcoded keys -- stepPath1, stepName1,
+                 * stepGoalEvent1 -- so a message about step 2 or later was
+                 * written by validate(), refused the save, and then appeared
+                 * nowhere. The author got the form back with no reason on it.
+                 *
+                 * Driven off the errors themselves now, so a key added to
+                 * validate() cannot go unrendered.
+                 */
+                $owa_otherErrors = array_diff_key(
+                    (array) $view->validation_errors, $owa_shownErrors );
+            ?>
+            <?php foreach ( $owa_otherErrors as $owa_otherError ):?>
+            <span class="validation_error"><?php $view->out( $owa_otherError );?></span>
+            <?php endforeach;?>
         </div>
     </div>
 
@@ -157,7 +204,17 @@ and where they left.</div>
          */
     ?>
     <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') );?>">
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Visualization">
+    <input class="owa-button" type="submit" id="owa_visualizationSubmit"
+           name="<?php echo $view->getNs();?>submit_btn" value="Save Visualization">
+
+    <?php
+        /*
+         * Why Save is unavailable. Written by the script below; the server
+         * validates the same rules either way, so a browser running none of
+         * this still saves and is still refused with a reason.
+         */
+    ?>
+    <span id="owa_visualizationBlocker" class="owa_builderBlocker" style="display:none;"></span>
 </form>
 
 <?php if ( ! empty( $owa_v['id'] ) ):?>
@@ -228,5 +285,118 @@ jQuery( function () {
 
         syncStep( this );
     } );
+
+    /*
+     * The same rules VisualizationSave::validate() applies, checked before the
+     * round trip rather than instead of it.
+     *
+     * A row left entirely blank is ignored, here and there -- the form always
+     * carries one, and the description says so. A row with anything in it has
+     * to be complete.
+     */
+    var MAX_STEPS = <?php echo (int) ( $view->maxSteps ?: 10 ); ?>;
+
+    /** One step row read off its controls. */
+    function readStep( row ) {
+
+        var $row = jQuery( row );
+
+        return {
+            name: jQuery.trim( $row.find( '.owa_funnelStepName' ).val() || '' ),
+            kind: $row.find( '.owa_funnelStepKind' ).val() || 'path',
+            path: jQuery.trim( $row.find( '.owa_funnelStepPath' ).val() || '' ),
+            goal: $row.find( '.owa_funnelStepGoal' ).val() || ''
+        };
+    }
+
+    /** Why this funnel cannot be saved yet, or '' if it can. */
+    function visualizationBlocker() {
+
+        if ( ! jQuery.trim( jQuery( 'input[name$="name"]' ).not( '[type=hidden]' ).first().val() || '' ) ) {
+            return 'Give the visualization a name.';
+        }
+
+        var rows    = jQuery( '#owa_goalEventFunnel .constraintRow' );
+        var problem = '';
+        var kept    = 0;
+
+        rows.each( function ( i ) {
+
+            var step  = readStep( this );
+            var value = step.kind === 'goal_event' ? step.goal : step.path;
+
+            // Untouched, so not a mistake.
+            if ( ! step.name && ! value ) {
+                return;
+            }
+
+            kept++;
+
+            if ( problem ) {
+                return;
+            }
+
+            if ( ! step.name ) {
+                problem = 'Step ' + ( i + 1 ) + ' has no name.';
+
+            } else if ( ! value ) {
+                problem = step.kind === 'goal_event'
+                    ? 'Step ' + ( i + 1 ) + ' has no goal event.'
+                    : 'Step ' + ( i + 1 ) + ' has no path.';
+
+            } else if ( step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
+                // Matched on the path alone, so a full address matches nothing.
+                problem = 'Step ' + ( i + 1 ) + ' needs a path, such as /basket, not a full '
+                        + 'web address.';
+            }
+        } );
+
+        if ( problem ) {
+            return problem;
+        }
+
+        if ( ! kept ) {
+            return 'Add at least one step.';
+        }
+
+        if ( kept > MAX_STEPS ) {
+            return 'A funnel can have at most ' + MAX_STEPS + ' steps; this one has ' + kept + '.';
+        }
+
+        return '';
+    }
+
+    function refreshVisualizationState() {
+
+        var blocker = visualizationBlocker();
+
+        jQuery( '#owa_visualizationSubmit' )
+            .prop( 'disabled', !! blocker )
+            .attr( 'title', blocker );
+
+        jQuery( '#owa_visualizationBlocker' ).text( blocker ).toggle( !! blocker );
+    }
+
+    /*
+     * Delegated: the + button clones rows at runtime, so binding to the rows
+     * that exist now would miss every one added afterwards.
+     */
+    jQuery( document ).on( 'input change click',
+        '#owa_goalEventFunnel, input[name$="name"]', refreshVisualizationState );
+
+    jQuery( 'form[name=owa_visualization]' ).on( 'submit', function ( e ) {
+
+        // Enter in a text field submits whether or not there is a button to
+        // press, so the disabled button is not the whole guard.
+        if ( visualizationBlocker() ) {
+
+            e.preventDefault();
+            refreshVisualizationState();
+
+            return false;
+        }
+    } );
+
+    refreshVisualizationState();
 } );
 </script>
