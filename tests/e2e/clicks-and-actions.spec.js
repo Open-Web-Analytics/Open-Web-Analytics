@@ -6,11 +6,13 @@
  * WHAT THIS COVERS THAT NOTHING DID
  *
  * Until the fixture grew clicks and actions, these reports had no data to draw
- * and no test that looked at them. The heatmap was in the same position from
- * the other direction: its plotting is tested against rows typed into a JS
- * test, the overlay e2e proves a canvas is created, the cross-origin e2e proves
- * the fetch is not blocked. Every layer proved against a mock of its
- * neighbour -- so a break BETWEEN them was invisible.
+ * and no test that looked at them.
+ *
+ * The heatmap was NOT in the same position, and it is worth being exact about
+ * that: overlay_e2e_helper.php seeds clicks and overlay-cross-origin.spec.js
+ * asserts the overlay's own query comes back non-empty. That path was covered.
+ * What was not covered was every OTHER way these clicks are counted -- by
+ * element, by page, by tag, by class -- and the action metrics entirely.
  *
  * The arithmetic lives in ClickAndActionMetricsTest, which asks the reporting
  * stack for these metrics by name against its own site. This file is about the

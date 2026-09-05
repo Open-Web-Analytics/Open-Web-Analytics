@@ -5,19 +5,24 @@ use PHPUnit\Framework\TestCase;
 /**
  * The click and action metrics and dimensions, end to end.
  *
- * WHY THIS DID NOT EXIST, WHICH IS THE POINT OF IT
+ * WHY THIS DID NOT EXIST, STATED ACCURATELY
  *
- * Nothing anywhere produced a click. The heatmap's plotting is tested against
- * rows typed into a JS test; the overlay e2e proves a canvas gets created; the
- * cross-origin e2e proves the fetch is not blocked; the token tests prove the
- * signature. Every layer is checked against a MOCK of its neighbour, so a break
- * BETWEEN them is invisible -- `domClicks` could point at the wrong entity, the
- * dom-element dimensions could stop resolving, ClickHandlers could quietly fail
- * to write, and all of it stays green.
+ * One place did produce clicks: overlay_e2e_helper.php seeds them against a
+ * real document row, and overlay-cross-origin.spec.js drives the actual overlay
+ * and asserts the query comes back with resultsTotal > 0. That test is sound --
+ * its own comments record that the weaker "does the body mention clickX"
+ * version was verified by breaking the fixture's document row and watching it
+ * stay green.
  *
- * So this one produces clicks and actions the way the tracker does -- real
- * events through logEvent, so the handlers run -- and then asks the ordinary
- * reporting stack for them by name, the way a report does.
+ * But it is @selfhost-only, it covers the HEATMAP's query alone, and the main
+ * reporting fixture seeded no clicks at all. So `domClicks` grouped any other
+ * way, the four dom-element dimensions, the three action metrics and every
+ * report built on them had nothing to count and nothing looking at them.
+ *
+ * This one produces clicks and actions the way the tracker does -- real events
+ * through logEvent, so the handlers run -- and asks the ordinary reporting
+ * stack for them by name, the way a report does. It runs wherever there is a
+ * database rather than only under the self-host runner.
  *
  * THE FIXTURE IS ASYMMETRIC ON PURPOSE
  *
@@ -386,13 +391,17 @@ final class ClickAndActionMetricsTest extends TestCase
     }
 
     /**
-     * THE HEATMAP'S OWN QUERY.
+     * THE HEATMAP'S OWN QUERY, AND ITS WEIGHTS.
      *
-     * domClicks by clickX,clickY is exactly what the overlay asks for, and it
-     * is the one query nothing exercised: the plotting test feeds it rows by
-     * hand. Three clicks share (100,200), so the heatmap gets a point of weight
-     * 3 beside points of weight 1 and 2 -- which is the only shape that can
-     * tell a weighted plot from a plot of distinct positions.
+     * domClicks by clickX,clickY is exactly what the overlay asks for. The
+     * cross-origin spec already proves the overlay fetches it and gets a
+     * non-empty result -- what it does not check is the SHAPE of what came
+     * back, only that resultsTotal is above zero.
+     *
+     * Three clicks share (100,200), so the point must come back with weight 3
+     * beside points of 1 and 2. That is the only arrangement that tells a
+     * weighted plot from a plot of distinct positions, and a heatmap that
+     * dropped the weights would still answer resultsTotal > 0.
      */
     public function testTheHeatmapQueryReturnsWeightedPoints(): void
     {
