@@ -757,10 +757,76 @@ test.describe('custom reports', () => {
 
             await expect(body).not.toHaveText('');
             await expect(body).toContainText('Custom Report');
+
+            // A MESSAGE, and a specific one. "A broken error page with no msg"
+            // is the whole symptom, so an empty notice is as much a failure
+            // here as no page at all.
             await expect(page.locator('.notice')).toContainText('needs a name');
+            await expect(page.locator('.notice')).not.toHaveText('');
 
             // ...and the builder is back, so the author can fix it here.
             await expect(page.locator('#customReportForm')).toBeVisible();
+
+            // THE WORK IS STILL THERE. The blocks come back from the submitted
+            // definition, not from the stored row -- there is no stored row --
+            // so a refusal that redrew an empty canvas would have thrown away
+            // everything the author had built.
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+
+            // ...and the screen is correctly gated on arrival, saying which
+            // rule is unmet rather than offering a Save that will fail again.
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+            await expect(page.locator('#customReportBlocker')).toContainText('name');
+        });
+
+        /**
+         * The same refusal, driven with a BARE TREND.
+         *
+         * A trend is the one type whose query is non-empty before the author
+         * has chosen anything -- newWidget() fills in the fixed date dimension
+         * and its sort -- so it is the type most likely to look configured to
+         * code that only checks whether `query` has anything in it. It reaches
+         * the refusal with no metrics and no report name, which is the shape
+         * that has to come back legible.
+         */
+        test('a bare trend refused for a missing name comes back with its block',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await startWidget(page, 'trend');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'load' }),
+                page.evaluate(() => {
+                    document.getElementById('customReportDefinition').value = JSON.stringify({
+                        title: '',
+                        widgets: [{
+                            type: 'trend', title: 'Widget 1', rowspan: 1, colspan: 6,
+                            query: { dimensions: 'date', sort: 'date' },
+                            id: 'w1', container: 'w1',
+                        }],
+                    });
+                    document.getElementById('customReportName').value = '';
+
+                    HTMLFormElement.prototype.submit.call(
+                        document.getElementById('customReportForm'));
+                }),
+            ]);
+
+            await expect(page.locator('.notice')).toContainText('needs a name');
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            await expect(page.locator('.owa_builderBlockType')).toHaveText('Trend chart');
+
+            // The trend names no metrics, so it is marked as unfinished too --
+            // the canvas says which block, not just that something is wrong.
+            await expect(page.locator('.owa_builderBlockIncomplete')).toHaveCount(1);
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+
+            // ...and it can be opened and fixed from here.
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
         });
 
         /**
