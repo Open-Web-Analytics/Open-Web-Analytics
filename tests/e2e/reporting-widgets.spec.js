@@ -576,16 +576,25 @@ test.describe('the report grid gives every widget a usable width', () => {
      * queried for, which is the only place they can come from when the rows are
      * empty.
      *
-     * The fixture seeds no clicks, which is what makes the Clicks report a
-     * reliable empty state. If that ever changes, point this at another report
-     * with nothing in it rather than weakening the assertions.
+     * WHICH REPORT IS EMPTY IS A FIXTURE FACT, AND IT MOVED.
+     *
+     * This used the Clicks report, on the grounds that the fixture seeded no
+     * clicks. It seeds six now -- the click reports had no coverage precisely
+     * because nothing produced a click -- so the Clicks report is a chart of
+     * real data and no longer says anything about the empty case.
+     *
+     * Pointed at Feeds instead, which nothing seeds: feedRequests, feedReaders
+     * and feedSubscriptions have no fixture and no handler firing in this
+     * suite. Moved rather than weakened, per the note that used to be here: an
+     * empty-state test whose subject stopped being empty should change subject,
+     * not lower its standards.
      */
     test('a trend with no data is drawn as a zero-filled period', async ({ page }) => {
         await login(page);
         await page.setViewportSize({ width: 1500, height: 1200 });
 
         await page.goto(
-            `?owa_do=base.report&owa_reportId=clicks&owa_siteId=${FIXTURE.siteId}`
+            `?owa_do=base.report&owa_reportId=feeds&owa_siteId=${FIXTURE.siteId}`
             + '&owa_period=last_thirty_days',
             { waitUntil: 'networkidle' }
         );

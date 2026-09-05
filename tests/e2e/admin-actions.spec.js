@@ -691,8 +691,22 @@ test.describe('admin: the site control fan-out', () => {
 
         const after = (await tileId()).trim();
 
-        expect(after, 'the tile still names the Profile we came from').toBe(wanted);
-        expect(after, 'switching Profile left us on the same Profile').not.toBe(before);
+        // THE claim: you land on the Profile you picked. True whether or not
+        // that is the one you were already on.
+        expect(after, 'clicking a Profile did not land on that Profile').toBe(wanted);
+
+        /*
+         * And that it MOVED -- but only where there was somewhere to move to.
+         *
+         * CI's scratch install has a single Profile, so the one you can pick is
+         * the one you are on and "it changed" is unassertable there. Asserting
+         * it unconditionally passed on this box, which has several, and failed
+         * in CI for a reason that had nothing to do with the fix.
+         */
+        if (wanted !== before) {
+            expect(after, 'switching Profile left us on the Profile we came from')
+                .not.toBe(before);
+        }
     });
 
     /** The Properties column answers across its whole row too, via its handler. */
