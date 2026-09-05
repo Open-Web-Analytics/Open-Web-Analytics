@@ -296,6 +296,22 @@ class DbColumn {
     }
 
      /**
+      * THE COLUMN'S OWN DEFINITION, AND NOTHING ELSE.
+      *
+      * An index is a TABLE-level clause, not part of a column definition. This
+      * used to append `, INDEX (col)` here, which reads fine inside a CREATE
+      * TABLE's parenthesised list and is a syntax error everywhere else -- so
+      * `ALTER TABLE t ADD col VARCHAR(255), INDEX (col)` was rejected outright
+      * and addColumn() had never once worked for an indexed column.
+      *
+      * It went unnoticed because a fresh install CREATEs its tables from the
+      * current entity, indexes and all; only an upgrade adding an indexed
+      * column to an existing table takes this path, and that is what stopped a
+      * live upgrade dead at Update026.
+      *
+      * createTable() asks isIndexed() and writes the table-level clause
+      * itself; Entity::addColumn() adds the index as its own statement.
+      *
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
       *                                table that declares a composite one
       */
@@ -328,13 +344,19 @@ class DbColumn {
             //$definition .= sprintf(", INDEX (%s)", $this->get('name'));
         endif;
 
-        // check for index
-        if ($this->get('index') == true):
-            $definition .= sprintf(", INDEX (%s)", $this->get('name'));
-        endif;
-
          return $definition;
 
+     }
+
+     /**
+      * Whether this column asked for an index.
+      *
+      * The clause itself belongs to whoever is writing the statement, because
+      * where it may legally go depends on the statement. See getDefinition().
+      */
+     function isIndexed() {
+
+         return (bool) $this->get('index');
      }
 
      function setDataType($type) {

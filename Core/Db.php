@@ -3224,10 +3224,21 @@ class Db extends \OWA\Core\Base {
 
         // Control loop
 
+        // Index clauses are TABLE-level and are collected as we go. They used
+        // to arrive glued onto the end of a column's definition, which is
+        // legal only here -- and made addColumn() emit a syntax error for
+        // every indexed column. See DbColumn::getDefinition().
+        $indexes = array();
+
         foreach ($all_cols as $k => $v){
 
             // get column definition
             $columns .= $v.' '.$entity->getColumnDefinition($v, (bool) $partition_column);
+
+            if ( $entity->isColumnIndexed( $v ) ) {
+
+                $indexes[] = sprintf( 'INDEX (%s)', $v );
+            }
 
             // Add commas to column statement
             if ($i < $count - 1):
@@ -3238,6 +3249,11 @@ class Db extends \OWA\Core\Base {
 
             $i++;
 
+        }
+
+        if ( $indexes ) {
+
+            $columns .= ', ' . implode( ', ', $indexes );
         }
 
         // make table options

@@ -943,6 +943,16 @@ class Entity {
     
     }
     
+    /**
+     * Adds a declared column to the table this entity is already persisted as.
+     *
+     * The index, when the column declares one, is a SECOND statement. MySQL
+     * will not take `ALTER TABLE t ADD col VARCHAR(255), INDEX (col)` -- the
+     * index clause is legal only inside a CREATE TABLE's column list -- and
+     * building it into the column definition meant this method had never
+     * worked for an indexed column on any install that reached it, which is
+     * every upgrade rather than any fresh install.
+     */
     function addColumn($column_name) {
         
         $def = $this->getColumnDefinition($column_name);
@@ -950,12 +960,17 @@ class Entity {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $status = $db->addColumn($this->getTableName(), $column_name, $def);
         
-        if ($status == true):
-            return true;
-        else:
+        if (! $status) {
             return false;
-        endif;
+        }
         
+        if ($this->isColumnIndexed($column_name)) {
+            // addIndex() is itself a no-op when the index is already there, so
+            // a re-run after a half-finished ALTER finishes the job.
+            return (bool) $db->addIndex($this->getTableName(), $column_name);
+        }
+        
+        return true;
     }
     
     function dropColumn($column_name) {
@@ -1020,11 +1035,31 @@ class Entity {
     
     function getColumnDefinition($column_name, $omit_primary_key = false) {
     
+        return $this->getColumn($column_name)->getDefinition($omit_primary_key);
+    }
+    
+    /**
+     * Whether a column declared an index.
+     *
+     * Separate from its definition because an index is a table-level clause:
+     * createTable() may write it inline, an ALTER may not. See
+     * DbColumn::getDefinition().
+     */
+    function isColumnIndexed($column_name) {
+    
+        return $this->getColumn($column_name)->isIndexed();
+    }
+    
+    /**
+     * The DbColumn object behind a column name.
+     */
+    function getColumn($column_name) {
+    
         if (empty($this->properties)) {
-            return $this->$column_name->getDefinition($omit_primary_key);
-        } else {
-            return $this->properties[$column_name]->getDefinition($omit_primary_key);
+            return $this->$column_name;
         }
+        
+        return $this->properties[$column_name];
     }
     
     /**
