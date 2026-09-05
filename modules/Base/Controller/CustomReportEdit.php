@@ -105,10 +105,11 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'custom_report_id', $report ? $report['id'] : '' );
 
         /*
-         * The definition the form starts from. A NEW report starts from one
-         * empty widget rather than none, because a report with no widgets
-         * cannot be saved and an empty form gives the author nothing to react
-         * to.
+         * The definition the form starts from. A NEW report starts from NONE --
+         * no widgets and no report metric set -- so the first thing an author
+         * does is choose what to build. It used to be seeded with one table
+         * widget, which meant a report could be saved without a single choice
+         * having been made, and what came out was a table of nothing.
          */
         $definition = $report ? (array) $report['definition'] : array();
 
@@ -182,7 +183,6 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'full_width_types',   \OWA\Module\Base\Classes\CustomReports::FULL_WIDTH_TYPES );
         $this->set( 'single_field_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_FIELD_TYPES );
         $this->set( 'single_metric_types', \OWA\Module\Base\Classes\CustomReports::SINGLE_METRIC_TYPES );
-        $this->set( 'own_metric_types',   \OWA\Module\Base\Classes\CustomReports::OWN_METRIC_TYPES );
         $this->set( 'chart_types',        \OWA\Module\Base\Classes\CustomReports::CHART_TYPES );
         $this->set( 'fixed_dimensions', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSIONS );
         $this->set( 'fixed_dimension_extra', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSION_EXTRA );

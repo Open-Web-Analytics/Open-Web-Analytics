@@ -56,32 +56,46 @@ $owa_max        = (int) $view->get('max_widgets');
 
     <div class="owa_builderHeader">
         <div class="owa_builderField">
-            <label for="customReportName">Report name</label>
+            <?php
+                /*
+                 * MARKED REQUIRED, because the placeholder makes an empty one
+                 * look filled in.
+                 *
+                 * "Untitled report" sits in the field greyed out, which reads
+                 * as a default that has already been supplied rather than as an
+                 * example of what to type -- so pressing Save with it untouched
+                 * was the most ordinary mistake there is, and the refusal it
+                 * produced was the least informative page in the application.
+                 */
+            ?>
+            <div class="owa_builderFieldLabel">
+                <label for="customReportName">Report name</label>
+                <span class="owa_builderRequired">Required</span>
+            </div>
             <input type="text" id="customReportName" name="customReportName"
                    placeholder="Untitled report"
                    value="<?php $view->out( $owa_name ); ?>" />
         </div>
 
-        <div class="owa_builderField">
-            <label for="reportMetricSet">Report metric set</label>
-            <?php
-                /*
-                 * Enhanced by CHOSEN, the same control the grid's secondary
-                 * dimension picker uses: type to filter a long list, and each
-                 * thing you pick becomes a pill with its own remove.
-                 *
-                 * The same control rather than one of our own, because a second
-                 * searchable multi-select that behaved almost the same would be
-                 * the kind of difference nobody can justify later.
-                 */
-            ?>
-            <select id="reportMetricSet" class="owa_builderChosen" multiple="multiple"></select>
-            <div class="owa_builderHelp">
-                The metrics this report offers as a whole, independent of any one widget.
-                At most <?php $view->out( (int) $view->get('max_metrics') ); ?>, and they
-                have to be measured in the same place &mdash; the list narrows as you choose.
-            </div>
-        </div>
+        <?php
+            /*
+             * THE REPORT METRIC SET IS NOT ASKED FOR HERE ANY MORE.
+             *
+             * It was a second place to answer "what does this report measure",
+             * beside the one inside every widget, and the two did not compose:
+             * a widget that named nothing inherited the set, so the same
+             * report drew different things depending on a field further up the
+             * page that said nothing about which widget it would land in. An
+             * author reading a widget could not tell what it would show.
+             *
+             * So a widget names its own metrics, always -- see
+             * CustomReports::validateQuery(), which now refuses one that names
+             * none. The key is still READ: a report saved while the control
+             * existed keeps its set, keeps rendering, and keeps validating, and
+             * the script below carries the stored value back out untouched
+             * rather than dropping it on the next save.
+             */
+        ?>
     </div>
 
     <div class="owa_builderSectionHeader">
@@ -96,6 +110,20 @@ $owa_max        = (int) $view->get('max_widgets');
          * being that the layout is legible here rather than only after saving.
          */
     ?>
+    <?php
+        /*
+         * Shown only while the canvas is empty, which for a NEW report is what
+         * it opens as. Server-rendered and hidden rather than built in script,
+         * so it is in the page for a reader whose stylesheet or script is slow
+         * -- and so its words live in the template with the rest of them.
+         */
+    ?>
+    <div id="customReportEmpty" class="owa_builderEmpty" style="display:none;">
+        <span class="owa_builderEmptyTitle">Nothing in this report yet.</span>
+        <span class="owa_builderEmptyBody">A report is its widgets &mdash; a table,
+            a chart, a row of totals. Add at least one; it cannot be saved empty.</span>
+    </div>
+
     <div id="customReportCanvas" class="owa_builderCanvas"></div>
 
     <div class="owa_builderActions">
@@ -106,10 +134,48 @@ $owa_max        = (int) $view->get('max_widgets');
              * site filter brings a form of its own.
              */
         ?>
-        <input type="submit" id="customReportSubmit" class="owa_button" value="Save report" />
+        <?php
+            /*
+             * owa-button, the class every other save form on the installation
+             * uses -- the sibling visualization builder included.
+             *
+             * This said `owa_button`, with an underscore, and NOTHING defines
+             * that: not owa.css, not owa.report.css, not the combined bundle.
+             * So the one affirmative control on the screen rendered as a bare
+             * browser submit while Save Visualization two screens over was the
+             * orange primary, and the difference was invisible in review
+             * because a class name reads as styling whether or not a rule
+             * exists for it.
+             */
+        ?>
+        <?php
+            /*
+             * Disabled in the MARKUP, not only by draw().
+             *
+             * draw() sets this on every canvas change and is the thing that
+             * keeps it right, but it does not run until the script at the foot
+             * of the page does -- so a new report drew an enabled Save for as
+             * long as that took, and pressing it in that window posted an empty
+             * definition. Rendered from the same fact the canvas is rendered
+             * from, there is no window.
+             */
+        ?>
+        <input type="submit" id="customReportSubmit" class="owa-button" value="Save report"
+               <?php echo empty( $owa_definition['widgets'] ) ? 'disabled="disabled"' : ''; ?> />
+
+        <?php
+            /*
+             * WHY Save will not go, next to the button that will not go.
+             *
+             * A disabled control with no explanation is the worst of both: it
+             * says something is wrong and not what. The text is written by
+             * refreshSaveState() from the same rules the server applies.
+             */
+        ?>
+        <span id="customReportBlocker" class="owa_builderBlocker" style="display:none;"></span>
 
         <?php if ( $owa_id ): ?>
-        <a class="owa_button owa_buttonQuiet" href="<?php echo $view->makeLink( array(
+        <a class="owa-button owa-button-quiet" href="<?php echo $view->makeLink( array(
             'do'       => 'base.report',
             'reportId' => 'custom-' . $owa_id,
         ), true ); ?>">View</a>
@@ -271,14 +337,35 @@ $owa_max        = (int) $view->get('max_widgets');
              * widget has no way to draw.
              */
         ?>
+        <?php
+            /*
+             * The "Required" marks are TOGGLED, not written once.
+             *
+             * Which of these must be answered depends on the widget's type --
+             * a card and a pie draw exactly one dimension and are refused
+             * without it, while a grid may name none -- so a mark painted into
+             * the markup would be wrong on half the types. applyTypeRules()
+             * sets them from the same lists the server validates against.
+             *
+             * Kept in a row beside the label rather than inside it, because
+             * that label's text is rewritten per type and would take the mark
+             * with it.
+             */
+        ?>
         <div class="owa_builderField" id="dlgMetricsField">
-            <label for="dlgMetrics" id="dlgMetricsLabel">Metrics</label>
+            <div class="owa_builderFieldLabel">
+                <label for="dlgMetrics" id="dlgMetricsLabel">Metrics</label>
+                <span class="owa_builderRequired" id="dlgMetricsRequired">Required</span>
+            </div>
             <select id="dlgMetrics" class="owa_builderChosen" multiple="multiple"></select>
             <div class="owa_builderHelp" id="dlgMetricsHelp"></div>
         </div>
 
         <div class="owa_builderField" id="dlgDimensionsField">
-            <label for="dlgDimensions" id="dlgDimensionsLabel">Dimensions</label>
+            <div class="owa_builderFieldLabel">
+                <label for="dlgDimensions" id="dlgDimensionsLabel">Dimensions</label>
+                <span class="owa_builderRequired" id="dlgDimensionsRequired">Required</span>
+            </div>
             <select id="dlgDimensions" class="owa_builderChosen" multiple="multiple"></select>
             <div class="owa_builderHelp" id="dlgDimensionsHelp"></div>
         </div>
@@ -355,6 +442,14 @@ $owa_max        = (int) $view->get('max_widgets');
              */
         ?>
         <div id="dlgConstraintRows" class="owa_builderConstraints"><ul></ul></div>
+        <?php
+            /*
+             * Why Done will not close. A half-filled row used to be dropped
+             * silently on the way out, which produced a widget with no filter
+             * and nothing to say one had been asked for.
+             */
+        ?>
+        <div id="dlgConstraintError" class="owa_builderRowError" style="display:none;"></div>
         <div class="owa_builderHelp">
             Rows are combined, e.g. <code>medium</code> is <code>organic-search</code>
             <em>and</em> <code>browserType</code> contains <code>Chrome</code>.
@@ -494,16 +589,13 @@ $owa_max        = (int) $view->get('max_widgets');
     var CHART_TYPES = <?php echo json_encode( array_values( (array) $view->get('chart_types') ) ); ?>;
 
     /*
-     * Types that name their own metrics and cannot fall back to the report
-     * metric set. Used to say so on the form -- an author who leaves the
-     * metrics of a card empty is not going to inherit anything, they are going
-     * to be refused on save.
+     * OWN_METRIC_TYPES used to be read here, to say on the form which types
+     * could not fall back to the report metric set. Nothing falls back any
+     * more -- every widget names its own -- so the distinction has nothing left
+     * to tell an author, and the list is not sent. The constant still exists
+     * server-side, where it is what makes the refusal for those types say the
+     * more precise thing.
      */
-    var OWN_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('own_metric_types') ) ); ?>;
-
-    function needsOwnMetrics( type ) {
-        return OWN_METRIC_TYPES.indexOf( type ) !== -1;
-    }
 
     /*
      * The grid the report is drawn on. These mirror Core\ReportGrid, which
@@ -578,11 +670,29 @@ $owa_max        = (int) $view->get('max_widgets');
      */
     var widgets = ( definition && definition.widgets ) ? definition.widgets.slice() : [];
 
-    // A new report starts from one block. A report with no widgets cannot be
-    // saved, and an empty canvas gives the author nothing to press.
-    if ( ! widgets.length ) {
-        widgets = [ newWidget( 0, 'grid' ) ];
-    }
+    /*
+     * A NEW REPORT STARTS EMPTY.
+     *
+     * It used to start from one table block, so the canvas was never blank --
+     * and the cost of that was a report you could save without having decided
+     * anything. The block was already named, already a table, already the right
+     * width; pressing Save produced a report with a table of nothing in it, and
+     * the author had answered no question to get there.
+     *
+     * Empty, the first thing on the screen is the choice that actually starts a
+     * report: what kind of widget. Save is refused until one exists, here and
+     * on the server both.
+     */
+
+    /*
+     * The report-level metric set, as it was stored.
+     *
+     * Not editable any more -- see the note where the control used to be -- but
+     * carried so that saving a report built before it was withdrawn does not
+     * silently strip it. Read once, written back on submit, never looked at in
+     * between.
+     */
+    var reportMetrics = ( definition && definition.metrics ) ? definition.metrics : '';
 
     var editing = null;   // index of the widget the dialog is open on
 
@@ -812,12 +922,15 @@ $owa_max        = (int) $view->get('max_widgets');
      * list from the select and only re-reads it on chosen:updated. An option
      * left in place but unusable would still appear in the search results.
      */
-    function narrowMetrics( selector ) {
+    function narrowMetrics() {
 
-        var $select  = jQuery( selector );
+        var $select  = jQuery( '#dlgMetrics' );
         var selected = $select.val() || [];
 
-        var full = selected.length >= ( selector === '#dlgMetrics' ? maxMetrics() : MAX_METRICS );
+        // The widget's own cap, which depends on its type. It used to also
+        // serve the report metric set, whose cap was MAX_METRICS flat; that
+        // control is gone, so there is one caller and one cap.
+        var full = selected.length >= maxMetrics();
 
         var allowed = METRICS.filter( function ( choice ) {
 
@@ -836,7 +949,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         fillChoices( $select, allowed, selected );
 
-        chosenSync( selector );
+        chosenSync( '#dlgMetrics' );
     }
 
     /**
@@ -913,11 +1026,26 @@ $owa_max        = (int) $view->get('max_widgets');
                 .append( jQuery( '<span class="owa_builderBlockSpan">' )
                     .text( colspan + ' × ' + rowspan ) ) );
 
-            var summary = names( widget.query && widget.query.metrics )
+            var summary = widgetMetrics( widget )
                 .concat( names( widget.query && widget.query.dimensions ) );
 
+            /*
+             * A block that names no metrics is marked ON THE CANVAS, not only
+             * in the sentence under the Save button. The canvas is where an
+             * author is looking, and "Widget 3 does not say what it measures"
+             * is only useful if Widget 3 can be picked out of a row of blocks.
+             *
+             * Not marked at all where a report metric set exists, because there
+             * the widget is inheriting rather than unfinished -- the same
+             * exception the server makes.
+             */
+            if ( ! reportMetrics && ! widgetMetrics( widget ).length ) {
+
+                $block.addClass( 'owa_builderBlockIncomplete' );
+            }
+
             $block.append( jQuery( '<div class="owa_builderBlockSummary">' )
-                .text( summary.length ? summary.join( ', ' ) : 'Nothing configured yet' ) );
+                .text( summary.length ? summary.join( ', ' ) : 'No metrics chosen yet' ) );
 
             $block.append( jQuery( '<a href="#" class="owa_builderEdit">' ).text( 'Edit' ) );
 
@@ -932,7 +1060,101 @@ $owa_max        = (int) $view->get('max_widgets');
                     .append( jQuery( '<span>' ).text( 'Add widget' ) ) );
         }
 
+        /*
+         * WHAT AN EMPTY CANVAS SAYS.
+         *
+         * The plus alone is a control, not an instruction: on a blank screen it
+         * reads as one option among others rather than as the only thing there
+         * is to do. So an empty canvas says what a report is made of and that
+         * it needs at least one, beside a plus that is now the obvious target.
+         *
+         * Drawn as a sibling of the plus rather than replacing it, because the
+         * plus is where the widget will appear -- moving it for the empty case
+         * would make the first widget land somewhere other than where it was
+         * added.
+         */
+        $canvas.toggleClass( 'owa_builderCanvasEmpty', ! widgets.length );
+
+        jQuery( '#customReportEmpty' ).toggle( ! widgets.length );
+
         jQuery( '#widgetBudget' ).text( widgets.length + ' of ' + MAX + ' widgets' );
+
+        refreshSaveState();
+    }
+
+    /**
+     * Why this report cannot be saved yet, or '' if it can.
+     *
+     * THE SAME RULES THE SERVER APPLIES, asked before the round trip rather
+     * than instead of it. Every one of these is refused by
+     * CustomReports::validate() or by the save controller's own validate(); the
+     * point of asking here is that the author is told while the thing they have
+     * to fix is still in front of them.
+     *
+     * In the order an author would fix them: something to save, a name for it,
+     * then whether each widget says what it measures.
+     */
+    function saveBlocker() {
+
+        if ( ! widgets.length ) {
+            return 'Add at least one widget before saving.';
+        }
+
+        /*
+         * The NAME. Required by CustomReportSave::validate(), and the field
+         * carries a placeholder -- "Untitled report" -- which reads as a value
+         * that is already there. Leaving it empty was the one refusal an author
+         * could hit without having done anything they would recognise as wrong.
+         */
+        if ( ! jQuery.trim( jQuery( '#customReportName' ).val() || '' ) ) {
+            return 'Give the report a name before saving.';
+        }
+
+        /*
+         * ...and every widget names its own metrics.
+         *
+         * Unless the report carries a metric set from before that control was
+         * withdrawn, which is the one case the server still lets inherit -- the
+         * builder has to allow exactly what the server allows, or it refuses an
+         * old report its author cannot fix.
+         */
+        if ( ! reportMetrics ) {
+
+            for ( var i = 0; i < widgets.length; i++ ) {
+
+                if ( ! widgetMetrics( widgets[ i ] ).length ) {
+
+                    return ( widgets[ i ].title || ( 'Widget ' + ( i + 1 ) ) )
+                         + ' does not say what it measures. Open it and choose a metric.';
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /** The metric names one widget asks for. */
+    function widgetMetrics( widget ) {
+
+        return names( widget && widget.query && widget.query.metrics );
+    }
+
+    /**
+     * Save is available exactly when the report could actually be stored.
+     *
+     * Disabled rather than hidden: the button is where an author expects it,
+     * and the sentence beside it says why it will not go yet. A control that
+     * vanishes reads as a page that has not finished loading.
+     */
+    function refreshSaveState() {
+
+        var blocker = saveBlocker();
+
+        jQuery( '#customReportSubmit' )
+            .prop( 'disabled', !! blocker )
+            .attr( 'title', blocker );
+
+        jQuery( '#customReportBlocker' ).text( blocker ).toggle( !! blocker );
     }
 
     // ------------------------------------------------------------------
@@ -942,6 +1164,9 @@ $owa_max        = (int) $view->get('max_widgets');
     function openDialog( index ) {
 
         editing = index;
+
+        // A refusal from last time is not about this widget.
+        jQuery( '#dlgConstraintError' ).text( '' ).hide();
 
         var widget = widgets[ index ];
         var query  = widget.query || {};
@@ -1044,26 +1269,49 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( '#dlgMetricsLabel' ).text( oneMetric ? 'Metric' : 'Metrics' );
 
         /*
-         * "Leave empty to use the report metric set" is only true where it IS
-         * an option. A type that names its own metrics has no fallback -- an
-         * author who left the field empty on the strength of that sentence
-         * would be refused on save, by the rule the sentence contradicted.
+         * THERE IS NO LONGER ANYTHING TO LEAVE THIS EMPTY FOR.
+         *
+         * The sentence here used to be "Leave empty to use the report metric
+         * set" on every type that could inherit one, and a contradiction of it
+         * on the types that could not. With the set withdrawn from the builder
+         * the first half is an offer nothing fulfils -- an author who took it
+         * would be refused on save -- so both halves go and the field says the
+         * one thing that is now true of every type: it has to be answered.
          */
-        var setFallback = needsOwnMetrics( type )
-            ? ' A ' + name.toLowerCase() + ' names its own; it does not take the report metric set.'
-            : ' Leave empty to use the report metric set.';
+        var required = ' Required: a widget draws what it names, and nothing else.';
+
+        /*
+         * ...and the mark beside the label says the same thing at a glance.
+         *
+         * Metrics are required on every type UNLESS the report carries a metric
+         * set from before that control was withdrawn -- the one case the server
+         * still lets a widget inherit. Marking it required there would be
+         * telling an author to fill a field they can legitimately leave alone.
+         */
+        jQuery( '#dlgMetricsRequired' ).toggle( ! reportMetrics );
 
         jQuery( '#dlgMetricsHelp' ).text( oneMetric
-            ? 'The one metric this ' + name.toLowerCase() + ' draws.'
+            ? 'The one metric this ' + name.toLowerCase() + ' draws.' + required
             : ( type === 'trend' || type === 'trend-card'
                 ? 'Up to ' + MAX_METRICS + '. The first is charted; all of them are '
                   + 'drawn as boxes ' + ( type === 'trend-card' ? 'above' : 'under' ) + ' it.'
-                  + setFallback
-                : 'Up to ' + MAX_METRICS + '.' + setFallback ) );
+                  + required
+                : 'Up to ' + MAX_METRICS + '.' + required ) );
 
         var fixed = fixedDimension( type );
 
         jQuery( '#dlgDimensionsField' ).toggle( picksDimensions( type ) );
+
+        /*
+         * A dimension is REQUIRED exactly where the type draws exactly one --
+         * a card ranks rows by it, a pie divides by it, and neither renders
+         * without it. SINGLE_FIELD_TYPES is the server's own list, so the mark
+         * cannot come to disagree with the rule that enforces it.
+         *
+         * Everywhere else it is optional: a grid may be a row of totals, and a
+         * trend's breakdown is an addition to a chart that draws without one.
+         */
+        jQuery( '#dlgDimensionsRequired' ).toggle( single );
 
         if ( fixed !== null ) {
 
@@ -1098,7 +1346,7 @@ $owa_max        = (int) $view->get('max_widgets');
         // A sort orders rows, and these types have none to order.
         jQuery( '#dlgSortField' ).toggle( picksDimensions( type ) );
 
-        narrowMetrics( '#dlgMetrics' );
+        narrowMetrics();
 
         if ( picksDimensions( type ) ) {
             narrowDimensions();
@@ -1363,13 +1611,23 @@ $owa_max        = (int) $view->get('max_widgets');
         } );
     }
 
+    /** One constraint row read off its controls. */
+    function readConstraintRow( row ) {
+
+        return {
+            name:  jQuery( row ).find( 'select.dim-list' ).val() || '',
+            op:    jQuery( row ).find( 'select.operator-list' ).val() || '==',
+            value: jQuery.trim( jQuery( row ).children( '.constraintValueField' ).val() || '' )
+        };
+    }
+
     /**
      * The rows, back as the stored string.
      *
-     * A row with no dimension or no value contributes NOTHING -- it filters
-     * nothing, and writing `==` into the definition would be a clause the
-     * server then has to reject. That is also what lets the form always carry
-     * one empty row without it meaning anything.
+     * A COMPLETELY empty row contributes nothing, which is what lets the form
+     * always carry a blank one without it meaning anything. A HALF-filled row
+     * is a different thing and is not silently dropped -- see
+     * constraintRowProblem(), which stops the dialog closing on one.
      */
     function readConstraintRows() {
 
@@ -1377,22 +1635,87 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( '#dlgConstraintRows > ul > li' ).each( function () {
 
-            var name  = jQuery( this ).find( 'select.dim-list' ).val();
-            var op    = jQuery( this ).find( 'select.operator-list' ).val();
-            var value = jQuery.trim( jQuery( this ).children( '.constraintValueField' ).val() || '' );
+            var part = readConstraintRow( this );
 
-            if ( name && value ) {
-                out.push( name + ( op || '==' ) + value );
+            if ( part.name && part.value ) {
+                out.push( part.name + part.op + part.value );
             }
         } );
 
         return out.join( ',' );
     }
 
+    /**
+     * What is wrong with the constraint rows, or '' if nothing is.
+     *
+     * A HALF-FILLED ROW USED TO VANISH.
+     *
+     * readConstraintRows() keeps a row only when it has both a dimension and a
+     * value, and dropped anything else without a word. So an author who chose
+     * `medium`, chose an operator and then tabbed past the value -- or typed a
+     * value and never picked the dimension -- got a widget with no filter on
+     * it, no message, and no way to tell it apart from one they had never
+     * filtered. The query engine treats exactly this as an error worth refusing
+     * ("a missing value is not a request for everything"); the builder treated
+     * it as nothing.
+     *
+     * An entirely blank row is still nothing, because there is always one on
+     * the form and it does not mean the author left something out.
+     */
+    function constraintRowProblem() {
+
+        var problem = '';
+
+        jQuery( '#dlgConstraintRows > ul > li' ).each( function ( i ) {
+
+            if ( problem ) {
+                return;
+            }
+
+            var part = readConstraintRow( this );
+
+            // Untouched. There is always one of these.
+            if ( ! part.name && ! part.value ) {
+                return;
+            }
+
+            if ( ! part.name ) {
+                problem = 'Constraint ' + ( i + 1 ) + ' has a value but no dimension. '
+                        + 'Choose what to constrain on, or clear the value.';
+                return;
+            }
+
+            if ( ! part.value ) {
+                problem = 'Constraint ' + ( i + 1 ) + ' constrains on ' + part.name
+                        + ' but gives no value. An empty value is not a request for '
+                        + 'everything -- fill it in, or remove the row.';
+            }
+        } );
+
+        return problem;
+    }
+
+    /**
+     * Write the dialog back onto the widget.
+     *
+     * Returns FALSE when it refused to, which is what stops Done closing on a
+     * half-filled constraint row -- the row is the thing that needs fixing and
+     * it is inside this dialog, so closing would hide it.
+     *
+     * @return bool
+     */
     function applyDialog() {
 
         if ( editing === null ) {
-            return;
+            return true;
+        }
+
+        var problem = constraintRowProblem();
+
+        jQuery( '#dlgConstraintError' ).text( problem ).toggle( !! problem );
+
+        if ( problem ) {
+            return false;
         }
 
         var widget = widgets[ editing ];
@@ -1531,6 +1854,8 @@ $owa_max        = (int) $view->get('max_widgets');
         editing = null;
 
         draw();
+
+        return true;
     }
 
     chosenify( '#dlgMetrics' );
@@ -1538,7 +1863,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
     // Choosing a metric changes what else is askable alongside it.
     jQuery( '#dlgMetrics' ).on( 'change', function () {
-        narrowMetrics( '#dlgMetrics' );
+        narrowMetrics();
         // Choosing a metric can rule dimensions out, so both are redrawn.
         narrowDimensions();
         refreshLinkControl();
@@ -1560,8 +1885,6 @@ $owa_max        = (int) $view->get('max_widgets');
     jQuery( '#dlgMoreReport' ).on( 'change', function () {
         dialogMore = jQuery( this ).val() || '';
     } );
-
-    jQuery( '#reportMetricSet' ).on( 'change', function () { narrowMetrics( '#reportMetricSet' ); } );
 
     jQuery( '#typeDialog' ).dialog( {
         autoOpen: false,
@@ -1607,7 +1930,15 @@ $owa_max        = (int) $view->get('max_widgets');
         // dialog chrome cannot be styled through #widgetDialog alone.
         dialogClass: 'owa_widgetDialogFrame',
         buttons: [
-            { text: 'Done', click: function () { applyDialog(); jQuery( this ).dialog( 'close' ); } },
+            /*
+             * Closed only if the dialog could be applied. A refused apply
+             * leaves the modal open with the reason on it: the row that needs
+             * fixing is in here, and closing would take the author away from
+             * the one control the message is about.
+             */
+            { text: 'Done', click: function () {
+                if ( applyDialog() ) { jQuery( this ).dialog( 'close' ); }
+            } },
             { text: 'Cancel', click: function () { editing = null; jQuery( this ).dialog( 'close' ); } }
         ]
     } );
@@ -1628,12 +1959,16 @@ $owa_max        = (int) $view->get('max_widgets');
 
             widgets.splice( index, 1 );
 
-            // A report with no widgets cannot be saved, so removing the last
-            // one leaves a fresh block rather than an empty canvas.
-            if ( ! widgets.length ) {
-                widgets = [ newWidget( 0 ) ];
-            }
-
+            /*
+             * Removing the last one leaves the canvas EMPTY.
+             *
+             * It used to put a fresh block back, on the reasoning that a report
+             * with no widgets cannot be saved and so an empty canvas is a dead
+             * end. It is not a dead end -- the plus is right there -- and the
+             * replacement was worse than the emptiness: an author who removed a
+             * widget got another one, of a type they had not chosen, which then
+             * had to be removed as well.
+             */
             draw();
         } )
         .on( 'click', '#addWidget', function ( e ) {
@@ -1667,22 +2002,42 @@ $owa_max        = (int) $view->get('max_widgets');
         openDialog( widgets.length - 1 );
     } );
 
-    fillChoices( jQuery( '#reportMetricSet' ), METRICS, names( definition.metrics ) );
-
-    chosenify( '#reportMetricSet' );
-
-    narrowMetrics( '#reportMetricSet' );
+    /*
+     * The name is one of the things Save waits for, so it is re-checked as it
+     * is typed rather than only when a widget changes.
+     */
+    jQuery( '#customReportName' ).on( 'input', refreshSaveState );
 
     // The definition is assembled at submit rather than kept in step with every
     // keystroke: one place it is built means one place it can be wrong.
-    jQuery( '#customReportForm' ).on( 'submit', function () {
+    jQuery( '#customReportForm' ).on( 'submit', function ( e ) {
+
+        /*
+         * A disabled Save is not the whole guard.
+         *
+         * Pressing Enter in a text field submits the form whether or not there
+         * is a submit button to press, so an unsaveable report could still be
+         * posted. Stopped here, the reason stays on the screen beside the
+         * button instead of the author being sent to a refusal page.
+         */
+        if ( saveBlocker() ) {
+
+            e.preventDefault();
+
+            refreshSaveState();
+
+            return false;
+        }
 
         var built = { title: jQuery( '#customReportName' ).val(), widgets: [] };
 
-        var metricSet = jQuery( '#reportMetricSet' ).val() || [];
-
-        if ( metricSet.length ) {
-            built.metrics = metricSet.join( ',' );
+        /*
+         * Whatever set the report already had, unchanged. There is no control
+         * for it, so there is nothing to read -- the stored value is simply
+         * passed through, which is what stops a rename from stripping it.
+         */
+        if ( reportMetrics ) {
+            built.metrics = reportMetrics;
         }
 
         widgets.forEach( function ( widget, i ) {

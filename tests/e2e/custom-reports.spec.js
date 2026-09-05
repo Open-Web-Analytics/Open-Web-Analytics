@@ -35,6 +35,19 @@ async function openBuilder(page) {
     await page.waitForSelector('#customReportForm', { timeout: 20_000 });
 }
 
+/**
+ * The builder, with one grid block added and its modal OPEN.
+ *
+ * A new report starts empty now -- there is no default block to press Edit on
+ * -- so a test about what the widget modal contains has to put a widget there
+ * first. A grid, because that is what the default block used to be, so the
+ * tests below are asking the same question they were.
+ */
+async function openBuilderOnGrid(page) {
+    await openBuilder(page);
+    await startWidget(page, 'grid');
+}
+
 async function openRoster(page) {
     await page.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
 }
@@ -71,9 +84,9 @@ async function buildOne(page, label) {
     await openBuilder(page);
     await page.fill('#customReportName', name);
 
-    // One block is drawn for a new report, so there is always something to
-    // configure without pressing the plus first.
-    await configureWidget(page, 0, { metrics: ['pageViews'], dimensions: ['pagePath'] });
+    // A new report starts EMPTY, so the widget has to be added. There is
+    // nothing to configure until one is.
+    await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
 
     await page.click('#customReportSubmit');
     await page.waitForLoadState('networkidle');
@@ -132,10 +145,13 @@ function chosenPills(page, selectId) {
  * Add a widget of a given type, through the plus.
  *
  * The type is chosen BEFORE the widget modal opens -- the modal is built for a
- * type, so there has to be one first. That is also why configureWidget() below
- * takes no type: by the time a block exists, its type is settled.
+ * type, so there has to be one first, which is why every caller names one.
+ *
+ * startWidget() is the same thing stopping one step earlier, with the modal
+ * left OPEN: a test about what the modal CONTAINS needs a widget there and
+ * needs it not filled in.
  */
-async function addWidget(page, type, opts = {}) {
+async function startWidget(page, type) {
     await page.click('#addWidget');
 
     await expect(page.locator('#typeDialog')).toBeVisible();
@@ -143,6 +159,10 @@ async function addWidget(page, type, opts = {}) {
 
     // Choosing lands straight in the widget modal, on the block just added.
     await expect(page.locator('#widgetDialog')).toBeVisible();
+}
+
+async function addWidget(page, type, opts = {}) {
+    await startWidget(page, type);
 
     await fillWidget(page, opts);
 }
@@ -150,20 +170,20 @@ async function addWidget(page, type, opts = {}) {
 /**
  * One widget of a given type, and nothing else.
  *
- * A new report starts with one grid block so the canvas is never empty. A test
- * that wants a single widget of some OTHER type adds one and drops that
- * default, rather than asserting past it.
+ * This used to add one and then remove the grid block a new report started
+ * with. A new report starts EMPTY, so there is nothing to drop -- but the
+ * assertion is kept, because it is what makes every caller's later
+ * `.first()` unambiguous.
  */
 async function onlyWidget(page, type, opts = {}) {
     await addWidget(page, type, opts);
 
-    await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
     await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 }
 
-/** Open a block's modal, set some fields, and close it with Done. */
-async function configureWidget(page, index, opts) {
-    await page.locator('.owa_builderBlock').nth(index).locator('.owa_builderEdit').click();
+/** Open the FIRST block's modal, set some fields, and close it with Done. */
+async function configureFirstWidget(page, opts) {
+    await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
     await expect(page.locator('#widgetDialog')).toBeVisible();
 
     await fillWidget(page, opts);
@@ -290,10 +310,7 @@ test.describe('custom reports', () => {
          * dimension to pick; a card takes one metric where a table takes four.
          */
         test('the widget modal does not offer the type again', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await openBuilderOnGrid(page);
 
             await expect(page.locator('#dlgType')).toHaveCount(0);
         });
@@ -305,10 +322,7 @@ test.describe('custom reports', () => {
          * author could not see.
          */
         test('the pickers are populated from the registry', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await openBuilderOnGrid(page);
 
             expect(await page.locator('#dlgMetrics option').count()).toBeGreaterThan(10);
             expect(await page.locator('#dlgDimensions option').count()).toBeGreaterThan(10);
@@ -332,9 +346,7 @@ test.describe('custom reports', () => {
          * -- the pickers enhance to a couple of pixels and cannot be used.
          */
         test('the metric picker is a searchable pill control, not a multi-select', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             const chosen = page.locator('#dlgMetrics_chosen');
 
@@ -348,9 +360,7 @@ test.describe('custom reports', () => {
 
         /** Typing filters the list, and choosing turns the value into a pill. */
         test('choosing a metric turns it into a pill that can be removed', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(0);
 
@@ -366,15 +376,391 @@ test.describe('custom reports', () => {
             await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
         });
 
-        /** The report metric set is the same control. */
-        test('the report metric set is a pill control too', async ({ page }) => {
+        /**
+         * THE REPORT METRIC SET IS NOT ASKED FOR ANY MORE.
+         *
+         * It was a second answer to "what does this report measure", beside the
+         * one inside every widget, and the two did not compose: a widget naming
+         * nothing inherited the set, so what a widget drew depended on a field
+         * further up the page that said nothing about which widget it landed
+         * in. Every widget names its own now.
+         *
+         * Asserted on the CONTROL rather than on the label, because the label
+         * could be renamed and the picker left behind -- and the picker is the
+         * half that would still be posting a set.
+         */
+        test('the builder does not ask for a report metric set', async ({ page }) => {
             await openBuilder(page);
 
-            await expect(page.locator('#reportMetricSet_chosen')).toBeVisible();
+            await expect(page.locator('#reportMetricSet')).toHaveCount(0);
+            await expect(page.locator('#reportMetricSet_chosen')).toHaveCount(0);
 
-            await chooseInChosen(page, 'reportMetricSet', 'visits');
+            // The report's name is still the only thing asked for up here.
+            await expect(page.locator('#customReportName')).toBeVisible();
+        });
 
-            await expect(chosenPills(page, 'reportMetricSet')).toHaveCount(1);
+        /*
+         * ------------------------------------------------------------------
+         * A NEW REPORT STARTS EMPTY
+         * ------------------------------------------------------------------
+         *
+         * It used to start from one table block: already named, already the
+         * right width, already a type. So Save worked on a report the author
+         * had made no decision about, and what came out was a table of nothing.
+         *
+         * Empty, the first thing on the screen is the choice that actually
+         * starts a report, and Save is unavailable until it has been made.
+         */
+        test('a new report starts with no widgets and cannot be saved', async ({ page }) => {
+            await openBuilder(page);
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+
+            // The plus is there, and it is the only thing to press.
+            await expect(page.locator('#addWidget')).toBeVisible();
+
+            // ...beside a sentence saying what is missing. The plus alone is a
+            // control, not an instruction.
+            await expect(page.locator('#customReportEmpty')).toBeVisible();
+            await expect(page.locator('#customReportEmpty')).toContainText('at least one');
+
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+
+            // The budget counts from nought, rather than from the block that
+            // used to be there.
+            await expect(page.locator('#widgetBudget')).toContainText('0 of');
+        });
+
+        /**
+         * ...and a named report with a configured widget is saveable.
+         *
+         * Both halves, because Save waits for every rule: the widget makes the
+         * canvas non-empty, and the name is the other thing the server
+         * requires.
+         */
+        test('adding a widget and a name enables the save button', async ({ page }) => {
+            await openBuilder(page);
+
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+
+            await page.fill('#customReportName', reportName('Enables'));
+            await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            await expect(page.locator('#customReportEmpty')).toBeHidden();
+            await expect(page.locator('#customReportSubmit')).toBeEnabled();
+        });
+
+        /**
+         * The disabled Save is not the whole guard.
+         *
+         * Enter in a text field submits a form whether or not there is a submit
+         * button to press, so an empty report could still be posted -- and the
+         * refusal would come back as a message about a definition the author
+         * never assembled.
+         */
+        test('pressing enter on an empty report does not post it', async ({ page }) => {
+            await openBuilder(page);
+
+            await page.fill('#customReportName', reportName('EnterKey'));
+            await page.locator('#customReportName').press('Enter');
+
+            // Still on the builder, with the sentence still saying why.
+            await expect(page.locator('#customReportForm')).toBeVisible();
+            await expect(page.locator('#customReportEmpty')).toBeVisible();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+        });
+
+        /**
+         * WHICH FIELDS HAVE TO BE ANSWERED IS SAID ON THE FIELD.
+         *
+         * Every one of these was discoverable only by pressing Save and reading
+         * the refusal. The report name is the worst of them: it carries an
+         * "Untitled report" placeholder, which reads as a value already
+         * supplied rather than as an example, so an empty one does not look
+         * empty.
+         *
+         * The marks are asserted PER TYPE, because that is the half that can
+         * rot. Metrics are required on every widget; a dimension is required
+         * only where the type draws exactly one -- a card and a pie -- and
+         * marking it everywhere would be telling an author to fill a field a
+         * grid may legitimately leave alone.
+         */
+        test('the required fields say so', async ({ page }) => {
+            await openBuilder(page);
+
+            const nameField = page.locator('.owa_builderField', {
+                has: page.locator('#customReportName'),
+            });
+
+            await expect(nameField.locator('.owa_builderRequired')).toBeVisible();
+            await expect(nameField.locator('.owa_builderRequired')).toHaveText(/required/i);
+
+            // A grid: metrics have to be named, dimensions need not be.
+            await startWidget(page, 'grid');
+            await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
+            await expect(page.locator('#dlgDimensionsRequired')).toBeHidden();
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            // A card and a pie draw exactly one of each, and are refused
+            // without either -- see CustomReports::SINGLE_FIELD_TYPES.
+            for (const type of ['grid-card', 'pie']) {
+                await startWidget(page, type);
+                await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
+                await expect(page.locator('#dlgDimensionsRequired')).toBeVisible();
+                await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            }
+
+            // A trend's breakdown is an addition to a chart that draws without
+            // one, so it is optional -- but its metrics are not.
+            await startWidget(page, 'trend');
+            await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
+            await expect(page.locator('#dlgDimensionsRequired')).toBeHidden();
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+
+            // Info boxes have no dimension field at all, so there is nothing to
+            // mark -- the mark must not be showing beside a hidden control.
+            await startWidget(page, 'metric-boxes');
+            await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
+            await expect(page.locator('#dlgDimensionsField')).toBeHidden();
+            await expect(page.locator('#dlgDimensionsRequired')).toBeHidden();
+        });
+
+        /**
+         * A HALF-FILLED CONSTRAINT ROW USED TO VANISH.
+         *
+         * readConstraintRows() keeps a row only when it has both a dimension
+         * and a value, and dropped anything else without a word. So an author
+         * who chose a dimension and tabbed past the value got a widget with no
+         * filter on it, no message, and nothing to distinguish it from one they
+         * had never filtered -- the same failure the query engine refuses to
+         * run ("a missing value is not a request for everything"), except that
+         * here it happened before anything reached the engine.
+         *
+         * Done does not close on one. The row is inside this dialog, so closing
+         * would take the author away from the control the message is about.
+         */
+        test('a constraint row started and not finished stops the dialog closing',
+            async ({ page }) => {
+
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('Constraint'));
+
+            await startWidget(page, 'grid');
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+
+            // A dimension, and deliberately no value.
+            await fillConstraintRow(page, { dimension: '(medium)' });
+
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(page.locator('#dlgConstraintError'))
+                .toContainText('gives no value');
+
+            // Filling it in lets the dialog close, and the constraint reaches
+            // the definition rather than being dropped on the way out.
+            await fillConstraintRow(page, { value: 'organic-search' });
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0].constraints)
+                .toBe('medium==organic-search');
+        });
+
+        /**
+         * A blank row is still nothing.
+         *
+         * The form always carries one, and it does not mean the author left
+         * something out -- so it must not be what stops them saving.
+         */
+        test('the always-present empty constraint row is not an error', async ({ page }) => {
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('BlankRow'));
+
+            await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+
+            await expect(page.locator('#customReportSubmit')).toBeEnabled();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0]).not.toHaveProperty('constraints');
+        });
+
+        /**
+         * SAVE WAITS FOR EVERY RULE THE SERVER APPLIES, and says which one.
+         *
+         * A widget could be added and left with no metrics, and Save was
+         * bright orange over it. The report was then refused -- correctly, it
+         * would have drawn an empty panel -- but the author found that out
+         * after a round trip, on a page that had to tell them about a widget
+         * rather than showing it to them.
+         *
+         * Each rule asserted with the ONE reason it should give: a disabled
+         * button that does not say what is missing is the worst of both, and a
+         * message that named the wrong rule would send an author to fix
+         * something that was already right.
+         */
+        test('save says which rule it is waiting for, one at a time', async ({ page }) => {
+            await openBuilder(page);
+
+            // Nothing at all: the widget is the first thing to fix.
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+            await expect(page.locator('#customReportBlocker'))
+                .toContainText('Add at least one widget');
+
+            await startWidget(page, 'grid');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            // A widget, still no name.
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+            await expect(page.locator('#customReportBlocker')).toContainText('name');
+
+            await page.fill('#customReportName', reportName('Gate'));
+
+            // Named, but the widget still measures nothing -- and it is marked
+            // ON THE CANVAS, because that is where the author is looking.
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+            await expect(page.locator('#customReportBlocker'))
+                .toContainText('does not say what it measures');
+            await expect(page.locator('.owa_builderBlockIncomplete')).toHaveCount(1);
+
+            await configureFirstWidget(page, { metrics: ['pageViews'] });
+
+            // ...and now it can go.
+            await expect(page.locator('#customReportSubmit')).toBeEnabled();
+            await expect(page.locator('#customReportBlocker')).toBeHidden();
+            await expect(page.locator('.owa_builderBlockIncomplete')).toHaveCount(0);
+        });
+
+        /**
+         * A REFUSED REPORT IS STILL EDITABLE, block by block.
+         *
+         * The refusal page is rebuilt by CustomReportSave::refuse(), which
+         * delegates to the builder rather than rendering a page of its own --
+         * so everything the canvas does has to survive that hand-off: the
+         * blocks come back from the SUBMITTED definition, the dialog is
+         * initialised, and Edit opens the widget the message is about.
+         *
+         * Asserted REPEATEDLY, on both blocks and through both ways of closing,
+         * because the failure this guards against is a canvas that draws and
+         * then does nothing -- which looks identical to a working one in a
+         * screenshot.
+         */
+        test('every block stays editable after a refusal, and the fix saves',
+            async ({ page }) => {
+
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('Refused'));
+
+            await addWidget(page, 'grid', {
+                metrics: ['pageViews'], dimensions: ['pagePath'],
+            });
+
+            // A sort the registry cannot resolve, on the SECOND widget, so the
+            // refusal is about one block and the other is untouched.
+            await addWidget(page, 'grid-card', {
+                metrics: ['pageViews'], dimensions: ['pagePath'], sort: 'notARealMetric-',
+            });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            await expect(page.locator('.notice')).toContainText('notARealMetric');
+
+            // Both blocks came back, from the definition that was posted.
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(2);
+
+            for (const index of [1, 0, 1]) {
+                await page.locator('.owa_builderBlock').nth(index)
+                    .locator('.owa_builderEdit').click();
+
+                await expect(page.locator('#widgetDialog')).toBeVisible();
+
+                await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+                await expect(page.locator('#widgetDialog')).toBeHidden();
+            }
+
+            // ...and the widget the message named can actually be fixed here,
+            // which is the whole point of coming back to the builder.
+            await page.locator('.owa_builderBlock').nth(1).locator('.owa_builderEdit').click();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await page.fill('#dlgSort', 'pageViews-');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            // Saved: on the report, with no refusal on the page.
+            await expect(page.locator('.owa_reportTitle')).toBeVisible();
+            await expect(page.locator('.notice')).toHaveCount(0);
+        });
+
+        /**
+         * A REFUSAL RAISED BY validate() RENDERS A PAGE.
+         *
+         * It did not. Core/Controller.php calls errorAction() for its side
+         * effects and then returns $this->data regardless -- it only honours
+         * what action() returns -- so CustomReportSave::refuse() built the
+         * whole builder screen and had it thrown away. The author got a blank
+         * white page, every time, for the most ordinary mistake there is:
+         * pressing Save with the name left empty. The field carries a
+         * placeholder, so an empty one does not look empty.
+         *
+         * Driven PAST the client-side gate on purpose. The gate stops this in a
+         * browser, which is why the server half went unnoticed for so long --
+         * but a stale tab, a second window, or anything posting the form
+         * directly still reaches it, and a blank page is the one response that
+         * tells nobody anything.
+         */
+        test('a save refused for a missing name renders the builder, not a blank page',
+            async ({ page }) => {
+
+            await openBuilder(page);
+
+            await startWidget(page, 'grid');
+            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Done' }).click();
+
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'load' }),
+                page.evaluate(() => {
+                    // Bypass the submit handler AND the disabled button, the
+                    // way a direct post does.
+                    document.getElementById('customReportDefinition').value = JSON.stringify({
+                        title: '',
+                        widgets: [{
+                            type: 'grid', id: 'w1', container: 'w1',
+                            query: { metrics: 'pageViews', dimensions: 'pagePath' },
+                        }],
+                    });
+                    document.getElementById('customReportName').value = '';
+
+                    HTMLFormElement.prototype.submit.call(
+                        document.getElementById('customReportForm'));
+                }),
+            ]);
+
+            // A PAGE, with the reporting chrome on it -- the blank one had none
+            // of this. Asserted on rendered text rather than on the response
+            // body, because the body was never the empty part.
+            const body = page.locator('body');
+
+            await expect(body).not.toHaveText('');
+            await expect(body).toContainText('Custom Report');
+            await expect(page.locator('.notice')).toContainText('needs a name');
+
+            // ...and the builder is back, so the author can fix it here.
+            await expect(page.locator('#customReportForm')).toBeVisible();
         });
 
         /**
@@ -396,8 +782,7 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'grid');
 
             await chooseInChosen(page, 'dlgMetrics', 'visits');
             await chooseInChosen(page, 'dlgDimensions', 'browserType');
@@ -559,12 +944,13 @@ test.describe('custom reports', () => {
         test('the plus adds blocks, and stops at ten', async ({ page }) => {
             await openBuilder(page);
 
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            // From NOUGHT: a new report no longer starts with a block.
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
 
             // The plus asks what KIND now, so each one is a choice as well as
             // a click -- and the chooser is modal, so the next plus is behind
             // its overlay until it closes.
-            for (let i = 1; i < 10; i++) {
+            for (let i = 0; i < 10; i++) {
                 await addWidget(page, 'grid');
             }
 
@@ -593,6 +979,9 @@ test.describe('custom reports', () => {
         test('the builder is actually styled', async ({ page }) => {
             await openBuilder(page);
 
+            // A block to look at: the canvas starts empty now.
+            await addWidget(page, 'grid');
+
             const canvas = page.locator('#customReportCanvas');
 
             // The canvas is a CSS grid. Unstyled it would be a plain block.
@@ -618,9 +1007,7 @@ test.describe('custom reports', () => {
          * unstyled block in the middle of the document.
          */
         test('the widget modal is a styled dialog', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             const dialog = page.locator('.owa_widgetDialogFrame').first();
 
@@ -644,9 +1031,7 @@ test.describe('custom reports', () => {
          * theme leaves it so faint the page looks live underneath.
          */
         test('the modal dims the page behind it', async ({ page }) => {
-            await openBuilder(page);
-
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             const overlay = page.locator('.ui-widget-overlay');
 
@@ -667,8 +1052,7 @@ test.describe('custom reports', () => {
          * selection that the save then refuses.
          */
         test('the metric picker stops offering incompatible metrics', async ({ page }) => {
-            await openBuilder(page);
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             // Both are on offer to begin with.
             await expect(page.locator('#dlgMetrics option[value="visits"]')).toHaveCount(1);
@@ -683,8 +1067,7 @@ test.describe('custom reports', () => {
 
         /** The same narrowing reaches dimensions, and the caps are enforced. */
         test('the pickers stop at four', async ({ page }) => {
-            await openBuilder(page);
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
+            await openBuilderOnGrid(page);
 
             for (const m of ['visits', 'uniqueVisitors', 'pageViews', 'uniquePageViews']) {
                 await chooseInChosen(page, 'dlgMetrics', m);
@@ -701,11 +1084,13 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * A block carries a default name, so a new report is never a row of
-         * unlabelled boxes.
+         * A block carries a default name, so a report under construction is
+         * never a row of unlabelled boxes.
          */
-        test('a new block has a default name and a type', async ({ page }) => {
+        test('an added block has a default name and its type', async ({ page }) => {
             await openBuilder(page);
+
+            await addWidget(page, 'grid');
 
             const block = page.locator('.owa_builderBlock').first();
 
@@ -754,11 +1139,7 @@ test.describe('custom reports', () => {
          * no controls at all.
          */
         test('a grid has no column span to set, and says why', async ({ page }) => {
-            await openBuilder(page);
-
-            // The block a new report starts with is a grid.
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await openBuilderOnGrid(page);
 
             await expect(page.locator('#dlgColspanField')).toBeHidden();
             await expect(page.locator('#dlgWidthNote')).toContainText('always full width');
@@ -769,9 +1150,7 @@ test.describe('custom reports', () => {
             await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
 
             // ...and a card has a width to choose.
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'grid-card');
 
             await expect(page.locator('#dlgColspanField')).toBeVisible();
             await expect(page.locator('#dlgWidthNote')).toBeHidden();
@@ -793,9 +1172,7 @@ test.describe('custom reports', () => {
         test('metric boxes ask for no dimension, because they are totals', async ({ page }) => {
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="metric-boxes"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'metric-boxes');
 
             await expect(page.locator('#dlgDimensionsField')).toBeHidden();
             await expect(page.locator('#dlgDimensionNote')).toContainText('totals for the period');
@@ -804,30 +1181,28 @@ test.describe('custom reports', () => {
         /**
          * A trend card names its own metrics and has nothing to group by.
          *
-         * Both follow from the width. Half a row has no room for a legend of
-         * six lines, so it cannot be broken out -- and a report metric set
-         * would replace the figures its author chose with three to six whose
-         * boxes do not fit that width, so it does not take one.
+         * Both follow from the width: half a row has no room for a legend of
+         * six lines, so it cannot be broken out.
          *
-         * The form has to SAY the second one. "Leave empty to use the report
-         * metric set" is the sentence every other multi-metric type carries,
-         * and an author who acted on it here would be refused on save by the
-         * rule that sentence contradicted.
+         * The metrics half used to be the interesting one -- every other
+         * multi-metric type carried "Leave empty to use the report metric set",
+         * and an author who acted on that sentence HERE would be refused on
+         * save by the rule it contradicted. There is no set to leave it empty
+         * for any more, on any type, so the sentence is gone from all of them
+         * and what is asserted is that it has not come back.
          */
         test('a trend card names its own metrics and is not broken out', async ({ page }) => {
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="trend-card"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'trend-card');
 
             // Several metrics, so the field is plural -- unlike a card or a pie.
             await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
 
-            // ...and it says the set is not on offer, rather than offering it.
-            await expect(page.locator('#dlgMetricsHelp'))
-                .toContainText('does not take the report metric set');
+            // Nothing offers an inheritance that no longer exists.
             await expect(page.locator('#dlgMetricsHelp')).not.toContainText('Leave empty');
+            await expect(page.locator('#dlgMetricsHelp')).not.toContainText('report metric set');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('Required');
 
             // The boxes are above the chart, and the form says which.
             await expect(page.locator('#dlgMetricsHelp')).toContainText('above');
@@ -1048,26 +1423,27 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * A card draws one metric, so it is offered a METRIC, not a metric set.
+         * A card draws ONE metric, a table several -- and the field says which
+         * by being singular or plural.
          *
-         * The report metric set is several metrics, and a card ranks its rows
-         * by one -- so calling the field "Metrics" there would be offering a
-         * set the widget has no way to draw.
+         * Both are required now: neither can be left empty, because there is no
+         * report metric set for either to fall back to. What separates them is
+         * the count, which is what these labels are for.
          */
-        test('a card asks for one metric, a table for a set', async ({ page }) => {
-            await openBuilder(page);
+        test('a card asks for one metric, a table for several', async ({ page }) => {
+            await openBuilderOnGrid(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
             await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
-            await expect(page.locator('#dlgMetricsHelp')).toContainText('report metric set');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('Up to');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('Required');
             await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await startWidget(page, 'grid-card');
 
             await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metric');
             await expect(page.locator('#dlgDimensionsLabel')).toHaveText('Dimension');
-            await expect(page.locator('#dlgMetricsHelp')).not.toContainText('report metric set');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('The one metric');
+            await expect(page.locator('#dlgMetricsHelp')).toContainText('Required');
         });
 
         test('a card takes one metric and one dimension and then offers no more',
@@ -1075,9 +1451,7 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'grid-card');
 
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
             await chooseInChosen(page, 'dlgDimensions', 'pagePath');
@@ -1125,9 +1499,7 @@ test.describe('custom reports', () => {
         test('a card is offered only the reports its dimension can reach', async ({ page }) => {
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'grid-card');
 
             // Nothing to link from yet.
             await expect(page.locator('#dlgLinkField')).toBeHidden();
@@ -1155,9 +1527,7 @@ test.describe('custom reports', () => {
         test('the full-report link is scoped to the dimension too', async ({ page }) => {
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'grid-card');
 
             // Nothing shown yet, so there is no "more of the same thing".
             await expect(page.locator('#dlgMoreField')).toBeHidden();
@@ -1288,9 +1658,7 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
 
-            await page.click('#addWidget');
-            await page.locator('.owa_typeChoice[data-type="trend"]').click();
-            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await startWidget(page, 'trend');
 
             // The axis is settled; what is offered is the breakdown.
             await expect(page.locator('#dlgDimensionsField')).toBeVisible();
@@ -1497,29 +1865,50 @@ test.describe('custom reports', () => {
 
         /** Cancel leaves the widget as it was. */
         test('cancelling the modal changes nothing', async ({ page }) => {
-            await openBuilder(page);
+            await openBuilderOnGrid(page);
 
-            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
             await page.fill('#dlgTitle', 'Should not stick');
             await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
 
             await expect(page.locator('.owa_builderBlockName').first()).toHaveText('Widget 1');
         });
 
-        /** A block can be removed, and the last one leaves a fresh block. */
-        test('removing blocks never empties the canvas', async ({ page }) => {
+        /**
+         * A block can be removed, and removing the LAST one leaves the canvas
+         * empty rather than putting another block back.
+         *
+         * It used to put a fresh one back, on the reasoning that a report with
+         * no widgets cannot be saved and so an empty canvas is a dead end. It
+         * is not a dead end -- the plus is right there -- and the replacement
+         * was worse than the emptiness: an author who removed a widget got
+         * another one, of a type they had not chosen, which then had to be
+         * removed as well.
+         */
+        test('removing the last block empties the canvas and disables save',
+            async ({ page }) => {
+
             await openBuilder(page);
 
-            await addWidget(page, 'grid');
+            // Named and configured, so that the ONLY thing Save is waiting for
+            // by the end of this test is the emptiness of the canvas.
+            await page.fill('#customReportName', reportName('Removing'));
+            await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+            await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
             await expect(page.locator('.owa_builderBlock')).toHaveCount(2);
 
             await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
             await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+            await expect(page.locator('#customReportSubmit')).toBeEnabled();
 
-            // Removing the last leaves a fresh one: a report with no widgets
-            // cannot be saved, so an empty canvas is a dead end.
             await page.locator('.owa_builderBlock').first().locator('.owa_builderRemove').click();
-            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
+
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+            await expect(page.locator('#customReportEmpty')).toBeVisible();
+            await expect(page.locator('#customReportSubmit')).toBeDisabled();
+
+            // ...and the plus is still there, which is why the emptiness is not
+            // a dead end.
+            await expect(page.locator('#addWidget')).toBeVisible();
         });
 
         /**
@@ -1590,8 +1979,8 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            // A grid -- the block a new report starts with...
-            await configureWidget(page, 0, {
+            // A grid...
+            await addWidget(page, 'grid', {
                 title: 'Pages',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
@@ -1645,7 +2034,7 @@ test.describe('custom reports', () => {
             await openBuilder(page);
             await page.fill('#customReportName', name);
 
-            await configureWidget(page, 0, {
+            await addWidget(page, 'grid', {
                 title: 'Pages',
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
@@ -1792,7 +2181,7 @@ test.describe('custom reports', () => {
 
             // Reach past the pickers: a sort is free text, which is the field
             // an author can put an unresolvable name into.
-            await configureWidget(page, 0, {
+            await addWidget(page, 'grid', {
                 metrics: ['pageViews'],
                 sort: 'notARealMetric-',
             });

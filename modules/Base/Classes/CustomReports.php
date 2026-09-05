@@ -42,8 +42,10 @@ namespace OWA\Module\Base\Classes;
  * nothing about whether the NAMES inside resolve. So validate() below also
  * requires that:
  *
- *   - there are at most MAX_WIDGETS widgets;
+ *   - there is at least one widget, and at most MAX_WIDGETS of them;
  *   - every widget names one of the types a person can actually build;
+ *   - every widget names at least one metric, unless the report carries a
+ *     metric set for it to inherit -- see validateQuery();
  *   - every metric, dimension and sort name resolves through the registry.
  *
  * That last one is the REST-to-SQL invariant: a name that reaches the query
@@ -398,6 +400,15 @@ class CustomReports {
                 self::MAX_WIDGETS, count( $widgets ) );
         }
 
+        /*
+         * Whether there is a set for a widget to inherit, read once for the
+         * whole loop. Only a report saved before the builder withdrew the
+         * control has one -- see validateQuery(), which is the only thing that
+         * asks.
+         */
+        $has_report_metrics = (bool) self::asNames(
+            isset( $definition['metrics'] ) ? $definition['metrics'] : '' );
+
         foreach ( $widgets as $i => $widget ) {
 
             $where = sprintf( 'widget %d', $i + 1 );
@@ -415,7 +426,7 @@ class CustomReports {
                     $where, $type, implode( ', ', array_keys( self::WIDGET_TYPES ) ) );
             }
 
-            $error = self::validateQuery( $widget, $where );
+            $error = self::validateQuery( $widget, $where, $has_report_metrics );
 
             if ( $error !== '' ) {
 
@@ -462,9 +473,12 @@ class CustomReports {
      *
      * @param array  $widget
      * @param string $where human-readable position, for the message
+     * @param bool   $has_report_metrics whether the REPORT declares a metric
+     *               set. Only a report that has one may carry a widget naming
+     *               no metrics of its own; see the rule below.
      * @return string
      */
-    private static function validateQuery( array $widget, $where ) {
+    private static function validateQuery( array $widget, $where, $has_report_metrics = false ) {
 
         $query = isset( $widget['query'] ) ? (array) $widget['query'] : array();
 
@@ -562,22 +576,43 @@ class CustomReports {
         }
 
         /*
-         * A type that may not inherit a set has to have named some.
+         * EVERY WIDGET NAMES ITS OWN METRICS.
+         *
+         * A widget that named none used to inherit the report metric set, and
+         * the builder asked for that set beside the report's name. It no longer
+         * does -- see the note in custom_report_edit.php -- so a widget with an
+         * empty list has nothing to inherit and would draw an empty panel. That
+         * is not something an author can have meant, and it is not something
+         * they would see until after saving, so it is refused here.
+         *
+         * The exception is a report that ALREADY HAS a set. Those were built
+         * while the control existed, they render correctly, and this check runs
+         * at render time as well as at save time -- refusing them would take
+         * down reports that are working, and leave their authors no way to fix
+         * it, because the field they would have to fill is gone. So the
+         * fallback stays legal exactly where there is something to fall back to.
          *
          * AFTER the single-field check, which says the same thing more
          * precisely for a card or a pie: "draws one metric, this one names 0"
-         * names the count as well as the rule. What is left for this to catch
-         * is the type that takes SEVERAL of its own -- a trend card -- where
-         * nothing else would notice an empty list, because an empty list is
-         * legal on every type that CAN inherit.
+         * names the count as well as the rule.
          */
-        if ( in_array( $type, self::OWN_METRIC_TYPES, true )
-             && ! self::asNames( $query['metrics'] ?? '' ) ) {
+        if ( ! self::asNames( $query['metrics'] ?? '' ) ) {
 
-            return sprintf(
-                '%s is a %s, which names its own metrics -- it does not take the '
-              . 'report metric set. This one names none.',
-                $where, self::WIDGET_TYPES[ $type ] ?? $type );
+            if ( in_array( $type, self::OWN_METRIC_TYPES, true ) ) {
+
+                return sprintf(
+                    '%s is a %s, which names its own metrics -- it does not take the '
+                  . 'report metric set. This one names none.',
+                    $where, self::WIDGET_TYPES[ $type ] ?? $type );
+            }
+
+            if ( ! $has_report_metrics ) {
+
+                return sprintf(
+                    '%s names no metrics, so it would draw nothing. Every widget has '
+                  . 'to say what it measures.',
+                    $where );
+            }
         }
 
         $error = self::validateFieldCount(
@@ -609,6 +644,21 @@ class CustomReports {
 
                 return $error;
             }
+        }
+
+        /*
+         * EACH CONSTRAINT, CLAUSE BY CLAUSE.
+         *
+         * Before the combination check below, which folds the constraints'
+         * dimensions into the same reduction: constraintDimensions() keeps only
+         * the names that resolve, so a misspelled one reaches that check as
+         * nothing at all and the combination looks fine.
+         */
+        $error = self::validateConstraints( $widget, $where );
+
+        if ( $error !== '' ) {
+
+            return $error;
         }
 
         /*
@@ -1357,6 +1407,170 @@ class CustomReports {
         $names = is_array( $value ) ? $value : explode( ',', (string) $value );
 
         return array_values( array_filter( array_map( 'trim', $names ) ) );
+    }
+
+    /**
+     * The operators a constraint may use.
+     *
+     * READ FROM THE ENGINE, not listed here. ResultSetManager is what actually
+     * parses these strings, and a list of our own would eventually accept a
+     * clause it then drops -- which is the exact failure this validation
+     * exists to stop.
+     *
+     * Deliberately the FULL set rather than the five the builder offers. The
+     * builder's list is a choice about what is worth putting in a picker; this
+     * is a question about what the engine can run, and a definition written by
+     * hand or carried over from an older report may legitimately use the rest.
+     *
+     * @return array
+     */
+    private static function constraintOperators() {
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $operators = (array) $rsm->constraint_operators;
+
+        /*
+         * LONGEST FIRST. '>=' contains '>' and '=@' contains '=', so testing in
+         * any other order splits `medium=@news` at the wrong character and
+         * reports a name of `medium=`. The builder's splitConstraint() sorts
+         * for the same reason.
+         */
+        usort( $operators, static function ( $a, $b ) {
+
+            return strlen( $b ) - strlen( $a );
+        } );
+
+        return $operators;
+    }
+
+    /**
+     * Every clause of a widget's constraints, checked the way every other name
+     * in a definition is checked.
+     *
+     * WHY THIS IS HERE AT ALL
+     *
+     * Constraints were the one thing in a definition that reached the query
+     * builder without resolving through the registry at save time. Metrics,
+     * dimensions, sorts, chart metrics and link targets are all checked; a
+     * constraint was not, and the consequences split two ways.
+     *
+     * A clause the engine CAN parse but not resolve -- `notADimension==direct`,
+     * or `medium==` with no value -- is refused by ResultSetManager at QUERY
+     * time. That is the right answer at the wrong moment: the author is told
+     * long after they could easily fix it, and everyone who opens the report is
+     * told as well, every time.
+     *
+     * A clause the engine cannot parse at all is worse. `medium` with no
+     * operator, `==direct` with no name, and `medium~~x` with an operator that
+     * does not exist all parse to NOTHING -- parseConstraintsString() finds no
+     * operator and contributes no constraint -- so the query runs completely
+     * unfiltered, with no error raised anywhere. A widget meant to show organic
+     * search shows the site total, and nothing says so.
+     *
+     * Both are refused here, where the author is looking at the row.
+     *
+     * @param array  $widget
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    private static function validateConstraints( array $widget, $where ) {
+
+        $constraints = isset( $widget['constraints'] ) ? $widget['constraints'] : '';
+
+        if ( ! is_string( $constraints ) || trim( $constraints ) === '' ) {
+
+            return '';
+        }
+
+        $operators = self::constraintOperators();
+
+        foreach ( explode( ',', $constraints ) as $clause ) {
+
+            $clause = trim( $clause );
+
+            if ( $clause === '' ) {
+
+                continue;
+            }
+
+            $name     = '';
+            $value    = '';
+            $operator = '';
+
+            foreach ( $operators as $candidate ) {
+
+                $at = strpos( $clause, $candidate );
+
+                /*
+                 * `> 0`, not `!== false`: an operator at position 0 leaves no
+                 * name in front of it. That is a clause the engine drops
+                 * silently -- its own parser uses a truthy strpos and skips it
+                 * -- so it has to be caught as "names nothing" below rather
+                 * than accepted as a clause.
+                 */
+                if ( $at > 0 ) {
+
+                    $name     = trim( substr( $clause, 0, $at ) );
+                    $operator = $candidate;
+                    $value    = trim( substr( $clause, $at + strlen( $candidate ) ) );
+                    break;
+                }
+            }
+
+            if ( $operator === '' ) {
+
+                /*
+                 * An operator at position 0 is a different mistake from no
+                 * operator at all -- "==direct" has a comparison and nothing to
+                 * compare, "medium" has neither -- and telling an author to add
+                 * an operator to a clause that already has one sends them to
+                 * fix the wrong half. Both are dropped identically by the
+                 * engine, which is why both have to be caught, but they do not
+                 * get the same sentence.
+                 */
+                foreach ( $operators as $candidate ) {
+
+                    if ( strpos( $clause, $candidate ) === 0 ) {
+
+                        return sprintf(
+                            '%s has the constraint "%s", which names nothing to constrain '
+                          . 'on. A constraint reads name, operator, value -- for example '
+                          . 'medium==organic-search.',
+                            $where, $clause );
+                    }
+                }
+
+                return sprintf(
+                    '%s has the constraint "%s", which names no comparison. A constraint '
+                  . 'reads name, operator, value -- for example medium==organic-search. '
+                  . 'One the engine cannot read is dropped, and the widget shows '
+                  . 'everything instead of saying so. Operators: %s.',
+                    $where, $clause, implode( ' ', $operators ) );
+            }
+
+            if ( ! self::isKnownName( $name ) ) {
+
+                return sprintf(
+                    '%s constrains on "%s", which is not a dimension or a metric.',
+                    $where, $name );
+            }
+
+            if ( $value === '' ) {
+
+                /*
+                 * The same rule ResultSetManager states at query time: a
+                 * missing value is not a request for everything. Said here so
+                 * that a half-filled row is caught before it is stored.
+                 */
+                return sprintf(
+                    '%s constrains on "%s" but gives no value to compare it with. An '
+                  . 'empty value is not a request for everything.',
+                    $where, $name );
+            }
+        }
+
+        return '';
     }
 
     /**

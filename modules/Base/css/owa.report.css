@@ -1341,10 +1341,41 @@ li.constraintRow {
     margin-bottom: 14px;
 }
 
-.owa .owa_builderField > label {
+/* The label, whether it sits alone or in a row beside a "Required" mark. A
+   child selector was enough until the mark needed a row of its own. */
+.owa .owa_builderField label {
     font-size: 12px;
     font-weight: bold;
     color: #505050;
+}
+
+.owa .owa_builderFieldLabel {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+/* Why the dialog will not close: a constraint row that was started and not
+   finished. Sits directly under the rows it is about. */
+.owa .owa_builderRowError {
+    font-size: 12px;
+    color: #99321f;
+    margin-top: 6px;
+}
+
+/* WHICH FIELDS HAVE TO BE ANSWERED, said on the field rather than discovered
+ * on save.
+ *
+ * Small, and in the muted red the refusal text uses, so it reads as the same
+ * voice pointing at the same rule -- but it is not an error: nothing has gone
+ * wrong yet, it is a fact about the field. Hence the weight of a caption
+ * rather than of a warning. */
+.owa .owa_builderRequired {
+    font-size: 10px;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #99321f;
 }
 
 .owa .owa_builderField input[type=text],
@@ -1851,12 +1882,103 @@ li.constraintRow {
     line-height: 1;
 }
 
+/* What an EMPTY canvas says.
+ *
+ * A new report starts with no widgets, so this is the first thing on the
+ * screen. The plus alone is a control rather than an instruction -- on a blank
+ * page it reads as one option among others -- so the words say what a report is
+ * made of, and the plus below them is then the obvious thing to press.
+ *
+ * The gap under it is the point of the block. Without it the sentence sat
+ * directly on the top edge of the plus tile and read as a label ON the tile
+ * rather than as a line above it. */
+.owa .owa_builderEmpty {
+    display: block;
+    margin: 0 0 18px 0;
+    padding: 16px 0 0 0;
+}
+
+.owa .owa_builderEmptyTitle {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    color: #505050;
+    margin-bottom: 4px;
+}
+
+.owa .owa_builderEmptyBody {
+    display: block;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #808080;
+    max-width: 560px;
+}
+
+/* ...and the plus keeps clear of the words above it whether or not the empty
+   block is drawn, so the canvas does not shift when the first widget lands. */
+.owa .owa_builderCanvasEmpty {
+    padding-top: 2px;
+}
+
 .owa .owa_builderActions {
     display: flex;
     align-items: center;
     gap: 15px;
     padding-top: 15px;
     border-top: 1px solid #e0e0e0;
+}
+
+/* .owa-button carries `margin: 25px 0 0 0` for the admin forms it was written
+   for, where it is the last thing on a page. Here it sits in a centred flex row
+   under its own rule, and that margin pushes it off the line. Overridden the
+   same way the confirmation dialog's buttons override it, rather than by
+   introducing a second button class. */
+.owa .owa_builderActions .owa-button {
+    margin: 0;
+}
+
+/* Save with nothing to save.
+ *
+ * A report needs at least one widget, and the button says so by being
+ * unavailable rather than by being absent -- a control that vanishes reads as a
+ * page that has not finished loading. The empty-canvas sentence above says
+ * why. */
+.owa .owa_builderActions .owa-button:disabled {
+    background-color: #f0f0f0;
+    color: #a0a0a0;
+    border-color: #dddddd;
+    cursor: default;
+}
+
+/* The reason Save will not go, beside the button that will not go. A disabled
+   control with no explanation says something is wrong and not what. */
+.owa .owa_builderBlocker {
+    font-size: 12px;
+    color: #99321f;
+}
+
+/* A block that has not been told what it measures.
+ *
+ * Marked on the CANVAS as well as in the sentence under the button, because the
+ * canvas is where the author is looking -- "Widget 3 does not say what it
+ * measures" is only useful if Widget 3 can be picked out of a row of blocks.
+ *
+ * A left edge rather than a full border: the block is unfinished, not invalid,
+ * and a red box around it would read as an error the author has made. */
+.owa .owa_builderBlockIncomplete {
+    border-left: 3px solid #d9a441;
+}
+
+.owa .owa_builderBlockIncomplete .owa_builderBlockSummary {
+    color: #99321f;
+}
+
+.owa .owa_builderActions .owa-button:disabled:hover {
+    color: #a0a0a0;
+    border-color: #dddddd;
+    box-shadow: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
 }
 
 .owa .owa_builderDelete {

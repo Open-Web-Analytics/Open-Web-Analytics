@@ -133,6 +133,21 @@ class CustomReportSave extends \OWA\Core\AdminController {
      *
      * The submitted definition rides along in the params, so the builder
      * redraws what the author had rather than what was last stored.
+     *
+     * ASSIGNED TO $this->data AS WELL AS RETURNED, and that is not belt and
+     * braces -- it is the only half that works from errorAction().
+     *
+     * doAction() honours what action() returns (finishActionCall passes it
+     * straight back), and DISCARDS what errorAction() returns: it calls
+     * errorAction() for its side effects and then returns $this->data
+     * regardless -- see Core/Controller.php, the branch that runs when
+     * validate() fails. So a refusal raised by validate() rather than by
+     * action() rendered THIS controller's data, which names no view at all,
+     * and the author got a blank page. Saving with the name left empty did it
+     * every time.
+     *
+     * Assigning makes the two paths agree without changing the dispatcher,
+     * which every other controller's error path depends on.
      */
     private function refuse( $message ) {
 
@@ -143,7 +158,9 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         $target = new CustomReportEdit( $params );
 
-        return $target->doAction();
+        $this->data = $target->doAction();
+
+        return $this->data;
     }
 
     function errorAction() {
