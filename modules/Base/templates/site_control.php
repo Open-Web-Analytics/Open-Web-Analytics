@@ -84,7 +84,30 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
                 <?php echo $owa_p['name'] === $owa_current['property'] ? '' : 'hidden';?>>
                 <?php foreach ( $owa_p['profiles'] as $owa_prof ):?>
                 <li class="owa_siteControlItem<?php echo $owa_prof['site_id'] === $owa_current_site ? ' is-selected' : '';?>">
-                    <a class="owa_siteControlSelect" href="<?php echo $view->makeLink( array( 'siteId' => $owa_prof['site_id'] ), true );?>">
+                    <?php
+                        /*
+                         * NAMES ITS DESTINATION, and that is not decoration.
+                         *
+                         * This was makeLink( array( 'siteId' => ... ) ) with no
+                         * `do`, which produced index.php?siteId=X. That URL
+                         * reaches the default action, and the default action
+                         * reads `site_id` -- the underscored spelling -- not
+                         * `siteId`. So the chosen Profile was dropped on the
+                         * floor and the fallback picked the first site the user
+                         * may see: every Profile in the column led to the same
+                         * one, which is a site switcher that does not switch.
+                         *
+                         * It already LANDED on the dashboard, by falling
+                         * through to the default; saying so explicitly changes
+                         * nothing about where you end up and everything about
+                         * which Profile you end up on.
+                         */
+                    ?>
+                    <a class="owa_siteControlSelect" href="<?php echo $view->makeLink( array(
+                        'do'       => 'base.report',
+                        'reportId' => 'dashboard',
+                        'siteId'   => $owa_prof['site_id'],
+                    ), true );?>">
                         <span class="owa_siteControlItemName"><?php $view->out( $owa_prof['name'] );?></span>
                         <span class="owa_siteControlId"><?php $view->out( $owa_prof['site_id'] );?></span>
                     </a>

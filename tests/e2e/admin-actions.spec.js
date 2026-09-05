@@ -644,6 +644,57 @@ test.describe('admin: the site control fan-out', () => {
         expect(onTop, "the row's own link is covering a secondary action").toBe(true);
     });
 
+    /**
+     * AND CLICKING A PROFILE ACTUALLY SWITCHES TO IT.
+     *
+     * The hit tests above prove the pointer reaches the link. They do not prove
+     * the link goes anywhere, and it did not: it was built as
+     * makeLink( array( 'siteId' => ... ) ) with no `do`, which produces
+     * index.php?siteId=X. That URL lands on the default action, and the default
+     * action reads `site_id` -- the underscored spelling -- not `siteId`. So
+     * the chosen Profile was discarded and the fallback picked the first site
+     * the reader may see: every row in the column led to the same Profile.
+     *
+     * A switcher that does not switch, and three passing tests about where the
+     * pointer landed. This is the assertion that was missing.
+     */
+    test('clicking a Profile switches to that Profile', async ({ page }) => {
+        const tileId = () =>
+            page.locator('#owa_siteControlSummary .owa_siteControlId').first().textContent();
+
+        const before = (await tileId()).trim();
+
+        await page.locator('.owa_siteControlProperties .owa_siteControlItem').nth(0).click();
+        await page.waitForTimeout(300);
+
+        const row = page.locator(
+            '.owa_siteControlProfiles .owa_siteControlProfileList:not([hidden]) '
+            + '.owa_siteControlItem').first();
+
+        const href = await row.locator('a.owa_siteControlSelect').getAttribute('href');
+        const wanted = href.match(/siteId=([^&]+)/)[1];
+
+        expect(wanted, 'the Profile link carries no siteId').toBeTruthy();
+        expect(href, 'the Profile link names no action, so the default one runs and drops the siteId')
+            .toContain('do=');
+
+        // Clicked at the ROW's edge, not on the words -- so this covers the
+        // stretch and the destination together, which is how someone uses it.
+        const box = await row.boundingBox();
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.mouse.click(box.x + box.width - 8, box.y + box.height / 2),
+        ]);
+
+        expect(page.url()).toContain(wanted);
+
+        const after = (await tileId()).trim();
+
+        expect(after, 'the tile still names the Profile we came from').toBe(wanted);
+        expect(after, 'switching Profile left us on the same Profile').not.toBe(before);
+    });
+
     /** The Properties column answers across its whole row too, via its handler. */
     test('a Property row answers from edge to edge', async ({ page }) => {
         for (const [where, fraction] of [['left edge', 0], ['middle', 0.5], ['right edge', 1]]) {
