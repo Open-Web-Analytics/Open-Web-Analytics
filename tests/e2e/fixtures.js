@@ -99,6 +99,41 @@ const FIXTURE = {
         ],
     },
     /*
+     * The clicks seeded by seedClicks(), and what the reports must say about
+     * them. Every number here is different from every other on purpose: 6
+     * clicks, 5 on one element, 4 on one page, 3 at one coordinate, 2, 1. A
+     * fixture whose totals agree cannot tell you which grouping was applied.
+     */
+    clicks: {
+        total: 6,
+        byElement: { 'buy-btn': 5, 'nav-home': 1 },
+        byPage: { '/': 4, '/pricing': 2 },
+        // Three clicks share this coordinate, so the heatmap has a point of
+        // weight 3 -- the only way to distinguish a weighted plot from a plot
+        // of distinct positions.
+        hottest: { x: 100, y: 200, weight: 3, page: '/' },
+        tag: 'a',
+        elementClass: 'e2e-clickable',
+    },
+    /*
+     * The actions seeded by seedActions(). The three metrics answer three
+     * different questions and must give three different numbers:
+     *   actions       4  -- how many happened
+     *   uniqueActions 2  -- how many distinct NAMES (submit, cancel)
+     *   actionsValue 22  -- what they were worth (5 + 5 + 2 + 10)
+     *
+     * Names, groups and labels are LOWERCASE here because the handler
+     * lowercases them on the way in, which is itself worth pinning.
+     */
+    actions: {
+        total: 4,
+        uniqueNames: 2,
+        value: 22,
+        byGroup: { signup: 3, commerce: 1 },
+        byName: { submit: 3, cancel: 1 },
+        labels: ['form-a', 'cart'],
+    },
+    /*
      * The DOM recordings seeded by seedDomstreams().
      *
      * `a` is stored as THREE rows -- one per flush of the tracker's event queue

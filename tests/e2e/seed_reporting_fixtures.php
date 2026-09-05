@@ -104,6 +104,50 @@ const E2E_NOTIFICATIONS = [
     ['source_key' => 'e2e-n5', 'title' => 'E2E Notification Five',  'body' => 'fifth',  'url' => 'https://example.test/n5'],
 ];
 
+/*
+ * CLICKS, for the click reports and the heatmap.
+ *
+ * Nothing seeded these before, so `domClicks` and every dom-element dimension
+ * had no coverage at all -- and neither did the heatmap, whose plotting is
+ * tested against rows typed into a JS test rather than clicks that were ever
+ * recorded. Every layer was proved against a mock of its neighbour; the seam
+ * between them was what nobody could see.
+ *
+ * The counts are DELIBERATELY ALL DIFFERENT -- 6 clicks, 5 on one element,
+ * 4 on one page, 3 at one coordinate, 2, 1 -- so an assertion cannot pass by
+ * landing on a number that happens to be right for another reason. A fixture
+ * where the totals agree proves nothing about which grouping was applied.
+ *
+ * Coordinates repeat on purpose too: three clicks share (100,200), so the
+ * heatmap has a point of weight 3 beside points of weight 1 and 2, which is
+ * the only way to tell a weighted plot from a plot of distinct positions.
+ */
+const E2E_CLICKS = [
+    ['page' => '/',        'id' => 'buy-btn',  'tag' => 'a',      'x' => 100, 'y' => 200, 'n' => 3],
+    ['page' => '/',        'id' => 'nav-home', 'tag' => 'a',      'x' => 40,  'y' => 50,  'n' => 1],
+    ['page' => '/pricing', 'id' => 'buy-btn',  'tag' => 'button', 'x' => 300, 'y' => 400, 'n' => 2],
+];
+
+/*
+ * ACTIONS, for the action reports.
+ *
+ * Shaped so the three action metrics cannot agree with each other:
+ *   actions        = 4  (a distinct count of rows)
+ *   uniqueActions  = 2  (a distinct count of NAMES -- submit, cancel)
+ *   actionsValue   = 22 (a sum -- 5 + 5 + 2 + 10)
+ *
+ * Three different questions with three different answers. A fixture of four
+ * identical actions would let a report answering any of them look correct.
+ *
+ * The handler lowercases name, group and label, so the values read back are
+ * lowercase however they are written here -- which is itself worth pinning.
+ */
+const E2E_ACTIONS = [
+    ['group' => 'Signup',   'name' => 'submit', 'label' => 'form-a', 'value' => 5,  'n' => 2],
+    ['group' => 'Signup',   'name' => 'cancel', 'label' => 'form-a', 'value' => 2,  'n' => 1],
+    ['group' => 'Commerce', 'name' => 'submit', 'label' => 'cart',   'value' => 10, 'n' => 1],
+];
+
 const E2E_GOAL_NUMBER = 1;
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
 const E2E_GOAL_GROUP  = '1';
@@ -375,6 +419,11 @@ function seed(): array
     //     nothing about it -- a funnel is an analysis of a path now, not part
     //     of a goal's configuration.
     $out['funnel_visualization_seeded'] = seedFunnelVisualization();
+
+    // 11. Clicks and actions, so the click reports, the dom-element dimensions,
+    //     the action metrics and the heatmap have something to count.
+    $out['clicks_seeded']  = seedClicks();
+    $out['actions_seeded'] = seedActions();
 
     $out['status']            = 'seeded';
     return $out;
@@ -927,7 +976,7 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_domstream',
+    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
@@ -1338,6 +1387,221 @@ function seedPageviews(int $n): int
 
 
 
+
+/**
+ * Clicks, fired as real dom.click events.
+ *
+ * Through logEvent, not by inserting rows: ClickHandlers is what mints the
+ * document_id from the page url, the target_id from the target url and the
+ * `position` from the coordinates, and a fixture that wrote owa_click directly
+ * would seed data no tracker could ever have produced -- and would keep passing
+ * if the handler stopped running.
+ *
+ * @return array what was written, for the e2e fixture file to assert against
+ */
+function seedClicks(): array
+{
+    $expected = array_sum(array_column(E2E_CLICKS, 'n'));
+    $existing = countSiteRows('owa_click');
+
+    /*
+     * IDEMPOTENT, like the pageviews above and for the same reason: every click
+     * carries a fresh guid, so a second seed would double the rows and every
+     * count the specs assert would be wrong by exactly a factor of two -- the
+     * kind of wrong that looks like a real regression.
+     *
+     * All-or-nothing rather than topping up. A partial run means a previous
+     * seed died midway, and the fixture should be torn down and rebuilt, not
+     * patched up with a second visitor's worth of clicks.
+     */
+    if ($existing > 0) {
+        return [
+            'clicks'     => 0,
+            'reused'     => true,
+            'rows_in_db' => $existing,
+            'complete'   => $existing === $expected,
+            'by_element' => clickTotals('id'),
+            'by_page'    => clickTotals('page'),
+        ];
+    }
+
+    $rc = owa_coreAPI::requestContainerSingleton();
+
+    // One visitor, one session, a single day inside the reporting window. The
+    // clicks do not need to be spread out -- what varies here is WHERE they
+    // landed, not when.
+    $visitor_id = numericGuid();
+    $session_id = numericGuid();
+
+    $day = time() - (5 * 86400);
+    $day = $day - ($day % 86400) + 43200;   // 12:00 UTC, clear of any boundary
+
+    $written = 0;
+    $offset  = 0;
+
+    foreach (E2E_CLICKS as $click) {
+
+        for ($i = 0; $i < $click['n']; $i++) {
+
+            $rc->timestamp = $day + ($offset * 60);
+            $offset++;
+
+            $url = E2E_SITE_DOMAIN . $click['page'];
+
+            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event->setEventType('dom.click');
+            $event->setProperties([
+                'site_id'            => E2E_SITE_ID,
+                'session_id'         => $session_id,
+                'visitor_id'         => $visitor_id,
+                'guid'               => numericGuid(),
+                'page_url'           => $url,
+                'page_title'         => 'E2E ' . ($click['page'] === '/' ? 'Home' : trim($click['page'], '/')),
+                'HTTP_USER_AGENT'    => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
+                'ip_address'         => '203.0.113.30',
+                'target_url'         => $url . '#' . $click['id'],
+                'click_x'            => $click['x'],
+                'click_y'            => $click['y'],
+                'page_width'         => 1280,
+                'page_height'        => 2000,
+                'dom_element_id'     => $click['id'],
+                'dom_element_tag'    => $click['tag'],
+                'dom_element_name'   => $click['id'] . '-name',
+                'dom_element_class'  => 'e2e-clickable',
+                'dom_element_text'   => 'E2E ' . $click['id'],
+                'dom_element_value'  => '(not set)',
+            ]);
+
+            if (owa_coreAPI::logEvent('dom.click', $event) !== false) {
+                $written++;
+            }
+        }
+    }
+
+    $rc->timestamp = time();
+
+    return [
+        'clicks'       => $written,
+        'rows_in_db'   => countSiteRows('owa_click'),
+        // What the reports should say, derived from the fixture rather than
+        // written down twice.
+        'by_element'   => clickTotals('id'),
+        'by_page'      => clickTotals('page'),
+    ];
+}
+
+/** Sum the fixture's click counts by one of its keys. */
+function clickTotals(string $key): array
+{
+    $out = [];
+
+    foreach (E2E_CLICKS as $click) {
+        $out[$click[$key]] = ($out[$click[$key]] ?? 0) + $click['n'];
+    }
+
+    arsort($out);
+
+    return $out;
+}
+
+/**
+ * Actions, fired as real track.action events.
+ *
+ * Same reasoning as the clicks: ActionHandler is what lowercases the name,
+ * group and label and coerces the value to a number, so writing owa_action_fact
+ * directly would seed rows in a shape the tracker never produces.
+ *
+ * @return array
+ */
+function seedActions(): array
+{
+    $expected = array_sum(array_column(E2E_ACTIONS, 'n'));
+    $existing = countSiteRows('owa_action_fact');
+
+    /* Idempotent for the same reason as the clicks above. */
+    if ($existing > 0) {
+        return [
+            'actions'       => 0,
+            'reused'        => true,
+            'rows_in_db'    => $existing,
+            'complete'      => $existing === $expected,
+            'actions_total' => $expected,
+            'unique_names'  => count(array_unique(array_column(E2E_ACTIONS, 'name'))),
+            'value_total'   => array_sum(array_map(
+                static fn($a) => $a['value'] * $a['n'], E2E_ACTIONS)),
+        ];
+    }
+
+    $rc = owa_coreAPI::requestContainerSingleton();
+
+    $visitor_id = numericGuid();
+    $session_id = numericGuid();
+
+    $day = time() - (6 * 86400);
+    $day = $day - ($day % 86400) + 43200;
+
+    $written = 0;
+    $offset  = 0;
+
+    foreach (E2E_ACTIONS as $action) {
+
+        for ($i = 0; $i < $action['n']; $i++) {
+
+            $rc->timestamp = $day + ($offset * 60);
+            $offset++;
+
+            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event->setEventType('track.action');
+            $event->setProperties([
+                'site_id'          => E2E_SITE_ID,
+                'session_id'       => $session_id,
+                'visitor_id'       => $visitor_id,
+                'guid'             => numericGuid(),
+                'page_url'         => E2E_SITE_DOMAIN . '/',
+                'page_title'       => 'E2E Home',
+                'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
+                'ip_address'       => '203.0.113.31',
+                'action_group'     => $action['group'],
+                'action_name'      => $action['name'],
+                'action_label'     => $action['label'],
+                'numeric_value'    => $action['value'],
+            ]);
+
+            if (owa_coreAPI::logEvent('track.action', $event) !== false) {
+                $written++;
+            }
+        }
+    }
+
+    $rc->timestamp = time();
+
+    return [
+        'actions'       => $written,
+        'rows_in_db'    => countSiteRows('owa_action_fact'),
+        /*
+         * The three answers the three metrics should give. Computed from the
+         * fixture so the numbers cannot drift apart from the data, and kept
+         * DIFFERENT from each other so no metric can be right by accident.
+         */
+        'actions_total' => array_sum(array_column(E2E_ACTIONS, 'n')),
+        'unique_names'  => count(array_unique(array_column(E2E_ACTIONS, 'name'))),
+        'value_total'   => array_sum(array_map(
+            static fn($a) => $a['value'] * $a['n'], E2E_ACTIONS)),
+    ];
+}
+
+/** How many rows of a fact table belong to the fixture site. */
+function countSiteRows(string $table): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom($table);
+    $db->selectColumn('COUNT(*) AS c');
+    $db->where('site_id', E2E_SITE_ID);
+
+    $row = $db->getOneRow();
+
+    return (int) ($row['c'] ?? 0);
+}
 
 /** Numeric GUID in the tracker's format (BIGINT-safe): <time><6rand><3rand>. */
 function numericGuid(): string
