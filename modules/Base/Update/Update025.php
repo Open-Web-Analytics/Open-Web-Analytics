@@ -208,7 +208,7 @@ class Update025 extends \OWA\Core\Update {
                 'site_id'            => $row['scope_id'],
                 'property_id'        => self::propertyFor( $row['scope_id'] ),
                 'name'               => (string) $goal['goal_name'],
-                'goal_number'        => (int) ( $goal['goal_number'] ?: $number ),
+                'goal_number'        => (int) ( ( $goal['goal_number'] ?? '' ) ?: $number ),
                 'goal_group'         => (string) ( $goal['goal_group'] ?? '' ),
                 'is_active'          => ( ( $goal['goal_status'] ?? '' ) === 'active' ) ? 1 : 0,
                 'value'              => self::valueInCents( $goal ),
