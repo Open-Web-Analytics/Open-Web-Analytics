@@ -197,4 +197,107 @@ final class UpdateAddColumnGuardTest extends TestCase
 
         return substr( $code, $open );
     }
+    /**
+     * THE PRODUCTION FAILURE, REPRODUCED.
+     *
+     * The scans above prove the SHAPE of the code. This proves the behaviour:
+     * running an update whose column is already present must SUCCEED.
+     *
+     * That is exactly what killed the live upgrade -- Update023 asked for a
+     * column Update021 had already created, got false, and reported failure on
+     * a correct database. The source scan alone would pass against a helper
+     * that was subtly wrong; this runs the real thing against a real table.
+     *
+     * Update023's own targets are used because that is the update that failed.
+     * The column is already there on any install at schema 23 or above, which
+     * is every install this suite runs against -- so the test needs no fixture,
+     * only a database.
+     */
+    public function testAnUpdateSucceedsWhenItsColumnIsAlreadyThere(): void
+    {
+        require_once __DIR__ . '/bootstrap_owa.php';
+
+        if ( ! owa_test_db_available() ) {
+
+            $this->markTestSkipped( 'the behaviour needs a database to be idempotent against' );
+        }
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $present = (array) $db->get_results(
+            "SHOW COLUMNS FROM " . $property->getTableName() . " LIKE 'archived_date'" );
+
+        $this->assertNotEmpty( $present,
+            'this install is below schema 23, so the already-present case cannot be exercised' );
+
+        $update = new \OWA\Module\Base\Update\Update023;
+
+        $this->assertTrue( $update->up(),
+            'Update023 reported failure for a column that is already there. That is what '
+            . 'stopped a live upgrade at schema 22: addColumn() answers false for "already '
+            . 'exists", and reading that as a failure halts an install whose database is '
+            . 'already correct.' );
+
+        // And again, because idempotent means repeatable rather than merely
+        // survivable once.
+        $this->assertTrue( $update->up(), 'the second run reported failure' );
+    }
+
+    /**
+     * And the down is repeatable too.
+     *
+     * Run against a scratch table so nothing real loses a column: a rollback
+     * that got half way through has to be finishable, and dropColumnIfPresent()
+     * is what makes the second attempt a no-op rather than an error.
+     */
+    public function testDroppingAColumnTwiceIsNotAFailure(): void
+    {
+        require_once __DIR__ . '/bootstrap_owa.php';
+
+        if ( ! owa_test_db_available() ) {
+
+            $this->markTestSkipped( 'the behaviour needs a database' );
+        }
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = 'owa_test_drop_' . bin2hex( random_bytes( 4 ) );
+
+        $db->query( "CREATE TABLE $table (id BIGINT NOT NULL, archived_date BIGINT, PRIMARY KEY (id))" );
+
+        try {
+
+            $entity = new class( $table ) extends \OWA\Core\Entity {
+
+                private $t;
+
+                public function __construct( $t ) { $this->t = $t; }
+
+                public function getTableName() { return $this->t; }
+
+                public function dropColumn( $column ) {
+
+                    return \OWA\Core\CoreAPI::dbSingleton()->query(
+                        'ALTER TABLE ' . $this->t . ' DROP COLUMN ' . $column );
+                }
+            };
+
+            $update = new \OWA\Module\Base\Update\Update023;
+
+            $drop = new ReflectionMethod( '\OWA\Core\Update', 'dropColumnIfPresent' );
+            $drop->setAccessible( true );
+
+            $this->assertTrue( (bool) $drop->invoke( $update, $entity, 'archived_date' ),
+                'the first drop failed' );
+
+            $this->assertTrue( (bool) $drop->invoke( $update, $entity, 'archived_date' ),
+                'dropping an already-absent column reported failure, so a rollback that got '
+                . 'half way through cannot be finished' );
+
+        } finally {
+
+            $db->query( "DROP TABLE IF EXISTS $table" );
+        }
+    }
 }
