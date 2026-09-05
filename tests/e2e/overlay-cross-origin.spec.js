@@ -203,6 +203,35 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             `the heatmap query resolved the page but matched no clicks\n${failure}`
         ).toBeGreaterThan(0);
 
+        /*
+         * AND THE POINTS ARE WEIGHTED.
+         *
+         * resultsTotal above zero says clicks came back. It does not say they
+         * were GROUPED -- a heatmap that returned one row per click and plotted
+         * every one identically satisfies it exactly as well, and that is the
+         * difference between a heat map and a scatter of dots.
+         *
+         * The fixture puts three of its clicks on one coordinate, so the
+         * grouped result must have fewer rows than there are clicks. Asserted
+         * as an inequality between two numbers the fixture reports, rather than
+         * by digging a count out of a truncated response body: it holds
+         * whatever the envelope looks like, and it fails the moment the
+         * grouping stops happening.
+         */
+        expect(fx.click_points,
+            'the overlay fixture no longer reports how many distinct points it seeded'
+        ).toBeGreaterThan(0);
+
+        expect(Number(total[1]),
+            `the heatmap returned a row per CLICK rather than per POINT, so the points carry `
+            + `no weight -- ${fx.clicks} clicks came back as ${total[1]} rows and should have `
+            + `come back as ${fx.click_points}\n${failure}`
+        ).toBe(fx.click_points);
+
+        expect(fx.click_points,
+            'the fixture stopped repeating a coordinate, so this no longer tests weighting'
+        ).toBeLessThan(Number(fx.clicks));
+
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);
     });

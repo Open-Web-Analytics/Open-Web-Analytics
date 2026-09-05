@@ -99,11 +99,19 @@ if ( ! defined( 'OWA_SQL_LIKE' ) ) { define('OWA_SQL_LIKE', 'LIKE'); }
 // argument order is part of the contract: needle first, then the column.
 if ( ! defined( 'OWA_SQL_CONTAINS' ) ) { define('OWA_SQL_CONTAINS', 'LOCATE(%s, %s) > 0'); }
 if ( ! defined( 'OWA_SQL_NOT_CONTAINS' ) ) { define('OWA_SQL_NOT_CONTAINS', 'LOCATE(%s, %s) = 0'); }
+// Prefix match, spelled as containment AT POSITION ONE rather than as LIKE
+// 'x%'. LIKE would read % and _ in the value as wildcards, so a goal event on
+// "50% off" would quietly match far more than it says -- and escaping them is a
+// thing to get wrong once per call site. Same argument order: needle, column.
+if ( ! defined( 'OWA_SQL_STARTS_WITH' ) ) { define('OWA_SQL_STARTS_WITH', 'LOCATE(%s, %s) = 1'); }
 if ( ! defined( 'OWA_SQL_ADD_INDEX' ) ) { define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s'); }
 // Named form. The unnamed one above lets MySQL pick the name, so repeating it
 // yields site_id, site_id_2, site_id_3 rather than failing as a duplicate.
 if ( ! defined( 'OWA_SQL_ADD_NAMED_INDEX' ) ) { define('OWA_SQL_ADD_NAMED_INDEX', 'ALTER TABLE %s ADD INDEX %s (%s) %s'); }
 if ( ! defined( 'OWA_SQL_COUNT' ) ) { define('OWA_SQL_COUNT', 'COUNT(%s)'); }
+// The first non-null of its arguments. Used by GoalEventPredicate so a NULL
+// column compares as the empty string, the way GoalEvent::compare() sees it.
+if ( ! defined( 'OWA_SQL_COALESCE' ) ) { define('OWA_SQL_COALESCE', 'COALESCE(%s, %s)'); }
 if ( ! defined( 'OWA_SQL_SUM' ) ) { define('OWA_SQL_SUM', 'SUM(%s)'); }
 if ( ! defined( 'OWA_SQL_ROUND' ) ) { define('OWA_SQL_ROUND', 'ROUND(%s)'); }
 if ( ! defined( 'OWA_SQL_AVERAGE' ) ) { define('OWA_SQL_AVERAGE', 'AVG(%s)'); }

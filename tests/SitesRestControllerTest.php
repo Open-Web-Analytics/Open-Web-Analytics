@@ -113,6 +113,8 @@ final class SitesRestControllerTest extends RestControllerTestCase
             'The response should echo the created site domain.');
 
         $this->assertTrue($this->siteDomainExists($domain), 'The site should have been persisted.');
+
+        $this->trackPropertyOf($domain);
     }
 
     /**
@@ -153,9 +155,46 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->assertNotSame(
             $site['site_id'], $resp['data']['site_id'] ?? $site['site_id'],
             'The second Profile reused the first one\'s identifier.');
+
+        /*
+         * The second Profile is created BY THE ENDPOINT, so makeSite()'s
+         * cleanup does not know about it -- it left one site row behind per
+         * run. No Property to remove with it: reusing the first one's Property
+         * is the whole point of the case, and deleting it would take the
+         * tracked site's parent out from under it.
+         */
+        if (!empty($resp['data']['site_id'])) {
+            $this->trackForCleanup('base.site', $resp['data']['site_id'], 'site_id');
+        }
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * Track the Property the endpoint minted for a site it created.
+     *
+     * Cleanup for these sites is registered BY DOMAIN before the request, so a
+     * mid-request throw cannot orphan the site -- but the Property does not
+     * exist until the controller runs, so it cannot be registered the same way.
+     * It has to be looked up afterwards.
+     *
+     * The consequence of not doing so was 82 parentless Properties from this
+     * one test, each a row in the site picker.
+     *
+     * Silent when the site is absent: the caller has already asserted that it
+     * was created, and a second failure here would only obscure the first.
+     */
+    private function trackPropertyOf(string $domain): void
+    {
+        $site = owa_coreAPI::entityFactory('base.site');
+        $site->load($domain, 'domain');
+
+        $property = $site->get('property_id');
+
+        if ($property) {
+            $this->trackForCleanup('base.property', $property, 'id');
+        }
+    }
 
     private function siteDomainExists(string $domain): bool
     {

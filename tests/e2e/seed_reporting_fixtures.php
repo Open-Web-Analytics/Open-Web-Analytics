@@ -104,13 +104,72 @@ const E2E_NOTIFICATIONS = [
     ['source_key' => 'e2e-n5', 'title' => 'E2E Notification Five',  'body' => 'fifth',  'url' => 'https://example.test/n5'],
 ];
 
+/*
+ * CLICKS, for the click reports and the heatmap.
+ *
+ * Nothing seeded these before, so `domClicks` and every dom-element dimension
+ * had no coverage at all -- and neither did the heatmap, whose plotting is
+ * tested against rows typed into a JS test rather than clicks that were ever
+ * recorded. Every layer was proved against a mock of its neighbour; the seam
+ * between them was what nobody could see.
+ *
+ * The counts are DELIBERATELY ALL DIFFERENT -- 6 clicks, 5 on one element,
+ * 4 on one page, 3 at one coordinate, 2, 1 -- so an assertion cannot pass by
+ * landing on a number that happens to be right for another reason. A fixture
+ * where the totals agree proves nothing about which grouping was applied.
+ *
+ * Coordinates repeat on purpose too: three clicks share (100,200), so the
+ * heatmap has a point of weight 3 beside points of weight 1 and 2, which is
+ * the only way to tell a weighted plot from a plot of distinct positions.
+ */
+const E2E_CLICKS = [
+    ['page' => '/',        'id' => 'buy-btn',  'tag' => 'a',      'x' => 100, 'y' => 200, 'n' => 3],
+    ['page' => '/',        'id' => 'nav-home', 'tag' => 'a',      'x' => 40,  'y' => 50,  'n' => 1],
+    ['page' => '/pricing', 'id' => 'buy-btn',  'tag' => 'button', 'x' => 300, 'y' => 400, 'n' => 2],
+];
+
+/*
+ * ACTIONS, for the action reports.
+ *
+ * Shaped so the three action metrics cannot agree with each other:
+ *   actions        = 4  (a distinct count of rows)
+ *   uniqueActions  = 2  (a distinct count of NAMES -- submit, cancel)
+ *   actionsValue   = 22 (a sum -- 5 + 5 + 2 + 10)
+ *
+ * Three different questions with three different answers. A fixture of four
+ * identical actions would let a report answering any of them look correct.
+ *
+ * The handler lowercases name, group and label, so the values read back are
+ * lowercase however they are written here -- which is itself worth pinning.
+ */
+const E2E_ACTIONS = [
+    ['group' => 'Signup',   'name' => 'submit', 'label' => 'form-a', 'value' => 5,  'n' => 2],
+    ['group' => 'Signup',   'name' => 'cancel', 'label' => 'form-a', 'value' => 2,  'n' => 1],
+    ['group' => 'Commerce', 'name' => 'submit', 'label' => 'cart',   'value' => 10, 'n' => 1],
+];
+
 const E2E_GOAL_NUMBER = 1;
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
 const E2E_GOAL_GROUP  = '1';
 const E2E_GOAL_URL    = '/docs';
-const E2E_GOAL_STEPS  = [
-    1 => ['name' => 'E2E Step Home',    'path' => '/',        'is_required' => true],
-    2 => ['name' => 'E2E Step Pricing', 'path' => '/pricing', 'is_required' => true],
+
+// The funnel VISUALIZATION.
+//
+// A funnel used to be configuration -- rows hanging off a goal -- and the goal
+// funnel report read them. It is a visualization now: a custom report of type
+// `visualization`, whose definition holds its own steps. So it is seeded the
+// way a custom report is, not the way a goal is, and nothing about it belongs
+// to the goal event above.
+//
+// The third step is the one the old report APPENDED from the goal's own
+// goal_url. It is an ordinary step here, which is the whole difference: the
+// path being analysed is stated where it is looked at, so there is no longer a
+// stage the report builds rather than reads.
+const E2E_FUNNEL_VIZ_NAME  = 'E2E Signup Funnel Visualization';
+const E2E_FUNNEL_VIZ_STEPS = [
+    ['name' => 'E2E Step Home',    'path' => '/'],
+    ['name' => 'E2E Step Pricing', 'path' => '/pricing'],
+    ['name' => 'E2E Step Docs',    'path' => '/docs'],
 ];
 
 // A second fixture user with the ADMIN role, so the admin-actions e2e suite
@@ -355,6 +414,16 @@ function seed(): array
 
     // 9. A custom report with a broken-out trend, for the companion-grid specs.
     $out['breakdown_report_seeded'] = seedBreakdownReport();
+
+    // 10. The funnel visualization. Separate from the goal above and naming
+    //     nothing about it -- a funnel is an analysis of a path now, not part
+    //     of a goal's configuration.
+    $out['funnel_visualization_seeded'] = seedFunnelVisualization();
+
+    // 11. Clicks and actions, so the click reports, the dom-element dimensions,
+    //     the action metrics and the heatmap have something to count.
+    $out['clicks_seeded']  = seedClicks();
+    $out['actions_seeded'] = seedActions();
 
     $out['status']            = 'seeded';
     return $out;
@@ -673,6 +742,40 @@ function seedNotifications(): array
     return ['created' => $created, 'source' => E2E_NOTIFICATION_SOURCE];
 }
 
+/**
+ * Remove a Property once nothing is left under it.
+ *
+ * Creating a site MINTS a Property -- a site is an Observation Profile, and a
+ * Profile has to hang off something -- so a teardown that removes only the site
+ * leaves a parentless Property behind on every run. This fixture's own was
+ * sitting in the development database as exactly that.
+ *
+ * Guarded on emptiness rather than deleted outright, because a Property can
+ * legitimately hold more than one Profile: two Observation Profiles of the same
+ * website share it, and taking it away would orphan the other one. Called AFTER
+ * the site is deleted, so "empty" is the question actually being asked.
+ */
+function unseedPropertyIfEmpty($propertyId): void
+{
+    // Db::where() DROPS an empty value rather than matching nothing, so an
+    // unguarded call here would count every Profile on the installation and
+    // conclude the Property is busy.
+    if (!$propertyId) {
+        return;
+    }
+
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_site');
+    $db->selectColumn('id');
+    $db->where('property_id', $propertyId);
+
+    if ($db->getAllRows()) {
+        return;
+    }
+
+    owa_coreAPI::entityFactory('base.property')->delete($propertyId, 'id');
+}
+
 /** Remove the fixture notifications and every per-user state row pointing at them. */
 function unseedNotifications(): int
 {
@@ -701,39 +804,166 @@ function unseedNotifications(): int
     return $removed;
 }
 
-function seedGoal(): array
+/**
+ * The funnel VISUALIZATION, and the id the specs address it by.
+ *
+ * Written through the entity rather than CustomReports::save(), because save()
+ * validates a REPORT: it requires widgets whose metrics and dimensions resolve
+ * through the registry, and a funnel has neither. A visualization's definition
+ * is its steps, and the controller that computes it is chosen by
+ * visualization_type -- so those two columns, and not the widget list, are what
+ * has to be right here.
+ *
+ * The step paths are ones the pageview fixture already walks, in order, so
+ * every stage counts somebody. A funnel whose stages are all zero would render
+ * and prove nothing about the counting.
+ *
+ * @return array  the seeded row's id and its steps, for the e2e fixture file
+ */
+function seedFunnelVisualization(): array
 {
     $steps = [];
 
-    foreach (E2E_GOAL_STEPS as $n => $step) {
-        $steps[$n] = $step + ['step_number' => $n];
+    foreach (E2E_FUNNEL_VIZ_STEPS as $i => $step) {
+        $steps[] = $step + ['step_number' => $i + 1];
     }
 
-    $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
 
-    $goals[E2E_GOAL_NUMBER] = [
-        'goal_number' => E2E_GOAL_NUMBER,
+    $id = '';
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_FUNNEL_VIZ_NAME) {
+
+            $id = (string) $row['id'];
+            break;
+        }
+    }
+
+    $report = owa_coreAPI::entityFactory('base.custom_report');
+
+    if ($id !== '') {
+        $report->load($id);
+    }
+
+    $report->set('name', E2E_FUNNEL_VIZ_NAME);
+    $report->set('report_type', \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION);
+    $report->set('visualization_type', 'funnel');
+    // ENCODED: the column is a blob holding JSON, and handing it an array
+    // stores the string "Array" -- which renders as a funnel with no steps.
+    $report->set('definition', json_encode(['steps' => $steps]));
+    $report->set('last_updated_timestamp', owa_coreAPI::getRequestTimestamp());
+
+    if ($report->wasPersisted()) {
+
+        $report->update();
+
+    } else {
+
+        $id = $report->generateId('visualization:e2e:' . E2E_SITE_ID);
+
+        $report->set('id', $id);
+        /*
+         * Owned by the ANALYST, not the admin.
+         *
+         * Ownership decides what the roster LISTS -- an admin sees everyone's,
+         * everyone else sees their own -- and the reporting specs sign in as
+         * the analyst. Seeded under the admin it existed, opened fine by its
+         * URL, and was invisible on the roster the specs look it up on, which
+         * reads as "the funnel is missing" rather than "you cannot see it".
+         *
+         * It also makes the fixture the ordinary case: somebody's own
+         * visualization, not an administrator's.
+         */
+        $report->set('user_id', E2E_USER_ID);
+        $report->set('creation_timestamp', owa_coreAPI::getRequestTimestamp());
+        $report->create();
+    }
+
+    /*
+     * Read BACK, not returned from what was written.
+     *
+     * The definition survives a JSON round trip through a blob column, and the
+     * specs address the row by an id this function minted. Reporting what the
+     * database now holds is the only way the seed output can say the steps are
+     * really there -- the "Array" bug above wrote successfully and stored
+     * nothing readable.
+     */
+    $stored = \OWA\Module\Base\Classes\CustomReports::load($id);
+    $back   = isset($stored['definition']['steps']) ? (array) $stored['definition']['steps'] : [];
+
+    return [
+        'id'    => $id,
+        'name'  => E2E_FUNNEL_VIZ_NAME,
+        'steps' => count($back),
+        'paths' => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
+    ];
+}
+
+/** Remove the funnel visualization fixture, by name. */
+function unseedFunnelVisualization(): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_FUNNEL_VIZ_NAME) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
+            $removed++;
+        }
+    }
+
+    return $removed;
+}
+
+function seedGoal(): array
+{
+    /*
+     * Through GoalManager, not persistSiteSetting.
+     *
+     * Goals are rows in owa_goal_event now. persistSiteSetting still WRITES a
+     * settings blob perfectly happily -- nothing reads it any more, so seeding
+     * that way succeeded and produced a site with no goals, which is how
+     * thirteen reporting specs came to fail at once.
+     *
+     * No steps: a funnel is not part of a goal any more. See
+     * seedFunnelVisualization(), which seeds the path separately and does not
+     * name this goal at all.
+     */
+    $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', E2E_SITE_ID);
+
+    $gm->saveGoal(E2E_GOAL_NUMBER, [
         'goal_name'   => E2E_GOAL_NAME,
         'goal_status' => 'active',
         'goal_group'  => E2E_GOAL_GROUP,
         'goal_type'   => 'url_destination',
         'details'     => [
-            'match_type'   => 'exact',
-            'goal_url'     => E2E_GOAL_URL,
-            'funnel_steps' => $steps,
+            'match_type' => 'exact',
+            'goal_url'   => E2E_GOAL_URL,
         ],
-    ];
+    ]);
 
-    owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
+    // The write happens on destruct, as the blob write used to.
+    unset($gm);
 
-    $stored = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
-    $back   = $stored[E2E_GOAL_NUMBER]['details']['funnel_steps'] ?? [];
+    // Read back, so the seed output reports what the database holds rather than
+    // what was handed to it.
+    $stored = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals(E2E_SITE_ID);
+    $goal   = $stored[E2E_GOAL_NUMBER] ?? [];
 
     return [
         'goal_number' => E2E_GOAL_NUMBER,
-        'steps'       => count($back),
-        'paths'       => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
-        'goal_url'    => E2E_GOAL_URL,
+        'goal_name'   => $goal['goal_name'] ?? '',
+        'goal_status' => $goal['goal_status'] ?? '',
+        'goal_url'    => $goal['details']['goal_url'] ?? '',
     ];
 }
 
@@ -746,7 +976,7 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_domstream',
+    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
@@ -781,25 +1011,43 @@ function teardown(): array
     $removed['owa_referer'] = 'fixture rows cleared';
 
     $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
-    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport() )
-        . ' fixture report(s) removed';
+    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport()
+        + unseedFunnelVisualization() ) . ' fixture report(s) removed';
 
     /*
-     * The fixture goal. Goals are a per-site SETTING, not rows, so the table
-     * loop above cannot reach it -- and a goal left behind keeps converting
-     * against real traffic and keeps its group showing as a metric-set tab on
-     * every tabbed report.
+     * The fixture goal event, and the conditions hanging off it.
      *
-     * Only this goal number is removed: an install may have its own goals in
-     * other slots, and clearing the setting wholesale would take them too.
+     * Goals are ROWS now, in owa_goal_event -- the table loop above does not
+     * reach them because it clears fact tables, and a goal event left behind
+     * keeps converting against real traffic and keeps its group showing as a
+     * metric-set tab on every tabbed report.
+     *
+     * Only this one is removed, by its derived id: an install may have goal
+     * events of its own, and clearing the table wholesale would take them too.
+     *
+     * Its conditions go first. They are separate rows keyed by goal_event_id
+     * and nothing cascades, so deleting only the goal event leaves conditions
+     * pointing at an id that no longer resolves -- and the next run's goal
+     * event, minted at the same derived id, would inherit them.
      */
     try {
-        $goals = (array) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'goals');
+        $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
+            E2E_SITE_ID, E2E_GOAL_NUMBER);
 
-        if (array_key_exists(E2E_GOAL_NUMBER, $goals)) {
-            unset($goals[E2E_GOAL_NUMBER]);
-            owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'goals', $goals);
-            $removed['goal'] = 'fixture goal removed';
+        $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
+        $goalEvent->load($goalEventId);
+
+        if ($goalEvent->wasPersisted()) {
+
+            $db = owa_coreAPI::dbSingleton();
+            $db->deleteFrom(
+                owa_coreAPI::entityFactory('base.goal_event_condition')->getTableName());
+            $db->where('goal_event_id', $goalEventId);
+            $db->executeQuery();
+
+            $goalEvent->delete($goalEventId);
+            $removed['goal'] = 'fixture goal event removed';
+
         } else {
             $removed['goal'] = 'none';
         }
@@ -834,12 +1082,20 @@ function teardown(): array
         // Created through the admin UI, so its identifier is minted and cannot
         // be predicted here. The domain is what this cleanup actually knows.
         $cs->load(E2E_NEW_SITE_DOMAIN, 'domain');
-        if ($cs->get('id')) { $cs->delete($cs->get('id'), 'id'); }
+        if ($cs->get('id')) {
+            $property = $cs->get('property_id');
+            $cs->delete($cs->get('id'), 'id');
+            unseedPropertyIfEmpty($property);
+        }
     } catch (\Throwable $e) {}
     try {
         $s = owa_coreAPI::entityFactory('base.site');
         $s->load($site_id, 'site_id');
-        if ($s->get('id')) { $s->delete($s->get('id'), 'id'); }
+        if ($s->get('id')) {
+            $property = $s->get('property_id');
+            $s->delete($s->get('id'), 'id');
+            unseedPropertyIfEmpty($property);
+        }
     } catch (\Throwable $e) {}
 
     return ['status' => 'torn down', 'tables' => $removed];
@@ -1131,6 +1387,221 @@ function seedPageviews(int $n): int
 
 
 
+
+/**
+ * Clicks, fired as real dom.click events.
+ *
+ * Through logEvent, not by inserting rows: ClickHandlers is what mints the
+ * document_id from the page url, the target_id from the target url and the
+ * `position` from the coordinates, and a fixture that wrote owa_click directly
+ * would seed data no tracker could ever have produced -- and would keep passing
+ * if the handler stopped running.
+ *
+ * @return array what was written, for the e2e fixture file to assert against
+ */
+function seedClicks(): array
+{
+    $expected = array_sum(array_column(E2E_CLICKS, 'n'));
+    $existing = countSiteRows('owa_click');
+
+    /*
+     * IDEMPOTENT, like the pageviews above and for the same reason: every click
+     * carries a fresh guid, so a second seed would double the rows and every
+     * count the specs assert would be wrong by exactly a factor of two -- the
+     * kind of wrong that looks like a real regression.
+     *
+     * All-or-nothing rather than topping up. A partial run means a previous
+     * seed died midway, and the fixture should be torn down and rebuilt, not
+     * patched up with a second visitor's worth of clicks.
+     */
+    if ($existing > 0) {
+        return [
+            'clicks'     => 0,
+            'reused'     => true,
+            'rows_in_db' => $existing,
+            'complete'   => $existing === $expected,
+            'by_element' => clickTotals('id'),
+            'by_page'    => clickTotals('page'),
+        ];
+    }
+
+    $rc = owa_coreAPI::requestContainerSingleton();
+
+    // One visitor, one session, a single day inside the reporting window. The
+    // clicks do not need to be spread out -- what varies here is WHERE they
+    // landed, not when.
+    $visitor_id = numericGuid();
+    $session_id = numericGuid();
+
+    $day = time() - (5 * 86400);
+    $day = $day - ($day % 86400) + 43200;   // 12:00 UTC, clear of any boundary
+
+    $written = 0;
+    $offset  = 0;
+
+    foreach (E2E_CLICKS as $click) {
+
+        for ($i = 0; $i < $click['n']; $i++) {
+
+            $rc->timestamp = $day + ($offset * 60);
+            $offset++;
+
+            $url = E2E_SITE_DOMAIN . $click['page'];
+
+            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event->setEventType('dom.click');
+            $event->setProperties([
+                'site_id'            => E2E_SITE_ID,
+                'session_id'         => $session_id,
+                'visitor_id'         => $visitor_id,
+                'guid'               => numericGuid(),
+                'page_url'           => $url,
+                'page_title'         => 'E2E ' . ($click['page'] === '/' ? 'Home' : trim($click['page'], '/')),
+                'HTTP_USER_AGENT'    => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
+                'ip_address'         => '203.0.113.30',
+                'target_url'         => $url . '#' . $click['id'],
+                'click_x'            => $click['x'],
+                'click_y'            => $click['y'],
+                'page_width'         => 1280,
+                'page_height'        => 2000,
+                'dom_element_id'     => $click['id'],
+                'dom_element_tag'    => $click['tag'],
+                'dom_element_name'   => $click['id'] . '-name',
+                'dom_element_class'  => 'e2e-clickable',
+                'dom_element_text'   => 'E2E ' . $click['id'],
+                'dom_element_value'  => '(not set)',
+            ]);
+
+            if (owa_coreAPI::logEvent('dom.click', $event) !== false) {
+                $written++;
+            }
+        }
+    }
+
+    $rc->timestamp = time();
+
+    return [
+        'clicks'       => $written,
+        'rows_in_db'   => countSiteRows('owa_click'),
+        // What the reports should say, derived from the fixture rather than
+        // written down twice.
+        'by_element'   => clickTotals('id'),
+        'by_page'      => clickTotals('page'),
+    ];
+}
+
+/** Sum the fixture's click counts by one of its keys. */
+function clickTotals(string $key): array
+{
+    $out = [];
+
+    foreach (E2E_CLICKS as $click) {
+        $out[$click[$key]] = ($out[$click[$key]] ?? 0) + $click['n'];
+    }
+
+    arsort($out);
+
+    return $out;
+}
+
+/**
+ * Actions, fired as real track.action events.
+ *
+ * Same reasoning as the clicks: ActionHandler is what lowercases the name,
+ * group and label and coerces the value to a number, so writing owa_action_fact
+ * directly would seed rows in a shape the tracker never produces.
+ *
+ * @return array
+ */
+function seedActions(): array
+{
+    $expected = array_sum(array_column(E2E_ACTIONS, 'n'));
+    $existing = countSiteRows('owa_action_fact');
+
+    /* Idempotent for the same reason as the clicks above. */
+    if ($existing > 0) {
+        return [
+            'actions'       => 0,
+            'reused'        => true,
+            'rows_in_db'    => $existing,
+            'complete'      => $existing === $expected,
+            'actions_total' => $expected,
+            'unique_names'  => count(array_unique(array_column(E2E_ACTIONS, 'name'))),
+            'value_total'   => array_sum(array_map(
+                static fn($a) => $a['value'] * $a['n'], E2E_ACTIONS)),
+        ];
+    }
+
+    $rc = owa_coreAPI::requestContainerSingleton();
+
+    $visitor_id = numericGuid();
+    $session_id = numericGuid();
+
+    $day = time() - (6 * 86400);
+    $day = $day - ($day % 86400) + 43200;
+
+    $written = 0;
+    $offset  = 0;
+
+    foreach (E2E_ACTIONS as $action) {
+
+        for ($i = 0; $i < $action['n']; $i++) {
+
+            $rc->timestamp = $day + ($offset * 60);
+            $offset++;
+
+            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event->setEventType('track.action');
+            $event->setProperties([
+                'site_id'          => E2E_SITE_ID,
+                'session_id'       => $session_id,
+                'visitor_id'       => $visitor_id,
+                'guid'             => numericGuid(),
+                'page_url'         => E2E_SITE_DOMAIN . '/',
+                'page_title'       => 'E2E Home',
+                'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
+                'ip_address'       => '203.0.113.31',
+                'action_group'     => $action['group'],
+                'action_name'      => $action['name'],
+                'action_label'     => $action['label'],
+                'numeric_value'    => $action['value'],
+            ]);
+
+            if (owa_coreAPI::logEvent('track.action', $event) !== false) {
+                $written++;
+            }
+        }
+    }
+
+    $rc->timestamp = time();
+
+    return [
+        'actions'       => $written,
+        'rows_in_db'    => countSiteRows('owa_action_fact'),
+        /*
+         * The three answers the three metrics should give. Computed from the
+         * fixture so the numbers cannot drift apart from the data, and kept
+         * DIFFERENT from each other so no metric can be right by accident.
+         */
+        'actions_total' => array_sum(array_column(E2E_ACTIONS, 'n')),
+        'unique_names'  => count(array_unique(array_column(E2E_ACTIONS, 'name'))),
+        'value_total'   => array_sum(array_map(
+            static fn($a) => $a['value'] * $a['n'], E2E_ACTIONS)),
+    ];
+}
+
+/** How many rows of a fact table belong to the fixture site. */
+function countSiteRows(string $table): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->selectFrom($table);
+    $db->selectColumn('COUNT(*) AS c');
+    $db->where('site_id', E2E_SITE_ID);
+
+    $row = $db->getOneRow();
+
+    return (int) ($row['c'] ?? 0);
+}
 
 /** Numeric GUID in the tracker's format (BIGINT-safe): <time><6rand><3rand>. */
 function numericGuid(): string

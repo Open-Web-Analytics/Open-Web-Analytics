@@ -1,7 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div class="panel_headline">GeoIP Settings</div>
 
-<div class="subview_content">
+<?php /* #panel, like every settings screen -- see options_general.php. */ ?>
+<div id="panel">
 
 <?php
 // Status first, because it is the question someone opening this page actually

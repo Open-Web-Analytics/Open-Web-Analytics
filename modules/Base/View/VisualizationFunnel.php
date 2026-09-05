@@ -29,16 +29,16 @@ namespace OWA\Module\Base\View;
  * @since        owa 1.4.0
  */
 
-class ReportGoalFunnel extends \OWA\Core\View {
+class VisualizationFunnel extends \OWA\Core\View {
 
     function render() {
 
-        $this->body->set_template('report_goal_funnel.php');
+        $this->body->set_template('visualization_funnel.php');
         $this->body->set('funnel', $this->get('funnel'));
         $this->body->set('funnel_json', json_encode($this->get('funnel')));
         $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
         $this->body->set('numGoals', \OWA\Core\CoreAPI::getSetting('base', 'numGoals') );
-        $this->body->set('goal_number',  $this->get('goal_number') );
+        $this->body->set( 'visualization_id', $this->get( 'visualization_id' ) );
 
         /*
          * The scope toggle and any segment complaint.
@@ -51,6 +51,9 @@ class ReportGoalFunnel extends \OWA\Core\View {
         $this->body->set('funnel_scope_other',   $this->get('funnel_scope_other') );
         $this->body->set('funnel_scope_label',   $this->get('funnel_scope_label') );
         $this->body->set('funnel_segment_error', $this->get('funnel_segment_error') );
+        // A step naming a goal event the funnel cannot count against. Refused
+        // rather than drawn with that step ignored -- see stepPredicate().
+        $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );
         $this->body->set('funnel_table_json', json_encode( $this->get('funnel_table') ) );
         $this->body->set('funnel_filter_json', json_encode( array(
             'dimensions'  => $this->get('funnel_filter_dimensions'),

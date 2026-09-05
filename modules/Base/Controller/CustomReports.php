@@ -83,7 +83,7 @@ class CustomReports extends \OWA\Core\ReportController {
             : (bool) $descending;
 
         $reports = \OWA\Module\Base\Classes\CustomReports::roster(
-            $user_id, $sees_all, $sort, $descending );
+            $user_id, $sees_all, $sort, $descending, null, $this->rosterType() );
 
         // What the headings need to draw themselves: which one is active, and
         // which way, so each can link to the OPPOSITE of what it shows now.
@@ -93,9 +93,25 @@ class CustomReports extends \OWA\Core\ReportController {
             : $descending );
 
         $this->set( 'custom_reports', $reports );
+        $this->set( 'roster_type', $this->rosterType() );
         $this->set( 'sees_all', $sees_all );
         $this->set( 'may_author', (bool) $user->isCapable( 'edit_reports' ) );
         $this->set( 'current_user_id', $user_id );
+    }
+
+    /**
+     * Which kind this roster lists.
+     *
+     * Reports and visualizations share a table and a set of screens -- same
+     * ownership, access control, editable titles, delete -- and differ only in
+     * how they are drawn. So the roster is one class asked which kind it is,
+     * rather than two that would drift.
+     *
+     * @return string
+     */
+    protected function rosterType() {
+
+        return \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT;
     }
 
     function success() {

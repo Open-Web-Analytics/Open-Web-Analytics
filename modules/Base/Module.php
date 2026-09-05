@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 24;
+        $this->required_schema_version = 27;
         return parent::__construct();
     }
 
@@ -170,9 +170,14 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.notifyNewSession',              'OWA\\Module\\Base\\Controller\\NotifyNewSession',             'Controller/NotifyNewSession.php' );
         $this->registerAction( 'base.optionsFlushCache',             'OWA\\Module\\Base\\Controller\\OptionsFlushCache',            'Controller/OptionsFlushCache.php' );
         $this->registerAction( 'base.optionsGeneral',                'OWA\\Module\\Base\\Controller\\OptionsGeneral',               'Controller/OptionsGeneral.php' );
-        $this->registerAction( 'base.optionsGoalEdit',               'OWA\\Module\\Base\\Controller\\OptionsGoalEdit',              'Controller/OptionsGoalEdit.php' );
-        $this->registerAction( 'base.optionsGoalEntry',              'OWA\\Module\\Base\\Controller\\OptionsGoalEntry',             'Controller/OptionsGoalEntry.php' );
-        $this->registerAction( 'base.optionsGoals',                  'OWA\\Module\\Base\\Controller\\OptionsGoals',                 'Controller/OptionsGoals.php' );
+        $this->registerAction( 'base.visualizations',                'OWA\\Module\\Base\\Controller\\Visualizations',              'Controller/Visualizations.php' );
+        $this->registerAction( 'base.visualizationSave',             'OWA\\Module\\Base\\Controller\\VisualizationSave',           'Controller/VisualizationSave.php' );
+        $this->registerAction( 'base.visualizationEdit',             'OWA\\Module\\Base\\Controller\\VisualizationEdit',           'Controller/VisualizationEdit.php' );
+        $this->registerAction( 'base.visualizationFunnel',           'OWA\\Module\\Base\\Controller\\VisualizationFunnel',         'Controller/VisualizationFunnel.php' );
+        $this->registerAction( 'base.goalEvents',                     'OWA\\Module\\Base\\Controller\\GoalEvents',                    'Controller/GoalEvents.php' );
+        $this->registerAction( 'base.goalEventEdit',                  'OWA\\Module\\Base\\Controller\\GoalEventEdit',                 'Controller/GoalEventEdit.php' );
+        $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
+        $this->registerAction( 'base.goalEventDelete',                'OWA\\Module\\Base\\Controller\\GoalEventDelete',               'Controller/GoalEventDelete.php' );
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
@@ -194,7 +199,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
         $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
-        $this->registerAction( 'base.reportGoalFunnel',              'OWA\\Module\\Base\\Controller\\ReportGoalFunnel',             'Controller/ReportGoalFunnel.php' );
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
@@ -2156,7 +2160,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'exit-pages', 'reports/exit-pages.json' );
         $this->registerReport( 'feeds', 'reports/feeds.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
-        $this->registerReport( 'goal-funnel', array( 'controller' => 'base.reportGoalFunnel' ) );
         $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'host-detail', 'reports/host-detail.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
@@ -2277,7 +2280,6 @@ class Module extends \OWA\Core\Module {
 
         //Goals
         $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
-        $this->addNavigationLinkInSubGroup( 'Goals', $this->reportRef( 'goal-funnel' ), 'Funnel Visualization', 1);
 
     }
 
@@ -2428,6 +2430,8 @@ class Module extends \OWA\Core\Module {
                 'impression',
                 'configuration',
             'setting',
+            'goal_event',
+            'goal_event_condition',
                 'user',
                 'domstream',
                 'action_fact',

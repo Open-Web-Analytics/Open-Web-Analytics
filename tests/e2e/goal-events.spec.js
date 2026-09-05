@@ -1,0 +1,161 @@
+const { test, expect } = require('@playwright/test');
+const { FIXTURE, adminLogin } = require('./fixtures');
+
+/**
+ * Goal events: the screens that replaced the twenty numbered goal slots.
+ *
+ * The old screens listed twenty rows whether or not anyone had filled them in,
+ * because the storage was a fixed-length array and the screen showed the
+ * storage. These list what exists -- so "counts nothing yet" is a state worth
+ * asserting, being the one the old screens could not represent.
+ */
+
+/** Land on an admin screen by its owa_do action. */
+async function gotoAction(page, doName, extra = '') {
+    await page.goto(`?owa_do=${doName}${extra}`, { waitUntil: 'networkidle' });
+}
+
+/** Click something destructive and confirm it through the modal. */
+async function confirmAndWait(page, locator) {
+    await locator.click();
+    await expect(page.locator('#owa_confirmDialog')).toBeVisible();
+
+    await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        page.locator('.owa_confirmProceed').click(),
+    ]);
+}
+
+test.describe('goal events', () => {
+
+    test.beforeEach(async ({ page }) => {
+        await adminLogin(page);
+    });
+
+    test('the list, the create, the edit and the delete', async ({ page }) => {
+        const name = 'E2E Signup ' + Date.now();
+        const renamed = name + ' renamed';
+
+        await gotoAction(page, 'base.goalEvents', `&owa_siteId=${FIXTURE.siteId}`);
+
+        // Every hierarchy screen says what it is for.
+        await expect(page.locator('.owa_panelIntro')).toBeVisible();
+
+        // --- CREATE ------------------------------------------------------------
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        // The condition is a constraint row -- the same markup and class names
+        // the report builder uses. That is what makes naming a condition look
+        // the same wherever it is done.
+        //
+        // Scoped to the condition list: the FUNNEL rows are constraint rows too,
+        // which is the point, so an unscoped locator matches both and resolves
+        // to two elements.
+        const condition = page.locator('.owa_goalEventCondition li.constraintRow');
+
+        await expect(condition.locator('.constraintDimensionPicker')).toBeVisible();
+        await expect(condition.locator('.constraintOperatorPicker')).toBeVisible();
+
+        // Conditions are a LIST: "a purchase over 50 from the pricing page" is
+        // two conditions, and one triple could not express it.
+        await page.locator('.owa_goalEventCondition .constraintAddButton').first().click();
+        await expect(condition).toHaveCount(2);
+
+        await page.locator('.owa_goalEventCondition .constraintRemoveButton').first().click();
+        await expect(condition).toHaveCount(1);
+
+        // How several combine is asked once, about the set.
+        await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
+
+        await page.fill('input[name="name"]', name);
+        await page.selectOption('select[name="conditionProperty[]"]', 'page_uri');
+        await page.selectOption('select[name="conditionOperator[]"]', 'begins');
+        await page.fill('input[name="conditionValue[]"]', '/thanks');
+        await page.fill('input[name="value"]', '2.50');
+
+        // A new goal event defaults to Active. Defaulting to Inactive means
+        // someone saves what they just described and it silently never fires.
+        await expect(page.locator('select[name="isActive"]')).toHaveValue('1');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        const row = page.locator('table.management tbody tr', { hasText: name });
+        await expect(row).toHaveCount(1);
+
+        // The condition shows, and the value survived the trip through cents.
+        await expect(row).toContainText('/thanks');
+        await expect(row).toContainText('2.50');
+        await expect(row).toContainText('Active');
+
+        // --- EDIT --------------------------------------------------------------
+        const editHref = await row.locator('a[href*="base.goalEventEdit"]').first()
+            .getAttribute('href');
+        const params = new URL(editHref, page.url()).searchParams;
+        const id = params.get('owa_goalEventId') || params.get('goalEventId');
+
+        expect(id, 'the list must expose the goal event id').toBeTruthy();
+
+        await gotoAction(page, 'base.goalEventEdit',
+            `&owa_siteId=${FIXTURE.siteId}&owa_goalEventId=${id}`);
+
+        // It came back carrying what was saved, not a blank form.
+        await expect(page.locator('input[name="name"]')).toHaveValue(name);
+        await expect(page.locator('input[name="conditionValue[]"]')).toHaveValue('/thanks');
+
+        await page.fill('input[name="name"]', renamed);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        await expect(
+            page.locator('table.management tbody tr', { hasText: renamed })
+        ).toHaveCount(1);
+
+        // Edited, not duplicated: the id is carried through the form, so saving
+        // twice has to update one row rather than leave two behind.
+        //
+        // Counted by NAME rather than as every row on the screen -- the seeded
+        // fixture goal event is a real row on this Profile, so "one row" would
+        // be asserting the fixture away.
+        await expect(
+            page.locator('table.management tbody tr', { hasText: name })
+        ).toHaveCount(1);
+
+        // --- DELETE ------------------------------------------------------------
+        await gotoAction(page, 'base.goalEventEdit',
+            `&owa_siteId=${FIXTURE.siteId}&owa_goalEventId=${id}`);
+
+        await confirmAndWait(page, page.locator('input[value="Delete Goal Event"]'));
+
+        await expect(
+            page.locator('table.management tbody tr', { hasText: renamed })
+        ).toHaveCount(0);
+    });
+
+    /**
+     * A condition with nothing to compare against counts nothing, and says
+     * nothing about it. This install had a goal in exactly that state -- a type
+     * the evaluator has no case for and no URL -- silently never firing since
+     * it was made.
+     */
+    test('a condition with no value is refused', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', 'E2E No Condition');
+        await page.fill('input[name="conditionValue[]"]', '');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        // Still on the form, carrying what was typed rather than a blank one.
+        await expect(page.locator('input[name="name"]')).toHaveValue('E2E No Condition');
+    });
+
+});

@@ -349,4 +349,78 @@ final class DbDriverSqlParityTest extends TestCase
             $db->close();
         }
     }
+    /**
+     * BOTH drivers can hand rows over one at a time, and agree on the rows.
+     *
+     * get_result_iterator() exists because some callers treat the rows as WORK
+     * rather than as the answer -- the funnel walks a row per matching event
+     * and only ever looks at one -- and get_results() would build a PHP array
+     * of all of them first, measured at 46MB per 100,000 rows.
+     *
+     * Tested against both drivers HERE rather than left to whichever one the
+     * box happens to run, because that is the trap this file exists for: this
+     * machine is PDO, so local green proves nothing about mysqli.
+     */
+    public function testBothDriversCanIterateRowsOneAtATime(): void
+    {
+        $sql = "SELECT 1 AS n, 'O''Brien' AS name UNION ALL SELECT 2, 'x'";
+
+        $streamed = array();
+        $whole    = array();
+
+        foreach ($this->drivers() as $name => $db) {
+
+            $this->assertTrue(method_exists($db, 'get_result_iterator'),
+                "$name: driver cannot hand rows over one at a time");
+
+            $rows = array();
+
+            foreach ($db->get_result_iterator($sql) as $row) {
+                $rows[] = $row;
+            }
+
+            $streamed[$name] = $rows;
+            $whole[$name]    = $db->get_results($sql);
+
+            $db->close();
+        }
+
+        $this->assertSame($streamed['mysqli'], $streamed['pdo'],
+            'the drivers streamed different rows');
+
+        // And streaming must give exactly what fetching the lot gives -- the
+        // mysqli driver puts rows through stringifyRow() on the way out of
+        // get_results(), so an iterator that skipped it would return native
+        // ints where the rest of OWA expects strings.
+        foreach (array('mysqli', 'pdo') as $name) {
+            $this->assertSame($whole[$name], $streamed[$name],
+                "$name: streaming returned something different from get_results()");
+        }
+    }
+
+    /** An empty result yields nothing rather than throwing, from both. */
+    public function testIteratingAnEmptyResultYieldsNothing(): void
+    {
+        foreach ($this->drivers() as $name => $db) {
+
+            $seen = 0;
+
+            foreach ($db->get_result_iterator('SELECT 1 AS x FROM DUAL WHERE 1 = 0') as $row) {
+                $seen++;
+            }
+
+            $this->assertSame(0, $seen, "$name: an empty result yielded rows");
+
+            // And a failed statement is the same non-answer, not an exception.
+            $seen = 0;
+
+            foreach ($db->get_result_iterator('SELECT * FROM a_table_that_does_not_exist_here') as $row) {
+                $seen++;
+            }
+
+            $this->assertSame(0, $seen, "$name: a failed query yielded rows");
+
+            $db->close();
+        }
+    }
 }

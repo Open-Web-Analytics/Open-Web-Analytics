@@ -89,7 +89,8 @@ class SitesProfile extends \OWA\Core\View {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $property->getTableName() );
         $db->selectColumn( 'id, name, domain, archived_date' );
-        $db->orderBy( 'name' );
+        // ASC explicitly: orderBy() with no direction is DESC.
+        $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
         $rows = array();
 

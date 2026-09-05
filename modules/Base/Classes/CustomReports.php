@@ -96,6 +96,35 @@ class CustomReports {
      *
      * Keys are what a definition says; values are what a person is shown.
      */
+    /**
+     * The visualizations, and the controller each resolves to.
+     *
+     * A map rather than a switch so a second one needs no dispatcher change.
+     * Only the funnel exists today, which is why the type is asked for at all
+     * -- a single hardcoded kind would not need naming.
+     */
+    const VISUALIZATION_TYPES = array(
+        'funnel' => 'Funnel',
+    );
+
+    /**
+     * One line about each visualization, shown where the kind is chosen.
+     *
+     * The kind is picked before anything else, and it decides what the builder
+     * asks for -- a funnel asks for a path, and the next one will ask for
+     * something else entirely. So this sentence is not decoration: with one
+     * choice it says what the choice IS, and with two it will be what separates
+     * them. Kept beside VISUALIZATION_TYPES so the two cannot drift.
+     */
+    const VISUALIZATION_TYPE_HINTS = array(
+        'funnel' => 'How many people reached each step of a path, in order, and where they left.',
+    );
+
+    /** A picture of each kind, in the Font Awesome 5 set the chrome loads. */
+    const VISUALIZATION_TYPE_ICONS = array(
+        'funnel' => 'fas fa-filter',
+    );
+
     const WIDGET_TYPES = array(
         'grid'          => 'Table',
         'grid-card'     => 'Table card',
@@ -1421,17 +1450,42 @@ class CustomReports {
      * @param bool   $all     true for a user who may see everyone's
      * @return array
      */
-    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $sql    = 'SELECT * FROM owa_custom_report';
         $params = array();
+        $where  = array();
 
         if ( ! $all ) {
 
-            $sql     .= ' WHERE user_id = ?';
+            $where[]  = 'user_id = ?';
             $params[] = (string) $user_id;
+        }
+
+        /*
+         * Reports and visualizations share this table and are listed
+         * separately, so a roster asks for one or the other.
+         *
+         * A REPORT is any row whose report_type is not 'visualization',
+         * including every row written before the column existed -- matched that
+         * way rather than on = 'report', which would exclude all of them.
+         */
+        if ( $type === \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION ) {
+
+            $where[]  = 'report_type = ?';
+            $params[] = \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION;
+
+        } elseif ( $type === \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT ) {
+
+            $where[]  = '( report_type IS NULL OR report_type <> ? )';
+            $params[] = \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION;
+        }
+
+        if ( $where ) {
+
+            $sql .= ' WHERE ' . implode( ' AND ', $where );
         }
 
         /*
@@ -1643,9 +1697,9 @@ class CustomReports {
      * @param bool   $all
      * @return array
      */
-    public static function recent( $user_id, $all = false ) {
+    public static function recent( $user_id, $all = false, $type = null ) {
 
-        return self::roster( $user_id, $all, 'updated', true, self::NAV_LIMIT );
+        return self::roster( $user_id, $all, 'updated', true, self::NAV_LIMIT, $type );
     }
 
     /**

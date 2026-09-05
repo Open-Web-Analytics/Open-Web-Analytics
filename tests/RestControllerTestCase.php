@@ -130,6 +130,22 @@ abstract class RestControllerTestCase extends TestCase
 
         $this->trackForCleanup('base.site', $site->get('id'), 'id');
 
+        /*
+         * AND THE PROPERTY IT MINTED.
+         *
+         * Creating a site creates the Property above it -- a site is an
+         * Observation Profile now, and a Profile has to hang off something.
+         * This helper is the one every REST test builds its fixture site
+         * through, so a Property left here is one per test across the whole
+         * suite: they had accumulated in the hundreds, each one a row in the
+         * site picker's Properties column.
+         */
+        $property = $site->get('property_id');
+
+        if ($property) {
+            $this->trackForCleanup('base.property', $property, 'id');
+        }
+
         return [
             'id'      => $site->get('id'),
             'site_id' => $site->get('site_id'),

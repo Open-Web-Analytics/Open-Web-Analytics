@@ -1007,6 +1007,19 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.propertyProfile', 'label' => 'Details',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
+                /*
+                 * Goal events describe a behaviour on the WEBSITE, so they
+                 * belong here and every Profile of it inherits them -- the same
+                 * place GA puts key events, and for the same reason. Counting
+                 * still happens per Profile, because a conversion is a flag on
+                 * a session and a session belongs to one.
+                 *
+                 * Addressed by siteId even so: the screen is reached from a
+                 * Profile in the nav, and it resolves the Property itself.
+                 */
+                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
             );
 
             /*
@@ -1042,9 +1055,6 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
-                array( 'do' => 'base.optionsGoals', 'label' => 'Goals',
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_settings' ),
             );
         }
 
@@ -1083,7 +1093,14 @@ class Controller extends \OWA\Core\Base {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $property->getTableName() );
         $db->selectColumn( 'id, name, domain, archived_date' );
-        $db->orderBy( 'name' );
+        /*
+         * ASC explicitly: orderBy() with no direction is DESC.
+         *
+         * getDefaultSortDirection() returns OWA_SQL_DESCENDING, so every
+         * directionless orderBy() in this codebase sorts backwards -- which for
+         * a picker means the Properties list reads Z to A.
+         */
+        $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
         $properties = array();
 

@@ -48,6 +48,25 @@ const OVERLAY_DOMAIN      = 'http://localhost';
 // clicks. Held as constants so the fixture, the token and the spec cannot
 // disagree about which page is being asked for.
 const OVERLAY_PAGE_PATH  = '/overlay-e2e-page';
+
+/**
+ * Where the fixture's clicks landed: x, y, and how many at that point.
+ *
+ * SOME OF THEM SHARE A COORDINATE, and that is the whole point of the shape.
+ * Five clicks at five distinct points would give five rows of weight one, and a
+ * heatmap that threw the counts away and plotted every row identically would
+ * look exactly the same -- so the spec could only ever assert that SOMETHING
+ * came back.
+ *
+ * Three at one point and one each at two others means the grouped result has
+ * FEWER ROWS THAN CLICKS, which is a claim about weighting that survives
+ * whatever the response envelope looks like.
+ */
+const OVERLAY_CLICK_POINTS = [
+    ['x' => 100, 'y' => 200, 'n' => 3],
+    ['x' => 110, 'y' => 210, 'n' => 1],
+    ['x' => 120, 'y' => 220, 'n' => 1],
+];
 const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH;
 
 $owa_root = dirname(__DIR__, 2) . '/';
@@ -154,6 +173,10 @@ function provision(): array
         'document_id'    => $document_id,
         'domstream_guid' => $domstream_guid,
         'clicks'         => countRows('owa_click', $site_id),
+        // How many DISTINCT points those clicks land on. Fewer than the clicks
+        // themselves, which is what lets the spec assert they were weighted
+        // rather than merely returned.
+        'click_points'   => count(OVERLAY_CLICK_POINTS),
         'domstream_module_activated' => !$domstream_was_active,
         // Scoped tokens: one action, one resource, minutes. Minted here because
         // only the server can sign them.
@@ -182,19 +205,26 @@ function provision(): array
 function seedClicks(string $site_id, string $document_id): void
 {
     $now = time();
+    $i   = 0;
 
-    for ($i = 0; $i < 5; $i++) {
-        $c = owa_coreAPI::entityFactory('base.click');
-        $c->set('id', $c->generateId(FIXTURE_TAG . '-click-' . $i));
-        $c->set('site_id', $site_id);
-        $c->set('document_id', $document_id);
-        $c->set('timestamp', $now - $i);
-        $c->set('yyyymmdd', (int) date('Ymd', $now));
-        $c->set('click_x', 100 + ($i * 10));
-        $c->set('click_y', 200 + ($i * 10));
-        $c->set('page_width', 1200);
-        $c->set('page_height', 800);
-        $c->create();
+    foreach (OVERLAY_CLICK_POINTS as $point) {
+
+        for ($k = 0; $k < $point['n']; $k++) {
+
+            $c = owa_coreAPI::entityFactory('base.click');
+            $c->set('id', $c->generateId(FIXTURE_TAG . '-click-' . $i));
+            $c->set('site_id', $site_id);
+            $c->set('document_id', $document_id);
+            $c->set('timestamp', $now - $i);
+            $c->set('yyyymmdd', (int) date('Ymd', $now));
+            $c->set('click_x', $point['x']);
+            $c->set('click_y', $point['y']);
+            $c->set('page_width', 1200);
+            $c->set('page_height', 800);
+            $c->create();
+
+            $i++;
+        }
     }
 }
 

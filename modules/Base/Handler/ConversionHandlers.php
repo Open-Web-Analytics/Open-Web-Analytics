@@ -216,14 +216,19 @@ class ConversionHandlers extends \OWA\Core\Observer {
                     $start = '';
                     $goal_value = '';
 
-                    switch ($goal['goal_type']) {
-
-                        case 'url_destination':
-
-                            $match = $this->checkUrlDestinationGoal($event, $goal);
-                            $start = $this->checkGoalStart($event, $goal);
-                            break;
-                    }
+                    /*
+                     * Evaluated from the goal event's CONDITIONS, not from a
+                     * single url_destination triple.
+                     *
+                     * The switch had exactly one case, so a goal of any other
+                     * type silently never converted -- this install has had one
+                     * in that state since it was made. Conditions are rows now,
+                     * there can be several, and they combine with all or any,
+                     * so there is no type to switch on: a goal event either
+                     * describes the event in front of us or it does not.
+                     */
+                    $match = $this->checkGoalEventConditions( $event, $siteId, $num );
+                    $start = $this->checkGoalEventStart( $event, $siteId, $num );
 
                     if ($start) {
                         $goal_info['start'] = $start;
@@ -260,6 +265,53 @@ class ConversionHandlers extends \OWA\Core\Observer {
         return $goal_info;
     }
     
+    /**
+     * Does this event satisfy the goal event in one slot?
+     *
+     * @return string  the slot number when it matches, '' when it does not --
+     *                 the shape the caller already had, where a slot number is
+     *                 truthy and no match is empty.
+     */
+    protected function checkGoalEventConditions( $event, $siteId, $number ) {
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $number ) );
+
+        if ( ! $goalEvent->wasPersisted() ) {
+
+            return '';
+        }
+
+        return $goalEvent->matchesEvent( $event ) ? $number : '';
+    }
+
+    /**
+     * Did this event BEGIN the goal event in one slot?
+     *
+     * From the goal event's own START condition, not from the first step of its
+     * funnel.
+     *
+     * Reading funnel step 1 tied an ingest-time decision to a reporting
+     * artefact: goal_N_start is written at collection, so a funnel could not
+     * become a read-time report widget without silently taking the seven
+     * goalNStarts metrics with it. "Began this" is a fact about the goal event,
+     * and is stated as one.
+     *
+     * @return string  the slot number when it started, '' otherwise.
+     */
+    protected function checkGoalEventStart( $event, $siteId, $number ) {
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $number ) );
+
+        if ( ! $goalEvent->wasPersisted() ) {
+
+            return '';
+        }
+
+        return $goalEvent->startedByEvent( $event ) ? $number : '';
+    }
+
     function checkUrlDestinationGoal($event, $goal) {
         $match = '';
         $page_uri = $event->get('page_uri');
@@ -293,20 +345,6 @@ class ConversionHandlers extends \OWA\Core\Observer {
         }
 
         return $match;
-    }
-    
-    function checkGoalStart($event, $goal) {
-        $page_uri = $event->get('page_uri');
-        // check for goal start
-        if ( array_key_exists( 'funnel_steps', $goal['details'] ) ) {
-            // check the first step
-            $step = $goal['details']['funnel_steps'][1];
-            $pattern = sprintf('@%s@i', $step['path']);
-            $check = preg_match($pattern, $page_uri );
-            if ($check > 0) {
-                return $goal['goal_number'];
-            }
-        }
     }
     
     function countGoalConversions($session) {

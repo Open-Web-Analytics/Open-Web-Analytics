@@ -1548,6 +1548,15 @@ li.constraintRow {
     background: #fff;
     cursor: pointer;
     font: inherit;
+
+    /*
+     * A tile is a <button> in the widget builder and an <a> in the
+     * visualization chooser -- picking a widget type stays on the page, picking
+     * a visualization kind navigates to its builder. Same tile either way, so
+     * the link colour and underline an <a> arrives with are taken back off.
+     */
+    text-decoration: none;
+    color: inherit;
 }
 
 /*
@@ -1887,20 +1896,14 @@ li.constraintRow {
  *
  * Values read left to right, because they are words -- a report name and a user
  * id are read from their first character, and centring them puts every row's
- * first character in a different place. Only the action column is centred: it
- * holds one short control, and centring keeps it away from the table edge.
+ * first character in a different place. Every column now: the roster carries no
+ * action column, because editing is the pencil on the thing itself.
  * ------------------------------------------------------------------------- */
 
 .owa table.owa_customReportRoster th,
 .owa table.owa_customReportRoster td {
     text-align: left;
     vertical-align: top;
-}
-
-.owa table.owa_customReportRoster td.owa_rosterAction,
-.owa table.owa_customReportRoster th:last-child {
-    text-align: center;
-    white-space: nowrap;
 }
 
 /* A sortable heading, and the arrow marking the one the order is actually by. */
@@ -3061,6 +3064,9 @@ li.constraintRow {
     border-left: 3px solid transparent;
     border-bottom: 1px solid #f4f4f4;
     cursor: pointer;
+    /* The anchor below is stretched over this box, which needs a positioned
+       ancestor to stretch to. */
+    position: relative;
 }
 
 .owa_siteControlItem:hover {
@@ -3082,10 +3088,39 @@ li.constraintRow {
     margin-top: 2px;
 }
 
+/*
+ * THE WHOLE ROW PICKS THE PROFILE, not just the words.
+ *
+ * The row is a flex box holding the name and, at its right, one or two
+ * secondary links -- so the anchor was as wide as the text and no wider: 105px
+ * of a 219px row. Everything else was bare <li>, which carries no handler and
+ * no href, so a click on the padding, on the gap, or anywhere right of the name
+ * did nothing at all. With cursor:pointer on the row, it looked live for its
+ * whole width and answered on half of it.
+ *
+ * The Properties column never had this: it has no anchor and its <li> carries a
+ * JavaScript click handler, so it always responded across the full row. The two
+ * columns sit side by side and behaved differently, which is the part a reader
+ * notices before they work out why.
+ *
+ * Stretched with a pseudo-element rather than by making the anchor a block:
+ * the flex layout that puts the secondary links on the right is worth keeping,
+ * and this leaves the anchor a real anchor -- focusable, keyboard-activatable,
+ * and still the thing the status bar shows on hover.
+ */
 .owa_siteControlSelect {
     flex: 1 1 auto;
     min-width: 0;
     text-decoration: none;
+}
+
+.owa_siteControlSelect::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
 }
 
 /* Edit is a secondary action: quiet until wanted, but always reachable by
@@ -3096,6 +3131,13 @@ li.constraintRow {
     font-size: 11px;
     text-decoration: none;
     visibility: hidden;
+    /*
+     * ABOVE the stretched select, or the row's own link would swallow it --
+     * "goal events" and "edit" sit inside the area that now picks the Profile,
+     * and a secondary action you cannot reach is worse than one that is hidden.
+     */
+    position: relative;
+    z-index: 1;
 }
 
 .owa_siteControlItem:hover .owa_siteControlEdit,
@@ -3281,8 +3323,49 @@ li.constraintRow {
     margin-top: 4px;
 }
 
+/*
+ * A setting is a ROW, not a box.
+ *
+ * owa.css draws .setting with its own 1px border and a 10px margin -- a design
+ * for a screen with no card under it. Inside the panel that gives every other
+ * settings screen its white ground, that reads as boxes inside a box, and it
+ * was why the general options looked like a different application from the
+ * user roster and the access list.
+ *
+ * Separated by a hairline instead, in the same greys the panel uses. The last
+ * one drops it so the list does not end on a rule with nothing beneath it.
+ */
 .owa_hierarchyContent #panel .setting {
-    margin-bottom: 16px;
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    margin: 0;
+    padding: 14px 0;
+}
+
+.owa_hierarchyContent #panel .setting:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+/*
+ * 16px was the size of a heading on a screen with no headings above it. Here
+ * the legend and the panel headline are both smaller, so a setting's title
+ * outweighing both put the emphasis on the least important of the three.
+ */
+.owa_hierarchyContent #panel .setting .title {
+    font-size: 13px;
+    color: #505050;
+}
+
+.owa_hierarchyContent #panel .setting .description {
+    color: #999999;
+    font-size: 11px;
+    line-height: 1.55;
+    max-width: 620px;
+}
+
+.owa_hierarchyContent #panel .setting .field {
+    padding-top: 8px;
 }
 
 /*
@@ -3562,4 +3645,225 @@ li.constraintRow {
     color: #333333;
     border-color: #b5b5b5;
     box-shadow: none;
+}
+
+
+/* ------------------------------------------------------------------
+ * Goal events
+ * ------------------------------------------------------------------
+ *
+ * The condition rows reuse .constraintRow wholesale -- same markup, same class
+ * names as the report builder -- so nothing here restyles them. Naming a
+ * condition is the same act in both places and it should look the same.
+ * These rules cover only what the report builder has no equivalent of.
+ */
+
+/* A Profile that counts nothing yet. Said, rather than shown as an empty grid
+   with headers and no rows -- which reads as broken rather than as new. */
+.owa_emptyState {
+    padding: 26px 0 10px 0;
+    max-width: 780px;
+}
+
+.owa_emptyState p {
+    color: #666666;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 4px 0;
+}
+
+/* The condition, summarised in the list. Reads as one phrase, so the parts are
+   spaced rather than boxed -- a full pill per part would out-weigh the name
+   beside it, which is what someone is actually scanning for. */
+.owa_goalEventCondition {
+    font-size: 12px;
+    color: #555555;
+}
+
+.owa_goalEventProperty {
+    color: #333333;
+    font-weight: bold;
+}
+
+/* The word between two conditions in the list summary. Lowercase and quiet:
+   it is punctuation between the parts, not one of them. */
+.owa_goalEventJoin {
+    color: #b5b5b5;
+    font-size: 11px;
+    margin: 0 4px;
+}
+
+.owa_goalEventOperator {
+    color: #999999;
+    margin: 0 3px;
+}
+
+.owa_goalEventValue {
+    font-family: Menlo, Consolas, monospace;
+    font-size: 11px;
+    background: #f4f4f4;
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+/* A goal event with no condition counts nothing. Coloured like a warning
+   because it is one: this install had a goal in exactly that state and nothing
+   anywhere said it would never fire. */
+.owa_goalEventIncomplete {
+    color: #99321f;
+    font-style: italic;
+}
+
+/* Field widths, so a form reads as one column rather than a ragged edge.
+ *
+ * The sibling settings screens get theirs from size="50" attributes, which give
+ * every input the same measure. These are sized here instead: the goal event
+ * form mixes long text, a short money field and a rename box, and an attribute
+ * per input is how they drifted apart in the first place. */
+.owa_hierarchyContent #panel .owa_largeFormField {
+    width: 400px;
+    max-width: 100%;
+}
+
+.owa_hierarchyContent #panel .owa_mediumFormField {
+    width: 220px;
+}
+
+.owa_hierarchyContent #panel .owa_shortFormField {
+    width: 90px;
+}
+
+/* The condition row.
+ *
+ * .constraintRow was written for the report builder's dialog, which is narrow
+ * and dark-on-light. In a settings pane it needs its own measure or the value
+ * field takes whatever is left and the row reads as three unrelated controls. */
+.owa_hierarchyContent #panel .constraintList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel .constraintRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel .constraintRow select {
+    max-width: 220px;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintValueField {
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: 320px;
+}
+
+/* The funnel builder. .constraintRow gives the row its shape; this is only the
+   parts a funnel step has and a constraint does not -- two text fields of
+   different weight, and the word between them. */
+.owa_goalEventFunnel {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.owa_hierarchyContent #panel .constraintRow .owa_funnelStepName {
+    flex: 0 0 auto;
+    width: 190px;
+    max-width: 190px;
+}
+
+.owa_hierarchyContent #panel .constraintRow .owa_funnelStepPath {
+    flex: 1 1 auto;
+    max-width: 280px;
+    font-family: Menlo, Consolas, monospace;
+    font-size: 12px;
+}
+
+/* The add and remove controls.
+ *
+ * The report builder styles these inside its own dialog; in the settings pane
+ * they inherited nothing and rendered as two bare characters floating at the
+ * end of a wide row. Given a target worth clicking, and pushed to the end of
+ * the flex row rather than left wherever the text ran out. */
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton,
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton {
+    flex: 0 0 auto;
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border: 1px solid #d5d5d5;
+    border-radius: 3px;
+    background: #fbfbfb;
+    color: #666666;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton:hover,
+.owa_hierarchyContent #panel .constraintRow .constraintAddButton:focus {
+    border-color: #9f9f9f;
+    color: #333333;
+}
+
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton:hover,
+.owa_hierarchyContent #panel .constraintRow .constraintRemoveButton:focus {
+    border-color: #d9b8b1;
+    background: #99321f;
+    color: #ffffff;
+}
+
+/* Not a picker: a funnel step always matches on the path, so the word sits
+   where the operator dropdown does but is not one. Styled to match the picker's
+   height so the row does not jump. */
+.owa_funnelStepMatches {
+    display: inline-block;
+    color: #999999;
+    font-size: 12px;
+    padding: 0 8px;
+    line-height: 28px;
+    vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+ * A value the form STATES rather than asks for.
+ *
+ * A visualization's kind and a Property's kind are both chosen once, before or
+ * at creation, because each decides what everything under it was set up
+ * against. Showing them as a disabled control would say "you could change this,
+ * but not now"; showing them as text says what is true -- this is settled.
+ *
+ * Styled as a value, not as a label: it sits where a field would, so it has to
+ * read as the answer rather than as another heading.
+ * ------------------------------------------------------------------------ */
+
+.owa .owa_statedValue {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    background: #f7f7f7;
+    color: #505050;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.owa .owa_statedValue i {
+    margin-right: 7px;
+    color: #999999;
+}
+
+/* The sentence under it saying what the kind actually does. Secondary to the
+   value, so it is the same treatment .form-instructions gets. */
+.owa .owa_statedValueHint {
+    color: #999999;
+    font-size: 11px;
+    margin-top: 6px;
 }

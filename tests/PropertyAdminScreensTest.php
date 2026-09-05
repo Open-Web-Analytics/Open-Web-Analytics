@@ -85,6 +85,163 @@ final class PropertyAdminScreensTest extends TestCase
 
 
     /**
+     * The names a validator was given, so a test can ask what is checked.
+     *
+     * @return string[]
+     */
+    private function validatedNames( $controller ): array
+    {
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+        $validator = $v->getValue( $controller );
+
+        if ( ! $validator ) {
+
+            return array();
+        }
+
+        $property = new \ReflectionProperty( $validator, 'validations' );
+        $property->setAccessible( true );
+
+        $names = array();
+
+        foreach ( (array) $property->getValue( $validator ) as $validation ) {
+            $names[] = $validation['name'];
+        }
+
+        return $names;
+    }
+
+    /**
+     * A web Property needs a domain.
+     *
+     * The domain is the ORIGIN a tracking request is accepted or refused on, so
+     * a web Property without one has nothing to check against -- the field was
+     * optional and quietly load-bearing. Asked on the ADD path, where the kind
+     * comes from the request because there is no row to read it from.
+     */
+    public function testAWebPropertyMustHaveADomain(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit(
+            array( 'name' => 'Example', 'propertyType' => 'web', 'domain' => '  ' ) );
+
+        $controller->validate();
+
+        $this->assertContains( 'domain', $this->validatedNames( $controller ),
+            'A website Property can be created with no domain, so there is no origin to check '
+            . 'a tracking request against.' );
+    }
+
+    /**
+     * And an app Property is not asked for one.
+     *
+     * An app is identified by its Profiles' bundle ids. Requiring a domain of
+     * it would be asking for a value that names nothing.
+     */
+    public function testAnAppPropertyIsNotAskedForADomain(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit(
+            array( 'name' => 'Example', 'propertyType' => 'app', 'domain' => '' ) );
+
+        $controller->validate();
+
+        $this->assertNotContains( 'domain', $this->validatedNames( $controller ),
+            'An app Property is required to have a domain, which names nothing about an app.' );
+    }
+
+    /**
+     * An unknown kind is WEB, not "not web".
+     *
+     * The kind decides whether the domain is required, so anything that is not
+     * a kind must not become a way to skip that check. Web is both the default
+     * and the stricter of the two, which is why it is the fallback.
+     */
+    public function testAnUnknownPropertyKindIsTreatedAsWeb(): void
+    {
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit(
+            array( 'name' => 'Example', 'propertyType' => 'nonsense', 'domain' => '' ) );
+
+        $controller->validate();
+
+        $this->assertContains( 'domain', $this->validatedNames( $controller ),
+            'An unrecognised property type skips the domain requirement, so naming a bogus kind '
+            . 'is a way to create a web Property with no origin.' );
+    }
+
+    /**
+     * Falsy reads as web.
+     *
+     * The column arrives by migration and is NULL on every Property that
+     * predates it -- and every one of those is a website, minted from sites
+     * that had domains. Reading NULL as anything else would reclassify the
+     * entire install at once.
+     */
+    public function testAPropertyWithNoStoredKindIsAWebsite(): void
+    {
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        $this->assertSame( \OWA\Module\Base\Entity\Property::TYPE_WEB,
+            $property->getPropertyType(),
+            'A Property with no stored type is not read as a website, so every Property that '
+            . 'predates the column changes kind.' );
+
+        $this->assertTrue( $property->isWebProperty() );
+    }
+
+    /**
+     * The kind is chosen once and is not editable.
+     *
+     * It decides which identifier the Property is known by, and every Profile
+     * beneath it is set up against that identifier -- so an edit that changed
+     * it would invalidate all of them at once. The form states it on the edit
+     * path; this is the half that makes it true of the row.
+     */
+    public function testAnEditDoesNotWriteThePropertyKind(): void
+    {
+        $body = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/PropertyEdit.php' );
+
+        $edit = substr( $body, (int) strpos( $body, 'if ( $propertyId ) {' ) );
+        $edit = substr( $edit, 0, (int) strpos( $edit, '} else {' ) );
+
+        $this->assertStringNotContainsString( "set( 'property_type'", $edit,
+            'The edit branch writes property_type, so renaming an app Property can turn it into '
+            . 'a web one.' );
+
+        $this->assertStringContainsString( "set( 'property_type'", $body,
+            'Nothing writes property_type at all, so every new Property is created without a '
+            . 'kind.' );
+    }
+
+    /**
+     * The kind is offered only where it can be answered.
+     *
+     * A select on the edit path would offer a choice the save ignores, which is
+     * worse than not offering it: the screen would accept the change and the
+     * row would not.
+     */
+    public function testTheKindIsAskedOnAddAndStatedOnEdit(): void
+    {
+        $body = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/templates/property_profile.php' );
+
+        $this->assertStringContainsString( '$owa_isNew', $body,
+            'The Property form does not distinguish the add path from the edit path, so the '
+            . 'kind is either asked twice or never.' );
+
+        $this->assertStringContainsString( 'owa_statedValue', $body,
+            'The edit path does not STATE the kind, so a Property does not say what it is.' );
+
+        /*
+         * Posted either way. A form that shows the kind but does not send it
+         * would have the save fall back to the default -- belt to the edit
+         * branch's braces above.
+         */
+        $this->assertStringContainsString( 'propertyType', $body );
+    }
+
+
+    /**
      * The Organization is the one tier a user could not name.
      *
      * There is exactly one, created as "My Organization" by the installer or by
@@ -192,7 +349,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( array( 'base.users'        => 'the Organization',
                          'base.sites'        => 'the site control',
-                         'base.optionsGoals' => 'a Profile' ) as $gone => $where ) {
+                         'base.goalEvents' => 'a Profile' ) as $gone => $where ) {
 
             $this->assertNotContains(
                 $gone, $actions,
@@ -222,7 +379,7 @@ final class PropertyAdminScreensTest extends TestCase
         foreach ( array( 'base.organizationProfile' => 'the Organization',
                          'base.propertyProfile'     => 'a Property',
                          'base.sitesProfile'        => 'a Profile',
-                         'base.optionsGoals'        => "a Profile's goals" ) as $action => $what ) {
+                         'base.goalEvents'        => "a Profile's goals" ) as $action => $what ) {
 
             $this->assertStringContainsString(
                 $action, $template,
@@ -400,11 +557,23 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'Details', $profile['base.sitesProfile'] ?? null );
         $this->assertSame( 'Observation Settings', $profile['base.profileSettings'] ?? null );
         $this->assertSame( 'Tracking Tag', $profile['base.sitesInvocation'] ?? null );
-        $this->assertSame( 'Goals', $profile['base.optionsGoals'] ?? null );
 
         $property = array_column( $nav['Property'], 'label', 'do' );
 
         $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
+        /*
+         * Goal events sit under the PROPERTY, not the Profile.
+         *
+         * A behaviour worth counting is a fact about the website: two Profiles
+         * of one Property both want the same signup counted, and defining it
+         * twice is how the two drift. GA puts key events on the property for
+         * the same reason. Counting still happens per Profile, because a
+         * conversion is a flag on a session.
+         */
+        $this->assertSame( 'Goal Events', $property['base.goalEvents'] ?? null );
+        $this->assertArrayNotHasKey( 'base.goalEvents', $profile,
+            'Goal events are listed under the Observation Profile as well, so the same '
+            . 'list appears twice and it is unclear which tier owns it.' );
         $this->assertSame(
             'Property Access Management', $property['base.propertyAccess'] ?? null,
             'Access is granted to a website, so it belongs under the Property.' );
@@ -507,7 +676,7 @@ final class PropertyAdminScreensTest extends TestCase
             'property_access.php'      => 'Property',
             'profile_settings.php'     => 'Observation Profile',
             'sites_addoredit.php'      => 'Observation Profile',
-            'options_goals.php'        => 'Observation Profile',
+            'goal_events.php'        => 'Observation Profile',
         );
 
         foreach ( $screens as $template => $term ) {
@@ -761,7 +930,7 @@ final class PropertyAdminScreensTest extends TestCase
             'OrganizationProfile' => 1, 'Users'           => 1,
             'PropertyProfile'     => 2, 'PropertyAccess'  => 2,
             'SitesProfile'        => 3, 'ProfileSettings' => 3,
-            'SitesInvocation'     => 3, 'OptionsGoals'    => 3,
+            'SitesInvocation'     => 3, 'GoalEvents'    => 3,
         );
 
         foreach ( $expected as $controller => $tier ) {
@@ -830,14 +999,14 @@ final class PropertyAdminScreensTest extends TestCase
             'A column label is larger than the page heading it sits under.' );
     }
 
-    /** Goals renders in the pane like every other hierarchy screen. */
-    public function testGoalsUsesThePaneConvention(): void
+    /** Goal Events renders in the pane like every other hierarchy screen. */
+    public function testGoalEventsUsesThePaneConvention(): void
     {
-        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/options_goals.php' );
+        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/goal_events.php' );
 
         $this->assertStringContainsString(
             '<div id="panel">', $body,
-            'Goals uses subview_content, so none of the pane styling reaches it and it '
+            'Goal Events uses subview_content, so none of the pane styling reaches it and it '
             . 'looks like a different application.' );
 
         $this->assertStringNotContainsString( 'subview_content', $body );

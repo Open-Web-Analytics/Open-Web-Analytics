@@ -25,18 +25,6 @@
                 "metrics": "@activeGoalCompletions"
             },
             "showTitle": true
-        },
-        {
-            "type": "report-links",
-            "title": "Related Reports",
-            "colspan": 6,
-            "links": [
-                {
-                    "reportId": "goal-funnel",
-                    "label": "Conversion Funnels",
-                    "description": "Goal funnel Visualization."
-                }
-            ]
         }
     ]
 }

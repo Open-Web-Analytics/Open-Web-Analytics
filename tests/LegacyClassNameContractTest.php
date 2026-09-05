@@ -68,6 +68,44 @@ final class LegacyClassNameContractTest extends TestCase
 
     private const RETIRED = [
         /*
+         * RETIRED 2026-09-02: the goal funnel REPORT.
+         *
+         * A funnel is a visualization now -- a row on owa_custom_report drawn
+         * by its own controller, reached as custom-<id>. The controller and
+         * view were not deleted, they were renamed to VisualizationFunnel, and
+         * the old names are listed here rather than aliased forward because the
+         * thing they named -- a registered report called goal-funnel -- no
+         * longer exists in any form.
+         *
+         * What made this possible: the funnel's first step used to be read at
+         * INGEST to stamp goal_N_start on the session, so it could not become a
+         * read-time analysis without silently taking the goal-start metrics
+         * with it. A goal event states what starts it directly now.
+         */
+        'owa_reportGoalFunnelController',
+        'owa_reportGoalFunnelView',
+
+        /*
+         * RETIRED 2026-09-02: the three goal screens.
+         *
+         * Goals became goal events -- named rows in owa_goal_event rather than
+         * twenty numbered slots inside a serialized array. The screens went
+         * with the model: a list that showed twenty rows whether or not anyone
+         * had filled them in, and an editor that edited a SLOT, so creating a
+         * goal meant picking an unused number and there was no twenty-first.
+         *
+         * base.goalEvents and base.goalEventEdit replace them. Their validation
+         * rules did NOT retire with them -- the funnel-step and group-name
+         * rules moved to GoalEventSave, and the tests that earned them were
+         * repointed rather than deleted.
+         */
+        'owa_optionsGoalsController',
+        'owa_optionsGoalsView',
+        'owa_optionsGoalEntryController',
+        'owa_optionsGoalEntryView',
+        'owa_optionsGoalEditController',
+
+        /*
          * RETIRED 2026-09-01: base.sites, the flat roster of every tracked site.
          *
          * It was the landing page, the "Reporting" link and the redirect after

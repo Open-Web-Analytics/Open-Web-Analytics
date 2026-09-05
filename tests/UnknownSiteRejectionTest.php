@@ -29,8 +29,19 @@ final class UnknownSiteRejectionTest extends TestCase
     /** @var string */
     private $site_id;
 
-    /** @var string[] */
+    /** @var string[] site row ids to remove */
     private $created = [];
+
+    /**
+     * @var string[] the Property ids those sites were given
+     *
+     * Tracked separately because creating a site MINTS A PROPERTY -- a site is
+     * an Observation Profile now, and a Profile has to hang off something.
+     * Removing only the site leaves the Property behind, and this suite creates
+     * one per test: it had left 1,120 of them in the development database,
+     * every one a row in the site picker's Properties column.
+     */
+    private $createdProperties = [];
 
     protected function setUp(): void
     {
@@ -47,7 +58,19 @@ final class UnknownSiteRejectionTest extends TestCase
         $site   = $sm->createNewSite($domain, 'Unknown site rejection test');
 
         $this->site_id   = $site->get('site_id');
+        $this->track($site);
+    }
+
+    /** Remember a created site AND the Property it was given. */
+    private function track($site): void
+    {
         $this->created[] = $site->get('id');
+
+        $property = $site->get('property_id');
+
+        if ($property) {
+            $this->createdProperties[] = $property;
+        }
     }
 
     protected function tearDown(): void
@@ -58,7 +81,17 @@ final class UnknownSiteRejectionTest extends TestCase
             $db->query(sprintf("DELETE FROM owa_site WHERE id = '%s'", $db->prepare($id)));
         }
 
-        $this->created = [];
+        /*
+         * The Properties too, and AFTER the sites -- a Property with a Profile
+         * still pointing at it is a worse thing to leave behind than either
+         * alone.
+         */
+        foreach ($this->createdProperties as $id) {
+            $db->query(sprintf("DELETE FROM owa_property WHERE id = '%s'", $db->prepare($id)));
+        }
+
+        $this->created           = [];
+        $this->createdProperties = [];
 
         \OWA\Core\CoreAPI::forgetRegisteredSites();
     }
@@ -155,7 +188,7 @@ final class UnknownSiteRejectionTest extends TestCase
         $sm   = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
         $site = $sm->createNewSite($domain, 'Memoisation test', '', '', $site_id);
 
-        $this->created[] = $site->get('id');
+        $this->track($site);
 
         $this->assertFalse(\OWA\Core\CoreAPI::isSiteRegistered($site_id),
             'the negative answer must be remembered rather than re-queried per event');
@@ -182,7 +215,7 @@ final class UnknownSiteRejectionTest extends TestCase
         $sm   = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
         $site = $sm->createNewSite($domain, 'Freshly created');
 
-        $this->created[] = $site->get('id');
+        $this->track($site);
 
         // No forget() here: this is a process that has never asked about it.
         $this->assertTrue(\OWA\Core\CoreAPI::isSiteRegistered($site->get('site_id')),

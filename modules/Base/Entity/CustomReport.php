@@ -62,6 +62,39 @@ class CustomReport extends \OWA\Core\Entity {
          * runs past 255 bytes, and a definition silently truncated at a column
          * boundary is invalid JSON that reports as a broken report.
          */
+        /*
+         * 'report' or 'visualization'. Falsy reads as 'report'.
+         *
+         * A report CONFIGURES a query: metrics against dimensions, drawn by one
+         * of the widget types. A visualization COMPUTES -- a funnel counts
+         * ordered stages over the event stream, which no arrangement of metrics
+         * and dimensions expresses. That distinction is why goal-funnel and
+         * domstreams kept controllers when 62 of 64 reports became JSON.
+         *
+         * Two types on one table rather than two tables, because everything
+         * around them is identical: access control, ownership, editable titles,
+         * the roster, delete. Only how they are drawn differs.
+         *
+         * They are NOT shown together, though -- the reporting nav gives
+         * visualizations their own group. A list mixing "Pages by source" with
+         * "Checkout funnel" invites the reader to expect the same knobs on
+         * both, and they do not have them.
+         */
+        $report_type = new \OWA\Module\Base\Classes\DbColumn( 'report_type', OWA_DTD_VARCHAR255 );
+        $report_type->setIndex();
+        $this->setProperty( $report_type );
+
+        /*
+         * WHICH visualization, for the ones that are. Empty on a report.
+         *
+         * Resolves to a controller: a visualization brings its own data path,
+         * so the type names the code that computes it. 'funnel' is the only one
+         * today, and the vocabulary is a map rather than a switch so the second
+         * one needs no dispatcher change.
+         */
+        $visualization_type = new \OWA\Module\Base\Classes\DbColumn( 'visualization_type', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $visualization_type );
+
         $definition = new \OWA\Module\Base\Classes\DbColumn( 'definition', OWA_DTD_BLOB );
         $this->setProperty( $definition );
 
@@ -70,5 +103,22 @@ class CustomReport extends \OWA\Core\Entity {
 
         $last_updated_timestamp = new \OWA\Module\Base\Classes\DbColumn( 'last_updated_timestamp', OWA_DTD_INT );
         $this->setProperty( $last_updated_timestamp );
+    }
+
+    /** What a report is. Falsy reads as a report. */
+    const TYPE_REPORT        = 'report';
+    const TYPE_VISUALIZATION = 'visualization';
+
+    /** @return string */
+    public function reportType() {
+
+        return $this->get( 'report_type' ) === self::TYPE_VISUALIZATION
+            ? self::TYPE_VISUALIZATION : self::TYPE_REPORT;
+    }
+
+    /** @return bool */
+    public function isVisualization() {
+
+        return $this->reportType() === self::TYPE_VISUALIZATION;
     }
 }

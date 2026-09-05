@@ -69,18 +69,69 @@ const FIXTURE = {
         refererHost: 'news.ycombinator.com',
         mediums: { 'organic-search': 2, referral: 1, direct: 1 },
     },
-    // The goal + funnel seeded by seed_reporting_fixtures.php. Its step paths
-    // are ones the pageview fixture already visits, so every stage of the
-    // funnel has real visitors -- including `destination`, which the report
-    // appends as the funnel's last bar from the goal's own goal_url.
+    // The goal event seeded by seed_reporting_fixtures.php. It has no funnel:
+    // a funnel is not part of a goal any more, it is a visualization.
     goal: {
         number: 1,
         name: 'E2E Signup Funnel',
+        destination: '/docs',
+    },
+    /*
+     * The funnel VISUALIZATION, seeded separately and naming nothing about the
+     * goal above.
+     *
+     * The step paths are ones the pageview fixture already walks, in order, so
+     * every stage counts somebody -- a funnel whose stages are all zero would
+     * render and prove nothing about the counting. `/docs` is an ordinary step
+     * here; it used to be a bar the report appended from the goal's own
+     * goal_url, and appending it was the only stage a key mismatch could
+     * silently empty.
+     *
+     * The id is not written down: it is minted by the seeder, so the specs find
+     * it by NAME on the roster.
+     */
+    funnelVisualization: {
+        name: 'E2E Signup Funnel Visualization',
         steps: [
             { name: 'E2E Step Home', path: '/' },
             { name: 'E2E Step Pricing', path: '/pricing' },
+            { name: 'E2E Step Docs', path: '/docs' },
         ],
-        destination: '/docs',
+    },
+    /*
+     * The clicks seeded by seedClicks(), and what the reports must say about
+     * them. Every number here is different from every other on purpose: 6
+     * clicks, 5 on one element, 4 on one page, 3 at one coordinate, 2, 1. A
+     * fixture whose totals agree cannot tell you which grouping was applied.
+     */
+    clicks: {
+        total: 6,
+        byElement: { 'buy-btn': 5, 'nav-home': 1 },
+        byPage: { '/': 4, '/pricing': 2 },
+        // Three clicks share this coordinate, so the heatmap has a point of
+        // weight 3 -- the only way to distinguish a weighted plot from a plot
+        // of distinct positions.
+        hottest: { x: 100, y: 200, weight: 3, page: '/' },
+        tag: 'a',
+        elementClass: 'e2e-clickable',
+    },
+    /*
+     * The actions seeded by seedActions(). The three metrics answer three
+     * different questions and must give three different numbers:
+     *   actions       4  -- how many happened
+     *   uniqueActions 2  -- how many distinct NAMES (submit, cancel)
+     *   actionsValue 22  -- what they were worth (5 + 5 + 2 + 10)
+     *
+     * Names, groups and labels are LOWERCASE here because the handler
+     * lowercases them on the way in, which is itself worth pinning.
+     */
+    actions: {
+        total: 4,
+        uniqueNames: 2,
+        value: 22,
+        byGroup: { signup: 3, commerce: 1 },
+        byName: { submit: 3, cancel: 1 },
+        labels: ['form-a', 'cart'],
     },
     /*
      * The DOM recordings seeded by seedDomstreams().

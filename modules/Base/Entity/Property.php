@@ -43,6 +43,24 @@ class Property extends \OWA\Core\Entity {
         $domain->setIndex();
         $this->setProperty( $domain );
 
+        /*
+         * What KIND of thing this Property is: a website or an app.
+         *
+         * The Profile answers a version of this too -- it decides whether that
+         * Profile needs a domain or a bundle id -- but the domain lives HERE,
+         * because it describes the thing being measured rather than one way of
+         * watching it. So this is where "this is a website" has to be said, and
+         * it is what makes the domain requirable: a web Property with no domain
+         * cannot have its origin checked, which is what a tracking request is
+         * accepted or refused on.
+         *
+         * Chosen once, at creation, and not editable afterwards. Changing it
+         * would invalidate the identifier every Profile beneath it was set up
+         * with, and the Profiles are the things actually recording.
+         */
+        $property_type = new \OWA\Module\Base\Classes\DbColumn( 'property_type', OWA_DTD_VARCHAR255 );
+        $this->setProperty( $property_type );
+
         $description = new \OWA\Module\Base\Classes\DbColumn( 'description', OWA_DTD_TEXT );
         $this->setProperty( $description );
 
@@ -69,6 +87,39 @@ class Property extends \OWA\Core\Entity {
          */
         $archived_date = new \OWA\Module\Base\Classes\DbColumn( 'archived_date', OWA_DTD_BIGINT );
         $this->setProperty( $archived_date );
+    }
+
+    /** Web is the default: every Property that existed before types did is one. */
+    const TYPE_WEB = 'web';
+    const TYPE_APP = 'app';
+
+    /** What a person is shown for each kind. */
+    public static function types() {
+
+        return array(
+            self::TYPE_WEB => 'A website',
+            self::TYPE_APP => 'An app',
+        );
+    }
+
+    /**
+     * What kind of thing this Property is.
+     *
+     * Falsy means web. The column is added by a migration and is NULL on rows
+     * that predate it, and every one of those is a website -- they were minted
+     * from sites that had domains.
+     */
+    public function getPropertyType() {
+
+        $type = (string) $this->get( 'property_type' );
+
+        return $type !== '' ? $type : self::TYPE_WEB;
+    }
+
+    /** Does this Property describe a website? */
+    public function isWebProperty() {
+
+        return $this->getPropertyType() === self::TYPE_WEB;
     }
 
     /**

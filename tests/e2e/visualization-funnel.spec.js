@@ -1,30 +1,80 @@
 // @ts-check
 /**
- * The goal funnel renders every stage, including the one it appends itself.
+ * The funnel visualization computes, and this asserts what it computed.
  *
- * ReportGoalFunnel draws a bar per configured funnel step and then appends ONE
- * MORE from the goal's own goal_url -- the conversion itself, the last bar. That
- * appended element is built by the report rather than read from the goal, and
- * when the step key was renamed from `url` to `path` the constructor was missed:
- * the last bar constrained on `pagePath==`, matched nothing, and reported zero.
+ * A funnel counts ordered stages over the event stream: a stage counts only
+ * those who reached it AFTER the stage before, which no arrangement of metrics
+ * and dimensions expresses. That is why it kept a controller when 62 of 64
+ * reports became JSON, and why it is a visualization rather than a report.
  *
- * Nothing caught it. Reaching that loop needs a configured funnel, a goalNumber
- * and traffic on the step paths, and no install had a single funnel step until
- * the seeder grew one.
+ * It used to read its stages from a goal's funnel configuration and append one
+ * more from the goal's own goal_url -- a stage the report BUILT rather than
+ * read, which is exactly the one a key rename silently emptied (the constructor
+ * kept saying `url` after the steps started saying `path`, so the last bar
+ * constrained on nothing and reported zero). The stages come from the
+ * visualization's own definition now, so there is no built stage left to get
+ * wrong; the counting assertions below are kept because what they protect --
+ * that no stage is constrained on something that matches nothing -- is
+ * unchanged.
  *
  * So this asserts CONTENT, not that a page rendered: the stage names, their
- * paths, and a non-zero visitor count on the appended stage -- which is the
- * assertion the regression would have failed.
+ * paths, and a non-zero count on every one.
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login } = require('./fixtures');
 
-async function openFunnel(page) {
+const VIZ = FIXTURE.funnelVisualization;
+
+/*
+ * The seeded visualization's id, found by NAME on its own roster.
+ *
+ * The seeder mints the id, so it cannot be written down in the fixture file.
+ * Looked up once per worker rather than per test: it does not change within a
+ * run, and every test here opens the same row.
+ */
+let vizId = null;
+
+async function visualizationId(page) {
+
+    if (vizId) {
+        return vizId;
+    }
+
+    await page.goto(`?owa_do=base.visualizations&owa_siteId=${FIXTURE.siteId}`,
+        { waitUntil: 'networkidle' });
+
+    const href = await page
+        .locator('table.management tbody tr', { hasText: VIZ.name })
+        .locator('a[href*="reportId=custom-"]').first()
+        .getAttribute('href');
+
+    /*
+     * `reportId`, and `owa_reportId` as the fallback.
+     *
+     * Report links are built with makeLink(), which writes OWA's own URLs in
+     * the app namespace -- empty on this install, so the roster's link says
+     * `reportId=` with no prefix. Reading only the prefixed name returned null,
+     * every test then asked for `owa_reportId=null`, and the funnel that could
+     * not be found looked exactly like a funnel that failed to render.
+     */
+    const params = new URL(href, page.url()).searchParams;
+
+    vizId = params.get('reportId') || params.get('owa_reportId');
+
+    expect(vizId, 'the roster must link to the visualization by id').toBeTruthy();
+
+    return vizId;
+}
+
+/** The funnel, optionally with a counting scope or a segment on the URL. */
+async function openFunnel(page, extra = '') {
+    const id = await visualizationId(page);
+
     await page.goto(
-        `?owa_do=base.report&owa_reportId=goal-funnel`
+        `?owa_do=base.report&owa_reportId=${encodeURIComponent(id)}`
         + `&owa_siteId=${FIXTURE.siteId}`
-        + `&owa_goalNumber=${FIXTURE.goal.number}`
-        + `&owa_period=last_thirty_days`,
+        + `&owa_period=last_thirty_days`
+        + extra,
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
@@ -32,30 +82,26 @@ async function openFunnel(page) {
 
 /** The funnel drawn with a given counting scope. */
 async function openFunnelAs(page, scope) {
-    await page.goto(
-        `?owa_do=base.report&owa_reportId=goal-funnel`
-        + `&owa_siteId=${FIXTURE.siteId}`
-        + `&owa_goalNumber=${FIXTURE.goal.number}`
-        + `&owa_period=last_thirty_days`
-        + `&owa_funnelScope=${scope}`,
-        { waitUntil: 'networkidle' }
-    );
-    await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+    await openFunnel(page, `&owa_funnelScope=${scope}`);
 }
 
-test.describe('reporting: goal funnel', () => {
+test.describe('visualization: funnel', () => {
 
     test.beforeEach(async ({ page }) => {
         await login(page);
     });
 
-    test('draws a stage for every configured step', async ({ page }) => {
+    test('draws a stage for every step, in the order they were written', async ({ page }) => {
         await openFunnel(page);
 
         // Assert per stage, not against the bare class: the name has to land on
         // the stage at its own step number, and a locator matching all three is
         // both strict-mode ambiguous and a weaker claim.
-        for (const [i, step] of FIXTURE.goal.steps.entries()) {
+        //
+        // ORDER is the claim. orderBy() with no direction defaults to DESC
+        // here, which drew the steps last-first -- a funnel that reported the
+        // destination as its entry point and still looked plausible.
+        for (const [i, step] of VIZ.steps.entries()) {
             const stage = page.locator('.owa_funnelStepColumn').nth(i);
 
             await expect(stage.locator('.funnelStepName')).toContainText(step.name);
@@ -64,25 +110,14 @@ test.describe('reporting: goal funnel', () => {
     });
 
     /**
-     * The regression guard. The goal's destination is the funnel's last bar and
-     * is the only stage the report builds rather than reads, so it is the only
-     * one a key mismatch can silently empty.
+     * Every stage comes from the definition now -- there is no stage the report
+     * builds rather than reads. So the count is exact, and an extra bar means
+     * something is inventing one again.
      */
-    test('draws the appended goal destination, with visitors', async ({ page }) => {
+    test('draws exactly the steps it was given', async ({ page }) => {
         await openFunnel(page);
 
-        const stages = page.locator('.owa_funnelStepColumn');
-        await expect(stages).toHaveCount(FIXTURE.goal.steps.length + 1);
-
-        const last = stages.last();
-
-        await expect(last).toContainText(FIXTURE.goal.destination);
-
-        // The fixture walks one visitor through every step in order, so the
-        // goal stage MUST count somebody. Zero here means either the appended
-        // stage is constrained on a path that matches nothing, or the ordering
-        // dropped a visitor who really did go through.
-        await expect(last).not.toContainText('0 visitors');
+        await expect(page.locator('.owa_funnelStepColumn')).toHaveCount(VIZ.steps.length);
     });
 
     test('every stage counts visitors, so none constrained on nothing', async ({ page }) => {
@@ -90,8 +125,13 @@ test.describe('reporting: goal funnel', () => {
 
         const counts = await page.locator('.funnelStepCount').allTextContents();
 
-        expect(counts.length).toBe(FIXTURE.goal.steps.length + 1);
+        expect(counts.length).toBe(VIZ.steps.length);
         expect(counts.every((c) => /\d+\s*visitors/.test(c))).toBe(true);
+
+        // The fixture walks one visitor through every step in order, so every
+        // stage MUST count somebody. Zero means a stage is constrained on a
+        // path that matches nothing, or the ordering dropped someone who really
+        // did go through.
         expect(counts.some((c) => /^0\s*visitors/.test(c.trim()))).toBe(false);
     });
 
@@ -112,12 +152,27 @@ test.describe('reporting: goal funnel', () => {
         }
     });
 
-    test('the control bar offers the goal, the scope and an edit link', async ({ page }) => {
+    test('the control bar is for LOOKING, and editing is on the title', async ({ page }) => {
         await openFunnel(page);
 
-        await expect(page.locator('.owa_reportControls #goalChooser')).toBeVisible();
+        // What the bar offers: how you are looking at it.
         await expect(page.locator('#funnelScopeSwitch')).toBeVisible();
-        await expect(page.locator('.owa_reportControls a[href*="optionsGoalEntry"]')).toBeVisible();
+        await expect(page.locator('#funnelFilter')).toBeVisible();
+
+        /*
+         * And what it does NOT offer. Changing what the funnel IS is a
+         * different kind of act from changing how it is drawn, so it is the
+         * pencil beside the title -- the same control, in the same place, that
+         * every custom report gets. It was a text link in this bar.
+         */
+        await expect(
+            page.locator('.owa_reportControls a[href*="visualizationEdit"]'),
+            'the edit link is back in the control bar'
+        ).toHaveCount(0);
+
+        await expect(
+            page.locator('.owa_reportTitle a.owa_titleActionMark[href*="visualizationEdit"]')
+        ).toHaveCount(1);
     });
 
     /**
@@ -202,10 +257,8 @@ test.describe('reporting: goal funnel', () => {
         const boxes = {};
 
         for (const [name, selector] of Object.entries({
-            goal:   '.owa_reportControls #goalChooser',
             scope:  '#funnelScopeSwitch .buttons',
             filter: '#funnelFilter .toggle-button',
-            edit:   '.owa_reportControls a[href*="optionsGoalEntry"]',
         })) {
             const box = await page.locator(selector).first().boundingBox();
             expect(box, `${name} control has no box`).not.toBeNull();
@@ -232,12 +285,12 @@ test.describe('reporting: goal funnel', () => {
     test('opening the filter does not move the rest of the bar', async ({ page }) => {
         await openFunnel(page);
 
-        const before = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
+        const before = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
 
         await page.locator('#funnelFilter .toggle-button').click();
         await expect(page.locator('#owa_filterBuilder-funnelFilter')).toBeVisible();
 
-        const after = await page.locator('.owa_reportControls a[href*="optionsGoalEntry"]').boundingBox();
+        const after = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
 
         expect(Math.abs(after.y - before.y)).toBeLessThan(3);
     });
@@ -278,15 +331,8 @@ test.describe('reporting: goal funnel', () => {
      * leaving it unsegmented.
      */
     test('a segment that matches nobody empties the funnel', async ({ page }) => {
-        await page.goto(
-            `?owa_do=base.report&owa_reportId=goal-funnel`
-            + `&owa_siteId=${FIXTURE.siteId}`
-            + `&owa_goalNumber=${FIXTURE.goal.number}`
-            + `&owa_period=last_thirty_days`
-            + `&owa_constraints=` + encodeURIComponent('medium==no-such-medium'),
-            { waitUntil: 'networkidle' }
-        );
-        await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+        await openFunnel(page,
+            '&owa_constraints=' + encodeURIComponent('medium==no-such-medium'));
 
         const counts = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));
@@ -295,10 +341,11 @@ test.describe('reporting: goal funnel', () => {
     });
 
     test('a refused segment says so rather than showing an unsegmented funnel', async ({ page }) => {
+        const id = await visualizationId(page);
+
         await page.goto(
-            `?owa_do=base.report&owa_reportId=goal-funnel`
+            `?owa_do=base.report&owa_reportId=${encodeURIComponent(id)}`
             + `&owa_siteId=${FIXTURE.siteId}`
-            + `&owa_goalNumber=${FIXTURE.goal.number}`
             + `&owa_period=last_thirty_days`
             + `&owa_constraints=` + encodeURIComponent('bogusDimension==x'),
             { waitUntil: 'networkidle' }
@@ -316,10 +363,10 @@ test.describe('reporting: goal funnel', () => {
 
         const rows = page.locator('#funnel-steps-grid tr.jqgrow');
 
-        await expect(rows).toHaveCount(FIXTURE.goal.steps.length + 1);
+        await expect(rows).toHaveCount(VIZ.steps.length);
 
         // The rows carry the computed numbers, not just a shell.
-        await expect(rows.first()).toContainText(FIXTURE.goal.steps[0].path);
+        await expect(rows.first()).toContainText(VIZ.steps[0].path);
 
         // Computed rows, so the grid must not offer controls that would
         // re-query a result set URL that does not exist.
