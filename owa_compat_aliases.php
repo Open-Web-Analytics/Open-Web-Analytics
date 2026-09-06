@@ -107,7 +107,6 @@ function owa_compat_class_map(): array
         'owa_genericTableView' => 'OWA\\Core\\View\\GenericTable',
         'owa_sparklineJsView' => 'OWA\\Core\\View\\SparklineJs',
         'owa_mailView' => 'OWA\\Core\\View\\Mail',
-        'owa_adminView' => 'OWA\\Core\\View\\Admin',
         'owa_restApiView' => 'OWA\\Core\\View\\RestApi',
         'owa_jsonView' => 'OWA\\Core\\View\\Json',
         'owa_jsonResultsView' => 'OWA\\Core\\View\\JsonResults',
