@@ -10,7 +10,6 @@
     "owa_addUserRestView",
     "owa_adminController",
     "owa_adminPageView",
-    "owa_adminView",
     "owa_apiErrorView",
     "owa_apiRequestController",
     "owa_auth",

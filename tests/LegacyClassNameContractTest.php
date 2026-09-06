@@ -49,6 +49,15 @@ use PHPUnit\Framework\TestCase;
  * and a separate decision from removing dead code. (Unrelated to the exit-pages
  * REPORT, which is live.)
  *
+ * RETIRED 2026-09-06: owa_adminView, the Core\View\Admin base class. Nothing
+ * extended it and nothing named it -- and it could not have been named, since
+ * the dotted-name factory only resolves into modules/<dir>/, never Core\View\.
+ * Its post() called setJs() with one argument where two are required, so any
+ * use at all would have been an immediate ArgumentCountError on PHP 8; the
+ * whole-tree gate had reported exactly that and it was baselined instead of
+ * fixed. Admin PAGES are unaffected: they extend Core\View\AdminPage, which is
+ * a different, live class.
+ *
  * RETIRED 2026-08-24, same reasoning: the 8 report VIEWS whose reports became
  * widget configuration. Seven were bespoke views that did nothing but name a
  * template; the eighth, ReportSimpleDimensional, was the generic subview they
@@ -99,6 +108,14 @@ final class LegacyClassNameContractTest extends TestCase
          * rules moved to GoalEventSave, and the tests that earned them were
          * repointed rather than deleted.
          */
+        /*
+         * RETIRED 2026-09-06: the vestigial Core\View\Admin base class. See the
+         * class docblock -- unreachable by name, unextended, and fatal if
+         * constructed. Not to be confused with Core\View\AdminPage, which every
+         * admin screen still extends.
+         */
+        'owa_adminView',
+
         'owa_optionsGoalsController',
         'owa_optionsGoalsView',
         'owa_optionsGoalEntryController',

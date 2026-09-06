@@ -115,12 +115,6 @@ parameters:
 			path: Core/Update.php
 
 		-
-			message: '#^Method OWA\\Core\\View\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
-			identifier: arguments.count
-			count: 2
-			path: Core/View/Admin.php
-
-		-
 			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\ChartData\:\:\$series_label\.$#'
 			identifier: property.notFound
 			count: 2
