@@ -325,6 +325,31 @@ final class TemplateLatentVarTest extends TestCase
              * NOT change their address, because that branch renders a different
              * field and is the one a fixture is most likely to miss.
              */
+            /*
+             * The installer's environment report.
+             *
+             * Rendered nowhere else in the test suite: the web-wizard e2e walks
+             * a HEALTHY environment, which routes straight past this screen to
+             * the config form, so the only time it is drawn is the one nobody
+             * exercises.
+             */
+            'install_check_env (failures present)' => [
+                'install_check_env.php',
+                [
+                    'checks' => [
+                        [ 'name' => 'PHP version', 'value' => '8.2.33',
+                          'passed' => true, 'msg' => '' ],
+                        [ 'name' => 'Database driver', 'value' => 'none found',
+                          'passed' => false, 'msg' => 'Install pdo_mysql or mysqli.' ],
+                    ],
+                    'errors' => [
+                        [ 'name' => 'Database driver', 'value' => 'none found',
+                          'passed' => false, 'msg' => 'Install pdo_mysql or mysqli.' ],
+                    ],
+                ],
+                ['owa_installCheck', 'PHP version', 'Database driver',
+                 'Install pdo_mysql or mysqli.'],
+            ],
             'my_profile (no email capability)' => [
                 'my_profile.php',
                 [

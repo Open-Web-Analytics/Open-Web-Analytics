@@ -463,9 +463,11 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     text-align: left;
 }
 
+/* The step's own heading, under the installer's title. Separated from it, or
+   the two headings read as one run-on line. */
 .owa_installBody h2,
 .owa_installFinish h2 {
-    margin: 0 0 8px 0;
+    margin: 22px 0 8px 0;
     font-size: 18px;
     color: #333333;
 }
