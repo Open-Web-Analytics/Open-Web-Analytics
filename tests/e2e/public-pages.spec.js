@@ -51,6 +51,18 @@ test.describe('the signed-out pages', () => {
         const background = await button.evaluate((el) => getComputedStyle(el).backgroundColor);
 
         expect(background).toBe('rgb(255, 165, 0)');
+
+        /*
+         * White at rest, blue on hover. It used to go BLACK on hover, which is
+         * not a colour used anywhere else on these screens.
+         */
+        expect(await button.evaluate((el) => getComputedStyle(el).color))
+            .toBe('rgb(255, 255, 255)');
+
+        await button.hover();
+
+        expect(await button.evaluate((el) => getComputedStyle(el).color))
+            .toBe('rgb(26, 95, 138)');
     });
 
     /**

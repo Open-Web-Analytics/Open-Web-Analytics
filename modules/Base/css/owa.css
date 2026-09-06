@@ -133,7 +133,9 @@ div {margin:0;}
 
 }
 .owa-button:hover {
-    color: #000000;
+    /* Blue, not black. The label is white at rest and takes the link colour on
+       hover, which is the one other blue on these screens. */
+    color: #1a5f8a;
     border-color: #9f9f9f;
     -moz-box-shadow:2px 2px 2px #999;
     box-shadow:2px 2px 2px #999;
@@ -610,7 +612,7 @@ a.owa-button {
 
 a.owa_publicSubmit:hover,
 a.owa-button:hover {
-    color: #ffffff;
+    color: #1a5f8a;
 }
 
 /* The status and error banners on the signed-out pages.
