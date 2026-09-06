@@ -231,6 +231,25 @@ class GoalEventSave extends \OWA\Core\AdminController {
             $condition->create();
         }
     }
+    /**
+     * The lowest numbered slot not already taken on this site, or null.
+     *
+     * The ceiling is numGoals, and has to be: that one setting is what sizes
+     * every other half of a numbered slot. owa_session carries physical
+     * goal_<N>, goal_<N>_start and goal_<N>_value columns for 1..numGoals
+     * (Entity\Session), the goal<N>Completions metric family is registered
+     * over the same range (Base\Module), and GoalManager::saveGoal() refuses a
+     * number above it.
+     *
+     * This loop used to run to a hardcoded 20 while numGoals was 15, so slots
+     * 16-20 were handed out with none of that behind them: ConversionHandlers
+     * builds 'goal_' . <number> and sets it on the session, which for 16 names
+     * a column that does not exist, so the completion was dropped in silence
+     * and no metric could have reported it anyway. That is strictly worse than
+     * returning null, which is the deliberate, handled "no numbered slot"
+     * state -- the goal event is still created and still works, it just has no
+     * numbered metric.
+     */
     public static function nextFreeSlot( $siteId ) {
 
         $taken = array();
@@ -243,7 +262,9 @@ class GoalEventSave extends \OWA\Core\AdminController {
             }
         }
 
-        for ( $i = 1; $i <= 20; $i++ ) {
+        $ceiling = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'numGoals' );
+
+        for ( $i = 1; $i <= $ceiling; $i++ ) {
 
             if ( ! isset( $taken[ $i ] ) ) {
 
