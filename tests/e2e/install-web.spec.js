@@ -67,12 +67,12 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
 
         // --- STEP 1: Start ----------------------------------------------------
         await page.goto(`${installBase}?do=base.installStart`, { waitUntil: 'networkidle' });
-        await expect(page.locator('text=Welcome to the Installer')).toBeVisible();
+        await expect(page.locator('.owa_publicTitle')).toContainText('Install Open Web Analytics');
 
-        // --- STEP 2: Env check (follow the "Let's Get Started" link) ----------
+        // --- STEP 2: Env check (follow the "Get started" link) ----------------
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('a', { hasText: "Let's Get Started" }).first().click(),
+            page.locator('a', { hasText: 'Get started' }).first().click(),
         ]);
         // A good environment routes straight to the config-entry form (the DB
         // fields). If the env were bad we'd see error rows instead.
@@ -140,7 +140,7 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         // Either we were redirected off install.php, or the start form is gone.
         const landedOnInstall = page.url().includes('install.php');
         const startVisible = await page
-            .locator('text=Welcome to the Installer')
+            .locator('.owa_installCard')
             .count();
         expect(landedOnInstall && startVisible > 0).toBe(false);
     });

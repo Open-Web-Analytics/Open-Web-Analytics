@@ -1,25 +1,28 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div class="subview_content">
+<div class="owa_installFinish">
 
-    <h1>Success! That's It. Installation is Complete.</h1>
+    <h2 class="owa_installDone">Installation complete</h2>
     <p>Open Web Analytics has been successfully installed. Login using the user name and password below and generate a tracker.</p>
-    <p class="form-row">
-        <span class="form-label">User Name:</span>
-        <span class="form-field"><?php echo $view->u;?></span>
-    </p>
-    <p class="form-row">
-        <span class="form-label">Password:</span>
-        <span class="form-field"><?php echo $view->p;?></span>
-        <span class="form-instructions"></span>
-    </p>
-    <BR>
+    <?php
+        /*
+         * The one time this password is ever shown. It is generated, not
+         * chosen, so a copy of it that is easy to select matters.
+         */
+    ?>
+    <div class="owa_installCredentials">
+        <div class="owa_installField">
+            <label>User name</label>
+            <span class="owa_installCredential"><?php $view->out( $view->u );?></span>
+        </div>
+        <div class="owa_installField">
+            <label>Password</label>
+            <span class="owa_installCredential"><?php $view->out( $view->p );?></span>
+        </div>
+    </div>
     <p>
-        <a href="<?php echo $view->makeLink(array("action" => "base.sitesInvocation", "siteId" => $view->site_id), false, \OWA\Core\CoreAPI::getSetting('base','public_url'));?>" target="_blank">
-            <span class="owa-button">Login and generate a site tracker!</span>
-        </a>
+        <a class="owa-button owa_publicSubmit"
+           href="<?php echo $view->makeLink(array("action" => "base.sitesInvocation", "siteId" => $view->site_id), false, \OWA\Core\CoreAPI::getSetting('base','public_url'));?>">Log in and generate a tracker</a>
     </p>
-
-    <BR>
 
     <div class="status owa-install-cron">
         <b>One more step: add OWA's cron entry.</b>

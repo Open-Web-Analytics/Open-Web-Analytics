@@ -1,16 +1,16 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div id="panel" style="width:800px; margin: 0px auto 20px auto;">
+<p class="owa_publicIntro">The next few screens set up the framework: a check of this
+server, your database details, and an account to sign in with. If you need help, the
+<a href="<?php $view->out( $this->config['wiki_url'] );?>">documentation wiki</a> covers
+each step.</p>
 
-    <h2>Welcome to the Installer!</h2>
-	<div class="layout_subview" valign="top" style="text-align:left;">
-    <P>The next few screens will guide you through installing the Open Web Analytics framework. If at any time you
-    need help, please consult the <a href=<?php echo $this->config['wiki_url'];?>>OWA Documentation Wiki</a>.</P>
-    <BR>
-    <p>
-        <a href="<?php echo $view->makeLink(array('action' => 'base.installCheckEnv'));?>"><span class="owa-button">Let's Get Started...</span></a>
-    </p>
-
-	</div>
-
-</div>
-    
+<?php
+    /*
+     * The href was unquoted -- href=<?php echo ... ?> -- so any URL with a
+     * character needing quoting broke the tag.
+     */
+?>
+<p>
+    <a class="owa-button owa_publicSubmit"
+       href="<?php echo $view->makeLink( array( 'action' => 'base.installCheckEnv' ) );?>">Get started</a>
+</p>

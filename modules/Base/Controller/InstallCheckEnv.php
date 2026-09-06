@@ -33,122 +33,206 @@ namespace OWA\Module\Base\Controller;
 
 class InstallCheckEnv extends \OWA\Core\Controller\Install {
 
+    /**
+     * The lowest PHP this release runs on.
+     *
+     * The same number composer.json requires. It was a hand-rolled comparison
+     * -- `$version[0] < 5 && $version[1] < 2` -- which cannot express a
+     * requirement at all: on PHP 8.2 the first term is false, so the whole
+     * check passed, and on PHP 5.1 it passed too because 5 is not less than 5.
+     * It has been unable to fail for every PHP anyone still runs.
+     */
+    const MIN_PHP_VERSION = '8.2';
+
+    /**
+     * Extensions OWA cannot run without, and what each is for.
+     *
+     * Checked here because the alternative is finding out later and worse: with
+     * no database driver the wizard takes a full page of connection details and
+     * then fails on connect, which reads as "my credentials are wrong".
+     */
+    const REQUIRED_EXTENSIONS = array(
+        'json'     => 'Encoding stored report definitions and API responses.',
+        'mbstring' => 'Handling non-ASCII page titles, URLs and search terms.',
+        'pcre'     => 'Matching URLs, goal conditions and constraint values.',
+    );
+
     function action() {
 
-        $errors = array();
-        $bad_environment = false;
-        $config_file_present = false;
+        $checks = array();
 
-        // check PHP version
-        $version = explode( '.', phpversion() );
+        // PHP itself.
+        $checks[] = $this->check(
+            'PHP version',
+            phpversion(),
+            version_compare( phpversion(), self::MIN_PHP_VERSION, '>=' ),
+            sprintf( 'OWA needs PHP %s or newer. Ask your host to upgrade, or point '
+                   . 'this virtual host at a newer PHP.', self::MIN_PHP_VERSION ) );
 
-        if ( $version[0] < 5 && $version[1] < 2 ) {
-            $errors['php_version']['name'] = 'PHP Version';
-            $errors['php_version']['value'] = phpversion();
-            $errors['php_version']['msg'] = $this->getMsgAsString(3301);
-            $bad_environment = true;
+        /*
+         * A database driver: PDO with a MySQL driver, or mysqli. Either one is
+         * enough -- Db picks whichever is present -- so this is one check
+         * rather than three, and it says which ones it looked for.
+         */
+        $drivers = array();
+
+        if ( extension_loaded( 'pdo_mysql' ) ) {
+            $drivers[] = 'pdo_mysql';
         }
 
-        // Check permissions on log directory
-        if ( ! is_writable( OWA_DATA_DIR . 'logs/' ) ) {
-
-            $errors['owa_logdir_permissions']['name'] = 'Log Directory Permissions';
-            $errors['owa_logdir_permissions']['value'] = 'Not writable';
-            $errors['owa_logdir_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'logs/ ' . ' to ensure it is writable.';
-            $bad_environment = true;
+        if ( extension_loaded( 'mysqli' ) ) {
+            $drivers[] = 'mysqli';
         }
 
-        // Check permissions on caches directory
-        if ( ! is_writable( OWA_DATA_DIR . 'caches/' ) ) {
+        $checks[] = $this->check(
+            'Database driver',
+            $drivers ? implode( ', ', $drivers ) : 'none found',
+            (bool) $drivers,
+            'OWA needs the pdo_mysql or mysqli PHP extension to reach a database. '
+          . 'Install one and restart PHP.' );
 
-            $errors['owa_caches_permissions']['name'] = 'Caches Directory Permissions';
-            $errors['owa_caches_permissions']['value'] = 'Not writable';
-            $errors['owa_caches_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'caches/ ' . ' to ensure it is writable.';
-            $bad_environment = true;
+        foreach ( self::REQUIRED_EXTENSIONS as $extension => $what_for ) {
+
+            $checks[] = $this->check(
+                sprintf( 'PHP extension: %s', $extension ),
+                extension_loaded( $extension ) ? 'loaded' : 'missing',
+                extension_loaded( $extension ),
+                $what_for . ' Install the ' . $extension . ' extension and restart PHP.' );
         }
 
-        // check for magic_quotes
-        if ( function_exists( 'get_magic_quotes_gpc' ) ) {
+        // Where OWA writes.
+        foreach ( array( 'logs' => 'Log directory', 'caches' => 'Cache directory' )
+                  as $dir => $label ) {
 
-            $magic_quotes = get_magic_quotes_gpc();
+            $path = OWA_DATA_DIR . $dir . '/';
 
-            if ( $magic_quotes ) {
-
-                $errors['magic_quotes_gpc']['name'] = 'magic_quotes_gpc';
-                $errors['magic_quotes_gpc']['value'] = $magic_quotes;
-                $errors['magic_quotes_gpc']['msg'] = "The magic_quotes_gpc PHP INI directive must be set to 'OFF' in order for OWA domstreams to operate correctly.";
-                $bad_environment = true;
-
-            }
-        }
-        
-        // check to ensure tha the vendors dir exist
-        if (! is_dir( OWA_VENDOR_DIR ) ) {
-	        
-	        $errors['vendors_dir'] = [
-		        
-		        'name'	=> 'Vendors Directory',
-		        'value'	=> 'missing',
-		        'msg'	=> "The vendors directory is missing. Please run 'composer install' from the top level OWA directory."
-	        ];
-	        
-	        $bad_environment = true;
-        }
-        
-        // check to ensure the built asset dir exists. The webpack build now emits
-        // the tracker/reporting bundles under public/base/dist (they used to live
-        // in modules/base/dist); public/ is gitignored, so a fresh source checkout
-        // still lacks it until 'npm run build' runs.
-        if ( ! is_dir( OWA_DIR .'public/base/dist' ) ) {
-
-	        $errors['base_dist_dir'] = [
-
-		        'name'	=> 'dist Directory',
-		        'value'	=> 'missing',
-		        'msg'	=> "The built asset directory (public/base/dist) is missing. Please run 'npm run build' from the top level OWA directory."
-	        ];
-
-	        $bad_environment = true;
+            $checks[] = $this->check(
+                $label,
+                is_writable( $path ) ? 'writable' : 'not writable',
+                is_writable( $path ),
+                sprintf( 'Make %s writable by the user your web server runs as.', $path ) );
         }
 
+        /*
+         * Whether the config file can be WRITTEN, which nothing checked.
+         *
+         * The next screen collects database details and then calls
+         * createConfigFile(), which fopen()s the path for writing without
+         * asking first -- so on a docroot the web server cannot write to, an
+         * author filled in the whole form before anything went wrong, and what
+         * went wrong was a file handle failing rather than a message. Asked
+         * here, they are told before they type anything.
+         *
+         * An existing file is fine: that path skips the form entirely.
+         */
+        $config_file = $this->c->get( 'base', 'config_file' );
+        $config_dir  = dirname( $config_file );
 
-        // Check for config file and then test the db connection
-        if ($this->c->isConfigFilePresent()) {
-            $config_file_present = true;
-            $conn = $this->checkDbConnection();
-            if ($conn != true) {
-                $errors['db']['name'] = 'Database Connection';
-                $errors['db']['value'] = 'Connection failed';
-                $errors['db']['msg'] = 'Check the connection settings in your configuration file.' ;
-                $bad_environment = true;
-            }
+        $config_writable = file_exists( $config_file )
+            ? is_readable( $config_file )
+            : is_writable( $config_dir );
+
+        $checks[] = $this->check(
+            'Configuration file',
+            file_exists( $config_file )
+                ? ( is_readable( $config_file ) ? 'present' : 'present, not readable' )
+                : ( is_writable( $config_dir ) ? 'can be created' : 'cannot be created' ),
+            $config_writable,
+            file_exists( $config_file )
+                ? sprintf( 'Make %s readable by the user your web server runs as.', $config_file )
+                : sprintf( 'Make %s writable so the installer can create owa-config.php, or '
+                         . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.',
+                           $config_dir ) );
+
+        // The two directories a source checkout does not come with.
+        $checks[] = $this->check(
+            'Dependencies',
+            is_dir( OWA_VENDOR_DIR ) ? 'installed' : 'missing',
+            is_dir( OWA_VENDOR_DIR ),
+            "Run 'composer install' in the top level OWA directory." );
+
+        /*
+         * The webpack build emits the tracker and reporting bundles under
+         * public/base/dist, and public/ is gitignored -- so a fresh source
+         * checkout has none of it until 'npm run build' runs.
+         */
+        $checks[] = $this->check(
+            'Built assets',
+            is_dir( OWA_DIR . 'public/base/dist' ) ? 'built' : 'missing',
+            is_dir( OWA_DIR . 'public/base/dist' ),
+            "Run 'npm run build' in the top level OWA directory." );
+
+        /*
+         * The database connection, only when there is already a config file
+         * naming one. Without a config file there is nothing to connect with,
+         * and the next screen is where those details get entered.
+         */
+        $config_file_present = (bool) $this->c->isConfigFilePresent();
+
+        if ( $config_file_present ) {
+
+            $connected = (bool) $this->checkDbConnection();
+
+            $checks[] = $this->check(
+                'Database connection',
+                $connected ? 'connected' : 'failed',
+                $connected,
+                'Check the database settings in ' . $config_file . '.' );
         }
 
-        // if the environment is good
-        if ($bad_environment != true) {
-            // and the config file is present
-            if ($config_file_present === true) {
-                //skip to defaults entry step
-                $this->setRedirectAction('base.installDefaultsEntry');
+        $failed = array_values( array_filter( $checks, static function ( $check ) {
+
+            return ! $check['passed'];
+        } ) );
+
+        if ( ! $failed ) {
+
+            if ( $config_file_present ) {
+
+                // Everything is in place already; go straight to the defaults.
+                $this->setRedirectAction( 'base.installDefaultsEntry' );
+
                 return;
-            } else {
-                // otherwise show config file entry form
-                $this->setView('base.install');
-                // Todo: prepopulate public URL.
-                //$config = array('public_url', $url);
-                //$this->set('config', $config);
-                $this->setSubview('base.installConfigEntry');
-                return;
             }
-        // if the environment is bad, then show environment error details.
-        } else {
-            $this->set('errors', $errors);
-            $this->setView('base.install');
-            $this->setSubview('base.installCheckEnv');
+
+            $this->setView( 'base.install' );
+            $this->setSubview( 'base.installConfigEntry' );
+
+            return;
         }
+
+        /*
+         * Every check, not just the failures.
+         *
+         * The screen used to list only what was wrong, which left no way to
+         * tell "this was checked and is fine" from "this was never looked at"
+         * -- and on a screen whose whole job is to describe the environment,
+         * that is most of the information.
+         */
+        $this->set( 'checks', $checks );
+        $this->set( 'errors', $failed );
+        $this->setView( 'base.install' );
+        $this->setSubview( 'base.installCheckEnv' );
+    }
+
+    /**
+     * One environment check, in the shape the template renders.
+     *
+     * @param string $name   what was looked at
+     * @param string $value  what was found
+     * @param bool   $passed
+     * @param string $msg    what to do about it, shown only when it failed
+     * @return array
+     */
+    private function check( $name, $value, $passed, $msg ) {
+
+        return array(
+            'name'   => $name,
+            'value'  => $value,
+            'passed' => (bool) $passed,
+            'msg'    => $passed ? '' : $msg,
+        );
     }
 }
-
-
 
 ?>
