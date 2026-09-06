@@ -1,0 +1,30 @@
+{
+    "title": "Hello Dashboard",
+    "metrics": "visits,uniqueVisitors,pageViews",
+    "widgets": [
+        {
+            "type": "trend-card",
+            "id": "trend",
+            "container": "trend-chart",
+            "title": "Traffic",
+            "showTitle": true,
+            "chartMetric": "visits",
+            "query": {
+                "metrics": "visits,uniqueVisitors,pageViews",
+                "dimensions": "date",
+                "sort": "date"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "topPages",
+            "container": "top-pages",
+            "title": "Top Content",
+            "query": {
+                "metrics": "pageViews",
+                "dimensions": "pagePath",
+                "sort": "pageViews-"
+            }
+        }
+    ]
+}
