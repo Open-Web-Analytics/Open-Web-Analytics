@@ -424,6 +424,51 @@ abstract class Module {
     }
 
     /**
+     * Register a settings screen: its nav entry AND its page title, once.
+     *
+     * The two used to be declared in different places -- 'anchortext' here and
+     * a headline the view set for itself -- so they drifted, and a reader was
+     * given two names for one screen. base.optionsGeneral was "Main
+     * Configuration" in the nav and "General Configuration Options" on the
+     * page; three other screens had the same split.
+     *
+     * `title` is the one name. The nav renders it, and the framework hands it
+     * to the page, so a screen registered this way CANNOT disagree with itself.
+     * A view that sets its own headline is then a bug rather than a second
+     * opinion, which is what SettingsPageTitleTest asserts.
+     *
+     * Keys: do, title, capability, group, order. `priviledge` and `anchortext`
+     * are still written for registerSettingsPanel's consumers, which read the
+     * older shape.
+     *
+     * @param array $page
+     * @return bool
+     */
+    function registerSettingsPage( $page ) {
+
+        $title = (string) ( $page['title'] ?? '' );
+
+        if ( $title === '' ) {
+
+            \OWA\Core\CoreAPI::notice(
+                'A settings page needs a title: it names the screen in the nav and '
+              . 'on the page itself. Registering ' . ( $page['do'] ?? '?' ) . ' without one.' );
+        }
+
+        // The older shape, so the nav builder and every existing reader work
+        // unchanged. anchortext IS the title -- that is the whole point.
+        $page['anchortext'] = $title;
+        $page['priviledge'] = $page['priviledge'] ?? 'admin';
+        $page['group']      = $page['group'] ?? 'General';
+        $page['order']      = $page['order'] ?? 1;
+
+        // What marks this panel as carrying an authoritative title.
+        $page['owa_titled'] = true;
+
+        return $this->registerSettingsPanel( $page );
+    }
+
+    /**
      * Registers an admin panel with this module
      *
      */

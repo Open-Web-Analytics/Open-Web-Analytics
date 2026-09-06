@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div class="panel_headline"><?php echo $view->headline?></div>
+<div class="panel_headline"><?php $view->out( $view->settings_page_title ); ?></div>
 <div id="panel">
 
 <?php if (!empty($view->modules)): ?>

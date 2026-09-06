@@ -42,6 +42,14 @@ final class MaxmindOptionsPageTest extends TestCase {
             'db_present'    => false,
             'db_updated'    => 0,
             'has_key'       => true,
+            /*
+             * Supplied by Core\View from the module's registerSettingsPage()
+             * title at render time. This harness drives the Template directly,
+             * so it stands in for that -- and the value is deliberately the
+             * registered one, so the assertion below is checking the page shows
+             * what the nav shows.
+             */
+            'settings_page_title' => 'GeoIP',
         ), $overrides );
 
         foreach ( $data as $key => $value ) {
@@ -59,6 +67,8 @@ final class MaxmindOptionsPageTest extends TestCase {
             'an empty render is what a template error looks like -- the buffer is discarded' );
         // The heading matches the settings-nav label, which
         // testTheSettingsNavAndItsPagesAgreeOnTheName keeps true in both places.
+        // The heading is whatever registerSettingsPage() named the screen; it is
+        // not written into the template, which is what stops it drifting.
         $this->assertStringContainsString( 'class="panel_headline">GeoIP<', $html );
     }
 

@@ -377,12 +377,11 @@ class Module extends \OWA\Core\Module {
      */
     function registerAdminPanels() {
 
-        $this->addAdminPanel(array(
+        $this->registerSettingsPage(array(
                 'do'             => 'base.optionsGeneral',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Main Configuration',
-                'group'            => 'General',
-                'order'            => 1)
+                'title'          => 'Main Configuration',
+                'group'          => 'General',
+                'order'          => 1)
         );
 
 
@@ -414,12 +413,11 @@ class Module extends \OWA\Core\Module {
          * disagreeing about it would put rows of different meanings in one
          * table with nothing recording which.
          */
-        $this->addAdminPanel(array(
+        $this->registerSettingsPage(array(
                 'do'             => 'base.optionsModules',
-                'priviledge'     => 'admin',
-                'anchortext'     => 'Modules',
-                'group'            => 'General',
-                'order'            => 3)
+                'title'          => 'Modules',
+                'group'          => 'General',
+                'order'          => 3)
         );
 
         /*

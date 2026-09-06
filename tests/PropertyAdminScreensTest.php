@@ -336,118 +336,79 @@ final class PropertyAdminScreensTest extends TestCase
      * different meanings in one table with nothing recording which.
      */
     /**
-     * The settings nav and the page it opens call the screen the same thing.
+     * A settings screen is named ONCE, where it is registered.
      *
-     * These drifted apart: the nav said "Main Configuration" and the page said
-     * "General Configuration Options"; the nav said "Modules" and the page said
-     * "Modules Administration". Nothing was wrong except that the reader was
-     * told two names for one screen, which is the kind of thing no one files
-     * and everyone notices.
+     * The nav label and the page heading used to be declared separately -- an
+     * 'anchortext' in the module and a headline the view set for itself -- so
+     * they drifted apart on four screens. base.optionsGeneral said "Main
+     * Configuration" in the nav and "General Configuration Options" on the
+     * page.
      *
-     * The nav side is read from the REGISTRY rather than from source, so this
-     * follows a panel that moves. The page side is read from the view file,
-     * because a headline is set during a render this test does not perform --
-     * and every panel is required to resolve to a file with a headline in it,
-     * so a rename that breaks the pairing fails here instead of quietly
-     * matching nothing.
+     * registerSettingsPage() takes one title and both consumers read it, so the
+     * fix is structural rather than a rule someone has to remember. This test
+     * enforces the mechanism, not a list of matching strings: a screen that
+     * names itself a second time is the thing that could drift, so that is what
+     * fails here -- even when the two names happen to agree today.
      */
-    public function testTheSettingsNavAndItsPagesAgreeOnTheName(): void
+    public function testASettingsScreenIsNamedOnlyWhereItIsRegistered(): void
     {
         $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
 
-        $checked  = 0;
-        $mismatch = array();
+        $checked   = 0;
+        $untitled  = array();
+        $duplicate = array();
 
         foreach ( $panels as $items ) {
 
             foreach ( (array) $items as $item ) {
 
                 $action = (string) ( $item['do'] ?? '' );
-                $label  = (string) ( $item['anchortext'] ?? '' );
 
-                if ( $action === '' || $label === '' ) {
+                if ( $action === '' ) {
+                    continue;
+                }
+
+                $checked++;
+
+                // The registration is the one place a title may be stated.
+                if ( \OWA\Core\CoreAPI::settingsPageTitle( $action ) === '' ) {
+
+                    $untitled[] = $action;
                     continue;
                 }
 
                 list( $module, $name ) = array_pad( explode( '.', $action, 2 ), 2, '' );
 
-                /*
-                 * Both module layouts. Base is PSR-4 (View/Name.php); a
-                 * third-party module may still be flat (NameView.php), which is
-                 * what modules/Hello demonstrates -- and a nav label drifting
-                 * from its page is no less confusing there.
-                 */
                 $dir = OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/';
 
-                $candidates = array(
-                    $dir . 'View/' . ucfirst( $name ) . '.php',
-                    $dir . ucfirst( $name ) . 'View.php',
-                );
+                foreach ( array( $dir . 'View/' . ucfirst( $name ) . '.php',
+                                 $dir . ucfirst( $name ) . 'View.php' ) as $view ) {
 
-                $file = '';
-
-                foreach ( $candidates as $candidate ) {
-
-                    if ( file_exists( $candidate ) ) {
-
-                        $file = $candidate;
-                        break;
+                    if ( ! file_exists( $view ) ) {
+                        continue;
                     }
-                }
 
-                $this->assertNotSame( '', $file,
-                    "$action is in the settings nav but no view file was found for it "
-                  . 'in either module layout, so its heading cannot be checked against '
-                  . 'its nav label.' );
+                    if ( preg_match( "#set\(\s*'headline'#", (string) file_get_contents( $view ) ) ) {
 
-                $source = (string) file_get_contents( $file );
-
-                /*
-                 * Two ways a screen names itself, and both are in use: the view
-                 * sets a headline the template echoes, or the template writes
-                 * the panel_headline itself. Checked in that order -- a view
-                 * that sets one is the name that wins at render time.
-                 */
-                $heading = null;
-
-                if ( preg_match( "#set\(\s*'headline'\s*,\s*'([^']*)'#", $source, $m ) ) {
-
-                    $heading = $m[1];
-
-                } else {
-
-                    foreach ( glob( dirname( $file ) . '/../templates/*.php' ) ?: array() as $tpl ) {
-
-                        if ( preg_match( '#class="panel_headline">([^<>]*)<#',
-                                (string) file_get_contents( $tpl ), $m ) ) {
-
-                            $heading = trim( $m[1] );
-                            break;
-                        }
+                        $duplicate[] = $action . ' (' . basename( $view ) . ' sets its own headline)';
                     }
-                }
-
-                $this->assertNotNull( $heading,
-                    "$action names itself nowhere -- neither its view nor its template "
-                  . 'gives the screen a heading, so it opens unnamed.' );
-
-                $checked++;
-
-                if ( $heading !== $label ) {
-
-                    $mismatch[] = sprintf(
-                        '%s: nav says "%s", page says "%s"', $action, $label, $heading );
                 }
             }
         }
 
         // Never vacuous: a registry that resolved nothing would otherwise pass.
         $this->assertGreaterThan( 0, $checked,
-            'no settings-nav panel resolved to a view, so this checked nothing.' );
+            'no settings panel was found, so this checked nothing.' );
 
-        $this->assertSame( array(), $mismatch,
-            "The settings nav and the page it opens disagree about the name:\n"
-          . implode( "\n", $mismatch ) );
+        $this->assertSame( array(), $untitled,
+            "These settings screens are registered without a title, so the nav has "
+          . "nothing to label them with and the page has nothing to head itself with:\n"
+          . implode( "\n", $untitled ) );
+
+        $this->assertSame( array(), $duplicate,
+            "A settings screen is titled by registerSettingsPage() and nowhere else. "
+          . "These state a second name, which is how the two drifted apart before:\n"
+          . implode( "\n", $duplicate ) );
     }
 
     public function testTheSettingsNavHoldsOnlyInstallWideOptions(): void

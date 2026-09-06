@@ -116,12 +116,11 @@ class Module extends \OWA\Core\Module {
      */
     function registerAdminPanels() {
 
-        $this->addAdminPanel( array(
-            'do'          => 'maxmind_geoip.optionsGeoip',
-            'priviledge'  => 'admin',
-            'anchortext'  => 'GeoIP',
-            'group'       => 'Modules',
-            'order'       => 10,
+        $this->registerSettingsPage( array(
+            'do'    => 'maxmind_geoip.optionsGeoip',
+            'title' => 'GeoIP',
+            'group' => 'Modules',
+            'order' => 10,
         ) );
     }
 

@@ -54,11 +54,10 @@ class Module extends \OWA\Core\Module {
      */
     function registerAdminPanels() {
 
-        $this->addAdminPanel(array( 'do'             => 'hello.exampleSettings',
-                                    'priviledge'     => 'admin',
-                                    'anchortext'     => 'Hello World!',
-                                    'group'            => 'Test',
-                                    'order'            => 1));
+        $this->registerSettingsPage(array( 'do'    => 'hello.exampleSettings',
+                                          'title' => 'Hello World!',
+                                          'group' => 'Test',
+                                          'order' => 1));
 
 
         return;

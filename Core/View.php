@@ -145,6 +145,20 @@ class View extends \OWA\Core\Base {
             $this->body->set('params', $this->data['params']);
         endif;
 
+        /*
+         * The screen's own name, read from the same registration the settings
+         * nav draws its link from, so the two cannot disagree -- see
+         * Module::registerSettingsPage().
+         *
+         * Set UNCONDITIONALLY, and empty for anything that is not a registered
+         * settings page. ViewScope throws on a template variable that was never
+         * set, so a view reached by a path that skipped this would fail at
+         * render rather than fall back -- which is exactly what happened to the
+         * Maxmind screen when this was wired into the subview branch alone.
+         */
+        $this->body->set( 'settings_page_title', \OWA\Core\CoreAPI::settingsPageTitle(
+            $this->data['params']['do'] ?? ( $this->data['do'] ?? '' ) ) );
+
         if (array_key_exists('subview', $this->data)):
             $this->body->caller_params['subview'] = $this->data['subview'];
         endif;
