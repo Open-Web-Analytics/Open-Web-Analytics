@@ -33,6 +33,42 @@ test.describe('every configured report renders in a browser', () => {
      * the assertion names every offending report rather than dying on the
      * first -- for one login.
      */
+    /**
+     * A grid does not offer a picker for a column nobody can see.
+     *
+     * transactions is grouped by timestamp AND transactionId with timestamp in
+     * excludeColumns -- it is there only so the rows can carry it. The bar drew
+     * a picker for it all the same, so a grid showing one column offered two
+     * pickers and the second named a column that is not in the table.
+     *
+     * transactions rather than action-group, which has the same shape but takes
+     * a parameter: opened with a sentinel it matches nothing and draws no grid
+     * to carry a bar, so it cannot answer this either.
+     *
+     * This has now moved twice, both times because its subject became a
+     * grid-card: first from Top Content, then from Top Referrers. A card draws
+     * no explorer bar at all, so it cannot answer this question -- and the
+     * dashboard no longer has a grid with a hidden dimension on it, which is why
+     * this lives here with the other configured-report checks rather than in the
+     * dashboard spec.
+     */
+    test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
+
+        await login(page);
+        await openConfiguredReport(page, { reportId: 'transactions' });
+
+        const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
+            slots: e.querySelectorAll('.owa_dimSlot').length,
+            add: e.querySelectorAll('.owa_dimAdd').length,
+        })).filter((r) => r.slots || r.add));
+
+        expect(bars.length, 'transactions drew no explorer bar to count pickers on')
+            .toBeGreaterThan(0);
+
+        expect(bars[0].slots).toBe(1);
+        expect(bars[0].add).toBe(1);
+    });
+
     test('no configured report raises a browser console error', async ({ page }) => {
         test.setTimeout(300_000);
 

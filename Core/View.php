@@ -145,19 +145,7 @@ class View extends \OWA\Core\Base {
             $this->body->set('params', $this->data['params']);
         endif;
 
-        /*
-         * The screen's own name, read from the same registration the settings
-         * nav draws its link from, so the two cannot disagree -- see
-         * Module::registerSettingsPage().
-         *
-         * Set UNCONDITIONALLY, and empty for anything that is not a registered
-         * settings page. ViewScope throws on a template variable that was never
-         * set, so a view reached by a path that skipped this would fail at
-         * render rather than fall back -- which is exactly what happened to the
-         * Maxmind screen when this was wired into the subview branch alone.
-         */
-        $this->body->set( 'settings_page_title', \OWA\Core\CoreAPI::settingsPageTitle(
-            $this->data['params']['do'] ?? ( $this->data['do'] ?? '' ) ) );
+        $this->setSettingsPageTitle();
 
         if (array_key_exists('subview', $this->data)):
             $this->body->caller_params['subview'] = $this->data['subview'];
@@ -389,7 +377,40 @@ class View extends \OWA\Core\Base {
      * @param mixed $data
      * @return unknown
      */
+    /**
+     * Hand the page the name its settings-nav link carries.
+     *
+     * Read from the same registration the nav draws from -- see
+     * Module::registerSettingsPage() -- so the two cannot disagree.
+     *
+     * Called from BOTH assembly paths, which is the whole point of it being a
+     * method. A main view goes through assembleView() and a subview through
+     * assembleSubView(), and every settings screen is a subview while the
+     * Maxmind screen renders through neither: wiring this into one path alone
+     * left the other rendering blank, because ViewScope throws on a template
+     * variable that was never set rather than falling back to empty.
+     *
+     * Empty for anything that is not a registered settings page -- reports, the
+     * install wizard -- whose templates do not read it.
+     */
+    protected function setSettingsPageTitle() {
+
+        if ( ! is_object( $this->body ) ) {
+
+            return;
+        }
+
+        $do = $this->data['params']['do'] ?? ( $this->data['do'] ?? '' );
+
+        $this->body->set( 'settings_page_title',
+            \OWA\Core\CoreAPI::settingsPageTitle( $do ) );
+    }
+
     function assembleSubView($data) {
+
+        // Before render(), so a subview that wants to override its own title
+        // still can -- and so it is set whichever branch below runs.
+        $this->setSettingsPageTitle();
 
         // construct main view.  This might set some properties of the subview.
         if (method_exists($this, 'render')) {
