@@ -41,7 +41,7 @@ class MyProfile extends \OWA\Core\Controller {
          */
         $this->setRequiredCapability( 'view_site_list' );
 
-        return parent::__construct( $params );
+        parent::__construct( $params );
     }
 
     function action() {
