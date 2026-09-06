@@ -1504,7 +1504,27 @@ namespace OWA\Module\Base\Classes;
         fclose($handle);
         chmod($file, 0750);
         \OWA\Core\CoreAPI::debug('Config file created');
-        require_once($file);
+
+        /*
+         * The file is NOT loaded here.
+         *
+         * Its constants are already defined in this request -- InstallConfig
+         * defines the database ones from the submitted form so it can test the
+         * connection before writing anything, and install.php defines the error
+         * handler and cache ones. Loading the file then re-ran define() on all
+         * of them, and define() on an existing constant keeps the first value
+         * and emits a warning: eight "Constant OWA_DB_TYPE already defined in
+         * owa-config.php" warnings per install, in the error log, and printed
+         * ahead of the redirect below on any host with display_errors on.
+         *
+         * Nothing needs it loaded. The only caller redirects immediately
+         * (InstallConfig::action), and a redirect is a new request that reads
+         * the file from scratch with nothing predefined.
+         *
+         * Guarding the defines in owa-config-dist.php would have fixed only
+         * files written from that template afterwards; every existing install
+         * would keep warning.
+         */
         return true;
 
     }
