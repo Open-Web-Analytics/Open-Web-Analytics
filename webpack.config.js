@@ -96,7 +96,15 @@ function jsConfig(moduleName, moduleDir, pkg) {
 			? [
 					new CopyPlugin({
 						patterns: [
-							{ from: path.resolve(moduleDir, pkg.licence), to: 'LICENSE.txt' },
+							{
+								from: path.resolve(moduleDir, pkg.licence),
+								// Named for the bundle, not the directory: several bundles share
+								// this output dir and only this one is BSD-3 (owa.vendors.js is
+								// third-party, owa.reporting-combined-min.js is GPL), so a bare
+								// LICENSE.txt would read as covering all of them. Matches the
+								// <bundle>.LICENSE.txt convention terser uses.
+								to: `${pkg.name}.LICENSE.txt`,
+							},
 						],
 					}),
 			  ]

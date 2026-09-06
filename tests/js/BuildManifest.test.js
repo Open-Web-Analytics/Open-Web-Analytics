@@ -167,7 +167,10 @@ describe('per-module build manifest discovery', () => {
 
             const patterns = copies[0].patterns || copies[0].options.patterns;
             expect(patterns).toHaveLength(1);
-            expect(patterns[0].to).toBe('LICENSE.txt');
+            // Named for the bundle: several bundles share public/base/dist and only
+            // the tracker is BSD-3, so a bare LICENSE.txt would read as covering the
+            // whole directory (owa.vendors.js is third-party, the reporting bundle GPL).
+            expect(patterns[0].to).toBe('owa.tracker.js.LICENSE.txt');
             expect(patterns[0].from.endsWith('src/tracker/LICENSE.txt')).toBe(true);
             expect(fs.existsSync(patterns[0].from)).toBe(true);
         });
