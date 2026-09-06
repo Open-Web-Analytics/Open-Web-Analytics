@@ -18,8 +18,18 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, loginAs } = require('./fixtures');
 
-/** A name unique to this run, so reruns do not collide on the roster. */
-const reportName = (label) => `E2E ${label} ${Date.now()}`;
+/**
+ * A name unique to this run AND to the test using it.
+ *
+ * Date.now() alone has millisecond resolution, which was unique enough while
+ * this file ran one test at a time. It no longer does: the describes below run
+ * in parallel, so two tests can name a report in the same millisecond. The
+ * random suffix is what keeps them apart.
+ *
+ * The 'E2E ' prefix stays -- the fixture teardown finds these by it.
+ */
+const reportName = (label) =>
+    `E2E ${label} ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 /**
  * The builder, opened ON THE FIXTURE SITE.
@@ -214,6 +224,31 @@ async function fillWidget(page, opts) {
 }
 
 test.describe('custom reports', () => {
+
+    /*
+     * THIS FILE RUNS IN PARALLEL.
+     *
+     * It is 66 tests and about 40% of the self-hosted suite's wall clock -- and
+     * because a file is the unit Playwright keeps serial by default, it was the
+     * floor under every other attempt to speed the suite up.
+     *
+     * Its tests are independent, which is what makes this safe rather than
+     * merely faster:
+     *
+     *   - every report is created under a name unique to the test that makes
+     *     it, so no two tests address the same row;
+     *   - nothing here deletes a report, so no test can pull a row out from
+     *     under another;
+     *   - the one roster COUNT assertion checks the shape of the number
+     *     (/^[0-9]+$/), not its value, so a sibling creating a report
+     *     concurrently cannot break it;
+     *   - each test signs in for itself, and parallel workers get their own
+     *     browser contexts, so no session is shared.
+     *
+     * A test added here that deletes a report, or asserts an exact roster
+     * count, breaks those assumptions and has to be marked serial.
+     */
+    test.describe.configure({ mode: 'parallel' });
 
     test.describe('as an author', () => {
 

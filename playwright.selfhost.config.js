@@ -52,7 +52,7 @@ const HARNESS = path.join(__dirname, 'tests', 'e2e', 'selfhost_harness.php');
 const BASE_URL = execFileSync('php', [HARNESS, 'baseurl'], { encoding: 'utf8' }).trim();
 
 // The php -S command serves the repo root (this dir). Multiple workers would need
-// PHP_CLI_SERVER_WORKERS, but the suite runs workers:1 (fixtures share one DB), and
+// PHP_CLI_SERVER_WORKERS; the suite runs few workers (fixtures share one DB), and
 // a single-threaded server can deadlock if a request makes a same-server subrequest;
 // give it a small worker pool so a page + its assets/beacons can be served together.
 const SERVER_URL = BASE_URL.replace(/index\.php.*$/, '');
@@ -69,10 +69,30 @@ module.exports = defineConfig({
     globalSetup: require.resolve('./tests/e2e/selfhost-global-setup.js'),
     globalTeardown: require.resolve('./tests/e2e/selfhost-global-teardown.js'),
 
+    /*
+     * Files stay serial with respect to each other; only files that opt in
+     * (test.describe.configure({ mode: 'parallel' })) split across workers.
+     * Turning this on globally would let every file's tests interleave, and
+     * several of them mutate shared fixture rows -- the beacon specs write fact
+     * rows the reporting specs then assert on.
+     */
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: 0,
-    workers: 1,
+    /*
+     * Two, not one -- and not more.
+     *
+     * custom-reports.spec.js is about 40% of this suite's wall clock and opts
+     * into parallel mode, so a second worker is what lets it actually split.
+     * Beyond two, files that do NOT opt in start overlapping each other more
+     * aggressively, and several of them share fixture rows: admin-actions
+     * rewrites users and sites, and the beacon specs write the fact rows the
+     * reporting specs count.
+     *
+     * The live-server config stays at one worker. It runs on a 1.9GB box that
+     * hard-freezes rather than OOM-killing, and browsers are what fill it.
+     */
+    workers: 2,
     // In CI keep the streaming 'line' output AND write an HTML report so a
     // failing run has something to upload as an artifact for diagnosis.
     reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'list',
