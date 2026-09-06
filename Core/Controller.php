@@ -306,9 +306,39 @@ class Controller extends \OWA\Core\Base {
                 //print_r($this->v);
                 // if errors, do the errorAction instead of the normal action
                 $this->set('validation_errors', $this->getValidationErrorMsgs());
-              
-                $this->errorAction();
-                
+
+                /*
+                 * WHAT errorAction() RETURNS IS USED, not discarded.
+                 *
+                 * This called errorAction() for its side effects and then
+                 * returned $this->data regardless, while the success path below
+                 * hands back whatever action() returns. So a controller that
+                 * answers a refusal by DELEGATING -- building another
+                 * controller and returning its doAction() -- had that answer
+                 * thrown away, and the caller rendered this controller's own
+                 * data, which for a write that redirects on success names no
+                 * view at all. The result was a blank page:
+                 * base.customReportSave did exactly this for a missing report
+                 * name, every time.
+                 *
+                 * Only the return value changes. success() is NOT called here,
+                 * unlike finishActionCall(): most controllers override it to
+                 * set the view for the SUCCESS case, and running it now would
+                 * overwrite whatever errorAction() just set. post() is not
+                 * called either -- ReportController overrides it and returns
+                 * $this->data from errorAction(), so calling it would add a
+                 * side effect to a path that has never had one.
+                 *
+                 * Every errorAction() that returns nothing therefore behaves
+                 * exactly as before.
+                 */
+                $error_result = $this->errorAction();
+
+                if ( ! empty( $error_result ) ) {
+
+                    return $error_result;
+                }
+
                 return $this->data;
             }
         }
