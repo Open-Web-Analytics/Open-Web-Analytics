@@ -11,12 +11,8 @@ $owa_mayEditEmail = (bool) $view->may_edit_email;
 $owa_error        = (string) $view->my_profile_error;
 $owa_minPassword  = (int) $view->min_password_length;
 ?>
-<DIV class="panel_headline">Profile</DIV>
+<DIV class="panel_headline">User Profile</DIV>
 <div id="panel">
-
-<div class="owa_panelIntro">Your own account: the name you are shown as, the address
-password resets are sent to, and your password. To change somebody else's account, use
-Users under Organization.</div>
 
 <?php if ( $owa_error ): ?>
 <div class="notice error" role="alert"><?php $view->out( $owa_error ); ?></div>
@@ -33,9 +29,6 @@ Users under Organization.</div>
 
         <div class="setting">
             <div class="title">Username</div>
-            <div class="description">What you sign in with. It identifies everything you
-            have made &mdash; your custom reports and the sites you have been granted
-            &mdash; so it is not changed here.</div>
             <div class="field">
                 <span class="noedit"><?php $view->out( $view->user_id ); ?></span>
             </div>
@@ -43,8 +36,6 @@ Users under Organization.</div>
 
         <div class="setting">
             <div class="title">Role</div>
-            <div class="description">What you are allowed to do. Only an administrator can
-            change it.</div>
             <div class="field">
                 <span class="noedit"><?php $view->out( $view->role ); ?></span>
             </div>
@@ -90,10 +81,8 @@ Users under Organization.</div>
 
         <div class="setting">
             <div class="title">Change password</div>
-            <div class="description">Leave these empty to keep your current password. Your
-            current password is required, so a signed-in browser that is not yours cannot
-            change it. At least <?php echo (int) $owa_minPassword; ?> characters. Changing
-            it signs you out, so you will be asked to sign in again.</div>
+            <div class="description">Leave empty to keep your current password. At least
+            <?php echo (int) $owa_minPassword; ?> characters. Changing it signs you out.</div>
             <div class="field">
                 <?php
                     /*
@@ -102,12 +91,14 @@ Users under Organization.</div>
                      * filling the new-password fields with the old one.
                      */
                 ?>
-                <div><input type="password" size="30" name="current_password"
-                            autocomplete="current-password" placeholder="Current password"></div>
-                <div><input type="password" size="30" name="new_password"
-                            autocomplete="new-password" placeholder="New password"></div>
-                <div><input type="password" size="30" name="new_password2"
-                            autocomplete="new-password" placeholder="Repeat new password"></div>
+                <div class="owa_passwordFields">
+                    <input type="password" size="30" name="current_password"
+                           autocomplete="current-password" placeholder="Current password">
+                    <input type="password" size="30" name="new_password"
+                           autocomplete="new-password" placeholder="New password">
+                    <input type="password" size="30" name="new_password2"
+                           autocomplete="new-password" placeholder="Repeat new password">
+                </div>
             </div>
         </div>
 

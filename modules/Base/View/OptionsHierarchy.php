@@ -36,13 +36,13 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         /*
          * What the root crumb says. Tier 0 means install-wide on every other
-         * screen, so 'Installation' is the default -- but base.myProfile is
+         * screen, so 'Instance' is the default -- but base.myProfile is
          * tier 0 and is about the person rather than the installation, so it
          * names its own. get() answers false for a name nobody set, hence the
          * ?: rather than a check.
          */
         $this->body->set( 'hierarchy_root_label',
-            $this->get( 'hierarchy_root_label' ) ?: 'Installation' );
+            $this->get( 'hierarchy_root_label' ) ?: 'Instance' );
         /*
  * Not ?: -- tier 0 (install-wide) is a legitimate value that ?: would turn
  * into 3, putting a Property and a Profile above Main Configuration.
@@ -54,6 +54,16 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );
         $this->setCss( 'base/css/owa.report.css' );
+
+        /*
+         * The same chrome the reporting screens load, because these draw the
+         * same chrome. The top nav's icons are font-awesome classes, and the
+         * combined stylesheet carries owa.css -- neither was loaded here, so
+         * every settings screen drew the navigation without its icons and
+         * without the base styles the header is built on.
+         */
+        $this->setCss( 'base/css/font-awesome/css/all.min.css' );
+        $this->setCss( 'base/css/owa.reporting-css-combined.css' );
     }
 }
 

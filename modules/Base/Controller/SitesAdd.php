@@ -157,8 +157,27 @@ class SitesAdd extends \OWA\Core\AdminController {
     }
     
     function success() {
-	    
-	    $this->setRedirectAction('base.reportingHome');
+
+        /*
+         * To the Profile that was just created, not to reporting.
+         *
+         * A new Profile's whole point is its tracking id, which lives on this
+         * screen -- landing on the dashboard means the one thing you came for
+         * is somewhere you now have to go and find. action() has already put the
+         * created row in 'site', so the id is here to redirect with.
+         */
+        $site = (array) $this->get( 'site' );
+
+        if ( ! empty( $site['site_id'] ) ) {
+
+            $this->set( 'siteId', $site['site_id'] );
+            $this->setRedirectAction( 'base.sitesProfile' );
+
+        } else {
+
+            $this->setRedirectAction( 'base.reportingHome' );
+        }
+
         $this->set('status_code', 3202);
     }
 

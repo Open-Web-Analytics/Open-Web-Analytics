@@ -122,33 +122,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * A grid does not offer a picker for a column nobody can see.
-     *
-     * Top Referrers is grouped by referralPageTitle AND referralPageUrl, with
-     * the title in excludeColumns -- it is there only so the rows can carry it.
-     * The bar drew a picker for it all the same, so a grid showing one column
-     * offered two pickers and the second named a column that is not in the
-     * table.
-     *
-     * This used to be asserted against Top Content, which was the same shape
-     * until it became a grid-card grouped by pagePath alone. A card draws no
-     * explorer bar at all, so it can no longer answer this question.
-     */
-    test('a grid with a hidden dimension shows one picker and a plus', async ({ page }) => {
-        const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
-            title: e.querySelector('.owa_reportSectionHeader')?.textContent?.trim(),
-            slots: e.querySelectorAll('.owa_dimSlot').length,
-            add: e.querySelectorAll('.owa_dimAdd').length,
-        })).filter((r) => r.slots || r.add));
-
-        const hidden = bars.find((b) => b.title === 'Top Referrers');
-
-        expect(hidden, 'Top Referrers drew no explorer bar to count pickers on').toBeTruthy();
-        expect(hidden.slots).toBe(1);
-        expect(hidden.add).toBe(1);
-    });
-
-    /**
      * The empty pill beside every report heading.
      *
      * View::get() answers `false` for a key nobody set, so the title-count

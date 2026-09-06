@@ -490,3 +490,15 @@
     padding: 8px 10px 16px;
     color: #65676b;
 }
+
+/*
+ * The three password boxes are one control, not three settings, so they are
+ * spaced as a group rather than inheriting the gap between settings -- which
+ * they had none of, leaving them stacked edge to edge.
+ */
+.owa_passwordFields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}

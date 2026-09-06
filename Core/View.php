@@ -145,6 +145,8 @@ class View extends \OWA\Core\Base {
             $this->body->set('params', $this->data['params']);
         endif;
 
+        $this->setSettingsPageTitle();
+
         if (array_key_exists('subview', $this->data)):
             $this->body->caller_params['subview'] = $this->data['subview'];
         endif;
@@ -375,7 +377,40 @@ class View extends \OWA\Core\Base {
      * @param mixed $data
      * @return unknown
      */
+    /**
+     * Hand the page the name its settings-nav link carries.
+     *
+     * Read from the same registration the nav draws from -- see
+     * Module::registerSettingsPage() -- so the two cannot disagree.
+     *
+     * Called from BOTH assembly paths, which is the whole point of it being a
+     * method. A main view goes through assembleView() and a subview through
+     * assembleSubView(), and every settings screen is a subview while the
+     * Maxmind screen renders through neither: wiring this into one path alone
+     * left the other rendering blank, because ViewScope throws on a template
+     * variable that was never set rather than falling back to empty.
+     *
+     * Empty for anything that is not a registered settings page -- reports, the
+     * install wizard -- whose templates do not read it.
+     */
+    protected function setSettingsPageTitle() {
+
+        if ( ! is_object( $this->body ) ) {
+
+            return;
+        }
+
+        $do = $this->data['params']['do'] ?? ( $this->data['do'] ?? '' );
+
+        $this->body->set( 'settings_page_title',
+            \OWA\Core\CoreAPI::settingsPageTitle( $do ) );
+    }
+
     function assembleSubView($data) {
+
+        // Before render(), so a subview that wants to override its own title
+        // still can -- and so it is set whichever branch below runs.
+        $this->setSettingsPageTitle();
 
         // construct main view.  This might set some properties of the subview.
         if (method_exists($this, 'render')) {

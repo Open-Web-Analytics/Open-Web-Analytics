@@ -983,7 +983,7 @@ class Controller extends \OWA\Core\Base {
         /*
          * YOUR OWN SETTINGS, first.
          *
-         * Not part of the Installation group: every entry there is gated on
+         * Not part of the Instance group: every entry there is gated on
          * edit_settings and describes the installation, while this describes
          * the person looking at it. An analyst has one of these and none of
          * those.
@@ -1000,7 +1000,7 @@ class Controller extends \OWA\Core\Base {
         $nav['My Preferences'] = array(
             array(
                 'do'         => 'base.myProfile',
-                'label'      => 'Profile',
+                'label'      => 'User Profile',
                 'params'     => array(),
                 // What admin, analyst and viewer all carry and nothing else
                 // does -- the capability that means "signed in".
@@ -1044,7 +1044,7 @@ class Controller extends \OWA\Core\Base {
 
         if ( $installation ) {
 
-            $nav['Installation'] = $installation;
+            $nav['Instance'] = $installation;
         }
 
         $nav['Organization'] = array(

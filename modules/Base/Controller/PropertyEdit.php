@@ -94,7 +94,19 @@ class PropertyEdit extends \OWA\Core\AdminController {
             $property->load( $propertyId );
             $property->set( 'name', $name );
             $property->set( 'domain', $domain );
-            $property->set( 'description', $description );
+            /*
+             * Emptied means emptied -- see SitesEdit for the same guard and
+             * Entity::clear() for why set() cannot express it.
+             */
+            if ( $description === '' ) {
+
+                $property->clear( 'description' );
+
+            } else {
+
+                $property->set( 'description', $description );
+            }
+
             $property->update();
 
         } else {

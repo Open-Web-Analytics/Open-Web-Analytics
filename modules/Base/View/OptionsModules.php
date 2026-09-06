@@ -49,7 +49,6 @@ class OptionsModules extends \OWA\Core\View {
         $this->body->set_template('options_modules.php');
 
         // fetch admin links from all modules
-        $this->body->set('headline', 'Modules Administration');
 
         // Assign module data
         $this->body->set('modules', $this->get('modules'));

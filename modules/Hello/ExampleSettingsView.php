@@ -44,7 +44,6 @@ class ExampleSettingsView extends \OWA\Core\View {
         // load template
         $this->body->setTemplateFile('hello', 'example_settings.php');
         // assign headline
-        $this->body->set('headline', 'Example Settings Page');
     }
 
 

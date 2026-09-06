@@ -54,21 +54,36 @@ class Module extends \OWA\Core\Module {
      */
     function registerAdminPanels() {
 
-        $this->addAdminPanel(array( 'do'             => 'hello.exampleSettings',
-                                    'priviledge'     => 'admin',
-                                    'anchortext'     => 'Hello World!',
-                                    'group'            => 'Test',
-                                    'order'            => 1));
+        $this->registerSettingsPage(array( 'do'    => 'hello.exampleSettings',
+                                          'title' => 'Hello World!',
+                                          'group' => 'Test',
+                                          'order' => 1));
 
 
         return;
 
     }
 
-    public function registerNavigation() {
-        $this->addNavigationSubGroup('Hello World', 'hello.reportDashboard', 'Hello Dashboard');
-        $this->addNavigationLinkInSubGroup('Hello World','hello.reportSearchterms','also to the dashboard',1);
+    /**
+     * The report this module ships.
+     *
+     * A definition file, which is how a module adds a report -- see
+     * reports/hello-dashboard.json. This example previously pointed its
+     * navigation at hello.reportDashboard and hello.reportSearchterms, neither
+     * of which was registered anywhere, so both links errored: the module a
+     * third party copies was demonstrating a shape that does not work.
+     */
+    function registerReports() {
 
+        $this->registerReport( 'hello-dashboard', 'reports/hello-dashboard.json' );
+    }
+
+    public function registerNavigation() {
+
+        // reportRef() builds the link to a registered report, so the nav cannot
+        // name a report that does not exist.
+        $this->addNavigationSubGroup(
+            'Hello World', $this->reportRef( 'hello-dashboard' ), 'Hello Dashboard' );
     }
 
     /**

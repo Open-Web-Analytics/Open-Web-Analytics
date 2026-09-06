@@ -335,6 +335,82 @@ final class PropertyAdminScreensTest extends TestCase
      * so it is not retroactive, and two Profiles disagreeing would put rows of
      * different meanings in one table with nothing recording which.
      */
+    /**
+     * A settings screen is named ONCE, where it is registered.
+     *
+     * The nav label and the page heading used to be declared separately -- an
+     * 'anchortext' in the module and a headline the view set for itself -- so
+     * they drifted apart on four screens. base.optionsGeneral said "Main
+     * Configuration" in the nav and "General Configuration Options" on the
+     * page.
+     *
+     * registerSettingsPage() takes one title and both consumers read it, so the
+     * fix is structural rather than a rule someone has to remember. This test
+     * enforces the mechanism, not a list of matching strings: a screen that
+     * names itself a second time is the thing that could drift, so that is what
+     * fails here -- even when the two names happen to agree today.
+     */
+    public function testASettingsScreenIsNamedOnlyWhereItIsRegistered(): void
+    {
+        $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
+
+        $checked   = 0;
+        $untitled  = array();
+        $duplicate = array();
+
+        foreach ( $panels as $items ) {
+
+            foreach ( (array) $items as $item ) {
+
+                $action = (string) ( $item['do'] ?? '' );
+
+                if ( $action === '' ) {
+                    continue;
+                }
+
+                $checked++;
+
+                // The registration is the one place a title may be stated.
+                if ( \OWA\Core\CoreAPI::settingsPageTitle( $action ) === '' ) {
+
+                    $untitled[] = $action;
+                    continue;
+                }
+
+                list( $module, $name ) = array_pad( explode( '.', $action, 2 ), 2, '' );
+
+                $dir = OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/';
+
+                foreach ( array( $dir . 'View/' . ucfirst( $name ) . '.php',
+                                 $dir . ucfirst( $name ) . 'View.php' ) as $view ) {
+
+                    if ( ! file_exists( $view ) ) {
+                        continue;
+                    }
+
+                    if ( preg_match( "#set\(\s*'headline'#", (string) file_get_contents( $view ) ) ) {
+
+                        $duplicate[] = $action . ' (' . basename( $view ) . ' sets its own headline)';
+                    }
+                }
+            }
+        }
+
+        // Never vacuous: a registry that resolved nothing would otherwise pass.
+        $this->assertGreaterThan( 0, $checked,
+            'no settings panel was found, so this checked nothing.' );
+
+        $this->assertSame( array(), $untitled,
+            "These settings screens are registered without a title, so the nav has "
+          . "nothing to label them with and the page has nothing to head itself with:\n"
+          . implode( "\n", $untitled ) );
+
+        $this->assertSame( array(), $duplicate,
+            "A settings screen is titled by registerSettingsPage() and nowhere else. "
+          . "These state a second name, which is how the two drifted apart before:\n"
+          . implode( "\n", $duplicate ) );
+    }
+
     public function testTheSettingsNavHoldsOnlyInstallWideOptions(): void
     {
         $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
@@ -487,7 +563,7 @@ final class PropertyAdminScreensTest extends TestCase
         /* My Preferences needs no context either -- it is about the person, not
            about anything in the tree -- so it is present here too, at the head. */
         $this->assertSame(
-            array( 'My Preferences', 'Installation', 'Organization' ), array_keys( $bare ),
+            array( 'My Preferences', 'Instance', 'Organization' ), array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -501,7 +577,7 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'My Preferences', 'Installation', 'Organization', 'Property' ),
+            array( 'My Preferences', 'Instance', 'Organization', 'Property' ),
             array_keys( $withProperty ) );
     }
 
@@ -1135,12 +1211,12 @@ final class PropertyAdminScreensTest extends TestCase
             'Your own settings head the nav; they belong to no scope in the tree.' );
 
         $this->assertSame(
-            array( 'Installation', 'Organization' ),
+            array( 'Instance', 'Organization' ),
             array_values( array_diff( $groups, array( 'My Preferences' ) ) ),
             'Install-wide options are the widest scope in the tree, so they head it -- the '
             . 'order reads install, Organization, Property, Profile.' );
 
-        $actions = array_column( $nav['Installation'], 'do' );
+        $actions = array_column( $nav['Instance'], 'do' );
 
         foreach ( array( 'base.optionsGeneral', 'base.optionsModules' ) as $expected ) {
             $this->assertContains( $expected, $actions );
@@ -1190,7 +1266,7 @@ final class PropertyAdminScreensTest extends TestCase
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
 
         /* ...and it still says Installation for every screen that names none. */
-        $this->assertStringContainsString( "?: 'Installation'", $view );
+        $this->assertStringContainsString( "?: 'Instance'", $view );
 
         $this->assertStringNotContainsString(
             "hierarchy_tier' ) ?: 3", $view,

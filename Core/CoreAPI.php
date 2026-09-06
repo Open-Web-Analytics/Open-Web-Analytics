@@ -1241,6 +1241,36 @@ class CoreAPI {
      *
      * @return array
      */
+    /**
+     * The registered title for a settings screen, or '' if it has none.
+     *
+     * One lookup for both consumers: the nav renders it as the link, and the
+     * page renders it as its heading. See Module::registerSettingsPage().
+     *
+     * @param string $action  a dotted action id, e.g. 'base.optionsGeneral'
+     * @return string
+     */
+    public static function settingsPageTitle( $action ) {
+
+        if ( ! $action ) {
+
+            return '';
+        }
+
+        foreach ( (array) \OWA\Core\CoreAPI::getAdminPanels() as $items ) {
+
+            foreach ( (array) $items as $item ) {
+
+                if ( ( $item['do'] ?? '' ) === $action ) {
+
+                    return (string) ( $item['anchortext'] ?? '' );
+                }
+            }
+        }
+
+        return '';
+    }
+
     public static function getAdminPanels() {
 
         $panels = array();

@@ -15,9 +15,9 @@
 ?>
 <DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
 <div id="panel">
-<div class="owa_panelIntro">An Observation Profile is one way of watching a Property.
-It carries its own tracking id, so a Property watched two ways has two Profiles and
-two tags.</div>
+<div class="owa_panelIntro">An Observation Profile defines how OWA observes and
+analyzes a Property. You may have more than one Observation Profile per Property, as
+each carries its own tracking id.</div>
 <fieldset>
 
     <legend>Observation Profile</legend>
@@ -180,7 +180,7 @@ two tags.</div>
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile"
                data-owa-confirm
                data-owa-confirm-title="Delete this Observation Profile?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $view->site['name'] ?? '' );?>&rdquo; will stop recording immediately and will no longer appear in reporting. Everything it has already collected is kept, and an administrator can restore it."
+               data-owa-confirm-body="&ldquo;<?php $view->out( $view->site['name'] ?? '' );?>&rdquo; stops recording and leaves reporting. Everything it collected is kept, and it can be restored."
                data-owa-confirm-proceed="Delete Profile">
     </form>
 </div>

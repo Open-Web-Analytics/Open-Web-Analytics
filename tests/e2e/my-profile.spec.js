@@ -69,11 +69,11 @@ test.describe('my preferences', () => {
             await page.waitForSelector('form[name=owa_myProfile]', { timeout: 20_000 });
 
             // ...and the settings nav carries it, in a group of its own rather
-            // than filed under Installation with the install-wide screens.
+            // than filed under Instance with the install-wide screens.
             await expect(page.locator('.owa_hierarchyNavHead', { hasText: 'My Preferences' }))
                 .toHaveCount(1);
 
-            const navLink = page.locator('.owa_hierarchyNav a', { hasText: 'Profile' });
+            const navLink = page.locator('.owa_hierarchyNav a', { hasText: 'User Profile' });
 
             await expect(navLink).toHaveCount(1);
             await navLink.click();
@@ -152,7 +152,7 @@ test.describe('my preferences', () => {
         /**
          * An analyst reaches the screen, which is the point of gating it on
          * view_site_list rather than on edit_settings like the rest of the
-         * Installation nav group.
+         * Instance nav group.
          */
         test('an analyst can open it and change their name', async ({ page }) => {
             await openPreferences(page);

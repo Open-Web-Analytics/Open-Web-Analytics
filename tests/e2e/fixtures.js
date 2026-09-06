@@ -408,12 +408,27 @@ function declaredReportParams(reportId) {
 }
 
 /**
- * Every report that is configuration, read from disk.
+ * Every report that is configuration AND reachable, read from disk.
  *
  * Enumerated rather than listed so a report added tomorrow is swept without
  * anyone remembering to add it here -- which is the failure mode a hand-written
  * list has.
+ *
+ * Restricted to modules that are ACTIVE. A module registers its reports from
+ * registerReports(), which only runs for modules in the active list, so a
+ * definition shipped by an inactive one is a file on disk and not a report
+ * anybody can open. Sweeping it means waiting twenty seconds for a widget that
+ * was never going to be drawn and calling that a rendering failure -- which is
+ * what happened the first time the example module shipped one.
+ *
+ * base is the only module active on a default install; ACTIVE_MODULES lets a
+ * spec that activates another one sweep its reports too.
  */
+const ACTIVE_MODULES = (process.env.OWA_E2E_ACTIVE_MODULES || 'Base')
+    .split(',')
+    .map((m) => m.trim().toLowerCase())
+    .filter(Boolean);
+
 function configuredReportIds() {
     const fs = require('fs');
     const path = require('path');
@@ -422,6 +437,11 @@ function configuredReportIds() {
     const ids = [];
 
     for (const mod of fs.readdirSync(modules)) {
+
+        if (!ACTIVE_MODULES.includes(mod.toLowerCase())) {
+            continue;
+        }
+
         const dir = path.join(modules, mod, 'reports');
         if (!fs.existsSync(dir)) {
             continue;

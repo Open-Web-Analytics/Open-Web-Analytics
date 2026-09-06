@@ -188,7 +188,7 @@ $owa_max        = (int) $view->get('max_widgets');
         ), false, '', false, true ); ?>"
            data-owa-confirm
            data-owa-confirm-title="Delete this report?"
-           data-owa-confirm-body="There is no other copy of it. Unlike a Profile, a custom report is not archived &mdash; deleting it is final."
+           data-owa-confirm-body="This is final. Unlike a Profile, a custom report is not archived."
            data-owa-confirm-proceed="Delete report">Delete</a>
         <?php endif; ?>
     </div>

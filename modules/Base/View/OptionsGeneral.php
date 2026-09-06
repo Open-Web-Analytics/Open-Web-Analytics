@@ -36,7 +36,6 @@ class OptionsGeneral extends \OWA\Core\View\AdminPage {
         // load template
         $this->body->set_template('options_general.php');
         // fetch admin links from all modules
-        $this->body->set('headline', 'General Configuration Options');
 
         //print_r($data['config']);
         // assign config data

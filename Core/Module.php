@@ -104,6 +104,13 @@ abstract class Module {
      *
      * @var array
      */
+    /**
+     * What a report nav item shows when its module names no icon.
+     * Present in the bundled font-awesome, and in the same v4-prefix family the
+     * eight hand-picked icons use.
+     */
+    const DEFAULT_NAV_ICON = 'fa fa-chart-bar';
+
     var $admin_panels;
 
     /**
@@ -424,6 +431,51 @@ abstract class Module {
     }
 
     /**
+     * Register a settings screen: its nav entry AND its page title, once.
+     *
+     * The two used to be declared in different places -- 'anchortext' here and
+     * a headline the view set for itself -- so they drifted, and a reader was
+     * given two names for one screen. base.optionsGeneral was "Main
+     * Configuration" in the nav and "General Configuration Options" on the
+     * page; three other screens had the same split.
+     *
+     * `title` is the one name. The nav renders it, and the framework hands it
+     * to the page, so a screen registered this way CANNOT disagree with itself.
+     * A view that sets its own headline is then a bug rather than a second
+     * opinion, which is what SettingsPageTitleTest asserts.
+     *
+     * Keys: do, title, capability, group, order. `priviledge` and `anchortext`
+     * are still written for registerSettingsPanel's consumers, which read the
+     * older shape.
+     *
+     * @param array $page
+     * @return bool
+     */
+    function registerSettingsPage( $page ) {
+
+        $title = (string) ( $page['title'] ?? '' );
+
+        if ( $title === '' ) {
+
+            \OWA\Core\CoreAPI::notice(
+                'A settings page needs a title: it names the screen in the nav and '
+              . 'on the page itself. Registering ' . ( $page['do'] ?? '?' ) . ' without one.' );
+        }
+
+        // The older shape, so the nav builder and every existing reader work
+        // unchanged. anchortext IS the title -- that is the whole point.
+        $page['anchortext'] = $title;
+        $page['priviledge'] = $page['priviledge'] ?? 'admin';
+        $page['group']      = $page['group'] ?? 'General';
+        $page['order']      = $page['order'] ?? 1;
+
+        // What marks this panel as carrying an authoritative title.
+        $page['owa_titled'] = true;
+
+        return $this->registerSettingsPanel( $page );
+    }
+
+    /**
      * Registers an admin panel with this module
      *
      */
@@ -453,7 +505,18 @@ abstract class Module {
      * @param string $priviledge
      * @param string $groupName
      */
-    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = '') {
+    /**
+     * A top-level report nav item.
+     *
+     * $icon_class defaults to a generic chart rather than to nothing. The
+     * template renders `<i class="owa_nav_icon {$icon_class}">` unconditionally,
+     * so an empty class drew an empty glyph -- a module that shipped navigation
+     * without naming an icon, which is every third-party module, sat in the nav
+     * looking broken next to Base's eight. A generic icon is the honest default:
+     * the item IS a report group, and a module with something better to say
+     * still says it.
+     */
+    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = self::DEFAULT_NAV_ICON) {
         $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
     }
 
