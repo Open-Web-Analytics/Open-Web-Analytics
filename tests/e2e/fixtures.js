@@ -47,6 +47,18 @@ const FIXTURE = {
     // so the seeder plants a KNOWN temp_passkey the test submits to the real
     // base.usersChangePassword form. Isolated to its own user so rotating its
     // creds can't disturb the admin/reporter logins.
+    /*
+     * The Profile screen's own password fixture, separate from pwUserId.
+     *
+     * admin-actions.spec.js leaves pwUserId on a NEW password -- that is the
+     * point of its test -- and nothing restores it until the next seeding run.
+     * A second spec logging in as that user works alone and fails whenever
+     * admin-actions has run first, which in a full run it always has: the files
+     * run in name order.
+     */
+    profilePwUserId: 'owa-e2e-profilepw@example.test',
+    profilePwPassword: 'e2e-ProfilePw-Old-1!',
+
     pwUserId: 'owa-e2e-pwchange@example.test',
     pwOldPassword: 'e2e-PwChange-Old-1!',
     pwPasskey: '735512bd84ae1f2635e3e89fb7ecc001',

@@ -1,9 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <h2>Your first Property</h2>
 
-<p class="owa_publicIntro">A Property is the thing being measured. OWA creates one for
-this website, with a single Observation Profile beneath it to record visits, and an
-administrator account to sign in with.</p>
+<p class="owa_publicIntro">A Property is the website or application you want to
+track.</p>
 <div id="configSettings">
     <form method="POST">
         
@@ -35,7 +34,8 @@ administrator account to sign in with.</p>
                        placeholder="example.com"
                        value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">The website you want to measure.</span>
+            <span class="owa_installHint">The domain of the website this Property will
+            track (e.g. www.mydomain.com). Subdomains are also acceptable.</span>
         </div>
 
         <div class="owa_installField">
@@ -138,7 +138,7 @@ administrator account to sign in with.</p>
             <span class="owa_installInput">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">The name this account signs in with.</span>
+            <span class="owa_installHint">The user name to use for login.</span>
         </div>
 
         <div class="owa_installField">

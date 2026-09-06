@@ -16,8 +16,16 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, loginAs } = require('./fixtures');
 
-const PW_USER = 'owa-e2e-pwchange@example.test';
-const PW_PASS = 'e2e-PwChange-Old-1!';
+/*
+ * A password fixture of this spec's OWN.
+ *
+ * Not FIXTURE.pwUserId: admin-actions.spec.js leaves that user on a new
+ * password deliberately, and nothing restores it until the next seeding run --
+ * so sharing it works when this file runs alone and fails whenever
+ * admin-actions has run first, which in a full run it always has.
+ */
+const PW_USER = FIXTURE.profilePwUserId;
+const PW_PASS = FIXTURE.profilePwPassword;
 
 async function openPreferences(page) {
     await page.goto(`?owa_do=base.myProfile&owa_siteId=${FIXTURE.siteId}`,
