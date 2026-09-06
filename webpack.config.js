@@ -20,7 +20,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 // package into the right webpack config for its `type`.
 //
 // A manifest package is one of:
-//   JS  { name, type:'js', entry, outputDir, splitVendors }
+//   JS  { name, type:'js', entry, outputDir, splitVendors, licence? }
 //   CSS { name, type:'css', outputDir, files:[...], copy:[{from,to,ignore?}] }
 // where entry/files paths and outputDir are RELATIVE to the module directory
 // (outputDir may reach outside it, e.g. ../../public/base/dist, to emit into the
@@ -80,6 +80,35 @@ function jsConfig(moduleName, moduleDir, pkg) {
 			[pkg.name]: [path.resolve(moduleDir, pkg.entry)],
 		},
 		output: jsOutput(moduleDir, pkg),
+		// A package may declare its own `licence` (a path relative to the module dir),
+		// emitted VERBATIM next to the bundle. Only the tracker does: it was relicensed
+		// BSD-3 in 2020 (#670) so site owners can embed it on non-GPL pages, while the
+		// rest of OWA -- the reporting bundle included -- stays GPL-2.0. Do not widen
+		// this to every package; that would ship the wrong licence beside GPL output.
+		//
+		// A SIBLING FILE, not a banner in the bundle. BSD-3 clause 2 lets a binary-form
+		// redistribution carry the notice in "materials provided with the distribution",
+		// and the tracker loads on every tracked page view -- a banner cost 1552 bytes
+		// raw / 745 gzipped there for no legal gain. It cannot instead live with the
+		// source: the release tarball excludes modules/Base/src and ships public/, so
+		// public/ is the only place the notice actually reaches a user.
+		plugins: pkg.licence
+			? [
+					new CopyPlugin({
+						patterns: [
+							{
+								from: path.resolve(moduleDir, pkg.licence),
+								// Named for the bundle, not the directory: several bundles share
+								// this output dir and only this one is BSD-3 (owa.vendors.js is
+								// third-party, owa.reporting-combined-min.js is GPL), so a bare
+								// LICENSE.txt would read as covering all of them. Matches the
+								// <bundle>.LICENSE.txt convention terser uses.
+								to: `${pkg.name}.LICENSE.txt`,
+							},
+						],
+					}),
+			  ]
+			: [],
 		optimization: {
 			minimize: true,
 			minimizer,

@@ -49,6 +49,14 @@ describe('per-module build manifest discovery', () => {
                 expect(['js', 'css']).toContain(pkg.type);
                 expect(typeof pkg.outputDir).toBe('string');
 
+                // An OPTIONAL per-package licence, emitted verbatim beside the
+                // bundle. If declared it must resolve, or the build silently ships
+                // a package whose notice is missing.
+                if (pkg.licence !== undefined) {
+                    expect(typeof pkg.licence).toBe('string');
+                    expect(fs.existsSync(path.join(moduleDir, pkg.licence))).toBe(true);
+                }
+
                 if (pkg.type === 'js') {
                     // A JS package points at one entry file that must exist.
                     expect(typeof pkg.entry).toBe('string');
@@ -116,5 +124,72 @@ describe('per-module build manifest discovery', () => {
                 }
             }
         }
+    });
+
+    /**
+     * Per-package licence emission.
+     *
+     * OWA is GPL-2.0, but the TRACKER alone was relicensed BSD-3 in 2020 (#670) so
+     * site owners can embed it on non-GPL pages. The notice therefore has to travel
+     * with the tracker and must NOT be attached to anything else -- shipping a BSD
+     * notice beside the GPL reporting bundle would misstate its licence.
+     *
+     * It rides as a sibling file rather than a banner inside the bundle: the tracker
+     * loads on every tracked page view, and BSD-3 clause 2 lets a binary-form
+     * redistribution carry the notice in accompanying materials. It also cannot live
+     * only with the source, because the release tarball excludes modules/Base/src and
+     * ships public/.
+     */
+    describe('per-package licence', () => {
+
+        const configs = require(path.join(repoRoot, 'webpack.config.js'));
+        const byName = Object.fromEntries(configs.map((c) => [c.name, c]));
+
+        const copyPluginsFor = (name) =>
+            (byName[name].plugins || []).filter(
+                (p) => p && p.constructor && p.constructor.name === 'CopyPlugin'
+            );
+
+        test('the tracker declares a licence and every other JS package does not', () => {
+            // Pinning both halves: that the tracker keeps its notice, and that the
+            // mechanism has not been widened onto GPL output.
+            const base = manifests.find((m) => m.module === 'Base').manifest;
+            const js = base.packages.filter((p) => p.type === 'js');
+            const withLicence = js.filter((p) => p.licence !== undefined).map((p) => p.name);
+
+            expect(withLicence).toEqual(['owa.tracker.js']);
+            expect(js.length).toBeGreaterThan(1);
+        });
+
+        test('a declared licence is emitted beside the bundle as LICENSE.txt', () => {
+            const copies = copyPluginsFor('Base:owa.tracker.js');
+            expect(copies).toHaveLength(1);
+
+            const patterns = copies[0].patterns || copies[0].options.patterns;
+            expect(patterns).toHaveLength(1);
+            // Named for the bundle: several bundles share public/base/dist and only
+            // the tracker is BSD-3, so a bare LICENSE.txt would read as covering the
+            // whole directory (owa.vendors.js is third-party, the reporting bundle GPL).
+            expect(patterns[0].to).toBe('owa.tracker.js.LICENSE.txt');
+            expect(patterns[0].from.endsWith('src/tracker/LICENSE.txt')).toBe(true);
+            expect(fs.existsSync(patterns[0].from)).toBe(true);
+        });
+
+        test('the licence text is the BSD-3 notice, not the repo GPL', () => {
+            // A swap to the GPL text here would be a silent relicence of the tracker.
+            const base = manifests.find((m) => m.module === 'Base').manifest;
+            const pkg = base.packages.find((p) => p.name === 'owa.tracker.js');
+            const text = fs.readFileSync(
+                path.join(modulesDir, 'Base', pkg.licence), 'utf8'
+            );
+            expect(text).toMatch(/Redistribution and use in source and binary forms/);
+            expect(text).not.toMatch(/GNU GENERAL PUBLIC LICENSE/i);
+        });
+
+        test('a package with no licence gets no CopyPlugin', () => {
+            // CSS packages legitimately use CopyPlugin for their url() deps, so this
+            // only pins the JS side, where CopyPlugin exists solely for the licence.
+            expect(copyPluginsFor('Base:owa.reporting-combined-min.js')).toHaveLength(0);
+        });
     });
 });

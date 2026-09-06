@@ -5,7 +5,8 @@
             "type": "js",
             "entry": "src/tracker/tracker-dom.js",
             "outputDir": "../../public/base/dist",
-            "splitVendors": "owa.vendors"
+            "splitVendors": "owa.vendors",
+            "licence": "src/tracker/LICENSE.txt"
         },
         {
             "name": "owa.reporting-combined-min.js",

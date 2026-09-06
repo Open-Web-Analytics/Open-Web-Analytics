@@ -53,11 +53,11 @@
  * no-op for every non-legacy class name.
  *
  * THE MAP. owa_compat_class_map() below is the single source of truth of
- * old->new renames. It is EMPTY at stage 1 (nothing renamed yet — the bridge
- * is inert and the safety-net suites stay green). Each later migration stage
- * appends its entries here as it renames a directory. A `class_exists(<old>,
- * false)` guard in the alias step prevents redefining an old name that some
- * code still declares directly during the transition.
+ * old->new renames. The rename stages are COMPLETE: it now holds an entry for
+ * every migrated class and is the lookup both this bridge and
+ * Lib::resolveNamespacedClass() read. A `class_exists(<old>, false)` guard in
+ * the alias step prevents redefining an old name that some code still declares
+ * directly.
  *
  * RESIDUAL BREAK (documented, not worked around): a module doing string
  * equality on a class name — `get_class($x) === 'owa_foo'` or
@@ -69,15 +69,18 @@
 /**
  * The authoritative legacy-name -> new-namespaced-name map.
  *
- * EMPTY until renames begin (stage 2+). Add one entry per renamed class:
+ * One entry per renamed class:
  *   'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
+ *
+ * Entries are removed only when the deprecation window closes at v2.0 — see
+ * the Maintenance contract in tests/LegacyClassNameContractTest.php.
  *
  * @return array<string, string>
  */
 function owa_compat_class_map(): array
 {
     return [
-        // --- populated as classes are migrated, one entry per rename ---
+        // --- one entry per renamed class ---
 
         // root framework classes -> OWA\Core\ (Phase 6 stage 2, roots batch)
         'owa_base' => 'OWA\\Core\\Base',

@@ -18,8 +18,8 @@ use PHPUnit\Framework\TestCase;
  * This test freezes the complete set of legacy class/interface/trait names
  * (captured from the untouched tree into tests/fixtures/legacy_class_names.json
  * BEFORE any rename) and asserts that after a full framework boot every one
- * still resolves. At stage 0 it is a tautology. The moment a rename lands
- * without its forward alias, this test goes red — which is the whole point:
+ * still resolves. The moment a rename lands without its forward alias, this
+ * test goes red — which is the whole point:
  * net (a) reads its expectation from the (renamed) file and net (b) only covers
  * registered dotted-ids, so ONLY this frozen snapshot catches a dropped alias.
  *

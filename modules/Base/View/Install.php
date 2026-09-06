@@ -52,7 +52,7 @@ class Install extends \OWA\Core\View {
         $this->setCss("base/css/owa.css");
         $this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
         $this->body->set('step', $data['subview']);
-        $this->setJs("owa", "base/js/owa.js");
+        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }
 

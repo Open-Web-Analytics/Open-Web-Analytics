@@ -3,21 +3,21 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Backward-compat alias bridge test — proves the Phase-6 stage-1 linchpin
+ * Backward-compat alias bridge test — proves the bridge
  * (owa_compat_aliases.php) actually resolves a migrated class by its legacy
  * owa_* name.
  *
- * The production bridge's map (owa_compat_class_map()) is deliberately EMPTY at
- * stage 1, so it cannot yet be exercised against a real rename. This test
- * instead proves the MECHANISM the bridge relies on end-to-end, against a
- * throwaway fixture that mimics a migrated class:
+ * Real old->new pairs are covered by LegacyClassNameContractTest, which asserts
+ * every frozen legacy name still resolves after a full boot. This test covers
+ * the layer beneath that: the MECHANISM the bridge relies on, end-to-end
+ * against a throwaway fixture that mimics a migrated class:
  *   - a PSR-4-style namespaced class loadable on demand,
  *   - a lazy autoloader identical in shape to the production one,
  *   - resolution of the LEGACY name through class_alias.
  *
- * When the production bridge is wired (owa_env.php requires it on boot) the
- * real map simply supplies real old->new pairs to this exact code path. Two
- * further guarantees are asserted here that the bridge's contract depends on:
+ * The production bridge (required on boot by owa_env.php) feeds real old->new
+ * pairs to this exact code path. Two further guarantees are asserted here that
+ * the bridge's contract depends on:
  *   (1) instanceof works in BOTH directions across the alias, and
  *   (2) the bridge is a strict no-op for any non-owa_ / unmapped name.
  */
