@@ -67,11 +67,31 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->load( $site->generateId( $this->getParam('siteId') ) );
         $site->set('name', $this->getParam( 'name' ) );
         $site->set('domain', $this->getParam( 'domain' ) );
-        $site->set('description', $this->getParam( 'description') );
+
+        /*
+         * An emptied description means empty. set() drops '' on a string column
+         * so the old text used to survive the save with nothing said about it.
+         */
+        $description = (string) $this->getParam( 'description' );
+
+        if ( $description === '' ) {
+
+            $site->clear( 'description' );
+
+        } else {
+
+            $site->set( 'description', $description );
+        }
+
         $site->save();
 
-        //$data['view_method'] = 'redirect';
-        $this->setRedirectAction('base.reportingHome');
+        /*
+         * Back to the Profile that was edited, not to reporting. This sent
+         * every rename to the dashboard, which reads as the save having thrown
+         * the screen away -- and is not what the other two Profile editors do.
+         */
+        $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->setRedirectAction( 'base.sitesProfile' );
         $this->set('status_code', 3201);
     }
 }

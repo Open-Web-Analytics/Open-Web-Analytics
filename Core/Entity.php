@@ -311,6 +311,31 @@ class Entity {
      * @param mixed  $value
      * @return bool
      */
+    /**
+     * Empty a column, deliberately.
+     *
+     * set() discards '' on a string column, on purpose: several handlers rely
+     * on `set('medium', $maybeEmpty)` leaving the existing value alone, and
+     * blanket-storing empties there would wipe data that is currently kept.
+     * The cost is that a caller who genuinely means "this is now blank" -- an
+     * edit form whose textarea the user emptied -- had no way to say so, and
+     * the old value survived with no error shown.
+     *
+     * This is that way. It marks the column dirty so update() writes it, which
+     * is the half set() cannot reach: its falsy guard wraps the markDirty call
+     * as well as the assignment.
+     */
+    public function clear( $name ) {
+
+        if ( ! array_key_exists( $name, $this->properties ) ) {
+
+            return;
+        }
+
+        $this->properties[ $name ]->setValue( '' );
+        $this->markDirty( $name, '' );
+    }
+
     protected function columnAcceptsFalsy( $name, $value ) {
 
         if ( $value === null || $value === '' ) {

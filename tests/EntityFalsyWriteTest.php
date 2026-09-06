@@ -98,6 +98,55 @@ final class EntityFalsyWriteTest extends TestCase
     }
 
     /** A numeric column must not accept a non-numeric falsy value either. */
+    /**
+     * clear() is how a caller says "this is now blank".
+     *
+     * set() ignoring '' is deliberate and load-bearing (the test above), but it
+     * left an edit form unable to express an emptied field: the user cleared a
+     * description, the save discarded it, and the old text came back with
+     * nothing said. Property and Observation Profile descriptions could not be
+     * removed at all.
+     */
+    public function testClearEmptiesAStringColumnThatSetWillNotTouch(): void
+    {
+        $s = $this->session();
+        $s->set('medium', 'organic');
+
+        // Precondition: set() cannot do this, which is why clear() exists.
+        $s->set('medium', '');
+        $this->assertSame('organic', $s->get('medium'));
+
+        $s->clear('medium');
+
+        $this->assertSame('', $s->get('medium'),
+            'clear() did not empty the column');
+    }
+
+    /**
+     * ...and marks it dirty, which is the half set() cannot reach: its falsy
+     * guard wraps the markDirty call as well as the assignment, so a value it
+     * skips is never written by update() either.
+     */
+    public function testAClearedColumnIsMarkedDirtySoUpdateWritesIt(): void
+    {
+        $s = $this->session();
+        $s->set('medium', 'organic');
+        $s->clear('medium');
+
+        $this->assertArrayHasKey('medium', $s->dirty,
+            'a cleared column is not dirty, so update() would not write the blank');
+        $this->assertSame('', $s->dirty['medium']);
+    }
+
+    /** clear() on a column the entity does not have is a no-op, not a fatal. */
+    public function testClearIgnoresAnUnknownColumn(): void
+    {
+        $s = $this->session();
+        $s->clear('no_such_column_here');
+
+        $this->assertArrayNotHasKey('no_such_column_here', $s->dirty);
+    }
+
     public function testANumericColumnStillIgnoresEmptyAndNull(): void
     {
         $s = $this->session();
