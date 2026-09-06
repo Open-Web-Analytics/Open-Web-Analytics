@@ -327,6 +327,36 @@ test.describe('the top bar', () => {
             await expect(signIn).toHaveText('Login');
             expect(await signIn.getAttribute('href')).toContain('base.loginForm');
         });
+
+        /**
+         * ...but help IS there, and works.
+         *
+         * Documentation is the thing an anonymous reader is most likely to
+         * want, and every destination in this menu is a public GitHub URL, so
+         * none of it depends on having a session. It used to sit inside the
+         * signed-in branch and vanish with the rest of the account chrome.
+         */
+        test('help is still offered, and still opens', async ({ page }) => {
+            await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`,
+                { waitUntil: 'networkidle' });
+
+            await expect(page.locator('.owa_helpMenu')).toHaveCount(1);
+
+            await page.click('#owa_helpMenuToggle');
+
+            await expect(page.locator('#owa_helpMenuPanel')).toBeVisible();
+            expect(await page.locator('#owa_helpMenuPanel a').allInnerTexts())
+                .toEqual(['Documentation', 'Report a Bug', 'GitHub']);
+        });
+
+        /*
+         * There is deliberately no ORDERING assertion here. base.error is the
+         * only screen that renders this header without a session, and its
+         * container is narrow enough that the floats wrap onto two rows -- so
+         * comparing their left edges compares different rows and says nothing.
+         * The arrangement is asserted on a report screen above, where the bar
+         * is full width.
+         */
     });
 
     /**

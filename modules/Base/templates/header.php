@@ -304,16 +304,32 @@
          * outside to close -- so the two behave alike.
          */
     ?>
-<?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
+<?php if ( ! \OWA\Core\CoreAPI::isCurrentUserAuthenticated()
+           && ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ): ?>
     <?php
         /*
-         * HELP, at the left of the three.
+         * Signed out, the account slot is a way in rather than a menu. Before
+         * the help block so it takes the same place at the right-hand end that
+         * the account menu does when there is one.
+         */
+    ?>
+    <span class="owa_userMenu">
+        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
+    </span>
+<?php endif; ?>
+    <?php
+        /*
+         * HELP, at the left of the group, AND FOR EVERYONE.
          *
-         * Last in source order, which is what puts it there: these are floated
-         * right, so the first element in source order lands furthest right and
-         * the bar reads help, notifications, account from left to right.
-         * Everything in this menu leaves the application for GitHub, which is
-         * why it is a menu rather than three more links in the bar.
+         * Outside the signed-in branch on purpose. An install that grants
+         * "everyone" view_reports -- which the demo does -- renders this chrome
+         * for people with no account, and documentation is the thing they are
+         * most likely to want. Every destination here is a public GitHub URL,
+         * so there is nothing in it that depends on being signed in.
+         *
+         * Last in source order, which is what puts it at the left: these are
+         * floated right, so the first element in source order lands furthest
+         * right and the bar reads help, notifications, account.
          */
     ?>
     <span class="owa_helpMenu">
@@ -399,11 +415,6 @@
         wire('owa_helpMenuToggle', 'owa_helpMenuPanel', 'owa_helpMenu');
     })();
     </script>
-<?php elseif ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ): ?>
-    <span class="owa_userMenu">
-        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
-    </span>
-<?php endif; ?>
     <div class="post-nav"></div>
     <?php if (!empty($service_msg)): ?>
     <div class="owa_headerServiceMsg"><?php echo $service_msg; ?></div>
