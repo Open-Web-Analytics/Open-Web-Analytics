@@ -94,9 +94,41 @@ class EventDispatch {
      * @return bool
      */
 
+    /**
+     * The next observer id.
+     *
+     * A COUNTER, not a random value. These ids key $this->listeners, which
+     * attach() and attachFilter() share, and ids came from
+     * Lib::generateRandomUid() -- time() . mt_rand(0,999999) . pid. Within one
+     * process the time and the pid are fixed, so two registrations differed
+     * only by a six-digit random: with a couple of hundred registrations in a
+     * request the birthday bound puts a collision at a percent or two, every
+     * run, at random.
+     *
+     * A collision OVERWRITES: $this->listeners[$id] = $observer drops whichever
+     * was registered first while its id stays in listenersByEventType or
+     * listenersByFilterType. Two things follow, and the quiet one is worse.
+     *
+     * The loud one: a filter callback reached through notify() is called with
+     * one argument, because that is what a listener takes -- observed as
+     * "ArgumentCountError: Too few arguments to ...lowercaseString(), 1 passed
+     * and exactly 2 expected" in the isolation sweep, intermittently. The
+     * comment in notify() about DimensionIngestionTest failing "intermittently,
+     * because whether such a handler is registered depends on which modules and
+     * settings the run happens to have" is the same collision seen from a
+     * different angle.
+     *
+     * The quiet one: whichever observer lost the collision never runs again,
+     * and nothing says so. An event handler silently stops handling.
+     *
+     * A counter is unique by construction, which is all an id has ever needed
+     * to be here -- these never leave the process.
+     */
+    private $next_observer_id = 0;
+
     function attach($event_name, $observer) {
 
-        $id = \OWA\Core\Lib::generateRandomUid();
+        $id = ++$this->next_observer_id;
         // Register event names for this handler
         if(is_array($event_name)) {
 
@@ -148,7 +180,7 @@ class EventDispatch {
             }
         }
 
-        $id = \OWA\Core\Lib::generateRandomUid();
+        $id = ++$this->next_observer_id;
 
         $this->listenersByFilterType[$filter_name][$priority][] = $id;
 
