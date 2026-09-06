@@ -34,7 +34,15 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         page.__owaErrors = errors;
 
         await login(page);
-        await expect(page.locator('text=Logout').first()).toBeVisible();
+        /*
+         * The account menu, not the word "Logout".
+         *
+         * Logout lives inside that menu now and is hidden until it is opened,
+         * so a visibility check on the text fails for a perfectly good session.
+         * The toggle is a better signal anyway: it is rendered only for an
+         * authenticated request.
+         */
+        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
         await openDashboard(page);
     });
 

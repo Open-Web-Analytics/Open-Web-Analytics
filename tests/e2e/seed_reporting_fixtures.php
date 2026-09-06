@@ -221,6 +221,21 @@ const E2E_PWUSER_KEY  = '735512bd84ae1f2635e3e89fb7ecc001'; // md5 temp_passkey 
 const E2E_PWUSER_ROLE = 'analyst';
 const E2E_PWUSER_NAME = 'OWA E2E PwChange';
 
+/*
+ * A SECOND password fixture, for the Profile screen's own change-password form.
+ *
+ * It cannot share the one above. That user is left on a NEW password by the
+ * emailed-passkey test in admin-actions.spec.js -- deliberately, since the point
+ * there is that the change took -- and nothing puts it back until the next
+ * seeding run. A second spec logging in with the starting password therefore
+ * works alone and fails whenever admin-actions has run first, which in CI it
+ * always has: the files run in name order.
+ */
+const E2E_PROFILEPW_ID   = 'owa-e2e-profilepw@example.test';
+const E2E_PROFILEPW_PASS = 'e2e-ProfilePw-Old-1!';
+const E2E_PROFILEPW_ROLE = 'analyst';
+const E2E_PROFILEPW_NAME = 'OWA E2E ProfilePw';
+
 // Identifiers the admin-actions CRUD tests CREATE at runtime (add site / add
 // user) and then delete. They are NOT seeded here; they are declared so the
 // teardown can mop them up if a CRUD test dies between the add and its delete,
@@ -275,6 +290,8 @@ function fixtureInfo(): array
         'admin_user_id'  => E2E_ADMIN_ID,
         'admin_password' => E2E_ADMIN_PASS,
         'admin_role'     => E2E_ADMIN_ROLE,
+        'profilepw_user_id'  => E2E_PROFILEPW_ID,
+        'profilepw_password' => E2E_PROFILEPW_PASS,
         'pw_user_id'     => E2E_PWUSER_ID,
         'pw_password'    => E2E_PWUSER_PASS,
         'pw_passkey'     => E2E_PWUSER_KEY,
@@ -346,6 +363,26 @@ function seed(): array
         $pw->set('password', owa_lib::encryptPassword(E2E_PWUSER_PASS));
         $pw->set('temp_passkey', E2E_PWUSER_KEY);
         $pw->update();
+    }
+
+    /*
+     * 2d. The Profile screen's password fixture. Same treatment as 2c and for
+     *     the same reason -- its password is rotated by the test that changes
+     *     it, so every run resets it -- but a user of its own, because the two
+     *     specs would otherwise take turns invalidating each other's login.
+     */
+    $ppw = owa_coreAPI::entityFactory('base.user');
+    $ppw->load(E2E_PROFILEPW_ID, 'user_id');
+    if (!$ppw->get('id')) {
+        $ppw = owa_coreAPI::entityFactory('base.user');
+        $ppw->createNewUser(E2E_PROFILEPW_ID, E2E_PROFILEPW_ROLE, E2E_PROFILEPW_PASS,
+            E2E_PROFILEPW_ID, E2E_PROFILEPW_NAME);
+        $ppw = owa_coreAPI::entityFactory('base.user');
+        $ppw->load(E2E_PROFILEPW_ID, 'user_id');
+    }
+    if ($ppw->get('id')) {
+        $ppw->set('password', owa_lib::encryptPassword(E2E_PROFILEPW_PASS));
+        $ppw->update();
     }
 
     /*
@@ -1075,6 +1112,7 @@ function teardown(): array
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_ADMIN_ID, 'user_id'); } catch (\Throwable $e) {}
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_PWUSER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_PROFILEPW_ID, 'user_id'); } catch (\Throwable $e) {}
     // CRUD-test leftovers (only present if an add-then-delete test aborted midway).
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try {

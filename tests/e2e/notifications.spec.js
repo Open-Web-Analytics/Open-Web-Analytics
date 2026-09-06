@@ -60,33 +60,93 @@ test.describe('notifications', () => {
         await expect(page.locator('#owa_notificationBadge')).toHaveText(String(unreadBefore - 1));
     });
 
-    test('the badge sits clear of the bell, at the far right of the nav', async ({ page }) => {
+    test('the badge sits clear of the bell and of the account menu', async ({ page }) => {
         const geometry = await page.evaluate(() => {
             const btn   = document.querySelector('.owa_notificationToggle');
+            const box   = btn.getBoundingClientRect();
             const glyph = btn.querySelector('i').getBoundingClientRect();
             const badge = document.querySelector('#owa_notificationBadge').getBoundingClientRect();
             const bell  = document.querySelector('.owa_notificationBell').getBoundingClientRect();
-            const greet = document.querySelector('.user-greating');
+            const menu = document.querySelector('.owa_userMenu');
 
             return {
                 // Overlap needs BOTH axes; the badge clears the glyph on x.
                 overlapsGlyph: !(badge.right < glyph.left || badge.left > glyph.right ||
                                  badge.bottom < glyph.top || badge.top > glyph.bottom),
+                /*
+                 * ...but it must overlap the BUTTON, which is the half that was
+                 * never asserted. The badge is positioned against the button's
+                 * corner, and when the wrapper around it was given the bar's
+                 * height to centre things, the badge started measuring from the
+                 * wrapper instead and floated off the circle entirely. Every
+                 * assertion here still passed: it covered no glyph and was not
+                 * clipped, because it was nowhere near either.
+                 */
+                overlapsButton: !(badge.right < box.left || badge.left > box.right ||
+                                  badge.bottom < box.top || badge.top > box.bottom),
+                // It hangs off the top-right corner, so it starts above the
+                // button rather than sitting inside it.
+                aboveButtonTop: badge.top < box.top,
                 clipped: badge.right > window.innerWidth,
                 bellRight: bell.right,
-                greetingRight: greet ? greet.getBoundingClientRect().right : 0,
+                /*
+                 * NOT `menu ? ... : 0`. A missing element falling back to 0
+                 * makes "the bell is right of it" true by default, so a
+                 * renamed class would leave this test green and checking
+                 * nothing. Absent is reported as absent.
+                 */
+                menuRight: menu ? menu.getBoundingClientRect().right : null,
             };
         });
 
         expect(geometry.overlapsGlyph, 'the badge must not cover the bell').toBe(false);
+        expect(geometry.overlapsButton, 'the badge must overhang the bell, not float off it')
+            .toBe(true);
+        expect(geometry.aboveButtonTop, 'the badge hangs off the top-right corner').toBe(true);
         expect(geometry.clipped, 'the badge overhangs, so it must not be cut off at the edge').toBe(false);
-        expect(geometry.bellRight).toBeGreaterThan(geometry.greetingRight);
+        /*
+         * The bell is no longer the last thing in the bar -- the account menu
+         * is -- so the claim worth making here is that the badge does not run
+         * into it. Which control sits where is asserted in header-nav.spec.js,
+         * where the arrangement is the subject.
+         */
+        expect(geometry.menuRight, 'the account menu must be in the bar to compare against')
+            .not.toBeNull();
     });
 
-    test('the badge is always present, even at zero', async ({ page }) => {
-        // A control that comes and goes moves the bell under the cursor. At
-        // zero it goes quiet rather than away.
-        await expect(page.locator('#owa_notificationBadge')).toBeVisible();
+    /**
+     * Nothing unread, nothing to show.
+     *
+     * The badge used to stay and go grey, on the reasoning that a control which
+     * comes and goes moves the bell under the cursor. It cannot move anything:
+     * the badge overhangs the button and is not part of what spaces the header
+     * controls, which header-nav.spec.js measures with it forced on and off.
+     *
+     * The empty case is driven by ANSWERING THE API with an empty list rather
+     * than by reading every fixture notification. Reading persists, so a test
+     * that cleared them would consume the fixtures every other spec in this
+     * file depends on -- and would pass once, then never again.
+     */
+    test('the badge shows a count while something is unread', async ({ page }) => {
+        const badge = page.locator('#owa_notificationBadge');
+
+        await expect(badge).toBeVisible();
+        expect(Number(await badge.innerText())).toBeGreaterThan(0);
+    });
+
+    test('the badge disappears when nothing is unread', async ({ page }) => {
+        await page.route(/notifications/, (route) => route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ data: { notifications: [] } }),
+        }));
+
+        await page.reload({ waitUntil: 'networkidle' });
+
+        await expect(page.locator('#owa_notificationBadge')).toBeHidden();
+
+        // The bell is still there -- it is the control, and only the count goes.
+        await expect(page.locator('#owa_notificationToggle')).toBeVisible();
     });
 
     test('a row shows an icon, a bold linked headline and a short excerpt', async ({ page }) => {

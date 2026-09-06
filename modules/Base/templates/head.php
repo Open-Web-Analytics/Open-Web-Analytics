@@ -17,7 +17,19 @@
 <?php endif;?>
 
 <script>
+<?php
+    /*
+     * Only when the bundle that defines OWA is on the page.
+     *
+     * config_dom.php assigns onto OWA.config, and the signed-out pages -- the
+     * password reset request and the set-password form -- load no JavaScript at
+     * all. So every one of them threw "OWA is not defined" on load, which was
+     * harmless and permanently in the console, hiding anything that was not.
+     */
+?>
+if (typeof OWA !== 'undefined' && OWA.config) {
 <?php include('config_dom.php'); ?>
+}
 </script>
 
 

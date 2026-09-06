@@ -68,7 +68,15 @@ test.describe('admin: authentication (login / logout)', () => {
         // Profile's dashboard. base.sites is gone -- the roster of Profiles is
         // the site control's fan-out now, and its "add new" is the affordance
         // an admin (edit_sites) gets and an analyst never does.
-        await expect(page.locator('text=Logout').first()).toBeVisible();
+        /*
+         * The account menu, not the word "Logout".
+         *
+         * Logout lives inside that menu now and is hidden until it is opened,
+         * so a visibility check on the text fails for a perfectly good session.
+         * The toggle is a better signal anyway: it is rendered only for an
+         * authenticated request.
+         */
+        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
         await expect(page.locator('#owa_siteControl')).toBeVisible();
         await expect(
             page.locator('#owa_siteControlPanel a.owa_siteControlAdd').first()
@@ -81,12 +89,12 @@ test.describe('admin: authentication (login / logout)', () => {
         // land authenticated -- no Logout control, and the password field is
         // still on the page.
         await expect(page.locator('input[name="password"]')).toBeVisible();
-        expect(await page.locator('text=Logout').count()).toBe(0);
+        expect(await page.locator('#owa_userMenuToggle').count()).toBe(0);
     });
 
     test('logout ends the session', async ({ page }) => {
         await adminLogin(page);
-        await expect(page.locator('text=Logout').first()).toBeVisible();
+        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
 
         await logout(page);
 
@@ -525,11 +533,11 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
         //    change actually took: the OLD password no longer authenticates...
         await loginAs(page, FIXTURE.pwUserId, FIXTURE.pwOldPassword);
         await expect(page.locator('input[name="password"]')).toBeVisible();
-        expect(await page.locator('text=Logout').count()).toBe(0);
+        expect(await page.locator('#owa_userMenuToggle').count()).toBe(0);
 
         // 3. ...and the NEW password does.
         await loginAs(page, FIXTURE.pwUserId, newPassword);
-        await expect(page.locator('text=Logout').first()).toBeVisible();
+        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
     });
 });
 

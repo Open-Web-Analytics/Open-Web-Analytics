@@ -37,20 +37,49 @@ div {margin:0;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
-.owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
-.owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
-.owa_navigation li {text-decoration: none; float:left; margin: 2px;}
-.owa_navigation li a {
-    background: url() #fff bottom left repeat-x;
-    height: 2em;
-    line-height: 2em;
+/* The top bar's links.
+ *
+ * Each link used to be a 9em box, floated, whatever its text: "Donate" sat in
+ * the middle of a wide empty box and "Documentation" filled its own to the
+ * edge, so the gaps between words were all different widths. They are sized by
+ * their text now, with one padding value between them, which is what makes the
+ * spacing even.
+ *
+ * A row rather than a set of floats, so the items share a baseline instead of
+ * each one setting its own line-height. */
+/* As tall as the bar, with its contents centred in it.
+ *
+ * Every item in this header is floated, and a float takes its own height and
+ * sits at the top of the content box -- so the logo (55px), the links (36px)
+ * and the bell (40px) each started at the same top edge and ended in three
+ * different places, none of them centred on any other. Giving each the bar's
+ * height and centring inside it puts them all on one line.
+ *
+ * 55px is the header's own line-height, which is what sets the bar's height. */
+.owa_navigation {
     float: left;
-    width: 9em;
+    display: flex;
+    align-items: center;
+    height: 55px;
+}
+.owa_navigation ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    margin: 0;
+}
+.owa_navigation li {margin: 0;}
+.owa_navigation li a {
     display: block;
-    border: 0 solid #efefef;
+    padding: 0 14px;
+    height: 36px;
+    line-height: 36px;
+    border-radius: 6px;
+    color: #1a5f8a;
     text-decoration: none;
-    text-align: center;
-    
+    white-space: nowrap;
 }
 
 #updates {
@@ -64,9 +93,12 @@ div {margin:0;}
 	font-size: 14px;
 }
 
+/* A filled hover rather than an underline that appears from nowhere: the link
+   is a box, so the box responds. The orange stays for the current item, where
+   it means something. */
 .owa_navigation li a:hover {
-	border-bottom: 2px solid orange;
-   
+	background-color: #f0f2f5;
+	color: #124a6b;
 }
 
 .owa_current{
@@ -101,7 +133,9 @@ div {margin:0;}
 
 }
 .owa-button:hover {
-    color: #000000;
+    /* Blue, not black. The label is white at rest and takes the link colour on
+       hover, which is the one other blue on these screens. */
+    color: #1a5f8a;
     border-color: #9f9f9f;
     -moz-box-shadow:2px 2px 2px #999;
     box-shadow:2px 2px 2px #999;
@@ -296,3 +330,326 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 }
 
 .noedit {color: #999;}
+
+/* ---------------------------------------------------------------------------
+   The signed-out pages: login, password reset, set password, install, updates.
+
+   These looked like a different application from the one they let you into: a
+   table with a spacer column, runs of <BR>, and rounded-corner "spiffy" spans.
+   They already loaded this stylesheet -- Core\View adds it to every view -- and
+   simply were not using it.
+
+   A centred column with the form in a card, borrowing the treatments the rest
+   of the application uses: the same button, the same field borders, the same
+   muted description text.
+   --------------------------------------------------------------------------- */
+
+.owa_publicPage {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 20px 32px 20px;
+    font-size: 14px;
+    line-height: normal;
+}
+
+.owa_publicLogo {
+    margin-bottom: 28px;
+    text-align: center;
+}
+
+.owa_publicLogo img {
+    max-width: 200px;
+    height: auto;
+}
+
+/* The card is only as wide as a short form wants to be. The wrapper is also
+   used by install and updates, whose bodies set their own width -- so the
+   narrowing lives here rather than on the page. */
+.owa_publicCard {
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 28px 28px 24px 28px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.owa_publicTitle {
+    margin: 0 0 6px 0;
+    font-size: 22px;
+    font-weight: bold;
+    color: #333333;
+}
+
+.owa_publicIntro {
+    margin: 0 0 20px 0;
+    color: #666666;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.owa_publicForm {
+    margin: 18px 0 0 0;
+}
+
+.owa_publicField {
+    margin-bottom: 16px;
+}
+
+.owa_publicField label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_publicField input {
+    /* Full width of the card: a fixed size= attribute made every field a
+       different length regardless of what it held. */
+    box-sizing: border-box;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.owa_publicField input:focus {
+    border-color: #1a5f8a;
+    outline: none;
+}
+
+/* .owa-button carries a 25px top margin for the admin forms it was written
+   for, where it is the last thing on a page. Here it follows a field. */
+.owa_publicSubmit {
+    width: 100%;
+    margin: 4px 0 0 0;
+    font-size: 16px;
+    padding: 12px 20px;
+}
+
+.owa_publicAside {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.owa_publicFooter {
+    margin-top: 40px;
+    text-align: center;
+    color: #909090;
+    font-size: 12px;
+}
+
+.owa_publicFooter a {
+    color: #909090;
+}
+
+
+/* ---------------------------------------------------------------------------
+   The installer
+
+   Uses the signed-out card above, widened: it asks for a page of database
+   details, which does not fit a login box.
+
+   The fields were three spans positioned ABSOLUTELY -- the value at left:620px
+   and the hint at left:850px -- so on any window narrower than about 1100px the
+   hints sat off the edge of the page and the values overlapped the labels.
+   Stacked instead, which needs no assumption about the width.
+   --------------------------------------------------------------------------- */
+
+.owa_installCard {
+    max-width: 720px;
+    text-align: left;
+}
+
+/* The step's own heading, under the installer's title. Separated from it, or
+   the two headings read as one run-on line. */
+.owa_installBody h2,
+.owa_installFinish h2 {
+    margin: 22px 0 8px 0;
+    font-size: 18px;
+    color: #333333;
+}
+
+.owa_installBody h3 {
+    margin: 26px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ededed;
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #808080;
+}
+
+.owa_installField {
+    margin-bottom: 16px;
+}
+
+.owa_installField label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_installField input[type=text],
+.owa_installField input[type=password],
+.owa_installField select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.owa_installHint {
+    display: block;
+    margin-top: 5px;
+    color: #808080;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* The environment report. Every check is listed, passed or not: a list of only
+   the failures cannot distinguish "checked and fine" from "never looked at". */
+.owa_installChecks {
+    list-style: none;
+    margin: 20px 0 0 0;
+    padding: 0;
+}
+
+.owa_installCheck {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    gap: 2px 10px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+}
+
+.owa_installCheckMark {
+    font-weight: bold;
+}
+
+.owa_installCheck.is-ok .owa_installCheckMark {
+    color: #2e7d32;
+}
+
+.owa_installCheck.is-bad .owa_installCheckMark {
+    color: #99321f;
+}
+
+.owa_installCheckName {
+    color: #333333;
+}
+
+.owa_installCheckValue {
+    color: #808080;
+    text-align: right;
+}
+
+.owa_installCheck.is-bad .owa_installCheckValue {
+    color: #99321f;
+}
+
+/* The fix spans the two columns under the name, so it reads as belonging to
+   the row above rather than as another row. */
+.owa_installCheckFix {
+    grid-column: 2 / -1;
+    margin-top: 4px;
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+/* The generated password, shown once. */
+.owa_installCredentials {
+    margin: 18px 0;
+    padding: 16px;
+    background-color: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+}
+
+.owa_installCredentials .owa_installField:last-child {
+    margin-bottom: 0;
+}
+
+.owa_installCredential {
+    font-family: monospace;
+    font-size: 15px;
+    color: #333333;
+    /* Selectable in one gesture: it is generated, not chosen. */
+    user-select: all;
+}
+
+.owa_installActions {
+    margin-top: 26px;
+}
+
+
+/* An <a> styled as the primary button.
+ *
+ * .owa-button was written for <input type=submit>, which is inline-block and
+ * takes the button's own colour. An anchor is inline -- so width:100% did
+ * nothing and it kept the link colour, which on the installer's finish screen
+ * meant a blue label on an orange button, at a third of the width. */
+a.owa_publicSubmit,
+a.owa-button {
+    display: inline-block;
+    box-sizing: border-box;
+    color: #ffffff;
+    text-align: center;
+    text-decoration: none;
+}
+
+a.owa_publicSubmit:hover,
+a.owa-button:hover {
+    color: #1a5f8a;
+}
+
+/* The status and error banners on the signed-out pages.
+ *
+ * They are rendered outside the card, so without this they ran the full width
+ * of the window while everything else sat in a 380-720px column. */
+.owa_publicPage .status,
+.owa_publicPage .error {
+    max-width: 720px;
+    margin: 0 auto 20px auto;
+    border-radius: 6px;
+}
+
+/* The installer's cron notice. It used the green .status treatment, which is
+   for "this worked" -- this is a thing still to do, and a wall of white on
+   green to read. */
+.owa_installFinish .owa-install-cron {
+    margin-top: 26px;
+    padding: 16px;
+    background-color: #fffaf0;
+    border: 1px solid #f0d9a8;
+    border-radius: 6px;
+    color: #4a3c22;
+}
+
+.owa_installFinish .owa-install-cron p {
+    margin: 8px 0 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.owa_installFinish .owa-install-cron code {
+    display: inline-block;
+    padding: 2px 5px;
+    background-color: #ffffff;
+    border: 1px solid #ecdcc0;
+    border-radius: 3px;
+    font-size: 12px;
+    word-break: break-all;
+}

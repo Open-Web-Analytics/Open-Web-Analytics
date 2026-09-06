@@ -1,35 +1,38 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div style="width:340px; margin: 0px auto -1px auto;">
-    <div class="inline_h1" style="text-align:left;">Login</div><BR>
+<div class="owa_publicCard">
 
-    <div style="width:340px; margin: 0px auto -1px auto; text-align:center;">
+    <h1 class="owa_publicTitle">Login</h1>
 
-        <!-- content goes here -->
-        <DIV id="login_box" style="color:#ffffff; padding:45px; height:210px; text-align:left;" >
+    <form method="POST" class="owa_publicForm">
 
-            <form method="POST">
+        <div class="owa_publicField">
+            <label for="owa_loginUserId">User name</label>
+            <input id="owa_loginUserId" type="text" autocomplete="username" autofocus
+                   name="<?php echo $view->getNs();?>user_id"
+                   value="<?php $view->out( $view->user_id ); ?>">
+        </div>
 
-            <div class="inline_h3"><B>User Name:</B></div>
-            <INPUT class="owa_largeFormField" type="text" size="20" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user_id); ?>"><BR><BR>
-            <div class="inline_h3"><B>Password:</B></div>
-            <INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $view->getNs();?>password"><BR><BR>
-            <input type="hidden" size="70" name="<?php echo $view->getNs();?>go" value="<?php echo $view->go?>">
-            <input name="<?php echo $view->getNs();?>action" value="base.login" type="hidden">
-            <div style="text-align:;">
-            <INPUT class="owa_largeFormField" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Login">
-            </div>
-            </form>
+        <div class="owa_publicField">
+            <label for="owa_loginPassword">Password</label>
+            <input id="owa_loginPassword" type="password" autocomplete="current-password"
+                   name="<?php echo $view->getNs();?>password">
+        </div>
 
-        </DIV>
+        <?php
+            /*
+             * Where to go once they are in, and which action handles this. Both
+             * were here before and both are load-bearing: without `go` a login
+             * from a deep link lands on the dashboard instead.
+             */
+        ?>
+        <input type="hidden" name="<?php echo $view->getNs();?>go" value="<?php $view->out( $view->go );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.login">
 
+        <input class="owa-button owa_publicSubmit" type="submit"
+               name="<?php echo $view->getNs();?>submit_btn" value="Login">
+    </form>
+
+    <div class="owa_publicAside">
+        <a href="<?php echo $view->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a>
     </div>
-
-
-    <BR>
-    <span class="info_text">
-    <a href="<?php echo $view->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a>
-    </span>
 </div>
-
-
-

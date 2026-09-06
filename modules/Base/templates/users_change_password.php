@@ -1,39 +1,39 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div style="width:550px;margin: 0px auto -1px auto;">
-    <div class="inline_h1" style="text-align:left;">Password Setup</div><BR>
-    <div class="inline_h2" style="text-align:left;">Enter your new password below.</div><BR>
-    <div style="width:550px; margin: 0px auto -1px auto; ">
-      <b class="spiffy">
-      <b class="spiffy1"><b></b></b>
-      <b class="spiffy2"><b></b></b>
-      <b class="spiffy3"></b>
-      <b class="spiffy4"></b>
-      <b class="spiffy5"></b></b>
+<div class="owa_publicCard">
 
-      <div class="spiffyfg">
-        <!-- content goes here -->
-        <div id="" style="color:#ffffff; padding:30px; height:200px; text-align:left;" >
-            <form method="POST">
-                <div class="inline_h2">New Password</div>
-                <INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $view->getNs();?>password"><BR><BR>
-                <div class="inline_h2">Re-type your Password</div>
-                <INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $view->getNs();?>password2"><BR><BR>
-                <?php if ( $view->is_embedded ) {?>
-		        <input type="hidden" name="<?php echo $view->getNs();?>is_embedded" value="<?php echo $view->is_embedded;?>">                
-                <?php } ?>
-                <input type="hidden" name="<?php echo $view->getNs();?>k" value="<?php echo $view->key;?>">
-                <input name="<?php echo $view->getNs();?>action" value="base.usersChangePassword" type="hidden">
-                <INPUT class="owa_largeFormField" type="submit" size="" name="<?php echo $view->getNs();?>submit_btn" value="Save Your New Password">
-            </form>
+    <h1 class="owa_publicTitle">Set your password</h1>
+
+    <p class="owa_publicIntro">Choose a new password for your account.</p>
+
+    <form method="POST" class="owa_publicForm">
+
+        <div class="owa_publicField">
+            <label for="owa_newPassword">New password</label>
+            <input id="owa_newPassword" type="password" autocomplete="new-password" autofocus
+                   name="<?php echo $view->getNs();?>password">
         </div>
-    </div>
 
-      <b class="spiffy">
-      <b class="spiffy5"></b>
-      <b class="spiffy4"></b>
-      <b class="spiffy3"></b>
-      <b class="spiffy2"><b></b></b>
-      <b class="spiffy1"><b></b></b></b>
-    </div>
+        <div class="owa_publicField">
+            <label for="owa_newPassword2">Repeat new password</label>
+            <input id="owa_newPassword2" type="password" autocomplete="new-password"
+                   name="<?php echo $view->getNs();?>password2">
+        </div>
 
+        <?php
+            /*
+             * The passkey from the emailed link is what identifies the account
+             * here -- there is no session yet -- so it has to travel with the
+             * form. is_embedded rides along on the migration path that sets it.
+             */
+        ?>
+        <?php if ( $view->is_embedded ): ?>
+        <input type="hidden" name="<?php echo $view->getNs();?>is_embedded"
+               value="<?php $view->out( $view->is_embedded );?>">
+        <?php endif; ?>
+        <input type="hidden" name="<?php echo $view->getNs();?>k" value="<?php $view->out( $view->key );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.usersChangePassword">
+
+        <input class="owa-button owa_publicSubmit" type="submit"
+               name="<?php echo $view->getNs();?>submit_btn" value="Save new password">
+    </form>
 </div>

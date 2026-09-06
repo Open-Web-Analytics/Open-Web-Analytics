@@ -54,12 +54,158 @@
     border-bottom: 2px solid orange;
 }
 
-.owa .user-greating {
+/* ---------------------------------------------------------------------------
+   The account menu
 
-    color: #9f9f9f;
-    font-weight: normal;
-    float:right;
-    vertical-align:middle;
+   The username is a control, not a greeting. It opens a menu holding Profile
+   and Logout, and it is built to match the notification bell beside it: same
+   size, same hover, same panel treatment, so the two read as one pair of
+   controls rather than as two unrelated widgets.
+   --------------------------------------------------------------------------- */
+
+.owa .owa_userMenu {
+    position: relative;
+    /* Floated right and FIRST in the markup, so it lands furthest right -- with
+       float:right the first element in source order goes to the end. It is the
+       one against the window edge now, so it carries the margin that keeps the
+       group off it. */
+    float: right;
+    margin: 0 18px 0 0;
+    /* ...and the same for the account menu. */
+    display: flex;
+    align-items: center;
+    height: 55px;
+}
+
+.owa .owa_userMenuToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 280px;
+    height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 20px;
+    background: #e4e6eb;
+    color: #050505;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.owa .owa_userMenuToggle:hover {
+    background: #d8dadf;
+}
+
+/* A long address must not push the bell off the bar. */
+.owa .owa_userMenuName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.owa .owa_userMenuCaret {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.owa .owa_userMenuToggle[aria-expanded="true"] .owa_userMenuCaret {
+    transform: rotate(180deg);
+}
+
+.owa .owa_userMenuPanel[hidden],
+.owa .owa_headerMenuPanel[hidden] {
+    display: none;
+}
+
+/* Help: a round button matching the bell, holding the links that leave the
+   application. Left of the account menu, which is where the markup puts it. */
+.owa .owa_helpMenu {
+    position: relative;
+    float: right;
+    display: flex;
+    align-items: center;
+    height: 55px;
+    /* 16px to the bell. Left of it is open bar, so it needs nothing there. */
+    margin: 0 16px 0 0;
+}
+
+.owa .owa_helpMenuToggle {
+    background: #e4e6eb;
+    border: 0;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    cursor: pointer;
+    color: #050505;
+    font-size: 16px;
+    line-height: 40px;
+    text-align: center;
+}
+
+.owa .owa_helpMenuToggle:hover {
+    background: #d8dadf;
+}
+
+.owa .owa_helpMenuPanel {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    z-index: 1000;
+    min-width: 180px;
+    padding: 6px 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    line-height: normal;
+}
+
+/* Anchored to the button rather than to the window: this menu is about the
+   control it hangs off, unlike the notification panel, which is a surface
+   pinned to the edge of the app. */
+.owa .owa_userMenuPanel {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    z-index: 1000;
+    min-width: 180px;
+    padding: 6px 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    line-height: normal;
+}
+
+.owa .owa_userMenuItem,
+.owa .owa_headerMenuItem {
+    display: block;
+    padding: 10px 16px;
+    color: #050505;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.owa .owa_userMenuItem:hover,
+.owa .owa_headerMenuItem:hover {
+    background: #f0f2f5;
+}
+
+/* Signed out: a plain link, because there is no account to open a menu on. */
+.owa .owa_userMenuSignIn {
+    display: inline-block;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 20px;
+    background: #e4e6eb;
+    color: #050505;
+    font-size: 13px;
+    line-height: 40px;
+    text-decoration: none;
+}
+
+.owa .owa_userMenuSignIn:hover {
+    background: #d8dadf;
 }
 
 .owa a.login {
@@ -80,21 +226,40 @@
    --------------------------------------------------------------------------- */
 
 .owa .owa_notificationBell {
-    position: relative;
-    /* Floated right, and it sits BEFORE .user-greating in the markup -- with
+    /* NOT position:relative.
+     *
+     * The badge is a child of the BUTTON and hangs off its top-right corner, so
+     * the button has to be what it is positioned against. While this wrapper
+     * was the containing block it worked only because the wrapper was exactly
+     * the button's size; giving it the bar's height to centre the button moved
+     * the corner the badge was measuring from 7px up, and the badge stopped
+     * overlapping the circle. The positioning context is on the toggle now, so
+     * the wrapper's height is free to change. */
+    /* Floated right, and it sits BEFORE the account menu in the markup -- with
        float:right the first element in source order lands furthest right, so
-       the bell ends up at the far right of the nav bar and the greeting to its
+       the bell ends up at the far right of the nav bar and the menu to its
        left. Ordering the markup the other way would silently swap them. */
     float: right;
-    display: inline-block;
-    vertical-align: middle;
-    /* Room on the right for the badge, which overhangs the button. Without it
-       the badge is clipped by the edge of the header. */
-    /* Wide enough on the right that the overhanging badge is not clipped. */
-    margin: 0 18px 0 16px;
+    /* The bar's height with the button centred in it, so the bell shares the
+       logo's centre line rather than hanging 8px above it. See .owa_navigation
+       in owa.css for why every floated item needs this. */
+    display: flex;
+    align-items: center;
+    height: 55px;
+    /*
+     * The same 16px as the others.
+     *
+     * The badge overhangs this button, and it does NOT get a say in the
+     * spacing: the three controls are spaced by their own boxes, so the gaps
+     * stay equal whether or not there is anything unread. The badge hangs into
+     * the gap on its right when it is there.
+     */
+    margin: 0 16px 0 0;
 }
 
 .owa .owa_notificationToggle {
+    /* What the badge hangs off -- see .owa_notificationBell. */
+    position: relative;
     background: #e4e6eb;
     border: 0;
     border-radius: 50%;
@@ -138,10 +303,11 @@
     z-index: 1;
 }
 
-/* The badge is never hidden -- a control that comes and goes moves the bell
-   under the cursor. At zero it goes quiet instead: grey, not red. */
-.owa .owa_notificationBadge.is-zero {
-    background: #b0b3b8;
+/* Nothing unread, nothing to show. The badge is positioned absolutely and
+   overhangs the button, so hiding it moves nothing -- which is what makes this
+   safe where it was not before. */
+.owa .owa_notificationBadge[hidden] {
+    display: none;
 }
 
 .owa .owa_notificationPanel[hidden] {

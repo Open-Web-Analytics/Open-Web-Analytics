@@ -1,51 +1,33 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div style="width:550px;margin: 0px auto -1px auto;">
-    <div class="inline_h1" style="text-align:left;">Password Reset</div><BR>
-    <div class="inline_h2" style="text-align:left;">Enter the e-mail address associated with your account.</div><BR>
-    <div style="width:550px; margin: 0px auto -1px auto; ">
-      <b class="spiffy">
-      <b class="spiffy1"><b></b></b>
-      <b class="spiffy2"><b></b></b>
-      <b class="spiffy3"></b>
-      <b class="spiffy4"></b>
-      <b class="spiffy5"></b></b>
+<div class="owa_publicCard">
 
-      <div class="spiffyfg">
-        <!-- content goes here -->
-        <div id="" style="color:#ffffff; padding:30px; height:100px; text-align:left;" >
-            <form method="POST">
-                <div class="inline_h3">E-mail address:</div>
-                <INPUT class="owa_largeFormField" type="text" size="30" name="<?php echo $view->getNs();?>email_address" value=""></TD>
-                </TR>
+    <h1 class="owa_publicTitle">Reset your password</h1>
 
-                <TR>
-                    <TH scope="row"></TH>
-                    <TD>
+    <p class="owa_publicIntro">Enter the email address on your account and we will send you a
+    link to set a new password.</p>
 
-                        <input name="<?php echo $view->getNs();?>action" value="base.passwordResetRequest" type="hidden"><BR><BR>
-                        <INPUT class="owa_largeFormField" type="submit" size="30" name="<?php echo $view->getNs();?>submit" value="Request New Password">
-                    </TD>
-                </TR>
+    <?php
+        /*
+         * The markup here used to close a table that was never opened --
+         * </TD></TR>, a <TR>, then </TABLE> -- left behind when this stopped
+         * being a table. Browsers dropped the stray tags silently.
+         */
+    ?>
+    <form method="POST" class="owa_publicForm">
 
-                </TABLE>
-
-            </form>
+        <div class="owa_publicField">
+            <label for="owa_resetEmail">Email address</label>
+            <input id="owa_resetEmail" type="email" autocomplete="email" autofocus
+                   name="<?php echo $view->getNs();?>email_address" value="">
         </div>
 
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.passwordResetRequest">
+
+        <input class="owa-button owa_publicSubmit" type="submit"
+               name="<?php echo $view->getNs();?>submit" value="Send reset link">
+    </form>
+
+    <div class="owa_publicAside">
+        <a href="<?php echo $view->makeLink(array('do' => 'base.loginForm'))?>">Back to login</a>
     </div>
-
-      <b class="spiffy">
-      <b class="spiffy5"></b>
-      <b class="spiffy4"></b>
-      <b class="spiffy3"></b>
-      <b class="spiffy2"><b></b></b>
-      <b class="spiffy1"><b></b></b></b>
-    </div>
-
-
-    <BR>
-    <span class="info_text">
-    <!--<a href="<?php echo $view->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a> -->
-    </span>
 </div>
-

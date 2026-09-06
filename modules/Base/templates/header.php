@@ -6,19 +6,59 @@
     <span class="owa_navigation">
         <UL>
             <?php if ($view->getCurrentUser()->isCapable('view_site_list')): ?>
-                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.reportingHome'));?>">Reporting</a></LI>
+                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.reportingHome'));?>">Analytics</a></LI>
             <?php endif; ?>
             <?php if ($view->getCurrentUser()->isCapable('edit_settings')): ?>
                 <LI><a href="<?php echo $view->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>
             <?php endif; ?>
-            <LI><a href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki">Documentation</a></LI>
-            <LI><a href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues">Report a Bug</a></LI>
-            <LI><a href="https://github.com/sponsors/padams">Donate</a>
-
+            <?php
+                /*
+                 * Documentation and Report a Bug used to sit here. They are in
+                 * the help menu on the right now: both leave the application
+                 * for GitHub, which is a different kind of thing from Analytics
+                 * and Settings, and listing them here spent half the bar on
+                 * links that navigate away from it.
+                 *
+                 * This item was also never closed, so the markup nested the
+                 * rest of the bar inside it.
+                 */
+            ?>
+            <LI><a href="https://github.com/sponsors/padams">Donate</a></LI>
         </UL>
     </span>
     <?php $cu = $view->getCurrentUser(); ?>
 <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
+    <?php
+        /*
+         * THE ACCOUNT MENU, at the right-hand end.
+         *
+         * FIRST in source order, because these are floated right and the first
+         * element lands furthest right. Moving it after the bell would put the
+         * name to the bell's left again without anything saying so.
+         */
+    ?>
+    <span class="owa_userMenu">
+        <button type="button" id="owa_userMenuToggle" class="owa_userMenuToggle"
+                aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true">
+            <span class="owa_userMenuName"><?php $view->out( $cu->getUserData('user_id') );?></span>
+            <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
+        </button>
+        <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
+            <a role="menuitem" class="owa_userMenuItem owa_myProfileLink"
+               href="<?php echo $view->makeLink( array( 'do' => 'base.myProfile' ), false );?>">Profile</a>
+            <?php
+                /*
+                 * An embedded install signs people in through its host, so it
+                 * has no session of its own to end -- the same condition that
+                 * hid the old Logout link.
+                 */
+            ?>
+            <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
+            <a role="menuitem" class="owa_userMenuItem owa_userMenuLogout"
+               href="<?php echo $view->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
+            <?php endif;?>
+        </div>
+    </span>
 <?php
     /*
      * The badge count is NOT rendered here and is not a call of its own.
@@ -75,10 +115,16 @@
             var unread = items.querySelectorAll('.owa_notification.is-unread').length;
 
             badge.textContent = unread;
-            // Never hidden: an empty badge is still the control people look
-            // for, and a bell that only sometimes has one moves under the
-            // cursor.
-            badge.classList.toggle('is-zero', unread === 0);
+
+            /*
+             * Nothing unread, nothing to show.
+             *
+             * This used to stay put and go grey, because a badge that comes and
+             * goes moves the bell under the cursor. It no longer can: the badge
+             * overhangs the button and is not part of what spaces the header
+             * controls, so showing or hiding it moves nothing.
+             */
+            badge.hidden = unread === 0;
         }
 
         function markRead(id, el) {
@@ -244,18 +290,131 @@
     })();
     </script>
 <?php endif; ?>
-    <span class="user-greating" style="">
-        Hi, <?php $view->out( $cu->getUserData('user_id') );?> ! &bull;
-        <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
-
-                <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ):?>
-                <a class="login" href="<?php echo $view->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
-                <?php else:?>
-                <a class="login" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
-                <?php endif;?>
-
-            <?php endif;?>
+    <?php
+        /*
+         * THE ACCOUNT MENU.
+         *
+         * This was "Hi, <name> ! * Logout" -- a greeting, a bullet and a link,
+         * which spent the widest part of the bar saying hello and left the two
+         * things people come here to do looking like punctuation.
+         *
+         * The name is now the control: a button that opens a menu holding
+         * Profile and Logout. Same interaction as the notification bell beside
+         * it -- a button with aria-expanded, a panel with hidden, and a click
+         * outside to close -- so the two behave alike.
+         */
+    ?>
+<?php if ( ! \OWA\Core\CoreAPI::isCurrentUserAuthenticated()
+           && ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ): ?>
+    <?php
+        /*
+         * Signed out, the account slot is a way in rather than a menu. Before
+         * the help block so it takes the same place at the right-hand end that
+         * the account menu does when there is one.
+         */
+    ?>
+    <span class="owa_userMenu">
+        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
     </span>
+<?php endif; ?>
+    <?php
+        /*
+         * HELP, at the left of the group, AND FOR EVERYONE.
+         *
+         * Outside the signed-in branch on purpose. An install that grants
+         * "everyone" view_reports -- which the demo does -- renders this chrome
+         * for people with no account, and documentation is the thing they are
+         * most likely to want. Every destination here is a public GitHub URL,
+         * so there is nothing in it that depends on being signed in.
+         *
+         * Last in source order, which is what puts it at the left: these are
+         * floated right, so the first element in source order lands furthest
+         * right and the bar reads help, notifications, account.
+         */
+    ?>
+    <span class="owa_helpMenu">
+        <button type="button" id="owa_helpMenuToggle" class="owa_helpMenuToggle"
+                aria-expanded="false" aria-controls="owa_helpMenuPanel"
+                aria-haspopup="true" aria-label="Help">
+            <i class="fas fa-question" aria-hidden="true"></i>
+        </button>
+        <div id="owa_helpMenuPanel" class="owa_helpMenuPanel owa_headerMenuPanel" role="menu" hidden>
+            <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
+               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki">Documentation</a>
+            <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
+               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues">Report a Bug</a>
+            <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
+               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics">GitHub</a>
+        </div>
+    </span>
+    <script>
+    (function () {
+        /*
+         * Both header menus are wired by one routine.
+         *
+         * They behave identically -- open on the control, close on a click
+         * outside, close on Escape, report state through aria-expanded -- and
+         * two copies of that is how the two come to differ.
+         */
+        var menus = [];
+
+        function wire(toggleId, panelId, wrapperClass) {
+
+            var toggle = document.getElementById(toggleId);
+            var panel  = document.getElementById(panelId);
+
+            if (!toggle || !panel) {
+                return;
+            }
+
+            var menu = {
+                toggle: toggle,
+                panel: panel,
+                wrapper: wrapperClass,
+                close: function () {
+                    panel.hidden = true;
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            };
+
+            toggle.addEventListener('click', function () {
+
+                var open = !panel.hidden;
+
+                // One at a time: opening either closes the other, so two
+                // panels cannot overlap each other in the corner of the bar.
+                menus.forEach(function (other) {
+                    if (other !== menu) {
+                        other.close();
+                    }
+                });
+
+                panel.hidden = open;
+                toggle.setAttribute('aria-expanded', String(!open));
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!panel.hidden && !e.target.closest('.' + wrapperClass)) {
+                    menu.close();
+                }
+            });
+
+            // Escape closes it and puts the focus back on the control that
+            // opened it, so a keyboard user is not left adrift in the page.
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !panel.hidden) {
+                    menu.close();
+                    toggle.focus();
+                }
+            });
+
+            menus.push(menu);
+        }
+
+        wire('owa_userMenuToggle', 'owa_userMenuPanel', 'owa_userMenu');
+        wire('owa_helpMenuToggle', 'owa_helpMenuPanel', 'owa_helpMenu');
+    })();
+    </script>
     <div class="post-nav"></div>
     <?php if (!empty($service_msg)): ?>
     <div class="owa_headerServiceMsg"><?php echo $service_msg; ?></div>

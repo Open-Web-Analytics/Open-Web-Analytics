@@ -1,17 +1,28 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<h2>Default Site & User Information</h2>
+<h2>Your first Property</h2>
+
+<p class="owa_publicIntro">A Property is the website or application you want to
+track.</p>
 <div id="configSettings">
     <form method="POST">
         
-        <p class="form-row">
-            <span class="form-label">Site Domain</span>
-            <span class="form-field">
-                <select name="<?php echo $view->getNs();?>protocol">
-                    <option value="http://">http://</option>
-                    <option value="https://">https://</option>
-                </select>
+        <div class="owa_installField">
+            <label>Property Domain</label>
+            <span class="owa_installInput">
                 <?php
                 /*
+                 * NO PROTOCOL SELECT.
+                 *
+                 * It prefixed http:// or https:// onto the stored domain, and
+                 * nothing wants that: Site::getDomainName() strips a scheme
+                 * back off wherever the domain is used, the Profile edit form
+                 * asks for a bare domain, and the CLI installer stores one --
+                 * so the two install paths disagreed about what a domain is.
+                 *
+                 * The scheme was only ever load-bearing when a site's identity
+                 * was md5( domain ), where http:// and https:// made one website
+                 * into two sites. Identifiers are minted now.
+                 *
                  * ?? '' on every defaults read, because on the FIRST render
                  * there are none. InstallBase sets 'defaults' only in
                  * errorAction(), the re-render after a validation failure, so an
@@ -19,14 +30,17 @@
                  * line below already had the guard and the rest did not.
                  */
                 ?>
-                <input type="text"size="30" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
+                <input type="text" size="30" name="<?php echo $view->getNs();?>domain"
+                       placeholder="example.com"
+                       value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
-            <span class="form-instructions">This is the domain of the site to track.</span>
-        </p>
+            <span class="owa_installHint">The domain of the website this Property will
+            track (e.g. www.mydomain.com). Subdomains are also acceptable.</span>
+        </div>
 
-        <p class="form-row">
-            <span class="form-label">Reporting Timezone</span>
-            <span class="form-field">
+        <div class="owa_installField">
+            <label>Reporting Timezone</label>
+            <span class="owa_installInput">
                 <?php
                 /*
                  * A timezone supplied by OWA_TIMEZONE in owa-config.php is not
@@ -109,45 +123,46 @@
                 <?php } ?>
             </span>
             <?php if ( $tz_constant ) { ?>
-            <span class="form-instructions">Set by <code><?php $view->out( $tz_constant ); ?></code>
+            <span class="owa_installHint">Set by <code><?php $view->out( $tz_constant ); ?></code>
             in <code>owa-config.php</code>, which overrides any value chosen here. Remove the
             constant to choose a timezone from this page.</span>
             <?php } else { ?>
-            <span class="form-instructions">Statistics are bucketed into days using this
+            <span class="owa_installHint">Statistics are bucketed into days using this
             timezone. <strong>Changing it later is not retroactive</strong> &mdash; existing data
             keeps the day boundaries it was recorded with.</span>
             <?php } ?>
-        </p>
+        </div>
 
-        <p class="form-row">
-            <span class="form-label">Your Admin Name</span>
-            <span class="form-field">
+        <div class="owa_installField">
+            <label>Admin User Name</label>
+            <span class="owa_installInput">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
-            <span class="form-instructions">This is name of the admin user.</span>
-        </p>
+            <span class="owa_installHint">The user name to use for login.</span>
+        </div>
 
-        <p class="form-row">
-            <span class="form-label">Your E-mail Address</span>
-            <span class="form-field">
+        <div class="owa_installField">
+            <label>Email Address</label>
+            <span class="owa_installInput">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
-            <span class="form-instructions">This is the e-mail address of the admin user.</span>
-        </p>
+            <span class="owa_installHint">Where password resets for this account are sent.</span>
+        </div>
         
-        <p class="form-row">
-            <span class="form-label">Your Password</span>
-            <span class="form-field">
+        <div class="owa_installField">
+            <label>Password</label>
+            <span class="owa_installInput">
                 <input type="password"size="30" name="<?php echo $view->getNs();?>password" value="">
             </span>
-            <span class="form-instructions">This will be the password of the admin user.</span>
-        </p>
+            <span class="owa_installHint">The password for this account.</span>
+        </div>
                 
-        <p>
+        <div class="owa_installActions">
             <?php echo $view->createNonceFormField('base.installBase');?>
             <input type="hidden" value="base.installBase" name="<?php echo $view->getNs();?>action">
-            <input class="owa-button" type="submit" value="Continue..." name="<?php echo $view->getNs();?>save_button">
-        </p>
+            <input class="owa-button owa_publicSubmit" type="submit" value="Continue"
+                   name="<?php echo $view->getNs();?>save_button">
+        </div>
         
     </form>
     

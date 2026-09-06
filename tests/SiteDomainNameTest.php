@@ -83,4 +83,55 @@ final class SiteDomainNameTest extends TestCase
             'sub.example.co.uk',
             $this->siteWithDomain( 'sub.example.co.uk' )->getDomainName() );
     }
+
+    /**
+     * THE INSTALLER NOW WRITES THE BARE SHAPE, so this column stops gaining new
+     * rows with a scheme in them.
+     *
+     * The wizard asked for the scheme in a select and prefixed it onto what was
+     * typed -- while the CLI installer stored the domain as given, so the two
+     * install paths disagreed about what a domain is. The select is gone and
+     * whatever is typed is normalised instead.
+     *
+     * @dataProvider installerDomainProvider
+     */
+    public function testTheInstallerStoresADomainNotAUrl( string $typed, string $stored ): void
+    {
+        $this->assertSame(
+            $stored,
+            \OWA\Module\Base\Controller\InstallBase::domainOnly( $typed ) );
+    }
+
+    public static function installerDomainProvider(): array
+    {
+        return array(
+            'a bare domain is left alone'  => array( 'example.com', 'example.com' ),
+            'https is stripped'            => array( 'https://example.com', 'example.com' ),
+            'http is stripped'             => array( 'http://example.com', 'example.com' ),
+            'a trailing slash goes'        => array( 'https://example.com/', 'example.com' ),
+            'a subdomain survives'         => array( 'https://sub.example.co.uk', 'sub.example.co.uk' ),
+            'surrounding space goes'       => array( '  example.com  ', 'example.com' ),
+            'a port is not a scheme'       => array( 'example.com:8080', 'example.com:8080' ),
+        );
+    }
+
+    /**
+     * ...and what it writes is what getDomainName() answers, unchanged.
+     *
+     * The two have to agree: one normalises on the way in and the other on the
+     * way out, and a round trip that altered the value would mean the stored
+     * domain and the reported one were different strings.
+     */
+    public function testWhatTheInstallerStoresSurvivesTheRoundTrip(): void
+    {
+        foreach ( array( 'example.com', 'https://example.com/', 'sub.example.co.uk' ) as $typed ) {
+
+            $stored = \OWA\Module\Base\Controller\InstallBase::domainOnly( $typed );
+
+            $this->assertSame(
+                $stored,
+                $this->siteWithDomain( $stored )->getDomainName(),
+                sprintf( 'the round trip changed "%s"', $typed ) );
+        }
+    }
 }

@@ -67,12 +67,12 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
 
         // --- STEP 1: Start ----------------------------------------------------
         await page.goto(`${installBase}?do=base.installStart`, { waitUntil: 'networkidle' });
-        await expect(page.locator('text=Welcome to the Installer')).toBeVisible();
+        await expect(page.locator('.owa_publicTitle')).toContainText('Install Open Web Analytics');
 
-        // --- STEP 2: Env check (follow the "Let's Get Started" link) ----------
+        // --- STEP 2: Env check (follow the "Get started" link) ----------------
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('a', { hasText: "Let's Get Started" }).first().click(),
+            page.locator('a', { hasText: 'Get started' }).first().click(),
         ]);
         // A good environment routes straight to the config-entry form (the DB
         // fields). If the env were bad we'd see error rows instead.
@@ -97,10 +97,16 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         await expect(page.locator('input[name="user_id"]')).toBeVisible();
 
         // --- STEP 5+6: Defaults entry -> installBase (schema+admin+site) ------
-        // domain must NOT start with http (installBase validation) -- protocol
-        // is a separate select.
-        await page.selectOption('select[name="protocol"]', INFO.install_site.startsWith('https') ? 'https://' : 'http://');
-        await page.fill('input[name="domain"]', INFO.install_site.replace(/^https?:\/\//, ''));
+        /*
+         * The whole address, scheme and all.
+         *
+         * There is no protocol select any more, and a pasted URL is no longer
+         * refused -- installBase strips the scheme, which is what every reader
+         * of that column already did. Submitting the full address is therefore
+         * the case worth driving: it is what somebody actually pastes, and it
+         * used to be the one thing the form rejected.
+         */
+        await page.fill('input[name="domain"]', INFO.install_site);
 
         // The wizard asks for the reporting timezone now, and installBase
         // requires it. It is asked here because the choice is NOT retroactive:
@@ -123,6 +129,18 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         ]);
 
         // --- STEP 7: Finish ---------------------------------------------------
+        /*
+         * THE PASSWORD IS NOT PRINTED BACK.
+         *
+         * createAdminUser() generates one only when none is supplied, and this
+         * form requires one -- so the password here is the one the operator
+         * just chose. Echoing it tells them nothing they do not know while
+         * leaving a live credential in the page, in the back-forward cache, and
+         * in any screenshot of the completion screen.
+         */
+        expect(await page.locator('body').innerText())
+            .not.toContain(INFO.install_admin_pass);
+
         // The finish screen shows the admin credentials + tracker snippet.
         const finishBody = (await page.locator('body').innerText()).toLowerCase();
         expect(finishBody).toMatch(/complete|success|tracking|admin/);
@@ -140,7 +158,7 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
         // Either we were redirected off install.php, or the start form is gone.
         const landedOnInstall = page.url().includes('install.php');
         const startVisible = await page
-            .locator('text=Welcome to the Installer')
+            .locator('.owa_installCard')
             .count();
         expect(landedOnInstall && startVisible > 0).toBe(false);
     });
