@@ -57,7 +57,9 @@ final class MaxmindOptionsPageTest extends TestCase {
 
         $this->assertNotSame( '', $html,
             'an empty render is what a template error looks like -- the buffer is discarded' );
-        $this->assertStringContainsString( 'GeoIP Settings', $html );
+        // The heading matches the settings-nav label, which
+        // testTheSettingsNavAndItsPagesAgreeOnTheName keeps true in both places.
+        $this->assertStringContainsString( 'class="panel_headline">GeoIP<', $html );
     }
 
     /**

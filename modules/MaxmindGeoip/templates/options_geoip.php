@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div class="panel_headline">GeoIP Settings</div>
+<div class="panel_headline">GeoIP</div>
 
 <?php /* #panel, like every settings screen -- see options_general.php. */ ?>
 <div id="panel">
