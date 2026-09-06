@@ -28,7 +28,7 @@ $owa_crumbs = array();
  * screen whose settings apply to every Organization would be wrong in exactly
  * the way the tiering is meant to prevent.
  *
- * The label is not always "Installation": base.myProfile is tier 0 for the same
+ * The label is not always "Instance": base.myProfile is tier 0 for the same
  * reason -- it belongs to no Organization -- but is about the person, so it
  * supplies its own. See OptionsHierarchy, which defaults it.
  */

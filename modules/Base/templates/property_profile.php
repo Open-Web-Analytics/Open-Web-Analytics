@@ -117,7 +117,7 @@
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Property"
                data-owa-confirm
                data-owa-confirm-title="Delete this Property?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $view->property['name'] ?? '' );?>&rdquo; and <?php echo (int) ( $view->profileCount ?? 0 );?> Observation Profile(s) under it will stop recording immediately and will no longer appear in reporting. Everything already collected is kept, and an administrator can restore it."
+               data-owa-confirm-body="&ldquo;<?php $view->out( $view->property['name'] ?? '' );?>&rdquo; and its <?php echo (int) ( $view->profileCount ?? 0 );?> Observation Profile(s) stop recording and leave reporting. Everything collected is kept, and it can be restored."
                data-owa-confirm-proceed="Delete Property">
     </form>
 </div>

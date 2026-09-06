@@ -487,7 +487,7 @@ final class PropertyAdminScreensTest extends TestCase
         /* My Preferences needs no context either -- it is about the person, not
            about anything in the tree -- so it is present here too, at the head. */
         $this->assertSame(
-            array( 'My Preferences', 'Installation', 'Organization' ), array_keys( $bare ),
+            array( 'My Preferences', 'Instance', 'Organization' ), array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -501,7 +501,7 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'My Preferences', 'Installation', 'Organization', 'Property' ),
+            array( 'My Preferences', 'Instance', 'Organization', 'Property' ),
             array_keys( $withProperty ) );
     }
 
@@ -1135,12 +1135,12 @@ final class PropertyAdminScreensTest extends TestCase
             'Your own settings head the nav; they belong to no scope in the tree.' );
 
         $this->assertSame(
-            array( 'Installation', 'Organization' ),
+            array( 'Instance', 'Organization' ),
             array_values( array_diff( $groups, array( 'My Preferences' ) ) ),
             'Install-wide options are the widest scope in the tree, so they head it -- the '
             . 'order reads install, Organization, Property, Profile.' );
 
-        $actions = array_column( $nav['Installation'], 'do' );
+        $actions = array_column( $nav['Instance'], 'do' );
 
         foreach ( array( 'base.optionsGeneral', 'base.optionsModules' ) as $expected ) {
             $this->assertContains( $expected, $actions );
@@ -1190,7 +1190,7 @@ final class PropertyAdminScreensTest extends TestCase
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
 
         /* ...and it still says Installation for every screen that names none. */
-        $this->assertStringContainsString( "?: 'Installation'", $view );
+        $this->assertStringContainsString( "?: 'Instance'", $view );
 
         $this->assertStringNotContainsString(
             "hierarchy_tier' ) ?: 3", $view,

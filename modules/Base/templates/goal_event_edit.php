@@ -219,7 +219,7 @@ the event, how to compare it, and what to compare it to.</div>
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Goal Event"
                data-owa-confirm
                data-owa-confirm-title="Delete this goal event?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and disappears from reports. Events already counted under it are not removed."
+               data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and leaves reports. Events already counted are kept."
                data-owa-confirm-proceed="Delete goal event">
     </form>
 </div>
