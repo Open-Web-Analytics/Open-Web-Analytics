@@ -30,8 +30,6 @@ parameters:
         - vendor/*
         - node_modules/*
         - public/*
-        - includes/MaxMind/*
-        - includes/template_class/*
         - owa-config*.php
         - tests/*
     bootstrapFiles:
