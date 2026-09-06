@@ -65,11 +65,12 @@
 
 .owa .owa_userMenu {
     position: relative;
-    /* Floated right and AFTER the bell in the markup, so it lands to the
-       bell's left -- with float:right the first element in source order goes
-       furthest right. The bell stays at the edge, where its overhanging badge
-       has room. */
+    /* Floated right and FIRST in the markup, so it lands furthest right -- with
+       float:right the first element in source order goes to the end. It is the
+       one against the window edge now, so it carries the margin that keeps the
+       group off it. */
     float: right;
+    margin: 0 18px 0 0;
     /* ...and the same for the account menu. */
     display: flex;
     align-items: center;
@@ -124,6 +125,8 @@
     display: flex;
     align-items: center;
     height: 55px;
+    /* 16px to the bell. Left of it is open bar, so it needs nothing there. */
+    margin: 0 16px 0 0;
 }
 
 .owa .owa_helpMenuToggle {
@@ -223,7 +226,15 @@
    --------------------------------------------------------------------------- */
 
 .owa .owa_notificationBell {
-    position: relative;
+    /* NOT position:relative.
+     *
+     * The badge is a child of the BUTTON and hangs off its top-right corner, so
+     * the button has to be what it is positioned against. While this wrapper
+     * was the containing block it worked only because the wrapper was exactly
+     * the button's size; giving it the bar's height to centre the button moved
+     * the corner the badge was measuring from 7px up, and the badge stopped
+     * overlapping the circle. The positioning context is on the toggle now, so
+     * the wrapper's height is free to change. */
     /* Floated right, and it sits BEFORE the account menu in the markup -- with
        float:right the first element in source order lands furthest right, so
        the bell ends up at the far right of the nav bar and the menu to its
@@ -235,11 +246,20 @@
     display: flex;
     align-items: center;
     height: 55px;
-    /* Wide enough on the right that the overhanging badge is not clipped. */
-    margin: 0 18px 0 16px;
+    /*
+     * The same 16px as the others.
+     *
+     * The badge overhangs this button, and it does NOT get a say in the
+     * spacing: the three controls are spaced by their own boxes, so the gaps
+     * stay equal whether or not there is anything unread. The badge hangs into
+     * the gap on its right when it is there.
+     */
+    margin: 0 16px 0 0;
 }
 
 .owa .owa_notificationToggle {
+    /* What the badge hangs off -- see .owa_notificationBell. */
+    position: relative;
     background: #e4e6eb;
     border: 0;
     border-radius: 50%;
@@ -283,10 +303,11 @@
     z-index: 1;
 }
 
-/* The badge is never hidden -- a control that comes and goes moves the bell
-   under the cursor. At zero it goes quiet instead: grey, not red. */
-.owa .owa_notificationBadge.is-zero {
-    background: #b0b3b8;
+/* Nothing unread, nothing to show. The badge is positioned absolutely and
+   overhangs the button, so hiding it moves nothing -- which is what makes this
+   safe where it was not before. */
+.owa .owa_notificationBadge[hidden] {
+    display: none;
 }
 
 .owa .owa_notificationPanel[hidden] {

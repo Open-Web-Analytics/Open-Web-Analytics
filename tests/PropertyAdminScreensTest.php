@@ -485,9 +485,9 @@ final class PropertyAdminScreensTest extends TestCase
         /* Installation is always present -- it is install-wide and needs no
            context. What must NOT appear without a site is Property or Profile. */
         /* My Preferences needs no context either -- it is about the person, not
-           about anything in the tree -- so it is present here too. */
+           about anything in the tree -- so it is present here too, at the head. */
         $this->assertSame(
-            array( 'Installation', 'Organization', 'My Preferences' ), array_keys( $bare ),
+            array( 'My Preferences', 'Installation', 'Organization' ), array_keys( $bare ),
             'A screen with no site in context still offered Property or Profile links, '
             . 'which would point at nothing.' );
 
@@ -501,7 +501,7 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'Installation', 'Organization', 'Property', 'My Preferences' ),
+            array( 'My Preferences', 'Installation', 'Organization', 'Property' ),
             array_keys( $withProperty ) );
     }
 
@@ -1120,10 +1120,25 @@ final class PropertyAdminScreensTest extends TestCase
 
         $nav = (array) $method->invoke( $controller, '', '' );
 
+        /*
+         * Install-wide options head the SCOPE CHAIN -- install, Organization,
+         * Property, Profile -- which is the ordering this is about.
+         *
+         * They are no longer literally first: My Preferences sits above them,
+         * and it is not a step in that chain. It is the group about the person
+         * rather than about the tree, so it is neither wider nor narrower than
+         * the rest and does not belong anywhere inside their order.
+         */
+        $groups = array_keys( $nav );
+
+        $this->assertSame( 'My Preferences', $groups[0],
+            'Your own settings head the nav; they belong to no scope in the tree.' );
+
         $this->assertSame(
-            'Installation', array_key_first( $nav ),
-            'Install-wide options are the widest scope, so they head the nav -- the order '
-            . 'reads install, Organization, Property, Profile.' );
+            array( 'Installation', 'Organization' ),
+            array_values( array_diff( $groups, array( 'My Preferences' ) ) ),
+            'Install-wide options are the widest scope in the tree, so they head it -- the '
+            . 'order reads install, Organization, Property, Profile.' );
 
         $actions = array_column( $nav['Installation'], 'do' );
 

@@ -195,20 +195,82 @@ test.describe('the top bar', () => {
         }
     });
 
-    test('help sits to the left of the account menu', async ({ page }) => {
+    /**
+     * The bar reads help, notifications, account from left to right.
+     *
+     * These are floated right, so the order is set by SOURCE order in reverse
+     * -- the first element lands furthest right. That makes the arrangement a
+     * fact about the markup, and easy to invert by accident.
+     */
+    test('the controls run help, notifications, account', async ({ page }) => {
         const lefts = await page.evaluate(() => {
             const left = (selector) =>
                 Math.round(document.querySelector(selector).getBoundingClientRect().left);
 
             return {
                 help: left('.owa_helpMenu'),
-                account: left('.owa_userMenu'),
                 bell: left('.owa_notificationBell'),
+                account: left('.owa_userMenu'),
             };
         });
 
-        expect(lefts.help).toBeLessThan(lefts.account);
-        expect(lefts.account).toBeLessThan(lefts.bell);
+        expect(lefts.help).toBeLessThan(lefts.bell);
+        expect(lefts.bell).toBeLessThan(lefts.account);
+    });
+
+    /**
+     * ...and they are evenly spaced, measured BOX TO BOX.
+     *
+     * The badge overhangs the bell and gets no say in the spacing: the gaps are
+     * between the controls themselves, so they are the same whether or not
+     * anything is unread.
+     */
+    test('the header controls are evenly spaced', async ({ page }) => {
+        const gaps = await page.evaluate(() => {
+            const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+
+            return {
+                helpToBell: Math.round(box('.owa_notificationBell').left
+                                       - box('.owa_helpMenu').right),
+                bellToAccount: Math.round(box('.owa_userMenu').left
+                                          - box('.owa_notificationBell').right),
+            };
+        });
+
+        expect(gaps.helpToBell).toBe(gaps.bellToAccount);
+        expect(gaps.helpToBell).toBeGreaterThan(0);
+    });
+
+    /**
+     * ...and they do not move when the badge does.
+     *
+     * The badge is absolutely positioned and overhangs its button, so showing
+     * or hiding it must leave every control exactly where it was -- which is
+     * what makes hiding it at zero safe. Measured with the badge forced on and
+     * forced off, rather than trusted from the CSS.
+     */
+    test('the spacing does not change when the badge appears', async ({ page }) => {
+        const measure = () => page.evaluate(() => {
+            const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+
+            return [
+                Math.round(box('.owa_helpMenu').left),
+                Math.round(box('.owa_notificationBell').left),
+                Math.round(box('.owa_userMenu').left),
+            ];
+        });
+
+        await page.evaluate(() => {
+            document.getElementById('owa_notificationBadge').hidden = false;
+        });
+
+        const withBadge = await measure();
+
+        await page.evaluate(() => {
+            document.getElementById('owa_notificationBadge').hidden = true;
+        });
+
+        expect(await measure()).toEqual(withBadge);
     });
 
     /** Two panels must not hang open in the same corner. */
@@ -225,6 +287,46 @@ test.describe('the top bar', () => {
 
         await expect(page.locator(panel)).toBeHidden();
         await expect(page.locator('#owa_helpMenuPanel')).toBeVisible();
+    });
+
+    /**
+     * SIGNED OUT, ON AN INSTALL THAT LETS ANONYMOUS PEOPLE READ REPORTS.
+     *
+     * Granting view_reports to "everyone" -- which the demo install does -- means
+     * the chrome renders for somebody with no account. There is nothing to
+     * notify them about and no account to open a menu on, so the bell must not
+     * be there and the pill must be a way IN rather than a menu.
+     *
+     * base.error is the screen used to check it: it renders the full header
+     * without requiring a session, which the report screens on this fixture do
+     * not.
+     */
+    test.describe('signed out', () => {
+
+        test.use({ storageState: { cookies: [], origins: [] } });
+
+        test('there is no bell and the pill is a login link', async ({ page }) => {
+            await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`,
+                { waitUntil: 'networkidle' });
+
+            // The header is rendered at all, or this test proves nothing.
+            await expect(page.locator('#owa_header')).toHaveCount(1);
+
+            // Nothing to notify an anonymous reader about.
+            await expect(page.locator('.owa_notificationBell')).toHaveCount(0);
+            await expect(page.locator('#owa_notificationBadge')).toHaveCount(0);
+
+            // No account, so no account menu.
+            await expect(page.locator('#owa_userMenuToggle')).toHaveCount(0);
+            await expect(page.locator('#owa_userMenuPanel')).toHaveCount(0);
+
+            // A way in instead.
+            const signIn = page.locator('.owa_userMenuSignIn');
+
+            await expect(signIn).toHaveCount(1);
+            await expect(signIn).toHaveText('Login');
+            expect(await signIn.getAttribute('href')).toContain('base.loginForm');
+        });
     });
 
     /**

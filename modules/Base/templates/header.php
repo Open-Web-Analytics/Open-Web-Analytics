@@ -28,6 +28,37 @@
     </span>
     <?php $cu = $view->getCurrentUser(); ?>
 <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
+    <?php
+        /*
+         * THE ACCOUNT MENU, at the right-hand end.
+         *
+         * FIRST in source order, because these are floated right and the first
+         * element lands furthest right. Moving it after the bell would put the
+         * name to the bell's left again without anything saying so.
+         */
+    ?>
+    <span class="owa_userMenu">
+        <button type="button" id="owa_userMenuToggle" class="owa_userMenuToggle"
+                aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true">
+            <span class="owa_userMenuName"><?php $view->out( $cu->getUserData('user_id') );?></span>
+            <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
+        </button>
+        <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
+            <a role="menuitem" class="owa_userMenuItem owa_myProfileLink"
+               href="<?php echo $view->makeLink( array( 'do' => 'base.myProfile' ), false );?>">Profile</a>
+            <?php
+                /*
+                 * An embedded install signs people in through its host, so it
+                 * has no session of its own to end -- the same condition that
+                 * hid the old Logout link.
+                 */
+            ?>
+            <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
+            <a role="menuitem" class="owa_userMenuItem owa_userMenuLogout"
+               href="<?php echo $view->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
+            <?php endif;?>
+        </div>
+    </span>
 <?php
     /*
      * The badge count is NOT rendered here and is not a call of its own.
@@ -84,10 +115,16 @@
             var unread = items.querySelectorAll('.owa_notification.is-unread').length;
 
             badge.textContent = unread;
-            // Never hidden: an empty badge is still the control people look
-            // for, and a bell that only sometimes has one moves under the
-            // cursor.
-            badge.classList.toggle('is-zero', unread === 0);
+
+            /*
+             * Nothing unread, nothing to show.
+             *
+             * This used to stay put and go grey, because a badge that comes and
+             * goes moves the bell under the cursor. It no longer can: the badge
+             * overhangs the button and is not part of what spaces the header
+             * controls, so showing or hiding it moves nothing.
+             */
+            badge.hidden = unread === 0;
         }
 
         function markRead(id, el) {
@@ -268,35 +305,14 @@
          */
     ?>
 <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
-    <span class="owa_userMenu">
-        <button type="button" id="owa_userMenuToggle" class="owa_userMenuToggle"
-                aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true">
-            <span class="owa_userMenuName"><?php $view->out( $cu->getUserData('user_id') );?></span>
-            <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
-        </button>
-        <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
-            <a role="menuitem" class="owa_userMenuItem owa_myProfileLink"
-               href="<?php echo $view->makeLink( array( 'do' => 'base.myProfile' ), false );?>">Profile</a>
-            <?php
-                /*
-                 * An embedded install signs people in through its host, so it
-                 * has no session of its own to end -- the same condition that
-                 * hid the old Logout link.
-                 */
-            ?>
-            <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
-            <a role="menuitem" class="owa_userMenuItem owa_userMenuLogout"
-               href="<?php echo $view->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
-            <?php endif;?>
-        </div>
-    </span>
     <?php
         /*
-         * HELP, to the left of the account menu.
+         * HELP, at the left of the three.
          *
-         * After it in the markup, which is what puts it to its left: these are
-         * floated right, so the first element in source order lands furthest
-         * right. Everything in here leaves the application for GitHub, which is
+         * Last in source order, which is what puts it there: these are floated
+         * right, so the first element in source order lands furthest right and
+         * the bar reads help, notifications, account from left to right.
+         * Everything in this menu leaves the application for GitHub, which is
          * why it is a menu rather than three more links in the bar.
          */
     ?>
