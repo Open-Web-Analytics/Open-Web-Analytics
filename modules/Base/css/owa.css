@@ -591,3 +591,63 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_installActions {
     margin-top: 26px;
 }
+
+
+/* An <a> styled as the primary button.
+ *
+ * .owa-button was written for <input type=submit>, which is inline-block and
+ * takes the button's own colour. An anchor is inline -- so width:100% did
+ * nothing and it kept the link colour, which on the installer's finish screen
+ * meant a blue label on an orange button, at a third of the width. */
+a.owa_publicSubmit,
+a.owa-button {
+    display: inline-block;
+    box-sizing: border-box;
+    color: #ffffff;
+    text-align: center;
+    text-decoration: none;
+}
+
+a.owa_publicSubmit:hover,
+a.owa-button:hover {
+    color: #ffffff;
+}
+
+/* The status and error banners on the signed-out pages.
+ *
+ * They are rendered outside the card, so without this they ran the full width
+ * of the window while everything else sat in a 380-720px column. */
+.owa_publicPage .status,
+.owa_publicPage .error {
+    max-width: 720px;
+    margin: 0 auto 20px auto;
+    border-radius: 6px;
+}
+
+/* The installer's cron notice. It used the green .status treatment, which is
+   for "this worked" -- this is a thing still to do, and a wall of white on
+   green to read. */
+.owa_installFinish .owa-install-cron {
+    margin-top: 26px;
+    padding: 16px;
+    background-color: #fffaf0;
+    border: 1px solid #f0d9a8;
+    border-radius: 6px;
+    color: #4a3c22;
+}
+
+.owa_installFinish .owa-install-cron p {
+    margin: 8px 0 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.owa_installFinish .owa-install-cron code {
+    display: inline-block;
+    padding: 2px 5px;
+    background-color: #ffffff;
+    border: 1px solid #ecdcc0;
+    border-radius: 3px;
+    font-size: 12px;
+    word-break: break-all;
+}

@@ -1,17 +1,29 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<h2>Default Site & User Information</h2>
+<h2>Your first Property</h2>
+
+<p class="owa_publicIntro">A Property is the thing being measured. OWA creates one for
+this website, with a single Observation Profile beneath it to record visits, and an
+administrator account to sign in with.</p>
 <div id="configSettings">
     <form method="POST">
         
         <div class="owa_installField">
-            <label>Site Domain</label>
+            <label>Property Domain</label>
             <span class="owa_installInput">
-                <select name="<?php echo $view->getNs();?>protocol">
-                    <option value="http://">http://</option>
-                    <option value="https://">https://</option>
-                </select>
                 <?php
                 /*
+                 * NO PROTOCOL SELECT.
+                 *
+                 * It prefixed http:// or https:// onto the stored domain, and
+                 * nothing wants that: Site::getDomainName() strips a scheme
+                 * back off wherever the domain is used, the Profile edit form
+                 * asks for a bare domain, and the CLI installer stores one --
+                 * so the two install paths disagreed about what a domain is.
+                 *
+                 * The scheme was only ever load-bearing when a site's identity
+                 * was md5( domain ), where http:// and https:// made one website
+                 * into two sites. Identifiers are minted now.
+                 *
                  * ?? '' on every defaults read, because on the FIRST render
                  * there are none. InstallBase sets 'defaults' only in
                  * errorAction(), the re-render after a validation failure, so an
@@ -19,9 +31,11 @@
                  * line below already had the guard and the rest did not.
                  */
                 ?>
-                <input type="text"size="30" name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
+                <input type="text" size="30" name="<?php echo $view->getNs();?>domain"
+                       placeholder="example.com"
+                       value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">This is the domain of the site to track.</span>
+            <span class="owa_installHint">The website you want to measure.</span>
         </div>
 
         <div class="owa_installField">
@@ -120,27 +134,27 @@
         </div>
 
         <div class="owa_installField">
-            <label>Your Admin Name</label>
+            <label>Admin User Name</label>
             <span class="owa_installInput">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">This is name of the admin user.</span>
+            <span class="owa_installHint">The name this account signs in with.</span>
         </div>
 
         <div class="owa_installField">
-            <label>Your E-mail Address</label>
+            <label>Email Address</label>
             <span class="owa_installInput">
                 <input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">This is the e-mail address of the admin user.</span>
+            <span class="owa_installHint">Where password resets for this account are sent.</span>
         </div>
         
         <div class="owa_installField">
-            <label>Your Password</label>
+            <label>Password</label>
             <span class="owa_installInput">
                 <input type="password"size="30" name="<?php echo $view->getNs();?>password" value="">
             </span>
-            <span class="owa_installHint">This will be the password of the admin user.</span>
+            <span class="owa_installHint">The password for this account.</span>
         </div>
                 
         <div class="owa_installActions">

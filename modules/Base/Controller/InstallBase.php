@@ -52,14 +52,41 @@ class InstallBase extends \OWA\Core\Controller\Install {
         $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
 
-        $domainConf = [
-            'substring' => 'http',
-            'position'  => 0,
-            'operator'  => '!=',
-            'errorMsg'  => $this->getMsg(3208)
-        ];
+        /*
+         * A pasted URL is no longer refused.
+         *
+         * The form used to ask for the scheme in a select of its own, so a
+         * domain that also carried one produced "https://https://example.com"
+         * -- hence a validation that rejected anything starting with "http".
+         * The select is gone and the scheme is stripped instead, which is what
+         * every reader of this column does anyway; refusing the most natural
+         * thing to paste bought nothing.
+         */
+    }
 
-        $this->addValidation('domain', $this->getParam('domain'), 'subStringPosition', $domainConf);
+    /**
+     * A domain, from whatever was typed.
+     *
+     * Stores what the column is for. Site::getDomainName() strips a scheme on
+     * the way out for the rows that still have one, so writing a bare domain
+     * here means the two agree rather than one undoing the other -- and it
+     * matches what the CLI installer has always stored.
+     *
+     * @param string $domain
+     * @return string
+     */
+    public static function domainOnly( $domain ) {
+
+        $domain = trim( (string) $domain );
+
+        $separator = strpos( $domain, '://' );
+
+        if ( $separator !== false ) {
+
+            $domain = substr( $domain, $separator + 3 );
+        }
+
+        return rtrim( trim( $domain ), '/' );
     }
 
     function action() {
@@ -67,11 +94,17 @@ class InstallBase extends \OWA\Core\Controller\Install {
         $status = $this->installSchema();
 
         if ($status == true) {
-            $this->set('status_code', 3305);
+            /*
+             * No status banner on the way to the finish screen.
+             *
+             * It announced "Base Database Schema Installed." above a page whose
+             * own headline is "Installation complete" -- the same news, told
+             * twice, the second time as a sub-step nobody asked about.
+             */
 
             $password = $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
-            $site_id = $this->createDefaultSite($this->getParam('protocol').$this->getParam('domain'));
+            $site_id = $this->createDefaultSite( self::domainOnly( $this->getParam('domain') ) );
 
             /*
              * Persisted here, with the rest of the install, because the choice
@@ -126,7 +159,20 @@ class InstallBase extends \OWA\Core\Controller\Install {
 
             // set view
             $this->set('u', $this->getParam('user_id'));
-            $this->set('p', $password);
+
+            /*
+             * The password ONLY when OWA generated it.
+             *
+             * createAdminUser() generates one only when none was supplied, and
+             * this form requires one -- so on the web path this is a password
+             * the operator just chose, and printing it back tells them nothing
+             * while leaving a live credential in the page, in the back-forward
+             * cache, and in any screenshot of the completion screen.
+             *
+             * The CLI installer can be run without one, which is the case that
+             * has to be told; it prints its own.
+             */
+            $this->set( 'p', $this->getParam('password') ? '' : $password );
             $this->set('site_id', $site_id);
             $this->setView('base.install');
             $this->setSubview('base.installFinish');
