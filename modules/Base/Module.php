@@ -193,6 +193,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
+        $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
         $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli',           'Controller/PartitionInitCli.php' );
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
@@ -275,6 +276,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
+        $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
     }
 
     /**
