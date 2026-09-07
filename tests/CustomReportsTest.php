@@ -512,28 +512,28 @@ final class CustomReportsTest extends TestCase
      * A card's rows lead to the report that details that dimension.
      *
      * DERIVED from what the destination declares, not from a list kept here. A
-     * detail report says it is read under a constraint -- browser-detail names
-     * `{dimension: browserType, fromParam: browserType}` -- so the report
-     * itself already knows what a link into it has to carry.
+     * detail report says it is read under a constraint -- source-detail names
+     * `{dimension: source, fromParam: source}` -- so the report itself already
+     * knows what a link into it has to carry.
      */
     public function testLinkTargetsComeFromWhatTheDestinationDeclares(): void
     {
         $targets = CustomReports::linkTargetsByDimension();
 
-        $this->assertArrayHasKey('browserType', $targets);
+        $this->assertArrayHasKey('source', $targets);
 
-        $ids = array_column($targets['browserType'], 'id');
+        $ids = array_column($targets['source'], 'id');
 
-        $this->assertContains('browser-detail', $ids);
+        $this->assertContains('source-detail', $ids);
 
-        $target = $targets['browserType'][array_search('browser-detail', $ids, true)];
+        $target = $targets['source'][array_search('source-detail', $ids, true)];
 
-        $this->assertSame('browserType', $target['param'],
+        $this->assertSame('source', $target['param'],
             'the link carries the parameter the destination is read under');
 
         // The name without the value it is about: the title is
-        // "Browser Detail: {browserType}" and the placeholder is per request.
-        $this->assertSame('Browser Detail', $target['label']);
+        // "Source Detail: " and the value is per request.
+        $this->assertSame('Source Detail', $target['label']);
     }
 
     /**
@@ -748,11 +748,11 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkToADetailReportIsRefused(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['more'] = array( 'reportId' => 'browser-detail' );
+        $definition['widgets'][1]['more'] = array( 'reportId' => 'source-detail' );
 
         $error = CustomReports::validate($definition);
 
-        $this->assertStringContainsString('browserType', $error);
+        $this->assertStringContainsString('source', $error);
         $this->assertStringContainsString('Link the rows instead', $error);
     }
 

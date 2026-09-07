@@ -396,8 +396,8 @@ final class ReportRenderHarness
     public const MULTI_SUFFIX = ' (3 metric sets)';
 
     public const MULTI_METRIC_SET = array(
-        'browsers'    => 'base.reportDimension',
-        'host-detail' => 'base.reportDimensionDetail',
+        'browsers'      => 'base.reportDimension',
+        'source-detail' => 'base.reportDimensionDetail',
     );
 
     /** @return array<string, array> */

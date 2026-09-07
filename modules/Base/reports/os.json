@@ -19,15 +19,6 @@
                 "dimensions": "osType",
                 "sort": "visits-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "osType",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "os-detail",
-                    "osType": "%s"
-                },
-                "valueColumns": "osType"
             }
         }
     ]
