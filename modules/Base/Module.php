@@ -2163,7 +2163,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'host-detail', 'reports/host-detail.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
-        $this->registerReport( 'keyword-detail', 'reports/keyword-detail.json' );
         $this->registerReport( 'keywords', 'reports/keywords.json' );
         $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
         $this->registerReport( 'os', 'reports/os.json' );
@@ -2177,7 +2176,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'product-sku-detail', 'reports/product-sku-detail.json' );
         $this->registerReport( 'product-skus', 'reports/product-skus.json' );
         $this->registerReport( 'products', 'reports/products.json' );
-        $this->registerReport( 'referral-detail', 'reports/referral-detail.json' );
         $this->registerReport( 'referral-link-text-detail', 'reports/referral-link-text-detail.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );

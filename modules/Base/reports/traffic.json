@@ -28,7 +28,7 @@
             },
             "more": {
                 "reportId": "entry-pages",
-                "label": "View Full Report »"
+                "label": "View Full Report \u00bb"
             }
         },
         {
@@ -80,7 +80,7 @@
             },
             "more": {
                 "reportId": "referring-sites",
-                "label": "View Full Report »"
+                "label": "View Full Report \u00bb"
             }
         },
         {
@@ -96,7 +96,7 @@
             },
             "more": {
                 "reportId": "geolocation",
-                "label": "View Full Report »"
+                "label": "View Full Report \u00bb"
             }
         },
         {
@@ -125,30 +125,7 @@
             },
             "more": {
                 "reportId": "sources",
-                "label": "View Full Report »"
-            }
-        },
-        {
-            "type": "grid",
-            "id": "topreferrals",
-            "container": "top-referrals",
-            "title": "Top Referrals",
-            "colspan": 6,
-            "query": {
-                "dimensions": "referralPageUrl",
-                "sort": "visits-",
-                "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "referralPageUrl",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "referral-detail",
-                    "referralPageUrl": "%s"
-                },
-                "valueColumns": [
-                    "referralPageUrl"
-                ]
+                "label": "View Full Report \u00bb"
             }
         }
     ]

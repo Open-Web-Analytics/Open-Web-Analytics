@@ -1258,7 +1258,7 @@
                 "var": "topReferrersurl",
                 "query": {
                     "constraints": "medium==referral",
-                    "dimensions": "referralPageUrl",
+                    "dimensions": "referralWebSite",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",
@@ -2152,49 +2152,6 @@
             "site_usage_dim.refreshGrid"
         ]
     },
-    "keyword-detail": {
-        "subview": "base.reportWidgets",
-        "queries": [
-            {
-                "var": "site_usage_trendurl",
-                "query": {
-                    "constraints": "referralSearchTerms==characterization_sentinel",
-                    "dimensions": "date",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "date",
-                    "version": "v1"
-                }
-            }
-        ],
-        "control": {
-            "container": true,
-            "panels": [
-                "tab_site_usage"
-            ],
-            "registered": 1,
-            "built": 1,
-            "loads": 0,
-            "loadsWithUrl": 0,
-            "urls": 1
-        },
-        "explorers": [
-            {
-                "var": "site_usage_trend",
-                "container": "site_usage_trend-chart"
-            }
-        ],
-        "commands": [
-            "site_usage_trend.renderHeadline -> site_usage_trend-title",
-            "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
-            "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
-        ]
-    },
     "keywords": {
         "subview": "base.reportWidgets",
         "queries": [
@@ -2874,68 +2831,6 @@
             "dim.refreshGrid"
         ]
     },
-    "referral-detail": {
-        "subview": "base.reportWidgets",
-        "queries": [
-            {
-                "var": "trendurl",
-                "query": {
-                    "constraints": "referralPageUrl==characterization_sentinel",
-                    "dimensions": "date",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits,pageViews,bounces",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "date",
-                    "version": "v1"
-                }
-            },
-            {
-                "var": "dimurl",
-                "query": {
-                    "constraints": "referralPageUrl==characterization_sentinel",
-                    "dimensions": "referralWebSite",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits,pageViews,bounces",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "resultsPerPage": "25",
-                    "siteId": "1",
-                    "sort": "visits-",
-                    "version": "v1"
-                }
-            }
-        ],
-        "control": {
-            "container": false,
-            "panels": [],
-            "registered": 0,
-            "built": 0,
-            "loads": 2,
-            "loadsWithUrl": 0,
-            "urls": 2
-        },
-        "explorers": [
-            {
-                "var": "trend",
-                "container": "trend-chart"
-            },
-            {
-                "var": "dim",
-                "container": "dimension-grid"
-            }
-        ],
-        "commands": [
-            "trend.renderHeadline -> trend-title",
-            "trend.makeMetricBoxes -> trend-metrics",
-            "dim.refreshGrid"
-        ]
-    },
     "referral-link-text-detail": {
         "subview": "base.reportWidgets",
         "queries": [
@@ -3445,22 +3340,6 @@
                     "sort": "visits-",
                     "version": "v1"
                 }
-            },
-            {
-                "var": "topreferralsurl",
-                "query": {
-                    "dimensions": "referralPageUrl",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "visits",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "resultsPerPage": "25",
-                    "siteId": "1",
-                    "sort": "visits-",
-                    "version": "v1"
-                }
             }
         ],
         "control": {
@@ -3468,9 +3347,9 @@
             "panels": [],
             "registered": 0,
             "built": 0,
-            "loads": 9,
+            "loads": 8,
             "loadsWithUrl": 0,
-            "urls": 9
+            "urls": 8
         },
         "explorers": [
             {
@@ -3504,10 +3383,6 @@
             {
                 "var": "topsources",
                 "container": "top-sources"
-            },
-            {
-                "var": "topreferrals",
-                "container": "top-referrals"
             }
         ],
         "commands": [
@@ -3520,8 +3395,7 @@
             "campaign.makePieChart",
             "referringSites.refreshGrid",
             "countries.refreshGrid",
-            "topsources.refreshGrid",
-            "topreferrals.refreshGrid"
+            "topsources.refreshGrid"
         ]
     },
     "transactions": {
