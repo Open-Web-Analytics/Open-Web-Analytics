@@ -109,18 +109,13 @@
             ],
             "query": {
                 "metrics": "visits",
-                "dimensions": "referralPageUrl",
+                "dimensions": "referralWebSite",
                 "sort": "visits-",
                 "resultsPerPage": 10
             },
-            "link": {
-                "linkColumn": "referralPageUrl",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "referral-detail",
-                    "referralPageUrl": "%s"
-                },
-                "valueColumns": "referralPageUrl"
+            "more": {
+                "reportId": "referring-sites",
+                "label": "View Full Report \u00bb"
             }
         },
         {

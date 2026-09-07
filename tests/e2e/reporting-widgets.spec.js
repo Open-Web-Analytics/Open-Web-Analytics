@@ -331,16 +331,12 @@ test.describe('every configured report renders in a browser', () => {
             }
         });
 
-        test('the referrals grid lists the referring page', async ({ page }) => {
-            const grid = page.locator('#top-referrals .ui-jqgrid');
-
-            await expect(grid, 'top-referrals built no grid').toHaveCount(1, { timeout: 20_000 });
-
-            await expect(page.locator('#top-referrals'))
-                .toContainText(FIXTURE.traffic.refererHost);
-        });
-
         /*
+         * NO referrals test either: Top Referrals was a duplicate of the
+         * dashboard's Top Referrers card and is off this report. Referring Web
+         * Sites, which is what the report keeps, is covered by the grid-card
+         * assertions above.
+         *
          * NO keywords test and NO related-reports test here any more: Top
          * Keywords and the links block are off this report.
          *

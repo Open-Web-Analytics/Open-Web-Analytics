@@ -190,9 +190,6 @@ final class ReportChromeContractTest extends TestCase
             'referring-sites' => array( 'referring-sites' ),
 
             // A parameterised detail report, and one carrying a panel widget:
-            // referral-detail took ReportReferralDetail's place in the spread
-            // above when it became a definition.
-            'referral-detail' => array( 'referral-detail' ),
             'campaigns'       => array( 'campaigns' ),
             'dom-clicks'      => array( 'dom-clicks' ),
         );
