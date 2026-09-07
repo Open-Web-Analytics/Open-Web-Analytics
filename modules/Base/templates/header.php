@@ -1,7 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div id="owa_header">
 
-    <span class="owa_logo"><img src="<?php echo $view->makeImageLink( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>" alt="Open Web Analytics"></span>
+    <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
+    <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
      &nbsp
     <span class="owa_navigation">
         <UL>

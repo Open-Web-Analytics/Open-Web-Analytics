@@ -791,6 +791,69 @@ class Template extends TemplateEngine {
 
     }
 
+    /**
+     * Whether the webpack build has produced the public/ asset tree.
+     *
+     * public/ is gitignored and built by 'npm run build', so a source checkout
+     * -- or the GitHub "Source code" archive rather than the packaged release
+     * tarball -- has none of it. Every makeImageLink() target then 404s, which
+     * is how an unbuilt install shows up on screen: a broken logo on every page
+     * including the installer's own.
+     *
+     * The same directory the installer's environment check tests, deliberately:
+     * modules/Base/Controller/InstallCheckEnv.php reads this method rather than
+     * repeating the path, so "built" cannot come to mean two different things.
+     *
+     * @return bool
+     */
+    public static function assetsAreBuilt() {
+
+        static $built = null;
+
+        if ( $built === null ) {
+
+            $built = is_dir( OWA_DIR . 'public/base/dist' );
+        }
+
+        return $built;
+    }
+
+    /**
+     * makeImageLink(), but only when the file is actually there.
+     *
+     * Answers false instead of a URL so a template can fall back to text rather
+     * than emit a broken <img>. Checks the build first because that is the
+     * common cause and costs one cached stat; the per-file test then also
+     * catches a logo_image_path pointing at something that was never there.
+     *
+     * @param string $path
+     * @param bool $absolute
+     * @return string|false
+     */
+    function makeImageLinkIfPresent( $path, $absolute = false ) {
+
+        if ( ! $path || ! self::assetsAreBuilt() ) {
+
+            return false;
+        }
+
+        $public_path = \OWA\Core\CoreAPI::getSetting( 'base', 'public_path' );
+
+        if ( ! $public_path ) {
+
+            $public_path = OWA_DIR . 'public/';
+        }
+
+        $file = rtrim( $public_path, '/' ) . '/' . ltrim( $path, '/' );
+
+        if ( ! is_readable( $file ) ) {
+
+            return false;
+        }
+
+        return $this->makeImageLink( $path, $absolute );
+    }
+
     function includeTemplate($file) {
 
         $this->set_template($file);

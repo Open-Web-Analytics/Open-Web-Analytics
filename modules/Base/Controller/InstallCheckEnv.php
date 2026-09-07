@@ -156,10 +156,12 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
          * public/base/dist, and public/ is gitignored -- so a fresh source
          * checkout has none of it until 'npm run build' runs.
          */
+        $built = \OWA\Core\Template::assetsAreBuilt();
+
         $checks[] = $this->check(
             'Built assets',
-            is_dir( OWA_DIR . 'public/base/dist' ) ? 'built' : 'missing',
-            is_dir( OWA_DIR . 'public/base/dist' ),
+            $built ? 'built' : 'missing',
+            $built,
             "Run 'npm run build' in the top level OWA directory." );
 
         /*
