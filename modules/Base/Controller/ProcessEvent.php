@@ -99,11 +99,10 @@ class ProcessEvent extends \OWA\Core\Controller {
          * re-apply at the end of this method put it back on top of the value
          * the derivation had just computed.
          *
-         * That is how a tracking request carrying owa_is_browser=ludhiana ended
-         * up writing 'ludhiana' into a boolean column: the derivation ran
-         * correctly and was then undone. Environmental properties -- ip_address,
-         * timestamp -- were overwritable the same way, which is the more
-         * serious half.
+         * The derivation ran correctly and was then undone, so a value sent
+         * with the request reached a column only the server should decide.
+         * Environmental properties were reachable the same way, which is the
+         * more serious half.
          */
         $protected = $properties + $teh->serverOwnedProperties();
 

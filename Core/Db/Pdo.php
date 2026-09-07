@@ -209,8 +209,8 @@ abstract class Pdo extends \OWA\Core\Db
                  *
                  * PDO binds what it is given; MySQL then reports a type error
                  * against whichever column happens to line up with a misplaced
-                 * value -- "Incorrect integer value: 'ludhiana' for column
-                 * 'is_browser'" is what that looks like from the log, with
+                 * value -- an "Incorrect integer value" naming a column that was
+                 * never sent a string is what that looks like from the log, with
                  * nothing to say the values were offset rather than the data
                  * bad. Worse, an offset that lands a string in another string
                  * column raises nothing at all and writes the wrong value.

@@ -77,11 +77,9 @@ class TrackingEventHelpers {
     /**
      * The properties a tracking request is allowed to set.
      *
-     * A request reaches log.php with arbitrary owa_* parameters and they used
-     * to be copied onto the event wholesale, so anything whose name matched a
-     * column was written to that column -- owa_is_browser=ludhiana put a city
-     * name in a boolean, and owa_ip_address would have replaced the observed
-     * one.
+     * A request reaches log.php carrying arbitrary owa_* parameters, so what a
+     * request may set has to be decided here, deliberately, rather than by
+     * whether a parameter's name happens to match a column.
      *
      * Membership is DECLARED, not inferred from which map a property lives in.
      * `regular` is client-set by definition, but the classification is not a
