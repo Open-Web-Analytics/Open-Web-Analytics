@@ -34,9 +34,13 @@
                  * way in.
                  */
             ?>
+            <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
             <div class="owa_publicLogo">
-                <img src="<?php echo $view->makeImageLink( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>"
-                     alt="Open Web Analytics">
+                <?php if ( $owa_logo ): ?>
+                    <img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics">
+                <?php else: ?>
+                    <span class="owa_publicLogoText">Open Web Analytics</span>
+                <?php endif; ?>
             </div>
 
             <div class="owa_publicMain">

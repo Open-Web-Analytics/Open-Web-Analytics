@@ -35,6 +35,10 @@ class InstallCheckEnv extends \OWA\Core\View {
 
         //page title
         $this->t->set('page_title', 'Server Environment Check');
+        // Both, not just the failures: the template lists every check so that
+        // "looked at and fine" is distinguishable from "never looked at", and
+        // reading an unset view var is fatal rather than empty.
+        $this->body->set('checks', $this->get('checks'));
         $this->body->set('errors', $this->get('errors'));
         // load body template
         $this->body->set_template('install_check_env.php');

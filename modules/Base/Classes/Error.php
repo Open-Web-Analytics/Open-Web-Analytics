@@ -48,9 +48,19 @@ class Error {
     /**
      * logger instance
      *
-     * @var array
+     * Constructed lazily -- see logger(). Null until something is actually
+     * logged, and null forever on an installation whose vendor/ is missing.
+     *
+     * @var \Monolog\Logger|null
      */
     var $logger;
+
+    /**
+     * Whether the log handlers have been attached to the logger yet.
+     *
+     * @var bool
+     */
+    private $handlers_attached = false;
     
     /**
      * Buffered Msgs
@@ -66,8 +76,6 @@ class Error {
      *
      */
     function __construct() {
-		
-		$this->logger = new Logger('errors');
 		
 /*
 		if ( owa_lib::inDebug() ) {
@@ -91,50 +99,91 @@ class Error {
     // This is called by a client after the owas global config object has been created.
     public function setHandler($type) {
 
-        switch ($type) {
-            case "development":
-                $this->createDevelopmentHandler();
-                break;
-            case "production":
-                $this->createProductionHandler();
-                break;
-            default:
-                $this->createProductionHandler();
+        /*
+         * Do not build the log handlers here.
+         *
+         * Attaching a handler means constructing Monolog objects, and Monolog
+         * is a Composer package: on a source checkout with no vendor/ that is a
+         * fatal during boot, which is why an unbuilt download used to answer
+         * every request with a blank 500 instead of the installer's environment
+         * check saying so. Nothing here needs a logger, so nothing here builds
+         * one -- logger() does, on the first message that is actually written.
+         *
+         * The rest of what these handlers set up is not Monolog's and stays
+         * eager, because it has to be in place before the next line of code
+         * runs, not before the next message is logged.
+         */
+        if ( $type === 'development' ) {
+
+            $this->logPhpErrors();
         }
+
+        set_exception_handler( [ $this, 'handleUncaughtException' ] );
 
         $this->init = true;
         $this->logBufferedMsgs();
     }
 
-    function createDevelopmentHandler() {
-		
-		$this->logPhpErrors();
-		
-        // make file logger
-        $this->make_file_logger();
-        
-        // if the CLI is in use, also make a console logger
-        if ( defined('OWA_CLI') ) {
+    /**
+     * The logger, built on first use.
+     *
+     * Answers null when Monolog is not installed, which is the whole point:
+     * every caller below treats "no logger" as "do not log" rather than as an
+     * error. An installation in that state cannot write a log file, but it can
+     * still render the page that explains why -- see
+     * modules/Base/Controller/InstallCheckEnv.php.
+     *
+     * @return \Monolog\Logger|null
+     */
+    private function logger() {
 
-            $this->make_console_logger();
+        if ( ! class_exists( Logger::class ) ) {
+
+            return null;
         }
-        
+
+        if ( ! $this->logger ) {
+
+            $this->logger = new Logger( 'errors' );
+        }
+
+        if ( ! $this->handlers_attached ) {
+
+            // Before the handlers, so a handler that logs cannot recurse into
+            // this method and attach a second copy of everything.
+            $this->handlers_attached = true;
+
+            $this->make_file_logger();
+
+            // if the CLI is in use, also make a console logger
+            if ( defined( 'OWA_CLI' ) ) {
+
+                $this->make_console_logger();
+            }
+        }
+
+        return $this->logger;
+    }
+
+    /**
+     * Kept for callers that want the handlers attached now rather than on the
+     * first message. Both builders route through logger(), so the attachment
+     * happens exactly once however it is reached.
+     */
+    function createDevelopmentHandler() {
+
+        $this->logPhpErrors();
+
         set_exception_handler( [ $this, 'handleUncaughtException' ] );
 
+        $this->logger();
     }
 
     function createProductionHandler() {
 
-        // make file logger
-        $this->make_file_logger();
-        
-        // if the CLI is in use, also make a console logger
-        if ( defined('OWA_CLI') ) {
-
-            $this->make_console_logger();
-        }
-
         set_exception_handler( [ $this, 'handleUncaughtException' ] );
+
+        $this->logger();
     }
 
     /**
@@ -235,48 +284,61 @@ class Error {
 
             $msg = print_r( $msg, true );
         }
+
+        /*
+         * No Monolog, no log file. An installation missing vendor/ cannot write
+         * one, and saying so is the installer's job -- not this method's, which
+         * runs long before there is a page to say it on. Dropping the message is
+         * what lets the environment check render and name the real problem.
+         */
+        $logger = $this->logger();
+
+        if ( ! $logger ) {
+
+            return;
+        }
         
         switch ( $priority ) {
 	        
 	        case 'debug':
 	        	
-	        	$this->logger->debug( $msg );
+	        	$logger->debug( $msg );
 	        	
 	        	break;
 	        	
 	        case 'info':
 	        	
-	        	$this->logger->info( $msg );
+	        	$logger->info( $msg );
 	        	break;
 	        	
 	        case 'notice':
 	        
-	        	$this->logger->notice( $msg );
+	        	$logger->notice( $msg );
 	        	break;
 	        	
 	        case 'warning':
 	        	
-	        	$this->logger->warning( $msg );
+	        	$logger->warning( $msg );
 	        	break;
 	        	
 	        case 'error':
 	        	
-	        	$this->logger->error( $msg );
+	        	$logger->error( $msg );
 	        	break;
 	        	
 	        case 'critical':
 	        
-	        	$this->logger->critical( $msg );
+	        	$logger->critical( $msg );
 	        	break;
 	        	
 	        case 'alert':
 	        	
-	        	$this->logger->alert( $msg );
+	        	$logger->alert( $msg );
 	        	break;
 	        	
 	        case 'emergency':
 	        	
-	        	$this->logger->emergency( $msg );
+	        	$logger->emergency( $msg );
 	        	break;
         }
     }
@@ -328,7 +390,12 @@ class Error {
 	   $stream->setFormatter( $formatter );
 	   
 	   // add the stream hadnler to the logger
-       $this->logger->pushHandler( $stream );
+       $logger = $this->logger();
+
+       if ( $logger ) {
+
+           $logger->pushHandler( $stream );
+       }
     }
     
     function getLogLevel() {
@@ -392,7 +459,12 @@ class Error {
 		$stream->setFormatter($formatter);
 
 		// add stream handler to logger
-		$this->logger->pushHandler($stream);
+		$logger = $this->logger();
+
+		if ( $logger ) {
+
+			$logger->pushHandler( $stream );
+		}
     }
 
     /**

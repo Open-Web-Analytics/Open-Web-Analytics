@@ -99,11 +99,10 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     /*
      * Parameters naming a property the server computes are dropped here.
      *
-     * These were copied onto the event wholesale, so any parameter whose name
-     * matched a column was written to that column -- a request carrying
-     * owa_is_browser=ludhiana put a city name into a boolean column, and
-     * owa_ip_address or owa_timestamp would have replaced the observed values
-     * that IP exclusion and event ordering depend on.
+     * A tracking request is untrusted input, and a property the server derives
+     * for itself is the server's to set: a request naming one must not be able
+     * to replace it. TrackingEventHelpers::serverOwnedProperties() is that
+     * list, assembled from what the modules register.
      *
      * Unregistered names still pass through: this refuses to let a request
      * OVERWRITE a derivation, it does not restrict what a site may send. Custom
