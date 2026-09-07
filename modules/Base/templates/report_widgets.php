@@ -578,21 +578,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 
-<?php elseif ( ( $owa_w['type'] ?? '' ) === 'browser-badge' ): ?>
-<?php
-    /*
-     * The browser's icon and family name, above a browser-detail report.
-     *
-     * The widget names its own template; the definition does not. It used to
-     * be `dimension_template: "dimension_browser.php"` in the settings, which
-     * is configuration naming a PHP file on disk -- the same class of problem
-     * as a jqote string, and one that a user-authored definition must never be
-     * able to say.
-     */
-?>
-        <?php echo $view->renderDimension( 'dimension_browser.php',
-            (array) ( $owa_w['properties'] ?? array() ) ); ?>
-
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'report-links' ): ?>
 <?php
     /*
@@ -642,7 +627,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * overlay switched on.
      *
      * The widget builds the URL; the definition supplies only the page. Same
-     * rule as browser-badge: a report definition may say WHAT a widget is
+     * rule the retired badge widgets followed: a report definition may say WHAT a widget is
      * about, never which action to invoke or what to put in a credential.
      *
      * The overlay is reached in two hops. This link goes to the launcher on

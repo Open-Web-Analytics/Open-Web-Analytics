@@ -41,15 +41,6 @@
                 "dimensions": "pageType",
                 "sort": "visits-"
             },
-            "link": {
-                "linkColumn": "pageType",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "page-type-detail",
-                    "pageType": "%s"
-                },
-                "valueColumns": "pageType"
-            },
             "more": {
                 "reportId": "page-types",
                 "label": "View Full Report \u00bb"

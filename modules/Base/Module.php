@@ -2142,7 +2142,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'anchortext', 'reports/anchortext.json' );
         $this->registerReport( 'attribution-history', 'reports/attribution-history.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
-        $this->registerReport( 'browser-detail', 'reports/browser-detail.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
         $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
@@ -2161,13 +2160,10 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'feeds', 'reports/feeds.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goals', 'reports/goals.json' );
-        $this->registerReport( 'host-detail', 'reports/host-detail.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
         $this->registerReport( 'keywords', 'reports/keywords.json' );
         $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
         $this->registerReport( 'os', 'reports/os.json' );
-        $this->registerReport( 'os-detail', 'reports/os-detail.json' );
-        $this->registerReport( 'page-type-detail', 'reports/page-type-detail.json' );
         $this->registerReport( 'page-types', 'reports/page-types.json' );
         $this->registerReport( 'pages', 'reports/pages.json' );
         $this->registerReport( 'product-categories', 'reports/product-categories.json' );
@@ -2176,10 +2172,8 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'product-sku-detail', 'reports/product-sku-detail.json' );
         $this->registerReport( 'product-skus', 'reports/product-skus.json' );
         $this->registerReport( 'products', 'reports/products.json' );
-        $this->registerReport( 'referral-link-text-detail', 'reports/referral-link-text-detail.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
-        $this->registerReport( 'search-engine-detail', 'reports/search-engine-detail.json' );
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
         $this->registerReport( 'source-detail', 'reports/source-detail.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );

@@ -19,15 +19,6 @@
                 "dimensions": "browserType",
                 "sort": "visits-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "browserType",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "browser-detail",
-                    "browserType": "%s"
-                },
-                "valueColumns": "browserType"
             }
         }
     ]

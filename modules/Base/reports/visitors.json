@@ -25,15 +25,6 @@
                 "metrics": "visits",
                 "dimensions": "browserType",
                 "sort": "visits-"
-            },
-            "link": {
-                "linkColumn": "browserType",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "browser-detail",
-                    "browserType": "%s"
-                },
-                "valueColumns": "browserType"
             }
         },
         {

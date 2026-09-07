@@ -21,15 +21,6 @@
                 "dimensions": "pageType",
                 "sort": "pageViews-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "pageType",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "page-type-detail",
-                    "pageType": "%s"
-                },
-                "valueColumns": "pageType"
             }
         }
     ]
