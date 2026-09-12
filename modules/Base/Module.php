@@ -505,7 +505,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition(array(
             'name'            => 'visits',
             'label'            => 'Visits',
-            'description'    => 'The total number of visits/sessions.',
+            'description'    => 'The total number of visits, also called sessions.',
             'group'            => 'Site Usage',
             'entity'        => 'base.session',
             'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
@@ -517,7 +517,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition(array(
             'name'            => 'visits',
             'label'            => 'Visits',
-            'description'    => 'The total number of visits/sessions.',
+            'description'    => 'The total number of visits, also called sessions.',
             'group'            => 'Site Usage',
             'entity'        => 'base.request',
             'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
@@ -542,7 +542,7 @@ class Module extends \OWA\Core\Module {
             'base.repeatVisitors',
             '',
             'Repeat Visitors',
-            'The total number of repeat visitors',
+            'The total number of repeat visitors: unique visitors with two or more visits.',
             'Site Usage'
         );
 
@@ -560,7 +560,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'              => 'visitDuration',
             'label'             => 'Visit Duration',
-            'description'       => 'The average duration of visits.',
+            'description'       => 'The average duration of visits, measured between the first and last page view of each visit.',
             'group'             => 'Site Usage',
             'metric_type'       => 'avg_difference',
             'data_type'         => 'timestamp',
@@ -583,7 +583,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'          => 'bounceRate',
             'label'         => 'Bounce Rate',
-            'description'   => 'The percentage of visits that were bounces.',
+            'description'   => 'The percentage of visits that were bounces: single page view visits divided by entry pages.',
             'group'         => 'Site Usage',
             'metric_type'   => 'calculated',
             'data_type'     => 'percentage',
@@ -594,7 +594,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'          => 'pagesPerVisit',
             'label'         => 'Pages Per Visit',
-            'description'   => 'The average pages viewed per visit.',
+            'description'   => 'The average pages viewed per visit: page views divided by visits.',
             'group'         => 'Site Usage',
             'metric_type'   => 'calculated',
             'data_type'     => 'decimal',
@@ -605,7 +605,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'        => 'actions',
             'label'       => 'Actions',
-            'description' => 'The total number of action events.',
+            'description' => 'The total number of action events, an action being an analyst-defined event performed by a user.',
             'group'       => 'Actions',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
@@ -740,7 +740,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'          => 'goalConversionRateAll',
             'label'         => 'Goal Conversion Rate',
-            'description'   => 'The rate of goals achieved in all visits.',
+            'description'   => 'The rate of goals achieved in all visits: goal completions divided by goal starts.',
             'group'         => 'Goals',
             'metric_type'   => 'calculated',
             'data_type'     => 'percentage',
@@ -1019,7 +1019,7 @@ class Module extends \OWA\Core\Module {
             'year',
             'Year',
             'time',
-            'The year.',
+            'The four digit year.',
             '',
             true
         );
@@ -1062,7 +1062,7 @@ class Module extends \OWA\Core\Module {
             'yyyymmdd',
             'Date',
             'time',
-            'The date.',
+            'A date string in YYYYMMDD format (e.g. 20200415).',
             '',
             true,
             'yyyymmdd'
@@ -1074,7 +1074,7 @@ class Module extends \OWA\Core\Module {
             'day',
             'Day',
             'time',
-            'The day.',
+            'The day of the month (1-31).',
             '',
             true
         );
@@ -1085,7 +1085,7 @@ class Module extends \OWA\Core\Module {
             'month',
             'Month',
             'time',
-            'The month.',
+            'The month, as yyyymm.',
             '',
             true
         );
@@ -1096,7 +1096,7 @@ class Module extends \OWA\Core\Module {
             'year',
             'Year',
             'time',
-            'The year.',
+            'The four digit year.',
             '',
             true
         );
@@ -1208,7 +1208,7 @@ class Module extends \OWA\Core\Module {
             'user_name',
             'User Name',
             'visitor',
-            'The name or ID of the user.',
+            'A generic string used to store the user name of the visitor.',
             '',
             true
         );
@@ -1219,7 +1219,7 @@ class Module extends \OWA\Core\Module {
             'user_email',
             'Email Address',
             'visitor',
-            'The email address of the user.'
+            'A generic string used to store the email address of the visitor.'
         );
 
         $this->registerDimension(
@@ -1228,7 +1228,7 @@ class Module extends \OWA\Core\Module {
             'is_repeat_visitor',
             'Repeat Visitor',
             'visitor',
-            'Repeat Site Visitor.',
+            'A boolean indicating whether the visitor has had two or more visits.',
             '',
             true,
             // Declared boolean so it FORMATS as Yes/No wherever it is shown.
@@ -1243,7 +1243,7 @@ class Module extends \OWA\Core\Module {
             'is_new_visitor',
             'New Visitor',
             'visitor',
-            'New Site Visitor.',
+            'A boolean indicating whether the visitor has had only one visit.',
             '',
             true
         );
@@ -1264,7 +1264,7 @@ class Module extends \OWA\Core\Module {
             'url',
             'Entry Page URL',
             'visit',
-            'The URL of the entry page.',
+            'The url of the page first viewed during a visit.',
             'first_page_id'
         );
 
@@ -1274,7 +1274,7 @@ class Module extends \OWA\Core\Module {
             'uri',
             'Entry Page Path',
             'visit',
-            'The URI of the entry page.',
+            'The path portion of the URL of the page first viewed during a visit.',
             'first_page_id'
         );
 
@@ -1284,7 +1284,7 @@ class Module extends \OWA\Core\Module {
             'page_title',
             'Entry Page Title',
             'visit',
-            'The title of the entry page.',
+            'The title of the page first viewed during a visit.',
             'first_page_id'
         );
 
@@ -1294,7 +1294,7 @@ class Module extends \OWA\Core\Module {
             'page_type',
             'Entry Page Type',
             'visit',
-            'The page type of the entry page.',
+            'The page type of the page first viewed during a visit.',
             'first_page_id'
         );
 
@@ -1304,7 +1304,7 @@ class Module extends \OWA\Core\Module {
             'url',
             'Exit Page URL',
             'visit',
-            'The URL of the exit page.',
+            'The url of the page last viewed during a visit.',
             'last_page_id'
         );
 
@@ -1314,7 +1314,7 @@ class Module extends \OWA\Core\Module {
             'uri',
             'Exit Page Path',
             'visit',
-            'The URI of the exit page.',
+            'The path of the page last viewed during a visit.',
             'last_page_id'
         );
 
@@ -1324,7 +1324,7 @@ class Module extends \OWA\Core\Module {
             'page_title',
             'Exit Page Title',
             'visit',
-            'The title of the exit page.',
+            'The title of the page last viewed during a visit.',
             'last_page_id'
         );
 
@@ -1334,7 +1334,7 @@ class Module extends \OWA\Core\Module {
             'page_type',
             'Exit Page Type',
             'visit',
-            'The page type of the exit page.',
+            'The page type of the page last viewed during a visit.',
             'last_page_id'
         );
 
@@ -1576,7 +1576,7 @@ class Module extends \OWA\Core\Module {
             'country_code',
             'Country Code',
             'geo',
-            'The ISO country code of the visitor.'
+            'The country code for the inferred country location of visitors.'
         );
 
         $this->registerDimension(
@@ -1616,7 +1616,7 @@ class Module extends \OWA\Core\Module {
             'medium',
             'Medium',
             'campaign',
-            'The medium where visit originated from.',
+            'A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.',
             '',
             true
         );
@@ -1627,7 +1627,7 @@ class Module extends \OWA\Core\Module {
             'source_domain',
             'Source',
             'campaign',
-            'The traffic source of the visit.'
+            'The origin of traffic. Possible values are the domain of referring websites (foo.com) or app search engines (Google), etc.'
         );
 
         $this->registerDimension(
@@ -1672,7 +1672,7 @@ class Module extends \OWA\Core\Module {
             'page_title',
             'Referral Page Title',
             'campaign',
-            'The title of the referring web page.'
+            'The page title of the url that referred visitors to the tracked website.'
         );
 
         $this->registerDimension(
@@ -1681,7 +1681,7 @@ class Module extends \OWA\Core\Module {
             'terms',
             'Search Terms',
             'campaign',
-            'The referring search terms.',
+            'The search term that led visitors to the tracked website.',
             'referring_search_term_id'
         );
 
@@ -1691,7 +1691,7 @@ class Module extends \OWA\Core\Module {
             'refering_anchortext',
             'Referral Link Text',
             'campaign',
-            'The text of the referring link.'
+            'The anchor text of the link that referred visitors to the tracked website.'
         );
 
         $this->registerDimension(
@@ -1700,7 +1700,7 @@ class Module extends \OWA\Core\Module {
             'is_searchengine',
             'Search Engine',
             'campaign',
-            'Is traffic source a search engine.'
+            'A boolean indicating if the referring url is a search engine.'
         );
 
         $this->registerDimension(
@@ -1730,7 +1730,7 @@ class Module extends \OWA\Core\Module {
             'url',
             'Prior Page URL',
             'content',
-            'The URL of the prior page.',
+            'The url of the page viewed before the current page view.',
             'prior_document_id'
         );
 
@@ -1760,7 +1760,7 @@ class Module extends \OWA\Core\Module {
             'page_type',
             'Prior Page Type',
             'content',
-            'The page type of the prior page.',
+            'The type of page viewed before the current page view.',
             'prior_document_id'
         );
 
