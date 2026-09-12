@@ -1,5 +1,5 @@
 <?php
-namespace OWA\Module\Hello;
+namespace OWA\Module\Hello\View;
 
 
 //
@@ -31,7 +31,7 @@ namespace OWA\Module\Hello;
  * @since        owa 1.0.0
  */
 
-class ExampleSettingsView extends \OWA\Core\View {
+class ExampleSettings extends \OWA\Core\View {
 
     function __construct($params) {
         //set page type
