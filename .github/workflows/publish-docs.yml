@@ -1,0 +1,76 @@
+name: Publish reference documentation
+
+# On the release being PUBLISHED, not on it being packaged.
+#
+# The Release Packager opens a DRAFT, which a person publishes by hand and may
+# decide not to publish at all. Generating the wiki from the packager would
+# therefore document a release that does not exist yet, and sometimes one that
+# never will. `published` fires at the moment the release becomes public, which
+# is exactly when the wiki should start describing it.
+#
+# Deliberately not on push to master either: the wiki documents the released
+# version, so it must not move every time a metric is registered.
+on:
+  release:
+    types: [published]
+  # Re-run against an existing tag if a publish failed or the page was edited by
+  # hand. Generates from the tag given, so it cannot quietly document master.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to generate from (e.g. 1.13.0)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Regenerate the metrics and dimensions page
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the released code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      # Production dependencies only. The generator reads the registry, which
+      # needs the autoloader but no database -- it pre-defines OWA_DB_TYPE so it
+      # boots without a config file.
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: Generate the tables
+        run: |
+          php tests/tools/generate_metrics_dimensions_doc.php > /tmp/generated.md
+          test -s /tmp/generated.md
+          echo "rows: $(grep -c '^|`' /tmp/generated.md)"
+
+      - name: Check out the wiki
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" /tmp/wiki
+
+      # Only the delimited section is replaced; the notes below it are written by
+      # hand and are not ours to overwrite. The splice refuses if the markers are
+      # missing rather than guessing at what may be replaced.
+      - name: Splice the generated tables into the page
+        run: php tests/tools/splice_generated_doc.php "/tmp/wiki/Metrics-&-Dimensions.md" /tmp/generated.md
+
+      - name: Commit, if anything changed
+        working-directory: /tmp/wiki
+        run: |
+          if git diff --quiet; then
+            echo "The page already matches this release. Nothing to do."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "Metrics-&-Dimensions.md"
+          git commit -m "Regenerate metrics and dimensions for ${{ github.event.inputs.tag || github.event.release.tag_name }}"
+          git push
