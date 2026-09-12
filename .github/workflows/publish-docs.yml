@@ -46,23 +46,6 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-      # The tooling comes from the default branch, the REGISTRY from the tag.
-      #
-      # Generating with the released code is the point -- the page must describe
-      # that release. But the generator is repository tooling, not part of the
-      # release, and a tag predating it has no copy: the first run of this
-      # workflow failed against 1.13.0 for exactly that reason. Overlaying the
-      # scripts means any tag can be regenerated, including ones cut before this
-      # existed, and a fix to the generator applies to every release rather than
-      # only to those tagged after it.
-      - name: Take the generator from the default branch
-        run: |
-          git fetch --depth=1 origin ${{ github.event.repository.default_branch }}
-          git checkout FETCH_HEAD -- \
-            tests/tools/generate_metrics_dimensions_doc.php \
-            tests/tools/splice_generated_doc.php
-          ls -l tests/tools/generate_metrics_dimensions_doc.php tests/tools/splice_generated_doc.php
-
       - name: Generate the tables
         run: |
           php tests/tools/generate_metrics_dimensions_doc.php > /tmp/generated.md 2>/tmp/generate.err || {
