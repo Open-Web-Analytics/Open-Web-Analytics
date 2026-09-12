@@ -19,7 +19,7 @@
                     "child_metrics": [],
                     "column": "id",
                     "data_type": "integer",
-                    "description": "The total number of action events.",
+                    "description": "The total number of action events, an action being an analyst-defined event performed by a user.",
                     "entity": "base.action_fact",
                     "formula": "",
                     "group": "Actions",
@@ -64,7 +64,7 @@
                     ],
                     "column": "",
                     "data_type": "percentage",
-                    "description": "The percentage of visits that were bounces.",
+                    "description": "The percentage of visits that were bounces: single page view visits divided by entry pages.",
                     "entity": "",
                     "formula": "bounces / visits",
                     "group": "Site Usage",
@@ -757,7 +757,7 @@
                     ],
                     "column": "",
                     "data_type": "percentage",
-                    "description": "The rate of goals achieved in all visits.",
+                    "description": "The rate of goals achieved in all visits: goal completions divided by goal starts.",
                     "entity": "",
                     "formula": "goalCompletionsAll / visits",
                     "group": "Goals",
@@ -964,7 +964,7 @@
                     ],
                     "column": "",
                     "data_type": "decimal",
-                    "description": "The average pages viewed per visit.",
+                    "description": "The average pages viewed per visit: page views divided by visits.",
                     "entity": "",
                     "formula": "round(pageViews / visits, 2)",
                     "group": "Site Usage",
@@ -1421,7 +1421,7 @@
                     "child_metrics": [],
                     "column": "last_req",
                     "data_type": "timestamp",
-                    "description": "The average duration of visits.",
+                    "description": "The average duration of visits, measured between the first and last page view of each visit.",
                     "entity": "base.session",
                     "formula": "",
                     "group": "Site Usage",
@@ -1577,7 +1577,7 @@
                     "child_metrics": [],
                     "column": "id",
                     "data_type": "integer",
-                    "description": "The total number of visits/sessions.",
+                    "description": "The total number of visits, also called sessions.",
                     "entity": "base.session",
                     "formula": "",
                     "group": "Site Usage",
@@ -1596,7 +1596,7 @@
                     "child_metrics": [],
                     "column": "session_id",
                     "data_type": "integer",
-                    "description": "The total number of visits/sessions.",
+                    "description": "The total number of visits, also called sessions.",
                     "entity": "base.request",
                     "formula": "",
                     "group": "Site Usage",
@@ -1707,7 +1707,7 @@
                 "column": "country_code",
                 "family": "geo",
                 "label": "Country Code",
-                "description": "The ISO country code of the visitor.",
+                "description": "The country code for the inferred country location of visitors.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -1720,7 +1720,7 @@
                 "column": "uri",
                 "family": "visit",
                 "label": "Entry Page Path",
-                "description": "The URI of the entry page.",
+                "description": "The path portion of the URL of the page first viewed during a visit.",
                 "foreign_key_name": "first_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1733,7 +1733,7 @@
                 "column": "page_title",
                 "family": "visit",
                 "label": "Entry Page Title",
-                "description": "The title of the entry page.",
+                "description": "The title of the page first viewed during a visit.",
                 "foreign_key_name": "first_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1746,7 +1746,7 @@
                 "column": "page_type",
                 "family": "visit",
                 "label": "Entry Page Type",
-                "description": "The page type of the entry page.",
+                "description": "The page type of the page first viewed during a visit.",
                 "foreign_key_name": "first_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1759,7 +1759,7 @@
                 "column": "url",
                 "family": "visit",
                 "label": "Entry Page URL",
-                "description": "The URL of the entry page.",
+                "description": "The url of the page first viewed during a visit.",
                 "foreign_key_name": "first_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1772,7 +1772,7 @@
                 "column": "uri",
                 "family": "visit",
                 "label": "Exit Page Path",
-                "description": "The URI of the exit page.",
+                "description": "The path of the page last viewed during a visit.",
                 "foreign_key_name": "last_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1785,7 +1785,7 @@
                 "column": "page_title",
                 "family": "visit",
                 "label": "Exit Page Title",
-                "description": "The title of the exit page.",
+                "description": "The title of the page last viewed during a visit.",
                 "foreign_key_name": "last_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1798,7 +1798,7 @@
                 "column": "page_type",
                 "family": "visit",
                 "label": "Exit Page Type",
-                "description": "The page type of the exit page.",
+                "description": "The page type of the page last viewed during a visit.",
                 "foreign_key_name": "last_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1811,7 +1811,7 @@
                 "column": "url",
                 "family": "visit",
                 "label": "Exit Page URL",
-                "description": "The URL of the exit page.",
+                "description": "The url of the page last viewed during a visit.",
                 "foreign_key_name": "last_page_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1837,7 +1837,7 @@
                 "column": "is_searchengine",
                 "family": "campaign",
                 "label": "Search Engine",
-                "description": "Is traffic source a search engine.",
+                "description": "A boolean indicating if the referring url is a search engine.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -1967,7 +1967,7 @@
                 "column": "page_type",
                 "family": "content",
                 "label": "Prior Page Type",
-                "description": "The page type of the prior page.",
+                "description": "The type of page viewed before the current page view.",
                 "foreign_key_name": "prior_document_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1980,7 +1980,7 @@
                 "column": "url",
                 "family": "content",
                 "label": "Prior Page URL",
-                "description": "The URL of the prior page.",
+                "description": "The url of the page viewed before the current page view.",
                 "foreign_key_name": "prior_document_id",
                 "data_type": "string",
                 "denormalized": false
@@ -1993,7 +1993,7 @@
                 "column": "refering_anchortext",
                 "family": "campaign",
                 "label": "Referral Link Text",
-                "description": "The text of the referring link.",
+                "description": "The anchor text of the link that referred visitors to the tracked website.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -2006,7 +2006,7 @@
                 "column": "page_title",
                 "family": "campaign",
                 "label": "Referral Page Title",
-                "description": "The title of the referring web page.",
+                "description": "The page title of the url that referred visitors to the tracked website.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -2032,7 +2032,7 @@
                 "column": "terms",
                 "family": "campaign",
                 "label": "Search Terms",
-                "description": "The referring search terms.",
+                "description": "The search term that led visitors to the tracked website.",
                 "foreign_key_name": "referring_search_term_id",
                 "data_type": "string",
                 "denormalized": false
@@ -2097,7 +2097,7 @@
                 "column": "source_domain",
                 "family": "campaign",
                 "label": "Source",
-                "description": "The traffic source of the visit.",
+                "description": "The origin of traffic. Possible values are the domain of referring websites (foo.com) or app search engines (Google), etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -2123,7 +2123,7 @@
                 "column": "user_email",
                 "family": "visitor",
                 "label": "Email Address",
-                "description": "The email address of the user.",
+                "description": "A generic string used to store the email address of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": false
@@ -3061,7 +3061,7 @@
                 "column": "yyyymmdd",
                 "family": "time",
                 "label": "Date",
-                "description": "The date.",
+                "description": "A date string in YYYYMMDD format (e.g. 20200415).",
                 "foreign_key_name": "",
                 "data_type": "yyyymmdd",
                 "denormalized": true
@@ -3759,7 +3759,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3770,7 +3770,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3781,7 +3781,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3792,7 +3792,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3803,7 +3803,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3814,7 +3814,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3825,7 +3825,7 @@
                 "column": "is_new_visitor",
                 "family": "visitor",
                 "label": "New Visitor",
-                "description": "New Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had only one visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3838,7 +3838,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3849,7 +3849,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3860,7 +3860,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3871,7 +3871,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3882,7 +3882,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3893,7 +3893,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -3904,7 +3904,7 @@
                 "column": "is_repeat_visitor",
                 "family": "visitor",
                 "label": "Repeat Visitor",
-                "description": "Repeat Site Visitor.",
+                "description": "A boolean indicating whether the visitor has had two or more visits.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -4035,7 +4035,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4046,7 +4046,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4057,7 +4057,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4068,7 +4068,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4079,7 +4079,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4090,7 +4090,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4101,7 +4101,7 @@
                 "column": "medium",
                 "family": "campaign",
                 "label": "Medium",
-                "description": "The medium where visit originated from.",
+                "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4529,7 +4529,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4540,7 +4540,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4551,7 +4551,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4562,7 +4562,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4573,7 +4573,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4584,7 +4584,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4595,7 +4595,7 @@
                 "column": "user_name",
                 "family": "visitor",
                 "label": "User Name",
-                "description": "The name or ID of the user.",
+                "description": "A generic string used to store the user name of the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4934,7 +4934,7 @@
             "column": "country_code",
             "family": "geo",
             "label": "Country Code",
-            "description": "The ISO country code of the visitor.",
+            "description": "The country code for the inferred country location of visitors.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5055,7 +5055,7 @@
             "column": "yyyymmdd",
             "family": "time",
             "label": "Date",
-            "description": "The date.",
+            "description": "A date string in YYYYMMDD format (e.g. 20200415).",
             "foreign_key_name": "",
             "data_type": "yyyymmdd",
             "denormalized": true
@@ -5209,7 +5209,7 @@
             "column": "uri",
             "family": "visit",
             "label": "Entry Page Path",
-            "description": "The URI of the entry page.",
+            "description": "The path portion of the URL of the page first viewed during a visit.",
             "foreign_key_name": "first_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5220,7 +5220,7 @@
             "column": "page_title",
             "family": "visit",
             "label": "Entry Page Title",
-            "description": "The title of the entry page.",
+            "description": "The title of the page first viewed during a visit.",
             "foreign_key_name": "first_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5231,7 +5231,7 @@
             "column": "page_type",
             "family": "visit",
             "label": "Entry Page Type",
-            "description": "The page type of the entry page.",
+            "description": "The page type of the page first viewed during a visit.",
             "foreign_key_name": "first_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5242,7 +5242,7 @@
             "column": "url",
             "family": "visit",
             "label": "Entry Page URL",
-            "description": "The URL of the entry page.",
+            "description": "The url of the page first viewed during a visit.",
             "foreign_key_name": "first_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5253,7 +5253,7 @@
             "column": "uri",
             "family": "visit",
             "label": "Exit Page Path",
-            "description": "The URI of the exit page.",
+            "description": "The path of the page last viewed during a visit.",
             "foreign_key_name": "last_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5264,7 +5264,7 @@
             "column": "page_title",
             "family": "visit",
             "label": "Exit Page Title",
-            "description": "The title of the exit page.",
+            "description": "The title of the page last viewed during a visit.",
             "foreign_key_name": "last_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5275,7 +5275,7 @@
             "column": "page_type",
             "family": "visit",
             "label": "Exit Page Type",
-            "description": "The page type of the exit page.",
+            "description": "The page type of the page last viewed during a visit.",
             "foreign_key_name": "last_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5286,7 +5286,7 @@
             "column": "url",
             "family": "visit",
             "label": "Exit Page URL",
-            "description": "The URL of the exit page.",
+            "description": "The url of the page last viewed during a visit.",
             "foreign_key_name": "last_page_id",
             "data_type": "string",
             "denormalized": false
@@ -5363,7 +5363,7 @@
             "column": "is_new_visitor",
             "family": "visitor",
             "label": "New Visitor",
-            "description": "New Site Visitor.",
+            "description": "A boolean indicating whether the visitor has had only one visit.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5374,7 +5374,7 @@
             "column": "is_repeat_visitor",
             "family": "visitor",
             "label": "Repeat Visitor",
-            "description": "Repeat Site Visitor.",
+            "description": "A boolean indicating whether the visitor has had two or more visits.",
             "foreign_key_name": "",
             "data_type": "boolean",
             "denormalized": true
@@ -5385,7 +5385,7 @@
             "column": "is_searchengine",
             "family": "campaign",
             "label": "Search Engine",
-            "description": "Is traffic source a search engine.",
+            "description": "A boolean indicating if the referring url is a search engine.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5462,7 +5462,7 @@
             "column": "medium",
             "family": "campaign",
             "label": "Medium",
-            "description": "The medium where visit originated from.",
+            "description": "A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5572,7 +5572,7 @@
             "column": "page_type",
             "family": "content",
             "label": "Prior Page Type",
-            "description": "The page type of the prior page.",
+            "description": "The type of page viewed before the current page view.",
             "foreign_key_name": "prior_document_id",
             "data_type": "string",
             "denormalized": false
@@ -5583,7 +5583,7 @@
             "column": "url",
             "family": "content",
             "label": "Prior Page URL",
-            "description": "The URL of the prior page.",
+            "description": "The url of the page viewed before the current page view.",
             "foreign_key_name": "prior_document_id",
             "data_type": "string",
             "denormalized": false
@@ -5638,7 +5638,7 @@
             "column": "refering_anchortext",
             "family": "campaign",
             "label": "Referral Link Text",
-            "description": "The text of the referring link.",
+            "description": "The anchor text of the link that referred visitors to the tracked website.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5649,7 +5649,7 @@
             "column": "page_title",
             "family": "campaign",
             "label": "Referral Page Title",
-            "description": "The title of the referring web page.",
+            "description": "The page title of the url that referred visitors to the tracked website.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5671,7 +5671,7 @@
             "column": "terms",
             "family": "campaign",
             "label": "Search Terms",
-            "description": "The referring search terms.",
+            "description": "The search term that led visitors to the tracked website.",
             "foreign_key_name": "referring_search_term_id",
             "data_type": "string",
             "denormalized": false
@@ -5759,7 +5759,7 @@
             "column": "source_domain",
             "family": "campaign",
             "label": "Source",
-            "description": "The traffic source of the visit.",
+            "description": "The origin of traffic. Possible values are the domain of referring websites (foo.com) or app search engines (Google), etc.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5847,7 +5847,7 @@
             "column": "user_email",
             "family": "visitor",
             "label": "Email Address",
-            "description": "The email address of the user.",
+            "description": "A generic string used to store the email address of the visitor.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
@@ -5858,7 +5858,7 @@
             "column": "user_name",
             "family": "visitor",
             "label": "User Name",
-            "description": "The name or ID of the user.",
+            "description": "A generic string used to store the user name of the visitor.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
