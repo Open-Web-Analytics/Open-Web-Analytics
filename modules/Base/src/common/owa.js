@@ -98,16 +98,16 @@ class OWA {
         return this.state.isPresent( store_name );
     }
     
-    setState(store_name, key, value, is_perminant,format, expiration_days) {
+    setState(store_name, key, value, is_perminant, format) {
     
         this.initializeStateManager();
-        return this.state.set(store_name, key, value, is_perminant,format, expiration_days);    
+        return this.state.set(store_name, key, value, is_perminant, format);    
     }
     
-    replaceState(store_name, value, is_perminant, format, expiration_days) {
+    replaceState(store_name, value, is_perminant, format) {
     
         this.initializeStateManager();
-        return this.state.replaceStore(store_name, value, is_perminant, format, expiration_days);
+        return this.state.replaceStore(store_name, value, is_perminant, format);
     }
     
     getStateFromCookie(store_name) {

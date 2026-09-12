@@ -101,16 +101,16 @@ var OWA = {
         return this.state.isPresent( store_name );
     },
     
-    setState : function(store_name, key, value, is_perminant,format, expiration_days) {
+    setState : function(store_name, key, value, is_perminant, format) {
     
         this.initializeStateManager();
-        return this.state.set(store_name, key, value, is_perminant,format, expiration_days);    
+        return this.state.set(store_name, key, value, is_perminant, format);    
     },
     
-    replaceState : function (store_name, value, is_perminant, format, expiration_days) {
+    replaceState : function (store_name, value, is_perminant, format) {
     
         this.initializeStateManager();
-        return this.state.replaceStore(store_name, value, is_perminant, format, expiration_days);
+        return this.state.replaceStore(store_name, value, is_perminant, format);
     },
     
     getStateFromCookie : function(store_name) {
@@ -366,7 +366,7 @@ OWA.stateManager.prototype = {
         }
     },
     
-    set: function(store_name, key, value, is_perminant,format, expiration_days) {
+    set: function(store_name, key, value, is_perminant, format) {
         
         if ( ! this.isPresent( store_name ) ) {
             this.load( store_name );
@@ -405,7 +405,7 @@ OWA.stateManager.prototype = {
             state_value = OWA.util.assocStringFromJson(this.stores[store_name]);
         }
         
-        expiration_days = this.getExpirationDays( store_name );
+        var expiration_days = this.getExpirationDays( store_name );
         
         if ( ! expiration_days ) {
             
@@ -423,7 +423,7 @@ OWA.stateManager.prototype = {
         OWA.util.setCookie( OWA.getSetting('ns') + store_name, state_value, expiration_days, '/', domain );
     },
     
-    replaceStore : function (store_name, value, is_perminant, format, expiration_days) {
+    replaceStore : function (store_name, value, is_perminant, format) {
         
         OWA.debug('replace state format: %s, value: %s',format, JSON.stringify(value));
         if ( store_name ) {
@@ -445,7 +445,7 @@ OWA.stateManager.prototype = {
         
             var domain = OWA.getSetting('cookie_domain') || document.domain;
             
-            expiration_days = this.getExpirationDays( store_name );
+            var expiration_days = this.getExpirationDays( store_name );
             
             OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
             OWA.util.setCookie( OWA.getSetting('ns') + store_name, cookie_value, expiration_days, '/', domain );
@@ -1217,14 +1217,14 @@ OWA.util =  {
         return OWA.checkForState( store_name );
     },
     
-    setState : function(store_name, key, value, is_perminant,format, expiration_days) {
+    setState : function(store_name, key, value, is_perminant, format) {
         
-        return OWA.setState(store_name, key, value, is_perminant,format, expiration_days);
+        return OWA.setState(store_name, key, value, is_perminant, format);
     },
     
-    replaceState : function (store_name, value, is_perminant, format, expiration_days) {
+    replaceState : function (store_name, value, is_perminant, format) {
 
-        return OWA.replaceState(store_name, value, is_perminant, format, expiration_days);
+        return OWA.replaceState(store_name, value, is_perminant, format);
     },
     
     getRawState : function(store_name) {
