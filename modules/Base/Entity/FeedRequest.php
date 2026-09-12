@@ -31,40 +31,58 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class FeedRequest extends \OWA\Core\Entity {
+class FeedRequest extends \OWA\Core\Entity\FactTable {
 
     function __construct() {
 
         $this->setTableName('feed_request');
+
+        /*
+         * This IS a fact table -- a feed request is an event, filed under a
+         * yyyymmdd, referencing dimension rows. It simply did not say so, and
+         * three things select fact tables by class rather than by shape:
+         * the partition commands, the dimension-id conversion, and the
+         * visitor_id index update. So this table was silently left out of all
+         * of them: never partitioned, so retention never reached it; and its
+         * document_id/ua_id/host_id/os_id were never repointed when ids were
+         * re-derived to 63 bits.
+         *
+         * The parent columns are absorbed FIRST so that the declarations below
+         * still win. Several of them disagree with the parent on purpose --
+         * ua_id and os_id are VARCHAR255 here and BIGINT there -- and this
+         * change is about which tables are selected, not about correcting those
+         * types, which would be a data migration of its own.
+         */
+        $parent_columns = parent::__construct();
+
+        foreach ( $parent_columns as $pcolumn ) {
+
+            $this->setProperty( $pcolumn );
+        }
+
         // properties
         $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
 
-        $visitor_id = new \OWA\Module\Base\Classes\DbColumn('visitor_id', OWA_DTD_BIGINT);
-        $visitor_id->setForeignKey('base.visitor');
-        $this->setProperty($visitor_id);
-
-        $session_id = new \OWA\Module\Base\Classes\DbColumn('session_id', OWA_DTD_BIGINT);
-        $session_id->setForeignKey('base.session');
-        $this->setProperty($session_id);
-
+        /*
+         * visitor_id, session_id, site_id and host_id are NOT re-declared here.
+         * They were, identically to FactTable's -- except that the parent's
+         * carry setIndex() and these did not, so overriding them silently
+         * dropped the index. owa_request has session_id and site_id indexed;
+         * owa_feed_request had neither, and site_id is filtered on by
+         * essentially every report query.
+         *
+         * What follows is only what genuinely differs from the parent.
+         */
         $document_id = new \OWA\Module\Base\Classes\DbColumn('document_id', OWA_DTD_BIGINT);
         $document_id->setForeignKey('base.document');
         $this->setProperty($document_id);
-
-        $site_id = new \OWA\Module\Base\Classes\DbColumn('site_id', OWA_DTD_VARCHAR255);
-        $site_id->setForeignKey('base.site', 'site_id');
-        $this->setProperty($site_id);
 
         // wrong data type
         $ua_id = new \OWA\Module\Base\Classes\DbColumn('ua_id', OWA_DTD_VARCHAR255);
         $ua_id->setForeignKey('base.ua');
         $this->setProperty($ua_id);
-
-        $host_id = new \OWA\Module\Base\Classes\DbColumn('host_id', OWA_DTD_BIGINT);
-        $host_id->setForeignKey('base.host');
-        $this->setProperty($host_id);
 
         // wrong data type
         $os_id = new \OWA\Module\Base\Classes\DbColumn('os_id', OWA_DTD_VARCHAR255);

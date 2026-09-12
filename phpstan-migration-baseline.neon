@@ -466,6 +466,12 @@ parameters:
 			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
+			path: modules/Base/Entity/FeedRequest.php
+
+		-
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
+			count: 1
 			path: modules/Base/Entity/CommerceLineItemFact.php
 
 		-
