@@ -3151,7 +3151,7 @@
                 "column": "day",
                 "family": "time",
                 "label": "Day",
-                "description": "The day.",
+                "description": "The day of the month (1-31).",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4169,7 +4169,7 @@
                 "column": "month",
                 "family": "time",
                 "label": "Month",
-                "description": "The month.",
+                "description": "The month, as yyyymm.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4711,7 +4711,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4722,7 +4722,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4733,7 +4733,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4744,7 +4744,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4755,7 +4755,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4766,7 +4766,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4777,7 +4777,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4788,7 +4788,7 @@
                 "column": "year",
                 "family": "time",
                 "label": "Year",
-                "description": "The year.",
+                "description": "The four digit year.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -5066,7 +5066,7 @@
             "column": "day",
             "family": "time",
             "label": "Day",
-            "description": "The day.",
+            "description": "The day of the month (1-31).",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5473,7 +5473,7 @@
             "column": "month",
             "family": "time",
             "label": "Month",
-            "description": "The month.",
+            "description": "The month, as yyyymm.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5902,7 +5902,7 @@
             "column": "year",
             "family": "time",
             "label": "Year",
-            "description": "The year.",
+            "description": "The four digit year.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

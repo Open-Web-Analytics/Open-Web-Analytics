@@ -11,6 +11,24 @@
  */
 
 require __DIR__ . '/../../owa_env.php';
+
+/*
+ * The registry is all this reads, and the registry needs no database -- but
+ * booting constructs the base.configuration entity, whose column types
+ * reference OWA_DTD_* constants that only the DB driver defines, and the driver
+ * is only loaded when OWA_DB_TYPE is set. Without a config file that is an
+ * undefined-constant fatal before any module registers anything.
+ *
+ * Pre-defining the type loads the driver without connecting to anything, so
+ * this runs on a checkout with no owa-config.php -- which is what lets CI check
+ * the generated documentation is current without standing up a database. Gated
+ * on the config file being absent so a normal run is untouched; the same guard
+ * install.php and tests/bootstrap.php use.
+ */
+if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( OWA_DIR . 'owa-config.php' ) ) {
+    define( 'OWA_DB_TYPE', 'mysql' );
+}
+
 require __DIR__ . '/../../owa.php';
 
 $owa = new owa( array( 'instance_role' => 'cli' ) );

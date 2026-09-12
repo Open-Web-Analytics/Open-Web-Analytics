@@ -1019,7 +1019,7 @@ class Module extends \OWA\Core\Module {
             'year',
             'Year',
             'time',
-            'The year.',
+            'The four digit year.',
             '',
             true
         );
@@ -1074,7 +1074,7 @@ class Module extends \OWA\Core\Module {
             'day',
             'Day',
             'time',
-            'The day.',
+            'The day of the month (1-31).',
             '',
             true
         );
@@ -1085,7 +1085,7 @@ class Module extends \OWA\Core\Module {
             'month',
             'Month',
             'time',
-            'The month.',
+            'The month, as yyyymm.',
             '',
             true
         );
@@ -1096,7 +1096,7 @@ class Module extends \OWA\Core\Module {
             'year',
             'Year',
             'time',
-            'The year.',
+            'The four digit year.',
             '',
             true
         );
