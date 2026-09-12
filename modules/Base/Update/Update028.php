@@ -75,6 +75,17 @@ class Update028 extends \OWA\Core\Update {
         );
     }
 
+    /**
+     * The columns FactTable indexes that owa_feed_request was not indexing.
+     *
+     * Kept beside columns() and for the same reason: down() has to undo
+     * exactly what up() did, which means both have to read one list.
+     */
+    private function indexes() {
+
+        return array( 'visitor_id', 'session_id', 'site_id' );
+    }
+
     function up( $force = false ) {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
@@ -95,22 +106,38 @@ class Update028 extends \OWA\Core\Update {
         }
 
         /*
-         * What Update014 would have done had this table been a fact table when
-         * it ran. Doing it here rather than asking anyone to re-apply 014 with
-         * --force: an installation already past 14 never revisits it.
+         * The indexes FactTable declares that this table never got.
+         *
+         * visitor_id is what Update014 would have added had this been a fact
+         * table when it ran -- done here rather than asking anyone to re-apply
+         * 014 with --force, since an installation already past 14 never
+         * revisits it.
+         *
+         * session_id and site_id were lost a different way: the entity used to
+         * re-declare them identically to the parent EXCEPT for setIndex(), so
+         * the override dropped the index. owa_request carries both.
+         *
+         * addIndex() already returns early when the index is there, so this is
+         * re-runnable; the explicit check is only so the notice is not printed
+         * on a second pass.
          */
         $table = $this->c->get( 'base', 'ns' ) . 'feed_request';
 
-        if ( ! $db->indexExists( $table, 'visitor_id' ) ) {
+        foreach ( $this->indexes() as $column ) {
 
-            if ( ! $db->addIndex( $table, 'visitor_id' ) ) {
+            if ( $db->indexExists( $table, $column ) ) {
 
-                $this->e->notice( "Indexing visitor_id on $table failed" );
+                continue;
+            }
+
+            if ( ! $db->addIndex( $table, $column ) ) {
+
+                $this->e->notice( "Indexing $column on $table failed" );
 
                 return false;
             }
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Indexed visitor_id on %s.', $table ) );
+            \OWA\Core\CoreAPI::notice( sprintf( 'Indexed %s on %s.', $column, $table ) );
         }
 
         return true;
@@ -123,17 +150,56 @@ class Update028 extends \OWA\Core\Update {
      * 28 columns are untouched, so a rollback leaves feed tracking working
      * exactly as it did before.
      *
-     * The visitor_id index is deliberately left in place. It is not part of
-     * this table's shape, it costs nothing to keep, and dropping an index a
-     * query may already be relying on is a worse outcome than an extra one.
+     * The indexes go too. An earlier draft kept them on the grounds that an
+     * extra index is harmless, but that makes down() something other than the
+     * inverse of up(): re-applying would then find them present, skip them,
+     * and the two runs would not have done the same thing. Dropping them is
+     * what lets this be applied and rolled back repeatedly.
      *
-     * Partitioning, if it has been applied by then, is also left alone: this
-     * update did not create it and partition-drop/reorganize are the commands
-     * that own it.
+     * Partitioning, if it has been applied by then, IS left alone: this update
+     * did not create it, and partition-reorganize and partition-drop are the
+     * commands that own it. The primary key partitionTable() widened is left
+     * alone for the same reason.
      */
     function down() {
 
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.feed_request' );
+        $table  = $this->c->get( 'base', 'ns' ) . 'feed_request';
+
+        /*
+         * dropIndex() takes the INDEX NAME, not the column -- addIndex() names
+         * what it creates idx_<column>. Dropping only indexes carrying that
+         * name is also what keeps this from removing one that was already
+         * present under another name, which up() would have skipped rather
+         * than created. Same approach as Update014's down().
+         */
+        $ours = array();
+
+        foreach ( $db->listIndexes() as $row ) {
+
+            if ( $row['t'] === $table ) {
+
+                $ours[ $row['i'] ] = true;
+            }
+        }
+
+        foreach ( $this->indexes() as $column ) {
+
+            $index_name = 'idx_' . $column;
+
+            if ( ! isset( $ours[ $index_name ] ) ) {
+
+                continue;
+            }
+
+            if ( ! $db->dropIndex( $table, $index_name ) ) {
+
+                $this->e->notice( "Dropping index $index_name from $table failed" );
+
+                return false;
+            }
+        }
 
         foreach ( array_reverse( $this->columns() ) as $column ) {
 
