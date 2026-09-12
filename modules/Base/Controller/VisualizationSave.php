@@ -238,6 +238,12 @@ class VisualizationSave extends \OWA\Core\AdminController {
          */
         $report->set( 'definition', json_encode( array( 'steps' => $steps ) ) );
         $report->set( 'last_updated_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        /*
+         * Listed to everybody, or only to its author. DISCOVERABILITY, not
+         * access -- the URL already renders for anyone with view_reports. See
+         * CustomReports::roster().
+         */
+        $report->set( 'is_shared', $this->getParam( 'isShared' ) ? 1 : 0 );
 
         if ( $report->wasPersisted() ) {
 

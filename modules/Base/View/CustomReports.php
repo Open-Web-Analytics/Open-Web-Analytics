@@ -30,5 +30,6 @@ class CustomReports extends \OWA\Core\View {
         $this->body->set( 'current_user_id', $this->get( 'current_user_id' ) );
         $this->body->set( 'roster_sort', $this->get( 'roster_sort' ) );
         $this->body->set( 'roster_desc', $this->get( 'roster_desc' ) );
+        $this->body->set( 'roster_mine', $this->get( 'roster_mine' ) );
     }
 }

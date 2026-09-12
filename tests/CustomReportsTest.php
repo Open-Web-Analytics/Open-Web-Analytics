@@ -1399,6 +1399,155 @@ final class CustomReportsTest extends TestCase
         $this->assertContains($theirs['id'], $ids);
     }
 
+    // ------------------------------------------------------------------
+    // Sharing: whose LIST a report appears on
+    //
+    // Sharing is about being found, not about being allowed. A custom report
+    // opened by its URL already renders for anyone with view_reports, so these
+    // tests are all about the roster and none of them is an access test.
+    // ------------------------------------------------------------------
+
+    public function testAReportIsNotSharedUnlessAsked(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Private By Default'));
+        $row   = CustomReports::load($saved['id']);
+
+        $this->assertEmpty($row['is_shared'],
+            'a new report must be private, or sharing becomes something authors opt OUT of');
+    }
+
+    public function testASharedReportAppearsInSomebodyElsesRoster(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(array('name' => 'Shared With All', 'is_shared' => true), self::OTHER);
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertContains($shared['id'], $ids,
+            'the point of sharing is that it reaches other people\'s lists');
+    }
+
+    public function testAnUnsharedReportStaysOutOfSomebodyElsesRoster(): void
+    {
+        $this->requireDb();
+
+        $private = $this->store(array('name' => 'Still Private', 'is_shared' => false), self::OTHER);
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertNotContains($private['id'], $ids);
+    }
+
+    /**
+     * The column is NULL on every row that predates it, and NULL must read as
+     * private -- matched as = 1 rather than as truthy for exactly this reason.
+     */
+    public function testARowWithNoSharingFlagIsTreatedAsPrivate(): void
+    {
+        $this->requireDb();
+
+        $legacy = $this->store(array('name' => 'Predates The Column'), self::OTHER);
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query(sprintf(
+            "UPDATE owa_custom_report SET is_shared = NULL WHERE id = '%s'",
+            $db->prepare($legacy['id'])));
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertNotContains($legacy['id'], $ids,
+            'a NULL flag is a row written before sharing existed, and it was private then');
+    }
+
+    /**
+     * A save that says nothing about sharing must not change it, or any screen
+     * without the checkbox would silently un-share whatever it touched.
+     */
+    public function testASaveThatDoesNotMentionSharingLeavesItAlone(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Shared Then Renamed', 'is_shared' => true));
+
+        CustomReports::save(array(
+            'id'         => $saved['id'],
+            'name'       => 'Renamed, Still Shared',
+            'definition' => $this->definition(),
+        ), self::AUTHOR);
+
+        $row = CustomReports::load($saved['id']);
+
+        $this->assertSame('Renamed, Still Shared', $row['name']);
+        $this->assertNotEmpty($row['is_shared'], 'sharing must survive a save that never mentioned it');
+    }
+
+    /** The roster carries the flag, because the list marks shared rows. */
+    public function testTheRosterCarriesTheSharingFlag(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(array('name' => 'Marked Shared', 'is_shared' => true), self::OTHER);
+
+        $row = null;
+
+        foreach (CustomReports::roster(self::AUTHOR) as $candidate) {
+            if ($candidate['id'] === $shared['id']) {
+                $row = $candidate;
+            }
+        }
+
+        $this->assertNotNull($row);
+        $this->assertNotEmpty($row['is_shared']);
+    }
+
+    // ------------------------------------------------------------------
+    // "Just mine": a reader narrowing their own list
+    // ------------------------------------------------------------------
+
+    public function testMineOnlyExcludesAReportSharedBySomebodyElse(): void
+    {
+        $this->requireDb();
+
+        $mine   = $this->store(array('name' => 'My Own'));
+        $shared = $this->store(array('name' => 'Theirs But Shared', 'is_shared' => true), self::OTHER);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, true), 'id');
+
+        $this->assertContains($mine['id'], $ids);
+        $this->assertNotContains($shared['id'], $ids);
+    }
+
+    /**
+     * It means the same thing to an admin.
+     *
+     * "Just mine" is a reader narrowing a list, so for someone who would
+     * otherwise see everything it has to mean THEIR OWN -- not their own plus
+     * everyone's, which is what it would mean if it were applied alongside the
+     * see-everything branch rather than instead of it.
+     */
+    public function testMineOnlyNarrowsEvenForAUserWhoMaySeeEverything(): void
+    {
+        $this->requireDb();
+
+        $mine   = $this->store(array('name' => 'Admin Own'));
+        $theirs = $this->store(array('name' => 'Admin Sees Theirs'), self::OTHER);
+
+        $all = array_column(
+            CustomReports::roster(self::AUTHOR, true, '', null, null, null, false), 'id');
+        $this->assertContains($theirs['id'], $all);
+
+        $narrowed = array_column(
+            CustomReports::roster(self::AUTHOR, true, '', null, null, null, true), 'id');
+
+        $this->assertContains($mine['id'], $narrowed);
+        $this->assertNotContains($theirs['id'], $narrowed,
+            '"just mine" must narrow for an admin too, or the control does nothing for them');
+    }
+
     /** The roster has to say who made each report, which means carrying it. */
     public function testTheRosterCarriesTheNameAndTheCreator(): void
     {

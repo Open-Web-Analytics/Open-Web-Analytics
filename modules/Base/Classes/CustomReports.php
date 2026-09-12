@@ -1627,16 +1627,24 @@ class CustomReports {
      * The reports a user may see listed.
      *
      * Ownership governs the ROSTER, not viewing: an admin sees every report, a
-     * non-admin sees the ones they created. A report reached by its URL renders
-     * for anyone with view_reports, which is what makes the URL shareable --
-     * and is safe because a custom report can show nothing its reader could not
-     * already query for themselves.
+     * non-admin sees the ones they created, PLUS any their author has shared. A
+     * report reached by its URL renders for anyone with view_reports, which is
+     * what makes the URL shareable -- and is safe because a custom report can
+     * show nothing its reader could not already query for themselves.
+     *
+     * Sharing is therefore about being FOUND, not about being allowed. It puts
+     * a report on other people's lists; it does not open anything that was
+     * closed, and un-sharing does not close anything either -- a link someone
+     * already has goes on working.
      *
      * @param string $user_id
-     * @param bool   $all     true for a user who may see everyone's
+     * @param bool   $all       true for a user who may see everyone's
+     * @param bool   $mine_only true to list only this user's own, whatever
+     *                          else they would be shown. A reader's choice,
+     *                          not a permission -- it can only narrow.
      * @return array
      */
-    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -1644,9 +1652,25 @@ class CustomReports {
         $params = array();
         $where  = array();
 
-        if ( ! $all ) {
+        if ( $mine_only ) {
 
+            /*
+             * Asked for FIRST, and on its own, so it means the same thing to
+             * everybody: an admin narrowing to "mine" gets their own, not their
+             * own plus everyone's. It can only ever narrow -- a reader cannot
+             * widen past what they would have been shown anyway.
+             */
             $where[]  = 'user_id = ?';
+            $params[] = (string) $user_id;
+
+        } elseif ( ! $all ) {
+
+            /*
+             * Matched as = 1 rather than as truthy, so a NULL -- which is every
+             * row written before the column existed -- stays private. The same
+             * reasoning as the report_type filter below.
+             */
+            $where[]  = '( user_id = ? OR is_shared = 1 )';
             $params[] = (string) $user_id;
         }
 
@@ -1799,6 +1823,17 @@ class CustomReports {
         $entity->set( 'name', $name );
         $entity->set( 'definition', json_encode( $definition ) );
         $entity->set( 'last_updated_timestamp', $now );
+
+        /*
+         * Only when the caller said something about it. A save that does not
+         * mention sharing leaves it as it was, which is what lets a screen that
+         * has no such control edit a shared report without quietly un-sharing
+         * it.
+         */
+        if ( array_key_exists( 'is_shared', $fields ) ) {
+
+            $entity->set( 'is_shared', $fields['is_shared'] ? 1 : 0 );
+        }
 
         if ( $id === '' ) {
 

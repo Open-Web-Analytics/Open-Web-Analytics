@@ -45,6 +45,21 @@ and where they left.</div>
     </div>
 
     <div class="setting">
+        <div class="title">Visibility</div>
+        <div class="description">Anyone you send the link to can open this either way &mdash;
+        a visualization shows nothing its reader could not already query. This decides whose
+        <em>list</em> it appears on.</div>
+        <div class="field">
+            <label>
+                <input type="checkbox" value="1"
+                       name="<?php echo $view->getNs();?>isShared"
+                       <?php echo ! empty( $owa_v['is_shared'] ) ? 'checked="checked"' : '';?>>
+                Show this visualization in everyone's list
+            </label>
+        </div>
+    </div>
+
+    <div class="setting">
         <div class="title">Type</div>
         <div class="description">What kind of visualization this is. Each kind computes its own
         numbers, so it decides what this form asks for &mdash; which is why it is chosen before

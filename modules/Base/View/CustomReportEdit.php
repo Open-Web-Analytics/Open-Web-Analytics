@@ -25,6 +25,7 @@ class CustomReportEdit extends \OWA\Core\View {
         $this->body->set( 'custom_report_name', $this->get( 'custom_report_name' ) );
         $this->body->set( 'custom_report_definition', $this->get( 'custom_report_definition' ) );
         $this->body->set( 'custom_report_error', $this->get( 'custom_report_error' ) );
+        $this->body->set( 'custom_report_is_shared', $this->get( 'custom_report_is_shared' ) );
 
         $this->body->set( 'metric_choices', $this->get( 'metric_choices' ) );
         $this->body->set( 'metric_entities', $this->get( 'metric_entities' ) );

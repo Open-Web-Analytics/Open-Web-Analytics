@@ -141,6 +141,16 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'custom_report_definition', $definition );
 
         /*
+         * Shared, or listed only to its author. A refused save carries the
+         * checkbox back rather than redrawing the stored value, for the same
+         * reason the name and definition do.
+         */
+        $this->set( 'custom_report_is_shared',
+            $this->getParam( 'customReportError' )
+                ? (bool) $this->getParam( 'isShared' )
+                : ( $report ? ! empty( $report['is_shared'] ) : false ) );
+
+        /*
          * The site the author is looking at, carried through the form.
          *
          * It ends up on the URL the author lands on after saving, which is the

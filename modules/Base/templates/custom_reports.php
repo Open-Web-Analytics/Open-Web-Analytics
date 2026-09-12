@@ -25,11 +25,40 @@ $owa_builder   = $owa_isViz ? 'base.visualizationEdit' : 'base.customReportEdit'
  * has nothing to gate per row. The controller still decides what is LISTED.
  */
 $owa_author    = (bool) $view->get('may_author');
+$owa_mine      = (bool) $view->get('roster_mine');
+$owa_seesAll   = (bool) $view->get('sees_all');
 ?>
 
 <?php if ( $owa_reports ): ?>
 
 <div class="owa_reportSectionContent">
+
+<?php
+    /*
+     * Whose reports this is showing, and the way to change it.
+     *
+     * Only drawn for someone who could be shown more than their own -- an
+     * author with no shared reports around them would get a control whose two
+     * states produce the same list.
+     */
+?>
+<?php if ( $owa_seesAll || ! $owa_mine || $owa_reports ): ?>
+<div class="owa_rosterFilter">
+    <?php
+        $owa_filterLink = function ( $mine ) use ( $view, $owa_isViz ) {
+            return $view->makeLink( array(
+                'do'         => $owa_isViz ? 'base.visualizations' : 'base.customReports',
+                'rosterMine' => $mine ? '1' : '0',
+            ) );
+        };
+    ?>
+    <a class="<?php echo $owa_mine ? '' : 'owa_rosterFilterActive'; ?>"
+       href="<?php echo $owa_filterLink( false ); ?>">All</a>
+    <a class="<?php echo $owa_mine ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( true ); ?>">Just mine</a>
+</div>
+<?php endif; ?>
+
 <table class="management owa_customReportRoster">
     <thead>
         <tr>
@@ -49,7 +78,7 @@ $owa_author    = (bool) $view->get('may_author');
                 $owa_sort = (string) $view->get('roster_sort');
                 $owa_desc = (bool) $view->get('roster_desc');
 
-                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz ) {
+                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz, $owa_mine ) {
 
                     $active = ( $owa_sort === $key );
 
@@ -64,6 +93,9 @@ $owa_author    = (bool) $view->get('may_author');
                         'do'         => $owa_isViz ? 'base.visualizations' : 'base.customReports',
                         'rosterSort' => $key,
                         'rosterDesc' => $next ? '1' : '0',
+                        // Carried, or sorting would silently drop the filter
+                        // and hand back a longer list than was asked for.
+                        'rosterMine' => $owa_mine ? '1' : '0',
                     ) );
 
                     printf(
@@ -111,7 +143,13 @@ $owa_author    = (bool) $view->get('may_author');
                 ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
             </td>
 
-            <td class="data_cell"><?php $view->out( $owa_report['user_id'] ); ?></td>
+            <td class="data_cell">
+                <?php $view->out( $owa_report['user_id'] ); ?>
+                <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
+                    <span class="owa_rosterShared"
+                          title="Shown in everyone's list">shared</span>
+                <?php endif; ?>
+            </td>
 
             <td class="data_cell">
                 <?php $owa_when = (int) $owa_report['last_updated_timestamp']; ?>

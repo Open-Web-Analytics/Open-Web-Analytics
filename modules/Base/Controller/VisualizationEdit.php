@@ -83,6 +83,9 @@ class VisualizationEdit extends \OWA\Core\ReportController {
                 'id'                 => $id,
                 'name'               => $this->getParam( 'name' ),
                 'visualization_type' => $type,
+                // Carried back on a refused save, like the name is. The stored
+                // row already has it on the other branch.
+                'is_shared'          => $this->getParam( 'isShared' ) ? 1 : 0,
               )
             : (array) $report );
         $this->set( 'steps', $submitted ?: $stored );

@@ -27,6 +27,7 @@
 $owa_id         = (string) $view->get('custom_report_id');
 $owa_name       = (string) $view->get('custom_report_name');
 $owa_definition = (array) $view->get('custom_report_definition');
+$owa_is_shared  = (bool) $view->get('custom_report_is_shared');
 $owa_error      = (string) $view->get('custom_report_error');
 $owa_types      = (array) $view->get('widget_types');
 $owa_max        = (int) $view->get('max_widgets');
@@ -75,6 +76,25 @@ $owa_max        = (int) $view->get('max_widgets');
             <input type="text" id="customReportName" name="customReportName"
                    placeholder="Untitled report"
                    value="<?php $view->out( $owa_name ); ?>" />
+
+            <?php
+                /*
+                 * Listing, not access. Anyone with view_reports can already
+                 * open this report from its link -- that is what makes the link
+                 * worth sending. What this decides is whose LIST it appears on.
+                 */
+            ?>
+            <div class="owa_builderShare">
+                <label for="isShared">
+                    <input type="checkbox" id="isShared" name="isShared" value="1"
+                           <?php echo $owa_is_shared ? 'checked="checked"' : ''; ?> />
+                    Show this report in everyone's list
+                </label>
+                <p class="owa_builderHint">
+                    Off by default. Anyone you send the link to can open it either way;
+                    this decides whether other people find it without the link.
+                </p>
+            </div>
         </div>
 
         <?php

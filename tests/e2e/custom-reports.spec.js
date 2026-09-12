@@ -2438,6 +2438,94 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('#customReportName')).toHaveValue(name);
         });
+
+        test.describe('sharing and the roster filter', () => {
+
+            /*
+             * Sharing is about being FOUND, not about being allowed: a custom
+             * report opened by its URL already renders for anyone with
+             * view_reports. So these drive the roster, which is the thing the flag
+             * actually changes.
+             */
+
+            test('a new report is private, and the checkbox says what sharing does', async ({ page }) => {
+                await openBuilder(page);
+
+                const box = page.locator('#isShared');
+
+                await expect(box).toBeVisible();
+                await expect(box).not.toBeChecked();
+
+                // The label has to say LISTING rather than access, or it promises a
+                // privacy property it is not providing.
+                await expect(page.locator('label[for="isShared"]')).toContainText(/list/i);
+            });
+
+            test('sharing survives the round trip and marks the row', async ({ page }) => {
+                const name = reportName('Shared');
+
+                await openBuilder(page);
+                await page.fill('#customReportName', name);
+                await page.check('#isShared');
+                await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+                await page.click('#customReportSubmit');
+                await page.waitForLoadState('networkidle');
+
+                await openRoster(page);
+
+                const row = page.locator('.owa_customReportRoster tbody tr', { hasText: name });
+
+                await expect(row).toHaveCount(1);
+                await expect(row.locator('.owa_rosterShared')).toBeVisible();
+            });
+
+            test('the builder comes back with the box still ticked', async ({ page }) => {
+                const name = reportName('StillTicked');
+
+                await openBuilder(page);
+                await page.fill('#customReportName', name);
+                await page.check('#isShared');
+                await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+                await page.click('#customReportSubmit');
+                await page.waitForLoadState('networkidle');
+
+                await openRoster(page);
+                await page.locator('.owa_customReportRoster tbody tr', { hasText: name })
+                    .locator('a').first().click();
+                await page.waitForLoadState('networkidle');
+
+                // Edit is the pencil on the report itself, not a roster column.
+                await page.locator('.owa_editReport, a[href*="customReportEdit"]').first().click();
+                await page.waitForSelector('#customReportForm', { timeout: 20_000 });
+
+                await expect(page.locator('#isShared')).toBeChecked();
+            });
+
+            test('"just mine" narrows the roster and survives a sort', async ({ page }) => {
+                await buildOne(page, 'MineFilter');
+
+                await openRoster(page);
+                await expect(page.locator('.owa_rosterFilter')).toBeVisible();
+
+                await page.locator('.owa_rosterFilter a', { hasText: 'Just mine' }).click();
+                await page.waitForLoadState('networkidle');
+
+                await expect(page).toHaveURL(/rosterMine=1/);
+                await expect(
+                    page.locator('.owa_rosterFilter a.owa_rosterFilterActive')
+                ).toHaveText('Just mine');
+
+                /*
+                 * Sorting must CARRY the filter. A sort link that dropped it would
+                 * hand back a longer list than was asked for, which reads as the
+                 * filter having failed rather than as the link having lost it.
+                 */
+                await page.locator('.owa_customReportRoster thead th a').first().click();
+                await page.waitForLoadState('networkidle');
+
+                await expect(page).toHaveURL(/rosterMine=1/);
+            });
+        });
     });
 
     test.describe('as a reader who cannot author', () => {
