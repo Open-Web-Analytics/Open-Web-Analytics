@@ -253,6 +253,12 @@ parameters:
 			path: Core/Module.php
 
 		-
+			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Core/Module.php
+
+		-
 			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
