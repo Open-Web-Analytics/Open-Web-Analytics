@@ -763,7 +763,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'        => 'lineItemQuantity',
             'label'       => 'Item Quantity',
-            'description' => 'The total umber of items purchased.',
+            'description' => 'The total number of items purchased.',
             'group'       => 'E-commerce',
             'metric_type' => 'sum',
             'data_type'   => 'integer',
@@ -773,7 +773,7 @@ class Module extends \OWA\Core\Module {
         $this->registerMetricDefinition( array(
             'name'        => 'lineItemQuantity',
             'label'       => 'Item Quantity',
-            'description' => 'The total umber of items purchased.',
+            'description' => 'The total number of items purchased.',
             'group'       => 'E-commerce',
             'metric_type' => 'sum',
             'data_type'   => 'integer',
