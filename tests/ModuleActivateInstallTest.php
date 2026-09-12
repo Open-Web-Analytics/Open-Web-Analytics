@@ -142,6 +142,55 @@ final class ModuleActivateInstallTest extends TestCase
     }
 
     /**
+     * The decision itself: when a missing version must NOT be repaired.
+     *
+     * This is the case the repair test cannot reach. maxmind_geoip has no
+     * entities and requires schema 1, so BOTH halves of the condition
+     * ($all_tables_are_new, and required <= 1) are true there -- that test would
+     * pass against a condition hardcoded to true. It shows a repair happens, not
+     * that the decision is right.
+     *
+     * base is the only module with entities AND a required version above 1, so
+     * it is the only place the operands differ: its tables already exist, so a
+     * missing version might mean 27 updates are pending rather than none.
+     * Guessing "current" there is precisely the migration-skip this change
+     * exists to stop, so install() must refuse and leave the version unset --
+     * getSchemaVersion() then reads 1 and cmd=update replays properly.
+     */
+    public function testAMissingVersionIsNotRepairedWhenUpdatesCouldBePending(): void
+    {
+        $real = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
+
+        $this->assertGreaterThan(1, (int) $real,
+            'base must require more than schema 1 for this case to exist');
+
+        try {
+            // A module whose tables are already there, with no recorded version.
+            \OWA\Core\CoreAPI::persistSetting('base', 'schema_version', false);
+            \OWA\Core\CoreAPI::configSingleton()->save();
+
+            $this->assertEmpty(\OWA\Core\CoreAPI::getSetting('base', 'schema_version'),
+                'precondition: no version recorded');
+
+            \OWA\Core\CoreAPI::installModule('base');
+
+            $this->assertEmpty(
+                \OWA\Core\CoreAPI::getSetting('base', 'schema_version'),
+                'install() must NOT assume a module with existing tables is current: '
+                . 'recording the required version here would skip every pending update'
+            );
+
+        } finally {
+            \OWA\Core\CoreAPI::persistSetting('base', 'schema_version', $real);
+            \OWA\Core\CoreAPI::configSingleton()->save();
+
+            $this->assertSame((int) $real,
+                (int) \OWA\Core\CoreAPI::getSetting('base', 'schema_version'),
+                'the installation must be left exactly as it was found');
+        }
+    }
+
+    /**
      * install() must be able to tell a fresh table from one that was already
      * there. Without this the decision above cannot be made at all.
      */

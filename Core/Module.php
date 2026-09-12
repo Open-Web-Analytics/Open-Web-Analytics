@@ -762,11 +762,10 @@ abstract class Module {
              * Three cases, and only the first two can be answered here:
              *
              *  - Already recorded: leave it. cmd=update migrates from there.
-             *  - Not recorded, and nothing to migrate -- either every table was
-             *    just created at the current definition, or the module has no
-             *    updates at all (required version 1). The required version is
-             *    then the truth, and recording it REPAIRS a module that was
-             *    activated without being installed.
+             *  - Not recorded, and every table was just created at the current
+             *    definition (which includes a module with no tables at all).
+             *    The required version is then the truth, and recording it
+             *    REPAIRS a module that was activated without being installed.
              *  - Not recorded, tables already existed, and updates exist between
              *    1 and required: unknowable from here. Say so and leave it
              *    absent -- getSchemaVersion() reads that as 1, so cmd=update
@@ -777,7 +776,18 @@ abstract class Module {
 
             if ( ! $recorded ) {
 
-                if ( $all_tables_are_new || $this->getRequiredSchemaVersion() <= 1 ) {
+                /*
+                 * Freshness alone decides it. A second clause for "the module
+                 * requires schema 1, so nothing could be pending" was correct
+                 * but unreachable: only base registers entities, so for every
+                 * other module the loop above never runs and this is already
+                 * true, and for base it is already false. An untestable branch
+                 * that no module can exercise is one nobody will notice going
+                 * wrong -- and omitting it fails in the safe direction, since
+                 * the cost is a version left unrecorded rather than one
+                 * wrongly claimed current.
+                 */
+                if ( $all_tables_are_new ) {
 
                     \OWA\Core\CoreAPI::persistSetting(
                         $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
