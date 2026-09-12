@@ -48,8 +48,10 @@ jobs:
 
       - name: Generate the tables
         run: |
-          php tests/tools/generate_metrics_dimensions_doc.php > /tmp/generated.md
-          test -s /tmp/generated.md
+          php tests/tools/generate_metrics_dimensions_doc.php > /tmp/generated.md 2>/tmp/generate.err || {
+            echo "the generator failed:"; cat /tmp/generate.err; exit 1;
+          }
+          test -s /tmp/generated.md || { echo "the generator produced nothing"; cat /tmp/generate.err; exit 1; }
           echo "rows: $(grep -c '^|`' /tmp/generated.md)"
 
       - name: Check out the wiki
