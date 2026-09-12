@@ -33,10 +33,11 @@ namespace OWA\Module\Hello\View;
 
 class ExampleSettings extends \OWA\Core\View {
 
-    function __construct($params) {
-        //set page type
-        $this->_setPageType('Administration Page');
-        return parent::__construct($params);
+    function __construct( $params ) {
+
+        parent::__construct( $params );
+
+        $this->_setPageType( 'Administration Page' );
     }
 
     function render($data) {

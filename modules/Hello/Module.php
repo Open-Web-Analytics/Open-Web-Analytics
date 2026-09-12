@@ -45,7 +45,7 @@ class Module extends \OWA\Core\Module {
         $this->config_required = false;
         $this->required_schema_version = 1;
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     /**
