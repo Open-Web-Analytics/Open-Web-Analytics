@@ -45,7 +45,22 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
         
         if ( $module ) {
     
-            $ret = \OWA\Core\CoreAPI::activateModule($module);
+            /*
+             * INSTALL, not activate.
+             *
+             * The admin UI's "Activate" control has always called
+             * installModule() -- it creates the module's tables, records its
+             * schema version and then activates it. This command called
+             * activateModule(), which sets is_active and nothing else, so the
+             * same word did two different things depending on where it was
+             * typed, and the CLI one left a module switched on with no tables
+             * and no schema version. Nothing reported that: getSchemaVersion()
+             * defaults an absent version to 1, so the module read as current.
+             *
+             * install() is idempotent (see Module::install), so this is safe to
+             * run against a module that is already installed.
+             */
+            $ret = \OWA\Core\CoreAPI::installModule($module);
             
         } else {
             \OWA\Core\CoreAPI::notice('No module argument was specified. Use module=xxx');

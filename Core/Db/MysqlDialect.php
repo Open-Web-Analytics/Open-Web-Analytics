@@ -380,6 +380,37 @@ trait MysqlDialect
      * @param string $column_name  one column, or a comma-separated list
      * @return bool
      */
+    /**
+     * Whether a table is already there.
+     *
+     * Schema introspection, so it lives in the dialect: the spelling is
+     * MySQL's, and a query written at the call site would work here and answer
+     * wrongly on any other backend.
+     *
+     * Used by Module::install() to tell a FRESH install from a re-run over
+     * tables that already exist -- CREATE TABLE IF NOT EXISTS cannot report
+     * which of the two happened, and the difference decides whether recording
+     * the current schema version is a repair or a way to skip every pending
+     * update.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function tableExists( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        $row = $this->get_row( sprintf(
+            "SELECT COUNT(*) AS n FROM information_schema.TABLES "
+          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'",
+            $table_name ) );
+
+        return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
+    }
+
     function indexExists( $table_name, $column_name ) {
 
         $cols = $this->normalizeIndexColumns( $column_name );

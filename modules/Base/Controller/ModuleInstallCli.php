@@ -43,13 +43,27 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
 
         $module = $this->getParam('module');
 
-        if ( $module ) {
+        if ( ! $module ) {
 
-            $ret = \OWA\Core\CoreAPI::installModule($module);
-
-        } else {
-            \OWA\Core\CoreAPI::notice('No module argument was specified. Use module=xxx');
+            return $this->refuse( 'No module argument was specified. Use module=xxx' );
         }
+
+        /*
+         * DEPRECATED. Two commands did the same job under different names while
+         * a third name, cmd=activate, did only half of it -- so which of the
+         * three to type depended on knowing that history. cmd=activate now
+         * installs, matching what the admin UI's "Activate" control has always
+         * done, which leaves this one redundant.
+         *
+         * Still does exactly what it did, because scripts call it. It goes away
+         * at v2.0, alongside the other deprecations.
+         */
+        \OWA\Core\CoreAPI::notice(
+            'cmd=install-module is deprecated and will be removed in 2.0. '
+          . 'Use "cmd=activate module=' . $module . '" instead -- it installs '
+          . 'and activates, which is what this command does.' );
+
+        return \OWA\Core\CoreAPI::installModule($module);
     }
 
 }

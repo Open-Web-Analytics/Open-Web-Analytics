@@ -695,12 +695,31 @@ abstract class Module {
 
         $errors = '';
 
+        /*
+         * Whether every table this module owns had to be created.
+         *
+         * createTable() is CREATE TABLE IF NOT EXISTS and returns true either
+         * way, so it cannot say whether it built the table or found it. That
+         * difference decides what the schema version may be set to below, so it
+         * is measured here instead.
+         */
+        $all_tables_are_new = true;
+
         // Install schema
         if (!empty($this->entities)) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
 
             foreach ($this->entities as $k => $v) {
 
                 $entity = \OWA\Core\CoreAPI::entityFactory($this->name.'.'.$v);
+
+                if ( is_object( $db ) && method_exists( $db, 'tableExists' )
+                     && $db->tableExists( $entity->getTableName() ) ) {
+
+                    $all_tables_are_new = false;
+                }
+
                 //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
@@ -728,8 +747,49 @@ abstract class Module {
                 \OWA\Core\CoreAPI::notice("Post install procedure failed.");
             }
 
-            // save schema version to configuration
-            \OWA\Core\CoreAPI::persistSetting( $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
+            /*
+             * The schema version, written only when it is provably correct.
+             *
+             * Writing the REQUIRED version unconditionally was wrong on a re-run:
+             * CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so the
+             * version jumped to the latest while the tables stayed old. update()
+             * selects work with `$seq > $current_schema_version`, so every update
+             * in between was skipped -- permanently, since nothing revisits them
+             * and isSchemaCurrent() then answers true. Reachable from the admin
+             * UI, whose "Activate" control calls install(): deactivate a module,
+             * upgrade OWA, activate it again, and its migrations were gone.
+             *
+             * Three cases, and only the first two can be answered here:
+             *
+             *  - Already recorded: leave it. cmd=update migrates from there.
+             *  - Not recorded, and nothing to migrate -- either every table was
+             *    just created at the current definition, or the module has no
+             *    updates at all (required version 1). The required version is
+             *    then the truth, and recording it REPAIRS a module that was
+             *    activated without being installed.
+             *  - Not recorded, tables already existed, and updates exist between
+             *    1 and required: unknowable from here. Say so and leave it
+             *    absent -- getSchemaVersion() reads that as 1, so cmd=update
+             *    replays the updates and records the version as it goes, which
+             *    is the safe direction.
+             */
+            $recorded = \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
+
+            if ( ! $recorded ) {
+
+                if ( $all_tables_are_new || $this->getRequiredSchemaVersion() <= 1 ) {
+
+                    \OWA\Core\CoreAPI::persistSetting(
+                        $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
+
+                } else {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        'Module %s has tables but no recorded schema version, so its version '
+                      . 'was left unset rather than assumed current. Run "cmd=update" to apply '
+                      . 'any pending updates and record it.', $this->name ) );
+                }
+            }
             //activate the module and save the configuration
             $this->activate();
             \OWA\Core\CoreAPI::notice("Installation complete.");

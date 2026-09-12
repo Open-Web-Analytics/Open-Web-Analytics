@@ -218,14 +218,45 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
             $current = ! in_array( $name, $behind, true );
 
+            /*
+             * The STORED version, which is not the same question as the one the
+             * verdict beside it answers. Module::getSchemaVersion() defaults an
+             * absent value to 1, so a module that was never installed reads as
+             * current; printing the raw setting instead rendered "(schema )".
+             * Both are reported, because the gap between them IS the finding.
+             */
+            $stored = \OWA\Core\CoreAPI::getSetting( $name, 'schema_version' );
+
             $rows[] = $this->row(
                 $current ? self::OK : self::FAIL,
                 $name,
                 sprintf( '%s (schema %s)',
                     $current ? 'up to date' : 'UPDATE REQUIRED',
-                    (string) \OWA\Core\CoreAPI::getSetting( $name, 'schema_version' ) ),
+                    $stored ? (string) $stored : 'not recorded' ),
                 "Run 'php cli.php cmd=update'. Until you do, the job scheduler "
               . 'refuses every job.' );
+
+            /*
+             * Active, but never installed.
+             *
+             * install() is what creates a module's tables and records its
+             * version; activate() only sets is_active. A module enabled by the
+             * older cmd=activate therefore runs with no tables and no version,
+             * and nothing says so -- the default of 1 makes it read as current.
+             * Harmless while a module has no updates and no entities, which is
+             * why it has gone unnoticed; the first update such a module ships
+             * will run against tables that were never created.
+             */
+            if ( ! $stored ) {
+
+                $rows[] = $this->row( self::WARN, '  ' . $name,
+                    'active, but never installed',
+                    sprintf( 'No schema version was recorded, so this module was activated '
+                           . 'without being installed and its tables may never have been '
+                           . "created. Run 'php cli.php cmd=activate module=%s' to install "
+                           . 'it properly; that is safe to run on an installed module.',
+                             $name ) );
+            }
         }
 
         if ( ! $rows ) {
