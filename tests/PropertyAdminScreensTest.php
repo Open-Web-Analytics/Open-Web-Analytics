@@ -1287,7 +1287,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* Including the module screens -- they are settings like any other. */
         foreach ( array( 'modules/MaxmindGeoip/Controller/OptionsGeoip.php',
-                         'modules/Hello/ExampleSettingsController.php' ) as $module ) {
+                         'modules/Hello/Controller/ExampleSettingsController.php' ) as $module ) {
 
             $src = (string) file_get_contents( OWA_DIR . $module );
 

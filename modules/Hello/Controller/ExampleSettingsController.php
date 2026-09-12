@@ -1,5 +1,5 @@
 <?php
-namespace OWA\Module\Hello;
+namespace OWA\Module\Hello\Controller;
 
 
 //
@@ -54,7 +54,7 @@ class ExampleSettingsController extends \OWA\Core\AdminController {
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
         $this->set( 'hierarchy_tier', 0 );
         $this->setView('base.optionsHierarchy');
-        $this->setSubview('base.exampleSettings');
+        $this->setSubview('hello.exampleSettings');
     }
 
 }

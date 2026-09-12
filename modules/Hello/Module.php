@@ -45,7 +45,28 @@ class Module extends \OWA\Core\Module {
         $this->config_required = false;
         $this->required_schema_version = 1;
 
-        return parent::__construct();
+        parent::__construct();
+    }
+
+    /**
+     * Map this module's actions to their classes.
+     *
+     * Without this an action resolves through the legacy path, which rebuilds a
+     * class name and a file path out of the request's own `do` parameter. Naming
+     * the class here keeps CoreAPI::performAction() on the registered branch,
+     * and is what a module should do.
+     *
+     * The path argument is empty on purpose: registerAction() prefixes it with
+     * OWA_BASE_MODULE_DIR, which is hardcoded to modules/Base/, so a non-Base
+     * module cannot express a correct path through it. The class name is the
+     * PSR-4 name, so Composer autoloads it and the path is never consulted.
+     */
+    function registerActions() {
+
+        $this->registerAction(
+            'hello.exampleSettings',
+            'OWA\\Module\\Hello\\Controller\\ExampleSettingsController',
+            '' );
     }
 
     /**

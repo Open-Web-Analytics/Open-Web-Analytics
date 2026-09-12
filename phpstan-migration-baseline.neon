@@ -625,18 +625,6 @@ parameters:
 			path: modules/FileCache/Module.php
 
 		-
-			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Hello/ExampleSettingsView.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Hello/Module.php
-
-		-
 			message: '#^Instantiated class Client not found\.$#'
 			identifier: class.notFound
 			count: 1

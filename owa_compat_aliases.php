@@ -304,8 +304,8 @@ function owa_compat_class_map(): array
         'owa_domstreamsRestView' => 'OWA\\Module\\Domstream\\View\\DomstreamsRest',
         'owa_domstreamHandlers' => 'OWA\\Module\\Domstream\\Handler\\DomstreamHandlers',
         'owa_fileCache' => 'OWA\\Module\\FileCache\\Classes\\FileCache',
-        'owa_exampleSettingsController' => 'OWA\\Module\\Hello\\ExampleSettingsController',
-        'owa_exampleSettingsView' => 'OWA\\Module\\Hello\\ExampleSettingsView',
+        'owa_exampleSettingsController' => 'OWA\\Module\\Hello\\Controller\\ExampleSettingsController',
+        'owa_exampleSettingsView' => 'OWA\\Module\\Hello\\View\\ExampleSettings',
         'owa_maxmind' => 'OWA\\Module\\MaxmindGeoip\\Classes\\Maxmind',
         'owa_memcachedCache' => 'OWA\\Module\\MemcachedCache\\Classes\\MemcachedCache',
 
