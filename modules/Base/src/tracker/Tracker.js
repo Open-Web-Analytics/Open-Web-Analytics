@@ -294,7 +294,6 @@ class OWATracker  {
 	        domstreamLoggingInterval: 3000,
 	        domstreamEventThreshold: 10,
 	        maxPriorCampaigns: 5,
-	        campaignAttributionWindow: 60,
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        cookie_domain: false,
@@ -2108,7 +2107,7 @@ class OWATracker  {
 
     setCampaignCookie( values ) {
 	    
-        OWA.setState( 'c', 'attribs', values, '', 'json', this.options.campaignAttributionWindow );
+        OWA.setState( 'c', 'attribs', values, '', 'json' );
     }
     
 

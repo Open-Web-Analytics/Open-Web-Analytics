@@ -601,7 +601,17 @@ class StateManager {
         }
     }
     
-    set(store_name, key, value, is_perminant,format, expiration_days) {
+    /*
+     * The store's expiration is NOT a parameter here.
+     *
+     * It is declared once at registerStore(), because a store is backed by one
+     * cookie and a cookie has one lifetime: two writes asking for different
+     * expirations would quietly fight over it, last write winning. This used to
+     * take an expiration_days argument and discard it -- persist() reads
+     * getExpirationDays(store_name) -- so a caller passing one was silently
+     * ignored. The campaign store's 60 days comes from its registration.
+     */
+    set(store_name, key, value, is_perminant, format) {
         
         if ( ! this.isPresent( store_name ) && this.shouldAutoLoad( store_name ) ) {
             this.load( store_name );
@@ -714,7 +724,7 @@ class StateManager {
         Util.setCookie( OWA.getSetting('ns') + store_name, state_value, expiration_days, '/', domain );
     }
     
-    replaceStore(store_name, value, is_perminant, format, expiration_days) {
+    replaceStore(store_name, value, is_perminant, format) {
         
         OWA.debug('replace state format: %s, value: %s',format, JSON.stringify(value));
         if ( store_name ) {
@@ -876,7 +886,7 @@ class StateManager {
             
             if ( state && state.hasOwnProperty( key ) ) {
                 delete state[key];
-                this.replaceStore(store_name, state, true, this.getFormat( store_name ),  this.getExpirationDays( store_name ) );
+                this.replaceStore( store_name, state, true, this.getFormat( store_name ) );
             }
         }
     }
