@@ -19,7 +19,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     public function testReportsRejectsUnauthenticated(): void
     {
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['metrics' => 'pageViews', 'period' => 'today']
         );
@@ -32,7 +32,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['period' => 'today'] // no metrics, no report_name
         );
@@ -48,7 +48,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['metrics' => 'pageViews', 'period' => 'today']
         );
@@ -65,7 +65,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['metrics' => 'pageViews', 'period' => 'not-a-real-period-' . $this->tok]
         );
@@ -85,7 +85,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             array_merge( ['metrics' => 'pageViews'], $params )
         );
@@ -113,7 +113,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['metrics' => 'pageViews', 'startDate' => '20260801', 'endDate' => '20260810']
         );
@@ -128,7 +128,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
         // The 'visit' report requires a sessionId; omitting it must fail validation.
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['report_name' => 'visit'] // no sessionId
         );
@@ -157,7 +157,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     public function testCannedReportRejectsUnauthenticated(string $reportName, array $validParams): void
     {
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['report_name' => $reportName] + $validParams
         );
@@ -176,7 +176,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['report_name' => $reportName] + $validParams
         );
@@ -215,7 +215,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
         // latest_actions requires startDate, endDate AND siteId; omit all three.
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['report_name' => 'latest_actions']
         );
@@ -229,7 +229,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_reportsRestController',
+            \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
             ['report_name' => 'clickstream'] // no sessionId
         );

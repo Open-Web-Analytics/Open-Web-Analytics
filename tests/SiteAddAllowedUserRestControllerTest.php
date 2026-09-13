@@ -225,7 +225,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
 
     private function makeController($params)
     {
-        return new owa_siteAddAllowedUserRestController($params);
+        return new \OWA\Module\Base\Controller\SiteAddAllowedUserRest($params);
     }
 
     private function createSiteFixture(): void

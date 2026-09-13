@@ -104,12 +104,8 @@ function owa_compat_class_map(): array
         'owa_view' => 'OWA\\Core\\View',
 
         // owa_view.php subclasses -> OWA\Core\View\ (Phase 6 stage 3)
-        'owa_genericTableView' => 'OWA\\Core\\View\\GenericTable',
-        'owa_sparklineJsView' => 'OWA\\Core\\View\\SparklineJs',
         'owa_mailView' => 'OWA\\Core\\View\\Mail',
         'owa_restApiView' => 'OWA\\Core\\View\\RestApi',
-        'owa_jsonView' => 'OWA\\Core\\View\\Json',
-        'owa_jsonResultsView' => 'OWA\\Core\\View\\JsonResults',
         'owa_adminPageView' => 'OWA\\Core\\View\\AdminPage',
         'owa_cliView' => 'OWA\\Core\\View\\Cli',
 
@@ -141,26 +137,6 @@ function owa_compat_class_map(): array
         'owa_remoteQueueModule' => 'OWA\\Module\\RemoteQueue\\Module',
 
         // modules/base/entities (Phase 6 stage 2)
-        'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
-        'owa_action_fact' => 'OWA\\Module\\Base\\Entity\\ActionFact',
-        'owa_ad_dim' => 'OWA\\Module\\Base\\Entity\\AdDim',
-        'owa_campaign_dim' => 'OWA\\Module\\Base\\Entity\\CampaignDim',
-        'owa_click' => 'OWA\\Module\\Base\\Entity\\Click',
-        'owa_commerce_line_item_fact' => 'OWA\\Module\\Base\\Entity\\CommerceLineItemFact',
-        'owa_commerce_transaction_fact' => 'OWA\\Module\\Base\\Entity\\CommerceTransactionFact',
-        'owa_configuration' => 'OWA\\Module\\Base\\Entity\\Configuration',
-        'owa_domstream' => 'OWA\\Module\\Base\\Entity\\Domstream',
-        'owa_feed_request' => 'OWA\\Module\\Base\\Entity\\FeedRequest',
-        'owa_host' => 'OWA\\Module\\Base\\Entity\\Host',
-        'owa_impression' => 'OWA\\Module\\Base\\Entity\\Impression',
-        'owa_location_dim' => 'OWA\\Module\\Base\\Entity\\LocationDim',
-        'owa_os' => 'OWA\\Module\\Base\\Entity\\Os',
-        'owa_queue_item' => 'OWA\\Module\\Base\\Entity\\QueueItem',
-        'owa_referer' => 'OWA\\Module\\Base\\Entity\\Referer',
-        'owa_request' => 'OWA\\Module\\Base\\Entity\\Request',
-        'owa_search_term_dim' => 'OWA\\Module\\Base\\Entity\\SearchTermDim',
-        'owa_session' => 'OWA\\Module\\Base\\Entity\\Session',
-        'owa_site' => 'OWA\\Module\\Base\\Entity\\Site',
         /*
          * Not legacy names -- nothing ever called these. The entity factory
          * resolves 'base.organization' by checking class_exists('owa_organization'),
@@ -170,11 +146,6 @@ function owa_compat_class_map(): array
          * tests/fixtures/legacy_class_names.json: that fixture lists names the
          * project promises to keep resolving, which is a different claim.
          */
-        'owa_site_user' => 'OWA\\Module\\Base\\Entity\\SiteUser',
-        'owa_source_dim' => 'OWA\\Module\\Base\\Entity\\SourceDim',
-        'owa_ua' => 'OWA\\Module\\Base\\Entity\\Ua',
-        'owa_user' => 'OWA\\Module\\Base\\Entity\\User',
-        'owa_visitor' => 'OWA\\Module\\Base\\Entity\\Visitor',
 
         // modules/base/metrics (Phase 6 stage 2)
         'owa_actionsPerVisit' => 'OWA\\Module\\Base\\Metric\\ActionsPerVisit',
@@ -275,12 +246,8 @@ function owa_compat_class_map(): array
         // registration literals are untouched and these bridge keys cover them.
         // module.php files (the module-registry classes themselves) stay global —
         // deferred to the module.php special-case stage.
-        'owa_domstreamsRestController' => 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController',
-        'owa_domstreamsRestView' => 'OWA\\Module\\Domstream\\View\\DomstreamsRest',
         'owa_domstreamHandlers' => 'OWA\\Module\\Domstream\\Handler\\DomstreamHandlers',
         'owa_fileCache' => 'OWA\\Module\\FileCache\\Classes\\FileCache',
-        'owa_exampleSettingsController' => 'OWA\\Module\\Hello\\Controller\\ExampleSettingsController',
-        'owa_exampleSettingsView' => 'OWA\\Module\\Hello\\View\\ExampleSettings',
         'owa_maxmind' => 'OWA\\Module\\MaxmindGeoip\\Classes\\Maxmind',
         'owa_memcachedCache' => 'OWA\\Module\\MemcachedCache\\Classes\\MemcachedCache',
 
@@ -293,125 +260,26 @@ function owa_compat_class_map(): array
         // strings (registerRestApiRoute / registerAction) + the corsPreflight
         // simpleFactory literal; Views by setView('base.<x>') -> moduleFactory
         // synthesizing 'owa_'.<file>.'View'. All legacy names bridged here.
-        'owa_addSiteRestController' => 'OWA\\Module\\Base\\Controller\\AddSiteRest',
-        'owa_addSiteRestView' => 'OWA\\Module\\Base\\View\\AddSiteRest',
-        'owa_addUserRestController' => 'OWA\\Module\\Base\\Controller\\AddUserRest',
-        'owa_addUserRestView' => 'OWA\\Module\\Base\\View\\AddUserRest',
-        'owa_corsPreflightController' => 'OWA\\Module\\Base\\Controller\\CorsPreflight',
-        'owa_corsPreflightView' => 'OWA\\Module\\Base\\View\\CorsPreflight',
-        'owa_deleteUserRestController' => 'OWA\\Module\\Base\\Controller\\DeleteUserRest',
-        'owa_deleteUserRestView' => 'OWA\\Module\\Base\\View\\DeleteUserRest',
-        'owa_reportsRestController' => 'OWA\\Module\\Base\\Controller\\ReportsRest',
-        'owa_reportsRestView' => 'OWA\\Module\\Base\\View\\ReportsRest',
-        'owa_resetSecretsCliController' => 'OWA\\Module\\Base\\Controller\\ResetSecretsCli',
-        'owa_resetSecretsCliView' => 'OWA\\Module\\Base\\View\\ResetSecretsCli',
-        'owa_siteAddAllowedUserRestController' => 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',
-        'owa_siteAddAllowedUserRestView' => 'OWA\\Module\\Base\\View\\SiteAddAllowedUserRest',
-        'owa_sitesRestController' => 'OWA\\Module\\Base\\Controller\\SitesRest',
-        'owa_sitesRestView' => 'OWA\\Module\\Base\\View\\SitesRest',
-        'owa_usersRestController' => 'OWA\\Module\\Base\\Controller\\UsersRest',
-        'owa_usersRestView' => 'OWA\\Module\\Base\\View\\UsersRest',
 
         // modules/base flat pages — SINGLE-class files (Phase 6 stage 3).
         // In-place affix->namespace (no split needed): Controller suffix ->
         // ...Base\\Controller\\<Name>, View suffix -> ...Base\\View\\<Name>.
-        'owa_entityInstallController' => 'OWA\\Module\\Base\\Controller\\EntityInstall',
-        'owa_errorView' => 'OWA\\Module\\Base\\View\\Error',
-        'owa_flushCacheCliController' => 'OWA\\Module\\Base\\Controller\\FlushCacheCli',
-        'owa_flushProcessedEventsCliController' => 'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',
-        'owa_genericCliView' => 'OWA\\Module\\Base\\View\\GenericCli',
-        'owa_installBaseController' => 'OWA\\Module\\Base\\Controller\\InstallBase',
-        'owa_installCliController' => 'OWA\\Module\\Base\\Controller\\InstallCli',
-        'owa_installConfigController' => 'OWA\\Module\\Base\\Controller\\InstallConfig',
-        'owa_installConfigEntryView' => 'OWA\\Module\\Base\\View\\InstallConfigEntry',
-        'owa_loginController' => 'OWA\\Module\\Base\\Controller\\Login',
-        'owa_logoutController' => 'OWA\\Module\\Base\\Controller\\Logout',
-        'owa_moduleActivateController' => 'OWA\\Module\\Base\\Controller\\ModuleActivate',
-        'owa_moduleActivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleActivateCli',
-        'owa_moduleDeactivateController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivate',
-        'owa_moduleDeactivateCliController' => 'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',
-        'owa_moduleInstallCliController' => 'OWA\\Module\\Base\\Controller\\ModuleInstallCli',
-        'owa_notifyNewSessionPlainTextView' => 'OWA\\Module\\Base\\View\\NotifyNewSessionPlainText',
-        'owa_optionsFlushCacheController' => 'OWA\\Module\\Base\\Controller\\OptionsFlushCache',
-        'owa_optionsResetController' => 'OWA\\Module\\Base\\Controller\\OptionsReset',
         'owa_optionsUpdateController' => 'OWA\\Module\\Base\\Controller\\OptionsUpdate',
-        'owa_passwordResetRequestController' => 'OWA\\Module\\Base\\Controller\\PasswordResetRequest',
-        'owa_pixelView' => 'OWA\\Module\\Base\\View\\Pixel',
         'owa_processEventController' => 'OWA\\Module\\Base\\Controller\\ProcessEvent',
-        'owa_processEventQueueController' => 'OWA\\Module\\Base\\Controller\\ProcessEventQueue',
-        'owa_processFirstRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',
-        'owa_processRequestController' => 'OWA\\Module\\Base\\Controller\\ProcessRequest',
-        'owa_pruneEventQueueArchivesCliController' => 'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',
-        'owa_sitesDeleteController' => 'OWA\\Module\\Base\\Controller\\SitesDelete',
-        'owa_sitesEditController' => 'OWA\\Module\\Base\\Controller\\SitesEdit',
-        'owa_sitesEditAllowedUsersController' => 'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',
         'owa_sitesEditSettingsController' => 'OWA\\Module\\Base\\Controller\\SitesEditSettings',
-        'owa_updatesApplyController' => 'OWA\\Module\\Base\\Controller\\UpdatesApply',
-        'owa_updatesApplyCliController' => 'OWA\\Module\\Base\\Controller\\UpdatesApplyCli',
         'owa_usersAddController' => 'OWA\\Module\\Base\\Controller\\UsersAdd',
-        'owa_usersChangePasswordController' => 'OWA\\Module\\Base\\Controller\\UsersChangePassword',
         'owa_usersDeleteController' => 'OWA\\Module\\Base\\Controller\\UsersDelete',
-        'owa_usersEditController' => 'OWA\\Module\\Base\\Controller\\UsersEdit',
 
         // modules/base flat pages — Controller/View PAIR files (Phase 6 stage 3).
         // Split one-class-per-file (order-agnostic), then affix->namespace.
-        'owa_changeUserPasswordCliController' => 'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',
-        'owa_changeUserPasswordCliView' => 'OWA\\Module\\Base\\View\\ChangeUserPasswordCli',
-        'owa_crawlDocumentCliController' => 'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',
-        'owa_crawlDocumentCliView' => 'OWA\\Module\\Base\\View\\CrawlDocumentCli',
-        'owa_installCheckEnvController' => 'OWA\\Module\\Base\\Controller\\InstallCheckEnv',
-        'owa_installCheckEnvView' => 'OWA\\Module\\Base\\View\\InstallCheckEnv',
-        'owa_installDefaultsEntryController' => 'OWA\\Module\\Base\\Controller\\InstallDefaultsEntry',
-        'owa_installDefaultsEntryView' => 'OWA\\Module\\Base\\View\\InstallDefaultsEntry',
-        'owa_installFinishController' => 'OWA\\Module\\Base\\Controller\\InstallFinish',
-        'owa_installFinishView' => 'OWA\\Module\\Base\\View\\InstallFinish',
-        'owa_installStartController' => 'OWA\\Module\\Base\\Controller\\InstallStart',
-        'owa_installStartView' => 'OWA\\Module\\Base\\View\\InstallStart',
-        'owa_loginFormController' => 'OWA\\Module\\Base\\Controller\\LoginForm',
-        'owa_loginFormView' => 'OWA\\Module\\Base\\View\\LoginForm',
-        'owa_notifyNewSessionController' => 'OWA\\Module\\Base\\Controller\\NotifyNewSession',
-        'owa_notifyNewSessionView' => 'OWA\\Module\\Base\\View\\NotifyNewSession',
-        'owa_optionsGeneralController' => 'OWA\\Module\\Base\\Controller\\OptionsGeneral',
-        'owa_optionsGeneralView' => 'OWA\\Module\\Base\\View\\OptionsGeneral',
-        'owa_optionsModulesController' => 'OWA\\Module\\Base\\Controller\\OptionsModules',
-        'owa_optionsModulesView' => 'OWA\\Module\\Base\\View\\OptionsModules',
-        'owa_overlayLauncherController' => 'OWA\\Module\\Base\\Controller\\OverlayLauncher',
-        'owa_overlayLauncherView' => 'OWA\\Module\\Base\\View\\OverlayLauncher',
-        'owa_passwordResetFormController' => 'OWA\\Module\\Base\\Controller\\PasswordResetForm',
-        'owa_passwordResetFormView' => 'OWA\\Module\\Base\\View\\PasswordResetForm',
-        'owa_reportDomstreamsController' => 'OWA\\Module\\Base\\Controller\\ReportDomstreams',
-        'owa_reportDomstreamsView' => 'OWA\\Module\\Base\\View\\ReportDomstreams',
         'owa_sitesAddController' => 'OWA\\Module\\Base\\Controller\\SitesAdd',
         'owa_sitesAddView' => 'OWA\\Module\\Base\\View\\SitesAdd',
-        'owa_sitesAddCliController' => 'OWA\\Module\\Base\\Controller\\SitesAddCli',
-        'owa_sitesAddCliView' => 'OWA\\Module\\Base\\View\\SitesAddCli',
-        'owa_sitesInvocationController' => 'OWA\\Module\\Base\\Controller\\SitesInvocation',
-        'owa_sitesInvocationView' => 'OWA\\Module\\Base\\View\\SitesInvocation',
-        'owa_sitesProfileController' => 'OWA\\Module\\Base\\Controller\\SitesProfile',
-        'owa_sitesProfileView' => 'OWA\\Module\\Base\\View\\SitesProfile',
-        'owa_updatesController' => 'OWA\\Module\\Base\\Controller\\Updates',
-        'owa_updatesView' => 'OWA\\Module\\Base\\View\\Updates',
         'owa_usersController' => 'OWA\\Module\\Base\\Controller\\Users',
         'owa_usersView' => 'OWA\\Module\\Base\\View\\Users',
-        'owa_usersNewAccountController' => 'OWA\\Module\\Base\\Controller\\UsersNewAccount',
-        'owa_usersNewAccountView' => 'OWA\\Module\\Base\\View\\UsersNewAccount',
-        'owa_usersPasswordEntryController' => 'OWA\\Module\\Base\\Controller\\UsersPasswordEntry',
-        'owa_usersPasswordEntryView' => 'OWA\\Module\\Base\\View\\UsersPasswordEntry',
-        'owa_usersProfileController' => 'OWA\\Module\\Base\\Controller\\UsersProfile',
-        'owa_usersProfileView' => 'OWA\\Module\\Base\\View\\UsersProfile',
-        'owa_usersResetPasswordController' => 'OWA\\Module\\Base\\Controller\\UsersResetPassword',
-        'owa_usersResetPasswordView' => 'OWA\\Module\\Base\\View\\UsersResetPassword',
-        'owa_usersSetPasswordController' => 'OWA\\Module\\Base\\Controller\\UsersSetPassword',
-        'owa_usersSetPasswordView' => 'OWA\\Module\\Base\\View\\UsersSetPassword',
 
         // modules/base flat pages — EDGE cases (Phase 6 stage 3):
         // report.php (owa_reportView + 3 dimensional subviews) and the
         // asymmetric apiRequest.php (owa_apiRequestController + owa_apiErrorView).
-        'owa_apiRequestController' => 'OWA\\Module\\Base\\Controller\\ApiRequest',
-        'owa_apiErrorView' => 'OWA\\Module\\Base\\View\\ApiError',
-        'owa_reportView' => 'OWA\\Module\\Base\\View\\Report',
-        'owa_reportDimensionView' => 'OWA\\Module\\Base\\View\\ReportDimension',
-        'owa_reportDimensionDetailView' => 'OWA\\Module\\Base\\View\\ReportDimensionDetail',
     ];
 }
 

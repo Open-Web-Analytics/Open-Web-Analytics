@@ -77,6 +77,176 @@ final class LegacyClassNameContractTest extends TestCase
 
     private const RETIRED = [
         /*
+         * RETIRED 2026-09-13: 132 concrete controllers, views and entities.
+         *
+         * They were never reachable by these names from outside. A controller
+         * is reached by its REGISTERED ACTION -- base.reportPages -- and a view
+         * by its controller; an entity by entityFactory('base.document'). The
+         * only thing that ever turned those dotted names into owa_* class names
+         * was OWA's own factories, and they resolve by PSR-4 convention now, so
+         * nothing needs these at all.
+         *
+         * The fixture promised them because it was captured MECHANICALLY from
+         * the untouched tree -- every class, not every class anyone could call.
+         * That made the promise far wider than the API it was meant to protect.
+         *
+         * What was kept, and why:
+         *
+         *   - Everything in OWA\Core: the classes a module author calls
+         *     statically or extends -- owa_coreAPI, owa_lib, owa_module.
+         *   - Any class EXTENDED anywhere in this tree, checked rather than
+         *     assumed: owa_factTable, owa_cliController, owa_adminPageView and
+         *     13 others. Matched on short name, which over-keeps, which is the
+         *     safe direction.
+         *   - owa_event and the other classes that appear in SERIALIZED state.
+         *     A queued payload names its class as written, so a name in a blob
+         *     must go on resolving. Scanned live queues on two installs: the
+         *     only class in them is Base\Classes\Event, and the allowlist in
+         *     EventQueue::allowedEventClasses() admits the legacy spelling from
+         *     this very map.
+         *
+         * Checked before removing: of these 132, exactly two were used AS A
+         * CLASS anywhere in the tree, both in test tooling -- one instantiation
+         * in SiteAddAllowedUserRestControllerTest, now written as the
+         * namespaced class, and one mention in a phpstan-bootstrap COMMENT.
+         * The two OWA integrations installed on this box reference none of them
+         * at runtime.
+         */
+        'owa_action_fact',
+        'owa_ad_dim',
+        'owa_addSiteRestController',
+        'owa_addSiteRestView',
+        'owa_addUserRestController',
+        'owa_addUserRestView',
+        'owa_apiErrorView',
+        'owa_apiRequestController',
+        'owa_campaign_dim',
+        'owa_changeUserPasswordCliController',
+        'owa_changeUserPasswordCliView',
+        'owa_click',
+        'owa_commerce_line_item_fact',
+        'owa_commerce_transaction_fact',
+        'owa_configuration',
+        'owa_corsPreflightController',
+        'owa_corsPreflightView',
+        'owa_crawlDocumentCliController',
+        'owa_crawlDocumentCliView',
+        'owa_deleteUserRestController',
+        'owa_deleteUserRestView',
+        'owa_document',
+        'owa_domstream',
+        'owa_domstreamsRestController',
+        'owa_domstreamsRestView',
+        'owa_entityInstallController',
+        'owa_errorView',
+        'owa_exampleSettingsController',
+        'owa_exampleSettingsView',
+        'owa_feed_request',
+        'owa_flushCacheCliController',
+        'owa_flushProcessedEventsCliController',
+        'owa_genericCliView',
+        'owa_genericTableView',
+        'owa_host',
+        'owa_impression',
+        'owa_installBaseController',
+        'owa_installCheckEnvController',
+        'owa_installCheckEnvView',
+        'owa_installCliController',
+        'owa_installConfigController',
+        'owa_installConfigEntryView',
+        'owa_installDefaultsEntryController',
+        'owa_installDefaultsEntryView',
+        'owa_installFinishController',
+        'owa_installFinishView',
+        'owa_installStartController',
+        'owa_installStartView',
+        'owa_jsonResultsView',
+        'owa_jsonView',
+        'owa_location_dim',
+        'owa_loginController',
+        'owa_loginFormController',
+        'owa_loginFormView',
+        'owa_logoutController',
+        'owa_moduleActivateCliController',
+        'owa_moduleActivateController',
+        'owa_moduleDeactivateCliController',
+        'owa_moduleDeactivateController',
+        'owa_moduleInstallCliController',
+        'owa_notifyNewSessionController',
+        'owa_notifyNewSessionPlainTextView',
+        'owa_notifyNewSessionView',
+        'owa_optionsFlushCacheController',
+        'owa_optionsGeneralController',
+        'owa_optionsGeneralView',
+        'owa_optionsModulesController',
+        'owa_optionsModulesView',
+        'owa_optionsResetController',
+        'owa_os',
+        'owa_overlayLauncherController',
+        'owa_overlayLauncherView',
+        'owa_passwordResetFormController',
+        'owa_passwordResetFormView',
+        'owa_passwordResetRequestController',
+        'owa_pixelView',
+        'owa_processEventQueueController',
+        'owa_processFirstRequestController',
+        'owa_processRequestController',
+        'owa_pruneEventQueueArchivesCliController',
+        'owa_queue_item',
+        'owa_referer',
+        'owa_reportDimensionDetailView',
+        'owa_reportDimensionView',
+        'owa_reportDomstreamsController',
+        'owa_reportDomstreamsView',
+        'owa_reportView',
+        'owa_reportsRestController',
+        'owa_reportsRestView',
+        'owa_request',
+        'owa_resetSecretsCliController',
+        'owa_resetSecretsCliView',
+        'owa_search_term_dim',
+        'owa_session',
+        'owa_site',
+        'owa_siteAddAllowedUserRestController',
+        'owa_siteAddAllowedUserRestView',
+        'owa_site_user',
+        'owa_sitesAddCliController',
+        'owa_sitesAddCliView',
+        'owa_sitesDeleteController',
+        'owa_sitesEditAllowedUsersController',
+        'owa_sitesEditController',
+        'owa_sitesInvocationController',
+        'owa_sitesInvocationView',
+        'owa_sitesProfileController',
+        'owa_sitesProfileView',
+        'owa_sitesRestController',
+        'owa_sitesRestView',
+        'owa_source_dim',
+        'owa_sparklineJsView',
+        'owa_ua',
+        'owa_updatesApplyCliController',
+        'owa_updatesApplyController',
+        'owa_updatesController',
+        'owa_updatesView',
+        'owa_user',
+        'owa_usersChangePasswordController',
+        'owa_usersEditController',
+        'owa_usersNewAccountController',
+        'owa_usersNewAccountView',
+        'owa_usersPasswordEntryController',
+        'owa_usersPasswordEntryView',
+        'owa_usersProfileController',
+        'owa_usersProfileView',
+        'owa_usersResetPasswordController',
+        'owa_usersResetPasswordView',
+        'owa_usersRestController',
+        'owa_usersRestView',
+        'owa_usersSetPasswordController',
+        'owa_usersSetPasswordView',
+        'owa_visitor',
+
+
+        /*
          * RETIRED 2026-09-02: the goal funnel REPORT.
          *
          * A funnel is a visualization now -- a row on owa_custom_report drawn

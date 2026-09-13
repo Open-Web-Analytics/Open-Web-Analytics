@@ -19,9 +19,28 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
  */
 final class DomStreamsRestControllerTest extends RestControllerTestCase
 {
-    private const CTRL = 'owa_domstreamsRestController';
+    private const CTRL = \OWA\Module\Domstream\Controller\DomstreamsRestController::class;
 
     /** Absolute path — this controller lives in the domstream module, not base. */
+    /**
+     * The view class a dotted view name resolves to, the way the factory does.
+     *
+     * domstream.domstreamsRest -> OWA\Module\Domstream\View\DomstreamsRest
+     */
+    private function viewClassFor(?string $dotted): ?string
+    {
+        if (!$dotted || strpos($dotted, '.') === false) {
+            return null;
+        }
+
+        list($module, $name) = explode('.', $dotted, 2);
+
+        $class = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module)
+               . '\\View\\' . ucfirst($name);
+
+        return class_exists($class) ? $class : null;
+    }
+
     private function ctrlFile(): string
     {
         return OWA_MODULES_DIR . 'Domstream/Controller/DomstreamsRestController.php';
@@ -134,11 +153,17 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
             'A valid domstreams list query should return 201.');
         $this->assertSame('domstream.domstreamsRest', $resp['view']);
 
-        // Asserting the name alone would pass with the view deleted: the
-        // controller only records a string. Resolve it the way displayView()
-        // does -- owa_<name>View through the class map -- so a move that breaks
-        // the mapping fails here rather than at runtime.
-        $viewClass = \OWA\Core\Lib::resolveNamespacedClass('owa_domstreamsRestView');
+        /*
+         * Asserting the name alone would pass with the view deleted: the
+         * controller only records a string. Resolve it the way displayView()
+         * does -- by PSR-4 convention from the dotted name -- so a move that
+         * breaks the mapping fails here rather than at runtime.
+         *
+         * NOT through the compat map. That map answers for a name that is
+         * merely listed and stays silent for a class that loads perfectly well,
+         * so it was never the question this test meant to ask.
+         */
+        $viewClass = $this->viewClassFor($resp['view']);
 
         $this->assertNotNull($viewClass,
             'The view named by the controller does not resolve to a class.');
@@ -196,11 +221,17 @@ final class DomStreamsRestControllerTest extends RestControllerTestCase
             'A valid single-domstream query should return 201.');
         $this->assertSame('domstream.domstreamsRest', $resp['view']);
 
-        // Asserting the name alone would pass with the view deleted: the
-        // controller only records a string. Resolve it the way displayView()
-        // does -- owa_<name>View through the class map -- so a move that breaks
-        // the mapping fails here rather than at runtime.
-        $viewClass = \OWA\Core\Lib::resolveNamespacedClass('owa_domstreamsRestView');
+        /*
+         * Asserting the name alone would pass with the view deleted: the
+         * controller only records a string. Resolve it the way displayView()
+         * does -- by PSR-4 convention from the dotted name -- so a move that
+         * breaks the mapping fails here rather than at runtime.
+         *
+         * NOT through the compat map. That map answers for a name that is
+         * merely listed and stays silent for a class that loads perfectly well,
+         * so it was never the question this test meant to ask.
+         */
+        $viewClass = $this->viewClassFor($resp['view']);
 
         $this->assertNotNull($viewClass,
             'The view named by the controller does not resolve to a class.');
