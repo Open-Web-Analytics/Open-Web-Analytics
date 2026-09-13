@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 29;
+        $this->required_schema_version = 30;
         return parent::__construct();
     }
 
@@ -213,6 +213,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.organizationEdit',              'OWA\\Module\\Base\\Controller\\OrganizationEdit',              'Controller/OrganizationEdit.php' );
         $this->registerAction( 'base.customReports',                 'OWA\\Module\\Base\\Controller\\CustomReports',                'Controller/CustomReports.php' );
         $this->registerAction( 'base.customReportEdit',              'OWA\\Module\\Base\\Controller\\CustomReportEdit',             'Controller/CustomReportEdit.php' );
+        $this->registerAction( 'base.customReportMarkFavorite',      'OWA\\Module\\Base\\Controller\\CustomReportMarkFavorite',     'Controller/CustomReportMarkFavorite.php' );
         $this->registerAction( 'base.customReportSave',              'OWA\\Module\\Base\\Controller\\CustomReportSave',             'Controller/CustomReportSave.php' );
         $this->registerAction( 'base.customReportDelete',            'OWA\\Module\\Base\\Controller\\CustomReportDelete',           'Controller/CustomReportDelete.php' );
         $this->registerAction( 'base.sitesAdd',                      'OWA\\Module\\Base\\Controller\\SitesAdd',                     'Controller/SitesAdd.php' );
@@ -2441,6 +2442,7 @@ class Module extends \OWA\Core\Module {
                 'notification',
                 'notification_state',
                 'custom_report',
+                'custom_report_favorite',
                 'job_lock',
                 'site_user')
             );

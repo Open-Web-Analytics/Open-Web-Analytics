@@ -4,6 +4,8 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
+use OWA\Module\Base\Classes\CustomReportFavorites as Favorites;
+
 use OWA\Module\Base\Classes\CustomReports;
 
 /**
@@ -1546,6 +1548,126 @@ final class CustomReportsTest extends TestCase
         $this->assertContains($mine['id'], $narrowed);
         $this->assertNotContains($theirs['id'], $narrowed,
             '"just mine" must narrow for an admin too, or the control does nothing for them');
+    }
+
+    // ------------------------------------------------------------------
+    // Favourites: the READER's note about where a report sits
+    // ------------------------------------------------------------------
+
+    public function testStarringIsPerReaderNotPerReport(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Starred By One'), self::OTHER);
+
+        Favorites::toggle($saved['id'], self::AUTHOR);
+
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::OTHER),
+            'one reader starring a report must not star it for its author');
+    }
+
+    public function testStarringTwiceUnstars(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Toggled'));
+
+        $this->assertTrue(Favorites::toggle($saved['id'], self::AUTHOR));
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+
+        $this->assertFalse(Favorites::toggle($saved['id'], self::AUTHOR));
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::AUTHOR),
+            'the star is a toggle, so pressing it again has to clear it');
+    }
+
+    /** Starred rows come back first, whatever the reader sorted by. */
+    public function testFavouritesSortToTheTop(): void
+    {
+        $this->requireDb();
+
+        $plain   = $this->store(array('name' => 'AAA Sorts First Alphabetically'));
+        $starred = $this->store(array('name' => 'ZZZ Sorts Last Alphabetically'));
+
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, 'name', false), 'id');
+
+        $starredAt = array_search($starred['id'], $ids, true);
+        $plainAt   = array_search($plain['id'], $ids, true);
+
+        $this->assertNotFalse($starredAt);
+        $this->assertNotFalse($plainAt);
+        $this->assertLessThan($plainAt, $starredAt,
+            'a starred report must outrank an unstarred one even when the sort disagrees');
+    }
+
+    public function testTheRosterCarriesWhetherEachRowIsStarred(): void
+    {
+        $this->requireDb();
+
+        $starred = $this->store(array('name' => 'Carries Its Star'));
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        foreach (CustomReports::roster(self::AUTHOR) as $row) {
+            if ($row['id'] === $starred['id']) {
+                $this->assertTrue($row['is_favorite']);
+                return;
+            }
+        }
+
+        $this->fail('the starred report was not in the roster at all');
+    }
+
+    public function testFavouritesOnlyNarrowsToStarredReports(): void
+    {
+        $this->requireDb();
+
+        $starred = $this->store(array('name' => 'Kept'));
+        $plain   = $this->store(array('name' => 'Filtered Out'));
+
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, false, true), 'id');
+
+        $this->assertContains($starred['id'], $ids);
+        $this->assertNotContains($plain['id'], $ids);
+    }
+
+    /**
+     * A reader may star somebody else's shared report, and it reaches their
+     * list -- which is the case the two features have to work together in.
+     */
+    public function testAReaderMayStarSomebodyElsesSharedReport(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(
+            array('name' => 'Theirs, Shared, Starred', 'is_shared' => true), self::OTHER);
+
+        Favorites::toggle($shared['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, false, true), 'id');
+
+        $this->assertContains($shared['id'], $ids);
+    }
+
+    /** Deleting a report takes its stars with it. */
+    public function testDeletingAReportForgetsItsStars(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Deleted With Stars'));
+        Favorites::toggle($saved['id'], self::AUTHOR);
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+
+        CustomReports::delete($saved['id']);
+
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::AUTHOR),
+            'a star pointing at a deleted report would sort a gap to the top of a list');
     }
 
     /** The roster has to say who made each report, which means carrying it. */

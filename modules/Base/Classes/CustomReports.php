@@ -1642,9 +1642,12 @@ class CustomReports {
      * @param bool   $mine_only true to list only this user's own, whatever
      *                          else they would be shown. A reader's choice,
      *                          not a permission -- it can only narrow.
+     * @param bool   $favorites_only true to list only what this user starred.
+     *                          The same kind of thing as $mine_only, and it
+     *                          narrows the same way.
      * @return array
      */
-    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false, $favorites_only = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -1729,12 +1732,47 @@ class CustomReports {
         // failed query.
         $rows = $db->get_results( $sql, $params );
 
-        if ( $rows === null ) {
+        if ( ! $rows ) {
 
             return array();
         }
 
-        return array_map( array( __CLASS__, 'hydrate' ), $rows );
+        /*
+         * Starred first, then whatever the reader sorted by.
+         *
+         * Done here rather than in the ORDER BY because a favourite is not a
+         * column on this table -- it is a row in another one, belonging to the
+         * reader. Joining it in would mean carrying the user into a query that
+         * is otherwise about the reports themselves, for an ordering a person
+         * has tens of entries in.
+         *
+         * usort is STABLE as of PHP 8.0, so reports that are equally starred
+         * keep the order the database returned -- which is the sort the reader
+         * actually asked for.
+         */
+        $starred = \OWA\Module\Base\Classes\CustomReportFavorites::idsFor( $user_id );
+
+        $out = array();
+
+        foreach ( $rows as $row ) {
+
+            $row = (array) $row;
+            $row['is_favorite'] = isset( $starred[ (string) $row['id'] ] );
+
+            if ( $favorites_only && ! $row['is_favorite'] ) {
+
+                continue;
+            }
+
+            $out[] = $row;
+        }
+
+        usort( $out, function ( $a, $b ) {
+
+            return ( $b['is_favorite'] ? 1 : 0 ) <=> ( $a['is_favorite'] ? 1 : 0 );
+        } );
+
+        return array_map( array( __CLASS__, 'hydrate' ), $out );
     }
 
     /** A stored row, with its definition decoded. */
@@ -1943,6 +1981,13 @@ class CustomReports {
         }
 
         $entity->delete( $id );
+
+        /*
+         * The stars go with it. They are rows about a report that no longer
+         * exists, and a favourite pointing at nothing would sort a gap to the
+         * top of somebody's list.
+         */
+        CustomReportFavorites::forget( $id );
 
         return true;
     }

@@ -2439,6 +2439,80 @@ test.describe('custom reports', () => {
             await expect(page.locator('#customReportName')).toHaveValue(name);
         });
 
+        test.describe('favorites', () => {
+
+            /*
+             * The star lives on the REPORT, beside its title -- not on the
+             * roster row. A favourite is the reader's note about the thing they
+             * are looking at, so it is pressed while looking at it.
+             */
+
+            async function openReportNamed(page, name) {
+                await openRoster(page);
+                await page.locator('.owa_customReportRoster tbody tr', { hasText: name })
+                    .locator('a').first().click();
+                await page.waitForLoadState('networkidle');
+            }
+
+            test('the star sits beside the title and toggles', async ({ page }) => {
+                const name = await buildOne(page, 'Starrable');
+
+                await openReportNamed(page, name);
+
+                const star = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
+
+                await expect(star).toBeVisible();
+                await expect(star.locator('i.fa-star-o')).toHaveCount(1);
+
+                await star.click();
+                await page.waitForLoadState('networkidle');
+
+                // Back on the report, now starred.
+                const starred = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
+                await expect(starred.locator('i.fa-star')).toHaveCount(1);
+
+                // And again, to clear it -- it is a toggle, not a one-way mark.
+                await starred.click();
+                await page.waitForLoadState('networkidle');
+                await expect(
+                    page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"] i.fa-star-o')
+                ).toHaveCount(1);
+            });
+
+            test('a starred report sorts to the top and the filter finds it', async ({ page }) => {
+                const plain   = await buildOne(page, 'AAA Unstarred');
+                const starred = await buildOne(page, 'ZZZ Starred');
+
+                await openReportNamed(page, starred);
+                await page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]').click();
+                await page.waitForLoadState('networkidle');
+
+                await openRoster(page);
+
+                // Starred outranks the alphabetical sort.
+                const names = await page.locator('.owa_customReportRoster tbody tr td:first-child')
+                    .allInnerTexts();
+                const starredAt = names.findIndex((n) => n.includes(starred));
+                const plainAt   = names.findIndex((n) => n.includes(plain));
+
+                expect(starredAt).toBeGreaterThanOrEqual(0);
+                expect(plainAt).toBeGreaterThanOrEqual(0);
+                expect(starredAt).toBeLessThan(plainAt);
+
+                // And the third state of the filter narrows to it.
+                await page.locator('.owa_rosterFilter a', { hasText: 'Favorites' }).click();
+                await page.waitForLoadState('networkidle');
+
+                await expect(page).toHaveURL(/rosterFavorites=1/);
+
+                const filtered = await page.locator('.owa_customReportRoster tbody tr td:first-child')
+                    .allInnerTexts();
+
+                expect(filtered.some((n) => n.includes(starred))).toBe(true);
+                expect(filtered.some((n) => n.includes(plain))).toBe(false);
+            });
+        });
+
         test.describe('sharing and the roster filter', () => {
 
             /*

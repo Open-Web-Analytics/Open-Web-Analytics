@@ -219,7 +219,7 @@ class Report extends \OWA\Core\Controller {
         $data = (array) $this->delegateTo( $controllers[ $type ] );
 
         // The same edit control a custom report gets, in the same place.
-        return $this->withEditAction( $data, $report );
+        return $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report );
     }
 
     private function renderCustom( $id ) {
@@ -318,7 +318,7 @@ class Report extends \OWA\Core\Controller {
          * enough. It took an admin opening a report created by someone else --
          * which is the ordinary case on any install with more than one author.
          */
-        return $this->withEditAction( $data, $report );
+        return $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report );
     }
 
     /**
@@ -386,6 +386,70 @@ class Report extends \OWA\Core\Controller {
                 'iconOnly' => true,
             ),
         );
+
+        return $data;
+    }
+
+    /**
+     * A star beside the title, for the reader to mark this as one of theirs.
+     *
+     * Offered to ANYONE who is looking at a rendered report, not only to
+     * someone who may edit it. A favourite is the reader's own note about where
+     * this sits in their list -- starring somebody else's report changes
+     * nothing about the report, and a reader who may look but never author is
+     * exactly who it is for. That is why this is its own method beside
+     * withEditAction() rather than a branch inside it: the two answer different
+     * questions about different people.
+     *
+     * Put FIRST, so the star sits immediately right of the title and the pencil
+     * follows it. The star is about the row a reader is looking at; the pencil
+     * is about changing it, which fewer of them can do.
+     *
+     * @param  array $data    what the target controller returned
+     * @param  array $report  the row being rendered
+     * @return array
+     */
+    private function withFavoriteAction( array $data, array $report ) {
+
+        // Same guard as the edit action: a refused request comes back as bare
+        // data, and a star on a refusal would be decorating an error.
+        if ( empty( $data['view'] ) || empty( $report['id'] ) ) {
+
+            return $data;
+        }
+
+        $user_id = (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' );
+
+        /*
+         * Nobody to remember it for. An anonymous reader has no user_id, so a
+         * star would have nowhere to be stored and would read as a control that
+         * does nothing.
+         */
+        if ( $user_id === '' ) {
+
+            return $data;
+        }
+
+        $starred = \OWA\Module\Base\Classes\CustomReportFavorites::isFavorite(
+            (string) $report['id'], $user_id );
+
+        $star = array(
+            // add_state TRUE, or the round trip drops siteId and period and the
+            // reader lands on a different view of the report than they left.
+            // add_nonce TRUE, because the target action demands one.
+            'url' => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )->makeLink(
+                array(
+                    'do'             => 'base.customReportMarkFavorite',
+                    'customReportId' => $report['id'],
+                ), true, '', false, true ),
+            'label'    => $starred ? 'Remove from favorites' : 'Add to favorites',
+            'icon'     => $starred ? 'fa-star' : 'fa-star-o',
+            'iconOnly' => true,
+        );
+
+        $existing = isset( $data['title_actions'] ) ? (array) $data['title_actions'] : array();
+
+        $data['title_actions'] = array_merge( array( $star ), $existing );
 
         return $data;
     }

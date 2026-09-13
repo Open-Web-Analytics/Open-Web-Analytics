@@ -26,6 +26,7 @@ $owa_builder   = $owa_isViz ? 'base.visualizationEdit' : 'base.customReportEdit'
  */
 $owa_author    = (bool) $view->get('may_author');
 $owa_mine      = (bool) $view->get('roster_mine');
+$owa_favs      = (bool) $view->get('roster_favorites');
 $owa_seesAll   = (bool) $view->get('sees_all');
 ?>
 
@@ -42,22 +43,30 @@ $owa_seesAll   = (bool) $view->get('sees_all');
      * states produce the same list.
      */
 ?>
-<?php if ( $owa_seesAll || ! $owa_mine || $owa_reports ): ?>
 <div class="owa_rosterFilter">
     <?php
-        $owa_filterLink = function ( $mine ) use ( $view, $owa_isViz ) {
+        /*
+         * Three states of ONE control, not three controls. They are
+         * alternatives: "my favourites" and "my reports" are different
+         * questions, and a reader who could pick both would need a fourth
+         * control saying how to combine them.
+         */
+        $owa_filterLink = function ( $which ) use ( $view, $owa_isViz ) {
             return $view->makeLink( array(
-                'do'         => $owa_isViz ? 'base.visualizations' : 'base.customReports',
-                'rosterMine' => $mine ? '1' : '0',
+                'do'              => $owa_isViz ? 'base.visualizations' : 'base.customReports',
+                'rosterMine'      => $which === 'mine' ? '1' : '0',
+                'rosterFavorites' => $which === 'favorites' ? '1' : '0',
             ) );
         };
+        $owa_active = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
     ?>
-    <a class="<?php echo $owa_mine ? '' : 'owa_rosterFilterActive'; ?>"
-       href="<?php echo $owa_filterLink( false ); ?>">All</a>
-    <a class="<?php echo $owa_mine ? 'owa_rosterFilterActive' : ''; ?>"
-       href="<?php echo $owa_filterLink( true ); ?>">Just mine</a>
+    <a class="<?php echo $owa_active === 'all' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'all' ); ?>">All</a>
+    <a class="<?php echo $owa_active === 'mine' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'mine' ); ?>">Just mine</a>
+    <a class="<?php echo $owa_active === 'favorites' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'favorites' ); ?>"><i class="fa fa-star"></i> Favorites</a>
 </div>
-<?php endif; ?>
 
 <table class="management owa_customReportRoster">
     <thead>
@@ -78,7 +87,7 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                 $owa_sort = (string) $view->get('roster_sort');
                 $owa_desc = (bool) $view->get('roster_desc');
 
-                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz, $owa_mine ) {
+                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz, $owa_mine, $owa_favs ) {
 
                     $active = ( $owa_sort === $key );
 
@@ -95,7 +104,8 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                         'rosterDesc' => $next ? '1' : '0',
                         // Carried, or sorting would silently drop the filter
                         // and hand back a longer list than was asked for.
-                        'rosterMine' => $owa_mine ? '1' : '0',
+                        'rosterMine'      => $owa_mine ? '1' : '0',
+                        'rosterFavorites' => $owa_favs ? '1' : '0',
                     ) );
 
                     printf(
@@ -145,6 +155,10 @@ $owa_seesAll   = (bool) $view->get('sees_all');
 
             <td class="data_cell">
                 <?php $view->out( $owa_report['user_id'] ); ?>
+                <?php if ( ! empty( $owa_report['is_favorite'] ) ): ?>
+                    <i class="fa fa-star owa_rosterFavorite"
+                       title="One of your favorites, so it sorts to the top"></i>
+                <?php endif; ?>
                 <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
                     <span class="owa_rosterShared"
                           title="Shown in everyone's list">shared</span>
