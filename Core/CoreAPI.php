@@ -1099,11 +1099,82 @@ class CoreAPI {
 
 
 
+        /*
+         * PSR-4 FIRST, by convention, so a new entity needs nothing registered.
+         *
+         * Without this an entity name is turned into a legacy `owa_*` class
+         * name by moduleSpecificFactory() and resolved through
+         * owa_compat_class_map() -- which means OWA's OWN entity resolution
+         * depends on the compatibility bridge, a file whose stated purpose is
+         * third-party callers of the old names and which is removed at 2.0.
+         * Every entity added since the PSR-4 migration has had to be listed
+         * there, and the failure when it is not is
+         *
+         *     Class File modules/entities/Base/owa_<name>.php not existend!
+         *
+         * naming a directory layout that has not existed since the migration.
+         *
+         * The convention is the same one moduleDirName() uses for module
+         * directories: snake_case to PascalCase, under the module's own Entity
+         * namespace. base.custom_report -> OWA\Module\Base\Entity\CustomReport.
+         *
+         * Tried FIRST rather than as a fallback, so a mapped entity and an
+         * unmapped one resolve by the same route -- if the two disagreed, the
+         * map would quietly win for some entities and not others.
+         */
+        $nsClass = self::namespacedEntityClass($entity_name);
+
+        if ($nsClass !== null) {
+
+            $entity = new $nsClass();
+            $entity->name = $entity_name;
+
+            return $entity;
+        }
+
+        /*
+         * LEGACY FALLBACK: the compat map, and then a pre-PSR-4 file on disk.
+         * Reached now only by an entity that does not follow the convention --
+         * third-party code, or one whose class name genuinely differs from its
+         * registered name.
+         */
         $entity = \OWA\Core\CoreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
         $entity->name = $entity_name;
         return $entity;
         //return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
 
+    }
+
+    /**
+     * The PSR-4 class a `module.entity_name` refers to, or null.
+     *
+     * Null when the class does not exist, so the caller falls back rather than
+     * fataling on a name that only the legacy path can resolve.
+     *
+     * @param  string $entity_name e.g. 'base.custom_report'
+     * @return string|null         e.g. 'OWA\Module\Base\Entity\CustomReport'
+     */
+    private static function namespacedEntityClass($entity_name) {
+
+        if (strpos((string) $entity_name, '.') === false) {
+
+            return null;
+        }
+
+        list($module, $name) = explode('.', $entity_name, 2);
+
+        if ($module === '' || $name === '') {
+
+            return null;
+        }
+
+        // Same transform module directories use -- see Lib::moduleDirName().
+        $pascal = str_replace('_', '', ucwords($name, '_'));
+
+        $class = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module)
+               . '\\Entity\\' . $pascal;
+
+        return class_exists($class) ? $class : null;
     }
 
     /**
