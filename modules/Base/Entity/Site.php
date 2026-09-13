@@ -424,7 +424,7 @@ class Site extends \OWA\Core\Entity {
 
     /**
      * Returns collection of owa_user entities that are allowed for current user
-     * @return owa_user[]
+     * @return \OWA\Module\Base\Entity\User[]
      */
     public function getAssignedUsers() {
         if (!$this->get('id')) {

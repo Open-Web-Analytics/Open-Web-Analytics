@@ -58,7 +58,7 @@ class DocumentHandlers extends \OWA\Core\Observer {
         if ( $event->get( 'document_id' ) || $event->get( 'page_url' ) ) {
 
             // create entity
-            /* @var owa_document $d */
+            /* @var \OWA\Module\Base\Entity\Document $d */
             $d = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
 
             // get document id from event

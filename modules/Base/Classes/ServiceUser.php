@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Classes;
 
 class ServiceUser extends \OWA\Core\Base {
     /**
-     * @var \owa_user
+     * @var \OWA\Module\Base\Entity\User
      */
     public $user;
     var $capabilities = array();
