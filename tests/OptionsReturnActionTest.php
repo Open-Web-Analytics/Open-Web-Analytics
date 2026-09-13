@@ -119,7 +119,8 @@ final class OptionsReturnActionTest extends TestCase {
 
         $this->assertSame(
             \OWA\Module\MaxmindGeoip\Controller\OptionsGeoipUpdate::class,
-            \OWA\Core\Lib::resolveNamespacedClass( 'owa_optionsGeoipUpdateController' ),
+            ( \OWA\Core\CoreAPI::serviceSingleton()
+                ->getMapValue( 'actions', 'maxmind_geoip.optionsGeoipUpdate' )['class_name'] ?? null ),
             'an unregistered save action 404s the moment someone presses the button' );
     }
 

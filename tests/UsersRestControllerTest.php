@@ -24,7 +24,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
     public function testGetUsersRejectsUnauthenticated(): void
     {
         $resp = $this->callEndpoint(
-            'owa_usersRestController',
+            \OWA\Module\Base\Controller\UsersRest::class,
             'usersRestController.php',
             []
         );
@@ -38,7 +38,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('viewer');
 
         $resp = $this->callEndpoint(
-            'owa_usersRestController',
+            \OWA\Module\Base\Controller\UsersRest::class,
             'usersRestController.php',
             []
         );
@@ -56,7 +56,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_usersRestController',
+            \OWA\Module\Base\Controller\UsersRest::class,
             'usersRestController.php',
             []
         );
@@ -94,7 +94,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $user_id = 'anon-add-' . $this->tok . '@owatest.example.com';
 
         $resp = $this->callEndpoint(
-            'owa_addUserRestController',
+            \OWA\Module\Base\Controller\AddUserRest::class,
             'addUserRestController.php',
             [
                 'user_id'       => $user_id,
@@ -119,7 +119,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->trackForCleanup('base.user', $user_id, 'user_id');
 
         $resp = $this->callEndpoint(
-            'owa_addUserRestController',
+            \OWA\Module\Base\Controller\AddUserRest::class,
             'addUserRestController.php',
             [
                 'user_id'       => $user_id,
@@ -148,7 +148,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $user_id = 'badrole-' . $this->tok . '@owatest.example.com';
 
         $resp = $this->callEndpoint(
-            'owa_addUserRestController',
+            \OWA\Module\Base\Controller\AddUserRest::class,
             'addUserRestController.php',
             [
                 'user_id'       => $user_id,
@@ -170,7 +170,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_addUserRestController',
+            \OWA\Module\Base\Controller\AddUserRest::class,
             'addUserRestController.php',
             [
                 'user_id'       => $existing['user_id'],
@@ -193,7 +193,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $victim = $this->makeUser('viewer', 'victim');
 
         $resp = $this->callEndpoint(
-            'owa_deleteUserRestController',
+            \OWA\Module\Base\Controller\DeleteUserRest::class,
             'deleteUserRestController.php',
             ['user_id' => $victim['user_id']]
         );
@@ -209,7 +209,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_deleteUserRestController',
+            \OWA\Module\Base\Controller\DeleteUserRest::class,
             'deleteUserRestController.php',
             ['user_id' => $victim['user_id']]
         );
@@ -225,7 +225,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $admin = $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_deleteUserRestController',
+            \OWA\Module\Base\Controller\DeleteUserRest::class,
             'deleteUserRestController.php',
             ['user_id' => $admin['user_id']]
         );

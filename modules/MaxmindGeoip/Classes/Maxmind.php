@@ -53,9 +53,11 @@ class Maxmind extends \OWA\Core\Location {
     var $db_file_present = false;
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @return \owa_hostip
+     * The @return it used to carry named owa_hostip, a class that does not
+     * exist and never did here -- and a constructor returns nothing to annotate
+     * in any case.
      */
     function __construct() {
 

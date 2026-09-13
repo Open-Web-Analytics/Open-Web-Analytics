@@ -75,7 +75,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $domain = 'https://owatest-cli-add-' . $this->tok . '.example.com';
 
         $result = $this->runCommand(
-            'owa_sitesAddCliController',
+            \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
             ['domain' => $domain, 'name' => 'CLI add ' . $this->tok]
         );
@@ -113,7 +113,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public function testAddSiteRequiresDomain(): void
     {
         $result = $this->runCommand(
-            'owa_sitesAddCliController',
+            \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
             ['name' => 'no domain ' . $this->tok]
         );
@@ -128,7 +128,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         // The 'http' substring-position validation requires a protocol prefix.
         $result = $this->runCommand(
-            'owa_sitesAddCliController',
+            \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
             ['domain' => 'owatest-cli-noproto-' . $this->tok . '.example.com']
         );
@@ -142,7 +142,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_sitesAddCliController',
+            \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
             ['domain' => 'https://owatest-cli-denied-' . $this->tok . '.example.com']
         );
@@ -169,7 +169,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $oldHash = $before->get('password');
 
         $result = $this->runCommand(
-            'owa_changeUserPasswordCliController',
+            \OWA\Module\Base\Controller\ChangeUserPasswordCli::class,
             'changeUserPasswordCli.php',
             ['user' => $user['user_id'], 'password' => 'newpass' . $this->tok]
         );
@@ -188,7 +188,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         // Omit the user; validation must fail and route to the error view.
         $result = $this->runCommand(
-            'owa_changeUserPasswordCliController',
+            \OWA\Module\Base\Controller\ChangeUserPasswordCli::class,
             'changeUserPasswordCli.php',
             ['password' => 'newpass' . $this->tok]
         );
@@ -209,7 +209,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $oldHash = $before->get('password');
 
         $result = $this->runCommand(
-            'owa_changeUserPasswordCliController',
+            \OWA\Module\Base\Controller\ChangeUserPasswordCli::class,
             'changeUserPasswordCli.php',
             ['user' => $user['user_id'], 'password' => 'short']
         );
@@ -229,7 +229,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_changeUserPasswordCliController',
+            \OWA\Module\Base\Controller\ChangeUserPasswordCli::class,
             'changeUserPasswordCli.php',
             ['user' => $target['user_id'], 'password' => 'newpass' . $this->tok]
         );
@@ -247,7 +247,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // fresh cache; the contract is simply that it runs without error and
         // does not route to an error/redirect view.
         $result = $this->runCommand(
-            'owa_flushCacheCliController',
+            \OWA\Module\Base\Controller\FlushCacheCli::class,
             'flushCacheCli.php',
             []
         );
@@ -271,7 +271,7 @@ final class CliCommandsTest extends CliControllerTestCase
             owa_coreAPI::deactivateModule('hello');
 
             $result = $this->runCommand(
-                'owa_moduleActivateCliController',
+                \OWA\Module\Base\Controller\ModuleActivateCli::class,
                 'moduleActivateCli.php',
                 ['module' => 'hello']
             );
@@ -291,7 +291,7 @@ final class CliCommandsTest extends CliControllerTestCase
             owa_coreAPI::activateModule('hello');
 
             $result = $this->runCommand(
-                'owa_moduleDeactivateCliController',
+                \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
                 'moduleDeactivateCli.php',
                 ['module' => 'hello']
             );
@@ -318,7 +318,7 @@ final class CliCommandsTest extends CliControllerTestCase
         }
 
         $result = $this->runCommand(
-            'owa_moduleDeactivateCliController',
+            \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
             'moduleDeactivateCli.php',
             ['module' => $module]
         );
@@ -338,7 +338,7 @@ final class CliCommandsTest extends CliControllerTestCase
             // hello has no entities, so install-module just persists the schema
             // version and activates -- no tables are created.
             $result = $this->runCommand(
-                'owa_moduleInstallCliController',
+                \OWA\Module\Base\Controller\ModuleInstallCli::class,
                 'moduleInstallCli.php',
                 ['module' => 'hello']
             );
@@ -356,7 +356,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_moduleActivateCliController',
+            \OWA\Module\Base\Controller\ModuleActivateCli::class,
             'moduleActivateCli.php',
             ['module' => 'hello']
         );
@@ -369,7 +369,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_moduleDeactivateCliController',
+            \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
             'moduleDeactivateCli.php',
             ['module' => 'hello']
         );
@@ -382,7 +382,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_moduleInstallCliController',
+            \OWA\Module\Base\Controller\ModuleInstallCli::class,
             'moduleInstallCli.php',
             ['module' => 'hello']
         );
@@ -407,7 +407,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_crawlDocumentCliController',
+            \OWA\Module\Base\Controller\CrawlDocumentCli::class,
             'crawlDocumentCli.php',
             ['doc' => '0']
         );
@@ -428,7 +428,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // resolves the 'processing' database queue, connects, and deletes
         // handled rows. On an empty queue that is a clean no-op.
         $result = $this->runCommand(
-            'owa_flushProcessedEventsCliController',
+            \OWA\Module\Base\Controller\FlushProcessedEventsCli::class,
             'flushProcessedEventsCli.php',
             []
         );
@@ -444,7 +444,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_flushProcessedEventsCliController',
+            \OWA\Module\Base\Controller\FlushProcessedEventsCli::class,
             'flushProcessedEventsCli.php',
             []
         );
@@ -457,7 +457,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_pruneEventQueueArchivesCliController',
+            \OWA\Module\Base\Controller\PruneEventQueueArchivesCli::class,
             'pruneEventQueueArchivesCli.php',
             []
         );
@@ -470,7 +470,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->authenticateAs('viewer');
 
         $result = $this->runCommand(
-            'owa_processEventQueueController',
+            \OWA\Module\Base\Controller\ProcessEventQueue::class,
             'processEventQueue.php',
             []
         );
@@ -484,7 +484,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // empty queue is a clean no-op -- the contract is that the command
         // connects and returns without error, not that it processes events.
         $result = $this->runCommand(
-            'owa_processEventQueueController',
+            \OWA\Module\Base\Controller\ProcessEventQueue::class,
             'processEventQueue.php',
             ['queues' => 'processing']
         );
@@ -498,7 +498,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // pruneArchive() is a no-op stub for the database queue, so this is
         // safe to run for real; assert the command connects and completes.
         $result = $this->runCommand(
-            'owa_pruneEventQueueArchivesCliController',
+            \OWA\Module\Base\Controller\PruneEventQueueArchivesCli::class,
             'pruneEventQueueArchivesCli.php',
             ['queues' => 'processing']
         );
@@ -520,7 +520,7 @@ final class CliCommandsTest extends CliControllerTestCase
 
         // Lives in modules/base/controllers/ (unlike the other CLI controllers).
         $result = $this->runCommand(
-            'owa_resetSecretsCliController',
+            \OWA\Module\Base\Controller\ResetSecretsCli::class,
             'controllers/resetSecretsCli.php',
             []
         );
@@ -537,7 +537,7 @@ final class CliCommandsTest extends CliControllerTestCase
     public function testUpdateListPendingRunsReadOnly(): void
     {
         $result = $this->runCommand(
-            'owa_updatesApplyCliController',
+            \OWA\Module\Base\Controller\UpdatesApplyCli::class,
             'updatesApplyCli.php',
             ['listpending' => '']
         );

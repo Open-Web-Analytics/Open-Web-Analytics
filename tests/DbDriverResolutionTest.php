@@ -22,6 +22,11 @@ use PHPUnit\Framework\TestCase;
  * tokens should be, it requires that each one resolves to a class, so a future
  * rename that de-syncs a token from its driver file fails here even if someone
  * updates the mapping expectations to match their change.
+ *
+ * It asks that question of the resolution production actually performs --
+ * convention first, compatibility map second -- rather than of the map alone.
+ * A bundled driver needs no map entry, so a map-only check would fail for a
+ * driver that loads and pass for one that is merely listed.
  */
 final class DbDriverResolutionTest extends TestCase {
 
@@ -79,6 +84,29 @@ final class DbDriverResolutionTest extends TestCase {
      * driver this can select for a bundled type must resolve to a class that
      * exists. This is the assertion the previous fallback failed.
      */
+    /**
+     * 'pdo' is a configuration spelling, and it has to name a real driver.
+     *
+     * It used to reach the class owa_db_pdo, which exists nowhere -- it was an
+     * entry in the compatibility map pointing at PdoMysql. A value an
+     * installation may put in its config file is not a legacy class name, so
+     * the spelling is normalised here instead, and the map no longer carries it.
+     */
+    public function testPdoIsAnAliasForThePdoDriver() {
+
+        $this->assertSame(
+            'pdo_mysql',
+            \OWA\Core\CoreAPI::resolveDbDriver( 'pdo', true ),
+            "db_type='pdo' must name the driver whose class exists, or an installation "
+          . 'configured that way cannot connect'
+        );
+
+        $this->assertTrue(
+            class_exists( 'OWA\\Core\\Db\\PdoMysql' ),
+            'the token it normalises to must name a class that is really there'
+        );
+    }
+
     public function testEveryResolvableDriverNamesALoadableClass() {
 
         foreach ( [ 'mysql', 'mysqli' ] as $configured ) {
@@ -87,7 +115,23 @@ final class DbDriverResolutionTest extends TestCase {
 
                 $token = \OWA\Core\CoreAPI::resolveDbDriver( $configured, $pdo_available );
                 $legacy_class = 'owa_db_' . $token;
-                $resolved = \OWA\Core\Lib::resolveNamespacedClass( $legacy_class );
+
+                /*
+                 * Resolved the way production resolves it: by CONVENTION first
+                 * -- pdo_mysql -> OWA\Core\Db\PdoMysql -- and only then
+                 * through the compatibility map.
+                 *
+                 * Asking the map alone would be asking the wrong question. A
+                 * bundled driver needs no entry there, so a map-only check
+                 * fails for a driver that loads perfectly well, and passes for
+                 * one that is merely listed. What has teeth is whether the
+                 * token names a class that exists.
+                 */
+                $conventional = 'OWA\\Core\\Db\\' . str_replace( '_', '', ucwords( $token, '_' ) );
+
+                $resolved = class_exists( $conventional )
+                    ? $conventional
+                    : \OWA\Core\Lib::resolveNamespacedClass( $legacy_class );
 
                 $this->assertNotNull(
                     $resolved,

@@ -23,7 +23,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->makeSite();
 
         $resp = $this->callEndpoint(
-            'owa_sitesRestController',
+            \OWA\Module\Base\Controller\SitesRest::class,
             'sitesRestController.php',
             []
         );
@@ -37,7 +37,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_sitesRestController',
+            \OWA\Module\Base\Controller\SitesRest::class,
             'sitesRestController.php',
             []
         );
@@ -58,7 +58,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('viewer');
 
         $resp = $this->callEndpoint(
-            'owa_sitesRestController',
+            \OWA\Module\Base\Controller\SitesRest::class,
             'sitesRestController.php',
             []
         );
@@ -82,7 +82,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $domain = 'https://owatest-post-anon-' . $this->tok . '.example.com';
 
         $resp = $this->callEndpoint(
-            'owa_addSiteRestController',
+            \OWA\Module\Base\Controller\AddSiteRest::class,
             'addSiteRestController.php',
             ['protocol' => '', 'domain' => $domain, 'name' => 'anon site']
         );
@@ -102,7 +102,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->trackForCleanup('base.site', $domain, 'domain');
 
         $resp = $this->callEndpoint(
-            'owa_addSiteRestController',
+            \OWA\Module\Base\Controller\AddSiteRest::class,
             'addSiteRestController.php',
             ['protocol' => '', 'domain' => $domain, 'name' => 'OWA Test POST ' . $this->tok]
         );
@@ -143,7 +143,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $this->authenticateAs('admin');
 
         $resp = $this->callEndpoint(
-            'owa_addSiteRestController',
+            \OWA\Module\Base\Controller\AddSiteRest::class,
             'addSiteRestController.php',
             ['protocol' => '', 'domain' => $site['domain'], 'name' => 'second profile']
         );

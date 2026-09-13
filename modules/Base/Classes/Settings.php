@@ -35,7 +35,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * Configuration entity holding the merged settings tree.
       *
-      * @var \owa_configuration
+      * @var \OWA\Module\Base\Entity\Configuration
       */
      var $config;
 
