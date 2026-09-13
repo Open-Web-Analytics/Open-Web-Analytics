@@ -82,26 +82,36 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
     }
 
     /**
-     * The point of the change: resolution must not consult the bridge.
+     * THE PROOF: these entities have NO entry in the bridge, and resolve anyway.
      *
-     * Asserted by removing the entry and resolving anyway. A map lookup would
-     * fail here; the convention does not need one.
+     * Eleven entity entries were deleted along with this change. They were
+     * never legacy names -- nothing outside OWA ever called owa_custom_report,
+     * which postdates the namespace migration entirely. They existed only
+     * because entityFactory() synthesized that name and looked it up, which is
+     * what the map's own comment said about them.
+     *
+     * Asserted both ways round, because either half alone is weak: that the
+     * entry is really gone, and that the entity still resolves.
+     *
+     * @dataProvider unmappedEntities
      */
-    public function testAnEntityResolvesWithNoEntryInTheCompatMap(): void
+    public function testAnEntityWithNoBridgeEntryStillResolves(string $legacy, string $registered, string $expected): void
     {
-        $map = \owa_compat_class_map();
+        $this->assertArrayNotHasKey($legacy, \owa_compat_class_map(),
+            sprintf('%s is back in the compat map; this test is about resolving without it', $legacy));
 
-        $this->assertArrayHasKey('owa_custom_report', $map,
-            'this test is about resolving WITHOUT the map, so the map must still have the entry '
-            . 'for the assertion below to mean anything');
+        $this->assertSame($expected, get_class(\OWA\Core\CoreAPI::entityFactory($registered)));
+    }
 
-        /*
-         * Resolved by convention from the registered name alone, which is what
-         * the map entry would otherwise have supplied.
-         */
-        $this->assertSame(
-            'OWA\\Module\\Base\\Entity\\CustomReport',
-            get_class(\OWA\Core\CoreAPI::entityFactory('base.custom_report')));
+    public static function unmappedEntities(): array
+    {
+        return array(
+            array('owa_custom_report', 'base.custom_report', 'OWA\\Module\\Base\\Entity\\CustomReport'),
+            array('owa_goal_event', 'base.goal_event', 'OWA\\Module\\Base\\Entity\\GoalEvent'),
+            array('owa_organization', 'base.organization', 'OWA\\Module\\Base\\Entity\\Organization'),
+            array('owa_notification_state', 'base.notification_state', 'OWA\\Module\\Base\\Entity\\NotificationState'),
+            array('owa_setting', 'base.setting', 'OWA\\Module\\Base\\Entity\\Setting'),
+        );
     }
 
     /** snake_case becomes PascalCase, which is where the class actually is. */
