@@ -947,29 +947,36 @@ class CoreAPI {
         endif;
 
         /*
-         * A class that was never called owa_* has no legacy name to bridge, so
-         * the compat map has no entry for it and Lib::factory() would fall
-         * through to looking for a pre-PSR-4 file that does not exist.
+         * PSR-4 FIRST, then the compat map.
          *
-         * Tried AFTER the map, never before it: owa_reportController maps to
-         * OWA\Core\ReportController, while this convention computes
-         * OWA\Module\Base\Controller\Report -- the report dispatcher, a
-         * different class entirely. Map first means nothing that resolves today
-         * resolves anywhere new; this only catches what currently cannot
-         * resolve at all.
+         * This used to run second, so that adding it could not re-point any
+         * name that already resolved. That was the right way to LAND it and the
+         * wrong way to leave it, because of what this factory builds:
+         *
+         *     $class = $class_ns . $file . $class_suffix;
+         *
+         * The MODULE is not in there. It picks the directory and nothing else,
+         * so base.report and acme.report both synthesize owa_reportController
+         * -- which the map sends to OWA\Core\ReportController, OWA's own base
+         * class, rather than to the caller's controller.
+         *
+         * OWA never meets that: base.report is a REGISTERED action and never
+         * reaches this legacy path. The only callers who can are unregistered
+         * ones -- third-party modules, exactly who the cautious ordering was
+         * meant to protect, and exactly who it was wrong for.
+         *
+         * Measured across the whole map: owa_reportController is the ONLY name
+         * the two orders disagree about. Everywhere else this is a no-op.
          */
-        if ( \OWA\Core\Lib::resolveNamespacedClass( $class ) === null ) {
+        $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
+              . '\\' . $class_suffix . '\\' . ucfirst( $file );
 
-            $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
-                  . '\\' . $class_suffix . '\\' . ucfirst( $file );
+        if ( $class_suffix && class_exists( $psr4 ) ) {
 
-            if ( $class_suffix && class_exists( $psr4 ) ) {
+            $obj = new $psr4( $params );
+            $obj->module = $module;
 
-                $obj = new $psr4( $params );
-                $obj->module = $module;
-
-                return $obj;
-            }
+            return $obj;
         }
 
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);

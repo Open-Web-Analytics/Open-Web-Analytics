@@ -472,11 +472,30 @@ class Lib {
 
         $class = $class_prefix . $class_name . $class_suffix;
 
-        // NAMESPACE-FIRST: if $class is a legacy owa_* name that maps to a
-        // migrated PSR-4 class, instantiate the new class directly (Composer
-        // autoloads it -- no require, no compat-bridge alias needed). This is
-        // what lets OWA run with the bridge disabled; the bridge stays only for
-        // third-party callers of the old names. See resolveNamespacedClass().
+        /*
+         * PSR-4 FIRST, from the directory the caller already named.
+         *
+         * modules/Base/Classes/ + 'event' -> OWA\Module\Base\Classes\Event.
+         * The directory says exactly where the class lives, so this needs
+         * nothing registered anywhere -- which is the point: a class added
+         * after the namespace migration never had a legacy name, and should
+         * not need an entry in a bridge kept for names that did.
+         *
+         * Only when the caller passed its parts. moduleFactory() hands the
+         * whole mangled name in as $class_name with an empty prefix, so the
+         * candidate comes out as nonsense, class_exists() says no, and it falls
+         * through to the map exactly as before. moduleFactory does its own
+         * convention lookup for that reason.
+         */
+        $nsClass = self::conventionalClass($class_dir, $class_prefix, $class_name, $class_suffix);
+
+        if ($nsClass !== null) {
+            return new $nsClass($constructorArguments);
+        }
+
+        // THEN the compat map: a legacy owa_* name that maps to a migrated
+        // class. Still consulted, for the names that do not follow the
+        // convention. See resolveNamespacedClass().
         $nsClass = self::resolveNamespacedClass($class);
         if ($nsClass !== null) {
             return new $nsClass($constructorArguments);
@@ -510,8 +529,26 @@ class Lib {
 
     public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
 
-        // NAMESPACE-FIRST (see factory() above): resolve a legacy owa_* class
-        // name to its migrated PSR-4 class before touching the filesystem.
+        /*
+         * PSR-4 FIRST (see factory() above), then the compat map.
+         *
+         * The class name arrives already built -- 'owa_cache' -- so there are
+         * no parts to work from, but the FILE PATH names the directory and the
+         * file names the class: modules/Base/Classes/cache.php is
+         * OWA\Module\Base\Classes\Cache. That is enough, and it means a class
+         * added after the migration needs no entry in the bridge.
+         */
+        if ( $file_path ) {
+
+            $nsClass = self::conventionalClass(
+                dirname( $file_path ), '', basename( $file_path, '.php' ) );
+
+            if ( $nsClass !== null ) {
+                return new $nsClass( $args );
+            }
+        }
+
+        // THEN the compat map, for a legacy name that does not follow it.
         $nsClass = self::resolveNamespacedClass($class_name);
         if ($nsClass !== null) {
             return new $nsClass( $args );
@@ -553,6 +590,53 @@ class Lib {
      * @param string $legacy a synthesized/registered class name, e.g. 'owa_error'
      * @return string|null new FQCN (e.g. 'OWA\\Module\\Base\\Classes\\Error') or null
      */
+    /**
+     * The PSR-4 class a factory's parts point at, or null.
+     *
+     * Derived from the DIRECTORY rather than guessed: modules/Base/Classes/
+     * is OWA\Module\Base\Classes, and Core/Db/ is OWA\Core\Db. A caller that
+     * passes a directory it does not own, or a name already carrying its
+     * prefix, produces a candidate that does not exist -- and gets null, so
+     * the caller falls back rather than failing.
+     *
+     * @param  string $class_dir    filesystem directory the class lives in
+     * @param  string $class_prefix e.g. 'owa_', stripped for the class name
+     * @param  string $class_name   e.g. 'event'
+     * @param  string $class_suffix e.g. 'Controller'
+     * @return string|null
+     */
+    public static function conventionalClass($class_dir, $class_prefix, $class_name, $class_suffix = '') {
+
+        $name = (string) $class_name;
+
+        // A name that still carries the prefix is a caller handing over an
+        // already-built class name; there are no parts to work from.
+        if ($name === '' || strncmp($name, 'owa_', 4) === 0) {
+            return null;
+        }
+
+        $dir = str_replace('\\', '/', (string) $class_dir);
+        $dir = trim($dir, '/');
+
+        // Everything from 'modules/' or 'Core/' onwards names the namespace.
+        if (preg_match('#(?:^|/)modules/(.+)$#', $dir, $m)) {
+            $ns = 'OWA\\Module\\' . str_replace('/', '\\', trim($m[1], '/'));
+        } elseif (preg_match('#(?:^|/)(Core(?:/.*)?)$#', $dir, $m)) {
+            $ns = 'OWA\\' . str_replace('/', '\\', trim($m[1], '/'));
+        } else {
+            return null;
+        }
+
+        // snake_case to PascalCase -- the transform the tree is laid out by, and
+        // the one moduleDirName() applies to directories. A name already camel
+        // just gains its capital: 'customReports' -> 'CustomReports'.
+        $pascal = str_replace('_', '', ucwords($name, '_'));
+
+        $class = $ns . '\\' . $pascal . $class_suffix;
+
+        return class_exists($class) ? $class : null;
+    }
+
     public static function resolveNamespacedClass(string $legacy): ?string {
 
         // Already a namespaced name (contains a backslash): nothing to map.
