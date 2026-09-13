@@ -4,6 +4,8 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
+use OWA\Module\Base\Classes\CustomReportFavorites as Favorites;
+
 use OWA\Module\Base\Classes\CustomReports;
 
 /**
@@ -1397,6 +1399,275 @@ final class CustomReportsTest extends TestCase
 
         $this->assertContains($mine['id'], $ids);
         $this->assertContains($theirs['id'], $ids);
+    }
+
+    // ------------------------------------------------------------------
+    // Sharing: whose LIST a report appears on
+    //
+    // Sharing is about being found, not about being allowed. A custom report
+    // opened by its URL already renders for anyone with view_reports, so these
+    // tests are all about the roster and none of them is an access test.
+    // ------------------------------------------------------------------
+
+    public function testAReportIsNotSharedUnlessAsked(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Private By Default'));
+        $row   = CustomReports::load($saved['id']);
+
+        $this->assertEmpty($row['is_shared'],
+            'a new report must be private, or sharing becomes something authors opt OUT of');
+    }
+
+    public function testASharedReportAppearsInSomebodyElsesRoster(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(array('name' => 'Shared With All', 'is_shared' => true), self::OTHER);
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertContains($shared['id'], $ids,
+            'the point of sharing is that it reaches other people\'s lists');
+    }
+
+    public function testAnUnsharedReportStaysOutOfSomebodyElsesRoster(): void
+    {
+        $this->requireDb();
+
+        $private = $this->store(array('name' => 'Still Private', 'is_shared' => false), self::OTHER);
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertNotContains($private['id'], $ids);
+    }
+
+    /**
+     * The column is NULL on every row that predates it, and NULL must read as
+     * private -- matched as = 1 rather than as truthy for exactly this reason.
+     */
+    public function testARowWithNoSharingFlagIsTreatedAsPrivate(): void
+    {
+        $this->requireDb();
+
+        $legacy = $this->store(array('name' => 'Predates The Column'), self::OTHER);
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query(sprintf(
+            "UPDATE owa_custom_report SET is_shared = NULL WHERE id = '%s'",
+            $db->prepare($legacy['id'])));
+
+        $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
+
+        $this->assertNotContains($legacy['id'], $ids,
+            'a NULL flag is a row written before sharing existed, and it was private then');
+    }
+
+    /**
+     * A save that says nothing about sharing must not change it, or any screen
+     * without the checkbox would silently un-share whatever it touched.
+     */
+    public function testASaveThatDoesNotMentionSharingLeavesItAlone(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Shared Then Renamed', 'is_shared' => true));
+
+        CustomReports::save(array(
+            'id'         => $saved['id'],
+            'name'       => 'Renamed, Still Shared',
+            'definition' => $this->definition(),
+        ), self::AUTHOR);
+
+        $row = CustomReports::load($saved['id']);
+
+        $this->assertSame('Renamed, Still Shared', $row['name']);
+        $this->assertNotEmpty($row['is_shared'], 'sharing must survive a save that never mentioned it');
+    }
+
+    /** The roster carries the flag, because the list marks shared rows. */
+    public function testTheRosterCarriesTheSharingFlag(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(array('name' => 'Marked Shared', 'is_shared' => true), self::OTHER);
+
+        $row = null;
+
+        foreach (CustomReports::roster(self::AUTHOR) as $candidate) {
+            if ($candidate['id'] === $shared['id']) {
+                $row = $candidate;
+            }
+        }
+
+        $this->assertNotNull($row);
+        $this->assertNotEmpty($row['is_shared']);
+    }
+
+    // ------------------------------------------------------------------
+    // "Just mine": a reader narrowing their own list
+    // ------------------------------------------------------------------
+
+    public function testMineOnlyExcludesAReportSharedBySomebodyElse(): void
+    {
+        $this->requireDb();
+
+        $mine   = $this->store(array('name' => 'My Own'));
+        $shared = $this->store(array('name' => 'Theirs But Shared', 'is_shared' => true), self::OTHER);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, true), 'id');
+
+        $this->assertContains($mine['id'], $ids);
+        $this->assertNotContains($shared['id'], $ids);
+    }
+
+    /**
+     * It means the same thing to an admin.
+     *
+     * "Just mine" is a reader narrowing a list, so for someone who would
+     * otherwise see everything it has to mean THEIR OWN -- not their own plus
+     * everyone's, which is what it would mean if it were applied alongside the
+     * see-everything branch rather than instead of it.
+     */
+    public function testMineOnlyNarrowsEvenForAUserWhoMaySeeEverything(): void
+    {
+        $this->requireDb();
+
+        $mine   = $this->store(array('name' => 'Admin Own'));
+        $theirs = $this->store(array('name' => 'Admin Sees Theirs'), self::OTHER);
+
+        $all = array_column(
+            CustomReports::roster(self::AUTHOR, true, '', null, null, null, false), 'id');
+        $this->assertContains($theirs['id'], $all);
+
+        $narrowed = array_column(
+            CustomReports::roster(self::AUTHOR, true, '', null, null, null, true), 'id');
+
+        $this->assertContains($mine['id'], $narrowed);
+        $this->assertNotContains($theirs['id'], $narrowed,
+            '"just mine" must narrow for an admin too, or the control does nothing for them');
+    }
+
+    // ------------------------------------------------------------------
+    // Favourites: the READER's note about where a report sits
+    // ------------------------------------------------------------------
+
+    public function testStarringIsPerReaderNotPerReport(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Starred By One'), self::OTHER);
+
+        Favorites::toggle($saved['id'], self::AUTHOR);
+
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::OTHER),
+            'one reader starring a report must not star it for its author');
+    }
+
+    public function testStarringTwiceUnstars(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Toggled'));
+
+        $this->assertTrue(Favorites::toggle($saved['id'], self::AUTHOR));
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+
+        $this->assertFalse(Favorites::toggle($saved['id'], self::AUTHOR));
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::AUTHOR),
+            'the star is a toggle, so pressing it again has to clear it');
+    }
+
+    /** Starred rows come back first, whatever the reader sorted by. */
+    public function testFavouritesSortToTheTop(): void
+    {
+        $this->requireDb();
+
+        $plain   = $this->store(array('name' => 'AAA Sorts First Alphabetically'));
+        $starred = $this->store(array('name' => 'ZZZ Sorts Last Alphabetically'));
+
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, 'name', false), 'id');
+
+        $starredAt = array_search($starred['id'], $ids, true);
+        $plainAt   = array_search($plain['id'], $ids, true);
+
+        $this->assertNotFalse($starredAt);
+        $this->assertNotFalse($plainAt);
+        $this->assertLessThan($plainAt, $starredAt,
+            'a starred report must outrank an unstarred one even when the sort disagrees');
+    }
+
+    public function testTheRosterCarriesWhetherEachRowIsStarred(): void
+    {
+        $this->requireDb();
+
+        $starred = $this->store(array('name' => 'Carries Its Star'));
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        foreach (CustomReports::roster(self::AUTHOR) as $row) {
+            if ($row['id'] === $starred['id']) {
+                $this->assertTrue($row['is_favorite']);
+                return;
+            }
+        }
+
+        $this->fail('the starred report was not in the roster at all');
+    }
+
+    public function testFavouritesOnlyNarrowsToStarredReports(): void
+    {
+        $this->requireDb();
+
+        $starred = $this->store(array('name' => 'Kept'));
+        $plain   = $this->store(array('name' => 'Filtered Out'));
+
+        Favorites::toggle($starred['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, false, true), 'id');
+
+        $this->assertContains($starred['id'], $ids);
+        $this->assertNotContains($plain['id'], $ids);
+    }
+
+    /**
+     * A reader may star somebody else's shared report, and it reaches their
+     * list -- which is the case the two features have to work together in.
+     */
+    public function testAReaderMayStarSomebodyElsesSharedReport(): void
+    {
+        $this->requireDb();
+
+        $shared = $this->store(
+            array('name' => 'Theirs, Shared, Starred', 'is_shared' => true), self::OTHER);
+
+        Favorites::toggle($shared['id'], self::AUTHOR);
+
+        $ids = array_column(
+            CustomReports::roster(self::AUTHOR, false, '', null, null, null, false, true), 'id');
+
+        $this->assertContains($shared['id'], $ids);
+    }
+
+    /** Deleting a report takes its stars with it. */
+    public function testDeletingAReportForgetsItsStars(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Deleted With Stars'));
+        Favorites::toggle($saved['id'], self::AUTHOR);
+        $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
+
+        CustomReports::delete($saved['id']);
+
+        $this->assertFalse(Favorites::isFavorite($saved['id'], self::AUTHOR),
+            'a star pointing at a deleted report would sort a gap to the top of a list');
     }
 
     /** The roster has to say who made each report, which means carrying it. */

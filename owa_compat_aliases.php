@@ -163,6 +163,7 @@ function owa_compat_class_map(): array
         'owa_notification' => 'OWA\\Module\\Base\\Entity\\Notification',
         'owa_notification_state' => 'OWA\\Module\\Base\\Entity\\NotificationState',
         'owa_custom_report' => 'OWA\\Module\\Base\\Entity\\CustomReport',
+        'owa_custom_report_favorite' => 'OWA\\Module\\Base\\Entity\\CustomReportFavorite',
         'owa_customReportsController' => 'OWA\\Module\\Base\\Controller\\CustomReports',
         'owa_customReportsView' => 'OWA\\Module\\Base\\View\\CustomReports',
         'owa_customReportEditController' => 'OWA\\Module\\Base\\Controller\\CustomReportEdit',

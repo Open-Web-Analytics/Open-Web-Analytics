@@ -82,8 +82,29 @@ class CustomReports extends \OWA\Core\ReportController {
             ? null
             : (bool) $descending;
 
+        /*
+         * "Just mine" rides on the URL like the sort does, so a link to the
+         * roster shows the same list to whoever opens it. It narrows and cannot
+         * widen, so it needs no capability of its own.
+         */
+        $mine_only = (bool) $this->getParam( 'rosterMine' );
+
+        /*
+         * A THIRD state of the same control, not a second control: All, Just
+         * mine, Favorites. They are alternatives -- "my favourites" and "my
+         * reports" are different questions and answering both at once would
+         * need a filter that says which.
+         */
+        $favorites_only = (bool) $this->getParam( 'rosterFavorites' );
+
+        if ( $favorites_only ) {
+
+            $mine_only = false;
+        }
+
         $reports = \OWA\Module\Base\Classes\CustomReports::roster(
-            $user_id, $sees_all, $sort, $descending, null, $this->rosterType() );
+            $user_id, $sees_all, $sort, $descending, null, $this->rosterType(),
+            $mine_only, $favorites_only );
 
         // What the headings need to draw themselves: which one is active, and
         // which way, so each can link to the OPPOSITE of what it shows now.
@@ -95,6 +116,8 @@ class CustomReports extends \OWA\Core\ReportController {
         $this->set( 'custom_reports', $reports );
         $this->set( 'roster_type', $this->rosterType() );
         $this->set( 'sees_all', $sees_all );
+        $this->set( 'roster_mine', $mine_only );
+        $this->set( 'roster_favorites', $favorites_only );
         $this->set( 'may_author', (bool) $user->isCapable( 'edit_reports' ) );
         $this->set( 'current_user_id', $user_id );
     }

@@ -95,6 +95,24 @@ class CustomReport extends \OWA\Core\Entity {
         $visualization_type = new \OWA\Module\Base\Classes\DbColumn( 'visualization_type', OWA_DTD_VARCHAR255 );
         $this->setProperty( $visualization_type );
 
+        /*
+         * Whether this one is listed to everybody, or only to the person who
+         * made it.
+         *
+         * DISCOVERABILITY, not access. A custom report opened by its URL
+         * already renders for anyone with view_reports -- that is what makes
+         * the link shareable, and it is safe because a custom report can show
+         * nothing its reader could not query for themselves. What ownership
+         * governs is the ROSTER, so this flag governs the roster too.
+         *
+         * NULL on every row written before this column existed, which reads as
+         * not shared -- the state those rows were already in. Nothing is
+         * backfilled, for the same reason report_type is not.
+         */
+        $is_shared = new \OWA\Module\Base\Classes\DbColumn( 'is_shared', OWA_DTD_TINYINT );
+        $is_shared->setIndex();
+        $this->setProperty( $is_shared );
+
         $definition = new \OWA\Module\Base\Classes\DbColumn( 'definition', OWA_DTD_BLOB );
         $this->setProperty( $definition );
 
@@ -120,5 +138,18 @@ class CustomReport extends \OWA\Core\Entity {
     public function isVisualization() {
 
         return $this->reportType() === self::TYPE_VISUALIZATION;
+    }
+
+    /**
+     * Is this one listed to everybody?
+     *
+     * Falsy reads as private, which is what NULL means on every row that
+     * predates the column -- the same shape as reportType() above.
+     *
+     * @return bool
+     */
+    public function isShared() {
+
+        return (bool) $this->get( 'is_shared' );
     }
 }

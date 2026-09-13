@@ -25,11 +25,49 @@ $owa_builder   = $owa_isViz ? 'base.visualizationEdit' : 'base.customReportEdit'
  * has nothing to gate per row. The controller still decides what is LISTED.
  */
 $owa_author    = (bool) $view->get('may_author');
+$owa_mine      = (bool) $view->get('roster_mine');
+$owa_favs      = (bool) $view->get('roster_favorites');
+$owa_seesAll   = (bool) $view->get('sees_all');
 ?>
 
 <?php if ( $owa_reports ): ?>
 
 <div class="owa_reportSectionContent">
+
+<?php
+    /*
+     * Whose reports this is showing, and the way to change it.
+     *
+     * Only drawn for someone who could be shown more than their own -- an
+     * author with no shared reports around them would get a control whose two
+     * states produce the same list.
+     */
+?>
+<div class="owa_rosterFilter">
+    <?php
+        /*
+         * Three states of ONE control, not three controls. They are
+         * alternatives: "my favourites" and "my reports" are different
+         * questions, and a reader who could pick both would need a fourth
+         * control saying how to combine them.
+         */
+        $owa_filterLink = function ( $which ) use ( $view, $owa_isViz ) {
+            return $view->makeLink( array(
+                'do'              => $owa_isViz ? 'base.visualizations' : 'base.customReports',
+                'rosterMine'      => $which === 'mine' ? '1' : '0',
+                'rosterFavorites' => $which === 'favorites' ? '1' : '0',
+            ) );
+        };
+        $owa_active = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
+    ?>
+    <a class="<?php echo $owa_active === 'all' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'all' ); ?>">All</a>
+    <a class="<?php echo $owa_active === 'mine' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'mine' ); ?>">Just mine</a>
+    <a class="<?php echo $owa_active === 'favorites' ? 'owa_rosterFilterActive' : ''; ?>"
+       href="<?php echo $owa_filterLink( 'favorites' ); ?>"><i class="fa fa-star"></i> Favorites</a>
+</div>
+
 <table class="management owa_customReportRoster">
     <thead>
         <tr>
@@ -49,7 +87,7 @@ $owa_author    = (bool) $view->get('may_author');
                 $owa_sort = (string) $view->get('roster_sort');
                 $owa_desc = (bool) $view->get('roster_desc');
 
-                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz ) {
+                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz, $owa_mine, $owa_favs ) {
 
                     $active = ( $owa_sort === $key );
 
@@ -64,6 +102,10 @@ $owa_author    = (bool) $view->get('may_author');
                         'do'         => $owa_isViz ? 'base.visualizations' : 'base.customReports',
                         'rosterSort' => $key,
                         'rosterDesc' => $next ? '1' : '0',
+                        // Carried, or sorting would silently drop the filter
+                        // and hand back a longer list than was asked for.
+                        'rosterMine'      => $owa_mine ? '1' : '0',
+                        'rosterFavorites' => $owa_favs ? '1' : '0',
                     ) );
 
                     printf(
@@ -111,7 +153,17 @@ $owa_author    = (bool) $view->get('may_author');
                 ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
             </td>
 
-            <td class="data_cell"><?php $view->out( $owa_report['user_id'] ); ?></td>
+            <td class="data_cell">
+                <?php $view->out( $owa_report['user_id'] ); ?>
+                <?php if ( ! empty( $owa_report['is_favorite'] ) ): ?>
+                    <i class="fa fa-star owa_rosterFavorite"
+                       title="One of your favorites, so it sorts to the top"></i>
+                <?php endif; ?>
+                <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
+                    <span class="owa_rosterShared"
+                          title="Shown in everyone's list">shared</span>
+                <?php endif; ?>
+            </td>
 
             <td class="data_cell">
                 <?php $owa_when = (int) $owa_report['last_updated_timestamp']; ?>

@@ -75,6 +75,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
             'id'         => $id,
             'name'       => $this->getParam( 'customReportName' ),
             'definition' => $this->getParam( 'customReportDefinition' ),
+            'is_shared'  => (bool) $this->getParam( 'isShared' ),
         ), $user_id );
 
         if ( ! $result['ok'] ) {
