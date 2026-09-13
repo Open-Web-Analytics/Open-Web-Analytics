@@ -58,14 +58,18 @@ final class MaxmindUpdateCliTest extends TestCase {
     }
 
     /**
-     * Controllers resolve through the legacy alias map, so one that is not
-     * registered there 404s at the moment someone runs it.
+     * The action name has to resolve to the class. This asks the ACTION REGISTRY,
+     * which is where a registered action's class actually comes from -- not the
+     * alias map, which would answer for a name that is merely listed and stay
+     * silent for a class that loads perfectly well. It still catches what it was
+     * written for: an action that 404s the moment someone runs it.
      */
     public function testTheActionResolvesToItsClass(): void {
 
         $this->assertSame(
             \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class,
-            \OWA\Core\Lib::resolveNamespacedClass( 'owa_updateGeoipDbCliController' )
+            ( \OWA\Core\CoreAPI::serviceSingleton()
+                ->getMapValue( 'actions', 'maxmind_geoip.updateGeoipDbCli' )['class_name'] ?? null )
         );
     }
 

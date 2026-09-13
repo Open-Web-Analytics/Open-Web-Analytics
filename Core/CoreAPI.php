@@ -131,6 +131,18 @@ class CoreAPI {
             return 'mysql';
         }
 
+        /*
+         * 'pdo' is a CONFIGURATION alias for the PDO driver, whose token is
+         * pdo_mysql. Normalised here rather than left to be turned into the
+         * class owa_db_pdo and resolved through the compatibility bridge --
+         * a config value someone may set is not a legacy class name, and the
+         * bridge is not where an installation's accepted spellings belong.
+         */
+        if ( $type === 'pdo' ) {
+
+            return 'pdo_mysql';
+        }
+
         return $type;
     }
 
@@ -149,7 +161,19 @@ class CoreAPI {
             // constants. resolveNamespacedClass() returns null for a
             // third-party owa_db_<type>, which falls through to the plugins/
             // seam below. class_exists() on the resolved name forces autoload.
-            $nsClass = \OWA\Core\Lib::resolveNamespacedClass( $connection_class );
+            /*
+             * Convention first, bridge second. A bundled driver's class name
+             * follows from its token -- pdo_mysql -> OWA\Core\Db\PdoMysql --
+             * so it needs no entry in a compatibility map, which is a file for
+             * names third parties once called, not a lookup table OWA reads to
+             * find its own classes.
+             */
+            $nsClass = self::namespacedClass( 'OWA\\Core\\Db', $type );
+
+            if ( $nsClass === null ) {
+
+                $nsClass = \OWA\Core\Lib::resolveNamespacedClass( $connection_class );
+            }
 
             if ( $nsClass === null && ! class_exists( $connection_class ) ) {
 
@@ -205,12 +229,25 @@ class CoreAPI {
              \OWA\Core\CoreAPI::error(sprintf('Failed to initialize db type %s. Exiting.', $db_type));
              return;
         } else {
-            // NAMESPACE-FIRST: resolve the bundled driver (owa_db_mysql ->
-            // OWA\Core\Db\Mysql) via the migration map so OWA runs bridge-free;
-            // a third-party owa_db_<type> from the plugins/ seam keeps its
-            // legacy name (setupStorageEngine required it in).
-            $connection_class = 'owa_db_'.self::resolveDbDriver($db_type);
-            $connection_class = \OWA\Core\Lib::resolveNamespacedClass($connection_class) ?? $connection_class;
+            /*
+             * CONVENTION FIRST, then the map, then the legacy name.
+             *
+             * A bundled driver's class follows from its token -- pdo_mysql ->
+             * OWA\Core\Db\PdoMysql -- so it needs nothing registered. The map
+             * is still consulted for anything that does not follow the
+             * convention, and a third-party owa_db_<type> from the plugins/
+             * seam keeps its legacy name (setupStorageEngine required it in).
+             *
+             * The same resolution as setupStorageEngine(), which runs first and
+             * is what loaded the class. The two must agree: if this one picked
+             * a different class the constants would come from one driver and
+             * the connection from another.
+             */
+            $driver = self::resolveDbDriver($db_type);
+            $connection_class = 'owa_db_'.$driver;
+            $connection_class = self::namespacedClass('OWA\\Core\\Db', $driver)
+                ?? \OWA\Core\Lib::resolveNamespacedClass($connection_class)
+                ?? $connection_class;
             $db = new $connection_class(
                 \OWA\Core\CoreAPI::getSetting('base','db_host'),
                 \OWA\Core\CoreAPI::getSetting('base','db_port'),
@@ -1168,11 +1205,58 @@ class CoreAPI {
             return null;
         }
 
-        // Same transform module directories use -- see Lib::moduleDirName().
-        $pascal = str_replace('_', '', ucwords($name, '_'));
+        return self::namespacedModuleClass($module, 'Entity', $name);
+    }
 
-        $class = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module)
-               . '\\Entity\\' . $pascal;
+    /**
+     * The PSR-4 class a module's `<kind>` of `<name>` refers to, or null.
+     *
+     * base + Controller + customReports -> OWA\Module\Base\Controller\CustomReports
+     * base + Entity     + custom_report -> OWA\Module\Base\Entity\CustomReport
+     *
+     * @param  string $module registered module name, e.g. 'base'
+     * @param  string $kind   the sub-namespace: Entity, Controller, View
+     * @param  string $name   registered name, snake_case or camelCase
+     * @return string|null
+     */
+    private static function namespacedModuleClass($module, $kind, $name) {
+
+        if ((string) $module === '' || (string) $name === '') {
+
+            return null;
+        }
+
+        return self::namespacedClass(
+            'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module) . '\\' . $kind,
+            $name );
+    }
+
+    /**
+     * The class $name refers to inside $namespace, or null when there is none.
+     *
+     * The transform is the one Lib::moduleDirName() applies to module
+     * directories: snake_case to PascalCase, and a name that is already camel
+     * only gains its capital. It is the convention the tree is laid out by, so
+     * a class that follows it needs nothing registered anywhere.
+     *
+     * Null rather than the name when the class does not exist, so every caller
+     * falls back to its legacy path instead of fataling on a name only that
+     * path can resolve.
+     *
+     * @param  string $namespace e.g. 'OWA\Core\Db'
+     * @param  string $name      e.g. 'pdo_mysql'
+     * @return string|null
+     */
+    private static function namespacedClass($namespace, $name) {
+
+        $pascal = str_replace('_', '', ucwords((string) $name, '_'));
+
+        if ($pascal === '') {
+
+            return null;
+        }
+
+        $class = $namespace . '\\' . $pascal;
 
         return class_exists($class) ? $class : null;
     }

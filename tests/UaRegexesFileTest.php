@@ -128,16 +128,18 @@ final class UaRegexesFileTest extends TestCase {
     }
 
     /**
-     * The action name has to resolve to the class. Controllers are reached
-     * through the legacy alias map, so a new one that is not registered there
-     * is a 404 at the moment someone runs it -- which is exactly what happened
-     * while writing this.
+     * The action name has to resolve to the class. This asks the ACTION REGISTRY,
+     * which is where a registered action's class actually comes from -- not the
+     * alias map, which would answer for a name that is merely listed and stay
+     * silent for a class that loads perfectly well. It still catches what it was
+     * written for: an action that 404s the moment someone runs it.
      */
     public function testTheCommandResolvesToItsClass(): void {
 
         $this->assertSame(
             \OWA\Module\Base\Controller\UpdateUaRegexesCli::class,
-            \OWA\Core\Lib::resolveNamespacedClass( 'owa_updateUaRegexesCliController' ),
+            ( \OWA\Core\CoreAPI::serviceSingleton()
+                ->getMapValue( 'actions', 'base.updateUaRegexesCli' )['class_name'] ?? null ),
             'the action name must resolve, or the command 404s when it is run'
         );
     }
