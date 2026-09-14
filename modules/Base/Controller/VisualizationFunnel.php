@@ -173,6 +173,27 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 }
 
                 /*
+                 * A GOAL EVENT STEP HAS NO PATH, and both the table and the
+                 * template read one. VisualizationSave stores a step as ONE of
+                 * two shapes -- {path} or {goal_event_id} -- deliberately, so
+                 * that a step cannot carry a stale path beside the goal event
+                 * it actually counts. Reading ['path'] unconditionally was
+                 * therefore an undefined-key warning on every render of a
+                 * funnel that ends in a goal, which is the shape the builder
+                 * encourages.
+                 *
+                 * Filled with what the step is measured against, so the column
+                 * keeps meaning the same thing: a path for a path step, and the
+                 * goal event's name for a goal step. Empty only when the goal
+                 * has since been deleted -- and stepPredicate() has already
+                 * refused to draw the funnel in that case.
+                 */
+                if ( ! isset( $steps[ $i ]['path'] ) ) {
+
+                    $steps[ $i ]['path'] = $this->goalEventLabel( $step );
+                }
+
+                /*
                  * Drop-off against the step before, which is what a funnel
                  * shows. The first step is the entry population, so it is 100%
                  * of itself by definition.
@@ -340,6 +361,30 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * @param  string $alias  the document table's alias in the funnel query
      * @return array|null     array( 'sql', 'params' ), or null if refused
      */
+    /**
+     * What a goal-event step is measured against, for display.
+     *
+     * The goal's own name -- it is what the author chose to call the thing
+     * being counted, and it is what the funnel's own step name defaults to.
+     *
+     * @param  array $step
+     * @return string
+     */
+    private function goalEventLabel( array $step ) {
+
+        $id = (string) ( $step['goal_event_id'] ?? '' );
+
+        if ( $id === '' ) {
+
+            return '';
+        }
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( $id );
+
+        return $goalEvent->wasPersisted() ? (string) $goalEvent->get( 'name' ) : '';
+    }
+
     private function stepPredicate( array $step, $alias = 'd' ) {
 
         $goalEventId = (string) ( $step['goal_event_id'] ?? '' );
