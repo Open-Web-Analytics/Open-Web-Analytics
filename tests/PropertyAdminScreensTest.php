@@ -452,10 +452,22 @@ final class PropertyAdminScreensTest extends TestCase
     {
         $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
 
+        /*
+         * base.goalEvents is NOT in this list any more.
+         *
+         * It was, on the grounds that the control was the only way in. It is
+         * not: getHierarchyNav() files Goal Events under Property, so the
+         * "edit" link on any row reaches the settings screen whose left-hand
+         * nav carries it. The control's own link was a second door to the same
+         * room, hung on the Profile row -- which said goals are per Profile,
+         * and they are not: owa_goal_event is keyed on property_id.
+         *
+         * What this still guards is that each TIER is reachable, which is what
+         * the control is for.
+         */
         foreach ( array( 'base.organizationProfile' => 'the Organization',
                          'base.propertyProfile'     => 'a Property',
-                         'base.sitesProfile'        => 'a Profile',
-                         'base.goalEvents'        => "a Profile's goals" ) as $action => $what ) {
+                         'base.sitesProfile'        => 'a Profile' ) as $action => $what ) {
 
             $this->assertStringContainsString(
                 $action, $template,

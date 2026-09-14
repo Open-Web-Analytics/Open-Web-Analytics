@@ -30,17 +30,16 @@ $owa_favs      = (bool) $view->get('roster_favorites');
 $owa_seesAll   = (bool) $view->get('sees_all');
 ?>
 
-<?php if ( $owa_reports ): ?>
-
 <div class="owa_reportSectionContent">
 
 <?php
     /*
      * Whose reports this is showing, and the way to change it.
      *
-     * Only drawn for someone who could be shown more than their own -- an
-     * author with no shared reports around them would get a control whose two
-     * states produce the same list.
+     * ALWAYS DRAWN, including when the list it produced is empty. It used to
+     * sit inside the has-results branch, so narrowing to "Just mine" or
+     * "Favorites" with nothing to show removed the only control that could
+     * widen it again -- a dead end escapable solely by the back button.
      */
 ?>
 <div class="owa_rosterFilter">
@@ -56,17 +55,25 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                 'do'              => $owa_isViz ? 'base.visualizations' : 'base.customReports',
                 'rosterMine'      => $which === 'mine' ? '1' : '0',
                 'rosterFavorites' => $which === 'favorites' ? '1' : '0',
-            ) );
+            // add_state, or siteId is dropped and the Profile the report links
+            // depend on is lost the moment anyone filters.
+            ), true );
         };
         $owa_active = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
     ?>
-    <a class="<?php echo $owa_active === 'all' ? 'owa_rosterFilterActive' : ''; ?>"
-       href="<?php echo $owa_filterLink( 'all' ); ?>">All</a>
-    <a class="<?php echo $owa_active === 'mine' ? 'owa_rosterFilterActive' : ''; ?>"
-       href="<?php echo $owa_filterLink( 'mine' ); ?>">Just mine</a>
-    <a class="<?php echo $owa_active === 'favorites' ? 'owa_rosterFilterActive' : ''; ?>"
-       href="<?php echo $owa_filterLink( 'favorites' ); ?>"><i class="fa fa-star"></i> Favorites</a>
+    <span class="owa_rosterFilterLabel">Showing</span>
+
+    <span class="owa_rosterFilterOptions">
+        <a class="<?php echo $owa_active === 'all' ? 'owa_rosterFilterActive' : ''; ?>"
+           href="<?php echo $owa_filterLink( 'all' ); ?>">All</a>
+        <a class="<?php echo $owa_active === 'mine' ? 'owa_rosterFilterActive' : ''; ?>"
+           href="<?php echo $owa_filterLink( 'mine' ); ?>">Just mine</a>
+        <a class="<?php echo $owa_active === 'favorites' ? 'owa_rosterFilterActive' : ''; ?>"
+           href="<?php echo $owa_filterLink( 'favorites' ); ?>"><i class="fas fa-star"></i>Favorites</a>
+    </span>
 </div>
+
+<?php if ( $owa_reports ): ?>
 
 <table class="management owa_customReportRoster">
     <thead>
@@ -106,7 +113,8 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                         // and hand back a longer list than was asked for.
                         'rosterMine'      => $owa_mine ? '1' : '0',
                         'rosterFavorites' => $owa_favs ? '1' : '0',
-                    ) );
+                    // add_state, for the same reason as the filter above.
+                    ), true );
 
                     printf(
                         '<th class="%s"><a href="%s">%s</a>%s</th>',
@@ -156,7 +164,7 @@ $owa_seesAll   = (bool) $view->get('sees_all');
             <td class="data_cell">
                 <?php $view->out( $owa_report['user_id'] ); ?>
                 <?php if ( ! empty( $owa_report['is_favorite'] ) ): ?>
-                    <i class="fa fa-star owa_rosterFavorite"
+                    <i class="fas fa-star owa_rosterFavorite"
                        title="One of your favorites, so it sorts to the top"></i>
                 <?php endif; ?>
                 <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
@@ -176,13 +184,23 @@ $owa_seesAll   = (bool) $view->get('sees_all');
 </div>
 
 <?php else: ?>
-<div class="owa_reportSectionContent">
     <?php $owa_noun = $owa_isViz ? 'visualizations' : 'custom reports'; ?>
-    <?php if ( $owa_author ): ?>
+    <?php if ( $owa_active !== 'all' ): ?>
+        <?php
+            /*
+             * EMPTY BECAUSE OF THE FILTER, which is a different thing from
+             * having none at all -- and saying "no custom reports yet" to
+             * someone who has several, just none starred, reads as data loss.
+             * The control above is still there to widen it again.
+             */
+        ?>
+        No <?php $view->out( $owa_noun );?> <?php
+            $view->out( $owa_active === 'mine' ? 'of your own.' : 'in your favorites.' );?>
+    <?php elseif ( $owa_author ): ?>
         No <?php $view->out( $owa_noun );?> yet.
         <?php /* Hooked by the same modal as the New button; see below. */ ?>
         <a class="<?php echo $owa_isViz ? 'owa_newVisualization' : '';?>"
-           href="<?php echo $view->makeLink( array( 'do' => $owa_builder ) ); ?>">Build one</a>.
+           href="<?php echo $view->makeLink( array( 'do' => $owa_builder ), true ); ?>">Build one</a>.
     <?php else: ?>
         <?php
             /*
@@ -192,8 +210,9 @@ $owa_seesAll   = (bool) $view->get('sees_all');
         ?>
         No <?php $view->out( $owa_noun );?> have been shared with you yet.
     <?php endif; ?>
-</div>
 <?php endif; ?>
+
+</div>
 
 <?php if ( $owa_isViz && $owa_author && $owa_vizTypes ): ?>
 <?php
@@ -229,7 +248,8 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                href="<?php echo $view->makeLink( array(
                    'do'                => 'base.visualizationEdit',
                    'visualizationType' => $owa_key,
-               ) ); ?>">
+               // add_state: the builder needs the Profile it is building for.
+               ), true ); ?>">
                 <span class="owa_typeChoiceArt" aria-hidden="true">
                     <i class="owa_typeChoiceIcon <?php $view->out(
                         \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"></i>

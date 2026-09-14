@@ -173,7 +173,16 @@ jQuery(document).ready(function(){
                         foreach ( $owa_titleMarks as $owa_mark ): ?><a
                             class="owa_titleActionMark" href="<?php $view->out( $owa_mark['url'], false ); ?>"
                             title="<?php $view->out( $owa_mark['label'] ); ?>"
-                            aria-label="<?php $view->out( $owa_mark['label'] ); ?>"><i class="fa <?php
+                            aria-label="<?php $view->out( $owa_mark['label'] ); ?>"><i class="<?php
+                            /*
+                             * The icon names its own Font Awesome STYLE, rather
+                             * than having 'fa' prefixed here. FA5 splits solid
+                             * from regular -- fas fa-star is filled, far fa-star
+                             * is the outline -- and a mark that wants the
+                             * outline cannot say so if this hardcodes a prefix.
+                             * (The FA4 spelling, fa-star-o, is defined nowhere
+                             * in 5.13 and renders as an empty box.)
+                             */
                             $view->out( $owa_mark['icon'] ); ?>"></i></a><?php
                         endforeach; ?></div>
 

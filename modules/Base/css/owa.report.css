@@ -2028,6 +2028,97 @@ li.constraintRow {
     vertical-align: top;
 }
 
+/* ---------------------------------------------------------------------------
+ * The roster's filter: All / Just mine / Favorites
+ *
+ * A segmented control rather than three loose links. They are alternatives --
+ * one is always in force -- and three bare anchors above a table read as
+ * navigation to somewhere else, which is the wrong promise: they change what
+ * this table lists.
+ *
+ * Labelled, because a control with no label leaves the reader to infer that a
+ * list is filtered at all. "Showing" is what the buttons complete.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_rosterFilter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: #707070;
+}
+
+.owa .owa_rosterFilter .owa_rosterFilterLabel {
+    margin-right: 2px;
+}
+
+/* The buttons themselves: one group, so the segments sit against each other. */
+.owa .owa_rosterFilter .owa_rosterFilterOptions {
+    display: inline-flex;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.owa .owa_rosterFilter a {
+    padding: 4px 10px;
+    color: #505050;
+    background-color: #ffffff;
+    text-decoration: none;
+    border-left: 1px solid #cccccc;
+    white-space: nowrap;
+}
+
+.owa .owa_rosterFilter a:first-child {
+    border-left: none;
+}
+
+.owa .owa_rosterFilter a:hover {
+    background-color: #f2f2f2;
+}
+
+/* The one in force. Colour AND weight: colour alone is not a state anybody
+   can see if they cannot distinguish it. */
+.owa .owa_rosterFilter a.owa_rosterFilterActive {
+    background-color: #505050;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.owa .owa_rosterFilter a.owa_rosterFilterActive:hover {
+    background-color: #505050;
+}
+
+/* Any icon inside a segment, whatever FA style it names. */
+.owa .owa_rosterFilter a i {
+    margin-right: 5px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Row markers: starred, and shared
+ *
+ * Both sit beside the author, because both answer "whose is this" -- one says
+ * it is one of yours, the other that its author put it on everyone's list.
+ * ------------------------------------------------------------------------- */
+
+.owa .owa_rosterFavorite {
+    color: #e8b500;
+    margin-right: 4px;
+}
+
+.owa .owa_rosterShared {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #707070;
+    background-color: #f2f2f2;
+    border-radius: 2px;
+}
+
 /* A sortable heading, and the arrow marking the one the order is actually by. */
 .owa table.owa_customReportRoster th a {
     color: inherit;

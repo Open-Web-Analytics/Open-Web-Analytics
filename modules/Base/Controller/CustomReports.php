@@ -177,11 +177,17 @@ class CustomReports extends \OWA\Core\ReportController {
          *
          * The period picker and Live View do NOT: this is a list of reports,
          * not a report of a time range, and neither control would change
-         * anything on the page. The sites filter goes for the same reason --
-         * a custom report is site-agnostic, so the list is the same whichever
-         * site is selected.
+         * anything on the page.
+         *
+         * THE SITES FILTER STAYS, though it used to go with them on the same
+         * reasoning -- that a custom report is site-agnostic, so the list reads
+         * the same whichever Profile is selected. The list does; the page does
+         * not. Every report link on it carries the current siteId (add_state),
+         * because a report opened from here has to open FOR somewhere. So the
+         * Profile is live on this screen and decides where these links land --
+         * hiding the control that shows it left that state invisible and
+         * unchangeable, which is how it read as the tile going missing.
          */
         $this->hideTimeControls();
-        $this->hideSitesFilter();
     }
 }

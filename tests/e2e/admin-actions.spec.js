@@ -614,10 +614,10 @@ test.describe('admin: the site control fan-out', () => {
     /**
      * And the secondary links still win inside that area.
      *
-     * "goal events" and "edit" sit within the region the row's own link now
-     * covers, so they need to sit above it -- a secondary action you cannot
-     * click is a worse bug than the one being fixed. They are revealed on
-     * hover, so the row is hovered first.
+     * "edit" sits within the region the row's own link now covers, so it
+     * needs to sit above it -- a secondary action you cannot click is a worse
+     * bug than the one being fixed. It is revealed on hover, so the row is
+     * hovered first.
      */
     test('the secondary links stay reachable inside the stretched row', async ({ page }) => {
         /*
