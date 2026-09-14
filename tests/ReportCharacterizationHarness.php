@@ -63,7 +63,7 @@ final class ReportCharacterizationHarness
     /**
      * Report id => the controller class that used to implement it.
      *
-     * These 49 reports are configuration now: modules/Base/reports/<id>.json,
+     * These 47 reports are configuration now: modules/Base/reports/<id>.json,
      * rendered by Core\ConfiguredReport. The map is what lets the conversion
      * keep being checked after the controllers are gone -- the golden file
      * records what each of them DECLARED, and that record is still the standard
@@ -108,8 +108,6 @@ final class ReportCharacterizationHarness
         'page-types'                => 'ReportPageTypes',
         'pages'                     => 'ReportPages',
         'product-categories'        => 'ReportProductCategories',
-        'product-category-detail'   => 'ReportProductCategoryDetail',
-        'product-sku-detail'        => 'ReportProductSkuDetail',
         'product-skus'              => 'ReportProductSkus',
         'products'                  => 'ReportProducts',
         'referring-sites'           => 'ReportReferringSites',
