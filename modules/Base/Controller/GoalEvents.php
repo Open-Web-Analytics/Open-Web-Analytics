@@ -34,7 +34,15 @@ class GoalEvents extends \OWA\Core\AdminController {
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        /* Tier 3: a goal event belongs to one Observation Profile. */
+        /*
+         * TIER 3, the Profile, even though the goals themselves belong to the
+         * Property. The tier says how this screen is ADDRESSED, not where its
+         * data lives: it takes a siteId, is reached from a Profile, and
+         * resolves the Property itself, so the context line above it should
+         * stop at the Profile. getHierarchyNav() files the nav ENTRY under
+         * Property instead, because that is where the data lives; the two are
+         * answering different questions and are meant to differ.
+         */
         $this->set( 'hierarchy_tier', 3 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
         $this->setView( 'base.optionsHierarchy' );

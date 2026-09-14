@@ -113,15 +113,19 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
                     </a>
                     <?php
                         /*
-                         * Goal events are per Profile, which is why they are
-                         * reached from here rather than from an entry in the
-                         * settings nav -- that entry had no way to say WHICH
-                         * Profile's it meant.
+                         * NO GOAL EVENTS LINK HERE. It used to sit on this row,
+                         * with a comment saying goal events are per Profile.
+                         * They are not -- owa_goal_event is keyed on
+                         * property_id, and the settings nav lists Goal Events
+                         * under the PROPERTY tier beside Property Access.
+                         *
+                         * So this row offered a property-scoped screen from a
+                         * Profile, implying each Profile had its own goals. One
+                         * "edit" is enough: it opens the settings screen, whose
+                         * left-hand nav carries Goal Events at the tier that
+                         * actually owns them.
                          */
                     ?>
-                    <?php if ( $view->getCurrentUser()->isCapable('edit_settings') ):?>
-                    <a class="owa_siteControlEdit" href="<?php echo $view->makeLink( array( 'do' => 'base.goalEvents', 'siteId' => $owa_prof['site_id'] ) );?>">goal events</a>
-                    <?php endif;?>
                     <?php if ( $view->getCurrentUser()->isCapable('edit_sites') ):?>
                     <a class="owa_siteControlEdit" href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile', 'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>">edit</a>
                     <?php endif;?>

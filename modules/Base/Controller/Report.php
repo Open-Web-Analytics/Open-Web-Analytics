@@ -380,7 +380,7 @@ class Report extends \OWA\Core\Controller {
                 'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
                                ->makeLink( $link, true ),
                 'label' => $is_viz ? 'Edit visualization' : 'Edit report',
-                'icon'  => 'fa-pencil-alt',
+                'icon'  => 'fas fa-pencil-alt',
                 // An icon, not a labelled button: the label names the row's own
                 // title, which is right beside it.
                 'iconOnly' => true,
@@ -443,7 +443,12 @@ class Report extends \OWA\Core\Controller {
                     'customReportId' => $report['id'],
                 ), true, '', false, true ),
             'label'    => $starred ? 'Remove from favorites' : 'Add to favorites',
-            'icon'     => $starred ? 'fa-star' : 'fa-star-o',
+            /*
+             * Filled when it is one of yours, outline when it is not -- the
+             * two styles FA5 ships for the same glyph, so the control reads as
+             * one thing in two states rather than two different marks.
+             */
+            'icon'     => $starred ? 'fas fa-star' : 'far fa-star',
             'iconOnly' => true,
         );
 

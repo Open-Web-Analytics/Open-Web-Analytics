@@ -2462,20 +2462,34 @@ test.describe('custom reports', () => {
                 const star = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
 
                 await expect(star).toBeVisible();
-                await expect(star.locator('i.fa-star-o')).toHaveCount(1);
+                // OUTLINE when it is not yours: FA5 splits solid from regular, and
+                // the FA4 spelling (fa-star-o) is defined nowhere in 5.13 -- it
+                // rendered an empty box, which is how this shipped invisible.
+                await expect(star.locator('i.far.fa-star')).toHaveCount(1);
+
+                /*
+                 * And it has to actually DRAW. A class assertion alone passed
+                 * while this shipped invisible -- the element was there, its
+                 * class named an icon the stylesheet does not define, and it
+                 * rendered at zero width. A glyph that is not there has no
+                 * bounding box, so visibility is what catches it.
+                 */
+                await expect(star.locator('i.far.fa-star')).toBeVisible();
+                const box = await star.locator('i.far.fa-star').boundingBox();
+                expect(box.width).toBeGreaterThan(0);
 
                 await star.click();
                 await page.waitForLoadState('networkidle');
 
                 // Back on the report, now starred.
                 const starred = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
-                await expect(starred.locator('i.fa-star')).toHaveCount(1);
+                await expect(starred.locator('i.fas.fa-star')).toHaveCount(1);
 
                 // And again, to clear it -- it is a toggle, not a one-way mark.
                 await starred.click();
                 await page.waitForLoadState('networkidle');
                 await expect(
-                    page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"] i.fa-star-o')
+                    page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"] i.far.fa-star')
                 ).toHaveCount(1);
             });
 
@@ -2599,7 +2613,68 @@ test.describe('custom reports', () => {
 
                 await expect(page).toHaveURL(/rosterMine=1/);
             });
+
         });
+    });
+
+    /**
+     * The filter has to survive producing NOTHING.
+     *
+     * It used to be drawn inside the branch that rendered the table, so
+     * choosing a filter that matched no reports took the filter away with the
+     * rows. There was then no control left to choose "All" with, and the
+     * browser's back button was the only way out.
+     *
+     * Tested from the reader's side because "mine" is EMPTY for them by
+     * construction -- they cannot author, so no report can be theirs -- while
+     * the author's own favourites depend on what earlier tests starred in a
+     * database they all share.
+     */
+    test('the roster filter is still there when it matches nothing',
+        async ({ page, browser }) => {
+
+        // Somebody else's SHARED report, so the unfiltered roster is not empty
+        // and "All" has something to come back to.
+        await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);
+
+        const name = reportName('EmptyFilter');
+
+        await openBuilder(page);
+        await page.fill('#customReportName', name);
+        await page.check('#isShared');
+        await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
+        await page.click('#customReportSubmit');
+        await page.waitForLoadState('networkidle');
+
+        const reader = await browser.newContext();
+        const theirs = await reader.newPage();
+
+        try {
+            await login(theirs);          // the analyst fixture user
+            await openRoster(theirs);
+
+            const rows = theirs.locator('.owa_customReportRoster tbody tr');
+
+            await expect(rows.filter({ hasText: name })).toHaveCount(1);
+
+            await theirs.locator('.owa_rosterFilter a', { hasText: 'Just mine' }).click();
+            await theirs.waitForLoadState('networkidle');
+
+            await expect(rows).toHaveCount(0);
+
+            const filter = theirs.locator('.owa_rosterFilter');
+
+            await expect(filter).toBeVisible();
+            await expect(filter.locator('a.owa_rosterFilterActive')).toHaveText('Just mine');
+
+            // ...and the way back out is a link on the page, not the back button.
+            await filter.locator('a', { hasText: 'All' }).click();
+            await theirs.waitForLoadState('networkidle');
+
+            await expect(rows.filter({ hasText: name })).toHaveCount(1);
+        } finally {
+            await reader.close();
+        }
     });
 
     test.describe('as a reader who cannot author', () => {
