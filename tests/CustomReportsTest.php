@@ -682,7 +682,7 @@ final class CustomReportsTest extends TestCase
      * The derivation reproduces every link the shipped summary widgets already
      * make.
      *
-     * The real check on it. These twelve were written by hand over years -- top
+     * The real check on it. These eighteen were written by hand over years -- top
      * products to Products, top page types to Page Types, latest visits to
      * Latest Visits -- so if the rule offered something different from what a
      * person chose, the rule would be the thing that is wrong.
@@ -723,6 +723,55 @@ final class CustomReportsTest extends TestCase
         $this->assertSame(array(), $missed,
             "The builder would not offer these links, which shipped reports already make:\n  "
             . implode("\n  ", $missed));
+    }
+
+    /**
+     * Every in-row link in a shipped definition points at a report that exists.
+     *
+     * Deliberately weaker than the rule above. Five shipped links cross
+     * dimensions on purpose -- entry-pages and exit-pages link an entry or exit
+     * path into Document, which is read under pagePath -- so requiring the
+     * builder to offer them would fail on choices that are correct. What is
+     * never a choice is a link whose destination is not registered at all,
+     * which is exactly what retiring a report leaves behind in every widget
+     * that pointed at it.
+     */
+    public function testTheShippedInRowLinksPointAtReportsThatExist(): void
+    {
+        $registry = (array) \OWA\Core\CoreAPI::getReportRegistry();
+        $dangling = array();
+        $checked  = 0;
+
+        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+
+            $definition = json_decode((string) file_get_contents($file), true);
+
+            foreach ((array) ($definition['widgets'] ?? array()) as $widget) {
+
+                $destination = $widget['link']['template']['reportId'] ?? '';
+
+                if ($destination === '') {
+                    continue;
+                }
+
+                $checked++;
+
+                if (!isset($registry[$destination])) {
+
+                    $dangling[] = sprintf('%s:%s -> %s', basename($file),
+                        $widget['id'] ?? '?', $destination);
+                }
+            }
+        }
+
+        // Asserted before the result: with no links found the loop would run no
+        // checks and the test would pass by not looking.
+        $this->assertGreaterThan(0, $checked,
+            'no in-row links found in the shipped definitions');
+
+        $this->assertSame(array(), $dangling,
+            "These row links point at reports that are not registered:\n  "
+            . implode("\n  ", $dangling));
     }
 
     public function testAFullReportLinkIsStoredAndItsDestinationChecked(): void

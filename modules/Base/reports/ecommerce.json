@@ -24,14 +24,9 @@
                 "dimensions": "productName",
                 "sort": "lineItemRevenue-"
             },
-            "link": {
-                "linkColumn": "productName",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "product-detail",
-                    "productName": "%s"
-                },
-                "valueColumns": "productName"
+            "more": {
+                "reportId": "products",
+                "label": "View Full Report \u00bb"
             }
         },
         {

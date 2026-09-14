@@ -2171,7 +2171,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'pages', 'reports/pages.json' );
         $this->registerReport( 'product-categories', 'reports/product-categories.json' );
         $this->registerReport( 'product-category-detail', 'reports/product-category-detail.json' );
-        $this->registerReport( 'product-detail', 'reports/product-detail.json' );
         $this->registerReport( 'product-sku-detail', 'reports/product-sku-detail.json' );
         $this->registerReport( 'product-skus', 'reports/product-skus.json' );
         $this->registerReport( 'products', 'reports/products.json' );

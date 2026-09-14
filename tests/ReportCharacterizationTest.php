@@ -70,9 +70,33 @@ final class ReportCharacterizationTest extends TestCase
             $checked++;
         }
 
-        $this->assertGreaterThan( 10, $checked,
-            'the parameterised reports are the point of this test; finding almost '
-            . 'none means the parameter detection broke, not that they went away' );
+        /*
+         * Counted from the definitions rather than compared against a fixed
+         * floor. The floor was 10, calibrated to the 11 parameterised reports
+         * that existed when this was written, so retiring one failed the test
+         * for having done the thing correctly. Reading the files here is also
+         * the stronger check: it is independent of the harness's own parameter
+         * detection, which is the thing this guard exists to catch breaking.
+         */
+        $declared = 0;
+
+        foreach ( array_keys( Harness::CONVERTED ) as $id ) {
+
+            $definition = json_decode( (string) file_get_contents(
+                OWA_DIR . "modules/Base/reports/$id.json" ), true );
+
+            if ( ! empty( $definition['params'] ) ) {
+                $declared++;
+            }
+        }
+
+        $this->assertGreaterThan( 0, $declared,
+            'the parameterised reports are the point of this test; finding none '
+            . 'means they have stopped being discoverable, not that they went away' );
+
+        $this->assertSame( $declared, $checked,
+            'every report declaring a parameter must have been checked; a lower '
+            . 'count means the parameter detection broke' );
     }
 
     /**
