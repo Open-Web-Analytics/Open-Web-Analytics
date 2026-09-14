@@ -21,15 +21,6 @@
                 "dimensions": "productCategory",
                 "sort": "lineItemQuantity-",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "productCategory",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "product-category-detail",
-                    "productCategory": "%s"
-                },
-                "valueColumns": "productCategory"
             }
         }
     ]
