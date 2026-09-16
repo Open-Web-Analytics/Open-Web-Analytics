@@ -1341,6 +1341,25 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         foreach ($row as $k => $v) {
 
+            /*
+             * Reset per key.
+             *
+             * These were assigned only inside the two branches below, and the
+             * row can hold a key that is neither: a calculated metric's
+             * children arrive in the result without having been asked for, so
+             * they reach the else branch. Left over from the previous
+             * iteration, $type and $data_type then described the PREVIOUS
+             * column -- a child metric following a date dimension was reported
+             * as a dimension and run through the date formatter. On the first
+             * key there was nothing to inherit and PHP warned about an
+             * undefined variable instead, which is how this was found.
+             *
+             * Null is what the else branch means: no metadata is applied at
+             * this stage, as the comment there says.
+             */
+            $type      = null;
+            $data_type = null;
+
             if (in_array($k, $this->dimensions)) {
                 $type = 'dimension';
                 $dim = $this->lookupDimension($k, $this->baseEntity);

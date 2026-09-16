@@ -889,23 +889,57 @@ class Lib {
         $c = \OWA\Core\CoreAPI::configSingleton();
         $config = $c->fetch('base');
 
-        $control_params = array('view_method', 'auth_status');
-
-
-        $get = '';
-
-        foreach ($data as $n => $v) {
-
-            if (!in_array($n, $control_params)) {
-
-                $get .= \OWA\Core\CoreAPI::appNs().$n.'='.$v.'&';
-
-            }
-        }
+        $get = self::buildRedirectQuery(
+            $data,
+            \OWA\Core\CoreAPI::appNs(),
+            array( 'view_method', 'auth_status' )
+        );
 
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
 
         \OWA\Core\Lib::redirectBrowser($new_url);
+    }
+
+    /**
+     * The query string a redirect-to-view carries, as trailing-& pairs.
+     *
+     * A query string holds scalars. A value that is not one -- an array or an
+     * object still in the controller's data container -- used to be
+     * concatenated in regardless, which is a PHP warning and writes the literal
+     * string "Array" into the URL as that parameter's value. Such values are
+     * dropped: they could never have survived the trip, and dropping one says
+     * so instead of sending something that reads like data.
+     *
+     * Names and values are encoded. They were interpolated raw, so a value
+     * holding & or = or a space rewrote the rest of the query string.
+     *
+     * Separated from redirectToView() because that method ends in a Location
+     * header, which a test cannot read. This half is the part with the rules in
+     * it, and it is pure.
+     *
+     * @param  array  $data           the controller's data container
+     * @param  string $ns             application namespace to prefix each name with
+     * @param  array  $control_params names that steer the framework, not the view
+     * @return string
+     */
+    public static function buildRedirectQuery( $data, $ns = '', $control_params = array() ) {
+
+        $get = '';
+
+        foreach ( (array) $data as $n => $v ) {
+
+            if ( in_array( $n, $control_params ) ) {
+                continue;
+            }
+
+            if ( is_array( $v ) || is_object( $v ) ) {
+                continue;
+            }
+
+            $get .= rawurlencode( $ns . $n ) . '=' . rawurlencode( (string) $v ) . '&';
+        }
+
+        return $get;
     }
 
     /**
