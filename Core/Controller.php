@@ -600,7 +600,10 @@ class Controller extends \OWA\Core\Base {
 		
 		foreach ($this->data as $k => $param) {
 			
-			if ( ! is_array( $param ) || ! is_object($param) ) {
+			// && , not || . An array satisfies ! is_object and an object
+			// satisfies ! is_array, so with || every value passed and the
+			// filter copied exactly what it was written to hold back.
+			if ( ! is_array( $param ) && ! is_object( $param ) ) {
 				
 				$new_data[$k] = $param;
 			}
