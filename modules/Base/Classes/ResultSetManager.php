@@ -1380,11 +1380,47 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 'result_type' => $type,
                 'name'           => $k,
                 'value'       => $v,
-                'formatted_value' => $this->formatValue($data_type, $v),
+                'formatted_value' => $type === 'dimension'
+                                     ? $this->formatDimensionValue( $data_type, $v )
+                                     : $this->formatValue($data_type, $v),
                 'label' => $this->getLabel($k), 'data_type' => $data_type);
         }
 
         return $new_row;
+    }
+
+    /**
+     * A dimension the row carries no value for reads as "(not set)".
+     *
+     * The label belongs HERE and not in the row, which is the rule the v2 plan
+     * states as "(not set) is a presentation choice, never a stored value". A
+     * magic string in storage is not absence, it is a value that merely looks
+     * like it: it groups as its own bucket, sorts among real values, and cannot
+     * be told apart from a visitor who genuinely typed it. Deciding the label at
+     * render time keeps one copy of the decision, changeable without touching
+     * data, and translatable later.
+     *
+     * 1.x had no such renderer, which is why the write path grew sentinels
+     * instead -- Geolocation and RefererHandlers each wrote the literal string
+     * so that something would appear in a report. Both stop now that this
+     * exists.
+     *
+     * Empty string counts as absent alongside null, because it renders as
+     * nothing either way and rows already carry both.
+     *
+     * DIMENSIONS ONLY. A metric of zero is a measurement, not an absence, and
+     * must keep formatting as 0.
+     */
+    const NOT_SET_LABEL = '(not set)';
+
+    function formatDimensionValue( $data_type, $value ) {
+
+        if ( $value === null || $value === '' ) {
+
+            return self::NOT_SET_LABEL;
+        }
+
+        return $this->formatValue( $data_type, $value );
     }
 
     function formatValue($type, $value) {

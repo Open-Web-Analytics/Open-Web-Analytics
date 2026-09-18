@@ -124,7 +124,24 @@ final class DimensionIngestionTest extends IngestionTestCase
 
         // Content-shared defaults (assert existence, do not clean).
         $this->assertSharedDimensionRowExists('base.host', 'host', '(not set)');
-        $this->assertSharedDimensionRowExists('base.location_dim', 'country', '(not set)');
+
+        /*
+         * No location dimension row, because there is no location.
+         *
+         * This used to assert a row with country = '(not set)'. The geolocation
+         * filter wrote that literal into every field the lookup could not fill,
+         * which made an absent location indistinguishable from a country
+         * genuinely named that, and gave location_dim.state more of the string
+         * than real values.
+         *
+         * Absence is recorded as absence now: the filter leaves the fields
+         * empty, LocationHandlers declines to mint a dimension row it has no
+         * content to key, and the session simply carries no location_id -- the
+         * same shape source_id has always had. "(not set)" is applied by
+         * ResultSetManager::formatDimensionValue() at render time, so the
+         * report reads exactly as before.
+         */
+        $this->assertSharedDimensionRowAbsent('base.location_dim', 'country', '(not set)');
     }
 
     public function testCampaignPageviewPopulatesCampaignSourceAndSearchDimensions(): void
@@ -257,6 +274,18 @@ final class DimensionIngestionTest extends IngestionTestCase
      * Assert that a dimension row with the given content value exists (existence
      * only — used for content-shared rows we must not delete).
      */
+    /** The counterpart: a row that must NOT have been created. */
+    private function assertSharedDimensionRowAbsent(string $entity, string $col, string $value): void
+    {
+        $row = owa_coreAPI::entityFactory($entity);
+        $row->load($value, $col);
+        $this->assertNotTrue(
+            $row->wasPersisted(),
+            "A {$entity} row with {$col}='{$value}' exists, so something is still "
+            . "storing the label instead of leaving the column unset."
+        );
+    }
+
     private function assertSharedDimensionRowExists(string $entity, string $col, string $value): void
     {
         $row = owa_coreAPI::entityFactory($entity);

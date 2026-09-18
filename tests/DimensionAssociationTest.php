@@ -89,10 +89,42 @@ final class DimensionAssociationTest extends IngestionTestCase
             'fact row visitor_id does not match the beacon visitor_id.'
         );
 
-        // Shared defaults: the fact must still be linked to a real host/location
-        // row (the '(not set)' rows in this environment), not left null.
+        // Shared default: the fact is still linked to a real host row.
         $this->assertFactLinkedTo($fact, 'host_id',     'base.host',         'host',    '(not set)');
-        $this->assertFactLinkedTo($fact, 'location_id', 'base.location_dim', 'country', '(not set)');
+
+        /*
+         * An unresolved location links to the shared "nothing resolved" row,
+         * and that row holds NULL rather than the literal '(not set)'.
+         *
+         * The link has to exist. Reports join a geo dimension to the fact table
+         * with a plain inner join, so a fact whose location_id matches no row is
+         * not grouped under "(not set)" -- it is dropped from the report. What
+         * changed in this PR is the CONTENT of the row, not whether it exists:
+         * the geolocation filter no longer writes the label into the columns it
+         * could not fill, and ResultSetManager applies that label at render time
+         * instead.
+         *
+         * host still carries the literal. That writer is elsewhere and is not
+         * part of this change.
+         */
+        $locationFk = (string) $fact->get('location_id');
+
+        $this->assertSame(
+            (string) \OWA\Module\Base\Classes\Geolocation::idFor( '', '', '' ),
+            $locationFk,
+            'an unresolved location should link to the shared unresolved row' );
+
+        $dim = owa_coreAPI::entityFactory('base.location_dim');
+        $dim->load($locationFk, 'id');
+
+        $this->assertTrue( (bool) $dim->wasPersisted(),
+            'the unresolved location row must exist, or the inner join drops the fact' );
+
+        foreach ( array( 'country', 'city', 'state' ) as $column ) {
+
+            $this->assertNotSame( '(not set)', $dim->get( $column ),
+                "location_dim.$column still stores the label" );
+        }
     }
 
     /**

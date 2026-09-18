@@ -617,12 +617,21 @@ class TrackingEventHelpers {
         return microtime();
     }
 
+    /**
+     * The fact row's location dimension id.
+     *
+     * Derived unconditionally. It used to return nothing when country was
+     * absent, which was invisible only because the geolocation filter wrote
+     * the literal '(not set)' into every empty field and so country was never
+     * absent. With the sentinel gone, bailing here left location_id at 0 --
+     * an id no dimension row carries -- and the inner join the reporting layer
+     * builds for a geo dimension then dropped the row from every geo report
+     * instead of grouping it under "(not set)".
+     */
     static function generateLocationId( $property_name, $event ) {
 
-        if ( $event->get( 'country' ) ) {
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            return $s->geolocation->generateId( $event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
-        }
+        return \OWA\Module\Base\Classes\Geolocation::idFor(
+            $event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
     }
 
     static function generateDimensionId ( $property_value, $event ) {
