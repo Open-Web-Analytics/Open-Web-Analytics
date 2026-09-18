@@ -174,6 +174,51 @@ class CommandQueue {
     }
 
     /**
+     * The value a queued setOption() will set, found BEFORE the tracker is built.
+     *
+     * argFor() cannot answer this: it returns cmd[1], which for setOption is the
+     * option NAME. The value is cmd[2].
+     *
+     * Returns undefined when nothing sets it, which is distinct from a command
+     * that sets it to false -- the caller has to be able to tell those apart, so
+     * this cannot use the '' sentinel argFor() uses.
+     */
+    optionFor( obj_name, option_name, current ) {
+
+        var valueOf = function ( cmd ) {
+
+            var parsed = CommandQueue.parseCmd( cmd );
+
+            if ( ! parsed || parsed.object !== obj_name || parsed.method !== 'setOption' ) {
+                return undefined;
+            }
+
+            if ( cmd[1] !== option_name ) {
+                return undefined;
+            }
+
+            return cmd[2];
+        };
+
+        var found = valueOf( current );
+
+        if ( found !== undefined ) {
+            return found;
+        }
+
+        for ( var i = 0; i < this.asyncCmds.length; i++ ) {
+
+            found = valueOf( this.asyncCmds[i] );
+
+            if ( found !== undefined ) {
+                return found;
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
      * Everything a tracker must know before its constructor body runs.
      *
      * Two things qualify, and both used to arrive too late:
@@ -205,6 +250,34 @@ class CommandQueue {
 
         if ( domain ) {
             identity.cookie_domain_declared = domain;
+        }
+
+        /*
+         * Cookie configuration, for the same reason the site id comes forward.
+         *
+         * Storage migrations are pegged to 'cookieDomainEstablished', which the
+         * constructor fires, and they WRITE cookies -- collapsing the legacy 'b'
+         * store into the session store, and moving a session store to its
+         * per-site name. Any command, setOption included, arrives after
+         * construction has finished. So a returning visitor holding a legacy
+         * cookie would have the migrated one written at the shipped 364 days
+         * even when the snippet asks for 90, which is precisely the upgrade path
+         * this configuration exists to serve.
+         *
+         * Carried as options, so the constructor's existing merge puts them in
+         * this.options before the migrations run. A tracker built by hand still
+         * gets the shipped defaults.
+         */
+        var expirations = this.optionFor( obj_name, 'stateStoreExpirations', current );
+
+        if ( expirations !== undefined ) {
+            identity.stateStoreExpirations = expirations;
+        }
+
+        var persistence = this.optionFor( obj_name, 'cookiePersistence', current );
+
+        if ( persistence !== undefined ) {
+            identity.cookiePersistence = persistence;
         }
 
         return identity;

@@ -61,6 +61,22 @@
             // drains owa_cmds on load and fires the page_request beacon.
             window.owa_cmds = window.owa_cmds || [];
             window.owa_cmds.push(['setSiteId', 'e2e-tracker-harness']);
+
+            // Optional cookie configuration, exactly as a site owner writes it
+            // into their own snippet. Passed as JSON in ?exp= so this harness
+            // stays one file, and pushed BEFORE trackPageView because that is
+            // where a real snippet puts it.
+            var exp = params.get('exp');
+            if (exp) {
+                window.owa_cmds.push(['setOption', 'stateStoreExpirations', JSON.parse(exp)]);
+            }
+
+            // Session-only cookies (issue #941). After the expirations, since
+            // persistence is the stronger statement of the two.
+            if (params.get('nopersist') === '1') {
+                window.owa_cmds.push(['setOption', 'cookiePersistence', false]);
+            }
+
             window.owa_cmds.push(['trackPageView']);
 
             var _owa = document.createElement('script');
