@@ -215,38 +215,66 @@ class Maxmind extends \OWA\Core\Location {
         return $location_map;
     }
 
+    /**
+     * Map a MaxMind city record onto OWA's location properties.
+     *
+     * NO CHARACTER SET CONVERSION HAPPENS HERE, and that is deliberate.
+     *
+     * Every name below used to be run through a Latin-1 to UTF-8 conversion, on
+     * the stated grounds that "MaxMind name fields are Latin-1". They are not.
+     * The MaxMind DB format spec defines its string type as "a variable length
+     * byte sequence that contains valid utf8", and this module reads .mmdb files
+     * through MaxMind\Db\Reader exclusively -- there is no longer any path
+     * through the legacy GeoIP .dat API, which did return ISO-8859-1 and is
+     * presumably where the belief came from.
+     *
+     * So the conversion was encoding UTF-8 a second time: "München" was stored
+     * as "MÃ¼nchen", and every city or region carrying an umlaut, accent or
+     * cedilla has been wrong since. Reported as issue #742 in March 2021. It
+     * went unnoticed for so long because the fields that are ISO codes are pure
+     * ASCII, so converting them changed nothing, and an English-speaking
+     * operator sees no difference either.
+     *
+     * Nothing downstream needs it. The database connection is utf8mb4, the
+     * tables are utf8, and Sanitize::escapeForDisplay() escapes as UTF-8.
+     *
+     * Rows already stored are repaired by `php cli.php cmd=repair-geo-encoding`.
+     *
+     * strtolower() is safe over UTF-8 here: since PHP 8.0 it is ASCII-only and
+     * locale-insensitive, so multibyte sequences pass through untouched.
+     */
     private function mapCityRecord( $record, $location_map = array(), $lang = 'en' ) {
 
         if ( $record && is_array( $record ) ) {
 
             if ( isset( $record['city']['names'][ $lang ] ) ) {
 
-                $location_map['city']             = $this->latin1ToUtf8( strtolower( trim( $record['city']['names'][ $lang ] ) ) );
+                $location_map['city']             = strtolower( trim( $record['city']['names'][ $lang ] ) );
             }
 
             if ( isset( $record['continent']['code'] ) ) {
 
-                $location_map['continent']        = $this->latin1ToUtf8( strtolower( trim( $record['continent']['code'] ) ) );
+                $location_map['continent']        = strtolower( trim( $record['continent']['code'] ) );
             }
 
             if ( isset( $record['continent']['names'][ $lang ] ) ) {
 
-                $location_map['continent_code'] = $this->latin1ToUtf8( strtolower( trim( $record['continent']['names'][ $lang ] ) ) );
+                $location_map['continent_code'] = strtolower( trim( $record['continent']['names'][ $lang ] ) );
             }
 
             if ( isset( $record['subdivisions'][0]['names'][ $lang ]  ) ) {
 
-                $location_map['state']             = $this->latin1ToUtf8( strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) ) );
+                $location_map['state']             = strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) );
                }
 
                if ( isset( $record['subdivisions'][0]['iso_code'] ) ) {
 
-                   $location_map['state_code']     = $this->latin1ToUtf8( strtolower( trim( $record['subdivisions'][0]['iso_code'] ) ) );
+                   $location_map['state_code']     = strtolower( trim( $record['subdivisions'][0]['iso_code'] ) );
                }
 
                if ( isset( $record['country']['names'][ $lang ] ) ) {
 
-                   $location_map['country']         = $this->latin1ToUtf8( strtolower( trim( $record['country']['names'][ $lang ] ) ) );
+                   $location_map['country']         = strtolower( trim( $record['country']['names'][ $lang ] ) );
             }
 
             if ( isset( $record['country']['iso_code'] ) ) {
@@ -273,48 +301,6 @@ class Maxmind extends \OWA\Core\Location {
         return $location_map;
     }
 
-    /**
-     * Convert an ISO-8859-1 (Latin-1) string to UTF-8.
-     *
-     * MaxMind name fields are Latin-1; the reporting UI expects UTF-8. This was
-     * previously done with mb_convert_encoding(), but ext-mbstring is not a
-     * production Composer requirement or polyfill (the release build installs
-     * with --no-dev), so on hosts without mbstring a GeoIP result containing any
-     * of these fields would fatal instead of returning a location. Prefer
-     * mbstring when available, then iconv, then a dependency-free byte
-     * conversion so the lookup always succeeds.
-     */
-    private function latin1ToUtf8( $string ) {
-
-        if ( $string === '' || $string === null ) {
-            return $string;
-        }
-
-        if ( function_exists( 'mb_convert_encoding' ) ) {
-            return mb_convert_encoding( $string, 'UTF-8', 'ISO-8859-1' );
-        }
-
-        if ( function_exists( 'iconv' ) ) {
-            $converted = @iconv( 'ISO-8859-1', 'UTF-8', $string );
-            if ( $converted !== false ) {
-                return $converted;
-            }
-        }
-
-        // Pure-PHP fallback: map each Latin-1 byte to its UTF-8 sequence.
-        $out = '';
-        $len = strlen( $string );
-        for ( $i = 0; $i < $len; $i++ ) {
-            $c = ord( $string[ $i ] );
-            if ( $c < 0x80 ) {
-                $out .= $string[ $i ];
-            } else {
-                $out .= chr( 0xC0 | ( $c >> 6 ) ) . chr( 0x80 | ( $c & 0x3F ) );
-            }
-        }
-
-        return $out;
-    }
 
 }
 
