@@ -84,9 +84,7 @@ if ( ! defined( 'OWA_SQL_PARTITION_TABLE' ) ) { define('OWA_SQL_PARTITION_TABLE'
 if ( ! defined( 'OWA_SQL_DROP_PARTITION' ) ) { define('OWA_SQL_DROP_PARTITION', 'ALTER TABLE %s DROP PARTITION %s'); }
 if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_PARTITION', 'ALTER TABLE %s REORGANIZE PARTITION %s INTO (%s)'); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
-if ( ! defined( 'OWA_SQL_JOIN_LEFT_INNER' ) ) { define('OWA_SQL_JOIN_LEFT_INNER', 'LEFT INNER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
-if ( ! defined( 'OWA_SQL_JOIN_RIGHT_INNER' ) ) { define('OWA_SQL_JOIN_RIGHT_INNER', 'RIGHT INNER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }
 if ( ! defined( 'OWA_SQL_DESCENDING' ) ) { define('OWA_SQL_DESCENDING', 'DESC'); }
 if ( ! defined( 'OWA_SQL_ASCENDING' ) ) { define('OWA_SQL_ASCENDING', 'ASC'); }
