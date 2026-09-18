@@ -67,11 +67,18 @@ class Geolocation {
             
             }
             
-            foreach ($geo as $k => $v) {
-                if ( ! $v ) {
-                    $geo[$k] = '(not set)';
-                }
-            }
+            /*
+             * A field the lookup could not fill stays empty.
+             *
+             * This used to write the literal '(not set)' so that something
+             * would appear in a report, which is how owa_location_dim.state
+             * came to hold more of that string than real values -- 2,949
+             * against 2,099 on the demo install. The label is the reporting
+             * layer's job now: ResultSetManager::formatDimensionValue()
+             * renders an absent dimension as "(not set)" at display time, so
+             * the screen is unchanged and the row stops claiming a value it
+             * does not have.
+             */
             
             $this->properties = $geo;
         }

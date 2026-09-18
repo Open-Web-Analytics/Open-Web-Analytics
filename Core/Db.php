@@ -739,6 +739,31 @@ class Db extends \OWA\Core\Base {
     }
     
     /**
+     * The operators that must not discard a row merely because it has no value.
+     *
+     * Only the negating ones. '==' and the ordering comparisons are correct
+     * already: a row with no value genuinely does not equal, exceed or precede
+     * anything.
+     */
+    const NULL_TOLERANT_OPERATORS = array( '!=', '!~', '!@' );
+
+    /**
+     * Widen a comparison so a row holding no value satisfies it.
+     *
+     * Returns the expression untouched when tolerance does not apply, so the
+     * call sites read the same whether or not the operator negates.
+     */
+    protected function tolerateNull( $apply, $name, $expression ) {
+
+        if ( ! $apply ) {
+
+            return $expression;
+        }
+
+        return sprintf( '( %s OR %s IS NULL )', $expression, $this->prepare( $name ) );
+    }
+
+    /**
      *  Generates the SQL constraint string
      *  @type string    'WHERE' || 'HAVING'
      */
@@ -763,6 +788,30 @@ class Db extends \OWA\Core\Base {
                     continue;
                 }
 
+                /*
+                 * A negating comparison has to tolerate absence.
+                 *
+                 * The reporting query LEFT OUTER JOINs its dimension tables, so
+                 * a session whose geo lookup failed, or which carried no
+                 * referer, still belongs in the result with NULLs for that
+                 * dimension. But NULL != 'google' is NULL rather than true, so
+                 * a WHERE built from a negating operator discards exactly the
+                 * rows the LEFT JOIN exists to keep -- silently, and the count
+                 * still looks plausible. On demo that is 23,945 of 326,212
+                 * sessions missing from "sources other than google", which are
+                 * the direct-traffic sessions somebody asking that question
+                 * most wants to see.
+                 *
+                 * So these three emit ( <comparison> OR <column> IS NULL ).
+                 *
+                 * WHERE only. This method also builds HAVING, where the operand
+                 * is an aggregate rather than a column: COUNT never returns
+                 * NULL and SUM returns it only over no rows, so the same clause
+                 * there would widen metric filtering for no reason.
+                 */
+                $tolerateNull = $type === 'WHERE'
+                                && in_array( $op, self::NULL_TOLERANT_OPERATORS, true );
+
                 switch ( $op ) {
 
                     case '==':
@@ -778,7 +827,8 @@ class Db extends \OWA\Core\Base {
                         break;
 
                     case '!~':
-                        $constraint .= sprintf("%s %s %s",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->bindValue( $v['value'] ) );
+                        $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
+                            sprintf("%s %s %s",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->bindValue( $v['value'] ) ) );
                         break;
 
                     case '=@':
@@ -788,13 +838,15 @@ class Db extends \OWA\Core\Base {
                         break;
 
                     case '!@':
-                        $constraint .= sprintf( OWA_SQL_NOT_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
+                        $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
+                            sprintf( OWA_SQL_NOT_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) ) );
                         break;
 
                     default:
                         // $op has already been validated against ALLOWED_OPERATORS,
                         // so this covers '=', '!=', '>', '>=', '<', '<='.
-                        $constraint .= sprintf("%s %s %s",$this->prepare( $v['name'] ), $op, $this->bindValue( $v['value'] ) );
+                        $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
+                            sprintf("%s %s %s",$this->prepare( $v['name'] ), $op, $this->bindValue( $v['value'] ) ) );
                         break;
                 }
 

@@ -72,8 +72,19 @@ class RefererHandlers extends \OWA\Core\Observer {
                 $r->set('is_searchengine', true);
             }
 
-            // set title. this will be updated later by the crawler.
-            $r->set('page_title', '(not set)');
+            /*
+             * No title, and nothing will supply one later.
+             *
+             * This line used to read "this will be updated later by the
+             * crawler". There is no crawler: fetching the referring page was
+             * removed because the URL arrives on the anonymous tracking beacon,
+             * so any visitor could make the server issue an HTTP GET to an
+             * address of their choosing. RefererCrawlRemovedTest keeps it gone.
+             *
+             * So the placeholder was permanent, and 22,802 of demo's 25,457
+             * referer rows carry it. Leaving the column unset is the honest
+             * record; referralPageTitle renders as "(not set)" at display time.
+             */
 
             // Persist to database
             $ret = $r->create();

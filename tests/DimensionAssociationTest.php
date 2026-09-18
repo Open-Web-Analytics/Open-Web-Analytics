@@ -89,10 +89,41 @@ final class DimensionAssociationTest extends IngestionTestCase
             'fact row visitor_id does not match the beacon visitor_id.'
         );
 
-        // Shared defaults: the fact must still be linked to a real host/location
-        // row (the '(not set)' rows in this environment), not left null.
+        // Shared default: the fact is still linked to a real host row.
         $this->assertFactLinkedTo($fact, 'host_id',     'base.host',         'host',    '(not set)');
-        $this->assertFactLinkedTo($fact, 'location_id', 'base.location_dim', 'country', '(not set)');
+
+        /*
+         * location_id is EMPTY, and that is the correct record.
+         *
+         * This used to assert a link to a location_dim row holding
+         * country = '(not set)'. That row only existed because the geolocation
+         * filter wrote the literal into every field it could not fill, purely so
+         * the dimension id -- derived from country.city -- had something to hash.
+         *
+         * With absence stored as absence there is no content to key a row on, so
+         * LocationHandlers declines to mint one and the fact carries no
+         * location_id. Reports are unaffected: a null dimension renders as
+         * "(not set)" at display time, and a negating constraint now tolerates
+         * NULL so these rows are no longer dropped from filtered results.
+         *
+         * host still carries the literal. That writer is elsewhere and is not
+         * part of this change.
+         */
+        $locationFk = (string) $fact->get('location_id');
+
+        // Asserted as "resolves to nothing" rather than against a literal: the
+        // column defaults to 0 rather than NULL, so absence shows up as '0'
+        // here and as NULL elsewhere, and the point is that neither names a row.
+        $this->assertTrue( $locationFk === '' || $locationFk === '0',
+            "expected no location link, got location_id={$locationFk}" );
+
+        if ( $locationFk !== '' && $locationFk !== '0' ) {
+
+            $dim = owa_coreAPI::entityFactory('base.location_dim');
+            $dim->load($locationFk, 'id');
+            $this->assertFalse( (bool) $dim->wasPersisted(),
+                'location_id names a dimension row that should not have been created' );
+        }
     }
 
     /**

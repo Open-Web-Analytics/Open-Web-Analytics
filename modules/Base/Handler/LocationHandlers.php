@@ -67,6 +67,33 @@ class LocationHandlers extends \OWA\Core\Observer {
                 $event->set('country_code', $location->getCountryCode());
                 $event->set('state', $location->getState());
                 $key = $event->get('country').$event->get('city');
+
+                /*
+                 * A lookup that filled nothing creates no dimension row.
+                 *
+                 * The id is content-derived from country.city, so with both
+                 * absent there is nothing to derive from and generateId('')
+                 * throws "No value passed." -- which is why the geolocation
+                 * filter used to write the literal '(not set)' into every empty
+                 * field: it guaranteed a non-empty key. That made the sentinel
+                 * load-bearing rather than cosmetic, and it is why removing it
+                 * has to be paired with this.
+                 *
+                 * Leaving the session's location_id unset is the honest record
+                 * and the one the rest of the schema already uses: source_id is
+                 * NULL on 23,945 of demo's sessions for the same reason. A
+                 * negating constraint still finds those rows, because
+                 * Db::_makeConstraintClause() now widens the comparison to
+                 * tolerate NULL.
+                 */
+                if ( $key === '' ) {
+
+                    \OWA\Core\CoreAPI::debug(
+                        'Not persisting location dimension: the lookup returned no country or city.' );
+
+                    return OWA_EHS_EVENT_HANDLED;
+                }
+
                 $location_id = $h->generateId($key);
             }
             
