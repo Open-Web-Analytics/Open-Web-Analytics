@@ -147,27 +147,70 @@ class Maxmind extends \OWA\Core\Location {
     }
 
 
+    /**
+     * Look the IP up through MaxMind's web service rather than the local file.
+     *
+     * Reached by setting the module's lookup_method to
+     * 'geoip_city_isp_org_web_service'. That setting has no UI, which is the
+     * only reason this has not been noticed: the code below asked for
+     * `new \Client(...)` with the `use GeoIp2\WebService\Client` line commented
+     * out, so it named a class in the ROOT namespace that has never existed. Any
+     * installation that set it got an uncaught Error on every tracked request
+     * that reached a geo lookup.
+     *
+     * The client lives in geoip2/geoip2, which this module does not require --
+     * only maxmind-db/reader, for the local file. So the honest behaviour is to
+     * say the service is unavailable and hand the location map back untouched,
+     * exactly as the local path does when its database is missing. A lookup that
+     * cannot happen must not take the page view down with it.
+     *
+     * Adding the dependency, and a UI for the setting, is a larger decision than
+     * a bug fix should make on its own.
+     */
     function getLocationFromWebService($location_map) {
-
-        $license_key = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_license_key');
-        $user_name = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_user_name');
 
         if ( ! array_key_exists( 'ip_address', $location_map ) ) {
             return $location_map;
         }
 
+        $client_class = '\GeoIp2\WebService\Client';
 
-        //use GeoIp2\WebService\Client;
+        if ( ! class_exists( $client_class ) ) {
 
-        $client = new \Client( $user_name, $license_key );
+            \OWA\Core\CoreAPI::notice(
+                'The Maxmind web service lookup needs the geoip2/geoip2 package, which is not '
+              . 'installed. Set the maxmind_geoip lookup_method to city_lite_db to use the local '
+              . 'database instead. Returning no location.' );
 
-        $record = $client->city( trim( $location_map['ip_address'] ) );
+            return $location_map;
+        }
 
+        $license_key = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_license_key');
+        $user_name = \OWA\Core\CoreAPI::getSetting('maxmind_geoip', 'ws_user_name');
+
+        /*
+         * Wrapped because this one reaches the network on the visitor-facing
+         * request. The client throws for an address it has no data for, for a
+         * rejected key, and for a timeout, and none of those are a reason to
+         * lose the page view.
+         */
+        try {
+
+            $client = new $client_class( $user_name, $license_key );
+            $record = $client->city( trim( $location_map['ip_address'] ) );
+
+        } catch ( \Throwable $e ) {
+
+            \OWA\Core\CoreAPI::debug( sprintf(
+                'Maxmind web service lookup failed: %s', $e->getMessage() ) );
+
+            return $location_map;
+        }
 
         if ( $record ) {
 
             $location_map = $this->mapCityRecord( $record, $location_map );
-         }
+        }
 
         return $location_map;
     }
