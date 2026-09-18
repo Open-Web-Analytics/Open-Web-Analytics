@@ -488,6 +488,27 @@ class StateManager {
         var hydrate = behaviour.hydrate || 'eager';
         var persist = behaviour.persist || 'immediate';
 
+        /*
+         * The FIRST tracker to register a store keeps ownership of it.
+         *
+         * Everything else in this metadata is replaced wholesale on
+         * re-registration, which is right: a store's format and behaviour are
+         * facts about the store. Ownership is not -- it is what resolves the
+         * configured lifetime, and the tracker constructor re-registers the
+         * global 'v' and 'c' stores unconditionally. Letting the last
+         * registration win means a second tracker on the page, configured with
+         * nothing, silently takes the visitor store back to its shipped
+         * lifetime and nothing puts it back.
+         *
+         * Only the global stores can collide at all: a site-scoped store is
+         * registered under 's_<siteId>', so two trackers never contend for one
+         * name. And a global store genuinely is the page's rather than any one
+         * tracker's -- 'v' is the visitor, which both trackers are supposed to
+         * agree about -- so the tracker that established it is the right one to
+         * answer for it, and it is the one a bare snippet command addresses.
+         */
+        var established = this.storeMeta[ name ];
+
         this.storeMeta[name] = {
             'expiration'   : expiration,
             'length'       : length,
@@ -515,6 +536,21 @@ class StateManager {
              */
             'scope'        : behaviour.scope === 'site' ? 'site' : 'global',
             'collapseInto' : behaviour.collapseInto || '',
+            /*
+             * Who this store belongs to, and what a snippet would call it.
+             *
+             * The registry is keyed by PHYSICAL name -- the session store is
+             * 's_<siteId>' -- while a snippet can only name the logical one,
+             * because the server writing it does not know which tracker object
+             * will receive the command. Keeping both, plus the tracker itself,
+             * is what lets getExpirationDays() resolve the configured lifetime
+             * at write time instead of this registration copying a value that
+             * the next registration would overwrite.
+             */
+            'owner'        : ( established && established.owner )
+                             ? established.owner : ( behaviour.owner || null ),
+            'logical'      : ( established && established.logical )
+                             ? established.logical : ( behaviour.logical || '' ),
             'hydrateOn'    : hydrate === 'deferred'
                              ? ( behaviour.hydrateOn || 'isSessionizationDone' ) : '',
             'persistOn'    : persist === 'deferred'
@@ -578,12 +614,113 @@ class StateManager {
         return names;
     }
     
+    /**
+     * How long this store's cookie should live, in days.
+     *
+     * The store's own registration is the DEFAULT, not the answer. The answer is
+     * whatever the owning tracker's `stateStoreExpirations` option says for this
+     * store's logical name, which is how a site owner configures a lifetime from
+     * the snippet:
+     *
+     *     owa_cmds.push(['setOption', 'stateStoreExpirations', { v: 90 }]);
+     *
+     * READ HERE, at the moment a cookie is about to be written, rather than
+     * copied into storeMeta when the option arrives. That is not a style choice.
+     * registerStore() replaces storeMeta[name] wholesale and the tracker
+     * constructor re-registers the global 'v' and 'c' stores unconditionally, so
+     * a second tracker on the page resets a configured lifetime and nothing puts
+     * it back. A value that is never copied cannot be lost that way.
+     *
+     * A value that is not a whole number of days, or is less than one, is
+     * ignored rather than coerced. This runs on someone else's page, where the
+     * honest failure mode for a malformed setting is "nothing changed" rather
+     * than a cookie carrying a lifetime nobody chose.
+     *
+     * No upper bound is enforced. Browsers already impose one that no setting
+     * here can exceed -- Chrome caps cookie expiry at 400 days, and Safari caps
+     * script-written cookies far lower -- so a ceiling here would be a second,
+     * quieter limit that disagrees with the one actually in force.
+     */
     getExpirationDays( store_name ) {
-        
-        if ( this.storeMeta.hasOwnProperty( store_name ) ) {
-            
-            return this.storeMeta[store_name].expiration;
+
+        if ( ! this.storeMeta.hasOwnProperty( store_name ) ) {
+
+            return;
         }
+
+        var meta = this.storeMeta[ store_name ];
+        var configured = this.configuredExpiration( meta );
+
+        if ( configured ) {
+
+            return configured;
+        }
+
+        return meta.expiration;
+    }
+
+    /**
+     * The lifetime this store's owner has been configured with, or nothing.
+     *
+     * Separate from getExpirationDays() so the fallback to the registration
+     * stays one readable line, and so the validation has somewhere to live that
+     * is not in the middle of a lookup.
+     */
+    configuredExpiration( meta ) {
+
+        if ( ! meta || ! meta.owner || ! meta.logical ) {
+
+            return;
+        }
+
+        var configured = meta.owner.getOption( 'stateStoreExpirations' );
+
+        if ( ! configured || typeof configured !== 'object'
+             || ! Object.prototype.hasOwnProperty.call( configured, meta.logical ) ) {
+
+            return;
+        }
+
+        var raw = configured[ meta.logical ];
+
+        // Number(), not parseInt(): parseInt('90 days') is 90, and a value that
+        // was never a number should not be half-read as one.
+        var days = typeof raw === 'number' ? raw : Number( String( raw ).trim() );
+
+        if ( ! isFinite( days ) || Math.floor( days ) !== days || days < 1 ) {
+
+            OWA.debug( 'Ignoring unusable expiration for state store (%s): %s',
+                meta.logical, raw );
+            return;
+        }
+
+        return days;
+    }
+
+    /**
+     * May this store's cookie outlive the browser session at all?
+     *
+     * The tracker-side half of cookie_persistence, which has governed
+     * server-set cookies since 2016 and which this tracker never read. Set from
+     * the snippet:
+     *
+     *     owa_cmds.push(['setOption', 'cookiePersistence', false]);
+     *
+     * Anything other than an explicit false leaves persistence ON. Silently
+     * downgrading every visitor to a session cookie because a value failed to
+     * parse loses data, and "unchanged" is the safe reading of something
+     * unparseable.
+     */
+    cookiePersistenceFor( store_name ) {
+
+        var meta = this.storeMeta[ store_name ];
+
+        if ( ! meta || ! meta.owner ) {
+
+            return true;
+        }
+
+        return meta.owner.getOption( 'cookiePersistence' ) !== false;
     }
     
     getFormat( store_name ) {
@@ -716,6 +853,23 @@ class StateManager {
             if ( is_perminant ) {
                 expiration_days =  364;
             }
+        }
+
+        /*
+         * Persistence is decided LAST, so it beats every lifetime above,
+         * including the 364-day fallback -- which is the one that would
+         * otherwise keep the visitor id alive for a year on a page that asked
+         * for session cookies.
+         *
+         * Zero is how Util.setCookie is told to omit the expires attribute
+         * entirely: it emits one only for a truthy days. That is also why this
+         * lives here rather than in Util.setCookie -- eraseCookie() calls that
+         * with -1 and -2 to expire a cookie in the past, and a blanket rule
+         * there would strip the attribute that makes deletion work.
+         */
+        if ( ! this.cookiePersistenceFor( store_name ) ) {
+
+            expiration_days = 0;
         }
         
         // set or reset the campaign cookie

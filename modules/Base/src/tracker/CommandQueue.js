@@ -70,6 +70,29 @@ class CommandQueue {
             this.unpause();
         }
 
+        /*
+         * ONE COMMAND MUST NOT TAKE THE REST OF THE QUEUE DOWN WITH IT.
+         *
+         * process() drains the queue by chaining through callbacks, and this
+         * method is where a command is actually applied. An exception raised
+         * anywhere below therefore escapes process() and abandons every command
+         * still queued behind it. The snippet pushes trackPageView LAST, so
+         * whatever went wrong, the visible result is the same: the page is not
+         * tracked at all, and nothing anywhere says why.
+         *
+         * The unknown-method guard further down handles one cause of that. This
+         * handles the rest, and they are not exotic: constructing the tracker
+         * can throw on a hostile document.domain, a known command can throw on
+         * an argument shape it did not expect, and a browser extension can
+         * replace a global out from under us. None of those are reasons to stop
+         * recording the page view that has already happened.
+         *
+         * Swallowed, not rethrown, and the callback below still runs so the
+         * drain continues. The command that failed is lost, which is the
+         * smallest thing that can be lost here.
+         */
+        try {
+
         // check to see if the command queue has been paused
         // used to stop tracking
         if ( ! this.is_paused && method !== "unpause-owa") {
@@ -98,10 +121,47 @@ class CommandQueue {
                     window[obj_name].setSiteId( args[0] );
                 }
 
-            } else {
+            } else if ( typeof window[obj_name][method] === 'function' ) {
 
                 window[obj_name][method].apply(window[obj_name], args);
+
+            } else {
+
+                /*
+                 * A command this tracker does not implement is SKIPPED, not
+                 * applied to undefined.
+                 *
+                 * This used to be `window[obj_name][method].apply(...)`
+                 * unguarded, so an unknown name threw a TypeError -- and the
+                 * throw escaped process(), so every command still queued behind
+                 * it was abandoned. In practice that means trackPageView, which
+                 * is pushed last: an unrecognised command anywhere in the
+                 * snippet silently stopped tracking the page.
+                 *
+                 * That is not hypothetical, and it is not only about typos. The
+                 * snippet is generated server-side and changes the instant PHP
+                 * is upgraded; the tracker is a long-cached static file that a
+                 * returning visitor may hold for days. Every snippet command
+                 * added from now on therefore reaches some browsers running a
+                 * tracker too old to have it -- which is exactly the window in
+                 * which OWA would have stopped recording those visitors, with
+                 * no error anywhere the site owner could see it.
+                 *
+                 * Skipping is the only behaviour that degrades sensibly: the
+                 * new instruction is ignored by a tracker that cannot honour it
+                 * anyway, and everything it already understood still runs.
+                 */
+                OWA.debug( 'Skipping unknown command %s.%s', obj_name, method );
             }
+        }
+
+        } catch ( e ) {
+
+            // debug(), not an error report: this runs on someone else's page,
+            // and a tracker that starts writing to their console over its own
+            // failure to apply one command has made their problem worse.
+            OWA.debug( 'Command %s.%s threw, skipping it: %s',
+                obj_name, method, ( e && e.message ) ? e.message : e );
         }
 
         if ( callback && ( typeof callback == 'function') ) {
@@ -174,6 +234,51 @@ class CommandQueue {
     }
 
     /**
+     * The value a queued setOption() will set, found BEFORE the tracker is built.
+     *
+     * argFor() cannot answer this: it returns cmd[1], which for setOption is the
+     * option NAME. The value is cmd[2].
+     *
+     * Returns undefined when nothing sets it, which is distinct from a command
+     * that sets it to false -- the caller has to be able to tell those apart, so
+     * this cannot use the '' sentinel argFor() uses.
+     */
+    optionFor( obj_name, option_name, current ) {
+
+        var valueOf = function ( cmd ) {
+
+            var parsed = CommandQueue.parseCmd( cmd );
+
+            if ( ! parsed || parsed.object !== obj_name || parsed.method !== 'setOption' ) {
+                return undefined;
+            }
+
+            if ( cmd[1] !== option_name ) {
+                return undefined;
+            }
+
+            return cmd[2];
+        };
+
+        var found = valueOf( current );
+
+        if ( found !== undefined ) {
+            return found;
+        }
+
+        for ( var i = 0; i < this.asyncCmds.length; i++ ) {
+
+            found = valueOf( this.asyncCmds[i] );
+
+            if ( found !== undefined ) {
+                return found;
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
      * Everything a tracker must know before its constructor body runs.
      *
      * Two things qualify, and both used to arrive too late:
@@ -205,6 +310,34 @@ class CommandQueue {
 
         if ( domain ) {
             identity.cookie_domain_declared = domain;
+        }
+
+        /*
+         * Cookie configuration, for the same reason the site id comes forward.
+         *
+         * Storage migrations are pegged to 'cookieDomainEstablished', which the
+         * constructor fires, and they WRITE cookies -- collapsing the legacy 'b'
+         * store into the session store, and moving a session store to its
+         * per-site name. Any command, setOption included, arrives after
+         * construction has finished. So a returning visitor holding a legacy
+         * cookie would have the migrated one written at the shipped 364 days
+         * even when the snippet asks for 90, which is precisely the upgrade path
+         * this configuration exists to serve.
+         *
+         * Carried as options, so the constructor's existing merge puts them in
+         * this.options before the migrations run. A tracker built by hand still
+         * gets the shipped defaults.
+         */
+        var expirations = this.optionFor( obj_name, 'stateStoreExpirations', current );
+
+        if ( expirations !== undefined ) {
+            identity.stateStoreExpirations = expirations;
+        }
+
+        var persistence = this.optionFor( obj_name, 'cookiePersistence', current );
+
+        if ( persistence !== undefined ) {
+            identity.cookiePersistence = persistence;
         }
 
         return identity;

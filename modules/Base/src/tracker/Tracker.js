@@ -242,8 +242,16 @@ class OWATracker  {
 	     */
 	    this.siteScopedStores = ['s'];
 
-	    OWA.registerStateStore('v', 364, '', 'json');
-	    OWA.registerStateStore('c', 60, '', 'json');
+	    /*
+	     * The numbers here are the SHIPPED defaults, not the last word: a store's
+	     * lifetime is resolved at write time from this tracker's
+	     * stateStoreExpirations option, falling back to what is registered here.
+	     * `owner` and `logical` are what make that resolution possible -- the
+	     * registry is keyed by physical name ('s_<siteId>'), while a snippet can
+	     * only know the logical one.
+	     */
+	    OWA.registerStateStore('v', 364, '', 'json', { owner: this, logical: 'v' });
+	    OWA.registerStateStore('c', 60, '', 'json', { owner: this, logical: 'c' });
 
 	    // The session store does not load its cookie on first touch, and does
 	    // not write one until the session has been accepted for delivery.
@@ -297,6 +305,30 @@ class OWATracker  {
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        cookie_domain: false,
+	        /*
+	         * How long each state store's cookie lives, by LOGICAL store name,
+	         * and whether any of them may outlive the browser session.
+	         *
+	         * Options rather than methods of their own: setOption() already
+	         * carries cookie_domain, campaignKeys, logger_endpoint, api_endpoint
+	         * and baseUrl, and CommandQueue dispatches with .apply(), so
+	         *
+	         *   owa_cmds.push(['setOption', 'stateStoreExpirations', {v: 90}]);
+	         *   owa_cmds.push(['setOption', 'cookiePersistence', false]);
+	         *
+	         * already reach here with no new public surface to deprecate later.
+	         *
+	         * Empty and true ship, so an install that says nothing keeps the
+	         * lifetimes the stores are registered with. The values are READ WHERE
+	         * THEY ARE USED -- see StateManager.getExpirationDays() -- and never
+	         * copied into the store registry, because registerStore() replaces
+	         * storeMeta[name] wholesale and this constructor re-registers the
+	         * global 'v' and 'c' stores unconditionally. A second tracker on the
+	         * page would otherwise reset the first one's configured lifetime with
+	         * nothing to put it back.
+	         */
+	        stateStoreExpirations: {},
+	        cookiePersistence: true,
 	        /*
 	         * 'public' is the parameter a marketer puts in a campaign URL and can
 	         * never move -- those links are already published. 'private' keys the
@@ -907,6 +939,8 @@ class OWATracker  {
     registerSiteScopedStores() {
 
         OWA.registerStateStore( this.storeName('s'), 364, '', 'json', {
+            owner:     this,
+            logical:   's',
             scope:     'site',
             hydrate:   'deferred',
             hydrateOn: 'isSessionizationDone',

@@ -30,6 +30,51 @@ See the wiki for documentation about the OWA Server and the Javascript Tracker c
 
 Upgrading, or maintaining a third-party module, local template override, or custom theme? See [UPGRADING.md](UPGRADING.md) for the interfaces that are deprecated but still supported, and what replaces each one.
 
+## Tracker cookie options
+
+The tracker's cookies have fixed lifetimes by default: 364 days for the visitor id
+(`owa_v`), 60 for the campaign store (`owa_c`), and 364 for the session store. A
+year-long identifier is longer than some sites want or can justify, so the snippet
+can ask for something shorter.
+
+These are ordinary tracker options, set from the snippet the same way
+`cookie_domain` and the campaign keys are:
+
+```js
+owa_cmds.push(['setOption', 'stateStoreExpirations', {"v": 90, "s": 7}]);
+owa_cmds.push(['setOption', 'cookiePersistence', false]);
+```
+
+`stateStoreExpirations` is keyed by store: `v` for the visitor id, `c` for the
+campaign store, `s` for the session store. Stores you leave out keep their
+defaults. Values are whole days, one or more; anything else is ignored rather
+than guessed at.
+
+`cookiePersistence: false` makes every one of them a *session* cookie instead: no
+expiry date, discarded when the browser closes, and a returning visitor counted
+as new. It overrides the lifetimes, so setting both means session cookies. This is
+the tracker-side counterpart of the `cookie_persistence` setting, which has
+governed server-set cookies since 2016 but was never read by the tracker.
+
+Put them before `trackPageView`, as in the snippet above. The command queue is
+drained in push order, and `trackPageView` is what writes the first cookie.
+
+Each cookie is rewritten on every page view, so shortening a lifetime gives a
+**rolling window**: a visitor's id expires that many days after their *last*
+visit, not after their first, and a visitor who keeps coming back is never
+forgotten. Shortening one does not delete anything already collected: it limits
+how far back returning-visitor and days-since-first-visit reporting can reach for
+people who stop visiting.
+
+Shortening the visitor cookie is the usual reason to touch these. Several consent
+exemptions for analytics, the Dutch Telecommunicatiewet art. 11.7a(3) among them,
+turn on the tracking having a small privacy impact, and a year-long identifier is
+hard to argue as small.
+
+Browsers impose their own ceiling that no value here can exceed: Chrome caps
+cookie expiry at 400 days, and Safari caps script-written cookies considerably
+lower.
+
 ## Issues & Support
 
 Please read the [troubleshooting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) guide before filing any issue or bug reports. Issue tickets without the necessary debug info will be closed automatically.
