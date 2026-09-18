@@ -214,7 +214,39 @@ class Entity {
         $properties = $this->getColumns();
         
         foreach ($properties as $k => $v) {
+            
+            /*
+             * A content-derived dimension key is DERIVED here, not copied.
+             *
+             * It used to be copied: the tracking-property pipeline hashed it
+             * onto the event before dispatch and this loop carried the result
+             * into the column. That put the derivation in the pipeline, where
+             * v2 has to pay for it and where it had drifted into three
+             * disagreeing copies. Deriving at write time puts it in the one
+             * place that owns the dimension, and leaves the event carrying only
+             * content.
+             *
+             * Deriving beats copying even while both run: a value the pipeline
+             * hashed can be stale by the time a fact is written, because a
+             * handler may have changed the content underneath it.
+             */
+            $dimension = self::contentDerivedDimensionFor( $this, $v );
+            
+            if ( $dimension !== null && self::addresses( $dimension, $array ) ) {
                 
+                $id = $dimension::deriveId( $array );
+                
+                // null means absence that is NOT_APPLICABLE -- this event has no
+                // such thing, so the column is left alone rather than set to an
+                // id that names no row.
+                if ( $id !== null && ! empty( $this->properties ) ) {
+                    
+                    $this->set( $v, $id, $apply_filters, false );
+                }
+                
+                continue;
+            }
+            
             //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
@@ -223,6 +255,85 @@ class Entity {
             }
         }
     }
+    
+    /**
+     * The dimension class that derives $column on $entity, or null.
+     *
+     * Null for every column that is not a foreign key, for a foreign key whose
+     * target is not a dimension (site_id is a minted identifier, visitor_id
+     * comes from the tracker), and for a second foreign key into a dimension
+     * that already has a canonical column -- owa_session.first_page_id and
+     * .last_page_id both point at base.document, and only document_id is the
+     * one derived from page_url.
+     *
+     * @return string|null A DimensionEntity subclass name.
+     */
+    protected static function contentDerivedDimensionFor( $entity, $column ) {
+        
+        $target = isset( $entity->_tableProperties['foreign_keys'][ $column ] )
+            ? $entity->_tableProperties['foreign_keys'][ $column ]
+            : null;
+        
+        if ( ! $target ) {
+            
+            return null;
+        }
+        
+        // Resolved once per entity name per process: this runs for every column
+        // of every fact row written.
+        if ( ! array_key_exists( $target, self::$dimensionClasses ) ) {
+            
+            $class = \OWA\Core\CoreAPI::namespacedEntityClass( $target );
+            
+            self::$dimensionClasses[ $target ] =
+                ( $class !== null
+                  && is_subclass_of( $class, '\\OWA\\Core\\Entity\\DimensionEntity' )
+                  && $class::isContentDerived() )
+                ? $class
+                : null;
+        }
+        
+        $class = self::$dimensionClasses[ $target ];
+        
+        if ( $class === null || $class::FK_COLUMN !== $column ) {
+            
+            return null;
+        }
+        
+        return $class;
+    }
+    
+    /**
+     * Whether $array is ABOUT this dimension at all.
+     *
+     * "The content says there is no value" and "this bag does not carry this
+     * content" are different things, and only the first is absence. Several
+     * call sites hand setProperties() a partial bag -- a session update, a
+     * re-dispatched event -- and re-deriving from one of those would overwrite
+     * a correct id with the unresolved one. That is a regression the copying
+     * behaviour did not have, because the pipeline's already-derived id was in
+     * the bag and got copied back over itself.
+     *
+     * So: if not one key of the content key is present, the column is left
+     * exactly as it was. If any key IS present, the content is authoritative --
+     * including when it is empty, which is how a genuinely unresolved value
+     * still reaches its shared row.
+     */
+    protected static function addresses( $dimension, $array ) {
+        
+        foreach ( $dimension::CONTENT_KEY as $name ) {
+            
+            if ( array_key_exists( $name, $array ) ) {
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /** entity name => DimensionEntity class, or null when it is not one. */
+    protected static $dimensionClasses = array();
     
     function setGuid($string) {
         

@@ -40,6 +40,8 @@ class LocationDim extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'country', 'state', 'city' );
 
+    const FK_COLUMN = 'location_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
 

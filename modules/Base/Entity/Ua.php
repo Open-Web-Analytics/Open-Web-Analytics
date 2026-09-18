@@ -39,6 +39,8 @@ class Ua extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'HTTP_USER_AGENT' );
 
+    const FK_COLUMN = 'ua_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
 

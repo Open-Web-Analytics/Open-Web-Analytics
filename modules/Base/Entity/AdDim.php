@@ -38,6 +38,8 @@ class AdDim extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'ad' );
 
+    const FK_COLUMN = 'ad_id';
+
     const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
 
 

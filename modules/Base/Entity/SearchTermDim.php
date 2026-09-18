@@ -38,6 +38,8 @@ class SearchTermDim extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'search_terms' );
 
+    const FK_COLUMN = 'referring_search_term_id';
+
     const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
 
 

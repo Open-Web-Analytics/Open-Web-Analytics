@@ -39,6 +39,8 @@ class Os extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'os' );
 
+    const FK_COLUMN = 'os_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
 

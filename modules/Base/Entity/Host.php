@@ -39,6 +39,8 @@ class Host extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'host' );
 
+    const FK_COLUMN = 'host_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
 

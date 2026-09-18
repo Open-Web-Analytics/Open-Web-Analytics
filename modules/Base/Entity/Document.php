@@ -38,6 +38,8 @@ class Document extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'page_url' );
 
+    const FK_COLUMN = 'document_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
 

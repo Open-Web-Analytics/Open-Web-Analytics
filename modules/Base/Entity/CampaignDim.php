@@ -39,6 +39,8 @@ class CampaignDim extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'campaign' );
 
+    const FK_COLUMN = 'campaign_id';
+
     const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
 
 

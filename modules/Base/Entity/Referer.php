@@ -41,6 +41,8 @@ class Referer extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'session_referer' );
 
+    const FK_COLUMN = 'referer_id';
+
     const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
 
 

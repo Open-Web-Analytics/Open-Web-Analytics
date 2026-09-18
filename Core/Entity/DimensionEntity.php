@@ -92,6 +92,20 @@ abstract class DimensionEntity extends \OWA\Core\Entity {
      */
     const CONTENT_KEY = array();
 
+    /**
+     * The ONE fact-table column that is this dimension's id derived from
+     * CONTENT_KEY.
+     *
+     * Needed because a fact may hold several foreign keys into the same
+     * dimension that mean different things: owa_session carries first_page_id
+     * AND last_page_id, both pointing at base.document, but one is the session's
+     * opening page and the other its most recent. Deriving every column that
+     * points here from page_url would make them permanently equal and destroy
+     * the session's entry/exit page. Only the column named here is derived; the
+     * rest stay whatever set them.
+     */
+    const FK_COLUMN = '';
+
     /** What absence means here. One of the ABSENCE_* constants above. */
     const ABSENCE = self::ABSENCE_UNKNOWN;
 

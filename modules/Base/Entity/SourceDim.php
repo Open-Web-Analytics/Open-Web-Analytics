@@ -40,6 +40,8 @@ class SourceDim extends \OWA\Core\Entity\DimensionEntity {
      */
     const CONTENT_KEY = array( 'source' );
 
+    const FK_COLUMN = 'source_id';
+
     const ABSENCE = self::ABSENCE_UNKNOWN;
 
     
