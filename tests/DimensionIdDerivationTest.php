@@ -230,6 +230,129 @@ final class DimensionIdDerivationTest extends TestCase
             $e . ' overrides deriveId() instead of declaring a CONTENT_KEY' );
     }
 
+    /**
+     * Normalisation must not destroy a meaningful value.
+     *
+     * A page path of '/' is the motivating case: it is a real, extremely common
+     * URL, and routing it to the unresolved bucket would merge every site root
+     * into "(not set)". trim() leaves it alone, but the property is worth
+     * asserting rather than assuming, because the absence test is a string
+     * comparison one edit away from being a truthiness test again.
+     *
+     * @dataProvider meaningfulValues
+     */
+    public function testAMeaningfulValueKeepsItsOwnRow( string $value ): void
+    {
+        $document = $this->entity( 'base.document' );
+
+        $id         = $document::deriveId( array( 'page_url' => $value ) );
+        $unresolved = $document::deriveId( array() );
+
+        $this->assertNotNull( $id, "'$value' should derive an id" );
+        $this->assertNotSame( $unresolved, $id,
+            "'$value' collapsed into the unresolved bucket instead of keeping its own row" );
+    }
+
+    public static function meaningfulValues(): array
+    {
+        return array(
+            'site root'      => array( '/' ),
+            'a path'         => array( '/a' ),
+            'zero'           => array( '0' ),      // falsy in PHP, but a value
+            'zero decimal'   => array( '0.0' ),
+            'the word false' => array( 'false' ),
+            'a full url'     => array( 'https://x.test/' ),
+        );
+    }
+
+    /**
+     * '0' is a value, not absence.
+     *
+     * Lib::setStringGuid() guards on truthiness, so the legitimate string '0'
+     * read as no-value and returned null, which reaches a BIGINT foreign key as
+     * 0 -- an id no dimension row carries. A campaign named "0" or a search for
+     * "0" would have vanished from its report.
+     *
+     * @dataProvider dimensions
+     */
+    public function testZeroIsAValueNotAbsence( string $name, array $key ): void
+    {
+        $e = $this->entity( $name );
+
+        $content = array();
+        foreach ( $key as $property ) { $content[ $property ] = '0'; }
+
+        $id = $e::deriveId( $content );
+
+        $this->assertNotNull( $id, "$name treated the value '0' as absence" );
+        $this->assertNotSame( $e::deriveId( array() ), $id,
+            "$name put the value '0' in the absence bucket" );
+    }
+
+    /**
+     * A dimension whose absence means "unknown" must ALWAYS answer with an id.
+     *
+     * Returning null there breaks the contract the whole design rests on: the
+     * fact's foreign key becomes 0, the INNER join finds nothing, and the row
+     * leaves the report rather than grouping under "(not set)".
+     *
+     * @dataProvider dimensions
+     */
+    public function testAnUnknownDimensionNeverAnswersNull( string $name, array $key, string $absence ): void
+    {
+        if ( $absence !== 'unknown' ) {
+            $this->markTestSkipped( "$name declares absence as not-applicable" );
+        }
+
+        $e = $this->entity( $name );
+
+        foreach ( array( '', '0', ' ', 'x', null, '/' ) as $value ) {
+
+            $content = array();
+            foreach ( $key as $property ) { $content[ $property ] = $value; }
+
+            $this->assertNotNull( $e::deriveId( $content ),
+                "$name answered null for " . var_export( $value, true ) );
+        }
+    }
+
+    /** Only nothing-at-all is absence: empty, whitespace, or missing. */
+    public function testOnlyAnEmptyOrBlankValueIsAbsence(): void
+    {
+        $document   = $this->entity( 'base.document' );
+        $unresolved = $document::deriveId( array() );
+
+        foreach ( array( '', '   ', "\t\n", null ) as $blank ) {
+            $this->assertSame( $unresolved, $document::deriveId( array( 'page_url' => $blank ) ),
+                var_export( $blank, true ) . ' should resolve to the unresolved row' );
+        }
+    }
+
+    /**
+     * deriveId() must not drift from setStringGuid().
+     *
+     * It passes $allow_falsy, which is the one respect in which they differ. For
+     * every other input they have to agree, or the "one derivation" claim is
+     * false and old rows stop being found.
+     *
+     * @dataProvider meaningfulValues
+     */
+    public function testItAgreesWithSetStringGuidWhereverThatAnswers( string $value ): void
+    {
+        $legacy = Lib::setStringGuid( $value );
+
+        if ( $legacy === null ) {
+            // '0' -- the case $allow_falsy exists for, asserted above instead.
+            $this->assertSame( '0', $value );
+            return;
+        }
+
+        $document = $this->entity( 'base.document' );
+
+        $this->assertSame( (string) $legacy,
+            (string) $document::deriveId( array( 'page_url' => $value ) ) );
+    }
+
     /** A dimension with no declared key must say so rather than hash nothing. */
     public function testADimensionWithNoKeyRefusesToDerive(): void
     {

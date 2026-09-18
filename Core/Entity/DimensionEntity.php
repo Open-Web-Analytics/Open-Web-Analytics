@@ -115,17 +115,35 @@ abstract class DimensionEntity extends \OWA\Core\Entity {
             $parts[] = self::normalize( isset( $props[ $name ] ) ? $props[ $name ] : null );
         }
 
-        if ( implode( '', $parts ) === '' ) {
+        /*
+         * Absence is decided HERE, by comparing the normalised key to the empty
+         * string, and nowhere else.
+         *
+         * Specifically not by truthiness. setStringGuid()'s own guard is a
+         * truthiness test, so the legitimate value '0' -- a campaign named "0",
+         * a search for "0" -- read as absent and returned null, which reaches
+         * the foreign key as 0 and points at no row. For a dimension declared
+         * UNKNOWN that also broke this method's contract: it must always answer
+         * with an id. Hence $allow_falsy.
+         *
+         * A path of '/' is unaffected and always was: trim() leaves it alone and
+         * '/' is a perfectly good hash input. What still resolves to absence is
+         * the empty string and strings that are entirely whitespace, which are
+         * not values.
+         */
+        $key = implode( '', $parts );
+
+        if ( $key === '' ) {
 
             if ( static::ABSENCE === self::ABSENCE_NOT_APPLICABLE ) {
 
                 return null;
             }
 
-            $parts = array_fill( 0, count( static::CONTENT_KEY ), self::UNRESOLVED_KEY_PART );
+            $key = str_repeat( self::UNRESOLVED_KEY_PART, count( static::CONTENT_KEY ) );
         }
 
-        return \OWA\Core\Lib::setStringGuid( implode( '', $parts ) );
+        return \OWA\Core\Lib::setStringGuid( $key, true );
     }
 
     /**
