@@ -103,7 +103,19 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $db->selectFrom( 'owa_click', 'click' );
         $db->selectColumn( 'document.url AS url, COUNT(*) AS clicks' );
-        $db->join( OWA_SQL_JOIN_LEFT_INNER, 'owa_document', 'document', 'document_id', 'document.id' );
+        /*
+         * INNER, not outer. A click whose document is missing cannot contribute
+         * a url, and the document.uri condition below excludes those rows
+         * anyway, so the join type that matches the intent is the plain one.
+         *
+         * This was OWA_SQL_JOIN_LEFT_INNER, which expanded to "LEFT INNER JOIN"
+         * -- not SQL in any dialect. MySQL rejected the statement, getOneRow()
+         * returns null for a rejected statement exactly as it does for no rows,
+         * and urlForPath() reads that as "no match" and returns ''. So the
+         * overlay drew empty every time, which is the failure the docblock above
+         * describes as reading like a broken heatmap.
+         */
+        $db->join( OWA_SQL_JOIN, 'owa_document', 'document', 'document_id', 'document.id' );
         $db->where( 'document.uri', $path );
         $db->where( 'click.site_id', $siteId );
         $db->groupBy( 'document.url' );
