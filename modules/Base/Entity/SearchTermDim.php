@@ -31,7 +31,15 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.3.0
  */
 
-class SearchTermDim extends \OWA\Core\Entity {
+class SearchTermDim extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Traffic that did not arrive from a search has no query to record.
+     */
+    const CONTENT_KEY = array( 'search_terms' );
+
+    const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
+
 
     function __construct() {
 

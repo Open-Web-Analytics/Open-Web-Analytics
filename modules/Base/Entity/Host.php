@@ -31,7 +31,16 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Host extends \OWA\Core\Entity {
+class Host extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * The visitor came from some host; if it did not resolve we still want the
+     * sessions counted rather than dropped from every host breakdown.
+     */
+    const CONTENT_KEY = array( 'host' );
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
 
     function __construct() {
 

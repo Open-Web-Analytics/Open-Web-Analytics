@@ -31,7 +31,17 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class SourceDim extends \OWA\Core\Entity {
+class SourceDim extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * A traffic-sources report should show direct traffic as a bucket, so an
+     * unresolved source wants a row. Measured on demo: source_id is 0 on no
+     * session logged in 2024 or later.
+     */
+    const CONTENT_KEY = array( 'source' );
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
     
     function __construct() {
         

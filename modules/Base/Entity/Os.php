@@ -31,7 +31,16 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Os extends \OWA\Core\Entity {
+class Os extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Same as Ua: derived from the same string, and absent only when that string
+     * told us nothing.
+     */
+    const CONTENT_KEY = array( 'os' );
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
 
     function __construct() {
 

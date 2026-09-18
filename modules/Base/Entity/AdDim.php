@@ -31,7 +31,15 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class AdDim extends \OWA\Core\Entity {
+class AdDim extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Untagged traffic carries no ad.
+     */
+    const CONTENT_KEY = array( 'ad' );
+
+    const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
+
 
     function __construct() {
 
