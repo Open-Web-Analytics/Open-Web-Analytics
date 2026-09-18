@@ -179,6 +179,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
         $this->registerAction( 'base.goalEventDelete',                'OWA\\Module\\Base\\Controller\\GoalEventDelete',               'Controller/GoalEventDelete.php' );
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
+        $this->registerAction( 'base.repairGeoEncodingCli',          'OWA\\Module\\Base\\Controller\\RepairGeoEncodingCli',         'Controller/RepairGeoEncodingCli.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
@@ -258,6 +259,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
+        $this->registerCliCommand('repair-geo-encoding', 'base.repairGeoEncodingCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
         $this->registerCliCommand('activate', 'base.moduleActivateCli');
