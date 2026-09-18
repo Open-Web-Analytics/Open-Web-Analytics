@@ -133,6 +133,58 @@ class Geolocation {
         }
     }
     
+    /**
+     * The key a location with no resolved geography hashes to.
+     *
+     * This is a KEY, not a value. Nothing stores it: a location the lookup
+     * could not resolve holds NULL in country, state and city, and the
+     * reporting layer labels that NULL "(not set)" at render time.
+     *
+     * It is spelled this way because it has to be. Until the sentinel was
+     * removed, the geolocation filter wrote the literal '(not set)' into
+     * every empty field, so every unresolved location on every existing
+     * install already hashes to idFor('(not set)', '(not set)', '(not set)').
+     * Deriving a prettier key here would give new events a different id from
+     * old ones and split one "(not set)" row into two identical-looking rows
+     * in every geo report. The constant keeps old and new data on the same
+     * dimension row.
+     */
+    const UNRESOLVED_KEY_PART = '(not set)';
+
+    /**
+     * The dimension id for a location, derived from its content.
+     *
+     * Static because two callers derive it and they used to disagree:
+     * LocationHandlers keyed on country.city while generateLocationId() keyed
+     * on country.state.city, so the rows the handler created were not the rows
+     * the fact table pointed at. One function, one key.
+     *
+     * @param  string $country
+     * @param  string $state
+     * @param  string $city
+     * @return string
+     */
+    static function idFor( $country, $state, $city ) {
+
+        $parts = array( $country, $state, $city );
+
+        foreach ( $parts as $i => $part ) {
+
+            $parts[ $i ] = trim( strtolower( (string) $part ) );
+        }
+
+        // Nothing resolved. Fall back to the reserved key so that every
+        // unresolved location shares one dimension row rather than hashing to
+        // the empty string, which setStringGuid() answers with null -- and a
+        // null id reaches the BIGINT column as 0, pointing at no row at all.
+        if ( $parts === array( '', '', '' ) ) {
+
+            $parts = array_fill( 0, 3, self::UNRESOLVED_KEY_PART );
+        }
+
+        return \OWA\Core\Lib::setStringGuid( implode( '', $parts ) );
+    }
+
     function generateId($country = '', $state = '', $city = '') {
         
         if ( ! $country ) {
@@ -149,9 +201,8 @@ class Geolocation {
         
             $city = $this->getCity();
         }
-        $id_string = trim( strtolower($country)) . trim( strtolower($state)) . trim( strtolower($city));
-        return \OWA\Core\Lib::setStringGuid( $id_string );
-        
+
+        return self::idFor( $country, $state, $city );
     }
 }
 

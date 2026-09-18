@@ -1,6 +1,8 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use OWA\Module\Base\Classes\Geolocation;
+use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
@@ -130,7 +132,14 @@ final class AbsenceIsNullTest extends TestCase
 
         $this->assertStringNotContainsString( "set('page_title', '(not set)')", $src,
             "$file still stores the label instead of leaving the column unset" );
-        $this->assertStringNotContainsString( "= '(not set)';", $src,
+
+        /*
+         * Deliberately narrow: an ARRAY-ELEMENT assignment, which is the shape
+         * the geolocation filter used ($geo[$k] = '(not set)'). A bare
+         * "= '(not set)'" would also match Geolocation::UNRESOLVED_KEY_PART,
+         * which is a hash input and never reaches a column.
+         */
+        $this->assertStringNotContainsString( "] = '(not set)'", $src,
             "$file still assigns the label into a value it is about to store" );
     }
 
@@ -140,6 +149,88 @@ final class AbsenceIsNullTest extends TestCase
             array( 'modules/Base/Classes/Geolocation.php' ),
             array( 'modules/Base/Handler/RefererHandlers.php' ),
         );
+    }
+
+    /**
+     * An unresolved location still gets a dimension id, and always the same one.
+     *
+     * This is the regression the e2e suite caught. Reports join a geo dimension
+     * to the fact table with a plain inner join, so a fact whose location_id
+     * matches no dimension row is not grouped under "(not set)" -- it drops out
+     * of the report entirely. Returning nothing here put 0 in the column, and 0
+     * is an id no row carries.
+     */
+    public function testAnUnresolvedLocationStillGetsAnId(): void
+    {
+        $id = Geolocation::idFor( '', '', '' );
+
+        $this->assertNotSame( 0, $id );
+        $this->assertNotSame( '0', (string) $id );
+        $this->assertNotNull( $id );
+    }
+
+    /**
+     * Every way of saying "nothing resolved" lands on the same row.
+     *
+     * The lookup returns '' for a field it could not fill and null for one it
+     * never attempted, and whitespace has been seen from the CSV reader. If
+     * these hashed differently the geo reports would show several identical
+     * "(not set)" rows.
+     */
+    public function testEveryFlavourOfAbsenceSharesOneRow(): void
+    {
+        $canonical = Geolocation::idFor( '', '', '' );
+
+        $this->assertSame( $canonical, Geolocation::idFor( null, null, null ) );
+        $this->assertSame( $canonical, Geolocation::idFor( '  ', '', ' ' ) );
+        $this->assertSame( $canonical, Geolocation::idFor( '', null, '   ' ) );
+    }
+
+    /**
+     * The id is the one every existing install already stores.
+     *
+     * Before the sentinel was removed the filter wrote '(not set)' into each
+     * empty field, so an unresolved location hashed to those three literals.
+     * Deriving a different key now would split one bucket into two that render
+     * identically. This asserts the compatibility, not the constant: change the
+     * key and old data silently stops joining to new data.
+     */
+    public function testTheUnresolvedIdMatchesWhatExistingInstallsStore(): void
+    {
+        $this->assertSame(
+            \OWA\Core\Lib::setStringGuid( '(not set)(not set)(not set)' ),
+            Geolocation::idFor( '', '', '' ) );
+    }
+
+    /**
+     * The fact table and the dimension handler derive the same id.
+     *
+     * They used to disagree -- the handler keyed on country.city and the fact
+     * callback on country.state.city -- so for any location carrying a state
+     * the handler wrote a row nothing pointed at. Both now go through idFor().
+     */
+    public function testTheFactAndTheDimensionAgreeOnTheId(): void
+    {
+        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+        $event->set( 'country', 'United States' );
+        $event->set( 'state',   'Virginia' );
+        $event->set( 'city',    'Ashburn' );
+
+        $this->assertSame(
+            Geolocation::idFor( 'United States', 'Virginia', 'Ashburn' ),
+            TrackingEventHelpers::generateLocationId( 'location_id', $event ) );
+    }
+
+    /**
+     * And they agree when there is no geography at all.
+     */
+    public function testTheFactAndTheDimensionAgreeWhenNothingResolved(): void
+    {
+        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+
+        $this->assertSame(
+            Geolocation::idFor( '', '', '' ),
+            TrackingEventHelpers::generateLocationId( 'location_id', $event ) );
     }
 
     /**

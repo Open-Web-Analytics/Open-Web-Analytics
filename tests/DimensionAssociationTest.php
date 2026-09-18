@@ -93,36 +93,37 @@ final class DimensionAssociationTest extends IngestionTestCase
         $this->assertFactLinkedTo($fact, 'host_id',     'base.host',         'host',    '(not set)');
 
         /*
-         * location_id is EMPTY, and that is the correct record.
+         * An unresolved location links to the shared "nothing resolved" row,
+         * and that row holds NULL rather than the literal '(not set)'.
          *
-         * This used to assert a link to a location_dim row holding
-         * country = '(not set)'. That row only existed because the geolocation
-         * filter wrote the literal into every field it could not fill, purely so
-         * the dimension id -- derived from country.city -- had something to hash.
-         *
-         * With absence stored as absence there is no content to key a row on, so
-         * LocationHandlers declines to mint one and the fact carries no
-         * location_id. Reports are unaffected: a null dimension renders as
-         * "(not set)" at display time, and a negating constraint now tolerates
-         * NULL so these rows are no longer dropped from filtered results.
+         * The link has to exist. Reports join a geo dimension to the fact table
+         * with a plain inner join, so a fact whose location_id matches no row is
+         * not grouped under "(not set)" -- it is dropped from the report. What
+         * changed in this PR is the CONTENT of the row, not whether it exists:
+         * the geolocation filter no longer writes the label into the columns it
+         * could not fill, and ResultSetManager applies that label at render time
+         * instead.
          *
          * host still carries the literal. That writer is elsewhere and is not
          * part of this change.
          */
         $locationFk = (string) $fact->get('location_id');
 
-        // Asserted as "resolves to nothing" rather than against a literal: the
-        // column defaults to 0 rather than NULL, so absence shows up as '0'
-        // here and as NULL elsewhere, and the point is that neither names a row.
-        $this->assertTrue( $locationFk === '' || $locationFk === '0',
-            "expected no location link, got location_id={$locationFk}" );
+        $this->assertSame(
+            (string) \OWA\Module\Base\Classes\Geolocation::idFor( '', '', '' ),
+            $locationFk,
+            'an unresolved location should link to the shared unresolved row' );
 
-        if ( $locationFk !== '' && $locationFk !== '0' ) {
+        $dim = owa_coreAPI::entityFactory('base.location_dim');
+        $dim->load($locationFk, 'id');
 
-            $dim = owa_coreAPI::entityFactory('base.location_dim');
-            $dim->load($locationFk, 'id');
-            $this->assertFalse( (bool) $dim->wasPersisted(),
-                'location_id names a dimension row that should not have been created' );
+        $this->assertTrue( (bool) $dim->wasPersisted(),
+            'the unresolved location row must exist, or the inner join drops the fact' );
+
+        foreach ( array( 'country', 'city', 'state' ) as $column ) {
+
+            $this->assertNotSame( '(not set)', $dim->get( $column ),
+                "location_dim.$column still stores the label" );
         }
     }
 

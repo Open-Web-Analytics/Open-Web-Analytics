@@ -1,6 +1,8 @@
 <?php
 namespace OWA\Module\Base\Handler;
 
+use OWA\Module\Base\Classes\Geolocation;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -45,6 +47,19 @@ class LocationHandlers extends \OWA\Core\Observer {
 
             $h = \OWA\Core\CoreAPI::entityFactory('base.location_dim');
             
+            /*
+             * The dimension id is derived in exactly one place --
+             * Geolocation::idFor() -- and this handler and the fact table's
+             * generateLocationId() callback both go through it.
+             *
+             * They used to derive it separately and disagree: this handler
+             * keyed on country.city, the fact callback on country.state.city.
+             * So for any location with a state, the row created here carried an
+             * id no fact row ever pointed at, and the row the facts did point at
+             * was created by nothing. Every geo report depended on the two
+             * hashes happening to coincide.
+             */
+
             // look for location id on the event. This happens when
             // another event has already created it.
             if ( $event->get( 'location_id' ) ) {
@@ -53,8 +68,9 @@ class LocationHandlers extends \OWA\Core\Observer {
             // else look to see if he event has the minimal geo properties
             // if it does then assume that geo properties are set.
             } elseif ( $event->get('country') ) {
-                $key = $event->get('country').$event->get('city');
-                $location_id = $h->generateId($key);
+
+                $location_id = Geolocation::idFor(
+                    $event->get('country'), $event->get('state'), $event->get('city') );
             // load the geo properties from the geo service.
             } else {
                 $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
@@ -66,35 +82,22 @@ class LocationHandlers extends \OWA\Core\Observer {
                 $event->set('longitude', $location->getLongitude());
                 $event->set('country_code', $location->getCountryCode());
                 $event->set('state', $location->getState());
-                $key = $event->get('country').$event->get('city');
 
                 /*
-                 * A lookup that filled nothing creates no dimension row.
+                 * A lookup that resolved nothing still gets a row, and that row
+                 * still holds NULL.
                  *
-                 * The id is content-derived from country.city, so with both
-                 * absent there is nothing to derive from and generateId('')
-                 * throws "No value passed." -- which is why the geolocation
-                 * filter used to write the literal '(not set)' into every empty
-                 * field: it guaranteed a non-empty key. That made the sentinel
-                 * load-bearing rather than cosmetic, and it is why removing it
-                 * has to be paired with this.
-                 *
-                 * Leaving the session's location_id unset is the honest record
-                 * and the one the rest of the schema already uses: source_id is
-                 * NULL on 23,945 of demo's sessions for the same reason. A
-                 * negating constraint still finds those rows, because
-                 * Db::_makeConstraintClause() now widens the comparison to
-                 * tolerate NULL.
+                 * The row has to exist because the fact table's location_id is
+                 * a plain inner join in every geo report: a fact pointing at an
+                 * id no row carries is not reported as "(not set)", it is not
+                 * reported at all. What must not exist is the old '(not set)'
+                 * STRING in the columns -- that is what made country != 'US'
+                 * silently exclude unresolved rows, and it is what this branch
+                 * no longer writes. The columns are left unset, so they store
+                 * NULL, and ResultSetManager labels them at render time.
                  */
-                if ( $key === '' ) {
-
-                    \OWA\Core\CoreAPI::debug(
-                        'Not persisting location dimension: the lookup returned no country or city.' );
-
-                    return OWA_EHS_EVENT_HANDLED;
-                }
-
-                $location_id = $h->generateId($key);
+                $location_id = Geolocation::idFor(
+                    $event->get('country'), $event->get('state'), $event->get('city') );
             }
             
             // look up the county code if it's missing
