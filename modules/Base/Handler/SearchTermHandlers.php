@@ -47,7 +47,7 @@ class SearchTermHandlers extends \OWA\Core\Observer {
         if ($terms) {
 
             $st = \OWA\Core\CoreAPI::entityFactory('base.search_term_dim');
-            $st_id = \OWA\Core\Lib::setStringGuid($terms);
+            $st_id = \OWA\Module\Base\Entity\SearchTermDim::deriveId( $event->getProperties() );
             $st->getByPk('id', $st_id);
             $id = $st->get('id');
 

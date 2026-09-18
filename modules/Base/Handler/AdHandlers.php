@@ -44,7 +44,7 @@ class AdHandlers extends \OWA\Core\Observer {
         if ($event->get('ad')) {
             $d = \OWA\Core\CoreAPI::entityFactory('base.ad_dim');
 
-            $new_id = $d->generateId( trim( strtolower( (string) $event->get( 'ad' ) ) ) );
+            $new_id = \OWA\Module\Base\Entity\AdDim::deriveId( $event->getProperties() );
             $d->getByPk('id', $new_id);
             $id = $d->get('id');
 

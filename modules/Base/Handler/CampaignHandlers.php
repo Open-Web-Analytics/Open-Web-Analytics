@@ -44,7 +44,7 @@ class CampaignHandlers extends \OWA\Core\Observer {
         if ($event->get('campaign')) {
             $d = \OWA\Core\CoreAPI::entityFactory('base.campaign_dim');
 
-            $new_id = $d->generateId(trim( strtolower( (string) $event->get('campaign') ) ) );
+            $new_id = \OWA\Module\Base\Entity\CampaignDim::deriveId( $event->getProperties() );
             $d->getByPk('id', $new_id);
             $id = $d->get('id');
 

@@ -41,23 +41,35 @@ class HostHandlers extends \OWA\Core\Observer {
      */
     function notify( $event ) {
 
-        if ( ! $event->get( 'host_id' ) ) {
+        /*
+         * The id comes from the dimension, derived from content on the event.
+         *
+         * It used to be read off the event, where the tracking-property
+         * pipeline had hashed it before dispatch. That made this handler a
+         * passive consumer of an upstream derivation -- and note the guard
+         * below WAS an early return on a missing id, so once the pipeline stops
+         * deriving, a handler left unconverted would stop writing its dimension
+         * rows silently, with no error at all.
+         */
+        $host_id = \OWA\Module\Base\Entity\Host::deriveId( $event->getProperties() );
 
-            \OWA\Core\CoreAPI::notice('Not persisting host dimension. Host id missing from event.');
+        if ( $host_id === null ) {
+
+            \OWA\Core\CoreAPI::notice('Not persisting host dimension. No host on the event.');
 
             return OWA_EHS_EVENT_HANDLED;
         }
 
         $h = \OWA\Core\CoreAPI::entityFactory('base.host');
 
-        $h->getByPk( 'id', $event->get( 'host_id' ) );
+        $h->getByPk( 'id', $host_id );
 
         $id = $h->get('id');
 
         if (!$id) {
 
             $h->setProperties( $event->getProperties() );
-            $h->set( 'id', $event->get( 'host_id' ) );
+            $h->set( 'id', $host_id );
             $ret = $h->create();
 
             if ( $ret ) {
