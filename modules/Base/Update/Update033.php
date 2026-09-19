@@ -102,13 +102,31 @@ class Update033 extends \OWA\Core\Update {
     }
 
     /**
-     * Put the six columns back, exactly as they were.
+     * Put the six columns back: the SHAPE exactly, the contents not at all.
      *
-     * Reversible because the definitions are carried above rather than read
-     * from the entity. A rollback is a release being reverted -- the code goes
-     * back too, and the older entity declares these columns again -- so the
-     * schema has to be able to follow it. Leaving them dropped would strand
-     * that older code against a table missing columns it declares.
+     * That distinction is the whole truth about reversing a column drop, and it
+     * is worth stating rather than leaving to be discovered. The names, types
+     * and nullability come back byte-identical -- the round-trip test asserts
+     * the types, not just the names -- and every value is gone. No `down()`
+     * that drops data can do better; DDL is not a backup.
+     *
+     * What that costs here, specifically:
+     *
+     *   first_session_dayofyear  Nothing. It is recomputable from
+     *       first_session_timestamp, which up() does not touch -- subject to the
+     *       configured timezone, which is not retroactive, so a recompute today
+     *       may not reproduce a value written under an older setting.
+     *
+     *   last_session_*  Around 87 non-zero values in 190,594 rows on the
+     *       install this was measured against, written by something that
+     *       stopped years ago and read by nothing since. A real loss, of
+     *       nothing anyone can use.
+     *
+     * Reversible at all because the definitions are carried above rather than
+     * read from the entity. A rollback is a release being reverted -- the code
+     * goes back too, and the older entity declares these columns again -- so the
+     * schema has to be able to follow it. Leaving them dropped would strand that
+     * older code against a table missing columns it declares.
      *
      * The definition is built through DbColumn so the type mapping stays in the
      * one place that owns it, rather than this update hand-writing SQL that

@@ -86,6 +86,13 @@ final class VisitorTableShapeTest extends TestCase
      * Asserts the types as well as the names. A down() that restores a column
      * with the wrong type is worse than one that fails, because nothing
      * complains until something writes to it.
+     *
+     * SHAPE ONLY, deliberately. Reversing a column drop restores the column and
+     * never its contents -- no down() can, since DDL is not a backup -- so this
+     * asserts what down() can actually promise. What the values cost is argued
+     * in Update033 itself: first_session_dayofyear is recomputable from
+     * first_session_timestamp, and last_session_* held around 87 non-zero
+     * values in 190,594 rows.
      */
     public function testUpdate033ReversesItselfExactly(): void
     {
