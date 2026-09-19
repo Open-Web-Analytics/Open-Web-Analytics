@@ -1568,10 +1568,31 @@ class Db extends \OWA\Core\Base {
      */
     const FACT_LOWER_BOUND_SLACK_DAYS = 30;
 
+    /**
+     * Day-of-month cut points per granularity, coarsest first.
+     *
+     * `daily` is listed last and is the only entry whose cuts a month can fail
+     * to carry -- cutsForMonth() clamps the 29th through 31st away in a short
+     * month, which is why anything comparing a table's boundaries against this
+     * list must compare against the clamped result and not against the constant.
+     *
+     * It is also the only one that changes the arithmetic of the lead. The lead
+     * is a count of MONTHS filled at the table's own granularity, so
+     * PARTITION_MONTHS_AHEAD of 12 is twelve partitions monthly and around 365
+     * daily -- past PARTITION_COUNT_LIMIT on its own, before any history. Daily
+     * is for a short lead over a short detail window (a rebuild horizon), not
+     * for a table kept daily the way the other three are kept.
+     */
     const PARTITION_CUTS = array(
         'monthly'       => array( 1 ),
         'half-month'    => array( 1, 16 ),
         'quarter-month' => array( 1, 8, 15, 22 ),
+        'daily'         => array(
+             1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31,
+        ),
     );
 
     /**
@@ -2164,9 +2185,21 @@ class Db extends \OWA\Core\Base {
 
         sort( $days );
 
+        $month_start = \DateTimeImmutable::createFromFormat( 'Ymd|', $month . '01' );
+
+        if ( ! $month_start ) {
+
+            return null;
+        }
+
         foreach ( self::PARTITION_CUTS as $granularity => $cuts ) {
 
-            if ( $days === $cuts ) {
+            // Against the cuts this month can actually carry, not against the
+            // constant: a 30-day month has no 31st, so a daily table's
+            // boundaries are 1..30 and never equal PARTITION_CUTS['daily'].
+            // For the three coarser schemes every cut is <= 22, so clamping is
+            // a no-op and this is the same comparison it always was.
+            if ( $days === self::cutsForMonth( $month_start, $granularity ) ) {
 
                 return $granularity;
             }
