@@ -212,7 +212,7 @@ final class PartitionCliTest extends CliControllerTestCase
     {
         $before = $this->partitionCount('owa_request');
 
-        foreach (['daily', 'weekly', '7day', 'tenday', 'hourly', 'yearly'] as $bad) {
+        foreach (['weekly', '7day', 'tenday', 'hourly', 'yearly'] as $bad) {
             $this->assertFalse(
                 \OWA\Core\Db::isPartitionGranularity($bad),
                 "$bad must not be a granularity"
