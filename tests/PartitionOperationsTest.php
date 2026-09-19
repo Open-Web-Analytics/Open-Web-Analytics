@@ -400,6 +400,49 @@ final class PartitionOperationsTest extends TestCase
     }
 
     /**
+     * Daily is inferred in a month that cannot carry every one of its cuts.
+     *
+     * PARTITION_CUTS['daily'] lists 31 cuts; a 28-day February carries 28.
+     * Comparing a table's boundaries against the raw constant therefore fails
+     * for daily in every month except the 31-day ones, and inference must
+     * compare against cutsForMonth() instead. The three coarser schemes all cut
+     * at or below the 22nd, so none of them can ever be clamped and none can
+     * show this -- daily is the only granularity that pins the behaviour, and
+     * the clamp in cutsForMonth() was unexercised before it existed.
+     *
+     * Every month length is covered deliberately rather than using the current
+     * month, which would make the assertion pass or fail depending on the date
+     * the suite happens to run.
+     */
+    public function testDailyIsInferredWhateverTheMonthLength()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $months = [
+            ['20260201', '20260228', 28, 'short month'],
+            ['20280201', '20280229', 29, 'leap February'],
+            ['20260401', '20260430', 30, '30-day month'],
+            ['20260101', '20260131', 31, '31-day month'],
+        ];
+
+        foreach ($months as [$from, $to, $expected, $label]) {
+
+            $ranges = \OWA\Core\Db::makePartitionRanges($from, $to, 'daily');
+
+            $this->assertCount($expected, $ranges, "$label should yield $expected daily partitions");
+
+            $t = $this->makeTable();
+            $db->partitionTable($t, 'yyyymmdd', $ranges);
+
+            $this->assertSame(
+                'daily',
+                $db->inferPartitionGranularity($t),
+                "daily must be inferred in a $label"
+            );
+        }
+    }
+
+    /**
      * The point of inferring: a table converted to a finer granularity must
      * keep extending at it. Topping the lead up with the command's own default
      * would quietly undo the conversion on the next scheduled run.

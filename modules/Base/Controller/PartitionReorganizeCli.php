@@ -58,7 +58,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly. '
+                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly. '
               . '(There is no "weekly": a week does not divide a month.)', $granularity
             ) );
 

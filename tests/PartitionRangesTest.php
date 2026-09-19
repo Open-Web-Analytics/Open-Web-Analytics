@@ -25,15 +25,17 @@ final class PartitionRangesTest extends TestCase
     /** Only divisions of a month are granularities. */
     public function testAcceptedGranularities()
     {
-        foreach (['quarter-month', 'half-month', 'monthly'] as $g) {
+        foreach (['daily', 'quarter-month', 'half-month', 'monthly'] as $g) {
             $this->assertTrue(\OWA\Core\Db::isPartitionGranularity($g), "$g should be accepted");
         }
 
-        // 'weekly', '7day' and 'tenday' claim a length a month cannot honour.
-        // 'daily' is honest but not offered: a partition per day is a file per
-        // day, and the yyyymmdd index already selects rows within a period, so
-        // it bought retention precision at a cost in open files.
-        foreach (['weekly', '7day', 'tenday', 'daily', 'hourly', ''] as $g) {
+        // 'weekly', '7day' and 'tenday' claim a length a month cannot honour:
+        // a division of a month is the only thing this scheme can express.
+        // 'daily' WAS refused on the same open-files argument and is now
+        // offered, because a rebuild-and-swap window wants the partition to be
+        // the unit of work. It is still not free -- see PARTITION_CUTS on why
+        // it cannot carry the ordinary twelve-month lead.
+        foreach (['weekly', '7day', 'tenday', 'hourly', 'yearly', ''] as $g) {
             $this->assertFalse(\OWA\Core\Db::isPartitionGranularity($g), "$g should be rejected");
         }
     }
@@ -49,6 +51,13 @@ final class PartitionRangesTest extends TestCase
             ['monthly',       20260201, 20260228, 1],
             ['half-month',    20260201, 20260228, 2],
             ['quarter-month', 20260201, 20260228, 4],
+
+            // daily is the only granularity whose part count varies with the
+            // month, which is the whole reason cutsForMonth() clamps.
+            ['daily',         20260101, 20260131, 31],   // 31-day month
+            ['daily',         20260401, 20260430, 30],   // 30-day month
+            ['daily',         20260201, 20260228, 28],   // short month
+            ['daily',         20280201, 20280229, 29],   // leap February
         ];
 
         foreach ($cases as [$g, $from, $to, $expected]) {
@@ -56,6 +65,41 @@ final class PartitionRangesTest extends TestCase
                 $expected,
                 \OWA\Core\Db::makePartitionRanges($from, $to, $g),
                 sprintf('%s should divide %d into %d part(s)', $g, $from, $expected)
+            );
+        }
+    }
+
+    /**
+     * A one-day span is named for the granularity that cuts it there.
+     *
+     * describePartitionPeriod() walks PARTITION_CUTS looking for a cut whose
+     * NEXT cut is exactly this partition's upper bound, so the answer depends
+     * on the order of that constant as well as its contents. These cases pin
+     * both: a daily partition mid-month, one on the 1st (where every
+     * granularity has a cut and only daily's next cut lands on the 2nd), and
+     * the last day of a short month (whose next cut is the 1st of the month
+     * after, via the end-of-list branch rather than the next-cut branch).
+     */
+    public function testDailyPeriodsAreNamed()
+    {
+        $cases = [
+            ['20260905', '20260906', 'daily'],
+            ['20260901', '20260902', 'daily'],
+            ['20260228', '20260301', 'daily'],
+            ['20280229', '20280301', 'daily'],
+
+            // Unchanged by daily being added ahead of nothing and behind the
+            // coarser schemes: these must still name the coarser period.
+            ['20260901', '20261001', 'monthly'],
+            ['20260916', '20261001', 'half-month'],
+            ['20260922', '20261001', 'quarter-month'],
+        ];
+
+        foreach ($cases as [$start, $less_than, $expected]) {
+            $this->assertSame(
+                $expected,
+                \OWA\Core\Db::describePartitionPeriod($start, $less_than),
+                sprintf('%s..%s should be described as %s', $start, $less_than, $expected)
             );
         }
     }
@@ -75,7 +119,7 @@ final class PartitionRangesTest extends TestCase
      */
     public function testNoPartitionCrossesAMonthBoundary()
     {
-        foreach (['quarter-month', 'half-month', 'monthly'] as $g) {
+        foreach (['daily', 'quarter-month', 'half-month', 'monthly'] as $g) {
 
             foreach (\OWA\Core\Db::makePartitionRanges(20251215, 20260315, $g) as $name => $less_than) {
 

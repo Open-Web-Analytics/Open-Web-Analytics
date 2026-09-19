@@ -60,7 +60,7 @@ class PartitionInitCli extends PartitionsCli {
         if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
+                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly.', $granularity
             ) );
 
             return;
