@@ -1044,15 +1044,70 @@ nothing, deletes nothing and updates nothing in place, so <em>rows in equals row
 invariant, not an aspiration &mdash; and a cheap defect detector, since any count mismatch is a
 bug by construction.</p>
 
-<p>What it has to materialise falls into three scopes, and only one of them is actually hard:</p>
+<p>What it has to materialise does not split cleanly by scope. It splits by <strong>whether the
+value is an observation, a mechanical resolution, or a model</strong> &mdash; the same three-way cut
+&sect;1.13 already makes for the wire, applied now to the pipeline. Scope decides <em>how far</em>
+the pass has to reach; that cut decides <em>whether it reaches at all</em>.</p>
 
 <table>
-<tr><th>scope</th><th>examples</th><th>where the value comes from</th></tr>
-<tr><td>event</td><td>geo, device, browser, page</td><td><strong>already on the row.</strong> Resolved at ingest, because realtime reads raw and reports on them</td></tr>
-<tr><td>session</td><td><code>session_referer</code>, <code>sts</code>, <code>tagged_*</code>, source and medium</td><td><strong>already on the row.</strong> OWA carries session-scoped values on every beacon &mdash; the point made above about realtime being richer than GA&rsquo;s</td></tr>
-<tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td>computed from the session&rsquo;s own rows, <strong>once it is closed</strong></td></tr>
-<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td>the visitor&rsquo;s <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
+<tr><th>scope</th><th>value</th><th>how it gets onto the denormalised row</th></tr>
+<tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
+<tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
+<tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon, which GA does not</td></tr>
+<tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
+<tr><td>session</td><td>landing page</td><td><strong>derived in the PASS</strong> &mdash; needs the session&rsquo;s first event, which no later beacon carries</td></tr>
+<tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
+<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
 </table>
+
+<p><strong>So yes, most session-scoped properties are derived, not carried &mdash; an earlier draft
+of this table said &ldquo;already on the row&rdquo; for the whole session tier and that was
+wrong.</strong> What rides every beacon is the <em>evidence</em>: the referring URL, the campaign
+tags as collected, the session id and timestamps. What has to be computed is the
+<em>reading</em> of that evidence. Both end up stamped on every denormalised row, which is what
+&sect;1.4&rsquo;s measurement depends on &mdash; sessions-by-landing-page at 215&nbsp;ms as a
+group-by over sticky values against 3.1&nbsp;s as a first-event join &mdash; so nothing there
+changes. What changes is <em>who</em> stamps them and <em>which layer</em> they exist in: the pass,
+and the denormalised table, not the tracker and not raw.</p>
+
+<p><strong>That also narrows the realtime claim made above, and it should be narrowed.</strong>
+OWA&rsquo;s raw layer does hold more than GA&rsquo;s &mdash; the referring URL and the campaign tags
+are there on every event where GA carries only per-event collected values &mdash; so realtime can
+report a referring host. It cannot report a resolved source, medium or channel, because those do
+not exist until the pass runs. Richer than GA&rsquo;s realtime, but not unboundedly so, and along a
+line that follows from the architecture rather than from a policy.</p>
+
+<p><strong>GA is built this way, and its BigQuery export says so explicitly.</strong> The export
+carries <em>three separate</em> traffic-source records per event row, which is the same three-way
+cut arrived at above:</p>
+<ul>
+<li><code>collected_traffic_source.*</code> &mdash; <code>manual_source</code>,
+<code>manual_medium</code>, <code>manual_campaign_*</code>, <code>gclid</code>,
+<code>dclid</code>, <code>srsltid</code>. The tags <em>as collected with the event</em>. Evidence,
+not reading. Confirms what the beacon capture already showed: GA ships raw tags and never a parsed
+source or medium.</li>
+<li><code>session_traffic_source_last_click.*</code> &mdash; session scope, and its name states the
+model. Nested per channel (<code>manual_campaign</code>, <code>google_ads_campaign</code>,
+<code>cross_channel_campaign</code>, sa360, dv360, cm360). Derived, not collected.</li>
+<li><code>traffic_source.name</code> / <code>.medium</code> / <code>.source</code> &mdash; user
+scope, documented as &ldquo;the traffic source that <strong>first acquired the user</strong>&rdquo;
+and explicitly <em>&ldquo;do not change if the user interacts with subsequent campaigns&rdquo;</em>.
+Write-once acquisition, materialised onto every event row.</li>
+</ul>
+
+<p><strong>And the line in that documentation that settles the architecture:
+<em>&ldquo;This record is not populated in intraday tables.&rdquo;</em></strong> GA&rsquo;s intraday
+table is its raw layer and its daily table is its processed one, and user acquisition exists only in
+the second. That is the raw/denormalised split observed from outside GA, with the same value in the
+same place for the same reason &mdash; it cannot be known from the event alone, so it cannot be in
+the layer that is written one event at a time. <code>geo</code> and <code>device</code>, by
+contrast, are on every exported row including intraday, which is the ingest-time mechanical
+resolution above.</p>
+
+<p>Whether GA keeps a user-acquisition table internally is not observable from outside. The
+<em>shape</em> is not in question: a write-once, user-scoped value that originates in one event
+which may be years old, absent from the streaming layer, present on every row of the processed one.
+Something has to hold it between those two facts.</p>
 
 <p><strong>The awkward fact is that a partition is not self-contained.</strong> &ldquo;The partition
 is the unit of work&rdquo; describes the write side exactly, and the read side not at all: a row
