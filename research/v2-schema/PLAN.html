@@ -1434,15 +1434,20 @@ rebuilds however much of the current partition exists, so at <code>*/15</code> t
 a day, and on a monthly partition the last of them rewrites a month. On a daily partition it
 rewrites at most a day, and the cost is flat across the month instead of climbing through it. A
 sub-hourly cadence is affordable on daily partitions and not really affordable on anything
-coarser. <strong>So v2 needs a <code>daily</code> entry in <code>PARTITION_CUTS</code>, which has
-only <code>monthly</code>, <code>half-month</code> and <code>quarter-month</code> today.</strong>
-Adding it is one array entry, but it is the first granularity whose cuts a short month cannot
-carry, and <code>inferPartitionGranularity()</code> compares a table's boundaries against the raw
-constant rather than against <code>cutsForMonth()</code>'s clamped result &mdash; so a daily table
-would infer as <code>null</code> in every month but the 31-day ones, and a <code>null</code> there
-makes rotation fall back to monthly. The clamp exists and has never applied, because every current
-granularity cuts at or below the 22nd. Both are v2 work, to land with the storage layer rather than
-ahead of it.</p>
+coarser. <strong>So v2 needs a <code>daily</code> entry in <code>PARTITION_CUTS</code>, which had
+only <code>monthly</code>, <code>half-month</code> and <code>quarter-month</code>.</strong> Added
+in PR&nbsp;#1113, kept in 1.x because it is additive: nothing adopts it on its own &mdash;
+<code>partition-init</code> still defaults to monthly, <code>partition-rotate</code> still infers
+from the table, and <code>partition-reorganize</code> requires the granularity to be named.</p>
+
+<p>It was one array entry plus one latent defect, which is the part worth remembering.
+<code>daily</code> is the first granularity whose cuts a short month cannot carry, and
+<code>inferPartitionGranularity()</code> compared a table's boundaries against the raw constant
+rather than <code>cutsForMonth()</code>'s clamped result &mdash; so a daily table inferred as
+<code>null</code> in every month but the 31-day ones, and a <code>null</code> there makes rotation
+fall back to monthly, silently changing a table's granularity on a scheduled run. The clamp had
+existed all along and had never once applied, because every other granularity cuts at or below the
+22nd.</p>
 
 <p><strong>What is still unsettled here:</strong> whether the rebuild set is the whole window every
 time (simple, no change tracking, and the only thing that is provably correct given a late flagged
