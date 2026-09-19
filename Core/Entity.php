@@ -250,11 +250,105 @@ class Entity {
             //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
-                    $this->set($v, $array[$v], $apply_filters, false);
+                    $this->set($v, $this->applyStorageDefault( $v, $array[$v] ), $apply_filters, false);
                 }
             }
         }
     }
+    
+    /**
+     * Substitute the "(not set)" label when an empty value reaches a column
+     * that declares it.
+     *
+     * This is where v1's storage convention lives now. The tracking-property
+     * pipeline used to apply it before dispatch, which made the literal the
+     * value every READER saw -- so a handler, and v2, could not tell "no value"
+     * from a value that happens to be that string. Applying it at the column
+     * instead keeps every v1 column exactly as it was, with nothing to
+     * backfill, while the event carries absence as absence.
+     *
+     * Only for columns that hold text. A numeric column has no use for a label
+     * and, with strict mode off, would silently coerce it to 0 -- which is how a
+     * city name once reached a boolean column.
+     */
+    protected function applyStorageDefault( $column, $value ) {
+        
+        /*
+         * false counts as absence here. Event::get() answers false for a key it
+         * does not hold, so that is the shape an unset property actually arrives
+         * in -- checking only '' and null left every column NULL and looked, from
+         * the tests, exactly like success.
+         */
+        if ( $value !== '' && $value !== null && $value !== false ) {
+            
+            return $value;
+        }
+        
+        if ( ! isset( $this->properties[ $column ] ) ) {
+            
+            return $value;
+        }
+        
+        $type = (string) $this->properties[ $column ]->get( 'data_type' );
+        
+        if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
+            
+            return $value;
+        }
+        
+        return self::storageDefaultFor( $column ) ?? $value;
+    }
+    
+    /**
+     * The declared storage label for a tracking property, or null.
+     *
+     * Read from the registered property maps rather than a list kept here, so
+     * the declaration stays in one place -- modules/Base/config/
+     * tracking_properties.json -- and a module registering its own properties
+     * gets the same treatment. Only the absent-value label is honoured; every
+     * other default is a real value and belongs to the event, where the pipeline
+     * still applies it.
+     */
+    protected static function storageDefaultFor( $property ) {
+        
+        if ( self::$storageDefaults === null ) {
+            
+            self::$storageDefaults = array();
+            
+            /*
+             * From the property DEFINITIONS, not the registered service maps.
+             *
+             * The maps are populated by module registration, and a process that
+             * writes rows does not always have them -- they came back empty from
+             * a CLI context while this was being built. A lookup that silently
+             * finds nothing would store NULL where every existing row holds the
+             * label, and nothing would have reported it. These three read the
+             * config file directly and cache, so they answer the same everywhere.
+             */
+            $definitions = array_merge(
+                \OWA\Module\Base\Classes\TrackingEventHelpers::requestProperties(),
+                \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties(),
+                \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
+            
+            {
+                foreach ( $definitions as $name => $definition ) {
+                    
+                    if ( isset( $definition['default_value'] )
+                         && $definition['default_value'] === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL ) {
+                        
+                        self::$storageDefaults[ $name ] = $definition['default_value'];
+                    }
+                }
+            }
+        }
+        
+        return isset( self::$storageDefaults[ $property ] )
+            ? self::$storageDefaults[ $property ]
+            : null;
+    }
+    
+    /** property name => the absent-value label, built once per process. */
+    protected static $storageDefaults = null;
     
     /**
      * The dimension class that derives $column on $entity, or null.

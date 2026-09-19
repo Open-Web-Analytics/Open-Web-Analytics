@@ -4,6 +4,17 @@ namespace OWA\Module\Base\Classes;
 
 class TrackingEventHelpers {
 
+    /**
+     * The label a v1 column carries when there is no value.
+     *
+     * Declared as default_value on 26 tracking properties. It is applied when a
+     * value is STORED, not when an event is built -- see setTrackerProperties()
+     * and Entity::setProperties(). GA4 uses the same string, and the reporting
+     * layer produces it for a NULL dimension at render time as well.
+     */
+    const ABSENT_VALUE_LABEL = '(not set)';
+
+
     // incoming tracking event control flow:
     // 0. create event
     // 0. translate request property keys
@@ -381,7 +392,24 @@ class TrackingEventHelpers {
                  * both failed the truthy check. So the one case a default exists
                  * for was the one case it was skipped.
                  */
-                if ( array_key_exists( 'default_value', $property ) ) {
+                /*
+                 * The "(not set)" default is a STORAGE convention, not an event
+                 * one, so it is not applied here any more.
+                 *
+                 * It used to be written onto the event before dispatch, which
+                 * made the literal the value every reader saw -- including v2,
+                 * which wants absence to look like absence. The v1 columns still
+                 * receive it: Entity::setProperties() substitutes it when an
+                 * empty value reaches a column whose property declares it, so
+                 * nothing on disk changes and there is nothing to backfill.
+                 *
+                 * Every other default still applies here, because it is a real
+                 * value rather than a stand-in for the lack of one: the boolean
+                 * flags default false, browser and os to '(unknown)', medium to
+                 * 'direct'.
+                 */
+                if ( array_key_exists( 'default_value', $property )
+                     && $property['default_value'] !== self::ABSENT_VALUE_LABEL ) {
 
                     $value = $property['default_value'];
                 }
