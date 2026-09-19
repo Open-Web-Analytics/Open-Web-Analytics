@@ -1076,6 +1076,32 @@ OWA.util =  {
         return new_obj;
     },
     
+    /**
+     * Escape a value for interpolation into HTML.
+     *
+     * A jqGrid formatter's return value becomes the cell's HTML, so any
+     * value concatenated into one is markup unless it passes through here
+     * first. Two formatters in owa.resultSetExplorer.js each carried their
+     * own copy of these five replaces; this is that, shared, and now also
+     * used by the formatters that were building markup without it.
+     *
+     * Covers both positions a value lands in: text content, and inside a
+     * double-quoted attribute.
+     */
+    escapeHtml : function( value ) {
+
+        if ( value === null || value === undefined ) {
+            return '';
+        }
+
+        return String( value )
+            .replace( /&/g, '&amp;' )
+            .replace( /</g, '&lt;' )
+            .replace( />/g, '&gt;' )
+            .replace( /"/g, '&quot;' )
+            .replace( /'/g, '&#39;' );
+    },
+
     urlEncode : function(str) {
         // URL-encodes string  
         // 

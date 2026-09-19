@@ -1371,24 +1371,32 @@ OWA.dataGrid.prototype = {
         // custom formattter functions.
         jQuery.extend(jQuery.fn.fmatter , {
             // urlFormatter allows for a single param substitution.
+            /*
+             * A formatter's return value becomes the cell's HTML, so anything
+             * interpolated into it is markup until it is escaped. The two
+             * formatters below this already did that with a local esc(); these
+             * two did not.
+             *
+             * Those locals stay local deliberately. Their tests pull the
+             * formatter's source out and eval() it on its own, where the global
+             * OWA does not exist -- so pointing them at the shared helper turns
+             * a passing test into a ReferenceError. Not worth reshaping a test
+             * that is doing something reasonable.
+             */
             urlFormatter : function(cellvalue, options, rowdata) {
-            //alert(JSON.stringify(cellvalue));
-                var sub_value = options.rowId;
-                //alert(options.rowId);
                 var name = options.colModel.realColName;
                 OWA.debug(options.rowId-1+' '+name);
 
                 if ( rowdata[name].link.length > 0 ) {
-                    var new_url = rowdata[name].link;
-                    var link =  '<a href="' + new_url + '">' + cellvalue.formatted_value + '</a>';
-                    return link;
+                    return '<a href="' + OWA.util.escapeHtml( rowdata[name].link ) + '">'
+                         + OWA.util.escapeHtml( cellvalue.formatted_value )
+                         + '</a>';
                 }
             },
 
             useServerFormatter : function(cellvalue, options, rowdata) {
                 var name = options.colModel.realColName;
-                return rowdata[name].formatted_value;
-                //return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
+                return OWA.util.escapeHtml( rowdata[name].formatted_value );
             },
 
             /*
