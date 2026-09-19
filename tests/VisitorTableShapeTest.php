@@ -70,6 +70,69 @@ final class VisitorTableShapeTest extends TestCase
     }
 
     /**
+     * Update033 reverses itself, exactly, and in both directions repeatedly.
+     *
+     * An update that drops a column cannot reverse itself by reading the
+     * definition back off the entity -- the entity describes the CURRENT
+     * schema, and the definition it would need is precisely what this update
+     * removed. Update033 therefore carries the six definitions itself, pinned
+     * to the version it leaves behind.
+     *
+     * That matters because a rollback is a release being reverted: the code
+     * goes back too, the older entity declares these columns again, and a
+     * schema that could not follow would strand it against a table missing
+     * columns it declares.
+     *
+     * Asserts the types as well as the names. A down() that restores a column
+     * with the wrong type is worse than one that fails, because nothing
+     * complains until something writes to it.
+     */
+    public function testUpdate033ReversesItselfExactly(): void
+    {
+        $db     = owa_coreAPI::dbSingleton();
+        $update = new \OWA\Module\Base\Update\Update033;
+
+        $expected = [
+            'last_session_id'         => 'bigint',
+            'last_session_year'       => 'int',
+            'last_session_month'      => 'varchar(255)',
+            'last_session_day'        => 'int',
+            'last_session_dayofyear'  => 'int',
+            'first_session_dayofyear' => 'int',
+        ];
+
+        $present = function () use ($db): array {
+            $out = [];
+            foreach ((array) $db->get_results('SHOW COLUMNS FROM owa_visitor') as $row) {
+                $row = (array) $row;
+                $out[$row['Field']] = strtolower((string) $row['Type']);
+            }
+            return $out;
+        };
+
+        $this->assertTrue($update->down(), 'down() must succeed');
+
+        $restored = $present();
+
+        foreach ($expected as $column => $type) {
+            $this->assertArrayHasKey($column, $restored, "down() must restore $column");
+            $this->assertSame($type, $restored[$column], "$column must come back as $type");
+        }
+
+        $this->assertTrue($update->down(), 'down() must be runnable twice');
+
+        $this->assertTrue($update->up(), 'up() must succeed');
+
+        $after = $present();
+
+        foreach (array_keys($expected) as $column) {
+            $this->assertArrayNotHasKey($column, $after, "up() must remove $column again");
+        }
+
+        $this->assertTrue($update->up(), 'up() must be runnable twice');
+    }
+
+    /**
      * The constraint that decides what CAN be dropped, pinned as a test.
      *
      * Entity::addColumn() builds its ALTER from the entity's declared property,
