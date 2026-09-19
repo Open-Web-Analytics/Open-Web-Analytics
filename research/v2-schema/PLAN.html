@@ -1150,6 +1150,49 @@ is not true: it is user-scoped, it originates in one event that may be years old
 beacon carries it. Same test, opposite answer &mdash; which is the reason to keep exactly this one
 table and not a second.</p>
 
+<p><strong>And the table wants a TTL, because a repeat visitor is a bounded concept everywhere
+else.</strong> The instinct is that acquisition is write-once and therefore kept forever, which
+would make this the one table in v2 that grows without limit. Nobody in the field does that, and
+there are two separate expiries to keep apart &mdash; the client-side one, which is the familiar
+argument, and a <em>server-side</em> one on the visitor record, which is the relevant one here.</p>
+
+<table>
+<tr><th></th><th>client side</th><th>server side</th></tr>
+<tr><td>GA4</td><td><code>_ga</code> nominally 2 years, sliding on each visit</td><td><strong>user-scoped retention 2 or 14 months</strong>, with &ldquo;reset user data on new activity&rdquo; making it slide; without new activity the identifier and its data are deleted monthly</td></tr>
+<tr><td>Adobe</td><td><code>s_vi</code> / ECID 2 years</td><td><strong>&ldquo;visitor profiles are deleted after 1 year of inactivity, regardless of any visitor ID cookie expiration&rdquo;</strong></td></tr>
+<tr><td>Matomo</td><td>default 30 years</td><td>none documented</td></tr>
+<tr><td>browser caps, which override every row above</td><td colspan="2">Chrome 400 days on any first-party cookie; Firefox ~45 days; <strong>Safari 7 days for a JS-set cookie</strong>, 24 hours on a <code>gclid</code> arrival</td></tr>
+</table>
+
+<p>Two things fall out. The <strong>shape is a sliding inactivity window, not a fixed lifetime</strong>
+&mdash; GA resets on activity, Adobe counts from last seen &mdash; and the <strong>magnitude
+converges on roughly 12 to 14 months</strong> from two vendors who did not copy each other. That
+Chrome&rsquo;s 400-day cap lands in the same place is probably not a coincidence: there is little
+point retaining a server-side profile past the longest cookie that can reach it.</p>
+
+<p><strong>So: expire a visitor row after N months of inactivity, default 13, and the table is
+bounded by active visitors rather than by all visitors ever.</strong> On the Safari share of
+traffic the cookie is gone in 7 days and the visitor is re-minted as new long before any server
+window applies, so the TTL is generous against reality rather than binding on it.</p>
+
+<p><strong>Expiring the row does not rewrite history, which is what makes it cheap.</strong>
+Events already denormalised keep the acquisition values stamped on them; only the ability to
+attribute <em>future</em> events for that visitor is lost, and a visitor returning after thirteen
+months of silence is a new acquisition by any reasonable reading. GA draws the same line
+explicitly &mdash; its retention setting <em>&ldquo;only affects explorations and funnel
+reports&rdquo;</em> and <em>&ldquo;does not affect standard aggregated reports&rdquo;</em>, which
+is exactly the distinction between the per-visitor record and the rows it has already stamped.</p>
+
+<p><strong>One wrinkle it creates in the write rule above.</strong> A sliding window needs
+<code>last_seen</code>, and the pass writing <code>last_seen</code> contradicts
+&ldquo;insert-if-absent, never update&rdquo;. The resolution is that the rule belongs to the
+<em>acquisition columns</em>, not to the row: those are write-once, while <code>last_seen</code> is
+a maintenance column the pass advances as
+<code>GREATEST(last_seen, &lt;partition max&gt;)</code> &mdash; monotonic, so a rerun of the same
+partition is a no-op and idempotency survives intact. Worth stating plainly, because
+&ldquo;never update the visitor row&rdquo; is the kind of rule that gets enforced literally by
+someone who was not in this conversation.</p>
+
 <p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
 safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
 same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
