@@ -146,7 +146,22 @@ class SessionHandlers extends \OWA\Core\Observer {
                 $ret = $s->create();
 
                 // create event message
+                /*
+                 * The session's own properties go downstream, minus its derived
+                 * dimension keys.
+                 *
+                 * Those keys used to ride along, and a handler reading one off
+                 * the event was consuming a derivation second-hand instead of
+                 * making it -- the shape of the over-hashing defect, and the
+                 * reason a key could be built from content the event no longer
+                 * carried. Downstream derives from content like everything else.
+                 */
                 $session = $s->_getProperties();
+
+                foreach ( $s->contentDerivedKeys() as $derived ) {
+                    unset( $session[ $derived ] );
+                }
+
                 $properties = array_merge($event->getProperties(), $session);
                 $properties['request_id'] = $event->get('guid');
                 $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
@@ -334,7 +349,14 @@ class SessionHandlers extends \OWA\Core\Observer {
             }
 
             // setup event message
+            // Derived dimension keys do not ride downstream -- see the note on
+            // the same strip in logSession().
             $session = $s->_getProperties();
+
+            foreach ( $s->contentDerivedKeys() as $derived ) {
+                unset( $session[ $derived ] );
+            }
+
             $properties = array_merge($event->getProperties(), $session);
             $properties['request_id'] = $event->get('guid');
             $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');

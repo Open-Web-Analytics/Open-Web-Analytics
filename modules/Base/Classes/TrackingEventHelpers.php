@@ -617,31 +617,18 @@ class TrackingEventHelpers {
         return microtime();
     }
 
-    /**
-     * The fact row's location dimension id.
+    /*
+     * generateLocationId() and generateDimensionId() stood here.
      *
-     * Derived unconditionally. It used to return nothing when country was
-     * absent, which was invisible only because the geolocation filter wrote
-     * the literal '(not set)' into every empty field and so country was never
-     * absent. With the sentinel gone, bailing here left location_id at 0 --
-     * an id no dimension row carries -- and the inner join the reporting layer
-     * builds for a geo dimension then dropped the row from every geo report
-     * instead of grouping it under "(not set)".
+     * They hashed a dimension key onto the event before dispatch, which put the
+     * derivation upstream of every handler and made it something v2 would have
+     * had to pay for and then ignore. It is now done by the dimension that owns
+     * it, at the moment a row is written -- DimensionEntity::deriveId(), reached
+     * from Entity::setProperties() for fact rows and from each dimension handler
+     * for its own row.
+     *
+     * The event carries content. Nothing derived rides along on it.
      */
-    static function generateLocationId( $property_name, $event ) {
-
-        return \OWA\Module\Base\Classes\Geolocation::idFor(
-            $event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
-    }
-
-    static function generateDimensionId ( $property_value, $event ) {
-
-        if ( $property_value ) {
-
-            return \OWA\Core\Lib::setStringGuid( $property_value );
-        }
-
-    }
 
     /**
      * Days since the prior session, derived from the interval the tracker

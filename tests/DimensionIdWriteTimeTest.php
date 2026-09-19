@@ -146,6 +146,33 @@ final class DimensionIdWriteTimeTest extends TestCase
     }
 
     /**
+     * An entity can name its own derived keys, and a fact's are what we expect.
+     *
+     * This is what the downstream strip in SessionHandlers relies on: the
+     * session's properties are merged onto the base.new_session event minus
+     * these, so no handler downstream can consume a derivation second-hand
+     * instead of making it.
+     */
+    public function testAFactKnowsWhichOfItsKeysAreDerived(): void
+    {
+        $derived = $this->session()->contentDerivedKeys();
+
+        sort( $derived );
+
+        $this->assertSame( array(
+            'ad_id', 'campaign_id', 'host_id', 'location_id', 'os_id',
+            'referer_id', 'referring_search_term_id', 'source_id', 'ua_id',
+        ), $derived );
+
+        // Carried, not derived: site_id is minted, visitor_id comes from the
+        // tracker, and first/last page are a different page from document_id.
+        foreach ( array( 'site_id', 'visitor_id', 'first_page_id', 'last_page_id' ) as $carried ) {
+            $this->assertNotContains( $carried, $derived,
+                "$carried is not content-derived and must not be stripped" );
+        }
+    }
+
+    /**
      * A dimension that does not apply leaves its column unset rather than
      * pointing at a row that names nothing.
      */

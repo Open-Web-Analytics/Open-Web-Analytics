@@ -332,6 +332,30 @@ class Entity {
         return false;
     }
     
+    /**
+     * This entity's columns that are derived from content rather than carried.
+     *
+     * Used to strip them back out when an entity's properties are merged onto a
+     * downstream event: a derived key riding along is exactly what let a handler
+     * consume one second-hand instead of deriving it.
+     *
+     * @return string[]
+     */
+    function contentDerivedKeys() {
+        
+        $keys = array();
+        
+        foreach ( $this->getColumns() as $column ) {
+            
+            if ( self::contentDerivedDimensionFor( $this, $column ) !== null ) {
+                
+                $keys[] = $column;
+            }
+        }
+        
+        return $keys;
+    }
+    
     /** entity name => DimensionEntity class, or null when it is not one. */
     protected static $dimensionClasses = array();
     
