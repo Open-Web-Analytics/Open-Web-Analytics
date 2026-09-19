@@ -129,9 +129,12 @@ describe('directAttributionModel (last-touch)', () => {
 
         expect(t.campaignState.length).toBe(1);
         expect(t.isTrafficAttributed).toBe(true);
-        // Session store carries the resolved values under their FULL names.
-        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBe('news');
-        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBe('email');
+        // The session store no longer carries the parsed tags, which is what
+        // took them off the wire -- the server parses landing_url instead.
+        // What the MODEL does with the parse is unchanged, and that is what
+        // the assertions either side of this cover.
+        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBeFalsy();
+        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBeFalsy();
         // The campaign cookie ('c') holds the touch list.
         expect(OWA.getState('c', 'attribs')).toBeTruthy();
     });
@@ -197,11 +200,12 @@ describe('setTrafficAttribution: end to end', () => {
 
         t.setTrafficAttribution(null, null);
 
-        // Resolved into the SESSION store, which is where the attribution
-        // model writes them and where every event now reads them from.
-        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBe('news');
-        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBe('email');
-        expect(OWA.getState('s_attribution-site', 'tagged_campaign')).toBe('summer');
+        // NOT resolved into the session store any more. The model still runs
+        // on the parse -- the touch list below proves it -- but the parsed
+        // values stop there rather than being persisted and re-sent.
+        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBeFalsy();
+        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBeFalsy();
+        expect(OWA.getState('s_attribution-site', 'tagged_campaign')).toBeFalsy();
         // The serialized touch list rides along as `attribs`.
         expect(JSON.stringify(OWA.getState('c', 'attribs'))).toContain('news');
     });

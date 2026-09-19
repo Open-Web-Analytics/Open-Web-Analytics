@@ -49,9 +49,9 @@ final class VisitorAcquisitionTest extends IngestionTestCase
             'is_new_session'  => true,
             'is_new_visitor'  => true,
             'visitor_id'      => $visitorId,
-            'tagged_campaign' => $campaign,
-            'tagged_source'   => $source,
-            'tagged_medium'   => 'cpc',
+            'landing_url'     => $this->landingUrlWithTags(
+                'https://owa-test-site.test/acquisition-probe',
+                array( 'campaign' => $campaign, 'source' => $source, 'medium' => 'cpc' ) ),
         ]);
 
         $this->assertNotFalse($result, 'page_request was dropped before persistence.');

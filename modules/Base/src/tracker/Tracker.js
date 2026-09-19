@@ -103,6 +103,7 @@ class OWATracker  {
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    session_referer:         { scope: 'session', permanent: false },
+		    landing_url:             { scope: 'session', permanent: false },
 		    nps:                     { scope: 'session', permanent: false },
 		    attribs:                 { scope: 'session', permanent: false },
 		    // The site may set a different one, so it is not permanent.
@@ -269,7 +270,6 @@ class OWATracker  {
 	    // it next attaches those values to a different session.
 	    this.registerSiteScopedStores();
 	    this.registerSessionStoreSiteMigration();
-	    this.registerCampaignTagRenameMigration();
 
 	    // 'b' held session-scoped custom variables, alongside 's' which is the
 	    // session store -- two cookies for one concept. Session-scoped custom
@@ -338,8 +338,9 @@ class OWATracker  {
 	         * decides the answer. They used to share one name, so a value in the
 	         * column recorded no trace of which half produced it.
 	         *
-	         * Renaming 'full' renames a key inside live visitor cookies, which is
-	         * what registerCampaignTagRenameMigration() exists to carry across.
+	         * 'full' is now only the name the parse produces for the attribution
+	         * MODEL below -- it no longer names a session-store key or a wire
+	         * property, because the server parses landing_url instead.
 	         */
 	        campaignKeys: [
 	                { public: 'owa_medium', private: 'md', full: 'tagged_medium' },
@@ -849,81 +850,6 @@ class OWATracker  {
             }
 
             state.clear( 's' );
-        } );
-    }
-
-    /**
-     * Carry campaign tags across the tagged_* rename.
-     *
-     * The session store keys campaign values by campaignKeys[].full, which this
-     * release changes from source/medium/campaign/... to tagged_*. A release
-     * ships the tracker and the server together, so there is no version skew --
-     * but cookies are not part of the release. A visitor already mid-session
-     * holds a store written under the old names, and the new code reads the new
-     * ones, so without this their campaign attribution silently becomes direct
-     * on the next page.
-     *
-     * A migration rather than a read-side fallback, per the rule: a fallback
-     * never expires and quietly keeps the old shape alive forever, whereas this
-     * runs once per store and is deletable in a later release.
-     *
-     * Pegged to cookieDomainEstablished like every other migration -- it
-     * rewrites a cookie, so it depends on knowing the domain.
-     */
-    registerCampaignTagRenameMigration() {
-
-        var tracker = this;
-
-        OWA.registerStateMigration( 'campaign-tags-renamed', function ( state ) {
-
-            var storeName = tracker.storeName('s');
-            var store = state.readPersistedStore( storeName );
-
-            if ( ! store || ! store.state ) {
-                return;
-            }
-
-            var carried = store.state;
-            var renamed = false;
-
-            var campaignKeys = tracker.getOption('campaignKeys') || [];
-
-            for ( var i = 0; i < campaignKeys.length; i++ ) {
-
-                // 'tagged_source' -> the 'source' it used to be stored under
-                var current = campaignKeys[i].full;
-                var legacy = current.replace( /^tagged_/, '' );
-
-                // tagged_terms was search_terms, not 'terms'
-                if ( legacy === 'terms' ) {
-                    legacy = 'search_terms';
-                }
-
-                if ( legacy === current || ! carried.hasOwnProperty( legacy ) ) {
-                    continue;
-                }
-
-                // Do not clobber a value already written under the new name.
-                if ( ! carried.hasOwnProperty( current ) ) {
-
-                    carried[ current ] = carried[ legacy ];
-                    renamed = true;
-                }
-
-                delete carried[ legacy ];
-                renamed = true;
-            }
-
-            if ( renamed ) {
-
-                OWA.debug( 'migrating campaign tags to tagged_* in %s', storeName );
-
-                // writePersistedStore, not an ordinary write: the session store
-                // is persist:'deferred', and a store being MOVED already exists
-                // -- a visitor who leaves before the next beacon must not lose
-                // it. Same reasoning as the per-site migration above.
-                state.writePersistedStore( storeName, carried, true );
-            }
         } );
     }
 
@@ -2005,8 +1931,15 @@ class OWATracker  {
 
             // set flag
             this.isTrafficAttributed = true;
-            // persist state to session store
-            this.setCampaignSessionState(campaign_params);
+            /*
+             * The parsed tags are NOT persisted to session state any more, and
+             * that is what takes them off the wire: the session store is what
+             * rides every beacon. The server resolves them from landing_url.
+             *
+             * The parse itself stays, because the attribution MODEL below still
+             * runs on it -- campaignState and the `c` cookie are a separate
+             * retirement, decided for v2 and not bundled here.
+             */
             // return values just in case
             return campaign_params;
         }
@@ -2037,7 +1970,7 @@ class OWATracker  {
             }
         }
         // persist state to session store
-        this.setCampaignSessionState(campaign_params);
+        // Not persisted to session state -- see directAttributionModel().
         // return values just in case
         return campaign_params;
 
@@ -2140,6 +2073,24 @@ class OWATracker  {
         if ( this.isNewSessionFlag === true ) {
 
             OWA.setState( this.storeName('s'), 'referer', document.referrer );
+
+            /*
+             * The URL this session landed on, written once and re-sent from
+             * session state for the rest of it -- the same contract as
+             * `referer` above, and for the same reason: a session-scoped
+             * property must be identical on every event sharing a session_id.
+             *
+             * It replaces the six tagged_* parameters this tracker used to
+             * parse out of the URL and re-send on every beacon. The server
+             * parses it instead, which is what makes the answer re-derivable:
+             * a parser fix, or a site changing `ns`, then applies on reprocess
+             * rather than being frozen in whatever this page load decided.
+             *
+             * The whole URL rather than just its query string, because the
+             * landing page is evidence in its own right and page_url on a later
+             * beacon is a different page.
+             */
+            OWA.setState( this.storeName('s'), 'landing_url', this.getCurrentUrl() );
         }
 
         // apply traffic attribution realted properties to events
@@ -2729,6 +2680,10 @@ class OWATracker  {
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
             { store: 's', key: 'referer', name: 'session_referer' },
+            // The landing URL, session-scoped like the referer beside it. It is
+            // what the server parses campaign tags out of, now that the tracker
+            // no longer parses them itself.
+            { store: 's', key: 'landing_url', name: 'landing_url' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
             { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
             { store: 's', key: 'psts', name: 'psts' },
@@ -2795,16 +2750,16 @@ class OWATracker  {
         // Campaign keys are session state too, written into 's' by the
         // attribution model. Their names are configured rather than fixed, so
         // they cannot go in the map above.
-        var campaignKeys = this.getOption('campaignKeys') || [];
-
-        for ( var k = 0; k < campaignKeys.length; k++ ) {
-
-            var campaign_value = OWA.getState( this.storeName('s'), campaignKeys[k].full );
-
-            if ( campaign_value ) {
-                collected[ campaignKeys[k].full ] = campaign_value;
-            }
-        }
+        /*
+         * The tagged_* keys are no longer collected, because nothing writes
+         * them to session state any more -- the server parses landing_url
+         * instead. The loop that stood here read six keys that are now always
+         * absent.
+         *
+         * Beacons from an OLD tracker still carry them, and the server still
+         * prefers what it was sent over what it re-derives, so those installs
+         * are unaffected until their cached tracker expires.
+         */
 
         return collected;
     }

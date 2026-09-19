@@ -1544,6 +1544,124 @@ class TrackingEventHelpers {
     }
 
     /**
+     * The campaign parameters a site owner writes on a landing URL, and the
+     * wire property each one becomes.
+     *
+     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
+     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
+     * own query string. Changing `ns` changes every campaign URL in the wild,
+     * which is exactly why the list is built from it rather than hard-coded.
+     *
+     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
+     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
+     * not share a stem.
+     */
+    const CAMPAIGN_KEYS = array(
+        'source'       => 'tagged_source',
+        'medium'       => 'tagged_medium',
+        'campaign'     => 'tagged_campaign',
+        'search_terms' => 'tagged_terms',
+        'ad'           => 'tagged_ad',
+        'ad_type'      => 'tagged_ad_type',
+    );
+
+    /** Parsed landing URLs, keyed by the URL. */
+    private static $landingTags = array();
+
+    /**
+     * What the landing URL claimed for one campaign property.
+     *
+     * The tracker used to parse the landing URL against campaignKeys and send
+     * six tagged_* parameters on every beacon of the session. It now carries
+     * the URL itself and the parse happens here, which is what makes the answer
+     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
+     * reprocess instead of being frozen in whatever a browser decided months
+     * ago.
+     *
+     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
+     * installs upgrade at their own pace, so beacons from the old tracker keep
+     * arriving long after the new one ships; treating what it sent as
+     * authoritative is what makes this change invisible to them. The parse is
+     * the fallback, which is also the right precedence on its own terms -- a
+     * value that was actually transmitted beats one re-derived from evidence.
+     *
+     * @param object $event
+     * @param string $name  a value of CAMPAIGN_KEYS
+     * @return string|null
+     */
+    static function taggedValue( $event, $name ) {
+
+        $sent = $event->get( $name );
+
+        if ( $sent ) {
+
+            return $sent;
+        }
+
+        $landing = $event->get( 'landing_url' );
+
+        if ( ! $landing || ! is_string( $landing ) ) {
+
+            return null;
+        }
+
+        if ( ! isset( self::$landingTags[ $landing ] ) ) {
+
+            self::$landingTags[ $landing ] = self::parseLandingTags( $landing );
+        }
+
+        return isset( self::$landingTags[ $landing ][ $name ] )
+            ? self::$landingTags[ $landing ][ $name ]
+            : null;
+    }
+
+    /**
+     * Pull the campaign parameters out of one landing URL.
+     *
+     * @param string $landing
+     * @return array wire property name => value
+     */
+    private static function parseLandingTags( $landing ) {
+
+        $uri = self::parse_url( $landing );
+
+        if ( empty( $uri['query'] ) ) {
+
+            return array();
+        }
+
+        $params = array();
+
+        parse_str( $uri['query'], $params );
+
+        $ns   = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $tags = array();
+
+        foreach ( self::CAMPAIGN_KEYS as $suffix => $property ) {
+
+            $public = $ns . $suffix;
+
+            // Absent and empty are the same claim: the URL said nothing. An
+            // empty owa_campaign= must not read as a campaign named ''.
+            if ( ! isset( $params[ $public ] ) || ! is_string( $params[ $public ] ) ) {
+
+                continue;
+            }
+
+            $value = trim( $params[ $public ] );
+
+            if ( $value === '' ) {
+
+                continue;
+            }
+
+            $tags[ $property ] = $value;
+        }
+
+        return $tags;
+    }
+
+    /**
      * Resolve the traffic source.
      *
      * The tracker reports what the landing URL was tagged with; the server
@@ -1556,7 +1674,7 @@ class TrackingEventHelpers {
      */
     static function resolveSource( $source, $event ) {
 
-        $tagged = $event->get( 'tagged_source' );
+        $tagged = self::taggedValue( $event, 'tagged_source' );
 
         if ( $tagged ) {
 
@@ -1589,7 +1707,7 @@ class TrackingEventHelpers {
      */
     static function resolveMedium( $medium, $event ) {
 
-        $tagged = $event->get( 'tagged_medium' );
+        $tagged = self::taggedValue( $event, 'tagged_medium' );
 
         if ( $tagged ) {
 
@@ -1637,7 +1755,7 @@ class TrackingEventHelpers {
      */
     static function resolveCampaign( $campaign, $event ) {
 
-        $tagged = $event->get( 'tagged_campaign' );
+        $tagged = self::taggedValue( $event, 'tagged_campaign' );
 
         return $tagged ? trim( $tagged ) : $campaign;
     }
@@ -1645,7 +1763,7 @@ class TrackingEventHelpers {
     /** As resolveCampaign(). Read by AdHandlers. */
     static function resolveAd( $ad, $event ) {
 
-        $tagged = $event->get( 'tagged_ad' );
+        $tagged = self::taggedValue( $event, 'tagged_ad' );
 
         return $tagged ? trim( $tagged ) : $ad;
     }
@@ -1653,7 +1771,7 @@ class TrackingEventHelpers {
     /** As resolveCampaign(). Read by AdHandlers beside ad. */
     static function resolveAdType( $ad_type, $event ) {
 
-        $tagged = $event->get( 'tagged_ad_type' );
+        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
 
         return $tagged ? trim( $tagged ) : $ad_type;
     }
@@ -1669,7 +1787,7 @@ class TrackingEventHelpers {
      */
     static function resolveSearchTerms( $terms, $event ) {
 
-        $tagged = $event->get( 'tagged_terms' );
+        $tagged = self::taggedValue( $event, 'tagged_terms' );
 
         if ( $tagged ) {
 

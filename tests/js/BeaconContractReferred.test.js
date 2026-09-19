@@ -70,6 +70,23 @@ function emittedKeys(fire) {
     return Object.keys(beacon).sort();
 }
 
+/**
+ * As emittedKeys(), but the whole beacon -- for the cases where the VALUE is
+ * the thing under test and a key's presence would not catch it being wrong.
+ */
+function emittedValues(fire) {
+    resetOwaState();
+    const t = new OWATracker({ cookie_domain_set: true });
+    t.setSiteId('contract-site');
+    let beacon = null;
+    t.logEvent = (properties) => { beacon = properties; };
+    fire(t);
+    if (!beacon) {
+        throw new Error('tracker did not emit a beacon');
+    }
+    return beacon;
+}
+
 describe('tracker referred pageview beacon contracts', () => {
     test('referral (referrer, no campaign) emits its contracted property set', () => {
         // No campaign params on the URL -> referrer inference -> session_referer.
@@ -95,11 +112,22 @@ describe('tracker referred pageview beacon contracts', () => {
         const expected = CONTRACTS['base.page_request.campaign'];
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
-        // The tracker reports the CLAIM the landing URL carried; the server
-        // resolves campaign/source/search_terms from it.
-        expect(actual).toContain('tagged_campaign');
-        expect(actual).toContain('tagged_source');
-        expect(actual).toContain('tagged_terms');
+        // The tracker no longer reports the tags it read off the URL. It
+        // reports the URL, and the server parses it -- so the evidence is on
+        // the wire instead of one page load's reading of it.
+        expect(actual).not.toContain('tagged_campaign');
+        expect(actual).not.toContain('tagged_source');
+        expect(actual).not.toContain('tagged_terms');
+        expect(actual).toContain('landing_url');
+
+        // And it is the LANDING url, with the tags still on it -- not a
+        // stripped path. This is the assertion that would catch the value
+        // being collected from the wrong place, which the key's presence alone
+        // would not.
+        const sent = emittedValues((t) => t.trackPageView(location.href));
+        expect(sent.landing_url).toContain('owa_campaign=summer');
+        expect(sent.landing_url).toContain('owa_source=news');
+        expect(sent.landing_url).toContain('owa_search_terms=blue');
 
         // ...and the referrer alongside it. This asserted `not.toContain`
         // until the campaign gate was removed: attribution used to suppress
