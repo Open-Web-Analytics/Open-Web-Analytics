@@ -1059,18 +1059,41 @@ is the unit of work&rdquo; describes the write side exactly, and the read side n
 written today belongs to a visitor whose <code>first_visit</code> may be two years back, and to a
 session that may have started yesterday. Two things follow, and they are the whole design.</p>
 
-<p><strong>1. Visitor acquisition needs a derived visitor table, and this is a real amendment to
-what is written above.</strong> The bullet saying a visitor rollup is not needed was reasoning
-about ingest and is right about ingest &mdash; no lookup on the write path, which is what mattered
-for ITP and for keeping append pure. But a bulk derivation still needs somewhere to put its
-result. Re-deriving acquisition by scanning raw for each visitor&rsquo;s flagged event is exactly
-the visitor-to-partition index the flag-keying argument was designed to avoid, and reading it back
-out of the denormalised table is the same lookup against a table a thousand times larger. So: one
-row per visitor, written when the <code>first_visit</code> event is seen, holding the arrival
-values. It is <em>visitor-cardinality, not event-cardinality</em>, it is derived and droppable, and
-critically it is <strong>maintained by the pass, not by ingest</strong> &mdash; so the property
-that mattered (ingest does no lookups) is untouched. Call it what it is rather than pretending the
-pass is stateless.</p>
+<p><strong>1. Visitor acquisition needs a derived visitor table, and the reason is retention,
+not lookup cost.</strong> The tempting answer is that the pass needs no table because it can join
+raw to raw &mdash; find the visitor&rsquo;s <code>first_visit</code> row and read the arrival values
+off it. <strong>That works right up until raw is pruned.</strong> &sect;1.13 banks on pruning raw to
+recover the storage doubling three layers cost; the moment the horizon passes a visitor&rsquo;s
+first visit, their acquisition is not expensive to recover, it is <em>gone</em>, and every
+subsequent event they generate is permanently unattributable. Retaining raw forever to avoid that
+gives back the one mitigation the third layer had. A visitor-cardinality row survives the prune
+because it is not event-cardinality.</p>
+
+<p>A cost argument points the same way but is weaker than it first looks, and the difference is
+worth recording because it nearly went in as the headline. MySQL has no global secondary index on
+a partitioned table &mdash; every index is local &mdash; so an unqualified seek by
+<code>visitor_id</code> touches every partition. But <code>visitor_fsts</code> rides on every event
+(&sect;1.10 column 9), so the partition holding the <code>first_visit</code> row is <em>computable
+from the row doing the asking</em>, and the seek is qualified rather than unqualified. Whether the
+optimiser actually prunes on a per-row join key, rather than only on a constant, is a measurement
+nobody here has taken. So the honest statement is that the lookup is probably affordable and the
+retention argument is what is decisive.</p>
+
+<p>So: one row per visitor, written when the <code>first_visit</code> event is seen, holding the
+arrival values. <strong>Maintained by the pass, not by ingest</strong> &mdash; the property that
+mattered for ITP and for keeping append pure is that the <em>write path</em> does no lookups, and
+that is untouched. Reports never join it either; it is an input to the build, and its values reach
+queries materialised onto event rows like everything else. It is neither <code>owa_visitor</code>
+reborn (no per-request write, no per-request read) nor a star-schema dimension (no query-time join,
+no FK on the fact row, so no repeat of the inner-join-drops-the-row failure &sect;1.12 exists to
+prevent). Calling it a table is accurate; calling the pass stateless would not be.</p>
+
+<p><strong>The test this passes is the one that deleted the session table.</strong> That draft kept
+a session-grain derived table and lost it because session-scoped values are stamped on every event,
+so the event table already <em>was</em> the session-grain table. Acquisition is the case where that
+is not true: it is user-scoped, it originates in one event that may be years old, and no later
+beacon carries it. Same test, opposite answer &mdash; which is the reason to keep exactly this one
+table and not a second.</p>
 
 <p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
 safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
