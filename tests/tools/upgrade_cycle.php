@@ -151,6 +151,23 @@ if ( $phase === 'down' ) {
 
     $rolled = array();
 
+    /*
+     * What each down() actually CHANGED, per version.
+     *
+     * The end-to-end fingerprint compare at the bottom of phase 2 cannot see
+     * this. It takes one reading before the rollback and one after the forward
+     * re-apply, so a down() that returns true without touching anything leaves
+     * the schema where it was, the forward pass finds nothing to do, and the
+     * two readings match. A no-op down() passes a cycle that only checks the
+     * ends.
+     *
+     * So each rollback is fingerprinted on both sides. Phase 2 does the same
+     * for each up(), and the pair is what gets asserted: an up() that changes
+     * the schema must have a down() that changes it back.
+     */
+    $down_changed = array();
+    $up_changed   = array();
+
     for ( $v = $installed; $v >= 1; $v-- ) {
 
         $update = owa_update_for( $v );
@@ -161,15 +178,54 @@ if ( $phase === 'down' ) {
             break;
         }
 
+        $was = owa_schema_fingerprint( $db, $dbName );
+
         if ( ! $update->rollback() ) {
 
             $note( "  $v: rollback refused or failed -- floor" );
             break;
         }
 
+        $rolled_to = owa_schema_fingerprint( $db, $dbName );
+
+        /*
+         * Re-apply this one update, then roll it back again.
+         *
+         * Everything above $v is already rolled back and $v is the top, so
+         * this is exactly the state a real upgrade meets when it reaches $v --
+         * which makes it the one moment both directions can be measured
+         * honestly.
+         *
+         * It also exercises up() twice over the run, so an update that is not
+         * re-runnable shows up here rather than on somebody's install.
+         */
+        $reapplied = null;
+
+        if ( $update->apply( true ) ) {
+
+            $reapplied = owa_schema_fingerprint( $db, $dbName );
+
+            if ( ! $update->rollback() ) {
+
+                $note( "  $v: re-applied but would not roll back a second time -- floor" );
+                break;
+            }
+
+        } else {
+
+            $note( "  $v: would not re-apply on the schema it just rolled to" );
+        }
+
+        $down_changed[ $v ] = owa_fingerprint_diff( $was, $rolled_to ) ? true : false;
+        $up_changed[ $v ]   = $reapplied === null
+            ? null
+            : ( owa_fingerprint_diff( $rolled_to, $reapplied ) ? true : false );
+
         $rolled[] = $v;
 
-        $note( "  $v: rolled back" );
+        $note( sprintf( '  %d: rolled back%s%s', $v,
+            $down_changed[ $v ] ? '' : ' (down changed no schema)',
+            $up_changed[ $v ]   ? ' (up changes schema)' : '' ) );
     }
 
     $floor = (int) owa_coreAPI::getSetting( 'base', 'schema_version' );
@@ -183,6 +239,8 @@ if ( $phase === 'down' ) {
         'rolled'    => $rolled,
         'before'    => $before,
         'seeded'    => $seeded,
+        'down'      => $down_changed,
+        'up'        => $up_changed,
     ) ) );
 
     if ( ! $rolled ) {
@@ -229,6 +287,77 @@ if ( $floor > OWA_UPGRADE_CYCLE_FLOOR ) {
       . "  answer. Either give it a real rollback, or lower OWA_UPGRADE_CYCLE_FLOOR here\n"
       . "  and say in the commit what stopped being covered.",
         $floor, OWA_UPGRADE_CYCLE_FLOOR, OWA_UPGRADE_CYCLE_FLOOR, $floor );
+}
+
+/* ---- every schema change must be reversible ------------------------------
+ *
+ * The end-to-end compare below cannot see this. It reads the schema once before
+ * the rollback and once after the upgrade, so an update whose down() returns
+ * true without touching anything leaves the schema where it was, the upgrade
+ * finds nothing to do, and the two readings agree. A no-op down() passes a
+ * cycle that only checks the ends -- which is the whole reason a rollback is
+ * worth testing separately from an upgrade.
+ *
+ * Phase 1 measured each update in both directions at the one moment both are
+ * meaningful, so the pairing is available here: an up() that changes the schema
+ * must have a down() that changes it back.
+ *
+ * A data-only update legitimately changes no schema in either direction and is
+ * not caught by this, correctly -- Update031 rewrites column VALUES and its
+ * down() is deliberately a no-op.
+ */
+foreach ( (array) $rolled as $v ) {
+
+    if ( ! owa_update_declares_schema_work( $v ) ) {
+
+        continue;
+    }
+
+    $up_changed   = $state['up'][ $v ]   ?? null;
+    $down_changed = $state['down'][ $v ] ?? null;
+
+    if ( $up_changed === true && $down_changed === true ) {
+
+        continue;
+    }
+
+    if ( empty( $down_changed ) ) {
+
+        $fail[] = sprintf(
+            "Update%03d does schema work, but rolling it back changed nothing.\n"
+          . "  The schema was byte-identical either side of down(), so the rollback is a\n"
+          . "  no-op wearing a success. An install that reverts this release keeps the\n"
+          . "  new shape while the reverted code expects the old one.\n"
+          . "  Usually this means down() reads its column definitions off the entity --\n"
+          . "  which describes the CURRENT schema, and so no longer holds what the older\n"
+          . "  one needs. An update that drops a column has to carry the definitions\n"
+          . "  itself; see Update033.",
+            $v );
+
+        continue;
+    }
+
+    if ( empty( $up_changed ) ) {
+
+        $fail[] = sprintf(
+            "Update%03d does schema work but re-applying it changed nothing.\n"
+          . "  Its down() moved the schema and its up() did not put it back, so the two\n"
+          . "  are not inverses. An install upgrading through this version does not get\n"
+          . "  the shape a fresh install has.",
+            $v );
+    }
+}
+
+foreach ( (array) ( $state['up'] ?? array() ) as $v => $up_changed ) {
+
+    if ( $up_changed === null ) {
+
+        $fail[] = sprintf(
+            "Update%03d would not re-apply on the schema its own down() produced.\n"
+          . "  That is the exact state a real upgrade meets when it reaches this update,\n"
+          . "  so an install rolling forward from below this version cannot get past it.",
+            $v );
+    }
 }
 
 if ( $reached !== $installed ) {
@@ -376,6 +505,46 @@ function owa_update_for( $v ) {
  * Everything else is compared: which columns exist, their types, their
  * nullability, and which column sets are indexed.
  */
+/**
+ * Does this update do SCHEMA work, as opposed to data work?
+ *
+ * Read off the source, because intent is not observable from the schema on a
+ * fresh install. An update that DROPS a column drops nothing there -- the
+ * column was never created, since the entity stopped declaring it -- so its
+ * up() moves the fingerprint exactly as little as a broken down() does, and
+ * the two are indistinguishable by measurement alone.
+ *
+ * The classifier is not the assertion. It only decides which updates are
+ * expected to move the schema; whether they actually did is measured at
+ * runtime in phase 1.
+ *
+ * @param int $v
+ * @return bool
+ */
+function owa_update_declares_schema_work( $v ) {
+
+    $file = sprintf( '%smodules/Base/Update/Update%03d.php', OWA_DIR, $v );
+
+    if ( ! is_readable( $file ) ) {
+
+        return false;
+    }
+
+    $src = (string) file_get_contents( $file );
+
+    foreach ( array( 'addColumnIfMissing', 'dropColumnIfPresent', 'addColumn',
+                     'dropColumn', 'createTable', 'dropTable', 'addIndex',
+                     'dropIndex' ) as $needle ) {
+
+        if ( strpos( $src, $needle ) !== false ) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function owa_schema_fingerprint( $db, $dbName ) {
 
     $columns = array();
