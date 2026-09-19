@@ -1036,6 +1036,124 @@ Those rows are in the same or later days, never earlier. <strong>So the blast ra
 how far the queue can reorder, not by retention</strong>, and the late-arrival window needs to
 exceed queue reorder latency rather than &ldquo;how late can an event conceivably be&rdquo;.</p>
 
+<h4>How the denormalise pass actually works</h4>
+
+<p>The pass is one function run once per partition: <strong>read every raw row in partition P,
+write the same rows enriched into a staging table, swap staging into P.</strong> It creates
+nothing, deletes nothing and updates nothing in place, so <em>rows in equals rows out</em> is an
+invariant, not an aspiration &mdash; and a cheap defect detector, since any count mismatch is a
+bug by construction.</p>
+
+<p>What it has to materialise falls into three scopes, and only one of them is actually hard:</p>
+
+<table>
+<tr><th>scope</th><th>examples</th><th>where the value comes from</th></tr>
+<tr><td>event</td><td>geo, device, browser, page</td><td><strong>already on the row.</strong> Resolved at ingest, because realtime reads raw and reports on them</td></tr>
+<tr><td>session</td><td><code>session_referer</code>, <code>sts</code>, <code>tagged_*</code>, source and medium</td><td><strong>already on the row.</strong> OWA carries session-scoped values on every beacon &mdash; the point made above about realtime being richer than GA&rsquo;s</td></tr>
+<tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td>computed from the session&rsquo;s own rows, <strong>once it is closed</strong></td></tr>
+<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td>the visitor&rsquo;s <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
+</table>
+
+<p><strong>The awkward fact is that a partition is not self-contained.</strong> &ldquo;The partition
+is the unit of work&rdquo; describes the write side exactly, and the read side not at all: a row
+written today belongs to a visitor whose <code>first_visit</code> may be two years back, and to a
+session that may have started yesterday. Two things follow, and they are the whole design.</p>
+
+<p><strong>1. Visitor acquisition needs a derived visitor table, and this is a real amendment to
+what is written above.</strong> The bullet saying a visitor rollup is not needed was reasoning
+about ingest and is right about ingest &mdash; no lookup on the write path, which is what mattered
+for ITP and for keeping append pure. But a bulk derivation still needs somewhere to put its
+result. Re-deriving acquisition by scanning raw for each visitor&rsquo;s flagged event is exactly
+the visitor-to-partition index the flag-keying argument was designed to avoid, and reading it back
+out of the denormalised table is the same lookup against a table a thousand times larger. So: one
+row per visitor, written when the <code>first_visit</code> event is seen, holding the arrival
+values. It is <em>visitor-cardinality, not event-cardinality</em>, it is derived and droppable, and
+critically it is <strong>maintained by the pass, not by ingest</strong> &mdash; so the property
+that mattered (ingest does no lookups) is untouched. Call it what it is rather than pretending the
+pass is stateless.</p>
+
+<p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
+safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
+same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
+never wrong then corrected&rdquo; property the flag keying buys, now expressed as a storage rule.
+A full rebuild of the table from raw must break ties deterministically &mdash; order by
+<code>(timestamp, event_id)</code>, not timestamp alone &mdash; or two rebuilds can disagree.</p>
+
+<p><strong>2. Session finalisation puts a floor under the late-arrival window that queue reorder
+latency does not.</strong> A session running across midnight has rows in two partitions and cannot
+be finalised while building the first. The window already has to exceed how far the queue can
+reorder; it <em>also</em> has to exceed the longest session that can straddle a partition boundary,
+or the earlier day is sealed holding a session that was never closed. OWA&rsquo;s
+<code>session_length</code> is 1800s, but that is the idle timeout between hits, not a cap on total
+duration &mdash; a session with a hit every 25 minutes runs indefinitely. So either the window
+carries an explicit session cap, or terminal values stay NULL and the row is corrected on the next
+rebuild, which the window makes free anyway. <strong>The second is the honest answer</strong>, and
+it costs nothing: &sect;1.12 already says &ldquo;(not set)&rdquo; is presentation rather than
+storage, so &ldquo;not final yet&rdquo; and &ldquo;no value&rdquo; are the same NULL and the
+reporting layer already has to handle it.</p>
+
+<p><strong>The order within one run is forced, and getting it backwards is silent:</strong></p>
+<ol>
+<li><strong>Harvest.</strong> Insert-if-absent into the visitor table from this partition&rsquo;s
+<code>first_visit</code> rows. Must precede step 3: a visitor whose first session <em>and</em>
+second session both fall in this partition needs their own acquisition row to already exist, and
+nothing about the second session&rsquo;s rows carries it.</li>
+<li><strong>Close.</strong> Compute terminal session values for sessions whose last event is in
+this partition and whose close is certain.</li>
+<li><strong>Build.</strong> <code>INSERT INTO staging SELECT &hellip;</code> joining raw against the
+visitor table and the closed-session set.</li>
+<li><strong>Swap.</strong> <code>EXCHANGE PARTITION</code>.</li>
+<li><strong>Roll up.</strong> Replace that day&rsquo;s rollup rows from the new partition.</li>
+</ol>
+
+<p><strong>Idempotency comes from the swap, not from clever SQL.</strong> Staging is built whole and
+is invisible until the exchange, so a run that dies in step 3 leaves the live table exactly as it
+was and the next run simply rebuilds. This is a stronger property than &ldquo;the statements are
+rerunnable&rdquo;, and it is the reason to build into staging rather than to write the target
+directly even where a direct write would be possible. The one piece of state that outlives a failed
+run is the visitor table, which is why its write rule has to be insert-if-absent independently.</p>
+
+<p><strong>Step 5 is not optional and is easy to forget.</strong> The rollup is downstream of the
+denormalised table, so rebuilding a partition invalidates that day&rsquo;s aggregates. Replacing
+them has to be part of the same job rather than a separately scheduled one, or a rebuilt day is
+served from stale aggregates until whenever the rollup next runs &mdash; a discrepancy that
+surfaces as &ldquo;the report and the detail disagree&rdquo; and is miserable to diagnose.</p>
+
+<p><strong>The whole thing runs in the database.</strong> Every step is
+<code>INSERT &hellip; SELECT</code> against tables in one schema; no step needs a row in PHP. That
+matters more than it sounds: a pass that fetches rows, enriches in PHP and writes them back is
+bounded by round trips and by <code>memory_limit</code>, and on this class of box that is the
+difference between a job that runs and a job that OOMs. It also keeps the pass expressible on a
+columnar engine, where the equivalent is likewise a single <code>INSERT SELECT</code>. Window
+functions make step 2 straightforward and need MySQL 8.0 &mdash; the repo declares no minimum
+server version anywhere, so v2 should state one rather than discover it on someone&rsquo;s 5.7.</p>
+
+<p><strong>Scheduling needs nothing new.</strong> The job scheduler shipped in #997 already has
+per-job locking (<code>getJobLock</code> / <code>releaseJobLock</code>, with
+<code>--force-release</code> for a lock left by a dead process), which is exactly the
+&ldquo;two runs must not build the same partition&rdquo; guard. Registering is one line beside
+<code>rotate-partitions</code> in <code>Base\Module::registerJobs()</code>. Two cautions from how
+that scheduler actually behaves: the lock is keyed on the <em>job name</em>, so one name serialises
+every partition the job touches &mdash; fine, and probably wanted, but it means the window cannot be
+rebuilt in parallel without per-partition names. And <code>ScheduleRunCli::MAX_RUNTIME</code> (240s)
+is checked <em>before</em> starting a job and never mid-job, so a long pass is not interrupted; it
+just delays whatever else was due to that tick.</p>
+
+<p><strong>The cost profile is why the partition tier at the front has to be fine.</strong>
+Rebuilding today&rsquo;s partition costs however much of today has happened, so an intraday cadence
+rewrites a growing table all day &mdash; cheap at 08:00, a full day&rsquo;s rows at 23:59. That is
+tolerable when a partition is a day and untenable when it is a month, which is the same argument
+the partition cycle above makes from the other direction. Two cadences fall out: a frequent run on
+the current partition setting the attributed-freshness tier, and a less frequent run over the rest
+of the late-arrival window, which is where a late <code>first_visit</code> actually gets picked up.</p>
+
+<p><strong>What is still unsettled here:</strong> whether the rebuild set is the whole window every
+time (simple, no change tracking, and the only thing that is provably correct given a late flagged
+event) or something narrower; and that partitioning on <code>yyyymmdd</code> alone means one
+partition holds every site, so a multi-site install pays one big site&rsquo;s rebuild cost in every
+site&rsquo;s freshness. Subpartitioning by site is the obvious answer and multiplies the partition
+count by the site count, straight into the budget &sect;1.13 is already spending. Left to &sect;4.5.</p>
+
 <h4>How the partition cycle actually runs</h4>
 
 <p>If a rebuild replaces a whole partition, the partition scheme decides the unit of work &mdash;
@@ -1111,9 +1229,10 @@ at the cost of re-derivability past that horizon, which is one of the main benef
 <li><strong>&sect;1.6&rsquo;s two freshness tiers get a mechanism.</strong> Event-grain immediate
 is the raw table; everything attributed waits for the pass. The tier boundary is no longer a
 policy, it is where the data physically is.</li>
-<li><strong>A visitor rollup is not needed after all</strong>, but for a different reason than
-assumed. Not because acquisition source is cheap to look up &mdash; because it is derived in bulk
-rather than looked up at all.</li>
+<li><strong>A visitor rollup is not needed <em>at ingest</em></strong>, and that was the
+question being asked &mdash; not because acquisition source is cheap to look up, but because it is
+derived in bulk rather than looked up at all. The pass does keep a visitor-cardinality table to put
+that derivation in; see the pass section above, which is where the distinction is drawn.</li>
 </ul>
 
 <h4>Open</h4>
