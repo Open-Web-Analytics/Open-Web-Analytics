@@ -96,6 +96,15 @@ final class VisitorTableShapeTest extends TestCase
      */
     public function testUpdate033ReversesItselfExactly(): void
     {
+        if ( ! owa_test_db_available() ) {
+
+            // The other three tests here read the entity's declarations and run
+            // anywhere. This one issues DDL and reads it back, which is the
+            // point of it -- a reversal asserted against anything less than a
+            // real table is asserting the code's own opinion of itself.
+            $this->markTestSkipped( 'down() and up() have to be issued to a database' );
+        }
+
         $db     = owa_coreAPI::dbSingleton();
         $update = new \OWA\Module\Base\Update\Update033;
 
