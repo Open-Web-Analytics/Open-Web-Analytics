@@ -76,6 +76,49 @@ class Visitor extends \OWA\Core\Entity {
         $this->properties['last_session_dayofyear'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
 
+        /*
+         * Acquisition -- the traffic source of the visitor's FIRST session,
+         * written once when the visitor row is created and never updated.
+         *
+         * Stored as literals, not as dimension foreign keys, for two reasons.
+         *
+         * A report reaching these goes owa_request -> owa_visitor already; a
+         * foreign key here would make it owa_request -> owa_visitor ->
+         * owa_source_dim, and ResultSetManager::addDimension joins with
+         * OWA_SQL_JOIN (INNER), so every extra hop is another way for a fact to
+         * vanish from a report rather than render "(not set)". One hop, one
+         * chance to go wrong.
+         *
+         * And the v2 event table is denormalised throughout, so a literal is
+         * the shape it inherits. A foreign key would have to be resolved back
+         * into a string at migration time for no benefit taken in the meantime.
+         *
+         * owa_session already mixes the two this way -- source_id, campaign_id
+         * and ad_id are keys, `medium` is a literal -- so this is the existing
+         * pattern rather than a new one.
+         *
+         * Declared NULLABLE, which for a text column is an opt-in: Entity
+         * writes '' for an unset one by default, to keep the shape the pre-PDO
+         * driver gave columns that already existed. These did not exist then,
+         * so they take v2's form instead -- absence is NULL, and "(not set)" is
+         * a label applied when a value is rendered.
+         */
+        $this->properties['first_session_source'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['first_session_source']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_source']->setNullable();
+        $this->properties['first_session_medium'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['first_session_medium']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_medium']->setNullable();
+        $this->properties['first_session_campaign'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['first_session_campaign']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_campaign']->setNullable();
+        $this->properties['first_session_ad'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['first_session_ad']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_ad']->setNullable();
+        $this->properties['first_session_search_terms'] = new \OWA\Module\Base\Classes\DbColumn;
+        $this->properties['first_session_search_terms']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_search_terms']->setNullable();
+
         //drop
         $num_prior_sessions =  new \OWA\Module\Base\Classes\DbColumn;
         $num_prior_sessions->setName('num_prior_sessions');
