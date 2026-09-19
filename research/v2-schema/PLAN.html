@@ -1267,10 +1267,15 @@ It holds active visitors, not all visitors ever: 6,761 against 445,055 request r
 1.5%. Cheap &mdash; but cheap is not the same as needed.</li>
 </ul>
 
-<p><strong>Revised position: build v2 with no visitor table, and retain raw for the attribution
-window.</strong> Add the table later if raw retention is to be shortened below it &mdash; at which
-point it is a derived cache rebuildable from raw rather than a source of truth, which is a much
-weaker thing to own. The pass keeps the same shape either way; only the lookup target changes.</p>
+<p><strong>Position, after the GA reading above: keep the store.</strong> The intermediate
+recommendation here was to ship without it and retain raw for the attribution window, on the
+strength of the 0.172%. What changed it is that GA &mdash; which supports the long-lived identity
+properly &mdash; has to hold acquisition on a user record, and that the 0.172% is the loyal
+returning cohort rather than a random slice. Keeping the store also leaves raw retention a free
+dial instead of pinning it to the attribution window, which is worth more than the table costs.
+The no-table build stays documented above as the fallback it is: if the store is ever dropped, raw
+retention becomes the attribution window and the rule in the next paragraph is what keeps the
+result honest.</p>
 
 <p><strong>One rule holds whichever way this goes.</strong> When a visitor&rsquo;s
 <code>first_visit</code> is outside whatever window is in force, acquisition must resolve to NULL
@@ -1278,6 +1283,52 @@ weaker thing to own. The pass keeps the same shape either way; only the lookup t
 the answer would change every time the window slid forward, which is precisely the
 wrong-then-corrected failure that keying acquisition off the flag exists to prevent. Absent is a
 fact about the data; a drifting value is a defect.</p>
+
+<h4>The visitor store, if it is kept: do not partition it on <code>last_seen</code></h4>
+
+<p>Partitioning on <code>last_seen</code> is the obvious move &mdash; expiry becomes
+<code>DROP PARTITION</code>, free and metadata-only, the same idiom raw uses. <strong>It does not
+work, and the reason is a hard MySQL constraint rather than a cost.</strong> Every unique key on a
+partitioned table must contain all partitioning columns, so the key becomes
+<code>(visitor_id, last_seen_period)</code> and <strong>uniqueness on <code>visitor_id</code> alone
+becomes unenforceable</strong>. Insert-if-absent is built on exactly that constraint. Lose it and a
+visitor can hold two acquisition rows in two partitions, silently, with nothing to say which is
+right &mdash; the write-once guarantee gone at the storage layer while the code still believes it
+holds.</p>
+
+<p>The cost objections are real too, and would matter even if the constraint did not.
+<code>last_seen</code> is mutable, and updating a partitioning column makes MySQL physically move
+the row between partitions; every visitor migrates whenever their <code>last_seen</code> crosses a
+boundary. And the lookup is by <code>visitor_id</code> with no period in hand, so with only local
+indexes it dives into every partition &mdash; the by-id-across-partitions trap 1.x already
+documents.</p>
+
+<p><strong>If it is ever partitioned, partition on first-seen, which the id already carries.</strong>
+&sect;1.10 keeps the time prefix in <code>visitor_id</code>, so the first-seen period is a pure
+function of the id. That fixes both cost problems at once: the column is immutable so no row ever
+migrates, and every lookup can supply the partition key it derives from the id it is already
+searching for, pruning to exactly one partition. Uniqueness also survives in substance &mdash; a
+given id can only ever hash to one period, so <code>UNIQUE(visitor_id, first_seen_period)</code>
+<em>is</em> uniqueness on <code>visitor_id</code>.</p>
+
+<p><strong>But first-seen partitioning buys nothing for expiry</strong>, which is the thing that
+wanted partitioning in the first place. Expiry is by inactivity, and a first-seen partition holds
+a mix of long-dead and still-active visitors, so it can never be dropped whole &mdash; only deleted
+within.</p>
+
+<p><strong>So: do not partition it at all, and expire with a plain <code>DELETE</code>.</strong>
+This is a visitor-cardinality table under a TTL, which means it holds <em>active</em> visitors:
+6,761 on the measured install against 445,055 request rows. A site a hundred times busier is still
+under a million rows, where a monthly <code>DELETE &hellip; WHERE last_seen &lt; cutoff</code>
+against an index is unremarkable. Partitioning exists to make drops free on tables of hundreds of
+millions of rows; here it costs the unique constraint or buys nothing, depending which column it
+picks.</p>
+
+<p><strong>One write-volume note, since <code>last_seen</code> is the only mutable column.</strong>
+It does not need per-pass precision &mdash; the TTL is measured in months, so storing the period
+rather than the timestamp means the update fires at most once per visitor per month instead of once
+per visitor per partition rebuild. Still <code>GREATEST</code>, still monotonic, still idempotent on
+a rerun, but the common case becomes a no-op write that changes nothing.</p>
 
 <p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
 safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
