@@ -82,11 +82,11 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
      * mean storing a sentinel -- and a stored "(not set)" is exactly what
      * Update031 spent a migration removing.
      */
-    const UNPROCESSED = 'v.first_session_source IS NULL
-                     AND v.first_session_medium IS NULL
-                     AND v.first_session_campaign IS NULL
-                     AND v.first_session_ad IS NULL
-                     AND v.first_session_search_terms IS NULL';
+    const UNPROCESSED = "COALESCE(v.first_session_source, '') = ''
+                     AND COALESCE(v.first_session_medium, '') = ''
+                     AND COALESCE(v.first_session_campaign, '') = ''
+                     AND COALESCE(v.first_session_ad, '') = ''
+                     AND COALESCE(v.first_session_search_terms, '') = ''";
 
     /**
      * The legacy absence sentinel, mapped to NULL on the way in.
@@ -206,9 +206,9 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
         }
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            'Visited %d visitor(s). Any still holding NULL either had no first session row left '
-          . 'to read, or its dimension rows are gone -- in both cases the evidence no longer '
-          . 'exists and a rerun will visit them again without finding more.', $done ) );
+            'Visited %d visitor(s). Any left empty had no first session row to read, or its '
+          . 'dimension rows are gone -- the evidence no longer exists, and inventing a value '
+          . 'from a later session would turn first-touch into some-touch.', $done ) );
     }
 
     /**
@@ -262,7 +262,8 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
         // dimension tables call their value column `name`, so selecting them
         // bare would put two columns called `name` in the derived table and the
         // SET clause would reference whichever the optimiser felt like.
-        $selects = array( sprintf( 'NULLIF(s.medium, %s) AS first_session_medium', self::SENTINEL_SQL ) );
+        $selects = array( sprintf(
+            "COALESCE(NULLIF(s.medium, %s), '') AS first_session_medium", self::SENTINEL_SQL ) );
         $sets    = array( 'v.first_session_medium = src.first_session_medium' );
         $joins   = '';
 
@@ -271,7 +272,7 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
             list( $table, $key, $value ) = $from;
 
             $alias     = 'd_' . $column;
-            $selects[] = sprintf( 'NULLIF(%s.%s, %s) AS %s',
+            $selects[] = sprintf( "COALESCE(NULLIF(%s.%s, %s), '') AS %s",
                 $alias, $value, self::SENTINEL_SQL, $column );
             $sets[]    = sprintf( 'v.%s = src.%s', $column, $column );
             $joins    .= sprintf( ' LEFT JOIN %s %s ON %s.id = s.%s', $table, $alias, $alias, $key );

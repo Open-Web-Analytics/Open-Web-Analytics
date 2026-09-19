@@ -162,14 +162,62 @@ final class VisitorAcquisitionTest extends IngestionTestCase
         $row = $this->visitorRow((string) $visitorId);
 
         $this->assertNotFalse($row);
-        $this->assertNull($row['first_session_source'],
-            'the sentinel must land as NULL, which is what the reporting layer renders');
-        $this->assertNull($row['first_session_medium'],
+        $this->assertSame('', (string) $row['first_session_source'],
+            'the sentinel must not be copied into a new column');
+        $this->assertSame('', (string) $row['first_session_medium'],
             'and the same for medium, which is copied straight off the session');
 
         $db->query(sprintf('DELETE FROM owa_visitor WHERE id = %d', $visitorId));
         $db->query(sprintf('DELETE FROM owa_session WHERE id = %d', $sessionId));
         $db->query(sprintf('DELETE FROM owa_source_dim WHERE id = %d', $sourceId));
+    }
+
+    /**
+     * Both write paths must spell absence the same way.
+     *
+     * VisitorHandlers leaves an absent value unset and Entity::save() supplies
+     * '' for a declared string column that was never set; the backfill has no
+     * '' to copy and would naturally write NULL. One column holding both is the
+     * defect -- a GROUP BY draws two buckets that both mean unknown and both
+     * render as "(not set)" -- and it is not caught by either path's own tests,
+     * because each is self-consistent.
+     *
+     * This asserts the convention directly: after a direct visit, with no
+     * campaign, ad or search terms anywhere, the columns hold '' and not NULL.
+     */
+    public function testAbsenceIsSpelledConsistentlyByTheWritePath(): void
+    {
+        $visitorId = (string) random_int(1000000000, 9999999999);
+
+        $result = $this->fireEvent('base.page_request', [
+            'guid'            => (string) random_int(1000000000, 9999999999),
+            'site_id'         => md5('owa-test-site'),
+            'session_id'      => (string) random_int(1000000000000, 9999999999999),
+            'page_url'        => 'https://owa-test-site.test/direct-acquisition-probe',
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+            'ip_address'      => '203.0.113.203',
+            'is_new_session'  => true,
+            'is_new_visitor'  => true,
+            'visitor_id'      => $visitorId,
+        ]);
+
+        $this->assertNotFalse($result, 'direct page_request was dropped before persistence.');
+
+        $row = $this->visitorRow($visitorId);
+
+        $this->assertNotFalse($row);
+
+        foreach (['first_session_source', 'first_session_campaign',
+                  'first_session_ad', 'first_session_search_terms'] as $column) {
+
+            $this->assertNotNull($row[$column],
+                "$column must spell absence as '' -- the backfill writes '' too, and one "
+                . 'column holding both NULL and empty draws two buckets that mean the same thing');
+            $this->assertSame('', (string) $row[$column]);
+        }
+
+        $this->assertSame('direct', $row['first_session_medium'],
+            "medium's default is a real answer, not an absence");
     }
 
     /**

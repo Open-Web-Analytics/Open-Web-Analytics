@@ -81,11 +81,47 @@ class VisitorHandlers extends \OWA\Core\Observer {
                  * returning visitor and leaves the row alone, which is what
                  * makes this first-touch rather than a sliding window.
                  */
-                $v->set('first_session_source',       $event->get('source'));
-                $v->set('first_session_medium',       $event->get('medium'));
-                $v->set('first_session_campaign',     $event->get('campaign'));
-                $v->set('first_session_ad',           $event->get('ad'));
-                $v->set('first_session_search_terms', $event->get('search_terms'));
+                $acquisition = array(
+                    'first_session_source'       => 'source',
+                    'first_session_medium'       => 'medium',
+                    'first_session_campaign'     => 'campaign',
+                    'first_session_ad'           => 'ad',
+                    'first_session_search_terms' => 'search_terms',
+                );
+
+                foreach ( $acquisition as $column => $property ) {
+
+                    $value = $event->get( $property );
+
+                    /*
+                     * Absent values are not set, which is about the SENTINEL,
+                     * not about NULL.
+                     *
+                     * `source` and `search_terms` declare "(not set)" as their
+                     * storage default, so on a direct visit the event can carry
+                     * the label rather than an empty string. Writing that here
+                     * would put the string back into a brand new column, which
+                     * is what Update031 spent a migration removing elsewhere.
+                     *
+                     * Skipping does NOT make the column NULL. Entity::save()
+                     * supplies '' for a declared string column that was never
+                     * set, and that is deliberate across the schema -- handlers
+                     * rely on set('medium', $maybeEmpty) leaving an existing
+                     * value alone. So '' is what absence looks like in these
+                     * five columns, and the backfill matches it rather than
+                     * writing NULL, because one spelling is the whole point.
+                     *
+                     * `medium` defaults to 'direct', which is a real answer and
+                     * not an absence, so none of this applies to it.
+                     */
+                    if ( $value === null
+                         || ( is_string( $value ) && trim( $value ) === '' ) ) {
+
+                        continue;
+                    }
+
+                    $v->set( $column, $value );
+                }
 
                 $ret = $v->save();
 
