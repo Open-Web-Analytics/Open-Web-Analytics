@@ -209,7 +209,7 @@ class PartitionRotateCli extends PartitionsCli {
         if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
             return $this->refuse( sprintf(
-                'Unknown granularity "%s". Use one of: quarter-month, half-month, monthly.', $granularity
+                'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly.', $granularity
             ) );
         }
 

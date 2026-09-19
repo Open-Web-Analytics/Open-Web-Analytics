@@ -123,10 +123,22 @@ async function chooseInChosen(page, selectId, name) {
      */
     await search.pressSequentially(name);
 
-    const result = page.locator(`#${selectId}_chosen .chosen-results li.active-result`).first();
+    /*
+     * The option whose MACHINE NAME is the one asked for, not the first match.
+     *
+     * Every option renders as `label + ' (' + name + ')'`, so the parenthesised
+     * name identifies it exactly. Taking .first() assumed the filtered list put
+     * the wanted dimension at the top, which held only while no other dimension
+     * label contained this one as a substring -- adding "Acquisition Medium"
+     * put it above "Medium" alphabetically and broke a search for `medium`.
+     * Ordering was never the thing being asserted.
+     */
+    const result = page
+        .locator(`#${selectId}_chosen .chosen-results li.active-result`)
+        .filter({ hasText: `(${name})` })
+        .first();
 
-    await expect(result).toBeVisible();
-    await expect(result).toContainText(name, { timeout: 5_000 });
+    await expect(result).toBeVisible({ timeout: 5_000 });
 
     await result.click();
 
