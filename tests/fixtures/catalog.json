@@ -2,11 +2,11 @@
     "counts": {
         "metricNames": 78,
         "metricImplementations": 99,
-        "dimensionNamesNormalized": 41,
-        "dimensionEntriesNormalized": 41,
+        "dimensionNamesNormalized": 46,
+        "dimensionEntriesNormalized": 46,
         "dimensionNamesDenormalized": 60,
         "dimensionEntriesDenormalized": 230,
-        "accessorDimensionNames": 101
+        "accessorDimensionNames": 106
     },
     "metrics": {
         "actions": [
@@ -1609,6 +1609,71 @@
         ]
     },
     "dimensionsNormalized": {
+        "acquisitionAd": {
+            "base.visitor": {
+                "name": "acquisitionAd",
+                "entity": "base.visitor",
+                "column": "first_session_ad",
+                "family": "visitor",
+                "label": "Acquisition Ad",
+                "description": "The ad that first brought this visitor to the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
+        },
+        "acquisitionCampaign": {
+            "base.visitor": {
+                "name": "acquisitionCampaign",
+                "entity": "base.visitor",
+                "column": "first_session_campaign",
+                "family": "visitor",
+                "label": "Acquisition Campaign",
+                "description": "The campaign that first brought this visitor to the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
+        },
+        "acquisitionMedium": {
+            "base.visitor": {
+                "name": "acquisitionMedium",
+                "entity": "base.visitor",
+                "column": "first_session_medium",
+                "family": "visitor",
+                "label": "Acquisition Medium",
+                "description": "The medium that first brought this visitor to the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
+        },
+        "acquisitionSearchTerms": {
+            "base.visitor": {
+                "name": "acquisitionSearchTerms",
+                "entity": "base.visitor",
+                "column": "first_session_search_terms",
+                "family": "visitor",
+                "label": "Acquisition Search Terms",
+                "description": "The search terms that first brought this visitor to the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
+        },
+        "acquisitionSource": {
+            "base.visitor": {
+                "name": "acquisitionSource",
+                "entity": "base.visitor",
+                "column": "first_session_source",
+                "family": "visitor",
+                "label": "Acquisition Source",
+                "description": "The source that first brought this visitor to the site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": false
+            }
+        },
         "ad": {
             "base.ad_dim": {
                 "name": "ad",
@@ -4796,6 +4861,61 @@
         }
     },
     "accessorGetAllDimensions": {
+        "acquisitionAd": {
+            "name": "acquisitionAd",
+            "entity": "base.visitor",
+            "column": "first_session_ad",
+            "family": "visitor",
+            "label": "Acquisition Ad",
+            "description": "The ad that first brought this visitor to the site.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": false
+        },
+        "acquisitionCampaign": {
+            "name": "acquisitionCampaign",
+            "entity": "base.visitor",
+            "column": "first_session_campaign",
+            "family": "visitor",
+            "label": "Acquisition Campaign",
+            "description": "The campaign that first brought this visitor to the site.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": false
+        },
+        "acquisitionMedium": {
+            "name": "acquisitionMedium",
+            "entity": "base.visitor",
+            "column": "first_session_medium",
+            "family": "visitor",
+            "label": "Acquisition Medium",
+            "description": "The medium that first brought this visitor to the site.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": false
+        },
+        "acquisitionSearchTerms": {
+            "name": "acquisitionSearchTerms",
+            "entity": "base.visitor",
+            "column": "first_session_search_terms",
+            "family": "visitor",
+            "label": "Acquisition Search Terms",
+            "description": "The search terms that first brought this visitor to the site.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": false
+        },
+        "acquisitionSource": {
+            "name": "acquisitionSource",
+            "entity": "base.visitor",
+            "column": "first_session_source",
+            "family": "visitor",
+            "label": "Acquisition Source",
+            "description": "The source that first brought this visitor to the site.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": false
+        },
         "actionGroup": {
             "name": "actionGroup",
             "entity": "base.action_fact",
@@ -5995,6 +6115,11 @@
                 "transactionsInVisit"
             ],
             "visitor": [
+                "acquisitionAd",
+                "acquisitionCampaign",
+                "acquisitionMedium",
+                "acquisitionSearchTerms",
+                "acquisitionSource",
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
@@ -6079,6 +6204,11 @@
                 "sessionId"
             ],
             "visitor": [
+                "acquisitionAd",
+                "acquisitionCampaign",
+                "acquisitionMedium",
+                "acquisitionSearchTerms",
+                "acquisitionSource",
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
@@ -6164,6 +6294,11 @@
                 "sessionId"
             ],
             "visitor": [
+                "acquisitionAd",
+                "acquisitionCampaign",
+                "acquisitionMedium",
+                "acquisitionSearchTerms",
+                "acquisitionSource",
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
@@ -6254,6 +6389,11 @@
                 "sessionId"
             ],
             "visitor": [
+                "acquisitionAd",
+                "acquisitionCampaign",
+                "acquisitionMedium",
+                "acquisitionSearchTerms",
+                "acquisitionSource",
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",
@@ -6334,6 +6474,11 @@
                 "sessionId"
             ],
             "visitor": [
+                "acquisitionAd",
+                "acquisitionCampaign",
+                "acquisitionMedium",
+                "acquisitionSearchTerms",
+                "acquisitionSource",
                 "isNewVisitor",
                 "isRepeatVisitor",
                 "userEmail",

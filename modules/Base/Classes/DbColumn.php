@@ -60,6 +60,26 @@ class DbColumn {
      var $truncatable = true;
 
      /**
+      * May this column store NULL, or is an unset value written as ''?
+      *
+      * Defaults to false, which is Entity::writeValue()'s long-standing
+      * behaviour: a text column whose value is NULL is written as '' so that
+      * rows keep the shape the pre-PDO driver gave them. That compatibility
+      * rule is about columns which ALREADY held '', and it must not be changed
+      * for them -- see the PDO null-coercion regression, where flipping ~70
+      * nullable columns the other way had to be reverted.
+      *
+      * A column added after that point has no such history, and NULL is the
+      * storage form v2 uses for absence: "(not set)" is a label applied when a
+      * value is rendered, never a value that is stored. Declaring a new column
+      * nullable opts it into that, one column at a time, without touching the
+      * ones the rule exists to protect.
+      *
+      * @var bool
+      */
+     var $nullable = false;
+
+     /**
       * The encoding of the TABLE this column belongs to, when it differs from
       * the installation default.
       *
@@ -266,6 +286,21 @@ class DbColumn {
     function setTruncatable( $truncatable ) {
 
         $this->truncatable = (bool) $truncatable;
+    }
+
+    /**
+     * Let this column hold NULL rather than '' when its value is unset.
+     *
+     * For NEW columns only. Setting it on an existing text column changes what
+     * every future write stores and leaves the table holding both spellings of
+     * absence.
+     *
+     * @param bool $nullable
+     * @return void
+     */
+    function setNullable( $nullable = true ) {
+
+        $this->nullable = (bool) $nullable;
     }
 
     /**

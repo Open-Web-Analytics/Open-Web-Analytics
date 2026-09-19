@@ -276,17 +276,21 @@ final class AbsenceIsNullTest extends TestCase
         $this->assertTrue( $update->up(), 'and again' );
     }
 
-    /** It declares the schema version the module now requires. */
-    public function testTheUpdateDeclaresTheCurrentSchemaVersion(): void
+    /**
+     * It declares its own schema version, which is what makes it discoverable.
+     *
+     * This used to also assert that Module.php requires exactly 31, which was
+     * true only while Update031 was the newest one on disk -- so every later
+     * update broke a test about this one. The invariant it was reaching for
+     * ("required_schema_version must cover the highest update present, or
+     * Module::update() skips it and it never runs") belongs to no single
+     * update, and UpdateDiscoveryTest already asserts it against whatever the
+     * highest actually is.
+     */
+    public function testTheUpdateDeclaresItsSchemaVersion(): void
     {
         $update = new \OWA\Module\Base\Update\Update031;
 
         $this->assertSame( 31, $update->schema_version );
-
-        $module = (string) file_get_contents( OWA_DIR . 'modules/Base/Module.php' );
-
-        $this->assertStringContainsString( 'required_schema_version = 31', $module,
-            'the module has to require the version the update supplies, or it '
-            . 'never runs' );
     }
 }

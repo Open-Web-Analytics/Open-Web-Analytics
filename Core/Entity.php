@@ -752,9 +752,14 @@ class Entity {
         }
 
         // Character and binary: '' stayed '' under the old driver.
+        //
+        // Unless the column declares itself nullable, which only a column added
+        // after that driver can honestly do -- it has no rows from then to keep
+        // the shape of. Those store NULL for absence, which is the form v2 uses
+        // and the one the reporting layer already renders as "(not set)".
         if ( in_array( $type, $this->textColumnTypes(), true ) ) {
 
-            return '';
+            return ! empty( $this->properties[ $col ]->nullable ) ? null : '';
         }
 
         return $value;
