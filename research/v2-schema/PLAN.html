@@ -986,6 +986,24 @@ enrichment. Two passes over one partition, or a pass racing a rebuild, can doubl
 realtime reads raw, so <code>first_visit</code> and <code>session_start</code> would be invisible
 live despite being exactly the events people report on.</p>
 
+<p><strong>And it makes the expansion atomic, which is the real argument.</strong> All the rows
+one beacon becomes are written in a single handler, so they can be written in a single
+transaction. A <code>page_view</code> that landed without its <code>session_start</code>, or a
+<code>first_visit</code> without the page view it was raised from, is not something a later pass
+can repair &mdash; the flag was on the beacon that half-wrote, and re-reading raw would see the
+same partial state and reproduce it. The guarantee has to be made where the rows are created.</p>
+
+<p>1.x does not do this today: <code>Db::beginTransaction()</code> exists and every fact table is
+already InnoDB, but the only callers are the schema-update CLI &mdash; each <code>create()</code>
+in the ingest path stands alone. Nothing has depended on it while one beacon meant one row. Once
+one beacon means three, it is load-bearing.</p>
+
+<p>State the guarantee portably as <strong>one atomic write of everything a beacon becomes</strong>
+rather than as &ldquo;a transaction&rdquo;. On MySQL that is a transaction. ClickHouse has no
+general transactions, but a single multi-row <code>INSERT</code> lands as one part atomically,
+which satisfies the same requirement &mdash; so the guarantee ports even though the mechanism does
+not.</p>
+
 <p>Ingest-time expansion keeps each layer honest: <strong>raw is the event stream as the system
 understands it</strong> &mdash; every event that happened, expanded but not enriched &mdash; and
 <strong>the pass is a pure row-in/row-out enrichment</strong>, idempotent by construction because
