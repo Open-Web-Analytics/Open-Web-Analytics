@@ -905,38 +905,73 @@ class Template extends TemplateEngine {
         return \OWA\Core\CoreAPI::performAction($do, $final_params);
     }
 
+    /**
+     * A JS object literal, for embedding in a <script> block.
+     *
+     * Both callers do exactly that -- report.php assigns the result to
+     * OWA.items[...].properties, and report_widgets.php passes it to
+     * addLinkToColumn() -- and report.php's input is $view->params, which is
+     * URL-controlled.
+     *
+     * It used to be assembled by string concatenation and escaped with
+     * Sanitize::escapeForDisplay(), which is htmlentities(): an HTML escape
+     * applied to a JavaScript context. HTML escaping answers the wrong question
+     * here. It leaves a backslash untouched, and a backslash is precisely what a
+     * JS string literal treats as an escape, so the closing quote a value was
+     * meant to sit inside is not reliably the one that ends it.
+     *
+     * json_encode() is the right tool and needs no reasoning about which
+     * characters matter. The HEX flags additionally emit <, >, &, ' and " as
+     * \uXXXX, which is what makes the result safe to embed inline -- '</script>'
+     * inside a value cannot close the block.
+     *
+     * Three behaviours are preserved deliberately:
+     *
+     *   - values are strings, as they have always been. Letting json_encode
+     *     infer types would hand the JS a number or a bool where it has always
+     *     had a string.
+     *   - entities are decoded first. Some values are stored HTML-encoded, and
+     *     the true value is what the JS should receive; escapeForDisplay() did
+     *     this too, by decoding before re-encoding.
+     *   - FORCE_OBJECT, because one caller passes a list. (array) on its
+     *     valueColumns yields integer keys, which emitted `0: "x"` before and
+     *     must stay an object rather than becoming a JS array.
+     *
+     * One bug goes with it: an empty array used to return '}' on its own, since
+     * substr('{', 0, -2) is ''. It now returns '{}'.
+     */
     function makeJson($array) {
 
         $reserved_words = \OWA\Core\CoreAPI::getSetting('base', 'reserved_words');
 
-        $json = '{';
+        $properties = array();
 
-        foreach ($array as $k => $v) {
+        foreach ( (array) $array as $k => $v ) {
 
-            if (is_object($v)) {
-                if (method_exists($v, 'toString')) {
-                    $v = $v->toString();
-                } else {
-                    $v = '';
-                }
+            if ( is_object( $v ) ) {
 
+                $v = method_exists( $v, 'toString' ) ? $v->toString() : '';
             }
 
-            if (in_array($k, array_keys($reserved_words))) {
-                $k = $reserved_words[$k];
-            }
-            
-            $json .= sprintf('%s: "%s", ', $k, \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( $v ) ) ;
+            if ( is_array( $v ) ) {
 
+                // Stringified before this change too, via sprintf's %s. Kept
+                // rather than serialised, because a caller that has always been
+                // handed the word "Array" should not silently start receiving a
+                // structure.
+                $v = 'Array';
+            }
+
+            if ( array_key_exists( $k, (array) $reserved_words ) ) {
+
+                $k = $reserved_words[ $k ];
+            }
+
+            $properties[ $k ] = html_entity_decode( (string) $v, ENT_QUOTES );
         }
 
-
-        $json = substr($json, 0, -2);
-
-        $json .= '}';
-
-        return $json;
-
+        return json_encode( $properties,
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_FORCE_OBJECT );
     }
 
     function headerActions() {
