@@ -299,4 +299,30 @@ abstract class IngestionTestCase extends TestCase
         );
         return $row;
     }
+    /**
+     * A landing URL carrying campaign tags, built from the configured `ns`.
+     *
+     * The tracker no longer sends tagged_* -- it carries the landing URL and
+     * the server parses it -- so an ingestion test that fired tagged_* would be
+     * exercising a wire shape the tracker has stopped producing. The beacon
+     * contract guard in IngestionTestCase is what catches that, and it caught
+     * exactly this.
+     *
+     * The old shape is still accepted and still tested, in
+     * LandingUrlCampaignParseTest, which asserts a sent tagged_* beats the
+     * parse -- that is the compatibility path for cached trackers, and it does
+     * not belong in a contract-checked ingestion test.
+     */
+    protected function landingUrlWithTags(string $path, array $tags): string
+    {
+        $ns    = (string) owa_coreAPI::getSetting('base', 'ns');
+        $query = [];
+
+        foreach ($tags as $suffix => $value) {
+            $query[$ns . $suffix] = $value;
+        }
+
+        return $path . '?' . http_build_query($query);
+    }
+
 }

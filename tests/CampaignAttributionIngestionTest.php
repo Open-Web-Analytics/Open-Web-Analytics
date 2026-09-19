@@ -40,7 +40,7 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
     public function testPaidClickPopulatesAdDimension(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [
-            'page_url', 'tagged_campaign', 'tagged_source', 'tagged_medium',
+            'page_url', 'landing_url',
             'visitor_id', 'is_new_session', 'is_new_visitor',
         ]);
 
@@ -75,11 +75,13 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
             'visitor_id'      => $visitor_id,
             // The tracker sends the CLAIM lifted off the landing URL; the
             // server resolves each into the bare name below.
-            'tagged_campaign' => $campaign,
-            'tagged_source'   => $source,
-            'tagged_medium'   => 'cpc',
-            'tagged_ad'       => $ad,
-            'tagged_ad_type'  => $ad_type,
+            'landing_url'     => $this->landingUrlWithTags( $page_url, array(
+                'campaign' => $campaign,
+                'source'   => $source,
+                'medium'   => 'cpc',
+                'ad'       => $ad,
+                'ad_type'  => $ad_type,
+            ) ),
         ]);
         $this->assertNotFalse($result, 'paid-click page_request was dropped before persistence.');
 

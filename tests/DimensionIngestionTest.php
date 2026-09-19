@@ -147,7 +147,7 @@ final class DimensionIngestionTest extends IngestionTestCase
     public function testCampaignPageviewPopulatesCampaignSourceAndSearchDimensions(): void
     {
         $this->assertFieldsInContract('base.page_request.campaign', [
-            'page_url', 'tagged_campaign', 'tagged_source', 'tagged_medium', 'tagged_terms',
+            'page_url', 'landing_url',
             'visitor_id', 'is_new_session', 'is_new_visitor',
         ]);
 
@@ -183,10 +183,12 @@ final class DimensionIngestionTest extends IngestionTestCase
             'is_new_session'  => true,
             'is_new_visitor'  => true,
             'visitor_id'      => $visitor_id,
-            'tagged_campaign' => $campaign,
-            'tagged_source'   => $source,
-            'tagged_medium'   => 'email',
-            'tagged_terms'    => $search_term,
+            'landing_url'     => $this->landingUrlWithTags( $page_url, array(
+                'campaign'     => $campaign,
+                'source'       => $source,
+                'medium'       => 'email',
+                'search_terms' => $search_term,
+            ) ),
         ]);
         $this->assertNotFalse($result, 'campaign page_request was dropped before persistence.');
 

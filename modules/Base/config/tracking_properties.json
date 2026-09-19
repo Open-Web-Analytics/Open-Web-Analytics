@@ -197,6 +197,12 @@
             "callbacks": [],
             "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
         },
+        "landing_url": {
+            "required": false,
+            "data_type": "url",
+            "callbacks": [],
+            "note": "The URL the session landed on, carried for the whole session so the server can resolve campaign tags from it on every beacon -- not just the first, where page_url would do. Replaces the six tagged_* params the tracker used to parse and re-send. Carried rather than derived because raw is the realtime surface: a value only a later pass produces does not exist for a live query. See resolveSource/taggedValue."
+        },
         "tagged_source": {
             "required": false,
             "data_type": "string",
