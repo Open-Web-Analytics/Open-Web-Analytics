@@ -1036,6 +1036,54 @@ Those rows are in the same or later days, never earlier. <strong>So the blast ra
 how far the queue can reorder, not by retention</strong>, and the late-arrival window needs to
 exceed queue reorder latency rather than &ldquo;how late can an event conceivably be&rdquo;.</p>
 
+<h4>How the partition cycle actually runs</h4>
+
+<p>If a rebuild replaces a whole partition, the partition scheme decides the unit of work &mdash;
+so the rebuild window wants fine partitions and everything older wants coarse ones. That is a
+two-stage lead, three operations, and only one of them costs anything.</p>
+
+<table>
+<tr><th>when</th><th>operation</th><th>cost</th></tr>
+<tr><td>continuously, far ahead</td><td><code>REORGANIZE pmax INTO (monthly&hellip;, pmax)</code></td><td>metadata &mdash; <code>pmax</code> is empty</td></tr>
+<tr><td>shortly before a month goes current</td><td><code>REORGANIZE p2026MM INTO (&lt;fine partitions&gt;)</code></td><td>metadata &mdash; that month is still empty too</td></tr>
+<tr><td>after the month closes and its window expires</td><td><code>REORGANIZE &lt;fine&gt; INTO p2026MM</code></td><td><strong>rewrites the month, once</strong></td></tr>
+</table>
+
+<p><strong>The fine partitions are never carved from <code>pmax</code>.</strong> They are carved
+from an already-created, still-empty <em>monthly</em> partition shortly before it goes current, so
+the daily lead only has to cover the reorder window plus margin &mdash; days or weeks. The long
+lead stays monthly and stays far out, exactly as 1.x runs it today (demo's reaches 13 months).</p>
+
+<p><strong><code>pmax</code> must never receive a row.</strong> That is the load-bearing invariant,
+and everything else here is tuning. 1.x already depends on it without saying so: the cost of
+extending the lead is <em>&ldquo;proportional to what is sitting in the catch-all&rdquo;</em>
+&mdash; measured at 1.52s to create 31 partitions when it is empty. Let rows land there and the
+next carve stops being metadata and becomes a rewrite, while rows that belong in a dated partition
+sit in the catch-all instead.</p>
+
+<p><strong>One job, and merge before carve.</strong> These are separate <code>ALTER</code>
+statements &mdash; MySQL permits one partition operation per statement &mdash; but they belong in
+one run of one job under one lock, which is how <code>PartitionRotateCli</code> already works
+(extend, then a REORGANIZE per merge, then drops). Order matters for the high-water mark, because
+merge and carve move the count in opposite directions: merging first frees roughly a month of
+partitions before the carve consumes roughly a month, so a run peaks near its starting count
+rather than a month above it. It also fails better &mdash; a run that dies between the two leaves
+the table <em>below</em> where it started, never over budget.</p>
+
+<p><strong>The rebuild granularity is an open trade, and there is a middle rung already built.</strong>
+<code>PARTITION_CUTS</code> offers <code>monthly</code>, <code>half-month</code> and
+<code>quarter-month</code>; there is no <code>daily</code>, though adding one is a single entry
+and <code>cutsForMonth()</code> already clamps cuts past a short month's end, so February and leap
+years fall out correctly. Daily gives the smallest rebuild and the most partitions &mdash; two
+months of them transiently, since the next month must be carved before the current one's window
+expires. Quarter-month gives a week-sized rebuild, about four partitions a month, and no new
+granularity. Which is right depends on rebuild cost, and that is unmeasured.</p>
+
+<p><strong>One consequence to plan for: the rotation job becomes a dependency of ingest
+correctness</strong>, not housekeeping. Today a stalled rotation is untidy. Under this scheme the
+lead erodes, rows reach <code>pmax</code>, and the invariant breaks &mdash; so it wants an alarm
+rather than a log line. 1.x has had two scheduler-adjacent stalls already.</p>
+
 <h4>Consequences for decisions already taken</h4>
 <ul>
 <li><strong>&sect;1.10 says two storage layers.</strong> This makes it three. Raw plus
