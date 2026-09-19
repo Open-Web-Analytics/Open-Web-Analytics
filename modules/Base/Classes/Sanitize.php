@@ -426,15 +426,39 @@ class Sanitize {
         }
     }
 
+    /**
+     * Re-encode a JSON value, or reject it.
+     *
+     * json_decode() answers null for input that is not JSON at all, and
+     * json_encode(null) is the four-character string "null" -- so anything
+     * malformed used to be stored as if it were data, and a reader taking it at
+     * face value gets a string where it expected a structure.
+     *
+     * The literal input "null" is itself valid JSON and decodes to null, which
+     * is why the check is not simply "did this decode to null".
+     */
     public static function cleanJson( $json_string ) {
 
-        if ( $json_string) {
+        /*
+         * Absence tested explicitly, not by truthiness. '0' is valid JSON -- the
+         * number zero -- and is falsy in PHP, so a truthiness guard here rejects
+         * a legitimate document. The same trap as a dimension value of '0'.
+         */
+        if ( $json_string === null || $json_string === '' ) {
 
-            $json_array = json_decode( $json_string, true );
-            $json_string = json_encode( $json_array );
-
-            return $json_string;
+            return;
         }
+
+        $decoded = json_decode( $json_string, true );
+
+        if ( $decoded === null && strtolower( trim( (string) $json_string ) ) !== 'null' ) {
+
+            \OWA\Core\CoreAPI::debug( 'Discarding a value declared as JSON that does not parse.' );
+
+            return '';
+        }
+
+        return json_encode( $decoded );
     }
 }
 
