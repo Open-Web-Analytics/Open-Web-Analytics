@@ -1189,8 +1189,88 @@ class TrackingEventHelpers {
             }
         }
 
-         return $url;
+         return self::makeUrlStorageSafe( $url );
 
+    }
+
+    /**
+     * A canonical URL that is safe to store and to render.
+     *
+     * This method decodes HTML entities so that parse_url() sees the real URL,
+     * and its return value goes to the event untouched -- setTrackerProperties()
+     * only re-applies the declared type when a callback answers null. So
+     * whatever survives the decode is what reaches the column, and a value that
+     * arrived encoded comes back out raw.
+     *
+     * The answer is not to escape it. A URL is not HTML, and escaping it for one
+     * output context breaks it for the others -- it also has to survive as an
+     * href, in a CSV, and in a JSON response. What a URL HAS is a grammar, and
+     * the characters below cannot legally appear raw in one: a browser
+     * percent-encodes them before the request is ever made. So percent-encoding
+     * them is not a mangling, it is the URL written correctly, and the value
+     * stays inert in every context rather than in one.
+     *
+     * Existing percent-escapes are left alone -- '%' is not in the replacement
+     * set -- so %3C stays %3C instead of becoming %253C.
+     *
+     * The scheme is checked separately, because 'javascript:' and 'data:' carry
+     * no dangerous characters at all and no amount of encoding addresses them.
+     * A rejected URL is recorded as absent rather than stored, which is the
+     * honest record: we did not observe a page we can represent.
+     */
+    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
+
+    static function makeUrlStorageSafe( $url ) {
+
+        if ( $url === null || $url === '' ) {
+
+            return $url;
+        }
+
+        $url = (string) $url;
+
+        /*
+         * Control characters first, and before the scheme is read. Browsers
+         * strip tab, newline and carriage return from inside a scheme, so
+         * "java	script:" is javascript: to a browser while parse_url() sees
+         * something else entirely -- the check and the consumer have to agree
+         * about what the string is.
+         */
+        $url = preg_replace( '/[\x00-\x1F\x7F]/', '', $url );
+
+        /*
+         * The scheme is read off the string, not via parse_url().
+         *
+         * parse_url() applies the grammar, so anything it considers malformed
+         * yields NO scheme -- and a check that only fires when a scheme parses
+         * is skipped by exactly the inputs worth checking. Sanitising upstream
+         * turns "java\tscript:" into "java_script:", which parse_url() reports
+         * no scheme for at all; the guard then passes it through.
+         *
+         * Everything before the first ':' is the claimed scheme, provided no
+         * '/' comes first -- that condition is what keeps a relative URL, or a
+         * path containing a colon, from being read as one.
+         */
+        $colon = strpos( $url, ':' );
+        $slash = strpos( $url, '/' );
+
+        if ( $colon !== false && ( $slash === false || $colon < $slash ) ) {
+
+            $scheme = strtolower( substr( $url, 0, $colon ) );
+
+            if ( ! in_array( $scheme, self::STORABLE_URL_SCHEMES, true ) ) {
+
+                \OWA\Core\CoreAPI::debug(
+                    'Not recording a URL with the scheme: ' . $scheme );
+
+                return '';
+            }
+        }
+
+        return str_replace(
+            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
+            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
+            $url );
     }
 
     static function utfEncodeProperty( $string, $event ) {
