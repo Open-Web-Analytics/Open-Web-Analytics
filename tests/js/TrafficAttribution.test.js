@@ -234,3 +234,84 @@ describe('setTrafficAttribution: end to end', () => {
         expect(received).toBe(event);
     });
 });
+
+describe('the session referrer is recorded independently of the campaign', () => {
+
+    function withReferrer(value) {
+        Object.defineProperty(document, 'referrer', {
+            value: value, configurable: true
+        });
+    }
+
+    function storedReferer(t) {
+        return OWA.getState(t.storeName('s'), 'referer');
+    }
+
+    afterEach(() => { withReferrer(''); });
+
+    /*
+     * The regression. A landing page carrying campaign tags recorded NO
+     * referrer, because the write sat in the `else` of `if (isTrafficAttributed)`.
+     * That was right while the browser decided attribution -- campaign beat
+     * referrer -- but since #812 the server resolves, and it needs the referrer
+     * for owa_referer.url, is_searchengine and the referring-sites report. The
+     * server already decides precedence via tagged_*, so recording the referrer
+     * cannot override the campaign.
+     */
+    test('a campaign-tagged landing page still records its referrer', () => {
+
+        withReferrer('https://partner.example/post');
+        setUrl('/landing?owa_campaign=spring&owa_medium=email');
+
+        const t = newTracker();
+        t.isNewSessionFlag = true;
+
+        t.setTrafficAttribution({}, function () {});
+
+        expect(t.isTrafficAttributed).toBe(true);
+        expect(storedReferer(t)).toBe('https://partner.example/post');
+    });
+
+    test('an untagged landing page still records its referrer', () => {
+
+        withReferrer('https://news.example/article');
+        setUrl('/landing');
+
+        const t = newTracker();
+        t.isNewSessionFlag = true;
+
+        t.setTrafficAttribution({}, function () {});
+
+        expect(storedReferer(t)).toBe('https://news.example/article');
+    });
+
+    /*
+     * session_referer is declared `scope: 'session'`, and the rule for that
+     * scope is that the value must be IDENTICAL on every event sharing a
+     * session_id. Writing it again mid-session would make a session-scoped
+     * value vary within its own session -- the scope contract broken, not
+     * merely a wrong value. (It would also be wrong on its own terms: the
+     * browser reports one of this site's own pages as the referrer.)
+     */
+    test('a later page in the same session does not overwrite it', () => {
+
+        withReferrer('https://news.example/article');
+        setUrl('/landing');
+
+        const t = newTracker();
+        t.isNewSessionFlag = true;
+        t.setTrafficAttribution({}, function () {});
+
+        expect(storedReferer(t)).toBe('https://news.example/article');
+
+        // second page view: same session, and the browser now reports the
+        // previous page of this very site as the referrer.
+        withReferrer('https://cv.example/landing');
+        setUrl('/second');
+
+        t.isNewSessionFlag = false;
+        t.setTrafficAttribution({}, function () {});
+
+        expect(storedReferer(t)).toBe('https://news.example/article');
+    });
+});

@@ -2100,21 +2100,46 @@ class OWATracker  {
         }
 
         // if one of the attribution methods attributes the traffic them
-        // set attribution properties on the event object otherwise infer from the referer
         if ( this.isTrafficAttributed ) {
 
             OWA.debug( 'Attributed Traffic to: %s', JSON.stringify( campaign_params ) );
+        }
 
-        } else {
-            // infer the attribution from the referer
-            // if the request is the start of a new session
-            
-            if ( this.isNewSessionFlag === true ) {
-	            var ref = document.referrer;
-	            OWA.setState( this.storeName('s'), 'referer', ref );
-                OWA.debug( 'Infering traffic attribution.' );
-               
-            }
+        /*
+         * The session's referrer is recorded whether or not a campaign was
+         * attributed.
+         *
+         * This used to sit in an `else`, so a landing page carrying campaign
+         * tags recorded no referrer at all. That was right while the BROWSER
+         * decided attribution: campaign beat referrer, so the referrer was not
+         * part of the answer and dropping it lost nothing anyone read.
+         *
+         * Since #812 the server resolves instead, and it wants both for
+         * different jobs -- resolveSource()/resolveMedium() read the tagged_*
+         * params first and fall back to the referrer, while the referrer itself
+         * is what fills owa_referer.url, decides is_searchengine, and puts the
+         * session in the referring-sites report. The gate was a client-side
+         * arbitration with nothing left to arbitrate: the server already decides
+         * precedence, so recording the referrer cannot override the campaign.
+         *
+         * It bit hardest on the hit that mattered most. isTrafficAttributed is
+         * set only when a NEW campaign is seen, so the first hit of a campaign
+         * touch -- the one whose referrer identifies where the campaign was
+         * clicked -- was the one that lost it, while later hits on the same
+         * campaign fell through and recorded it.
+         *
+         * The new-session guard stays, and not merely because document.referrer
+         * on a later page is an internal URL. session_referer is DECLARED
+         * `scope: 'session'` on trackingProperties, and a session-scoped
+         * property must be identical on every event sharing a session_id --
+         * a divergence is a regression whatever causes it. Writing this key
+         * again mid-session would make a session-scoped value vary within its
+         * own session, which is the scope contract broken, not just a wrong
+         * value. It is written once and re-sent from session state thereafter.
+         */
+        if ( this.isNewSessionFlag === true ) {
+
+            OWA.setState( this.storeName('s'), 'referer', document.referrer );
         }
 
         // apply traffic attribution realted properties to events
