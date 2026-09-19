@@ -82,11 +82,11 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
      * mean storing a sentinel -- and a stored "(not set)" is exactly what
      * Update031 spent a migration removing.
      */
-    const UNPROCESSED = "COALESCE(v.first_session_source, '') = ''
-                     AND COALESCE(v.first_session_medium, '') = ''
-                     AND COALESCE(v.first_session_campaign, '') = ''
-                     AND COALESCE(v.first_session_ad, '') = ''
-                     AND COALESCE(v.first_session_search_terms, '') = ''";
+    const UNPROCESSED = 'v.first_session_source IS NULL
+                     AND v.first_session_medium IS NULL
+                     AND v.first_session_campaign IS NULL
+                     AND v.first_session_ad IS NULL
+                     AND v.first_session_search_terms IS NULL';
 
     /**
      * The legacy absence sentinel, mapped to NULL on the way in.
@@ -263,7 +263,7 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
         // bare would put two columns called `name` in the derived table and the
         // SET clause would reference whichever the optimiser felt like.
         $selects = array( sprintf(
-            "COALESCE(NULLIF(s.medium, %s), '') AS first_session_medium", self::SENTINEL_SQL ) );
+            "NULLIF(NULLIF(s.medium, %s), '') AS first_session_medium", self::SENTINEL_SQL ) );
         $sets    = array( 'v.first_session_medium = src.first_session_medium' );
         $joins   = '';
 
@@ -272,7 +272,7 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
             list( $table, $key, $value ) = $from;
 
             $alias     = 'd_' . $column;
-            $selects[] = sprintf( "COALESCE(NULLIF(%s.%s, %s), '') AS %s",
+            $selects[] = sprintf( "NULLIF(NULLIF(%s.%s, %s), '') AS %s",
                 $alias, $value, self::SENTINEL_SQL, $column );
             $sets[]    = sprintf( 'v.%s = src.%s', $column, $column );
             $joins    .= sprintf( ' LEFT JOIN %s %s ON %s.id = s.%s', $table, $alias, $alias, $key );

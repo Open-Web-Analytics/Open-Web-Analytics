@@ -96,17 +96,28 @@ class Visitor extends \OWA\Core\Entity {
          * owa_session already mixes the two this way -- source_id, campaign_id
          * and ad_id are keys, `medium` is a literal -- so this is the existing
          * pattern rather than a new one.
+         *
+         * Declared NULLABLE, which for a text column is an opt-in: Entity
+         * writes '' for an unset one by default, to keep the shape the pre-PDO
+         * driver gave columns that already existed. These did not exist then,
+         * so they take v2's form instead -- absence is NULL, and "(not set)" is
+         * a label applied when a value is rendered.
          */
         $this->properties['first_session_source'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_source']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_source']->setNullable();
         $this->properties['first_session_medium'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_medium']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_medium']->setNullable();
         $this->properties['first_session_campaign'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_campaign']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_campaign']->setNullable();
         $this->properties['first_session_ad'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_ad']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_ad']->setNullable();
         $this->properties['first_session_search_terms'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_search_terms']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_search_terms']->setNullable();
 
         //drop
         $num_prior_sessions =  new \OWA\Module\Base\Classes\DbColumn;

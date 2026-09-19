@@ -162,9 +162,9 @@ final class VisitorAcquisitionTest extends IngestionTestCase
         $row = $this->visitorRow((string) $visitorId);
 
         $this->assertNotFalse($row);
-        $this->assertSame('', (string) $row['first_session_source'],
+        $this->assertNull($row['first_session_source'],
             'the sentinel must not be copied into a new column');
-        $this->assertSame('', (string) $row['first_session_medium'],
+        $this->assertNull($row['first_session_medium'],
             'and the same for medium, which is copied straight off the session');
 
         $db->query(sprintf('DELETE FROM owa_visitor WHERE id = %d', $visitorId));
@@ -175,17 +175,18 @@ final class VisitorAcquisitionTest extends IngestionTestCase
     /**
      * Both write paths must spell absence the same way.
      *
-     * VisitorHandlers leaves an absent value unset and Entity::save() supplies
-     * '' for a declared string column that was never set; the backfill has no
-     * '' to copy and would naturally write NULL. One column holding both is the
-     * defect -- a GROUP BY draws two buckets that both mean unknown and both
-     * render as "(not set)" -- and it is not caught by either path's own tests,
-     * because each is self-consistent.
+     * Both spell it NULL, which is v2's form and needs an opt-in to get:
+     * Entity::writeValue() stores '' for an unset text column unless the
+     * column declares itself nullable, because columns that predate the PDO
+     * driver have to keep the shape it gave them. These five do not predate
+     * it, so they are declared nullable and absence is NULL throughout.
      *
-     * This asserts the convention directly: after a direct visit, with no
-     * campaign, ad or search terms anywhere, the columns hold '' and not NULL.
+     * Worth a test of its own because one column holding both spellings is
+     * invisible to either path's own tests -- each is self-consistent, and the
+     * damage only shows in a GROUP BY, as two buckets that mean the same thing
+     * and both render as "(not set)".
      */
-    public function testAbsenceIsSpelledConsistentlyByTheWritePath(): void
+    public function testAbsenceIsNullNotEmptyString(): void
     {
         $visitorId = (string) random_int(1000000000, 9999999999);
 
@@ -210,10 +211,9 @@ final class VisitorAcquisitionTest extends IngestionTestCase
         foreach (['first_session_source', 'first_session_campaign',
                   'first_session_ad', 'first_session_search_terms'] as $column) {
 
-            $this->assertNotNull($row[$column],
-                "$column must spell absence as '' -- the backfill writes '' too, and one "
+            $this->assertNull($row[$column],
+                "$column must spell absence as NULL -- the backfill writes NULL too, and one "
                 . 'column holding both NULL and empty draws two buckets that mean the same thing');
-            $this->assertSame('', (string) $row[$column]);
         }
 
         $this->assertSame('direct', $row['first_session_medium'],

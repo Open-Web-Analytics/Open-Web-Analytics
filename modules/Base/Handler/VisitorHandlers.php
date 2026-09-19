@@ -103,13 +103,13 @@ class VisitorHandlers extends \OWA\Core\Observer {
                      * would put the string back into a brand new column, which
                      * is what Update031 spent a migration removing elsewhere.
                      *
-                     * Skipping does NOT make the column NULL. Entity::save()
-                     * supplies '' for a declared string column that was never
-                     * set, and that is deliberate across the schema -- handlers
-                     * rely on set('medium', $maybeEmpty) leaving an existing
-                     * value alone. So '' is what absence looks like in these
-                     * five columns, and the backfill matches it rather than
-                     * writing NULL, because one spelling is the whole point.
+                     * Skipping leaves the column NULL because the Visitor
+                     * entity declares these five nullable. Without that opt-in
+                     * Entity::writeValue() would store '' -- the shape the
+                     * pre-PDO driver gave text columns, kept for the columns
+                     * that actually have rows from then. These do not, so they
+                     * take v2's form: absence is NULL, and "(not set)" is a
+                     * label applied at render time.
                      *
                      * `medium` defaults to 'direct', which is a real answer and
                      * not an absence, so none of this applies to it.
