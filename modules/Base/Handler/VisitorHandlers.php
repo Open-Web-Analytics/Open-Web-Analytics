@@ -61,6 +61,32 @@ class VisitorHandlers extends \OWA\Core\Observer {
                 $v->set('first_session_timestamp', $event->get('timestamp'));
                 $v->set('first_session_yyyymmdd', $event->get('yyyymmdd'));
 
+                /*
+                 * Acquisition, written once and only here.
+                 *
+                 * These are already on the event: session_referer arrives on
+                 * the wire and source/medium/campaign/ad/search_terms are
+                 * resolved from it during the tracking-property pass, long
+                 * before any handler runs. So the visitor's acquisition is the
+                 * session values of the request that created it -- no lookup,
+                 * no second event, and nothing new for the tracker to send.
+                 *
+                 * Set explicitly rather than left to setProperties() above,
+                 * which matches on column name and would not connect `source`
+                 * to `first_session_source`. The rename is deliberate: it says
+                 * which session these describe, and keeps them distinct from
+                 * the session-scoped columns of the same name on the fact row.
+                 *
+                 * Nothing writes them again. The else branch below is the
+                 * returning visitor and leaves the row alone, which is what
+                 * makes this first-touch rather than a sliding window.
+                 */
+                $v->set('first_session_source',       $event->get('source'));
+                $v->set('first_session_medium',       $event->get('medium'));
+                $v->set('first_session_campaign',     $event->get('campaign'));
+                $v->set('first_session_ad',           $event->get('ad'));
+                $v->set('first_session_search_terms', $event->get('search_terms'));
+
                 $ret = $v->save();
 
                 if ( $ret ) {

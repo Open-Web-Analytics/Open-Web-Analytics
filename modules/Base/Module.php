@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 31;
+        $this->required_schema_version = 32;
         return parent::__construct();
     }
 
@@ -192,6 +192,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
         $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
+        $this->registerAction( 'base.backfillVisitorAcquisitionCli', 'OWA\\Module\\Base\\Controller\\BackfillVisitorAcquisitionCli', 'Controller/BackfillVisitorAcquisitionCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
@@ -270,6 +271,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
         $this->registerCliCommand('rederive-dimension-ids', 'base.rederiveDimensionIdsCli');
+        $this->registerCliCommand('backfill-visitor-acquisition', 'base.backfillVisitorAcquisitionCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
@@ -1224,6 +1226,55 @@ class Module extends \OWA\Core\Module {
             'visitor',
             'A generic string used to store the email address of the visitor.'
         );
+
+        /*
+         * Acquisition -- how the visitor first arrived, as opposed to how this
+         * session did.
+         *
+         * Registered against base.visitor like userEmail, so a report joins the
+         * fact row to owa_visitor and reads the literal off it: ONE hop. The
+         * columns hold strings rather than dimension keys precisely so there is
+         * no second hop to owa_source_dim, which with an INNER join would be
+         * another way for a fact to disappear from a report.
+         *
+         * These are NOT the same as source/medium/campaign registered on the
+         * fact tables. Those answer "where did this session come from"; these
+         * answer "where did this person come from, ever", and they do not change
+         * when the visitor comes back through a different campaign. Both are
+         * worth having and combining them is the point -- revenue by acquisition
+         * source, conversions by first medium.
+         */
+        $visitor_acquisition = array(
+            array( 'acquisitionSource',      'first_session_source',
+                   'Acquisition Source',
+                   'The source that first brought this visitor to the site.' ),
+            array( 'acquisitionMedium',      'first_session_medium',
+                   'Acquisition Medium',
+                   'The medium that first brought this visitor to the site.' ),
+            array( 'acquisitionCampaign',    'first_session_campaign',
+                   'Acquisition Campaign',
+                   'The campaign that first brought this visitor to the site.' ),
+            array( 'acquisitionAd',          'first_session_ad',
+                   'Acquisition Ad',
+                   'The ad that first brought this visitor to the site.' ),
+            array( 'acquisitionSearchTerms', 'first_session_search_terms',
+                   'Acquisition Search Terms',
+                   'The search terms that first brought this visitor to the site.' ),
+        );
+
+        foreach ( $visitor_acquisition as $dimension ) {
+
+            list( $name, $column, $label, $description ) = $dimension;
+
+            $this->registerDimension(
+                $name,
+                'base.visitor',
+                $column,
+                $label,
+                'visitor',
+                $description
+            );
+        }
 
         $this->registerDimension(
             'isRepeatVisitor',
