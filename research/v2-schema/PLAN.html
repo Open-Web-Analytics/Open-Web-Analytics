@@ -125,6 +125,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s110">1.10 The tables</a>
   <a href="#s111">1.11 The API delta</a>
   <a href="#s112">1.12 Booleans</a>
+  <a href="#s113">1.13 Three storage layers</a>
   <a class="r-part" href="#p2">II · Additive in 1.x</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
@@ -874,6 +875,130 @@ do have an unknown state. Those want an explicit three-state type, not an accide
 time. Reporting currently cannot express a normalised column — the dimension registry prefixes a
 table alias onto whatever it is given, so <code>COALESCE(...)</code> is not expressible as a
 dimension today.</p>
+
+<h3 id="s113"><span class="num">1.13</span>Three storage layers: raw, denormalised, rollup <span class="chip c-open">Proposed</span></h3>
+
+<p><strong>The fact table stops being primary.</strong> Events land in a raw, append-only table
+exactly as they arrived. A pass reads that and writes a <em>denormalised</em> fact table with
+session- and user-scoped values materialised onto every row. The day rollup aggregates from
+there. Queries hit the denormalised table; the raw table is the record of what was observed.</p>
+
+<p>This began as an attempt to answer one narrow question &mdash; where does acquisition source
+live &mdash; and ended up dissolving most of it. The thing that makes it work is that a
+<em>derived</em> table can be rebuilt. You never <code>UPDATE</code> a fact row; you regenerate a
+partition. So <strong>no-retroactive-fact-updates survives intact</strong>, and it stops being a
+constraint that forces values onto the wire.</p>
+
+<p>What it resolves, and each of these was an open question before:</p>
+<ul>
+<li><strong>No keyed store at ingest.</strong> Acquisition source is the visitor&rsquo;s earliest
+raw event; session source is the session&rsquo;s first. Both derivable in bulk, so no visitor
+store and no session store, and ingest stays a pure append with no lookups.</li>
+<li><strong>ITP becomes irrelevant.</strong> Safari caps a JS-set cookie at 7 days, and at
+<em>24 hours</em> when the visitor arrives from a URL carrying <code>gclid</code> or
+<code>fbclid</code> &mdash; which is precisely the tagged arrival worth attributing. Any design
+that carries a long-lived attribution anchor client-side has that ceiling. Deriving from raw does
+not.</li>
+<li><strong>Columnar stores get what they want.</strong> Bulk load, partition replace, no
+row-level updates. The plan already says MySQL first with an eye to columnar later; this is the
+shape that survives the move rather than being rewritten for it.</li>
+<li><strong>The model becomes re-derivable.</strong> Change an attribution model or a lookback
+window, reprocess, replace the table. A verdict written at ingest cannot be revisited; evidence
+plus a pass can.</li>
+<li><strong>Identity stitching works.</strong> A <code>user_id</code> arriving mid-session
+relabels that visitor&rsquo;s earlier events on the next pass, which is impossible if the fact row
+is final at write.</li>
+<li><strong>Session finalisation has a home.</strong> Engagement time, exit page, bounce and
+duration are not knowable until the session closes, so they were never materialisable at insert
+by any mechanism.</li>
+</ul>
+
+<p><strong>Realtime is a query of the raw table</strong>, and that is why its dimension set is
+smaller rather than arbitrarily limited. Only what is <em>on the event</em> can be reported live.
+Checked against GA&rsquo;s Realtime API schema, whose entire dimension list is
+<code>appVersion</code>, <code>audienceId/Name/ResourceName</code>, <code>city</code>,
+<code>cityId</code>, <code>country</code>, <code>countryId</code>, <code>deviceCategory</code>,
+<code>eventName</code>, <code>minutesAgo</code>, <code>platform</code>, <code>streamId</code>,
+<code>streamName</code>, <code>unifiedScreenName</code> &mdash; every one derivable from the event
+itself, and <em>no traffic-source dimension at all</em>. The four metrics are
+<code>activeUsers</code>, <code>eventCount</code>, <code>keyEvents</code>,
+<code>screenPageViews</code>. Event-scoped <em>custom</em> dimensions are excluded, which reads as
+a cardinality limit rather than an access-path one.</p>
+
+<p><strong>OWA&rsquo;s realtime can be richer than GA&rsquo;s, for a reason already decided.</strong>
+GA carries no session-scoped values on the wire, so its session source is not raw-resident. OWA
+carries all of them &mdash; <code>session_id</code>, <code>session_referer</code>,
+<code>prior_session_id</code>, <code>is_new_visitor</code>, <code>psts</code>, <code>sts</code>,
+plus the <code>tagged_*</code> keys. So a raw-log realtime query gets event <em>and</em> session
+scope for free. Only user scope waits for the pass.</p>
+
+<h4>What to carry and what to derive</h4>
+
+<p>The rule is not &ldquo;carry what cannot be derived&rdquo;. That rule was tried and it is wrong:
+GA keeps first-seen and session count client-side &mdash; <code>_ga</code> is
+<code>GA1.1.&lt;random&gt;.&lt;first-seen&gt;</code> and the session cookie carries
+<code>$o&lt;session count&gt;</code> &mdash; and both are trivially derivable from history. The
+rule that actually explains the practice is about <em>what kind of thing</em> the value is.</p>
+
+<ul>
+<li><strong>Counters and anchors the client already maintains &mdash; carry them.</strong>
+<code>vid</code>, <code>sid</code>, session count, first-seen, last-hit. The client computed them
+for its own session decision, so sending them costs a few bytes and saves the server an expensive
+per-visitor ordered scan. Carrying is free denormalisation performed where the answer already
+exists, and the value is correct in raw immediately, with no pass.</li>
+<li><strong>Resolutions needing server-side data &mdash; derive them.</strong> Source and medium
+from the referrer and tags, geography from the address, device from the user agent. The client
+cannot know these without shipping OWA&rsquo;s tables to the browser.</li>
+<li><strong>Decisions and models &mdash; derive, never carry.</strong> This is the one that
+matters. <code>attribs</code> is not wrong to retire because it is reconstructible; it is wrong
+because it is a <em>verdict</em>. A model frozen in a cookie cannot be revisited when the model
+changes, which is the reason Universal Analytics collapsed <code>__utmz</code> into a single id
+cookie and processed server-side in the first place.</li>
+</ul>
+
+<p>By that rule <code>nps</code> and <code>fsts</code> stay &mdash; they are observations &mdash;
+and <code>attribs</code> goes, as already decided in the attribution notes.</p>
+
+<h4>Consequences for decisions already taken</h4>
+<ul>
+<li><strong>&sect;1.10 says two storage layers.</strong> This makes it three. Raw plus
+denormalised roughly doubles event storage before the rollup, recoverable by pruning raw &mdash;
+at the cost of re-derivability past that horizon, which is one of the main benefits.</li>
+<li><strong>&sect;1.6&rsquo;s two freshness tiers get a mechanism.</strong> Event-grain immediate
+is the raw table; everything attributed waits for the pass. The tier boundary is no longer a
+policy, it is where the data physically is.</li>
+<li><strong>A visitor rollup is not needed after all</strong>, but for a different reason than
+assumed. Not because acquisition source is cheap to look up &mdash; because it is derived in bulk
+rather than looked up at all.</li>
+</ul>
+
+<h4>Open</h4>
+<ul>
+<li><strong>Reprocess cadence.</strong> Sets the freshness users actually see. GA runs realtime,
+intraday and daily as three intervals; intraday refreshes repeatedly.</li>
+<li><strong>Late-arrival window.</strong> How far back each pass reaches, and what becomes of an
+event landing outside it.</li>
+<li><strong>Idempotency.</strong> A pass must be rerunnable with identical output. Same discipline
+as a schema update&rsquo;s <code>up()</code>.</li>
+<li><strong>Partition swap.</strong> Both tables on <code>yyyymmdd</code>; rebuild one partition
+and exchange it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>.</li>
+<li><strong>Raw retention</strong>, which trades storage against how far back the model can be
+re-derived.</li>
+<li><strong>Cost on a small install.</strong> Unmeasured. Demo is 326k sessions and
+peteradamsphoto 203k <em>in total</em>, not per day, so a pass over these volumes should be
+seconds &mdash; but it runs on an RDS instance shared with eight WordPress sites, and that is the
+constraint to measure against, not the row count.</li>
+</ul>
+
+<p class="part-note"><em>Evidence.</em> The GA behaviour cited here was observed rather than read:
+a local page loading the real <code>gtag.js</code>, driven headless, capturing cookies and
+<code>/g/collect</code> beacons. It showed <code>_fv=1</code> on the first visit and absent
+after; <code>dl</code> carrying raw UTM parameters with no parsed
+<code>cs</code>/<code>cm</code>/<code>cn</code> ever sent; a second pageview in the same session
+sending no campaign at all; and <code>_ga</code> unchanged across sessions while the session
+cookie&rsquo;s <code>s</code> rolled and <code>$o</code> incremented. Several secondary sources
+consulted first were wrong on these points, including on which cookie carries the
+<code>GS2</code> format.</p>
 
 <h2>Additive work in 1.x</h2>
   <p class="part-note">What ships now, reduces risk, and is inherited by v2 rather than redone.</p>
