@@ -1031,10 +1031,33 @@ them. Keyed off the flag, no other event can change the answer: the failure mode
 to invalidate because the flagged event <em>is</em> the beginning.</p>
 
 <p>What remains is only out-of-order arrival &mdash; a later event processed before the flagged
-one, because the queue retried with backoff or an unload beacon landed behind a subsequent hit.
-Those rows are in the same or later days, never earlier. <strong>So the blast radius is bounded by
-how far the queue can reorder, not by retention</strong>, and the late-arrival window needs to
-exceed queue reorder latency rather than &ldquo;how late can an event conceivably be&rdquo;.</p>
+one. Those rows are in the same or later days, never earlier, <strong>so the blast radius is
+bounded by how late an event can arrive, not by retention</strong>.</p>
+
+<p><strong>And that bound is smaller than an earlier draft of this section assumed, because it
+named the wrong queue.</strong> 1.x has two, and they are not the same mechanism:</p>
+<ul>
+<li><strong>The incoming queue is a file.</strong> Tracking events are written to disk and
+processed later. Every event goes through it when it is enabled, and what it costs the window is
+simply <em>drain cadence</em> &mdash; a configured number, not a thing to measure.</li>
+<li><strong>The DB queue (<code>owa_queue_item</code>) is a retry queue</strong>, and it is the one
+with unbounded tails. An event reaches it on <code>EVENT_FAILED</code>, and the case that actually
+puts it there is <strong>a session-update event that cannot find its session</strong> &mdash;
+<code>SessionHandlers</code> aborts with &ldquo;no existing session was found&rdquo;, and
+<code>SessionCommerceSummaryHandlers</code> with &ldquo;Session does not exist yet&rdquo;.</li>
+</ul>
+
+<p><strong>That entire class of failure does not exist in v2.</strong> There is no session row to
+look for: session-scoped values ride every event and the event table <em>is</em> the session-grain
+table (&sect;1.4). An event that would have been re-queued in 1.x is, in v2, just a row. So the
+retry queue&rsquo;s reorder behaviour describes a failure mode v2 deletes, and sizing the window
+against it would be sizing against the wrong thing &mdash; conservatively, but wrong, which is
+worse than it sounds when the number sets the whole rebuild cadence.</p>
+
+<p>What is left to bound is therefore <strong>drain cadence plus client-side lateness</strong>: an
+unload beacon that landed behind a subsequent hit, a retry from the browser, a tab restored from
+bfcache, a device that was offline. None of that is visible in any server queue, which is the part
+that still needs a number.</p>
 
 <h4>How the denormalise pass actually works</h4>
 
@@ -1586,10 +1609,14 @@ scanning. Retention is therefore cheap on both; what is expensive on both is upd
 is what this design avoids.</li>
 <li><strong>Raw retention</strong>, which trades storage against how far back the model can be
 re-derived.</li>
-<li><strong>Worst-case queue reorder latency</strong>, which sets the late-arrival window and
-therefore the whole cadence. Measure <em>drain after a stall</em>, not steady state: 1.x has had
-two stalls that held events for a long time &mdash; the notify poison-pill and the legacy-class
-decode failure &mdash; and those are the cases the window has to survive.</li>
+<li><strong>Worst-case client-side lateness</strong>, which sets the late-arrival window and
+therefore the whole cadence. <em>Revised:</em> this was written as &ldquo;queue reorder
+latency&rdquo;, to be measured as a drain after a stall, citing 1.x's two long stalls &mdash; the
+notify poison-pill and the legacy-class decode failure. Both were <code>owa_queue_item</code>
+stalls, and that queue only ever holds retries of events whose session could not be found, which
+v2 has no equivalent of. The unbounded tail those incidents represent is v1-only. What remains is
+the file queue's drain cadence, which is configured rather than measured, and lateness originating
+at the client, which is not visible server-side and is the genuinely open number.</li>
 <li><strong>Cost on a small install.</strong> Unmeasured. Demo is 326k sessions and
 peteradamsphoto 203k <em>in total</em>, not per day, so a pass over these volumes should be
 seconds &mdash; but it runs on an RDS instance shared with eight WordPress sites, and that is the
