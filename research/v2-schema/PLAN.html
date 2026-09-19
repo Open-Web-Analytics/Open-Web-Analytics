@@ -1054,6 +1054,25 @@ from an already-created, still-empty <em>monthly</em> partition shortly before i
 the daily lead only has to cover the reorder window plus margin &mdash; days or weeks. The long
 lead stays monthly and stays far out, exactly as 1.x runs it today (demo's reaches 13 months).</p>
 
+<p><strong>That split is forced, not stylistic: the lead is filled at the table's own
+granularity.</strong> 1.x keeps <code>PARTITION_MONTHS_AHEAD</code> (12) whole future months
+ahead, and <code>extendPartitions()</code> fills to that boundary at whatever granularity the
+table already uses &mdash; the number of months is fixed, the number of partitions is not. A
+table taken wholly to quarter-month therefore carries ~48 partitions of lead rather than 12,
+against a <code>PARTITION_COUNT_LIMIT</code> of 400 whose own docblock notes that quarter-month
+over a decade reaches 480. Making the whole table fine-grained to get a fine-grained rebuild
+window would spend the partition budget on empty future months. The two-stage lead spends it
+only where the rebuild actually happens.</p>
+
+<p><strong>Do not confuse that lead with the detail window.</strong> Three separate month-counts
+govern partitioning in 1.x and only one of them is about granularity:
+<code>PARTITION_CUTS</code> is the granularity itself and is not a month count at all;
+<code>PARTITION_DETAIL_MONTHS</code> (36, and already cited below) is how long a period keeps
+that granularity before compaction may merge it into year blocks;
+<code>PARTITION_MONTHS_AHEAD</code> (12) is the lead. Granularity is never a stored setting
+&mdash; it is inferred per table from the existing layout, defaults to monthly, and only
+<code>partition-reorganize</code> changes it, which is the seam a two-stage scheme has to extend.</p>
+
 <p><strong><code>pmax</code> must never receive a row.</strong> That is the load-bearing invariant,
 and everything else here is tuning. 1.x already depends on it without saying so: the cost of
 extending the lead is <em>&ldquo;proportional to what is sitting in the catch-all&rdquo;</em>
