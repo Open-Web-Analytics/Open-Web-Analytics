@@ -980,8 +980,27 @@ intraday and daily as three intervals; intraday refreshes repeatedly.</li>
 event landing outside it.</li>
 <li><strong>Idempotency.</strong> A pass must be rerunnable with identical output. Same discipline
 as a schema update&rsquo;s <code>up()</code>.</li>
-<li><strong>Partition swap.</strong> Both tables on <code>yyyymmdd</code>; rebuild one partition
-and exchange it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>.</li>
+<li><strong>Partition swap</strong>, and it ports. Both tables on <code>yyyymmdd</code>;
+rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>;
+ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is
+<em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's,
+not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by
+arbitrary predicate, with no requirement that the table be partitioned on those columns.
+(Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were
+not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar
+boundary &mdash; it is the native idiom on the other side.
+<br><strong>The portable constraint is structural match.</strong> Both MySQL and ClickHouse
+require the staging table to mirror the target &mdash; same structure, partition key, ordering
+and primary key &mdash; so staging carries no convenience columns and a schema change must alter
+both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the
+denormalised table would not have.
+<br><strong>Dropping is free; reorganising is not.</strong> 1.x already relies on this in
+production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all:
+<code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or
+merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only
+more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than
+scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which
+is what this design avoids.</li>
 <li><strong>Raw retention</strong>, which trades storage against how far back the model can be
 re-derived.</li>
 <li><strong>Cost on a small install.</strong> Unmeasured. Demo is 326k sessions and
