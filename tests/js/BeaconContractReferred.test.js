@@ -85,7 +85,7 @@ describe('tracker referred pageview beacon contracts', () => {
     });
 
     test('campaign (owa_* URL params) emits its contracted property set', () => {
-        // Campaign params present -> campaign attribution -> no session_referer.
+        // Campaign params present: the beacon carries the tags AND the referrer.
         window.history.replaceState(
             {}, '',
             '/p?owa_campaign=summer&owa_source=news&owa_medium=email&owa_search_terms=blue widgets'
@@ -95,12 +95,19 @@ describe('tracker referred pageview beacon contracts', () => {
         const expected = CONTRACTS['base.page_request.campaign'];
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
-        // Campaign attribution suppresses referrer inference.
         // The tracker reports the CLAIM the landing URL carried; the server
         // resolves campaign/source/search_terms from it.
         expect(actual).toContain('tagged_campaign');
         expect(actual).toContain('tagged_source');
         expect(actual).toContain('tagged_terms');
-        expect(actual).not.toContain('session_referer');
+
+        // ...and the referrer alongside it. This asserted `not.toContain`
+        // until the campaign gate was removed: attribution used to suppress
+        // referrer inference, which was right while the BROWSER picked a
+        // winner between them. The server picks now -- tagged_* first, then
+        // the referrer -- and it needs the referrer in its own right for
+        // owa_referer.url, is_searchengine and the referring-sites report.
+        // So the two are no longer mutually exclusive.
+        expect(actual).toContain('session_referer');
     });
 });
