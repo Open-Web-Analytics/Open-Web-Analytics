@@ -1220,8 +1220,32 @@ months ago exist in the table and never return. Repeat visits plainly work at sh
 margin; it is recognition decaying to nothing well before the window closes. The cause is the same
 browser cookie physics that set the window: Chrome&rsquo;s 400-day cap, Safari&rsquo;s seven days,
 and people changing device or clearing state. <strong>The theoretical hole is closed by the same
-mechanism that produced the TTL</strong>, which is why GA can bound user retention at fourteen
-months and lose nothing it could have identified anyway.</p>
+mechanism that produced the TTL.</strong></p>
+
+<p><strong>GA is worth being precise about here, because its fourteen months do not bind the way
+the number suggests.</strong> With &ldquo;reset user data on new activity&rdquo; the window slides
+on every event, so a user who returns at least once inside it <em>never</em> expires &mdash; and
+first-user attribution rides with the identity rather than being stored beside it. Someone acquired
+via organic search stays organic on the first-user dimensions forever, unchanged by any later
+campaign, for exactly as long as the identity survives. What ends it is documented as the identity
+being lost &mdash; cookie expiry, a new device, Safari&rsquo;s caps &mdash; not the retention
+setting.</p>
+
+<p>Two things follow, pulling in opposite directions, and both are worth stating.
+<strong>GA must therefore hold acquisition on a user record and cannot be deriving it from its own
+retained events</strong>, since those live 2 or 14 months while attribution persists indefinitely
+for an active user. The store described above is real and GA has one. But <strong>GA has it because
+GA supports the case, and our own data says the case barely occurs</strong>: with Chrome capping any
+first-party cookie at 400 days, even GA&rsquo;s &ldquo;forever&rdquo; is about thirteen months in
+the dominant browser, which is where the TTL landed anyway. The architecture differs; the reachable
+outcome does not, by much.</p>
+
+<p><strong>The honest qualification on the 0.172%.</strong> Those are not 0.172% of randomly chosen
+visitors &mdash; they are, by construction, the most persistently engaged cohort on the site, the
+people who come back over years. Dropping acquisition for exactly them is a worse loss than the
+share implies, and anyone weighing this should weigh it as &ldquo;the loyal returning segment&rdquo;
+rather than as a rounding error. It does not change the recommendation; it changes how confident to
+be about it.</p>
 
 <p>So the argument that the table is <em>required</em> does not survive. What survives is narrower
 and is a choice rather than a necessity:</p>
