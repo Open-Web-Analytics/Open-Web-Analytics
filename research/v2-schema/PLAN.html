@@ -1405,6 +1405,38 @@ the partition cycle above makes from the other direction. Two cadences fall out:
 the current partition setting the attributed-freshness tier, and a less frequent run over the rest
 of the late-arrival window, which is where a late <code>first_visit</code> actually gets picked up.</p>
 
+<p><strong>Sub-hourly is already expressible, and the pass already qualifies to run that way.</strong>
+<code>Core\Cron</code> supports step syntax, so <code>*/15 * * * *</code> parses and describes
+itself as &ldquo;every 15 minutes&rdquo;; the crontab line is a one-minute resolution floor rather
+than the schedule, so anything down to a minute is available. No new mechanism.</p>
+
+<p>The constraint that matters is the one <code>Core\Cron</code> states in its own header:
+<strong>a scheduled job must be CONVERGENT, not incremental.</strong> The due test is
+level-triggered and does not backfill &mdash; a job missed for three days runs once at the next
+tick, not once per missed occurrence &mdash; so anything that processes &ldquo;the next unit of
+work&rdquo; loses data across a gap. <strong>The pass passes that test by construction</strong>:
+it rebuilds a whole partition from raw and swaps, so one run after an outage leaves exactly the
+state twenty runs would have. That is the same property the swap-as-commit design already
+provides, and it is worth naming here because the rule is enforced by convention rather than by
+code, and a pass written to enrich only what it had not enriched yet would violate it while
+looking correct.</p>
+
+<p>Two behaviours of the shipped scheduler are worth knowing before picking an interval. The
+per-job lock means <strong>a run that outlasts its interval does not pile up</strong> &mdash; the
+next tick finds the lock held, logs that the job is already running, and skips; the job simply
+runs less often than asked, which is the right failure. And
+<code>ScheduleRunCli::MAX_RUNTIME</code> (240s) is a budget checked <em>before</em> a job starts
+and never mid-job, so a long pass is never interrupted part-way; it only delays whatever else was
+due on that tick.</p>
+
+<p><strong>The interval and the partition granularity are one decision, not two.</strong> Each run
+rebuilds however much of the current partition exists, so at <code>*/15</code> that is 96 rebuilds
+a day, and on a monthly partition the last of them rewrites a month. On a daily partition it
+rewrites at most a day, and the cost is flat across the month instead of climbing through it. A
+sub-hourly cadence is affordable on daily partitions and not really affordable on anything
+coarser &mdash; which is why <code>daily</code> was added to <code>PARTITION_CUTS</code> in 1.x
+(PR&nbsp;#1113) rather than left as a v2-only idea.</p>
+
 <p><strong>What is still unsettled here:</strong> whether the rebuild set is the whole window every
 time (simple, no change tracking, and the only thing that is provably correct given a late flagged
 event) or something narrower; and that partitioning on <code>yyyymmdd</code> alone means one
