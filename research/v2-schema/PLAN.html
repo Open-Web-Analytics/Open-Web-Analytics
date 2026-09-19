@@ -1193,6 +1193,68 @@ partition is a no-op and idempotency survives intact. Worth stating plainly, bec
 &ldquo;never update the visitor row&rdquo; is the kind of rule that gets enforced literally by
 someone who was not in this conversation.</p>
 
+<p class="note"><strong>Correction, and it substantially demotes the table.</strong> If a visitor
+expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
+acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
+inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
+years ago and has returned every month has never expired, and their <code>first_visit</code> event
+is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
+
+<p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
+the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
+
+<table>
+<tr><th>lifespan</th><th>visitors</th><th>share</th></tr>
+<tr><td>&le; 1 month</td><td class="n">179,422</td><td class="n">98.837%</td></tr>
+<tr><td>1&ndash;6 months</td><td class="n">1,434</td><td class="n">0.790%</td></tr>
+<tr><td>6&ndash;13 months</td><td class="n">365</td><td class="n">0.201%</td></tr>
+<tr><td><strong>13&ndash;26 months</strong></td><td class="n">192</td><td class="n">0.106%</td></tr>
+<tr><td><strong>over 26 months</strong></td><td class="n">121</td><td class="n">0.067%</td></tr>
+</table>
+
+<p><strong>0.172% of visitors have an active life longer than thirteen months.</strong> Among the
+6,761 visitors active in the last 90 days, the oldest first visit is 2025-10-24 &mdash; under a
+year, with none at all over thirteen months, while 171,642 visitors first seen more than thirteen
+months ago exist in the table and never return. Repeat visits plainly work at short range
+(120,356 visitors have exactly one prior session), so this is not broken recognition at the
+margin; it is recognition decaying to nothing well before the window closes. The cause is the same
+browser cookie physics that set the window: Chrome&rsquo;s 400-day cap, Safari&rsquo;s seven days,
+and people changing device or clearing state. <strong>The theoretical hole is closed by the same
+mechanism that produced the TTL</strong>, which is why GA can bound user retention at fourteen
+months and lose nothing it could have identified anyway.</p>
+
+<p>So the argument that the table is <em>required</em> does not survive. What survives is narrower
+and is a choice rather than a necessity:</p>
+<ul>
+<li><strong>It decouples raw retention from attribution reach, and that is now the whole case.</strong>
+Without it, raw retention <em>is</em> the attribution window: raw cannot be pruned sooner than
+thirteen months without silently losing acquisition, so &sect;1.13&rsquo;s own mitigation for the
+storage doubling &mdash; &ldquo;recoverable by pruning raw&rdquo; &mdash; is locked out for that
+whole period. With it, raw could be pruned at 30 or 90 days while attribution still reaches
+thirteen months. Whether that is worth a table depends entirely on how aggressively raw wants
+pruning, which is unmeasured.</li>
+<li><strong>A site with logins breaks the measurement.</strong> &sect;1.5 makes cross-device
+identity depend on a site-supplied <code>user_id</code>, and a <code>user_id</code> outlives any
+cookie. peteradamsphoto has no logins, so its 0.172% is a floor for that class of site and says
+nothing about one where people sign in. Stitching also needs the old events to still exist to be
+relabelled, so it fails the same way and for the same reason.</li>
+<li><strong>Under a TTL the table is small enough that cost is not the argument either way.</strong>
+It holds active visitors, not all visitors ever: 6,761 against 445,055 request rows here, about
+1.5%. Cheap &mdash; but cheap is not the same as needed.</li>
+</ul>
+
+<p><strong>Revised position: build v2 with no visitor table, and retain raw for the attribution
+window.</strong> Add the table later if raw retention is to be shortened below it &mdash; at which
+point it is a derived cache rebuildable from raw rather than a source of truth, which is a much
+weaker thing to own. The pass keeps the same shape either way; only the lookup target changes.</p>
+
+<p><strong>One rule holds whichever way this goes.</strong> When a visitor&rsquo;s
+<code>first_visit</code> is outside whatever window is in force, acquisition must resolve to NULL
+&mdash; never to their earliest <em>retained</em> event. That fallback looks harmless and is not:
+the answer would change every time the window slid forward, which is precisely the
+wrong-then-corrected failure that keying acquisition off the flag exists to prevent. Absent is a
+fact about the data; a drifting value is a defect.</p>
+
 <p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
 safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
 same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
