@@ -1078,7 +1078,7 @@ the pass has to reach; that cut decides <em>whether it reaches at all</em>.</p>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon, which GA does not</td></tr>
 <tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
-<tr><td>session</td><td>landing page</td><td><strong>derived in the PASS</strong> &mdash; needs the session&rsquo;s first event, which no later beacon carries</td></tr>
+<tr><td>session</td><td>landing page / <code>landing_url</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
 </table>
@@ -1549,7 +1549,8 @@ has no traffic-source dimension at all. Three positions, then, and the middle on
 <table>
 <tr><th></th><th>wire</th><th>realtime</th><th>re-derivable</th></tr>
 <tr><td>OWA today</td><td>6 <code>tagged_*</code> per beacon</td><td>has session source</td><td><strong>no</strong> &mdash; parsed once, in a browser</td></tr>
-<tr><td><strong>Decided</strong></td><td><strong>1 landing URL per beacon</strong></td><td>has session source</td><td><strong>yes</strong></td></tr>
+<tr><td><strong>Decided &mdash; v1</strong></td><td><strong>1 landing URL per beacon</strong></td><td>has session source</td><td><strong>yes</strong></td></tr>
+<tr><td><strong>Decided &mdash; v2</strong></td><td><strong>landing beacon only</strong> (the pass stamps the rest)</td><td>referer, not campaign</td><td><strong>yes, and past raw retention</strong></td></tr>
 <tr><td>GA's way</td><td>nothing</td><td><strong>no traffic source</strong></td><td>yes</td></tr>
 </table>
 
@@ -1560,22 +1561,42 @@ belongs with the tables it reads; <code>attribs</code> and its <code>c</code> co
 campaign keys, applies retroactively on reprocess instead of being frozen in whatever a browser
 decided months ago.</p>
 
-<p><strong>And it removes a cross-partition read from the pass, which corrects something written
-above.</strong> The scope table says landing page is &ldquo;derived in the PASS &mdash; needs the
-session&rsquo;s first event, which no later beacon carries&rdquo;. Once the landing URL is carried,
-every beacon carries it. Session source and landing page both become derivable from a row
-<em>in isolation</em>, so rebuilding a partition needs no read outside itself for session scope
-&mdash; including for a session that began in the previous partition. <strong>Session
-finalisation is then the only genuinely cross-partition derivation left</strong>, which is a much
-smaller residue than &sect;1.13 otherwise assumes, and it is the one with a natural answer already
-(terminal values stay NULL until the session closes).</p>
+<p><strong>In v1 the tracker carries it on every beacon; in v2 it does not.</strong> The
+difference is that v1 has no pass. Its server is told or it cannot stamp the fact row, so the
+landing URL has to ride the session store and go out with every request. v2 has somewhere to put
+the work: <strong>the pass stamps <code>landing_url</code> onto every denormalised row</strong>, so
+the wire only needs it once, on the landing beacon, where <code>page_url</code> already is it. The
+tracker cookie loses the key entirely.</p>
 
-<p>Worth being precise about why carrying beats deriving here, since the pass could derive session
-source from the session&rsquo;s first event within the partition. <strong>Raw is the realtime
-surface.</strong> A value only the pass produces does not exist for a live query, so deriving it
-would hand back exactly the limitation GA lives with. Carrying the evidence keeps raw
-self-sufficient for event and session scope, and leaves only user scope waiting on the pass &mdash;
-which is the split &sect;1.13 opened with.</p>
+<p><strong>And it stays a column on the denormalised row, not just an input the pass consumes.</strong>
+Two reasons, and the second is the one that matters.</p>
+<ul>
+<li>&sect;1.4 already requires it. &ldquo;Sessions by landing page&rdquo; at 215&nbsp;ms against
+3.1&nbsp;s as a first-event join is the measurement that removed the session table, and the scope
+table above already lists landing page as session-scoped and stamped on every row. Keeping the URL
+rather than a stripped path costs one column.</li>
+<li><strong>It decouples re-derivability from raw retention.</strong> If the denormalised rows keep
+only the resolved source, medium and campaign, then the moment raw is pruned those answers are
+final &mdash; there is no evidence left to re-read. Keeping the landing URL on the row means the
+evidence outlives raw, and a parser fix or an <code>ns</code> change can be reapplied to years of
+history. That is exactly the argument that justified the visitor table, one layer down.</li>
+</ul>
+
+<p class="note"><strong>Correction.</strong> This section previously argued that carrying the URL on
+every beacon <em>removes</em> a cross-partition read, and called that a strengthening. It does, and
+it is the wrong trade. Stamping in the pass accepts that read and takes the cookie shrink instead
+&mdash; and the read is not a new class of problem, because <strong>session finalisation already
+needs exactly the same thing</strong>: the session's other events, which for a session spanning
+midnight are in the previous partition. One mechanism serves both. What the earlier version bought
+was wire bytes on every beacon for the life of every session, spent to avoid a read the pass has to
+do anyway.</p>
+
+<p><strong>The honest cost is realtime, and it is narrower than it first looks.</strong> A raw row
+from later in the session will not carry the landing URL, so a live query cannot resolve session
+<em>campaign</em> for it. It still carries <code>session_referer</code>, so referring host, and
+referral against organic-search, still work live. Narrower than losing session source altogether,
+and still ahead of GA, whose Realtime API has neither. The claim above that OWA's realtime is
+richer than GA's survives; it is just richer by referer rather than by campaign.</p>
 
 <h4>How the partition cycle actually runs</h4>
 
