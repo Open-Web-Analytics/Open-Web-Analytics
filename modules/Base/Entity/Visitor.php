@@ -59,22 +59,10 @@ class Visitor extends \OWA\Core\Entity {
         $this->properties['first_session_month']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['first_session_day'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_day']->setDataType(OWA_DTD_INT);
-        $this->properties['first_session_dayofyear'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['first_session_dayofyear']->setDataType(OWA_DTD_INT);
         $this->properties['first_session_timestamp'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_timestamp']->setDataType(OWA_DTD_BIGINT);
         $this->properties['first_session_yyyymmdd'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['first_session_yyyymmdd']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['last_session_id'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['last_session_id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['last_session_year'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['last_session_year']->setDataType(OWA_DTD_INT);
-        $this->properties['last_session_month'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['last_session_month']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['last_session_day'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['last_session_day']->setDataType(OWA_DTD_INT);
-        $this->properties['last_session_dayofyear'] = new \OWA\Module\Base\Classes\DbColumn;
-        $this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
 
         /*
          * Acquisition -- the traffic source of the visitor's FIRST session,
