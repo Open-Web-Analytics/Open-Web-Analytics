@@ -156,25 +156,46 @@ final class TaggedAttributionTest extends TestCase
         $this->assertSame( 'cpc',        Helpers::resolveAdType( null, $event ) );
     }
 
-    public function testTheAnswersAreResolvedBeforeTheDimensionIdsThatReadThem(): void
+    /**
+     * No dimension id is derived in the property pipeline at all.
+     *
+     * This replaces an ordering assertion. campaign_id, ad_id, source_id and
+     * referring_search_term_id used to be registered properties that picked
+     * their value up by alternative_key, so the config had to resolve the
+     * ANSWER before the id that hashed it -- register them the other way round
+     * and an untagged visit hashed nothing and the dimension was silently wrong
+     * rather than absent.
+     *
+     * Derivation now happens when a row is written, from content, by the
+     * dimension that owns it. The ordering constraint is not satisfied, it is
+     * gone: there is no longer anything in the pipeline whose order could be
+     * wrong. Asserting the absence is what keeps it gone, since re-adding one of
+     * these entries would silently reinstate the hazard.
+     */
+    public function testNoDimensionIdIsDerivedInThePipeline(): void
     {
-        /*
-         * campaign_id, ad_id, source_id and referring_search_term_id pick their
-         * value up by alternative_key. If the answers were registered after
-         * them the ids would hash whatever was on the event first -- nothing,
-         * on an untagged visit -- and the dimension would be silently wrong
-         * rather than absent.
-         */
-        $order = array_flip( array_keys( Helpers::serverProperties() ) );
+        $config = json_decode(
+            (string) file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
 
-        foreach ( array( 'campaign_id'  => 'campaign',
-                         'ad_id'        => 'ad',
-                         'source_id'    => 'source',
-                         'referring_search_term_id' => 'search_terms' ) as $id => $answer ) {
-
-            $this->assertLessThan(
-                $order[ $id ], $order[ $answer ],
-                "$answer must be resolved before $id hashes it." );
+        $registered = array();
+        foreach ( (array) $config as $scope => $properties ) {
+            $registered = array_merge( $registered, array_keys( (array) $properties ) );
         }
+
+        foreach ( array( 'location_id', 'source_id', 'host_id', 'ua_id', 'os_id',
+                         'referer_id', 'document_id', 'ad_id', 'campaign_id',
+                         'referring_search_term_id' ) as $id ) {
+
+            $this->assertNotContains( $id, $registered,
+                "$id is derived in the pipeline again; it belongs to its dimension" );
+        }
+
+        $this->assertFalse(
+            method_exists( '\OWA\Module\Base\Classes\TrackingEventHelpers', 'generateDimensionId' ),
+            'generateDimensionId() is back' );
+
+        $this->assertFalse(
+            method_exists( '\OWA\Module\Base\Classes\TrackingEventHelpers', 'generateLocationId' ),
+            'generateLocationId() is back' );
     }
 }

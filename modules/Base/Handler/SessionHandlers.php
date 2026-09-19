@@ -130,7 +130,7 @@ class SessionHandlers extends \OWA\Core\Observer {
                 $s->set( 'latest_attributions' , $event->get( 'attribs' ) );
 
                 // Make document ids
-                $s->set('first_page_id', \OWA\Core\Lib::setStringGuid($event->get('page_url')));
+                $s->set('first_page_id', \OWA\Module\Base\Entity\Document::deriveId( $event->getProperties() ));
 
                 $s->set('last_page_id', $s->get('first_page_id'));
 
@@ -146,7 +146,22 @@ class SessionHandlers extends \OWA\Core\Observer {
                 $ret = $s->create();
 
                 // create event message
+                /*
+                 * The session's own properties go downstream, minus its derived
+                 * dimension keys.
+                 *
+                 * Those keys used to ride along, and a handler reading one off
+                 * the event was consuming a derivation second-hand instead of
+                 * making it -- the shape of the over-hashing defect, and the
+                 * reason a key could be built from content the event no longer
+                 * carried. Downstream derives from content like everything else.
+                 */
                 $session = $s->_getProperties();
+
+                foreach ( $s->contentDerivedKeys() as $derived ) {
+                    unset( $session[ $derived ] );
+                }
+
                 $properties = array_merge($event->getProperties(), $session);
                 $properties['request_id'] = $event->get('guid');
                 $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
@@ -242,8 +257,30 @@ class SessionHandlers extends \OWA\Core\Observer {
                 // update timestamp of latest request that triggered the session update
                 $s->set( 'last_req', $event->get( 'timestamp' ) );
 
+                /*
+                 * Derived from content, not read off the event.
+                 *
+                 * This is the session UPDATE path, so these are the only writes
+                 * that re-attribute an existing session -- they cannot simply be
+                 * dropped in favour of setProperties(), which runs on creation
+                 * only.
+                 *
+                 * Each guard keeps the effect it had. source is an "unknown"
+                 * dimension and so always derives an id, which means a later
+                 * request still overwrites the session's source exactly as it
+                 * did before; campaign and ad derive null when the request
+                 * carries none, so an untagged later request still leaves the
+                 * session's campaign alone. Whether latest-wins is the right
+                 * attribution model is a separate question from this change.
+                 */
+                $properties = $event->getProperties();
+
                 // update last page id
-                $s->set( 'last_page_id', $event->get( 'document_id' ) );
+                $last_page_id = \OWA\Module\Base\Entity\Document::deriveId( $properties );
+
+                if ( $last_page_id !== null ) {
+                    $s->set( 'last_page_id', $last_page_id );
+                }
 
                 // set medium
                 if ( $event->get( 'medium' ) ) {
@@ -251,23 +288,31 @@ class SessionHandlers extends \OWA\Core\Observer {
                 }
 
                 // set source
-                if ( $event->get( 'source_id' ) ) {
-                    $s->set( 'source_id', $event->get( 'source_id' ) );
+                $source_id = \OWA\Module\Base\Entity\SourceDim::deriveId( $properties );
+
+                if ( $source_id !== null ) {
+                    $s->set( 'source_id', $source_id );
                 }
 
                 // set search terms
-                if ($event->get('referring_search_term_id')) {
-                    $s->set('referring_search_term_id',  $event->get('referring_search_term_id') );
+                $search_term_id = \OWA\Module\Base\Entity\SearchTermDim::deriveId( $properties );
+
+                if ( $search_term_id !== null ) {
+                    $s->set( 'referring_search_term_id', $search_term_id );
                 }
 
                 // set campaign
-                if ($event->get('campaign_id')) {
-                    $s->set('campaign_id', $event->get('campaign_id') );
+                $campaign_id = \OWA\Module\Base\Entity\CampaignDim::deriveId( $properties );
+
+                if ( $campaign_id !== null ) {
+                    $s->set( 'campaign_id', $campaign_id );
                 }
 
                 // set ad
-                if ($event->get('ad_id')) {
-                    $s->set( 'ad_id', $event->get( 'ad_id' ) );
+                $ad_id = \OWA\Module\Base\Entity\AdDim::deriveId( $properties );
+
+                if ( $ad_id !== null ) {
+                    $s->set( 'ad_id', $ad_id );
                 }
 
                 // set campaign touches
@@ -304,7 +349,14 @@ class SessionHandlers extends \OWA\Core\Observer {
             }
 
             // setup event message
+            // Derived dimension keys do not ride downstream -- see the note on
+            // the same strip in logSession().
             $session = $s->_getProperties();
+
+            foreach ( $s->contentDerivedKeys() as $derived ) {
+                unset( $session[ $derived ] );
+            }
+
             $properties = array_merge($event->getProperties(), $session);
             $properties['request_id'] = $event->get('guid');
             $ne = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');

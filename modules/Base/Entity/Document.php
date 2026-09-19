@@ -30,7 +30,18 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Document extends \OWA\Core\Entity {
+class Document extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * A request is always FOR a page. A row with no resolvable URL is a defect
+     * worth seeing in a report, not one worth hiding by dropping the row.
+     */
+    const CONTENT_KEY = array( 'page_url' );
+
+    const FK_COLUMN = 'document_id';
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
 
     function __construct() {
 

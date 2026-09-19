@@ -44,7 +44,7 @@ class SourceHandlers extends \OWA\Core\Observer {
         if ($event->get('source')) {
             $s = \OWA\Core\CoreAPI::entityFactory('base.source_dim');
 
-            $new_id = $s->generateId( trim( strtolower( (string) $event->get('source') ) ) );
+            $new_id = \OWA\Module\Base\Entity\SourceDim::deriveId( $event->getProperties() );
             $s->getByPk('id', $new_id);
             $id = $s->get('id');
 

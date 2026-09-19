@@ -41,15 +41,27 @@ class RefererHandlers extends \OWA\Core\Observer {
      */
     function notify($event) {
 
-        // if there is no session referer then return
-        if ( ! $event->get('referer_id') ) {
+        /*
+         * Null means this event has no referrer at all, which is not the same
+         * as one we could not resolve: base.referer declares its absence
+         * NOT_APPLICABLE, because direct traffic has no referring site and a
+         * referring-sites report should exclude it rather than invent a bucket.
+         *
+         * This guard used to read an id off the event, so it would have gone on
+         * returning early -- silently, writing no referer rows at all -- once
+         * the pipeline stopped putting one there.
+         */
+        $referer_id = \OWA\Module\Base\Entity\Referer::deriveId( $event->getProperties() );
+
+        if ( $referer_id === null ) {
+
             return OWA_EHS_EVENT_HANDLED;
         }
 
         // Make entity
         $r = \OWA\Core\CoreAPI::entityFactory('base.referer');
 
-        $r->load( $event->get( 'referer_id' ) );
+        $r->load( $referer_id );
 
         $r->detectIdCollision( 'url', $event->get( 'session_referer' ) );
         
@@ -57,7 +69,7 @@ class RefererHandlers extends \OWA\Core\Observer {
 
         if ( ! $r->wasPersisted() ) {
 
-            $r->set( 'id', $event->get( 'referer_id' ) );
+            $r->set( 'id', $referer_id );
 
             // set referer url
             $r->set('url', $event->get('session_referer'));

@@ -45,13 +45,15 @@ class UserAgentHandlers extends \OWA\Core\Observer {
 
             $ua = \OWA\Core\CoreAPI::entityFactory('base.ua');
 
-            $ua->getByColumn('id', \OWA\Core\Lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $ua_id = \OWA\Module\Base\Entity\Ua::deriveId( $event->getProperties() );
+
+            $ua->getByColumn('id', $ua_id);
 
             if (!$ua->get('id')) {
 
                 $ua->setProperties($event->getProperties());
                 $ua->set('ua', $event->get('HTTP_USER_AGENT'));
-                $ua->set('id', \OWA\Core\Lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+                $ua->set('id', $ua_id);
                 $ret = $ua->create();
 
                 if ( $ret ) {

@@ -31,7 +31,18 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class CampaignDim extends \OWA\Core\Entity {
+class CampaignDim extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Untagged traffic belongs to no campaign, and a campaign report that
+     * invents an 'unknown campaign' row is reporting on nothing.
+     */
+    const CONTENT_KEY = array( 'campaign' );
+
+    const FK_COLUMN = 'campaign_id';
+
+    const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
+
 
     function __construct() {
 

@@ -709,46 +709,6 @@
             ],
             "note": "The answer. tagged_terms if the URL carried one, else the query param the referring search engine used."
         },
-        "document_id": {
-            "alternative_key": "page_url",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "ua_id": {
-            "alternative_key": "HTTP_USER_AGENT",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "location_id": {
-            "alternative_key": "country",
-            "callbacks": "owa_trackingEventHelpers::generateLocationId"
-        },
-        "host_id": {
-            "alternative_key": "host",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "os_id": {
-            "alternative_key": "os",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "campaign_id": {
-            "alternative_key": "campaign",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "ad_id": {
-            "alternative_key": "ad",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "source_id": {
-            "alternative_key": "source",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "referer_id": {
-            "alternative_key": "session_referer",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
-        "referring_search_term_id": {
-            "alternative_key": "search_terms",
-            "callbacks": "owa_trackingEventHelpers::generateDimensionId"
-        },
         "cv1_name": {
             "required": true,
             "data_type": "string",

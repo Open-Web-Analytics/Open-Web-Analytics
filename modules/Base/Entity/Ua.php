@@ -31,7 +31,18 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Ua extends \OWA\Core\Entity {
+class Ua extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Every request carries a user agent, even a blank one, and a browser report
+     * that silently omits the unparseable ones understates its own total.
+     */
+    const CONTENT_KEY = array( 'HTTP_USER_AGENT' );
+
+    const FK_COLUMN = 'ua_id';
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
 
     function __construct() {
 

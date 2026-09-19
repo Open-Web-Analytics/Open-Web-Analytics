@@ -31,7 +31,20 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.0.0
  */
 
-class Referer extends \OWA\Core\Entity {
+class Referer extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * Direct traffic has no referring site. A referring-sites report should
+     * exclude it, not invent a bucket. Measured on both installs: every session
+     * whose medium implies a referrer has a referer_id -- 0 exceptions on
+     * peteradamsphoto, 3 on demo.
+     */
+    const CONTENT_KEY = array( 'session_referer' );
+
+    const FK_COLUMN = 'referer_id';
+
+    const ABSENCE = self::ABSENCE_NOT_APPLICABLE;
+
 
     function __construct() {
 

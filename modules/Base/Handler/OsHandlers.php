@@ -45,13 +45,15 @@ class OsHandlers extends \OWA\Core\Observer {
 
             $os = \OWA\Core\CoreAPI::entityFactory( 'base.os' );
 
-            $os->getByColumn( 'id', \OWA\Core\Lib::setStringGuid( $event->get( 'os' ) ) );
+            $os_id = \OWA\Module\Base\Entity\Os::deriveId( $event->getProperties() );
+
+            $os->getByColumn( 'id', $os_id );
 
             if ( ! $os->get( 'id' ) ) {
 
                 $os->set( 'name', $event->get( 'os' ) );
 
-                $os->set( 'id', \OWA\Core\Lib::setStringGuid( $event->get( 'os' ) ) );
+                $os->set( 'id', $os_id );
 
                 $ret = $os->create();
 

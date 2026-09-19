@@ -55,29 +55,29 @@ class DocumentHandlers extends \OWA\Core\Observer {
         // so this cannot pull in other people's pages.
         $this->ensureDocumentFor( $event, $event->get( 'prior_page' ) );
 
-        if ( $event->get( 'document_id' ) || $event->get( 'page_url' ) ) {
+        if ( $event->get( 'page_url' ) ) {
 
             // create entity
             /* @var \OWA\Module\Base\Entity\Document $d */
             $d = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
 
-            // get document id from event
-            $id = $event->get( 'document_id' );
+            /*
+             * Derived from page_url, by the dimension.
+             *
+             * The two-step this replaces -- take document_id off the event, and
+             * only fall back to hashing page_url if it was missing -- preferred
+             * an id the pipeline had already derived. That is the ordering that
+             * let a handler use a key built from content the event no longer
+             * carried, and it is the same shape as the over-hashing defect.
+             * Content is now the only input.
+             */
+            $id = \OWA\Module\Base\Entity\Document::deriveId( $event->getProperties() );
 
-            // if no document_id present attempt to make one from the page_url property
-            if ( ! $id ) {
+            if ( $id === null ) {
 
-                $page_url = $event->get( 'page_url' );
+                \OWA\Core\CoreAPI::debug( 'Not persisting Document, no page_url on the event.' );
 
-                if ( $page_url ) {
-
-                    $id = $d->generateId( $page_url );
-                } else {
-
-                    \OWA\Core\CoreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
-
-                    return OWA_EHS_EVENT_HANDLED;
-                }
+                return OWA_EHS_EVENT_HANDLED;
             }
 
             $d->load( $id );

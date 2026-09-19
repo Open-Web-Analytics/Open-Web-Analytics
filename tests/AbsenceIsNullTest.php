@@ -207,7 +207,8 @@ final class AbsenceIsNullTest extends TestCase
      *
      * They used to disagree -- the handler keyed on country.city and the fact
      * callback on country.state.city -- so for any location carrying a state
-     * the handler wrote a row nothing pointed at. Both now go through idFor().
+     * the handler wrote a row nothing pointed at. There is now one derivation,
+     * LocationDim::deriveId(), and both go through it.
      */
     public function testTheFactAndTheDimensionAgreeOnTheId(): void
     {
@@ -218,7 +219,7 @@ final class AbsenceIsNullTest extends TestCase
 
         $this->assertSame(
             Geolocation::idFor( 'United States', 'Virginia', 'Ashburn' ),
-            TrackingEventHelpers::generateLocationId( 'location_id', $event ) );
+            \OWA\Module\Base\Entity\LocationDim::deriveId( $event->getProperties() ) );
     }
 
     /**
@@ -230,7 +231,7 @@ final class AbsenceIsNullTest extends TestCase
 
         $this->assertSame(
             Geolocation::idFor( '', '', '' ),
-            TrackingEventHelpers::generateLocationId( 'location_id', $event ) );
+            \OWA\Module\Base\Entity\LocationDim::deriveId( $event->getProperties() ) );
     }
 
     /**

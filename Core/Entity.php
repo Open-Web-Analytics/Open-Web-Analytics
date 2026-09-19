@@ -214,15 +214,244 @@ class Entity {
         $properties = $this->getColumns();
         
         foreach ($properties as $k => $v) {
+            
+            /*
+             * A content-derived dimension key is DERIVED here, not copied.
+             *
+             * It used to be copied: the tracking-property pipeline hashed it
+             * onto the event before dispatch and this loop carried the result
+             * into the column. That put the derivation in the pipeline, where
+             * v2 has to pay for it and where it had drifted into three
+             * disagreeing copies. Deriving at write time puts it in the one
+             * place that owns the dimension, and leaves the event carrying only
+             * content.
+             *
+             * Deriving beats copying even while both run: a value the pipeline
+             * hashed can be stale by the time a fact is written, because a
+             * handler may have changed the content underneath it.
+             */
+            $dimension = self::contentDerivedDimensionFor( $this, $v );
+            
+            if ( $dimension !== null && self::addresses( $dimension, $array ) ) {
                 
+                $id = $dimension::deriveId( $array );
+                
+                // null means absence that is NOT_APPLICABLE -- this event has no
+                // such thing, so the column is left alone rather than set to an
+                // id that names no row.
+                if ( $id !== null && ! empty( $this->properties ) ) {
+                    
+                    $this->set( $v, $id, $apply_filters, false );
+                }
+                
+                continue;
+            }
+            
             //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
-                    $this->set($v, $array[$v], $apply_filters, false);
+                    $this->set($v, $this->applyStorageDefault( $v, $array[$v] ), $apply_filters, false);
                 }
             }
         }
     }
+    
+    /**
+     * Substitute the "(not set)" label when an empty value reaches a column
+     * that declares it.
+     *
+     * This is where v1's storage convention lives now. The tracking-property
+     * pipeline used to apply it before dispatch, which made the literal the
+     * value every READER saw -- so a handler, and v2, could not tell "no value"
+     * from a value that happens to be that string. Applying it at the column
+     * instead keeps every v1 column exactly as it was, with nothing to
+     * backfill, while the event carries absence as absence.
+     *
+     * Only for columns that hold text. A numeric column has no use for a label
+     * and, with strict mode off, would silently coerce it to 0 -- which is how a
+     * city name once reached a boolean column.
+     */
+    protected function applyStorageDefault( $column, $value ) {
+        
+        /*
+         * false counts as absence here. Event::get() answers false for a key it
+         * does not hold, so that is the shape an unset property actually arrives
+         * in -- checking only '' and null left every column NULL and looked, from
+         * the tests, exactly like success.
+         */
+        if ( $value !== '' && $value !== null && $value !== false ) {
+            
+            return $value;
+        }
+        
+        if ( ! isset( $this->properties[ $column ] ) ) {
+            
+            return $value;
+        }
+        
+        $type = (string) $this->properties[ $column ]->get( 'data_type' );
+        
+        if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
+            
+            return $value;
+        }
+        
+        return self::storageDefaultFor( $column ) ?? $value;
+    }
+    
+    /**
+     * The declared storage label for a tracking property, or null.
+     *
+     * Read from the registered property maps rather than a list kept here, so
+     * the declaration stays in one place -- modules/Base/config/
+     * tracking_properties.json -- and a module registering its own properties
+     * gets the same treatment. Only the absent-value label is honoured; every
+     * other default is a real value and belongs to the event, where the pipeline
+     * still applies it.
+     */
+    protected static function storageDefaultFor( $property ) {
+        
+        if ( self::$storageDefaults === null ) {
+            
+            self::$storageDefaults = array();
+            
+            /*
+             * From the property DEFINITIONS, not the registered service maps.
+             *
+             * The maps are populated by module registration, and a process that
+             * writes rows does not always have them -- they came back empty from
+             * a CLI context while this was being built. A lookup that silently
+             * finds nothing would store NULL where every existing row holds the
+             * label, and nothing would have reported it. These three read the
+             * config file directly and cache, so they answer the same everywhere.
+             */
+            $definitions = array_merge(
+                \OWA\Module\Base\Classes\TrackingEventHelpers::requestProperties(),
+                \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties(),
+                \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
+            
+            {
+                foreach ( $definitions as $name => $definition ) {
+                    
+                    if ( isset( $definition['default_value'] )
+                         && $definition['default_value'] === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL ) {
+                        
+                        self::$storageDefaults[ $name ] = $definition['default_value'];
+                    }
+                }
+            }
+        }
+        
+        return isset( self::$storageDefaults[ $property ] )
+            ? self::$storageDefaults[ $property ]
+            : null;
+    }
+    
+    /** property name => the absent-value label, built once per process. */
+    protected static $storageDefaults = null;
+    
+    /**
+     * The dimension class that derives $column on $entity, or null.
+     *
+     * Null for every column that is not a foreign key, for a foreign key whose
+     * target is not a dimension (site_id is a minted identifier, visitor_id
+     * comes from the tracker), and for a second foreign key into a dimension
+     * that already has a canonical column -- owa_session.first_page_id and
+     * .last_page_id both point at base.document, and only document_id is the
+     * one derived from page_url.
+     *
+     * @return string|null A DimensionEntity subclass name.
+     */
+    protected static function contentDerivedDimensionFor( $entity, $column ) {
+        
+        $target = isset( $entity->_tableProperties['foreign_keys'][ $column ] )
+            ? $entity->_tableProperties['foreign_keys'][ $column ]
+            : null;
+        
+        if ( ! $target ) {
+            
+            return null;
+        }
+        
+        // Resolved once per entity name per process: this runs for every column
+        // of every fact row written.
+        if ( ! array_key_exists( $target, self::$dimensionClasses ) ) {
+            
+            $class = \OWA\Core\CoreAPI::namespacedEntityClass( $target );
+            
+            self::$dimensionClasses[ $target ] =
+                ( $class !== null
+                  && is_subclass_of( $class, '\\OWA\\Core\\Entity\\DimensionEntity' )
+                  && $class::isContentDerived() )
+                ? $class
+                : null;
+        }
+        
+        $class = self::$dimensionClasses[ $target ];
+        
+        if ( $class === null || $class::FK_COLUMN !== $column ) {
+            
+            return null;
+        }
+        
+        return $class;
+    }
+    
+    /**
+     * Whether $array is ABOUT this dimension at all.
+     *
+     * "The content says there is no value" and "this bag does not carry this
+     * content" are different things, and only the first is absence. Several
+     * call sites hand setProperties() a partial bag -- a session update, a
+     * re-dispatched event -- and re-deriving from one of those would overwrite
+     * a correct id with the unresolved one. That is a regression the copying
+     * behaviour did not have, because the pipeline's already-derived id was in
+     * the bag and got copied back over itself.
+     *
+     * So: if not one key of the content key is present, the column is left
+     * exactly as it was. If any key IS present, the content is authoritative --
+     * including when it is empty, which is how a genuinely unresolved value
+     * still reaches its shared row.
+     */
+    protected static function addresses( $dimension, $array ) {
+        
+        foreach ( $dimension::CONTENT_KEY as $name ) {
+            
+            if ( array_key_exists( $name, $array ) ) {
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * This entity's columns that are derived from content rather than carried.
+     *
+     * Used to strip them back out when an entity's properties are merged onto a
+     * downstream event: a derived key riding along is exactly what let a handler
+     * consume one second-hand instead of deriving it.
+     *
+     * @return string[]
+     */
+    function contentDerivedKeys() {
+        
+        $keys = array();
+        
+        foreach ( $this->getColumns() as $column ) {
+            
+            if ( self::contentDerivedDimensionFor( $this, $column ) !== null ) {
+                
+                $keys[] = $column;
+            }
+        }
+        
+        return $keys;
+    }
+    
+    /** entity name => DimensionEntity class, or null when it is not one. */
+    protected static $dimensionClasses = array();
     
     function setGuid($string) {
         

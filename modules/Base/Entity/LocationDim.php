@@ -31,7 +31,19 @@ namespace OWA\Module\Base\Entity;
  * @since        owa 1.4.0
  */
 
-class LocationDim extends \OWA\Core\Entity {
+class LocationDim extends \OWA\Core\Entity\DimensionEntity {
+
+    /**
+     * An IP MaxMind cannot place still has a country; we just do not know it.
+     * This is the case that broke every geo report when the sentinel was
+     * removed without a row to fall back on.
+     */
+    const CONTENT_KEY = array( 'country', 'state', 'city' );
+
+    const FK_COLUMN = 'location_id';
+
+    const ABSENCE = self::ABSENCE_UNKNOWN;
+
 
     function __construct() {
 

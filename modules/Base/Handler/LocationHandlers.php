@@ -1,7 +1,6 @@
 <?php
 namespace OWA\Module\Base\Handler;
 
-use OWA\Module\Base\Classes\Geolocation;
 
 
 //
@@ -43,63 +42,39 @@ class LocationHandlers extends \OWA\Core\Observer {
      */
     function notify($event) {
         
-        if ( $event->get( 'location_id' ) || $event->get( 'ip_address' ) ) {
+        if ( $event->get( 'country' ) || $event->get( 'city' ) || $event->get( 'ip_address' ) ) {
 
             $h = \OWA\Core\CoreAPI::entityFactory('base.location_dim');
-            
+
             /*
-             * The dimension id is derived in exactly one place --
-             * Geolocation::idFor() -- and this handler and the fact table's
-             * generateLocationId() callback both go through it.
+             * One derivation, from content, owned by the dimension.
              *
-             * They used to derive it separately and disagree: this handler
-             * keyed on country.city, the fact callback on country.state.city.
-             * So for any location with a state, the row created here carried an
-             * id no fact row ever pointed at, and the row the facts did point at
-             * was created by nothing. Every geo report depended on the two
-             * hashes happening to coincide.
+             * Three branches stood here. The first read location_id straight off
+             * the event and reused it -- hashing nothing, but trusting a key the
+             * pipeline derived, which is how a handler could write a row keyed on
+             * content the event no longer carried. The third re-resolved the IP
+             * and wrote country/city/state back onto the event, then read them
+             * off it again forty lines later to fill the row: the event used as a
+             * scratch variable, at the cost of a geolocation lookup whose result
+             * was discarded.
+             *
+             * Both were already redundant. resolveCountry/resolveCity/
+             * resolveState run in the property pipeline before any handler sees
+             * the event, so the content is present; and the geolocation service
+             * caches per process, so re-resolving returned the same answer it had
+             * already given. Removing them also removes the only place a handler
+             * mutated a resolution output, which matters now that facts derive
+             * their keys at write time -- a handler changing country between two
+             * fact writes would give one event two different location_ids.
+             *
+             * base.location_dim declares absence UNKNOWN, so an address that
+             * resolved to nothing still gets the shared row rather than null. It
+             * has to: dimension joins are INNER, and a fact pointing at no row
+             * leaves every geo report entirely rather than grouping under
+             * "(not set)".
              */
+            $location_id = \OWA\Module\Base\Entity\LocationDim::deriveId( $event->getProperties() );
 
-            // look for location id on the event. This happens when
-            // another event has already created it.
-            if ( $event->get( 'location_id' ) ) {
-                
-                $location_id = $event->get('location_id');
-            // else look to see if he event has the minimal geo properties
-            // if it does then assume that geo properties are set.
-            } elseif ( $event->get('country') ) {
-
-                $location_id = Geolocation::idFor(
-                    $event->get('country'), $event->get('state'), $event->get('city') );
-            // load the geo properties from the geo service.
-            } else {
-                $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                \OWA\Core\CoreAPI::debug('geolocation: ' .print_r($location, true));
-                //set properties of the session
-                $event->set('country', $location->getCountry());
-                $event->set('city', $location->getCity());
-                $event->set('latitude', $location->getLatitude());
-                $event->set('longitude', $location->getLongitude());
-                $event->set('country_code', $location->getCountryCode());
-                $event->set('state', $location->getState());
-
-                /*
-                 * A lookup that resolved nothing still gets a row, and that row
-                 * still holds NULL.
-                 *
-                 * The row has to exist because the fact table's location_id is
-                 * a plain inner join in every geo report: a fact pointing at an
-                 * id no row carries is not reported as "(not set)", it is not
-                 * reported at all. What must not exist is the old '(not set)'
-                 * STRING in the columns -- that is what made country != 'US'
-                 * silently exclude unresolved rows, and it is what this branch
-                 * no longer writes. The columns are left unset, so they store
-                 * NULL, and ResultSetManager labels them at render time.
-                 */
-                $location_id = Geolocation::idFor(
-                    $event->get('country'), $event->get('state'), $event->get('city') );
-            }
-            
             // look up the county code if it's missing
             if ( ! $event->get('country_code') && $event->get('country') ) {
                 $event->set( 'country_code', $this->lookupCountryCodeFromName( $event->get('country') ) );
@@ -110,10 +85,13 @@ class LocationHandlers extends \OWA\Core\Observer {
             
             if (!$id) {
                 
-                $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                \OWA\Core\CoreAPI::debug('geolocation: ' .print_r($location, true));
-                
-                //set properties of the session
+                /*
+                 * No lookup here. There was one, assigned to $location and then
+                 * never read -- the row was filled from the event, which the
+                 * property pipeline had already resolved. A second call cost a
+                 * MaxMind read (or would have, but for the per-process cache)
+                 * and its result was discarded.
+                 */
                 $h->set('country', $event->get('country'));
                 $h->set('city', $event->get('city'));
                 $h->set('latitude', $event->get('latitude'));

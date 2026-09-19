@@ -1030,9 +1030,19 @@ class Lib {
         return $applied && (int) $applied < self::WIDE_GUID_SCHEMA_VERSION;
     }
 
-    public static function setStringGuid($string) {
+    /**
+     * @param bool $allow_falsy Hash '0' rather than treating it as no value.
+     *        The guard below is a truthiness test, so the legitimate string '0'
+     *        reads as absent and this returns null -- which reaches a BIGINT
+     *        foreign key as 0, an id no row carries. Callers deriving a
+     *        DIMENSION id pass true, because there absence is a decision made
+     *        from the content itself (DimensionEntity::deriveId), not something
+     *        to be inferred from PHP's idea of falsy. Default is unchanged, so
+     *        no existing caller shifts.
+     */
+    public static function setStringGuid($string, $allow_falsy = false) {
 
-        if ( $string ) {
+        if ( $allow_falsy ? ( $string !== '' && $string !== null ) : (bool) $string ) {
 
 
             if ( self::useNarrowGuid() ) {
