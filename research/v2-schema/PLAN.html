@@ -280,7 +280,7 @@ what GA4 emits that v2 deliberately will not.</p>
 <div class="scroll"><table>
 <thead><tr><th>v2 event</th><th>1.x today</th><th>GA4</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td>page_view</td><td><code>first_page_request</code> collapses in; new-visitor is derived, not flagged</td></tr>
+<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td>page_view</td><td><code>first_page_request</code> collapses in; carries <code>is_new_visitor_created</code>, the flag <code>first_visit</code> is raised from &mdash; GA's <code>_fv</code>. <code>fsts</code> rides alongside as the redundant floor</td></tr>
 <tr><td class="ev">user_engagement</td><td class="dash">—</td><td>user_engagement</td><td>carries the engagement delta; also the terminal beacon</td></tr>
 <tr><td class="ev">click</td><td class="ev-l">dom.click</td><td>click</td><td>gains outbound detection and element path</td></tr>
 <tr><td class="ev">scroll</td><td class="dash">—</td><td>scroll</td><td><strong>new.</strong> 1.x's <code>dom.scroll</code> is a recording sample, not an event — no server handler exists</td></tr>
@@ -289,7 +289,7 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
-<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise (fresh <code>fsts</code>, <code>prior_sessions</code>=0); carries user-scoped acquisition</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
 <tr><td class="ev">feed_request</td><td class="ev-l">base.feed_request</td><td class="dash">—</td><td>OWA-specific; kept</td></tr>
 </tbody></table></div>
 
@@ -959,6 +959,43 @@ cookie and processed server-side in the first place.</li>
 <p>By that rule <code>nps</code> and <code>fsts</code> stay &mdash; they are observations &mdash;
 and <code>attribs</code> goes, as already decided in the attribution notes.</p>
 
+<h4>Wire events and materialized events are different sets</h4>
+
+<p>The pass does not only enrich rows, it <strong>creates</strong> them. The client sends one
+beacon carrying flags; the server raises separate events from those flags. So the raw table holds
+what arrived, and the denormalised table holds more events than the client ever sent. Confirmed
+against GA by capture: a first page view arrives as a single <code>en=page_view</code> carrying
+both <code>_fv=1</code> and <code>_ss=1</code>, with no separate beacon &mdash;
+<code>first_visit</code> and <code>session_start</code> appear in BigQuery as distinct
+<code>event_name</code> rows, materialized from those flags. The taxonomy in &sect;1.4 already
+names both as server-materialized; what follows here is where that materialization happens.</p>
+
+<p>OWA has the flags already, with three different lifetimes, and the distinction matters:</p>
+<ul>
+<li><code>is_new_visitor_created</code> &mdash; the one REQUEST that minted the visitor. GA's
+<code>_fv</code>. Raises <code>first_visit</code>.</li>
+<li><code>is_new_session_start</code> &mdash; the one REQUEST that created the session. GA's
+<code>_ss</code>. Raises <code>session_start</code>.</li>
+<li><code>is_new_visitor</code> &mdash; SESSION scoped, rides every beacon of the first session.
+Keeps <code>is_repeat_visitor</code> from flipping mid-session. <em>Not</em> the raiser.</li>
+<li><code>is_new_session</code> &mdash; PAGE scoped, rides every beacon from the page the session
+started on. What <code>is_entry_page</code> needs.</li>
+</ul>
+
+<p><strong>Keying acquisition off the flag rather than off a computed earliest event is what
+bounds the correction problem.</strong> If acquisition were derived as <code>MIN(timestamp)</code>
+per visitor, a late event that turned out to be earlier would invalidate every row that visitor
+already had, wherever those rows sat &mdash; requiring a visitor-to-partition index to even find
+them. Keyed off the flag, no other event can change the answer: the failure mode is
+<em>absent then present</em>, never <em>wrong then corrected</em>, and there is no earlier history
+to invalidate because the flagged event <em>is</em> the beginning.</p>
+
+<p>What remains is only out-of-order arrival &mdash; a later event processed before the flagged
+one, because the queue retried with backoff or an unload beacon landed behind a subsequent hit.
+Those rows are in the same or later days, never earlier. <strong>So the blast radius is bounded by
+how far the queue can reorder, not by retention</strong>, and the late-arrival window needs to
+exceed queue reorder latency rather than &ldquo;how late can an event conceivably be&rdquo;.</p>
+
 <h4>Consequences for decisions already taken</h4>
 <ul>
 <li><strong>&sect;1.10 says two storage layers.</strong> This makes it three. Raw plus
@@ -1021,6 +1058,10 @@ scanning. Retention is therefore cheap on both; what is expensive on both is upd
 is what this design avoids.</li>
 <li><strong>Raw retention</strong>, which trades storage against how far back the model can be
 re-derived.</li>
+<li><strong>Worst-case queue reorder latency</strong>, which sets the late-arrival window and
+therefore the whole cadence. Measure <em>drain after a stall</em>, not steady state: 1.x has had
+two stalls that held events for a long time &mdash; the notify poison-pill and the legacy-class
+decode failure &mdash; and those are the cases the window has to survive.</li>
 <li><strong>Cost on a small install.</strong> Unmeasured. Demo is 326k sessions and
 peteradamsphoto 203k <em>in total</em>, not per day, so a pass over these volumes should be
 seconds &mdash; but it runs on an RDS instance shared with eight WordPress sites, and that is the
