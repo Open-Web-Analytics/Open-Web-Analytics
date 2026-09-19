@@ -416,7 +416,7 @@ final class SessionIngestionTest extends IngestionTestCase
         $this->setServerTime(1700000000);
         $this->firePageRequest($site_id, $session_id, [
             'is_new_session' => true,
-            'landing_url'    => $this->landingUrlWithTags( $page_url, array(
+            'landing_url'    => $this->landingUrlWithTags( 'https://example.com/session-test', array(
                 'campaign' => $campaign, 'source' => $source, 'medium' => 'cpc' ) ),
             'attribs'        => $attribs,
         ]);
@@ -468,7 +468,7 @@ final class SessionIngestionTest extends IngestionTestCase
         $this->setServerTime(1700000000);
         $this->firePageRequest($site_id, $session_id, [
             'is_new_session' => true,
-            'landing_url'    => $this->landingUrlWithTags( $page_url, array(
+            'landing_url'    => $this->landingUrlWithTags( 'https://example.com/session-test', array(
                 'campaign' => $campaign1, 'source' => $source1, 'medium' => 'email' ) ),
         ]);
 
@@ -485,7 +485,7 @@ final class SessionIngestionTest extends IngestionTestCase
 
         $this->setServerTime(1700000060);
         $this->firePageRequest($site_id, $session_id, [
-            'landing_url'   => $this->landingUrlWithTags( $page_url, array(
+            'landing_url'   => $this->landingUrlWithTags( 'https://example.com/session-test', array(
                 'campaign' => $campaign2, 'source' => $source2, 'medium' => 'cpc' ) ),
             'attribs'  => $attribs2,
         ]);
