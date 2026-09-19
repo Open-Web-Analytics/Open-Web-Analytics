@@ -12,6 +12,15 @@ class TrackingEventHelpers {
      * and Entity::setProperties(). GA4 uses the same string, and the reporting
      * layer produces it for a NULL dimension at render time as well.
      */
+    /**
+     * Declared types whose values are trimmed before they reach the event.
+     *
+     * The text-ish ones. '' is here because a property may omit data_type, and
+     * setDataType() treats that as a string. json is excluded: whitespace inside
+     * a document is the encoder's business, and boolean/integer never carry any.
+     */
+    const TRIMMED_TYPES = array( 'string', 'url', '' );
+
     const ABSENT_VALUE_LABEL = '(not set)';
 
 
@@ -379,6 +388,37 @@ class TrackingEventHelpers {
             if ( $data_type && $value === null ) {
 
                 $value = $this->setDataType( $value, $data_type );
+            }
+
+            /*
+             * Trim once, here, after the callbacks.
+             *
+             * Leading and trailing whitespace is never meaningful in a tracking
+             * value, and it was being removed in some paths and not others.
+             * The catch-all definition applies lowercaseString(), which is
+             * strtolower( trim() ); eight resolvers trim for themselves; and
+             * Sanitize::cleanInput(), which every explicitly-defined string
+             * property flows through, does not trim at all -- removeHiddenSpaces()
+             * only swaps a non-breaking space. So the properties that escaped
+             * trimming were exactly the ones with their own definitions.
+             *
+             * That asymmetry had teeth: ' Google ' and 'Google' hashed to
+             * different dimension rows depending which code path derived the id,
+             * and the fix for that was to trim inside the derivation, which left
+             * the STORED value untrimmed and merely moved the inconsistency.
+             *
+             * After the callback rather than inside setDataType(), because a
+             * callback's return value goes on to the event untouched -- trimming
+             * only the raw input would leave every resolved value unhandled.
+             *
+             * Deliberately NOT lowercasing. That is identity normalisation, and
+             * it belongs to the hash, not the value: a page title, a city name
+             * and a source domain are all displayed as recorded. Properties that
+             * lowercase today do it in their own callbacks and keep doing it.
+             */
+            if ( is_string( $value ) && in_array( $data_type, self::TRIMMED_TYPES, true ) ) {
+
+                $value = trim( $value );
             }
 
             //set default value

@@ -279,7 +279,8 @@ class Entity {
          * in -- checking only '' and null left every column NULL and looked, from
          * the tests, exactly like success.
          */
-        if ( $value !== '' && $value !== null && $value !== false ) {
+        if ( $value !== '' && $value !== null && $value !== false
+             && ! ( is_string( $value ) && trim( $value ) === '' ) ) {
             
             return $value;
         }
