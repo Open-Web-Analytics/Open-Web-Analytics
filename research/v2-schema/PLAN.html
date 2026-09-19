@@ -961,14 +961,36 @@ and <code>attribs</code> goes, as already decided in the attribution notes.</p>
 
 <h4>Wire events and materialized events are different sets</h4>
 
-<p>The pass does not only enrich rows, it <strong>creates</strong> them. The client sends one
-beacon carrying flags; the server raises separate events from those flags. So the raw table holds
-what arrived, and the denormalised table holds more events than the client ever sent. Confirmed
-against GA by capture: a first page view arrives as a single <code>en=page_view</code> carrying
-both <code>_fv=1</code> and <code>_ss=1</code>, with no separate beacon &mdash;
-<code>first_visit</code> and <code>session_start</code> appear in BigQuery as distinct
-<code>event_name</code> rows, materialized from those flags. The taxonomy in &sect;1.4 already
-names both as server-materialized; what follows here is where that materialization happens.</p>
+<p>One beacon can become several events. The client sends a single
+<code>page_view</code> carrying flags; the server raises <code>session_start</code> and
+<code>first_visit</code> from them. Confirmed against GA by capture: a first page view arrives as
+one <code>en=page_view</code> with both <code>_fv=1</code> and <code>_ss=1</code> and no separate
+beacon, and the two appear in BigQuery as distinct <code>event_name</code> rows.</p>
+
+<p><strong>That expansion happens at INGEST, into the raw log &mdash; not in the pass.</strong>
+The distinction is the whole point and it is easy to get backwards:</p>
+<ul>
+<li><strong>Per-beacon derivations go in at ingest.</strong> Raising <code>first_visit</code> from
+<code>is_new_visitor_created</code> is a pure function of one beacon. It needs no other event, no
+lookup and no ordering, so it belongs on the straight-line path where there is nothing to race
+and nothing to de-duplicate.</li>
+<li><strong>Cross-event derivations go in the pass.</strong> Acquisition source needs the
+visitor&rsquo;s flagged event; session finalisation needs the session closed. Those require
+context the single beacon does not carry.</li>
+</ul>
+
+<p>Putting the expansion in the pass instead breaks three things at once. The pass acquires a
+second job &mdash; synthesise as well as enrich &mdash; and must then be idempotent about
+<em>creation</em> across every rebuild, which is a much harder property than idempotent
+enrichment. Two passes over one partition, or a pass racing a rebuild, can double-raise. And
+realtime reads raw, so <code>first_visit</code> and <code>session_start</code> would be invisible
+live despite being exactly the events people report on.</p>
+
+<p>Ingest-time expansion keeps each layer honest: <strong>raw is the event stream as the system
+understands it</strong> &mdash; every event that happened, expanded but not enriched &mdash; and
+<strong>the pass is a pure row-in/row-out enrichment</strong>, idempotent by construction because
+it never creates anything. The taxonomy in &sect;1.4 already names both events as
+server-materialized; this is where in the pipeline that happens.</p>
 
 <p>OWA has the flags already, with three different lifetimes, and the distinction matters:</p>
 <ul>
