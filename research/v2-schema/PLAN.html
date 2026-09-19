@@ -1347,6 +1347,48 @@ against an index is unremarkable. Partitioning exists to make drops free on tabl
 millions of rows; here it costs the unique constraint or buys nothing, depending which column it
 picks.</p>
 
+<h4>What the visitor store holds, and what it deliberately does not</h4>
+
+<p>Two columns of content and one of maintenance. <strong>Acquisition</strong> &mdash; source,
+medium, campaign, ad, search terms &mdash; write-once from the <code>first_visit</code> event. And
+<strong><code>last_seen</code></strong>, which exists only to drive the TTL. Nothing else.</p>
+
+<p><strong>Session count does not belong here, and the reasoning generalises.</strong>
+<code>nps</code> is a counter the client already maintains and sends on every beacon, so in v2 it is
+already denormalised onto every event row. &ldquo;How many sessions has this visitor had&rdquo; is
+then <code>MAX(nps)</code> in a group-by, not a lookup &mdash; the same argument that removed the
+session table in &sect;1.4. The rule: <strong>a value that rides every event is already on the
+visitor, and copying it to a visitor row adds a write without adding an answer.</strong> Only values
+that cannot be on the event &mdash; because they originate in one event that may be years old
+&mdash; earn a place here.</p>
+
+<p>1.x is the cautionary version of exactly this, and it is worth stating because the mistake looks
+like tidiness. <code>num_prior_sessions</code> sits on <code>owa_visitor</code> AND on every fact
+row. Both registered dimensions that read it &mdash; &ldquo;Prior Visits&rdquo; and &ldquo;Visits To
+Purchase&rdquo; &mdash; read the <em>fact-row</em> copy, denormalised. The visitor copy is
+maintained by <code>VisitorUpdateHandlers</code>, which fires on every <code>base.new_session</code>,
+loads the visitor, runs a summarize query over <code>owa_session</code>, and writes a column no
+report can reach. A per-session row update plus an aggregate query, for nothing.</p>
+
+<p><strong>And <code>last_seen</code> being mutable does not put a write on the ingest path.</strong>
+That is the property worth protecting, since it is the one ITP made load-bearing: ingest stays a
+pure append with no lookups. Three things keep it that way.</p>
+<ul>
+<li><strong>The pass advances it, not ingest.</strong> One set-based <code>UPDATE</code> over the
+visitors seen in the partition being rebuilt, alongside the acquisition harvest that already
+happens there.</li>
+<li><strong>It is stored as a period, not a timestamp.</strong> The TTL is measured in months, so
+month precision is all it needs &mdash; which makes the value change at most once per visitor per
+month rather than once per session, and makes the common case a write that changes nothing.</li>
+<li><strong><code>GREATEST(last_seen, &lt;partition max&gt;)</code> is monotonic</strong>, so
+rebuilding a partition twice is a no-op and the column cannot go backwards when partitions are
+rebuilt out of order.</li>
+</ul>
+
+<p>So the store is written once per visitor for content, and touched in bulk at most monthly for
+maintenance. If a future column wants a per-session write, that is the signal it belongs on the
+event rather than here.</p>
+
 <p><strong>One write-volume note, since <code>last_seen</code> is the only mutable column.</strong>
 It does not need per-pass precision &mdash; the TTL is measured in months, so storing the period
 rather than the timestamp means the update fires at most once per visitor per month instead of once
