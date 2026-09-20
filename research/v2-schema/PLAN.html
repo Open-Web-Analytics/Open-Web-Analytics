@@ -1070,29 +1070,34 @@ a visitor whose <code>first_visit</code> may be two years back. So the pass need
 to look acquisition up in (<a href="#s29">&sect;2.9</a>), and it cannot finalise a session whose
 last event has not arrived, which is what the late-arrival window bounds.</p>
 
-<h4><span class="num">2.7.1</span>How one run is ordered</h4>
-<p><strong>Terminal session values stay NULL until the session closes</strong>, and are filled on a
-later rebuild. The alternative is an explicit session cap in the window, and it is not needed:
-<code>session_length</code> is an idle timeout rather than a duration cap, so a session with a hit
-every 25 minutes runs indefinitely and no finite window seals it. <a href="#s211">&sect;2.11</a>
-already makes &ldquo;not final yet&rdquo; and &ldquo;no value&rdquo; the same NULL.</p>
-<p><strong>The three steps run in this order</strong>, each reading what the one before it wrote.
-Out of order they produce wrong rows rather than an error:</p>
+<h4><span class="num">2.7.1</span>One statement and a swap</h4>
+<p><strong>There are two inserters in the whole design: ingest and this pass.</strong> Ingest
+writes the raw events a beacon becomes, and the visitor row on a first session
+(<a href="#s29">&sect;2.9</a>). The pass writes the denormalised rows. Nothing else inserts
+anything.</p>
+<p>So a run is one statement and a swap:</p>
 <ol>
-<li><strong>Close.</strong> Compute terminal session values for sessions whose last event is in
-this partition and whose close is certain.</li>
-<li><strong>Build.</strong> <code>INSERT INTO staging SELECT &hellip;</code> joining raw against the
-visitor table and the closed-session set.</li>
+<li><strong>Build.</strong> <code>INSERT INTO staging SELECT &hellip;</code> &mdash; every raw row
+in the partition, stamped: the landing page from the session's first event, acquisition read from
+the visitor store, and the terminal values computed inline over the session's own rows.</li>
 <li><strong>Swap.</strong> <code>EXCHANGE PARTITION</code>.</li>
 </ol>
+<p><strong>Terminal session values stay NULL until the session closes</strong>, and are filled on a
+later rebuild. They are a predicate inside the build, not a step before it. The alternative is an
+explicit session cap in the window, and it is not needed: <code>session_length</code> is an idle
+timeout rather than a duration cap, so a session with a hit every 25 minutes runs indefinitely and
+no finite window seals it. <a href="#s211">&sect;2.11</a> already makes &ldquo;not final yet&rdquo;
+and &ldquo;no value&rdquo; the same NULL.</p>
 <ul>
 <li><strong>The swap is the commit.</strong> Staging is built whole and is invisible until the
-exchange, so a run that dies in step 3 leaves the live table as it was. The visitor table is the
-only state outliving a failed run, which is why its write rule is insert-if-absent independently.</li>
-<li><strong>Every step is <code>INSERT &hellip; SELECT</code></strong> against tables in one
-schema. No step needs a row in PHP, and the same shape works on a columnar engine. Step 2 uses
-window functions, so <strong>v2 requires MySQL 8.0</strong> &mdash; the repo declares no minimum
-server version today.</li>
+exchange, so a run that dies during the build leaves the live table as it was and the next run
+simply rebuilds.</li>
+<li><strong>It runs entirely in the database.</strong> One <code>INSERT &hellip; SELECT</code>
+against tables in one schema; no row passes through PHP, and the same shape works on a columnar
+engine. The terminal values use window functions, so <strong>v2 requires MySQL 8.0</strong> &mdash;
+the repo declares no minimum server version today.</li>
+<li><strong>Nothing outlives a failed run</strong> except the visitor store, which ingest wrote and
+the pass only reads.</li>
 </ul>
 
 <h3 id="s28"><span class="num">2.8</span>The partition cycle <span class="chip c-dec">Decided</span></h3>
