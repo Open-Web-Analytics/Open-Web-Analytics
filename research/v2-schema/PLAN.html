@@ -246,10 +246,11 @@ query-builder feature rather than a schema change.</li>
 </ul>
 
 <h4><span class="num">1.2.4</span>A record's existence never depends on one packet</h4>
-<p><strong>Values may degrade. Records must not vanish.</strong> A marker event rides a single
-beacon, so anything carried <em>only</em> there is lost with it. That is why a session's identity
-and context ride every event instead: the session is still countable, and still attributable, from
-any of its other rows. What a lost marker costs is the payload the marker alone carried
+<p><strong>Values may degrade. Records must not vanish.</strong> Anything carried on a single beacon
+goes with that beacon, which is why a session's identity and context ride every event instead
+&mdash; the session stays countable, and attributable, from any of its rows. The markers are the
+case where that rule is honoured differently: they are raised server-side in the same atomic write
+as the beacon carrying their flags, so they cannot be lost while the session survives
 (<a href="#s13">&sect;1.3.2</a>). A delta or a stamped value rides every event, so losing one costs
 nothing or a single increment. <strong>Where a value can go on either shape, it goes on every
 event.</strong></p>
@@ -271,7 +272,7 @@ distinct count, which is the cheaper shape over a wide window.</p>
 <div class="scroll"><table>
 <thead><tr><th>Job</th><th>Which marker</th><th>Why only the marker</th></tr></thead>
 <tbody>
-<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>The pass harvests acquisition from <code>first_visit</code> rows and nothing else writes that table (<a href="#s27">&sect;2.7.1</a>). No marker, no acquisition row, ever &mdash; not a degraded one</td></tr>
+<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>The pass harvests acquisition from <code>first_visit</code> rows and nothing else writes that table (<a href="#s27">&sect;2.7.1</a>). The marker is raised atomically with the beacon that flags it, so a visitor who exists has one</td></tr>
 <tr><td><strong>Anchors acquisition to one event</strong></td><td><code>first_visit</code></td><td>Keying off the flag rather than a computed earliest event is what bounds the correction problem: no later arrival can change the answer, so the failure is <em>absent then present</em>, never <em>wrong then corrected</em> (<a href="#s26">&sect;2.6.3</a>)</td></tr>
 <tr><td><strong>Carries the attribution the client knew at that moment</strong></td><td>both</td><td>Session-scoped on <code>session_start</code>, user-scoped on <code>first_visit</code></td></tr>
 <tr><td><strong>Is the natural thing to name as a goal event</strong></td><td>both</td><td>A goal event is an author-named event, and the marker mechanism is what materialises it (<a href="#s13">&sect;1.3.3</a>)</td></tr>
@@ -284,12 +285,17 @@ the counting rules below are about, and what makes its atomic write with the
 that landed without its <code>session_start</code> is not something a later pass can repair.</p>
 
 <h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
-<p>A marker rides one beacon, so it can go missing, and a session whose marker is lost keeps its
-identity on every other event but loses the attribution the marker carried. That sets two rules:</p>
+<p><strong>A marker cannot go missing on its own.</strong> The client never sends one: it sends a
+<code>page_view</code> carrying flags, and the server raises the marker from them in the same
+atomic write (<a href="#s26">&sect;2.6.2</a>). So losing the marker means losing that beacon, and
+losing the session's <em>first</em> beacon means there is no session at all &mdash; the store is
+withheld until <code>sendAccepted</code> (<a href="#s19">&sect;1.9.2</a>). There is no state in
+which a session exists and its marker does not.</p>
+<p>Two rules still follow, because a breakdown and a total are not computed the same way:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
+<tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so the total does not depend on the marker having been raised</td></tr>
 <tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>A session with no value for that column groups under NULL, which the formatter renders <code>(not set)</code> (<a href="#s211">&sect;2.11</a>)</td></tr>
 </tbody></table></div>
 <p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
@@ -837,7 +843,7 @@ exist and why totals are never counted from them is <a href="#s13">&sect;1.3</a>
 <tr><td class="ev">form_start</td><td class="dash">—</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">form_submit</td><td class="dash">—</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">session_start</td><td class="dash">—</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
-<tr><td class="ev">first_visit</td><td class="dash">—</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 are a redundant floor for new-visitor, independent of the marker. Carries user-scoped acquisition</td></tr>
 </tbody></table></div>
 
 
@@ -1902,13 +1908,13 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 
 <p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
 window.</p>
-<h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen; a lost one is visible</h4>
+<h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen, and a lost one takes its session with it</h4>
 <p>The marker's event id is content-derived — <code>hash(site_id + session_id +
 'session_start')</code> — so racing writers produce the same row and the second insert is a
 duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
 Locks API is origin-scoped and could not reach.</p>
 
-<p>A lost marker leaves that session unattributed, so it groups under <code>(not set)</code>. A negative
+<p>A marker cannot be lost while its session survives, since both are one atomic write. A negative
 remainder is therefore a defect signal rather than a rounding artefact.</p>
 <h4 id="nA122"><span class="num">A.1.22</span>Marker overhead falls as the stream gets richer</h4>
 <div class="scroll"><table>
