@@ -391,15 +391,15 @@ shapes.</p>
 <div class="scroll"><table>
 <thead><tr><th>Question</th><th>Resolved by</th></tr></thead>
 <tbody>
-<tr><td>Where acquisition source lives</td><td>Derived in bulk from the visitor's <code>first_visit</code> event, so <strong>no keyed store at ingest</strong> and ingest stays a pure append</td></tr>
+<tr><td>Where acquisition source lives</td><td>On the visitor's <code>first_visit</code> event, resolved there like any other event's attribution, and carried forward by the visitor store</td></tr>
 <tr><td>ITP and cookie caps</td><td>Irrelevant. Safari caps a JS-set cookie at 7 days, and 24 hours on a <code>gclid</code> arrival &mdash; precisely the tagged arrival worth attributing. Any design carrying a long-lived anchor client-side has that ceiling; deriving from raw does not</td></tr>
-<tr><td>Changing an attribution model or lookback window</td><td>Reprocess and replace the table. A verdict written at ingest cannot be revisited; evidence plus a pass can</td></tr>
+<tr><td>Changing an attribution <em>model</em> &mdash; first touch, last click, a lookback window</td><td>A reporting choice, not an ingest one: the resolved values and the evidence are both stored, and a visualization selects which to read. Re-resolving after a parser fix is a reprocess over retained raw, which is a separate operation from the routine pass</td></tr>
 <tr><td>Identity stitching</td><td>A <code>user_id</code> arriving mid-session relabels that visitor's earlier events on the next pass &mdash; impossible if the fact row is final at write</td></tr>
 <tr><td>Session finalisation</td><td>Engagement time, exit page, bounce and duration are not knowable until the session closes, so they were never materialisable at insert</td></tr>
 <tr><td>A columnar reporting store later</td><td>Bulk load, partition replace, no row-level updates &mdash; so a move to such a store does not mean rewriting the pipeline</td></tr>
 </tbody></table></div>
 <p><strong>Realtime is a query of the raw table</strong>, so its dimension set is smaller rather
-than arbitrarily limited: only what is on the event can be reported live. OWA carries session-scoped values on the wire, so event and session scope are both raw-resident and only user scope waits for the pass.</p>
+than arbitrarily limited: only what is on the event can be reported live. attribution is resolved at ingest and written onto the event, so event and session scope are both raw-resident; only visitor scope needs the pass, and then only to copy it forward.</p>
 
 <h4><span class="num">1.5.3</span>What to carry and what to derive</h4>
 <p>The rule is not &ldquo;carry what cannot be derived&rdquo;: first-seen and session count are both readily derivable and are carried anyway. It is about what kind of thing the value is:</p>
@@ -677,8 +677,8 @@ observed and the surface realtime queries.</p>
 
 <p><strong>What raw does NOT have</strong> are the five attribution columns:
 <code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code> and
-<code>search_terms</code>. Those are readings of evidence rather than evidence — the referrer
-table changes and channel grouping is a classification — so they are derived in the pass. The
+<code>search_terms</code>. Those are readings of evidence rather than evidence, but ingest
+resolves them and writes them onto the event, so raw carries both the evidence and the reading. The
 consequence is stated in &sect;1.5 and is deliberate: a live query can show a referring host but not
 a resolved campaign.</p>
 
@@ -1009,6 +1009,16 @@ rather than as &ldquo;a transaction&rdquo;: on MySQL it is a transaction, and on
 single multi-row <code>INSERT</code> lands as one part, which satisfies it equally.</p>
 
 <h4><span class="num">2.6.2</span>The flags, and why acquisition keys off one</h4>
+<p><strong>Ingest also sets the attribution values, and the rule is two branches:</strong> an
+explicit tag wins, otherwise the referrer is classified &mdash; a search engine gives
+<code>organic-search</code> and the search terms, a known social host gives
+<code>social-network</code>, any other referrer gives <code>referral</code>, and no referrer at all
+gives <code>direct</code>. A table lookup, not a model, which is why it sits here beside the geo
+and device resolutions rather than in the pass.</p>
+<p class="note"><strong>Attribution <em>reporting</em> is a separate matter entirely</strong>
+&mdash; original versus last touch, and the window either is measured over. That is a choice the
+reporting layer makes over stored values and touchpoints (<a href="#s222">&sect;2.22</a>), and
+nothing about it reaches ingest.</p>
 <p>OWA has the flags already, with three different lifetimes:</p>
 <div class="scroll"><table>
 <thead><tr><th>Flag</th><th>Scope</th><th>Does</th></tr></thead>
@@ -1036,8 +1046,11 @@ count mismatch is a bug.</p>
 <li><strong>Observed</strong> &mdash; already in raw from the beacon. Copied across.</li>
 <li><strong>Resolved at ingest</strong> &mdash; a deterministic lookup, like geography from the
 address. Already done, which is why realtime can report on it.</li>
-<li><strong>Derived by the pass</strong> &mdash; a classification that can change later, or a value
-needing rows other than this one.</li>
+<li><strong>Copied by the pass</strong> &mdash; a value resolved elsewhere that has to appear on
+rows other than the one it was resolved on: the landing page onto every event of its session, a
+visitor's acquisition onto every session they have.</li>
+<li><strong>Computed by the pass</strong> &mdash; a value needing a set of rows rather than one,
+like engagement time or bounce, and not knowable until the session closes.</li>
 </ul>
 <p>Scope decides only how far the pass reaches for a derived value: the row, the session's other
 rows, or an event from years ago.</p>
@@ -1046,10 +1059,10 @@ rows, or an event from years ago.</p>
 <tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon</td></tr>
-<tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution. Where the pass cannot resolve it &mdash; the session's first event is not in the processed set &mdash; it writes the unresolved sentinel rather than NULL (<a href="#s211">&sect;2.11</a>)</td></tr>
+<tr><td>session</td><td><strong>source, medium, campaign</strong></td><td><strong>resolved at INGEST</strong>, on every event of the session. Its inputs &mdash; <code>session_referer</code> and the collected tags &mdash; ride every beacon, so each event resolves the same answer independently. The values are sticky because the inputs are; the pass does not touch them</td></tr>
 <tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
-<tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
-<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
+<tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>computed by the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
+<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>resolved at INGEST</strong> like any other event's, on the <code>first_visit</code> event. The pass copies it onto later rows, reading the visitor store because <strong>that event is usually not in this partition</strong></td></tr>
 </table></div>
 <p class="note">A partition is not self-contained on the read side: a row written today belongs to
 a visitor whose <code>first_visit</code> may be two years back. So the pass needs a visitor store
