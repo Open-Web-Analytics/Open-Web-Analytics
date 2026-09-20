@@ -521,7 +521,7 @@ down.</p>
 
 
 
-<h5>Raw — <code>owa_event_raw</code>, 48 columns</h5>
+<h5>Raw — <code>owa_event_raw</code>, 51 columns</h5>
 
 <p>Append-only, written one beacon at a time, never updated. It is the record of what was
 observed and the surface realtime queries.</p>
@@ -554,29 +554,32 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">23</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
 <tr><td class="n">24</td><td><code>browser_version</code></td><td>VARCHAR(32) NULL</td><td>split out of the same <code>raw_ua</code> parse, so <code>browser</code> is a name rather than a name-and-version string</td></tr>
 <tr><td class="n">25</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
-<tr><td class="n">26</td><td><code>device_type</code></td><td>VARCHAR(32)</td><td>desktop, mobile or tablet, from <code>raw_ua</code> at ingest. <a href="#s24">&sect;2.4</a> advertised <code>deviceType</code> with no column behind it</td></tr>
-<tr><td class="n">27</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
-<tr><td class="n">28</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
-<tr><td class="n">29</td><td><code>country_code</code></td><td>CHAR(2) NULL</td><td>ISO 3166-1 alpha-2, from the same lookup as <code>country</code></td></tr>
-<tr><td class="n">30</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">31</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>state or province, same lookup</td></tr>
-<tr><td class="n">32</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
-<tr><td class="n">33</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
-<tr><td class="n">34</td><td><code>consent_state</code></td><td>VARCHAR(32) NULL</td><td>what the page declared at send &mdash; granted, denied or absent. Recorded per event because it can change mid-session, and a row with no consent recorded is not the same as one with consent denied</td></tr>
-<tr><td class="n">35</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
-<tr><td class="n">36</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">37</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
-<tr><td class="n">38</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">39</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
-<tr><td class="n">40</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
-<tr><td class="n">41</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
-<tr><td class="n">42</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">43</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
-<tr><td class="n">44</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
-<tr><td class="n">45</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
-<tr><td class="n">46</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
-<tr><td class="n">47</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
-<tr><td class="n">48</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
+<tr><td class="n">26</td><td><code>os_version</code></td><td>VARCHAR(32) NULL</td><td>same parse. &ldquo;How much traffic is still on iOS&nbsp;16&rdquo; is the question it answers</td></tr>
+<tr><td class="n">27</td><td><code>device_type</code></td><td>VARCHAR(32)</td><td>desktop, mobile or tablet, from <code>raw_ua</code> at ingest. <a href="#s24">&sect;2.4</a> advertised <code>deviceType</code> with no column behind it</td></tr>
+<tr><td class="n">28</td><td><code>device_brand</code></td><td>VARCHAR(64) NULL</td><td>from <code>raw_ua</code> at ingest. Apple against Samsung is a group-by people ask for</td></tr>
+<tr><td class="n">29</td><td><code>device_model</code></td><td>VARCHAR(64) NULL</td><td>same parse, one level finer</td></tr>
+<tr><td class="n">30</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
+<tr><td class="n">31</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
+<tr><td class="n">32</td><td><code>country_code</code></td><td>CHAR(2) NULL</td><td>ISO 3166-1 alpha-2, from the same lookup as <code>country</code></td></tr>
+<tr><td class="n">33</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">34</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>state or province, same lookup</td></tr>
+<tr><td class="n">35</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
+<tr><td class="n">36</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
+<tr><td class="n">37</td><td><code>consent_state</code></td><td>VARCHAR(32) NULL</td><td>what the page declared at send &mdash; granted, denied or absent. Recorded per event because it can change mid-session, and a row with no consent recorded is not the same as one with consent denied</td></tr>
+<tr><td class="n">38</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
+<tr><td class="n">39</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">40</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
+<tr><td class="n">41</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">42</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
+<tr><td class="n">43</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
+<tr><td class="n">44</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
+<tr><td class="n">45</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">46</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
+<tr><td class="n">47</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
+<tr><td class="n">48</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
+<tr><td class="n">49</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
+<tr><td class="n">50</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
+<tr><td class="n">51</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
 </tbody></table></div>
 
 <p><strong>Raw holds the evidence; the denormalised table holds the reading.</strong> The
@@ -612,9 +615,9 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <p class="note">Why a page carries no identity hash, and what giving it one would have cost, is
 <a href="#nA118">A.1.18</a>.</p>
 
-<h5>Denormalised &mdash; <code>owa_event</code>: raw&rsquo;s 48 columns, plus these 16</h5>
+<h5>Denormalised &mdash; <code>owa_event</code>: raw&rsquo;s 51 columns, plus these 17</h5>
 
-<p>Every column of raw, unchanged and in the same order, then the sixteen below. Only these sixteen are listed: the first 48 are <a href="#s21">the raw table</a> verbatim. Queries hit this table; nothing else does.</p>
+<p>Every column of raw, unchanged and in the same order, then the seventeen below. Only these seventeen are listed: the first 51 are <a href="#s21">the raw table</a> verbatim. Queries hit this table; nothing else does.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Scope</th><th>Note</th></tr></thead>
@@ -627,14 +630,15 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <tr><td class="n">6</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>session</td><td>the session's first <code>page_location</code>. Makes landing-page reports a group-by: 215&nbsp;ms against 3.1&nbsp;s — <a href="#s13">&sect;1.3</a></td></tr>
 <tr><td class="n">7</td><td><code>landing_page_path</code></td><td>VARCHAR(1024)</td><td>session</td><td>the first event&rsquo;s <code>page_path</code>. Copied, not re-parsed</td></tr>
 <tr><td class="n">8</td><td><code>landing_page_query</code></td><td>VARCHAR(1024) NULL</td><td>session</td><td>the first event&rsquo;s <code>page_query</code></td></tr>
-<tr><td class="n">9</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
-<tr><td class="n">10</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
-<tr><td class="n">11</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
-<tr><td class="n">12</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">13</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">14</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
-<tr><td class="n">15</td><td><code>prev_event_ts</code></td><td>BIGINT UNSIGNED NULL</td><td>user</td><td>the visitor&rsquo;s previous event timestamp, from a window function over the partition. NULL on their first. Serves <code>daysSinceLastVisit</code> and <code>timeSinceLastVisit</code>, which had no anchor without it</td></tr>
-<tr><td class="n">16</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>partition</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
+<tr><td class="n">9</td><td><code>landing_page_title</code></td><td>VARCHAR(512)</td><td>session</td><td>the session&rsquo;s first <code>page_title</code>. Exit needs no twin: <code>is_exit</code> makes it a filter</td></tr>
+<tr><td class="n">10</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
+<tr><td class="n">11</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
+<tr><td class="n">12</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
+<tr><td class="n">13</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">14</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">15</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
+<tr><td class="n">16</td><td><code>prev_event_ts</code></td><td>BIGINT UNSIGNED NULL</td><td>user</td><td>the visitor&rsquo;s previous event timestamp, from a window function over the partition. NULL on their first. Serves <code>daysSinceLastVisit</code> and <code>timeSinceLastVisit</code>, which had no anchor without it</td></tr>
+<tr><td class="n">17</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>partition</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
 </tbody></table></div>
 
 <p><strong>Structurally identical to its staging table, by requirement.</strong> &sect;1.5's swap is
@@ -834,9 +838,10 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>exitPagePath</code></td><td>filtered</td><td><code>page_path</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>the 5% of pairs 1.10 costed</td></tr>
 <tr><td></td><td><code>exitPageLocation</code></td><td>filtered</td><td><code>page_location</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td></td></tr>
 <tr><td></td><td><code>priorPagePath</code></td><td><strong>open</strong></td><td>&mdash;</td><td><code>referer_url</code> holds the previous page only when it was a link. 1.x&rsquo;s <code>priorPage*</code> came from the session chain, which v2 would have to walk</td></tr>
-<tr><td></td><td><code>entryPageTitle / exitPageTitle</code></td><td>&mdash;</td><td>&mdash;</td><td>no landing or exit title column, and no report uses one</td></tr>
-<tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.x document type. <code>event_type</code> replaces it</td></tr>
-<tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>same walk as <code>priorPagePath</code>, same absence of a caller</td></tr>
+<tr><td></td><td><code>landingPageTitle</code></td><td>column</td><td><code>landing_page_title</code></td><td>the session&rsquo;s first title, stamped like the other landing columns</td></tr>
+<tr><td></td><td><code>exitPageTitle</code></td><td>filtered</td><td><code>page_title</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>needs no column of its own</td></tr>
+<tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.x&rsquo;s document type, which sorted pages from feed requests. <code>event_type</code> carries that distinction and nothing else was in it</td></tr>
+<tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>open for the same reason as <code>priorPagePath</code> &mdash; all three need the session chain walked</td></tr>
 <tr><td>Traffic source</td><td><code>source</code></td><td>column</td><td><code>source</code></td><td>the reading, written by the pass</td></tr>
 <tr><td></td><td><code>medium</code></td><td>column</td><td><code>medium</code></td><td></td></tr>
 <tr><td></td><td><code>sourceMedium</code></td><td>concat</td><td><code>source</code> + <code>medium</code></td><td></td></tr>
@@ -869,11 +874,17 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>city</code></td><td>column</td><td><code>city</code></td><td></td></tr>
 <tr><td></td><td><code>countryCode</code></td><td>column</td><td><code>country_code</code></td><td></td></tr>
 <tr><td></td><td><code>stateRegion</code></td><td>column</td><td><code>region</code></td><td></td></tr>
-<tr><td></td><td><code>latitude / longitude</code></td><td>&mdash;</td><td>&mdash;</td><td>dropped. A coordinate per event is a tracking capability, not a geography one, and GA surfaces neither</td></tr>
+<tr><td></td><td><code>continent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new. A pure function of the code, so it needs no column</td></tr>
+<tr><td></td><td><code>subContinent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new</td></tr>
+<tr><td></td><td><code>metro</code></td><td>&mdash;</td><td>&mdash;</td><td>US DMA coding. The group-by is meaningful; the dataset is licensed and we do not ship one</td></tr>
+<tr><td></td><td><code>latitude / longitude</code></td><td>&mdash;</td><td>&mdash;</td><td>dropped on privacy, not on usefulness: a coordinate per event locates a person, and the group-bys people want are <code>country</code>, <code>region</code> and <code>city</code></td></tr>
 <tr><td>Device</td><td><code>browserType</code></td><td>column</td><td><code>browser_type</code></td><td></td></tr>
 <tr><td></td><td><code>browserVersion</code></td><td>column</td><td><code>browser_version</code></td><td>split out of the <code>raw_ua</code> parse</td></tr>
 <tr><td></td><td><code>osType</code></td><td>column</td><td><code>os</code></td><td></td></tr>
+<tr><td></td><td><code>osVersion</code></td><td>column</td><td><code>os_version</code></td><td>new</td></tr>
 <tr><td></td><td><code>deviceType</code></td><td>column</td><td><code>device_type</code></td><td>new &mdash; desktop, mobile or tablet</td></tr>
+<tr><td></td><td><code>deviceBrand</code></td><td>column</td><td><code>device_brand</code></td><td>new</td></tr>
+<tr><td></td><td><code>deviceModel</code></td><td>column</td><td><code>device_model</code></td><td>new</td></tr>
 <tr><td></td><td><code>consentState</code></td><td>column</td><td><code>consent_state</code></td><td>new &mdash; what the page declared at send</td></tr>
 <tr><td></td><td><code>language</code></td><td>column</td><td><code>language</code></td><td></td></tr>
 <tr><td></td><td><code>ipAddress</code></td><td>column</td><td><code>ip_address</code></td><td>nullable: anonymise-on-write</td></tr>
@@ -894,7 +905,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>siteDomain / siteName</code></td><td>column</td><td>the site table</td><td>an admin lookup, not an event column</td></tr>
 <tr><td>Feed</td><td><code>feedType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.10 &mdash; nothing has written a feed request since 2021</td></tr>
 </tbody></table></div>
-<p class="note">Counts: 38 resolve to a column, 9 are computed (3 <code>concat</code>, 4 <code>map</code>, 2 <code>datePart</code>), 5 a <code>test</code> on a column, 2 <code>filtered</code> on <code>is_exit</code>, 5 a <code>params</code> path. 10 fall out. <strong>Two rows remain open</strong> &mdash; <code>priorPagePath</code>, and the pair that counts backwards from a purchase &mdash; and both need a rule rather than a renderer (<a href="#s31">&sect;3.1</a>).</p>
+<p class="note">Counts: 42 resolve to a column, 11 are computed (3 <code>concat</code>, 6 <code>map</code>, 2 <code>datePart</code>), 5 a <code>test</code> on a column, 3 <code>filtered</code> on <code>is_exit</code>, 5 a <code>params</code> path. 10 fall out. <strong>Two rows remain open</strong> &mdash; the <code>priorPage*</code> set and the pair that counts backwards from a purchase &mdash; and both need a rule rather than a renderer (<a href="#s31">&sect;3.1</a>).</p>
 
 <h4><span class="num">2.4.3</span>What changes in v2</h4>
 <div class="scroll"><table>
@@ -2187,6 +2198,16 @@ _rdi _tu _uip</code>.</li>
 <li><strong><code>user_engagement</code> is raised on <code>visibilitychange</code></strong> and
 the time rides as <code>_et</code>. Two tabs of one session each send their own residue and both
 count, because there is no id to collapse them against.</li>
+<li><strong>GA batches, and we do not.</strong> <code>batch_event_index</code> is &ldquo;the
+sequential order of each event within a batch&rdquo; and <code>event_bundle_sequence_id</code> is
+&ldquo;the sequential ID of the bundle in which these events were uploaded&rdquo;, so one request
+carries many events. GA locates each one deterministically without an id, by a coordinate:
+<code>batch_page_id</code> (which page of the engagement), <code>batch_ordering_id</code> (which
+request from that page) and <code>batch_event_index</code> (which event in that request). Note
+what <code>batch_page_id</code> is not &mdash; it is a page <em>ordinal</em>, not a page
+identifier. <a href="#s21">&sect;2.1.2</a>&rsquo;s id rests on the opposite arrangement, one event
+of a name per beacon; this is what that invariant is standing against, and the coordinate above is
+what would be needed instead of a per-event <code>ts</code> if batching ever arrived.</li>
 <li><strong>The path is collected, not only derived.</strong> <code>dp</code> rides beside
 <code>dl</code>, which is the same position <a href="#s21">&sect;2.1</a> takes on
 <code>page_path</code>.</li>
