@@ -472,8 +472,9 @@ the quietest kind of wrong. <strong>v2 removes the constraint rather than the se
 real at cutover and the clamp is what should be deleted then.</p>
 
 <h3 id="s15"><span class="num">1.5</span>Visitor identity <span class="chip c-dec">Decided</span></h3>
-<p>The one dimension that cannot be content-derived — everything else in v2 hashes from its own
-value, but a visitor is arbitrary and must be assigned, carried and trusted.</p>
+<p>A visitor is arbitrary: it must be assigned, carried and trusted, where a page or a referrer
+is just a value a report groups by. That is what makes it the one identity v2 has to mint, and
+the only one it can get wrong.</p>
 <div class="flag">
   <p class="h">Defect carried forward from 1.x</p>
   <p>The visitor id looks 63 bits wide because it lands in a BIGINT. It is a 10-digit unix
@@ -614,7 +615,7 @@ saw it. Erasure has to scan, not look up.</p>
 <tr><td><strong>Query-time sampling</strong></td><td>GA samples to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term.</td></tr>
 <tr><td><strong>Approximate counting, cardinality caps, thresholding</strong></td><td>GA4 ships all three, which is why counting <code>session_start</code> and reading its Sessions metric give two different defensible numbers, and why a breakdown need not sum to its total. All are scale accommodations a single tenant does not need — so <strong>every number exact, every breakdown summing to its total</strong> is a property v2 gets by construction and Google structurally cannot offer.</td></tr>
 <tr><td><strong>Retroactive reprocessing</strong></td><td>No retroactive goal conversion, no bot reclassification, no identity stitching backwards. Collection-time accuracy is the only chance, which raises the value of getting collection right.</td></tr>
-<tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 identifies a page as <code>hash( site_id + uri )</code> &mdash; URI, not URL &mdash; so both collapse with nothing configured. <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (&sect;3.5).</td></tr>
+<tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 stores the complete URL and lets a report group by a derived <code>pagePath</code> or <code>pagePathPlusQuery</code>, neither of which contains the host &mdash; so both collapse with nothing configured, and a report that wants the host asks for it (§1.10). <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (&sect;3.5).</td></tr>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Long-lived credentials off-origin</strong></td><td>Today the overlay's <code>api_url</code> — carrying a user's <code>apiKey</code> and its HMAC signature — is written to a cookie on the <em>tracked site's</em> domain, readable by any script there and sent on every request to that site. v2 mints a <strong>short-lived scoped token</strong> (one site, one page, read-only, minutes) carried in the fragment and held in memory, never a cookie. The signature then protects nothing and goes away</td></tr>
 <tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. Keeps it distinct from <code>(unknown)</code>, which means the breakdown could not attribute a session rather than the event carrying no value</td></tr>
@@ -654,7 +655,7 @@ type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</s
 <tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key; the only derived date part (1.x stores nine)</td></tr>
 <tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts on every event; new-visitor derives from it</td></tr>
 <tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>carried visitor history</td></tr>
-<tr><td class="n">11</td><td><code>page_uri</code></td><td>VARCHAR(1024)</td><td>URI not URL; page identity = <code>hash(site_id + uri)</code></td></tr>
+<tr><td class="n">11</td><td><code>page_location</code></td><td>VARCHAR(1024)</td><td>the complete URL as received, GA's <code>page_location</code>. <strong>No page identity hash</strong> — the path readings are dimensions derived from this, see below</td></tr>
 <tr><td class="n">12</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td></td></tr>
 <tr><td class="n">13</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td></td></tr>
 <tr><td class="n">14</td><td><code>medium</code></td><td>VARCHAR(64)</td><td rowspan="5">attribution: identified server-side at event processing, stamped on every event of the session (sticky)</td></tr>
@@ -742,7 +743,7 @@ observed and the surface realtime queries.</p>
 <tbody>
 <tr><td>identity and time</td><td><code>id</code>, <code>event_type</code>, <code>site_id</code>, <code>visitor_id</code>, <code>session_id</code>, <code>user_id</code>, <code>ts</code>, <code>yyyymmdd</code></td><td>observed, or assigned at collection</td></tr>
 <tr><td>carried anchors</td><td><code>visitor_fsts</code>, <code>prior_sessions</code></td><td>counters the client already maintains — §1.13's carry rule</td></tr>
-<tr><td>observed event</td><td><code>page_uri</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, <code>ip_address</code>, <code>language</code>, <code>raw_ua</code></td><td>on the beacon. <code>page_uri</code> carries its query string, which is where the campaign tags are — see below</td></tr>
+<tr><td>observed event</td><td><code>page_location</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, <code>ip_address</code>, <code>language</code>, <code>raw_ua</code></td><td>on the beacon. <code>page_location</code> is the whole URL, query included — which is where the campaign tags are</td></tr>
 <tr><td>mechanical resolutions</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>country</code>, <code>city</code></td><td>deterministic lookups from <code>raw_ua</code> and <code>ip_address</code>, no model and no cross-event context — so they resolve <strong>at ingest</strong>, which is why realtime has them (as GA's does)</td></tr>
 <tr><td>event-specific</td><td><code>click_x</code>, <code>click_y</code>, <code>page_width</code>, <code>page_height</code>, <code>target_url</code>, <code>element_path</code>, <code>element_tag</code>, <code>element_id</code>, <code>scroll_depth</code>, <code>engagement_msec</code>, <code>is_goal_event</code>, <code>revenue</code></td><td>observed; <code>engagement_msec</code> is the per-event delta, not a session total</td></tr>
 <tr><td>open-ended</td><td><code>params</code></td><td>what cannot be a column</td></tr>
@@ -757,34 +758,38 @@ a resolved campaign.</p>
 
 <p class="note"><strong>No <code>landing_url</code> column, and that is a correction.</strong>
 An earlier draft of this list gave raw one. In v2 it would be populated on the session's first
-event and NULL on every other — and on that one row it would duplicate <code>page_uri</code>,
+event and NULL on every other — and on that one row it would duplicate <code>page_location</code>,
 since the landing page <em>is</em> the page that event happened on. The pass reads the session's
 first event for the tags and the landing page alike, so the column earns nothing. <strong>v1 is
 different and keeps it</strong>: v1 has no pass, so its server must be told on every beacon or it
 cannot stamp the fact row — which is what PR&nbsp;#1117 ships.</p>
 
-<p><strong>Which turns on what &ldquo;URI&rdquo; excludes, and it is not the query.</strong>
-RFC&nbsp;3986 defines a URI as <code>scheme:[//authority]path[?query][#fragment]</code> — the
-query is a <em>component</em> of it, and <code>REQUEST_URI</code> carries it in every server
-that reports one. The distinction §1.9 draws with &ldquo;URI, not URL&rdquo; is about the
-<strong>authority</strong>: dropping scheme and host is exactly what collapses
-<code>mydomain.com/x</code> and <code>www.mydomain.com/x</code> into one page and lets domain
-aliases be dropped rather than ported. It was never about the query, and reading it that way is
-the easy mistake — it costs the campaign evidence.</p>
-
-<p><strong>So <code>page_uri</code> keeps its query string, and the plan has to say so, because
-identity cannot then hash it raw.</strong> Page identity is
-<code>hash(site_id + uri)</code> and §3.5 retires canonicalisation as v1-only machinery, so
-nothing normalises the URI before it is hashed. Hash the raw URI with its query and every
+<p><strong>And the page is stored as a URL, not a URI, because that is what it is.</strong>
+An earlier draft called this column <code>page_uri</code> and gave a page an identity —
+<code>hash(site_id + uri)</code>. Both are dropped. A hash has to commit to its input before
+anyone asks a question, which forced a decision about whether the query string was part of a
+page's identity; and neither literal answer was any good. Keep the query in the hash and every
 campaign-tagged arrival becomes a distinct page, fragmenting the landing-page report into one row
-per tag combination. Strip the query and the campaign evidence is gone from raw entirely.</p>
+per tag combination. Drop it and the campaign evidence is gone from raw entirely.</p>
 
-<p><strong>So the two are separated deliberately:</strong> <code>page_uri</code> stores the full
-URI <em>including</em> the query, and page identity hashes a <em>normalised</em> form of it with
-the campaign parameters removed. One column, two readings — the stored value is evidence, the
-hash is identity. This is the one piece of canonicalisation that does not disappear with v1, and
-it is cheaper than v1's, which rewrote stored URLs; here nothing is rewritten, the hash just
-ignores part of its input.</p>
+<p><strong>There is no such decision to make if the readings are dimensions.</strong>
+<code>page_location</code> stores the complete URL as received. What a report groups by is a
+derived dimension, computed at query time, and there can be more than one:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Dimension</th><th>Derived as</th><th>What it collapses</th></tr></thead>
+<tbody>
+<tr><td><code>pageLocation</code></td><td>the stored value</td><td>nothing — the evidence</td></tr>
+<tr><td><code>pagePathPlusQuery</code></td><td>drop scheme and host</td><td><code>www</code> against apex, and every other host variant</td></tr>
+<tr><td><code>pagePath</code></td><td>drop scheme, host and query</td><td>that, plus every campaign variant of one page</td></tr>
+</tbody></table></div>
+
+<p><strong>Domain aliases still die, and for a better reason than before.</strong> §1.9 retires
+them on the grounds that v2 identifies a page by URI rather than URL, so <code>www</code> and
+apex collapse with nothing configured. The conclusion holds; the mechanism was wrong. The
+collapse does not come from a hash — it comes from the host not being <em>in</em> the dimension
+two of the three group by. Nothing is configured because nothing has to be: the host is a column
+of its own, and a report that wants it asks for it.</p>
 
 <p><strong>What GA does, since the same question arises there.</strong> It stores the whole
 thing and derives both readings as separate dimensions, rather than choosing:</p>
@@ -793,22 +798,15 @@ thing and derives both readings as separate dimensions, rather than choosing:</p
 query. This is what the beacon carries as <code>dl</code>, confirmed by capture — the landing hit
 sends the URL with its UTMs intact.</li>
 <li><strong>Page path + query string</strong> — &ldquo;the parts of the URL that come after the
-domain&rdquo;. Exactly our <code>page_uri</code>, and the fact that GA had to name the query
+domain&rdquo;. Our <code>pagePathPlusQuery</code>, and the fact that GA had to name the query
 explicitly in a dimension called <em>path + query string</em> is itself the answer to whether a
 path implies one.</li>
 <li><strong>Page path</strong> — path only, query dropped. The identity-shaped reading.</li>
 </ul>
 
-<p><strong>But GA never has to pick one, and v2 does.</strong> GA groups by a string: whichever
-page dimension you choose IS the grouping, so both readings coexist at query time at no cost.
-&sect;1.10 gives a page an <em>identity</em> — <code>hash(site_id + uri)</code> — and a hash has
-to commit to its input before anyone asks a question. That is a constraint of our design rather
-than a property of the problem, and it is worth being clear that it is self-imposed: it buys the
-collapse of <code>www</code> and apex variants with nothing configured, which is what retires
-domain aliases, and it costs this decision about the query string.</p>
-
-<p>Storing the full URI and hashing a normalised form is how both are had at once — GA's two
-dimensions, from one stored column.</p>
+<p><strong>v2 does the same, which is what removed the choice.</strong> The constraint was
+self-imposed: it came from giving a page an identity when nothing needed one. Group by a string,
+derive the readings, and the question of what belongs in a page's identity does not arise.</p>
 
 <h5>Denormalised — <code>owa_event</code>, 48 columns</h5>
 
@@ -818,8 +816,8 @@ this table; nothing else does.</p>
 <div class="scroll"><table>
 <thead><tr><th>Added</th><th>Scope</th><th>Derived from</th></tr></thead>
 <tbody>
-<tr><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td><td>session</td><td>the session's first event — its <code>page_uri</code> query string, and <code>referer_url</code> — resolved against the referrer and search-engine tables</td></tr>
-<tr><td><code>landing_page_uri</code></td><td>session</td><td>the session's first event</td></tr>
+<tr><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td><td>session</td><td>the session's first event — the query string of its <code>page_location</code>, and <code>referer_url</code> — resolved against the referrer and search-engine tables</td></tr>
+<tr><td><code>landing_page_location</code></td><td>session</td><td>the session's first event</td></tr>
 <tr><td><code>is_exit</code></td><td>session, terminal</td><td>the session's last event — the flag §1.2 says the 5% of exit-page pairs need</td></tr>
 <tr><td><code>acq_source</code>, <code>acq_medium</code>, <code>acq_campaign</code>, <code>acq_ad</code>, <code>acq_search_terms</code></td><td>user</td><td>the visitor store, keyed on <code>visitor_id</code> — the only lookup the pass makes outside the partition</td></tr>
 </tbody></table></div>
@@ -846,7 +844,7 @@ that corpus and far too many for site-day totals. On that reading the layout is:
 <thead><tr><th>Part</th><th>Columns</th></tr></thead>
 <tbody>
 <tr><td>key</td><td><code>site_id</code>, <code>yyyymmdd</code></td></tr>
-<tr><td>context</td><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code>, <code>landing_page_uri</code>, <code>country</code>, <code>city</code>, <code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>host</code></td></tr>
+<tr><td>context</td><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code>, <code>landing_page_location</code>, <code>country</code>, <code>city</code>, <code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>host</code></td></tr>
 <tr><td>measures</td><td><code>sessions</code>, <code>events</code>, <code>page_views</code>, <code>new_visitors</code>, <code>engaged_sessions</code>, <code>bounces</code>, <code>engagement_msec</code>, <code>goal_events</code>, <code>revenue</code></td></tr>
 </tbody></table></div>
 
@@ -1234,7 +1232,7 @@ the pass has to reach; that cut decides <em>whether it reaches at all</em>.</p>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon, which GA does not</td></tr>
 <tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
-<tr><td>session</td><td>landing page / <code>landing_page_uri</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
+<tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
 </table>
@@ -1717,7 +1715,7 @@ decided months ago.</p>
 <p><strong>In v1 the tracker carries it on every beacon; in v2 it does not.</strong> The
 difference is that v1 has no pass. Its server is told or it cannot stamp the fact row, so the
 landing URL has to ride the session store and go out with every request. v2 has somewhere to put
-the work: <strong>the pass stamps <code>landing_page_uri</code> onto every denormalised row</strong>, so
+the work: <strong>the pass stamps <code>landing_page_location</code> onto every denormalised row</strong>, so
 the wire only needs it once, on the landing beacon, where <code>page_url</code> already is it. The
 tracker cookie loses the key entirely.</p>
 
@@ -2953,8 +2951,8 @@ would pass either way.</p>
 <p>The area needing least work: a single event table handles tenancy naturally, <code>site_id</code>
 is a column, isolation is a <code>WHERE</code>, and it already leads the composite indexes.
 Permissions are already per-site.</p>
-<p>Two things change. <code>site_id</code> becomes more load-bearing — it scopes page identity as
-<code>hash(site_id + uri)</code> — so it must be immutable. And <code>site_family</code> is
+<p>Two things change. <code>site_id</code> becomes more load-bearing — it leads every composite index and every
+report's <code>WHERE</code> — so it must be immutable. And <code>site_family</code> is
 written by site creation and read nowhere; it was built for a UI that never shipped, and should be
 dropped rather than ported.</p>
 <p><strong>Retention stays installation-wide, not per site.</strong> A partition of the shared event
