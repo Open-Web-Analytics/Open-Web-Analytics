@@ -205,9 +205,10 @@ their own content rather than assigned.</p>
 <a href="#sa1">the appendix</a>.</p>
 
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
-<p><strong>A session is not a table and not a row.</strong> Session totals come from the day
-rollup; session context is stamped on every event. Marker events (<a href="#s13">&sect;1.3</a>)
-exist for what they carry, not for what they count.</p>
+<p><strong>A session is not a table and not a row.</strong> Session context is stamped on every
+event, so a session is countable from the denormalised table directly or from the rollup, whichever
+suits the query &mdash; the rollup is the same computation precomputed, not a separate authority.
+Marker events (<a href="#s13">&sect;1.3</a>) exist for what they carry, not for what they count.</p>
 
 <h4><span class="num">1.2.1</span>Engagement is measured in deltas</h4>
 <p><code>engagement_msec</code> rides every outgoing event: the time accrued on the current page
@@ -248,10 +249,12 @@ query-builder feature rather than a schema change.</li>
 
 <h4><span class="num">1.2.4</span>A record's existence never depends on one packet</h4>
 <p><strong>Values may degrade. Records must not vanish.</strong> A marker event rides a single
-beacon, so losing one would erase a session while its other events still counted &mdash; which is
-why session totals come from the rollup (<a href="#s13">&sect;1.3.2</a>). A delta or a stamped
-value rides every event, so losing one costs nothing or a single increment. Where a value can go on
-either shape, it goes on every event.</p>
+beacon, so anything carried <em>only</em> there is lost with it. That is why a session's identity
+and context ride every event instead: the session is still countable, and still attributable, from
+any of its other rows. What a lost marker costs is the payload the marker alone carried
+(<a href="#s13">&sect;1.3.2</a>). A delta or a stamped value rides every event, so losing one costs
+nothing or a single increment. <strong>Where a value can go on either shape, it goes on every
+event.</strong></p>
 
 <h3 id="s13"><span class="num">1.3</span>Events and markers <span class="chip c-dec">Decided</span></h3>
 <p>The event set is tabulated in <a href="#s22">&sect;2.2</a>.</p>
@@ -261,25 +264,29 @@ already riding the session's first <code>page_view</code> request, so they cost 
 wire.</p>
 
 <h4><span class="num">1.3.1</span>What the markers are for</h4>
-<p>A metric and a dimension can only be combined where a row exists at their shared grain.
-<code>session_start</code> is what gives sessions that row: without it, &ldquo;sessions by landing
-page&rdquo; is not slow, it is <em>unavailable</em> &mdash; the job <code>owa_session</code>'s 121
-columns do in 1.x. Markers also carry the attribution the client knew at that moment, and they are
-the natural thing to name as a goal event.</p>
+<p><strong>A marker gives a session one row of its own.</strong> Session-grain questions are
+answerable without it &mdash; every event carries the session's id and context, so
+&ldquo;sessions by landing page&rdquo; is a <code>COUNT(DISTINCT session_id)</code> grouped by a
+stamped column (<a href="#s15">&sect;1.5.1</a>). The marker makes that a row count instead of a
+distinct count, which is the cheaper shape over a wide window.</p>
+<p>Two things only the marker carries: <strong>the attribution the client knew at that
+moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scoped on
+<code>first_visit</code> &mdash; and a natural thing to name as a goal event.</p>
 
 <h4><span class="num">1.3.2</span>Totals, breakdowns, and the <code>(unknown)</code> row</h4>
 <p>A marker rides one beacon, so it can go missing. That sets three rules:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>A session <strong>total</strong></td><td>the day rollup</td><td>A lost marker then degrades that session's attribution without erasing the session</td></tr>
+<tr><td>A session <strong>total</strong></td><td>the event rows &mdash; directly, or from the rollup, which precomputes the same thing</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
 <tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
 <tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
-<p><strong>The rollup is the authority for session counts and their breakdowns</strong>, which is
-why it carries the session's dimensional context rather than only its measures
-(<a href="#s21">&sect;2.1</a>). Where the two meet on one screen the total wins and the
-<code>(unknown)</code> row carries the remainder. Two rules keep that honest:</p>
+<p>The rollup carries the session's dimensional context rather than only its measures
+(<a href="#s21">&sect;2.1</a>), so a breakdown can be served from it without counting markers at
+all &mdash; markers are a fast path, not the source of truth. Where a total and a breakdown meet on
+one screen the total wins, and the <code>(unknown)</code> row carries the remainder. Two rules keep
+that honest:</p>
 <ul>
 <li>the row appears only for a <strong>positive</strong> remainder, labelled
 <code>(unknown)</code>, never blended into <code>(not set)</code>, which means something else
@@ -333,7 +340,7 @@ can check.</li>
 <tbody>
 <tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed</td><td class="n">692,829</td></tr>
 <tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns &mdash; one pass</td><td class="n">692,829</td></tr>
-<tr><td>Rollup</td><td>day &times; dimensional context</td><td>totals and trends, start-day attributed</td><td class="n">5,785</td></tr>
+<tr><td>Rollup</td><td>day &times; dimensional context</td><td>a precomputation of the layer above, for windows too wide to scan. Start-day attributed</td><td class="n">5,785</td></tr>
 </tbody></table></div>
 <p><strong>The fact table stops being primary.</strong> Events land in raw exactly as they arrived.
 A pass reads that and writes a denormalised fact table with session- and user-scoped values
@@ -416,13 +423,16 @@ physically is rather than a policy.</li>
 </ul>
 
 <h3 id="s16"><span class="num">1.6</span>Freshness and the API <span class="chip c-dec">Decided</span></h3>
-<p>Two freshness tiers. Cost tracks <em>window width</em>, not table size, so a thirty-minute window
-is trivial against raw events while a year is not &mdash; the rollup buys breadth, not recency.</p>
+<p>Two freshness tiers, and the split is a cost choice rather than two sources of truth.
+<strong>Cost tracks <em>window width</em>, not table size</strong>, so a thirty-minute window is
+trivial against raw events while a year is not. Everything the rollup answers is derivable from the
+denormalised table; it exists so a wide window does not have to scan, and the lag is what that
+costs.</p>
 <div class="scroll"><table>
 <thead><tr><th>View</th><th>Reads</th><th>Freshness</th></tr></thead>
 <tbody>
 <tr><td>Realtime &mdash; &ldquo;what is happening now&rdquo;</td><td>raw events, short window</td><td>immediate</td></tr>
-<tr><td>Historical &mdash; &ldquo;last month by source&rdquo;</td><td>rollup</td><td>last job run</td></tr>
+<tr><td>Historical &mdash; &ldquo;last month by source&rdquo;</td><td>rollup, or the denormalised table for a narrow window</td><td>last job run, or immediate</td></tr>
 </tbody></table></div>
 <p>So the freshest number in the system is the most naively computed one, and &ldquo;is my tracking
 working?&rdquo; &mdash; the question that must never be stale &mdash; never touches a summary.</p>
@@ -754,8 +764,7 @@ one step or the swap starts failing.</p>
 
 <p><strong>The grain is one row per day &times; dimensional context</strong>, which is what
 reconciles the two things asked of this table: <a href="#s15">&sect;1.5</a> counts 5,785 rows
-against 692,829 events, and <a href="#s13">&sect;1.3.2</a> makes it the authority for session
-counts <em>and</em> their breakdowns, which means it has to carry the session's dimensional
+against 692,829 events, and <a href="#s13">&sect;1.3.2</a> has breakdowns served from it without counting markers, which means it has to carry the session's dimensional
 context rather than only its measures. 5,785 is far too few for session grain over that corpus
 and far too many for site-day totals.</p>
 
