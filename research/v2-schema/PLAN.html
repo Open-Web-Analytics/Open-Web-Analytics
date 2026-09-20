@@ -326,7 +326,7 @@ the redundant floor for new-visitor.</div>
   rollup restores exactly that at the session grain.</p>
 </div>
 
-<h4>Two storage layers — the session table proved unnecessary</h4>
+<h4>The session table proved unnecessary</h4>
 <p>An earlier draft kept a session-grain derived table (~30 columns, <code>owa_session</code>'s
 grain reborn). It did not survive review: the v2 session primitives already make every session
 metric a <strong>single-pass aggregate over the fact table</strong>. Deltas are additive, so
@@ -340,9 +340,16 @@ its event rows, so the event table <em>is</em> the session-grain table. (This is
 <div class="scroll"><table>
 <thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th>Rows (measured)</th></tr></thead>
 <tbody>
-<tr><td>Fact table</td><td>event</td><td>realtime, and all breakdowns — one-pass</td><td class="n">692,829</td></tr>
+<tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed (§1.13)</td><td class="n">692,829</td></tr>
+<tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns — one-pass</td><td class="n">692,829</td></tr>
 <tr><td>Day rollup</td><td><code>yyyymmdd</code></td><td>totals and trends, start-day attributed (0.23% of sessions cross midnight)</td><td class="n">5,785</td></tr>
 </tbody></table></div>
+<p class="note"><strong>This table said TWO layers when it was written, and the measurement that
+put it here is unaffected by the third.</strong> §1.13 split the fact table into raw and
+denormalised; what this section established — that a session-grain table is unnecessary, because
+session-scoped values are stamped on every event row — is a statement about GRAIN, not about how
+many layers hold it. The 215&nbsp;ms group-by still beats the 3.1&nbsp;s first-event join, and it
+now happens against the denormalised layer.</p>
 <p><strong>The markers are the breakdown fast path.</strong> With <code>session_start</code> in the
 stream, an interactive breakdown counts marker rows instead of deduplicating session ids —
 measured via 1.x's <code>is_entry_page</code> proxy: <strong>92&nbsp;ms vs 373&nbsp;ms</strong>
@@ -876,7 +883,7 @@ time. Reporting currently cannot express a normalised column — the dimension r
 table alias onto whatever it is given, so <code>COALESCE(...)</code> is not expressible as a
 dimension today.</p>
 
-<h3 id="s113"><span class="num">1.13</span>Three storage layers: raw, denormalised, rollup <span class="chip c-open">Proposed</span></h3>
+<h3 id="s113"><span class="num">1.13</span>Three storage layers: raw, denormalised, rollup <span class="chip c-dec">Decided</span></h3>
 
 <p><strong>The fact table stops being primary.</strong> Events land in a raw, append-only table
 exactly as they arrived. A pass reads that and writes a <em>denormalised</em> fact table with
@@ -1667,9 +1674,11 @@ rather than a log line. 1.x has had two scheduler-adjacent stalls already.</p>
 
 <h4>Consequences for decisions already taken</h4>
 <ul>
-<li><strong>&sect;1.10 says two storage layers.</strong> This makes it three. Raw plus
-denormalised roughly doubles event storage before the rollup, recoverable by pruning raw &mdash;
-at the cost of re-derivability past that horizon, which is one of the main benefits.</li>
+<li><strong>&sect;1.4's layer table said two.</strong> It now says three, and carries a note
+saying why its own measurement is unaffected — that finding was about grain, not about layer
+count. Raw plus denormalised roughly doubles event storage before the rollup, recoverable by
+pruning raw &mdash; at the cost of re-derivability past that horizon, which is one of the main
+benefits.</li>
 <li><strong>&sect;1.6&rsquo;s two freshness tiers get a mechanism.</strong> Event-grain immediate
 is the raw table; everything attributed waits for the pass. The tier boundary is no longer a
 policy, it is where the data physically is.</li>
@@ -1679,7 +1688,15 @@ derived in bulk rather than looked up at all. The pass does keep a visitor-cardi
 that derivation in; see the pass section above, which is where the distinction is drawn.</li>
 </ul>
 
-<h4>Open</h4>
+<h4>What is still open, now that the architecture is not</h4>
+
+<p><strong>The shape is decided; these are numbers nobody has measured and one mechanism still
+to specify.</strong> They are listed as open because they size the design, not because they could
+change it &mdash; a different answer to any of them changes a cadence or a partition width, not
+whether there are three layers or what the pass does. Two of them (idempotency, partition swap)
+are settled in substance above and appear here only because their implementation has not been
+written.</p>
+
 <ul>
 <li><strong>Reprocess cadence, and it is bounded by the partition scheme.</strong> A swap
 replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact
@@ -1983,11 +2000,11 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     update. §1.13 turned it into <strong>three</strong> — raw, denormalised, rollup — and
     brought with them a denormalisation pass, a visitor store with an inactivity TTL,
     ingest-time event expansion under one transaction, a two-stage partition cycle, and a
-    scheduling model. It is no longer one item and no longer small: it is the largest
-    undecided thing in this document, and §1.13 is still marked Proposed with open questions
-    of its own — rebuild granularity, whether the rebuild set is the whole window,
-    client-side lateness, multi-site partitioning. Everything below that touches storage waits
-    on it.</span></li>
+    scheduling model. It is no longer one item and no longer small: it is the largest piece
+    of work in this document. §1.13 is <strong>Decided</strong> as of 20 Sep, so what remains
+    there is sizing rather than design — rebuild granularity, whether the rebuild set is the
+    whole window, client-side lateness, multi-site partitioning — and none of it blocks
+    starting. Everything below that touches storage waits on this item.</span></li>
     <li><strong><code>msec</code> carries a real fraction of a second</strong>
     <span class="chip c-dec">Decided</span> <span class="dash">&mdash; 3&nbsp;Sep&nbsp;2026,
     for v2 and deliberately <em>not</em> for 1.x. <code>owa_request.msec</code> is declared
@@ -2054,8 +2071,10 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   chunk seq are deliberately blocked on <code>owa_event</code> so they never pay for a throwaway
   1.x column.</p>
   <p><strong>So Phase 5 has not moved while the design under it has moved a great deal.</strong>
-  §1.13 needs to stop being Proposed before item 1 can be scoped — that is the next
-  decision, rather than the next piece of code.</p>
+  §1.13 was marked <strong>Decided</strong> on 20 Sep, which unblocks item 1: what is left in
+  that section is sizing — cadences and partition widths — not architecture, and none of it
+  has to be settled before the tables can be created. The next thing is code, not another
+  decision.</p>
 </div>
 
 <div class="flag">
