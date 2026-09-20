@@ -137,13 +137,27 @@ final class VisitorAcquisitionTest extends IngestionTestCase
         $sessionId = random_int(1000000000000, 9999999999999);
         $sourceId  = random_int(1000000000, 9999999999);
 
-        $db->query(sprintf(
-            'INSERT INTO owa_source_dim (id, source_domain) VALUES (%d, "(not set)")', $sourceId));
-        $db->query(sprintf(
-            'INSERT INTO owa_session (id, site_id, source_id, medium) VALUES (%d, "%s", %d, "(not set)")',
-            $sessionId, md5('owa-test-site'), $sourceId));
-        $db->query(sprintf(
-            'INSERT INTO owa_visitor (id, first_session_id) VALUES (%d, %d)', $visitorId, $sessionId));
+        /*
+         * yyyymmdd is NOT NULL with no default on the partitioned session
+         * table, and an insert omitting it is REFUSED. Db::query() answers
+         * false rather than throwing, so a fixture that leaves it out fails in
+         * silence -- and this test then asserted NULL against a row the
+         * backfill had never seen, which is NULL for the wrong reason. Every
+         * insert is asserted for the same reason.
+         */
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_source_dim (id, source_domain) VALUES (%d, "(not set)")',
+            $sourceId)), 'source_dim fixture insert failed');
+
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_session (id, site_id, yyyymmdd, source_id, medium)
+                  VALUES (%d, "%s", %d, %d, "(not set)")',
+            $sessionId, md5('owa-test-site'), (int) date('Ymd'), $sourceId)),
+            'session fixture insert failed');
+
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_visitor (id, first_session_id) VALUES (%d, %d)',
+            $visitorId, $sessionId)), 'visitor fixture insert failed');
 
         /*
          * Run as a subprocess, the way an operator runs it.
@@ -218,6 +232,67 @@ final class VisitorAcquisitionTest extends IngestionTestCase
 
         $this->assertSame('direct', $row['first_session_medium'],
             "medium's default is a real answer, not an absence");
+    }
+
+    /**
+     * A visitor whose id is NEGATIVE is backfilled too.
+     *
+     * Visitor ids are signed BIGINTs and a large share of the pre-rekey ones
+     * are below zero -- crc32 values cast into a signed column. The backfill
+     * walks by id, and starting that walk at 0 skipped every one of them in
+     * silence: not an error, not a warning, just 12,941 visitors on demo and
+     * 2,183 on peteradamsphoto left empty and re-reported as outstanding work
+     * on every rerun.
+     *
+     * Asserted through the command rather than by reading its SQL, because the
+     * bug was in a starting VALUE and no amount of source scanning would have
+     * caught it.
+     */
+    public function testBackfillReachesNegativeVisitorIds(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $visitorId = -1 * random_int(1000000000, 2000000000);
+        $sessionId = random_int(1000000000000, 9999999999999);
+        $sourceId  = random_int(1000000000, 9999999999);
+
+        // Each insert is asserted. Db::query() returns false on error, so a
+        // fixture that fails silently would leave this test asserting that the
+        // backfill did not fill a row that was never there to fill.
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_source_dim (id, source_domain) VALUES (%d, "negative-id-probe.test")',
+            $sourceId)), 'source_dim fixture insert failed');
+
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_session (id, site_id, yyyymmdd, source_id, medium)
+                  VALUES (%d, "%s", %d, %d, "referral")',
+            $sessionId, md5('owa-test-site'), (int) date('Ymd'), $sourceId)),
+            'session fixture insert failed');
+
+        $this->assertNotFalse($db->query(sprintf(
+            'INSERT INTO owa_visitor (id, first_session_id) VALUES (%d, %d)',
+            $visitorId, $sessionId)), 'visitor fixture insert failed');
+
+        // ...and that the join the backfill depends on actually resolves.
+        $this->assertNotFalse($db->get_row(sprintf(
+            'SELECT v.id FROM owa_visitor v JOIN owa_session s ON s.id = v.first_session_id
+              WHERE v.id = %d', $visitorId)),
+            'the visitor does not join to its session, so there is nothing for the backfill to read');
+
+        shell_exec(escapeshellarg(PHP_BINARY) . ' '
+            . escapeshellarg(OWA_DIR . 'cli.php')
+            . ' cmd=backfill-visitor-acquisition 2>&1');
+
+        $row = $this->visitorRow((string) $visitorId);
+
+        $this->assertNotFalse($row, 'the probe visitor row vanished');
+        $this->assertSame('negative-id-probe.test', $row['first_session_source'],
+            'a visitor with a negative id must be backfilled like any other');
+        $this->assertSame('referral', $row['first_session_medium']);
+
+        $db->query(sprintf('DELETE FROM owa_visitor WHERE id = %d', $visitorId));
+        $db->query(sprintf('DELETE FROM owa_session WHERE id = %d', $sessionId));
+        $db->query(sprintf('DELETE FROM owa_source_dim WHERE id = %d', $sourceId));
     }
 
     /**
