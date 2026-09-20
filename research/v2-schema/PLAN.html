@@ -225,7 +225,7 @@ since the last report. Losing a beacon then costs one increment rather than one 
 fires on any hide at any size &mdash; the threshold gates read-time classification, never the send,
 or it would bake itself into collection. <strong>It is delivered once</strong>, at hide; losing that
 beacon costs that increment like any other. Two tabs of one session each send their own residue and
-both are real, so nothing has to be deduplicated and the event needs no derived id
+both are real &mdash; not a duplicate to collapse, since they differ in <code>ts</code>
 (<a href="#nA132">A.1.32</a>).</p>
 <p><strong>Final-page dwell is the one irreducible lossy attempt</strong>, and the thing 1.x cannot
 measure at all.</p>
@@ -529,13 +529,13 @@ observed and the surface realtime queries.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>. Content-derived, client-minted or random by event type &mdash; &sect;2.1.2</td></tr>
+<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>. Derived from the event&rsquo;s own content &mdash; &sect;2.1.2</td></tr>
 <tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>the taxonomy names — <a href="#s13">&sect;1.3</a></td></tr>
 <tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>leads every composite index. Immutable</td></tr>
 <tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>the one identity v2 mints — <a href="#s14">&sect;1.4</a></td></tr>
 <tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds its creation timestamp, which the midnight rule reads. <strong>Not unique on its own</strong> &mdash; two visitors starting in the same second can share one, so a session is counted as distinct <code>(visitor_id, session_id)</code> (<a href="#s12">&sect;1.2</a>)</td></tr>
 <tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared, forward-only. The only field that outlives a cookie</td></tr>
-<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned, zone-less. The zone is applied once, into <code>yyyymmdd</code></td></tr>
+<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>stamped once at edge receipt, zone-less, microseconds. The zone is applied once, into <code>yyyymmdd</code>; the resolution is what makes the id unique (&sect;2.1.2)</td></tr>
 <tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key. Not retroactive if the configured zone changes</td></tr>
 <tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts. <code>is_new_visitor</code> derives from it</td></tr>
 <tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>session count, carried not derived — <a href="#s15">&sect;1.5</a></td></tr>
@@ -659,48 +659,39 @@ same primary key. So staging carries no convenience columns, and a schema change
 one step or the swap starts failing.</p>
 
 <h4><span class="num">2.1.2</span>How an event id is derived</h4>
-<p>An id is <strong>63 bits, always positive</strong>, and is either derived from the event&rsquo;s
-own content or random. It has to be derived wherever the same event can arrive twice; random is
-safe only where a second arrival carries the first id with it.</p>
+<p><strong>Every event id is derived from the event, by one formula, with no exceptions:</strong></p>
+<pre><code>id = wideStringGuid( site_id + visitor_id + session_id + ts + event_name )</code></pre>
+<p>Nothing is minted. The edge stamps <code>ts</code> and queues the beacon
+(<a href="#s21">&sect;2.1.3</a>); ingest expands it and derives an id per event from inputs that
+are all on the queue item. A redelivery therefore derives the same ids and collapses at
+<code>PK (id, yyyymmdd)</code> &mdash; which is the whole reason the id is content-derived rather
+than assigned.</p>
 
-<p><strong>One derivation serves every derived id</strong> &mdash;
-<code>hash(site_id + visitor_id + session_id + event_name)</code> &mdash; and each event type
-declares which parts of that key it uses:</p>
+<p><strong>The expansion needs no ordering and no counter.</strong> One beacon yields at most one
+event of any given name &mdash; <code>page_view</code>, <code>session_start</code>,
+<code>first_visit</code> &mdash; so <code>event_name</code> separates them whatever order they are
+built in. That invariant is what the formula rests on: if a beacon ever carries two events of one
+name, the fix is a per-event <code>ts</code>, not a discriminator bolted onto the key.</p>
 
-<div class="scroll"><table>
-<thead><tr><th>Event</th><th>Key</th><th>Why that key</th></tr></thead>
-<tbody>
-<tr><td><code>session_start</code></td><td>site, visitor, session, name</td><td>At most once per session. Raised server-side from <code>is_new_session_start</code>, which is scoped to one request (<a href="#s26">&sect;2.6.2</a>), so what the derived id collapses is that one request being received twice &mdash; a replay, or the session&rsquo;s first beacon arriving as two separate receipts (<a href="#nA120">A.1.20</a>)</td></tr>
-<tr><td><code>first_visit</code></td><td>site, visitor, name</td><td>At most once per visitor, ever. Leaving the session out makes the id say exactly that, so a second <code>first_visit</code> for one visitor collapses whatever raised it. With <code>session_id</code> in the key it would not, and the only thing keeping it unique would be that <code>is_new_visitor_created</code> marks the single request that minted the visitor (<a href="#s26">&sect;2.6.2</a>). An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
-<tr><td>every other event, <code>page_view</code> and <code>user_engagement</code> included</td><td>not derived &mdash; random, minted once at edge receipt</td><td>The id travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays it and collapses at the primary key</td></tr>
-</tbody></table></div>
-
-<p class="note">Both of the other two parts earn their place. <code>session_id</code> is not
-unique on its own (<a href="#s12">&sect;1.2</a>) &mdash; two visitors starting in the same second
-can share one &mdash; so without <code>visitor_id</code> the key would derive a single id for both
-their markers and drop one. And <code>visitor_id</code> carries no site: the tracker mints it as a
-timestamp plus nine random digits and the salt its callers still pass is discarded
-(<a href="#s14">&sect;1.4</a>). Every report filters by site, so two sites minting the same
-<code>visitor_id</code> stay correctly separated in reporting &mdash; but the primary key is global
-to a partition, and a partition holds every site&rsquo;s rows
-(<a href="#s217">&sect;2.17</a>).</p>
+<p><strong>The resolution of <code>ts</code> is the uniqueness guarantee.</strong> Two events
+collide only when one visitor and session produce two beacons at the same <code>ts</code> carrying
+the same event name. At second resolution that is reachable; at microsecond resolution it is not.
+<code>owa_request.msec</code> is broken in 1.x and deferred to v2 for sub-second ordering
+(<a href="#nA111">A.1.11</a>) &mdash; this is the second reason to fix it, and it sets the unit.</p>
 
 <p><strong>The hash is 1.x&rsquo;s, unchanged.</strong> <code>Lib::wideStringGuid()</code>: sha1 of
 the lowercased string, first 16 hex characters, split into two 32-bit halves with the top bit of
-the high half masked off. The two halves keep every intermediate inside the integer range: all 16
-characters through <code>hexdec()</code> produce a float, which loses precision and whose cast to
-int is undefined in PHP. Several nodes derive ids for the same content and have to agree on it. Reusing it means one
-derivation serves both pipelines while they run side by side (<a href="#s19">&sect;1.9</a>).</p>
+the high half masked off, giving 63 bits and always positive. The two halves keep every
+intermediate inside the integer range: all 16 characters through <code>hexdec()</code> produce a
+float, which loses precision and whose cast to int is undefined in PHP. Several nodes derive ids
+for the same content and have to agree on it.</p>
 
-<p><strong>Uniqueness is required within a partition, not globally.</strong> The primary key is
+<p class="note">Uniqueness is required within a partition, not globally: the primary key is
 (<code>id</code>, <code>yyyymmdd</code>), so two events a week apart may share an id with no
-effect. Against a 2<sup>63</sup> key space, a day of 10 million events carries roughly a
-5&nbsp;&times;&nbsp;10<sup>&minus;6</sup> chance of one collision within that day; the loser is
-silently dropped as a duplicate key.</p>
-
-<p class="note">Derived ids also take <code>yyyymmdd</code> from the timestamp
-inside <code>session_id</code> rather than from receipt, or a retry after midnight lands in a
-partition where the primary key cannot see the original &mdash; <a href="#s21">&sect;2.1.3</a>.</p>
+effect. Note also what this is not &mdash; 1.x derives <em>dimension</em> ids from content and
+mints <em>fact</em> row ids randomly (<code>Lib::generateRandomUid()</code>). v2 derives the fact
+id too, because a fact that arrives twice is the same fact; two facts that differ in any input
+differ in their id.</p>
 
 <h4><span class="num">2.1.3</span>Notes on both</h4>
 <p class="note">Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
@@ -708,14 +699,13 @@ partition where the primary key cannot see the original &mdash; <a href="#s21">&
 <code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
 decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
 dimension FKs — and bot rows entirely, refused at ingest.</p>
-<div class="note"><strong>The midnight rule</strong> — re-derived after server materialization,
-still necessary. Dedup rides PK <code>(id, yyyymmdd)</code> (a partitioned table cannot have a
-unique key omitting the partition column), and two cases still hand a second attempt a fresh
-receipt date: the engagement residue (beacon and retry are independent arrivals) and the
-session's first beacon arriving as two separate receipts. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
-embedded in <code>session_id</code> — deterministic on every attempt; the entropy fix must keep
-the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at edge receipt and
-travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
+<div class="note"><strong>The midnight rule</strong> &mdash; re-derived after server
+materialization, still necessary. Dedup rides PK <code>(id, yyyymmdd)</code>, since a partitioned
+table cannot have a unique key omitting the partition column, so a redelivery has to land in the
+same partition as the original or the key cannot see it. <code>ts</code> is stamped <em>once at
+edge receipt and travels with the queue item</em>, and <code>yyyymmdd</code> is derived from that
+<code>ts</code>, so every attempt lands in one partition however long it sat in the queue. The
+same property makes the id stable (&sect;2.1.2).</div>
 <div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
 config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
 abstracted away. <strong>Raw requires a row store</strong> &mdash; it takes one insert per beacon, the one thing
@@ -1926,9 +1916,10 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 <p>Recorded against a rollup that is now deferred (<a href="#s15">&sect;1.5</a>); what it measures is the cost of the <code>DISTINCT</code> itself, over its trailing
 window.</p>
 <h4 id="nA120"><span class="num">A.1.20</span>A duplicate marker cannot happen; a lost beacon takes its marker with it</h4>
-<p>The marker's event id is content-derived &mdash; <code>hash(site_id + visitor_id + session_id +
-'session_start')</code> &mdash; so the same raise arriving twice produces the same row and the
-second insert is a duplicate-key no-op. No coordination is needed.</p>
+<p>The marker's event id is derived from its own content like every other event's
+&mdash; <code>wideStringGuid(site_id + visitor_id + session_id + ts + event_name)</code>
+(<a href="#s21">&sect;2.1.2</a>) &mdash; so the same raise arriving twice produces the same row and
+the second insert is a duplicate-key no-op. No coordination is needed.</p>
 
 <p><strong>Concurrent tabs are not the case this covers.</strong>
 Two tabs that both decide a session is new each call
@@ -2155,8 +2146,8 @@ count, because there is no id to collapse them against.</li>
 </ul>
 
 <p>&sect;1.2.1 follows the first three: deliver the engagement residue once and there is nothing to
-dedupe, so the event needs no derived id and the tracker needs no per-page-load value to key one
-against.</p>
+dedupe. The id formula needs no per-page-load value to key against either
+(<a href="#s21">&sect;2.1.2</a>).</p>
 
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
