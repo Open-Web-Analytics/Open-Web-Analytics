@@ -1978,7 +1978,16 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
   <div class="phase-h"><span class="phase-n">Phase 5</span><span class="phase-t">v2 groundwork</span></div>
   <p class="phase-why">First code that is v2-shaped, still landing in a 1.x release.</p>
   <ul>
-    <li>Event table and rollup created by one CLI-mode update (§4.1)</li>
+    <li><strong>The storage layers, created by one CLI-mode update</strong> (§4.1).
+    <span class="dash">— This was written as “event table and rollup”: two layers, one
+    update. §1.13 turned it into <strong>three</strong> — raw, denormalised, rollup — and
+    brought with them a denormalisation pass, a visitor store with an inactivity TTL,
+    ingest-time event expansion under one transaction, a two-stage partition cycle, and a
+    scheduling model. It is no longer one item and no longer small: it is the largest
+    undecided thing in this document, and §1.13 is still marked Proposed with open questions
+    of its own — rebuild granularity, whether the rebuild set is the whole window,
+    client-side lateness, multi-site partitioning. Everything below that touches storage waits
+    on it.</span></li>
     <li><strong><code>msec</code> carries a real fraction of a second</strong>
     <span class="chip c-dec">Decided</span> <span class="dash">&mdash; 3&nbsp;Sep&nbsp;2026,
     for v2 and deliberately <em>not</em> for 1.x. <code>owa_request.msec</code> is declared
@@ -2005,6 +2014,23 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
     <li><strong>Element path capture</strong> — the value here <em>is</em> the stored selector,
     so it lands directly in <code>owa_event.element_path</code> rather than paying for a
     throwaway column on a 53-partition <code>owa_click</code></li>
+    <li><strong>Landed in 1.x, and never listed here</strong>
+    <span class="chip c-done">Shipped</span>
+    <span class="dash">— four PRs on 19 Sep 2026 that are Phase 5 by this phase's own
+    definition — v2-shaped code landing in a 1.x release — and were done without passing
+    through this list.
+    <strong>#1114</strong>: acquisition source/medium/campaign/ad/terms written once onto
+    <code>owa_visitor</code>, the v1 shape of v2's visitor store and the first first-touch
+    attribution OWA has had.
+    <strong>#1117</strong>: the tracker carries <code>landing_url</code> and the server parses
+    the campaign tags out of it — the wire contract v2 inherits, and what makes the
+    resolution re-derivable.
+    <strong>#1113</strong>: <code>daily</code> added to <code>PARTITION_CUTS</code>, the front
+    partition tier §1.13's rebuild window needs.
+    <strong>#1116</strong>: six dead columns dropped from <code>owa_visitor</code>, and the
+    upgrade cycle taught to verify rollbacks rather than only upgrades.
+    All four are deployed to demo and peteradamsphoto.</span></li>
+
     <li><strong>Chunk <code>seq</code></strong> — ships with domstream early cutover (§3.2),
     never as an <code>owa_domstream</code> column; it also feeds the content-derived engagement
     id, <code>hash(session_id + page_ref + seq)</code></li>
@@ -2012,7 +2038,28 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
 </div>
 
 <div class="flag">
-  <p class="h">Status — 2026-08-28</p>
+  <p class="h">Status — 2026-09-20</p>
+  <p><strong>All eight original Phase 5 items are still unstarted</strong>, checked against the
+  code rather than against the note below: no <code>owa_event</code> entity exists,
+  <code>msec</code> is still <code>OWA_DTD_INT</code> with its <em>wrong data type</em> comment
+  beside it, and the rollup job, fan-out dispatcher, parity command, engagement deltas, element
+  path and chunk seq have no references at all.</p>
+  <p><strong>What changed is the shape of the phase, not its progress.</strong> Item 1 grew from
+  two storage layers to three when §1.13 was written, taking a denormalisation pass, a visitor
+  store, a partition cycle and a scheduling model with it. And four PRs of v2 groundwork shipped
+  into 1.x on 19 Sep without appearing here at all; they are recorded above now. The ordering
+  constraint still holds: <strong>item 1 gates the rollup job, the fan-out dispatcher and the
+  parity command</strong>, since there is nothing to roll up, fan out to or compare against
+  until the table exists. The tracker-side items are independent of it, though element path and
+  chunk seq are deliberately blocked on <code>owa_event</code> so they never pay for a throwaway
+  1.x column.</p>
+  <p><strong>So Phase 5 has not moved while the design under it has moved a great deal.</strong>
+  §1.13 needs to stop being Proposed before item 1 can be scoped — that is the next
+  decision, rather than the next piece of code.</p>
+</div>
+
+<div class="flag">
+  <p class="h">Status — 2026-08-28 <span class="dash">(superseded)</span></p>
   <p><strong>Phases 1, 2, 3 and 4 are closed.</strong> Two items moved since the 23 Aug note,
   both by shipping. The <strong>PDO driver</strong> merged, closing Phase 2. <strong>Report
   config as JSON</strong> merged in three parts — #1044, #1047, #1048 — closing Phase 4.
