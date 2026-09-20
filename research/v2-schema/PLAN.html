@@ -205,18 +205,102 @@ entire class of dimension-FK bugs this release cycle has been spent fixing.</p>
 and inverts on a columnar engine, and it has been explicitly traded away.</p>
 
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
-<p>Sessions are not a table, and they are never <em>counted</em> from a marker event. Session
-totals come from an incrementally-maintained rollup built by a scheduler job, plus two pieces of
-client-carried state. (Marker events still exist — see &sect;1.3 — but for what they carry, not for
-what they count.)</p>
-<ul>
-<li><strong>Engagement time</strong> — <code>engagement_msec</code> rides <em>every</em> outgoing
-event, GA-style: the time accrued on the current page since the last report, so envelope
-attribution is automatically correct and loss granularity is one increment, not one page. The
-hide-time <code>user_engagement</code> event carries only the <em>residue</em> since the last
-event — fired on any hide at any size; the 10&nbsp;s threshold gates only the read-time
-classification, never the send, or it would bake itself into collection — with a content-derived id (<code>hash(page_view_id + seq)</code> &mdash; see below): beaconed at
-</p>
+<p>A session is not a table and not a row. Session totals come from an incrementally-maintained
+rollup built by a scheduler job, plus two pieces of client-carried state. Marker events exist
+(<a href="#s13">&sect;1.3</a>) for what they carry, not for what they count.</p>
+
+<h4>Engagement is measured in deltas</h4>
+
+<p><code>engagement_msec</code> rides every outgoing event, GA-style: the time accrued on the
+current page since the last report. Two consequences follow. Attribution to the enclosing
+envelope is automatically correct, and losing a beacon costs one increment rather than one
+page.</p>
+
+<p>The hide-time <code>user_engagement</code> event carries the residue since the last event. It
+fires on any hide, at any size &mdash; the 10&nbsp;second threshold gates read-time
+classification, never the send, or it would bake itself into collection. Its id is
+content-derived, <code>hash(page_view_id + seq)</code>. It is beaconed at hide and then rides the
+session's next request as parameters, never a separate catch-up beacon; the server materialises
+the row and duplicates collapse at the table.</p>
+
+<p>Final-page dwell is the one irreducible lossy attempt, and the thing 1.x cannot measure at
+all.</p>
+
+<h4>Engaged is derived at read time, never stored</h4>
+
+<p>A session is engaged if any of three things is true:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Disjunct</th><th>Why it is loss-tolerant</th></tr></thead>
+<tbody>
+<tr><td><code>SUM(engagement_msec) &ge; threshold</code></td><td>deltas ride every event, so one lost beacon costs one increment</td></tr>
+<tr><td><code>pageviews &ge; 2</code></td><td>a row per pageview</td></tr>
+<tr><td>a goal event</td><td>a row of its own</td></tr>
+</tbody></table></div>
+
+<p>An earlier draft carried a sticky client-set flag and it was removed: the pageview and
+goal-event disjuncts are already rows, a threshold-crossing single-page session emits
+delta-carrying scroll events anyway, and in the worst case the flag rode the same lossy terminal
+beacon as the delta. With no stored classification there is nothing for the derivation to
+disagree with.</p>
+
+<h4>Bounce means not engaged <span class="chip c-dec">Decided</span></h4>
+
+<p>The single-pageview definition is retired, because it measures beacon count rather than
+attention:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Measured on a photo/blog install</th><th></th></tr></thead>
+<tbody>
+<tr><td>sessions 1.x marks as bounces regardless of dwell</td><td class="n">73.6%</td></tr>
+<tr><td>deriving engaged at read time, two-level shape</td><td class="n">201 ms/year</td></tr>
+<tr><td>engagement by URL, were it a dimension</td><td class="n">210 ms/year</td></tr>
+</tbody></table></div>
+
+<p>1.x cannot see final-page time, which is the thing engagement deltas measure. v1 history keeps
+the old definition in its own UI, so neither system's trend steps.</p>
+
+<p><strong>Engaged as a dimension is deferred to after v2.0.</strong> The question installs
+actually ask &mdash; which URLs have the most engagement &mdash; is a one-pass
+<code>SUM(msec) GROUP BY pagePath</code> over the <code>user_engagement</code> rows, with no
+classification involved. Nothing is stored, so adding the dimension later is a query-builder
+feature and not a schema change.</p>
+
+<p><strong>The threshold is per-site, defaults to 10&nbsp;seconds, and is retroactively
+tunable</strong> &mdash; events are immutable and only the lens changes &mdash; with a UI
+annotation at any change date, since historical bounce numbers move with it.</p>
+
+<p><strong>Parity expectation, declared in advance:</strong> v2 bounce &le; v1 bounce. A v2
+number above v1's is a defect, not an intended difference.</p>
+
+<h4>Why the rollup rather than counting events</h4>
+
+<div class="scroll"><table>
+<thead><tr><th>Query</th><th class="n">Raw events</th><th class="n">From rollup</th></tr></thead>
+<tbody>
+<tr><td>Distinct sessions, full corpus</td><td class="n">39.2 s</td><td class="n">206.5 ms</td></tr>
+<tr><td>Distinct sessions, one month</td><td class="n">106.2 ms</td><td class="n">2.9 ms</td></tr>
+<tr><td>Rollup build — full / busiest day incremental</td><td class="n" colspan="2">50.4 s / <strong>377 ms</strong></td></tr>
+</tbody></table></div>
+
+<h4>A record's existence never depends on one packet</h4>
+
+<p>This is the rule the section produced, and it governs several decisions later on.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Shape</th><th>Carried on</th><th>Cost of losing one beacon</th></tr></thead>
+<tbody>
+<tr><td>marker event</td><td>a single beacon</td><td>the session is erased, while its other events still count</td></tr>
+<tr><td>sticky flag or delta</td><td>every event</td><td>nothing, or one increment</td></tr>
+</tbody></table></div>
+
+<p>Values may degrade. Records must not vanish.</p>
+
+<h3 id="s13"><span class="num">1.3</span>Event taxonomy <span class="chip c-dec">Decided</span></h3>
+<p>GA4's taxonomy is the guide, because it is the vocabulary the market already speaks and
+because arguing about event names is not where this project should spend its budget. Three
+groups follow: what the tracker sends automatically, what a site opts into, and — importantly —
+what GA4 emits that v2 deliberately will not.</p>
 
 <p class="note"><strong>The chunk id keys on the page VIEW, not the page.</strong> This was
 written as <code>hash(session_id + page_ref + seq)</code>, where <code>page_ref</code> was never
@@ -235,52 +319,6 @@ is added to &sect;1.6, and none is needed. The question a chunk row actually get
 &ldquo;which URLs have the most engagement&rdquo;, and it answers that from its own
 <code>page_location</code>, which every event carries. Joining a chunk back to its parent row is
 not a use case anyone has &mdash; GA has no parent pointer either.</p>
-
-<p>hide, then riding the session's next request <em>as parameters</em> — never a separate catch-up
-beacon — with the server materializing the row, duplicates collapsing at the table. Engaged is
-<code>SUM(engagement_msec)</code> across the session vs the threshold. Final-page dwell keeps the
-one irreducible lossy attempt, and is the thing 1.x structurally cannot measure at all.</li>
-<li><strong>Engaged is derived, not stored</strong> — classification at read time:
-<code>SUM(delta) ≥ threshold OR pageviews ≥ 2 OR goal event</code>. An earlier draft carried a
-sticky client-set flag; it was removed — the pageview and goal-event disjuncts are already
-loss-tolerant rows, threshold-crossing single-page sessions emit delta-carrying scroll events
-anyway, and in the worst case the flag rode the same lossy terminal beacon as the delta. No
-stored classification means nothing to disagree with.</li>
-<li><strong>Bounce means &ldquo;not engaged&rdquo;</strong> <span class="chip c-dec">Decided</span> —
-the single-pageview definition is retired. Measured: on a photo/blog install it marks
-<strong>73.6%</strong> of sessions as bounces regardless of dwell, because 1.x cannot see
-final-page time — the exact thing engagement deltas measure. v1 history keeps the old definition
-in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and goal events — the sole authority,
-with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). Engaged as a
-<strong>dimension is punted for v2.0</strong> — the question installs actually ask, &ldquo;which
-URLs have the most engagement&rdquo;, is a one-pass <code>SUM(msec) GROUP BY pagePath</code> over
-the <code>user_engagement</code> rows, no classification needed. The punt is free to reverse:
-nothing is stored, so the dimension is a later query-builder feature (measured at 210&nbsp;ms/year
-derived) with no schema change. The
-threshold is per-site, default 10&nbsp;s, and <em>retroactively tunable</em> — events are
-immutable, only the lens changes — with a UI annotation at any change date, since historical
-bounce numbers move with it. Parity expectation,
-declared in advance: v2 bounce ≤ v1 bounce, and a v2 number <em>above</em> v1's is a defect, not
-an intended difference.</li>
-</ul>
-<div class="scroll"><table>
-<thead><tr><th>Query</th><th class="n">Raw events</th><th class="n">From rollup</th></tr></thead>
-<tbody>
-<tr><td>Distinct sessions, full corpus</td><td class="n">39.2 s</td><td class="n">206.5 ms</td></tr>
-<tr><td>Distinct sessions, one month</td><td class="n">106.2 ms</td><td class="n">2.9 ms</td></tr>
-<tr><td>Rollup build — full / busiest day incremental</td><td class="n" colspan="2">50.4 s / <strong>377 ms</strong></td></tr>
-</tbody></table></div>
-<div class="note"><strong>The design rule this produced:</strong> never make a record's existence
-depend on a single packet. A marker event rides on one beacon, so losing it erases the session
-while its other events still count. A sticky flag rides on every event, so losing one costs
-nothing. <em>Values may degrade; records must not vanish.</em> This rule governs several
-decisions below.</div>
-
-<h3 id="s13"><span class="num">1.3</span>Event taxonomy <span class="chip c-dec">Decided</span></h3>
-<p>GA4's taxonomy is the guide, because it is the vocabulary the market already speaks and
-because arguing about event names is not where this project should spend its budget. Three
-groups follow: what the tracker sends automatically, what a site opts into, and — importantly —
-what GA4 emits that v2 deliberately will not.</p>
 
 <h4>Automatically collected</h4>
 <div class="scroll"><table>
