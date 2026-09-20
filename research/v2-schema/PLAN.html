@@ -271,39 +271,26 @@ distinct count, which is the cheaper shape over a wide window.</p>
 moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scoped on
 <code>first_visit</code> &mdash; and a natural thing to name as a goal event.</p>
 
-<h4><span class="num">1.3.2</span>Totals, breakdowns, and the <code>(unknown)</code> row</h4>
-<p>A marker rides one beacon, so it can go missing. Three rules follow:</p>
+<h4>Totals and breakdowns</h4>
+<p>A marker rides one beacon, so it can go missing, and a session whose marker is lost keeps its
+identity on every other event but loses the attribution the marker carried. That sets two rules:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
 <tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
-<tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>Counting marker rows instead is a fast path &mdash; far cheaper than a <code>DISTINCT</code> per bucket &mdash; and trades a wider gap for it</td></tr>
-<tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>A session the total can see and the breakdown cannot place. The API states the gap instead of hiding it</td></tr>
+<tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>A session with no value for that column groups under NULL, which the formatter renders <code>(not set)</code> (<a href="#s211">&sect;2.11</a>)</td></tr>
 </tbody></table></div>
-<p><strong>A session can be counted while its attribution is missing, and that is true in one
-table.</strong> The total is a distinct count over event rows; a breakdown groups by a stamped
-column. Where that column is NULL for a session the total still sees it and the breakdown cannot
-place it, and three decisions in this plan produce exactly that:</p>
-<ul>
-<li><strong>A lost marker.</strong> The row above says it: losing one costs that session's
-attribution and not its existence.</li>
-<li><strong>Acquisition past the TTL.</strong> <a href="#s15">&sect;1.5.4</a> resolves it to NULL
-rather than to the visitor's earliest retained event, so user-scoped breakdowns undercount by
-design.</li>
-<li><strong>Terminal values before a session closes.</strong> <a href="#s27">&sect;2.7.1</a> leaves
-them NULL until it does, so an exit-page or bounce breakdown omits sessions the total includes.</li>
-</ul>
-<p>Counting a breakdown from marker rows adds a fourth, and a rollup would add a fifth. None of
-them is the reason the row exists; the first three arrive with the single table.</p>
-<p>Where a total and a breakdown meet on one screen the total wins, and the <code>(unknown)</code>
-row carries the remainder. Two rules keep that honest:</p>
-<ul>
-<li>the row appears only for a <strong>positive</strong> remainder, labelled
-<code>(unknown)</code>, never blended into <code>(not set)</code>, which means something else
-(<a href="#s211">&sect;2.11</a>);</li>
-<li>a negative remainder is <strong>never clamped</strong>. A breakdown exceeding its total is a
-defect, and absorbing it would turn the parity harness's clearest signal into silent correction.</li>
-</ul>
+<p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
+A session the pass could not attribute is not missing from the grid &mdash; it is in the
+<code>(not set)</code> row, alongside the sessions that genuinely carried no value. The two are not
+told apart, which is the price of this being arithmetic rather than bookkeeping: a lost marker
+inflates <code>(not set)</code> rather than announcing itself.</p>
+<p class="note">A reconciliation row would be needed only if a breakdown were ever computed from a
+different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
+(<a href="#s15">&sect;1.5</a>). Both are out of the current design, so neither is specified. What
+survives from that reasoning is one rule worth keeping: <strong>a breakdown exceeding its total is
+a defect and is never clamped.</strong> It means an event-grain dimension has been crossed with a
+session metric, which <a href="#s213">&sect;2.13</a>'s scope algebra labels rather than hides.</p>
 
 <h4><span class="num">1.3.3</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
 <p>1.x had twenty numbered goal slots. v2 has none: an author names a goal event and gives it an
@@ -583,7 +570,7 @@ or it newly permits nonsense.</p>
 <tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 stores the complete URL and lets a report group by a derived <code>pagePath</code> or <code>pagePathPlusQuery</code>, neither of which contains the host &mdash; so both collapse with nothing configured, and a report that wants the host asks for it (&sect;2.1). <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (<a href="#s223">&sect;2.23</a>).</td></tr>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Long-lived credentials off-origin</strong></td><td>Today the overlay's <code>api_url</code> — carrying a user's <code>apiKey</code> and its HMAC signature — is written to a cookie on the <em>tracked site's</em> domain, readable by any script there and sent on every request to that site. v2 mints a <strong>short-lived scoped token</strong> (one site, one page, read-only, minutes) carried in the fragment and held in memory, never a cookie. The signature then protects nothing and goes away</td></tr>
-<tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. Keeps it distinct from <code>(unknown)</code>, which means the breakdown could not attribute a session rather than the event carrying no value</td></tr>
+<tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. A null groups with the other nulls and is labelled once, at the edge</td></tr>
 <tr><td><strong>Joins in the reporting path</strong></td><td>The single table exists to remove them. Lookup tables that reintroduce a join into aggregate queries are refused.</td></tr>
 <tr><td colspan="2" class="sunk"><strong>Events v2 will not emit</strong> <span class="dash">— the collected set is &sect;2.2</span></td></tr>
 <tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
@@ -1245,9 +1232,9 @@ breaks only if it names something that fell out.</p>
 
 
 
-<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (the partition's last pass); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
+<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (the partition's last pass); <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
 <tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
-<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function, so <code>relatedDimensions</code> describes exactly what the guard will allow. The only curated artifact is a near-empty editorial override list</td></tr>
+<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function, so <code>relatedDimensions</code> describes exactly what the guard will allow. The only curated artifact is a near-empty editorial override list</td></tr>
 </tbody></table></div>
 
 <!-- ============ PART II ============ -->
@@ -1846,7 +1833,7 @@ window.</p>
 duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
 Locks API is origin-scoped and could not reach.</p>
 
-<p>A lost marker undercounts the breakdown and lands in <code>(unknown)</code>. A negative
+<p>A lost marker leaves that session unattributed, so it groups under <code>(not set)</code>. A negative
 remainder is therefore a defect signal rather than a rounding artefact.</p>
 <h4 id="nA122"><span class="num">A.1.22</span>Marker overhead falls as the stream gets richer</h4>
 <div class="scroll"><table>
