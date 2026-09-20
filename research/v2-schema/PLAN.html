@@ -257,7 +257,7 @@ query-builder feature rather than a schema change.</li>
 goes with that beacon, which is why a session's identity and context ride every event instead
 &mdash; the session stays countable, and attributable, from any of its rows. The markers are raised server-side in the same atomic write as the beacon carrying their flags,
 so a marker cannot be lost while its own page view survives &mdash; but the beacon itself can be,
-and then the session has no marker row (<a href="#s13">&sect;1.3.2</a>). A delta or a stamped value rides every event, so losing one costs
+and then the session has no marker row (<a href="#s213">&sect;2.13</a>). A delta or a stamped value rides every event, so losing one costs
 nothing or a single increment. <strong>Where a value can go on either shape, it goes on every
 event.</strong></p>
 
@@ -279,33 +279,7 @@ and that it is the natural thing to name as a goal event (<a href="#s13">&sect;1
 the same row and the second insert collapses at the table. It can be lost, with the beacon that
 raised it &mdash; see below.</p>
 
-<h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
-<p>A total and a breakdown are computed differently, which sets two rules:</p>
-<div class="scroll"><table>
-<thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
-<tbody>
-<tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so the total does not depend on the marker having been raised</td></tr>
-<tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>A session with no value for that column groups under NULL, which the formatter renders <code>(not set)</code> (<a href="#s211">&sect;2.11</a>)</td></tr>
-</tbody></table></div>
-<p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
-A session the pass could not attribute is not missing from the grid, and it does not inflate
-<code>(not set)</code> either: the pass writes a sentinel where it failed, so that session groups
-under <code>(unknown)</code> (<a href="#s211">&sect;2.11</a>). Both are ordinary buckets, both sum,
-and neither is a remainder computed by subtraction.</p>
-<p class="note">A lost first beacon takes its marker with it &mdash; the client commits the session
-on <code>sendAccepted</code>, which fires when <code>sendBeacon</code> queues rather than delivers
-&mdash; so a session can exist with no <code>session_start</code> row. Neither number above
-notices: attribution is resolved at ingest on every event, and the visitor row is written by any
-event of a first session. What goes with the beacon is the landing page, which rides only that one
-(<a href="#s210">&sect;2.10</a>).</p>
-<p class="note">A reconciliation row would be needed only if a breakdown were computed from a
-different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
-(<a href="#s15">&sect;1.5</a>). Both are out of the current design. One rule from that reasoning is
-worth keeping: <strong>a breakdown exceeding its total is a defect and is never clamped.</strong>
-It means an event-grain dimension has been crossed with a session metric, which
-<a href="#s213">&sect;2.13</a>'s scope algebra labels rather than hides.</p>
-
-<h4><span class="num">1.3.3</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">1.3.2</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
 <p>1.x had twenty numbered goal slots. v2 has none: an author names a goal event and gives it an
 event type and a condition, and when the condition matches <strong>the server materialises an
 additional row whose <code>event_type</code> is that name</strong> &mdash; the marker mechanism
@@ -1335,7 +1309,34 @@ breaks only if it names something that fell out.</p>
 </tbody></table></div>
 
 <!-- ============ PART II ============ -->
-<h4><span class="num">2.13.1</span>Two queries, one generation</h4>
+<h4><span class="num">2.13.1</span>Computing a total and a breakdown</h4>
+<p>The property <a href="#s111">&sect;1.11</a> promises &mdash; every breakdown summing to its total &mdash; is delivered here, by how the two are computed.</p>
+<p>A total and a breakdown are computed differently, which sets two rules:</p>
+<div class="scroll"><table>
+<thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so the total does not depend on the marker having been raised</td></tr>
+<tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>A session with no value for that column groups under NULL, which the formatter renders <code>(not set)</code> (<a href="#s211">&sect;2.11</a>)</td></tr>
+</tbody></table></div>
+<p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
+A session the pass could not attribute is not missing from the grid, and it does not inflate
+<code>(not set)</code> either: the pass writes a sentinel where it failed, so that session groups
+under <code>(unknown)</code> (<a href="#s211">&sect;2.11</a>). Both are ordinary buckets, both sum,
+and neither is a remainder computed by subtraction.</p>
+<p class="note">A lost first beacon takes its marker with it &mdash; the client commits the session
+on <code>sendAccepted</code>, which fires when <code>sendBeacon</code> queues rather than delivers
+&mdash; so a session can exist with no <code>session_start</code> row. Neither number above
+notices: attribution is resolved at ingest on every event, and the visitor row is written by any
+event of a first session. What goes with the beacon is the landing page, which rides only that one
+(<a href="#s210">&sect;2.10</a>).</p>
+<p class="note">A reconciliation row would be needed only if a breakdown were computed from a
+different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
+(<a href="#s15">&sect;1.5</a>). Both are out of the current design. One rule from that reasoning is
+worth keeping: <strong>a breakdown exceeding its total is a defect and is never clamped.</strong>
+It means an event-grain dimension has been crossed with a session metric, which
+<a href="#s213">&sect;2.13</a>'s scope algebra labels rather than hides.</p>
+
+<h4><span class="num">2.13.2</span>Two queries, one generation</h4>
 <p>A report asks for a total and a breakdown, and <code>ResultSetManager</code> issues them as two
 queries &mdash; <code>computeAggregates()</code> then <code>computeDimensionalRows()</code>. The
 pass can swap a partition between them, and then the two numbers describe different data.</p>
