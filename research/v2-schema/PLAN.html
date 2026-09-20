@@ -190,20 +190,9 @@ than smoothed over.</p>
 <p>Every tracked interaction becomes one row in one table, GA4-style, replacing ten parallel
 fact tables and their dimension satellites. Ids are content-derived, so a write is a single
 insert with no lookups: no session upsert, no dimension check-and-create.</p>
-<div class="scroll"><table>
-<thead><tr><th>Model</th><th>Per tracked pageview</th><th class="n">Events/s</th></tr></thead>
-<tbody>
-<tr><td>1.x star</td><td>1 insert + 1 session upsert + 5 dimension checks = 7 statements</td><td class="n">79</td></tr>
-<tr><td>v2 event table</td><td>1 insert</td><td class="n"><strong>202</strong></td></tr>
-</tbody></table></div>
-<p><span class="chip c-meas">Measured</span> Disk is a wash — within ±2%, because 1.x already
-denormalises 58 dimensions onto its facts. The win is not storage. It is throughput, one
-definition per metric instead of nine commerce metrics existing twice, and the deletion of an
-entire class of dimension-FK bugs this release cycle has been spent fixing.</p>
-<p>The star keeps exactly one real advantage: post-hoc enrichment is <strong>589× cheaper</strong>
-— rewriting one dimension row versus 565k event rows. That advantage is a row-store artefact
-and inverts on a columnar engine, and it has been explicitly traded away.</p>
-
+<p>What the shape is worth &mdash; measured throughput, the storage wash,
+and the one advantage the star holds and then loses on a columnar engine &mdash; is in
+<a href="#sa1">the appendix</a>.</p>
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
 <p>A session is not a table and not a row. Session totals come from an incrementally-maintained
 rollup built by a scheduler job, plus two pieces of client-carried state. Marker events exist
@@ -238,8 +227,7 @@ all.</p>
 <tr><td>a goal event</td><td>a row of its own</td></tr>
 </tbody></table></div>
 
-<p>An earlier draft carried a sticky client-set flag and it was removed: the pageview and
-goal-event disjuncts are already rows, a threshold-crossing single-page session emits
+<p>No sticky client-set flag is stored. The pageview and goal-event disjuncts are already rows, a threshold-crossing single-page session emits
 delta-carrying scroll events anyway, and in the worst case the flag rode the same lossy terminal
 beacon as the delta. With no stored classification there is nothing for the derivation to
 disagree with.</p>
@@ -363,16 +351,14 @@ difference is shown as the <code>(unknown)</code> row rather than hidden.</p>
   <p><strong>The rollup's column list is a rebuild away, not a ceiling.</strong> Because it is
   derived from retained events, adding a session dimension later costs one rebuild —
   <strong>50.4 s</strong> over the full corpus — and applies retroactively to all existing data
-  with no change to collection. That is post-hoc enrichment recovered: the star's one measured
-  advantage in this research (589×) was rewriting a dimension without touching facts, and a derived
-  rollup restores exactly that at the session grain.</p>
+  with no change to collection. That is post-hoc enrichment recovered at the session grain &mdash; the one thing the star
+  did better, and the reason it was safe to give up (<a href="#sa1">appendix</a>).</p>
 </div>
 
 <h4>No session table</h4>
 
-<p>An earlier draft kept a session-grain derived table — about 30 columns,
-<code>owa_session</code>'s grain rebuilt. It is not needed, because every session metric is a
-one-pass aggregate over the event table:</p>
+<p>There is no session-grain derived table. Every session metric is a one-pass aggregate over
+the event table:</p>
 
 <div class="scroll"><table>
 <thead><tr><th>Session metric</th><th>How it is computed</th><th>Why it works</th></tr></thead>
@@ -698,8 +684,7 @@ to invalidate because the flagged event <em>is</em> the beginning.</p>
 one. Those rows are in the same or later days, never earlier, <strong>so the blast radius is
 bounded by how late an event can arrive, not by retention</strong>.</p>
 
-<p><strong>And that bound is smaller than an earlier draft of this section assumed, because it
-named the wrong queue.</strong> 1.x has two, and they are not the same mechanism:</p>
+<p>1.x has two queues, and they are not the same mechanism:</p>
 <ul>
 <li><strong>The incoming queue is a file.</strong> Tracking events are written to disk and
 processed later. Every event goes through it when it is enabled, and what it costs the window is
@@ -747,9 +732,7 @@ the pass has to reach; that cut decides <em>whether it reaches at all</em>.</p>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
 </table>
 
-<p><strong>So yes, most session-scoped properties are derived, not carried &mdash; an earlier draft
-of this table said &ldquo;already on the row&rdquo; for the whole session tier and that was
-wrong.</strong> What rides every beacon is the <em>evidence</em>: the referring URL, the campaign
+<p><strong>Most session-scoped properties are derived, not carried.</strong> What rides every beacon is the <em>evidence</em>: the referring URL, the campaign
 tags as collected, the session id and timestamps. What has to be computed is the
 <em>reading</em> of that evidence. Both end up stamped on every denormalised row, which is what
 &sect;1.3&rsquo;s measurement depends on &mdash; sessions-by-landing-page at 215&nbsp;ms as a
@@ -1413,25 +1396,19 @@ v1's history would step or stop the moment a site upgraded — destroying the va
 being kept.</p>
 
 <div class="flag">
-  <p class="h">Amended: one session model, adopted by both pipelines <span class="chip c-dec">Decided</span></p>
+  <p class="h">One session model, adopted by both pipelines <span class="chip c-dec">Decided</span></p>
   <p>A session id is decided in the browser, from a cookie, and v1 and v2 disagree about when a
   session <em>begins</em>: v2 creates sessions only on page-view events, withholds the store until
   <code>sendAccepted</code>, and embeds creation time in the id (&sect;1.3). One cookie cannot hold two
   models, so fanning one stream out unchanged would give v2 rows carrying <em>v1's</em> session
   boundaries — the v2 session model inherited rather than implemented.</p>
-  <p>An intermediate draft concluded from this that the page must carry two tracker configurations,
-  one per profile. <strong>One configuration, not two.</strong> Two configurations would mean two
-  session state machines in the tracker — the riskiest surface in the project — and would break the
-  property this section exists to provide, because two streams are not the same events and raw
-  counts would only match within a tolerance.</p>
-  <p><strong>Instead the tracker gets one session model, v2's, and v1 adopts it.</strong> One
+  <p><strong>The tracker gets one session model, v2's, and v1 adopts it.</strong> Two configurations would mean two session state machines in the tracker &mdash; the riskiest surface in the project &mdash; and two streams are not the same events, so raw counts would only ever match within a tolerance. One
   tracker, one cookie, one beacon, one stream; the server writes v1's star from it as before and
   v2's event table when enabled. The fan-out described above therefore stands exactly as written,
   and the two pipelines keep consuming <em>identical</em> events — which is what lets the integrity
   check of &sect;2.20 stay a diff rather than a tolerance.</p>
   <p><strong>The cost is one discontinuity in v1's session-derived numbers</strong>, accepted
-  deliberately &mdash; but not where an earlier draft put it. Three rules differ, and they are not
-  of equal size:</p>
+  deliberately. Three rules differ, and they are not of equal size:</p>
   <div class="scroll"><table>
   <thead><tr><th>Rule</th><th>Effect on v1's counts</th></tr></thead>
   <tbody>
@@ -1444,57 +1421,22 @@ being kept.</p>
   restart cleanly (EVENTS.html &sect;7). Its size depends entirely on traffic mix &mdash; near zero
   for organic-only sites, material for campaign-heavy ones &mdash; so there is no single number to
   quote.</p>
-  <div class="flag">
-    <p class="h">And v1's history cannot size it</p>
-    <p><code>owa_request</code> does carry per-request <code>medium</code>, <code>source_id</code>
-    and <code>campaign_id</code>, so the question looks answerable. It is not:
-    <code>setTrafficAttribution()</code> stamps the <em>decided</em>, session-sticky result rather
-    than the observation that produced it, so a mid-session tag change is collapsed before it is
-    stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
-    rather than a rate.</p>
-    <p>This is the same limitation &sect;2.20 records for validating the attribution model &mdash;
-    <em>existing history is not a usable touchpoint log</em>.</p>
-    <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
-    requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
-    is uncommon outside heavy paid-campaign traffic. If a number is wanted later, touchpoint data
-    supplies it; nothing waits on it.</p>
-    <p><strong>Touchpoint recording earns its place on data quality, not on this.</strong>
-    Attribution is decided <em>in the browser</em> today &mdash;
-    <code>setTrafficAttribution()</code> reads the <code>owa_c</code> cookie's <code>attribs</code>
-    stack, applies the model, and the event carries the <em>verdict</em> rather than the observation
-    that produced it. So the server stores a conclusion it cannot check, and four things follow:</p>
-    <ul>
-    <li><strong>A client-side verdict cannot be corrected later.</strong> Fix the attribution logic and every row already
-    written keeps the old verdict &mdash; there is nothing to recompute from.</li>
-    <li><strong>Attribution dies with the cookie.</strong> Clearing <code>owa_c</code> destroys the
-    stack, and the visitor's history is gone rather than re-derivable.</li>
-    <li><strong>The 60-day <code>original</code> window is measured on the client's clock</strong>,
-    which is unverifiable and, on a skewed device, wrong.</li>
-    <li><strong>No post-hoc enrichment.</strong> This research measured the star's one real
-    advantage as rewriting a dimension without touching facts (589&times;); attribution is precisely
-    the dimension worth rewriting, and today it is the one that cannot be.</li>
-    </ul>
-    <p>Recording the touchpoints makes attribution <em>derived</em> rather than <em>reported</em>:
-    recomputable, correctable, and independent of whether a cookie survived. That is the reason to
-    do it early, and it stands whether or not the session step is ever quantified.</p>
-  </div>
+  
+  <p><strong>Its size cannot be taken from v1's own history</strong>, because
+  <code>setTrafficAttribution()</code> stores the decided, session-sticky verdict rather than the
+  observation that produced it. Not treated as a blocker: it needs a visitor to re-enter through a
+  <em>second</em> tagged link inside the timeout, which is uncommon outside heavy paid traffic. See
+  <a href="#sa1">the appendix</a>, which also records why touchpoint recording earns its place on
+  data quality rather than on this.</p>
+
   <p>Event-level history &mdash; page views, clicks, geo, referrers &mdash; is untouched by all of
   this, and nothing already stored is rewritten. The change still wants a <strong>UI annotation at
   its date</strong>, per &sect;2.1's rule for definition changes.</p>
 </div>
-<div class="scroll"><table>
-<thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
-<tbody>
-<tr><td>Admin — sites, users, goals, config</td><td class="n">6</td><td class="n">0.1 MB</td><td><strong>shared</strong>; must not be altered destructively</td></tr>
-<tr><td>Facts</td><td class="n">10</td><td class="n">2,358.7 MB</td><td>parallel; v1 keeps its own</td></tr>
-<tr><td>Dimensions</td><td class="n">10</td><td class="n">38.6 MB</td><td>parallel; v1 keeps its own</td></tr>
-</tbody></table></div>
-<p><span class="chip c-meas">Measured</span> Effectively all volume is parallel and the shared set
-is trivial, which is what makes coexistence cheap. Cost of the overlap, composed from the two
-write paths: roughly <strong>57 events/s against v1's 79</strong> — about 28% down, and
-pessimistic since the writes share request overhead. That is an argument for the queue carrying
-the fan-out rather than the request doing it inline.</p>
-
+<p>Coexistence is cheap because effectively all volume is parallel &mdash; v1 keeps its own facts
+and dimensions, and the shared admin set is 0.1&nbsp;MB. The measured cost of running both write
+paths is in <a href="#sa1">the appendix</a>; it is the argument for the queue carrying the fan-out
+rather than the request doing it inline.</p>
 <h3 id="s110"><span class="num">1.10</span>Organization › Property › Observation Profile <span class="chip c-dec">Decided</span></h3>
 <p>&sect;2.21 established that a profile carries the version, which is what lets two generations
 coexist without a query ever inferring one. This is the structure that holds profiles, and it is
@@ -1612,7 +1554,7 @@ carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
 
 <h2><span class="secn">II</span>Implementation</h2>
 <h3 id="s21"><span class="num">2.1</span>Table layouts <span class="chip c-dec">Decided</span></h3>
-<p><strong>The column-admission rule (revised):</strong> a field is a <em>column</em> if its name
+<p><strong>The column-admission rule:</strong> a field is a <em>column</em> if its name
 is known at release time and it is scalar; <code>params</code> (JSON) is reserved for what cannot
 be a column — <strong>site-defined keys unknown at release time</strong> (unregistered custom
 variables; the alternatives are user-controlled DDL, a forbidden registration step, or a forbidden
@@ -1684,21 +1626,17 @@ table changes and channel grouping is a classification — so they are derived i
 consequence is stated in &sect;1.5 and is deliberate: a live query can show a referring host but not
 a resolved campaign.</p>
 
-<p class="note"><strong>No <code>landing_url</code> column, and that is a correction.</strong>
-An earlier draft of this list gave raw one. In v2 it would be populated on the session's first
-event and NULL on every other — and on that one row it would duplicate <code>page_location</code>,
+<p class="note"><strong>No <code>landing_url</code> column in raw.</strong> It would be
+populated on the session's first event and NULL on every other — and on that one row it would duplicate <code>page_location</code>,
 since the landing page <em>is</em> the page that event happened on. The pass reads the session's
 first event for the tags and the landing page alike, so the column earns nothing. <strong>v1 is
 different and keeps it</strong>: v1 has no pass, so its server must be told on every beacon or it
 cannot stamp the fact row — which is what PR&nbsp;#1117 ships.</p>
 
-<p><strong>And the page is stored as a URL, not a URI, because that is what it is.</strong>
-An earlier draft called this column <code>page_uri</code> and gave a page an identity —
-<code>hash(site_id + uri)</code>. Both are dropped. A hash has to commit to its input before
-anyone asks a question, which forced a decision about whether the query string was part of a
-page's identity; and neither literal answer was any good. Keep the query in the hash and every
-campaign-tagged arrival becomes a distinct page, fragmenting the landing-page report into one row
-per tag combination. Drop it and the campaign evidence is gone from raw entirely.</p>
+<p><strong>The page is stored as a URL, not a URI, and a page carries no identity hash.</strong>
+The path readings &mdash; <code>pagePath</code>, <code>pagePathPlusQuery</code> &mdash; are
+dimensions derived from the stored URL at read time. Why the hash was dropped is in
+<a href="#sa1">the appendix</a>.</p>
 
 <p><strong>There is no such decision to make if the readings are dimensions.</strong>
 <code>page_location</code> stores the complete URL as received. What a report groups by is a
@@ -1958,12 +1896,7 @@ SQL. That rule is what makes the set configuration rather than code, and it is t
 <tr><td><code>avg_difference</code></td><td>1</td><td>Added by the conversion</td></tr>
 <tr><td class="dash">bespoke</td><td>1</td><td><code>repeatVisitors</code>, the one composite expression; becomes the <code>newVsReturning</code> dimension in v2</td></tr>
 </tbody></table></div>
-<p class="note">Measured, not sampled: 40 registered classes across 28 <code>registerMetric()</code>
-calls producing 81 implementations, of which <strong>74 carried an explicit <code>setSelect()</code>
-expression</strong> and no kind at all. Those 74 expressions collapse to seven shapes. 48 metric
-class files became 7; of 78 metrics, 68 resolve byte-identically and 10 differ only in SQL keyword
-case. An earlier draft claimed 22 class references and that no metric class contained SQL &mdash;
-both wrong, and wrong the same way: read from a few classes rather than from classifying the set.</p>
+
 
 <h4>What changes in v2</h4>
 <div class="scroll"><table>
@@ -1976,59 +1909,6 @@ both wrong, and wrong the same way: read from a few classes rather than from cla
 &mdash; at registration. That declaration is what the combination guard in
 <a href="#s28">the API delta</a> computes against; it replaces 1.x's hand-written
 re-registration of a metric on a second entity.</p>
-
-<h4>Metrics are configuration &mdash; converted, and measured properly the second time <span class="chip c-done">Shipped</span></h4>
-<p><span class="chip c-meas">Measured</span> An earlier draft of this section said there were 22
-class references, that <strong>no metric class contains SQL</strong>, and that the conversion was
-therefore mechanical. Two of those three were wrong, and wrong the same way: they came from reading
-a few classes rather than classifying the set. The corrected figures, and what they changed:</p>
-<div class="scroll"><table>
-<thead><tr><th>Claimed</th><th>Actually</th></tr></thead>
-<tbody>
-<tr><td>22 class references</td><td><strong>40</strong> registered classes across 28 <code>registerMetric()</code> calls, producing 81 implementations</td></tr>
-<tr><td>No metric class contains SQL</td><td><strong>74 of 81</strong> implementations carry an explicit <code>setSelect()</code> expression with no <code>metric_type</code> at all. Five further classes build SQL with the query builder &mdash; all five unregistered and unreachable, since nothing calls their <code>calculate()</code></td></tr>
-<tr><td>Three aggregate kinds, six renderers total</td><td><strong>Five</strong> metric kinds. The 74 expressions collapse to <strong>seven shapes</strong>, five of which the vocabulary already had; two were added</td></tr>
-</tbody></table></div>
-<p>The distribution is what made it answerable, and it was never visible from samples: 61 plain
-sums (mostly generated goal metrics), 7 <code>distinct_count</code>, 7 calculated, 2
-<code>count</code>, 2 needing a boolean-true kind, 1 needing an average-of-difference, and exactly
-one bespoke composite.</p>
-<p><strong>The formatter model is what made it possible.</strong> A definition names a
-<em>kind</em> and an implementation renders it, so no definition carries SQL &mdash; the same rule
-as derived dimensions above, and the same rule reports-as-config used for formatters. The two new
-kinds, <code>boolean_true_count</code> and <code>avg_difference</code>, were each verified to render
-character-for-character what they replaced before any registration was touched.</p>
-<p><strong>Result:</strong> 48 metric class files became 7. Of 78 metrics, 68 resolve
-byte-identically and 10 differ only in SQL keyword case, since the classes hardcoded lowercase
-while the query builder emits upper.</p>
-<div class="flag">
-  <p class="h">Two defects the conversion uncovered</p>
-  <p><code>ConfigurableMetric</code>'s <code>calculated</code> type <strong>had never
-  worked</strong>. It calls <code>setChildMetric()</code>, which existed only on
-  <code>CalculatedMetric</code> &mdash; not on <code>Core\Metric</code>, which
-  <code>ConfigurableMetric</code> extends. Supported on paper, fatal on first use, and never
-  registered by anything, so nobody found out. &ldquo;Supported but unused&rdquo; was doing more
-  work in the earlier draft than it could bear.</p>
-  <p>And <code>registerMetricDefinition()</code> filters its params with
-  <code>array_intersect_key()</code> against a fixed map, so <strong>any key missing from that map
-  is silently dropped</strong> rather than rejected. A new kind's parameter vanishes and the metric
-  renders a subtraction against nothing.</p>
-</div>
-<p><strong>Seven classes remain, and none of them blocks the conversion.</strong> Seven classes remain: three goal
-classes (which read the <code>siteId</code> request param to build per-site labels),
-<code>repeatVisitors</code> (the one composite expression), one unregistered class a parity test
-names by literal, and <code>ConfigurableMetric</code> itself. <strong>Every one is gone in
-v2</strong> &mdash; the numbered goal slots become named goal events with a parameterised metric, and
-<code>repeatVisitors</code> becomes the <code>newVsReturning</code> dimension (EVENTS.html
-&sect;7.7, &sect;7.14). They are artefacts of numbered slots and stored booleans, which v2 removes
-for unrelated reasons, so <strong>v2's metrics are entirely configuration</strong>.</p>
-<p><strong>The evaluator stays out of scope.</strong> Formulas run through
-<code>ResultSetManager::evalFormula()</code>, which <code>@ eval()</code>s a PHP string &mdash; but
-moving a repo-shipped formula into a repo-shipped config entry does not move the trust boundary. The
-parser is the prerequisite for a <em>user-authored</em> metric builder, and a plain four-operator
-grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
-application. Separately: the <code>@</code> means a malformed formula falls through to
-<code>0</code>, so a broken metric reads as a real zero.</p>
 
 <h3 id="s24"><span class="num">2.4</span>Dimensions <span class="chip c-dec">Decided</span></h3>
 <p>Most dimensions are columns. The rest are functions of columns, and they declare a
@@ -2109,12 +1989,8 @@ stalled rotation erodes the lead until rows reach <code>pmax</code>, breaking th
 everything else rests on. It wants an alarm, not a log line. There have been two scheduler-adjacent
 stalls already.</p>
 <h3 id="s26"><span class="num">2.6</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
-<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
-<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
-those properties are <code>required</code>, the string is written to the fact row on every event
-that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
-every row carries the literal text.</p>
-<p>This is the &sect;2.6 problem in a different costume. A magic string is not absence; it is a
+
+<p>A magic string is not absence; it is a
 value that merely looks like absence, and the difference shows up everywhere downstream. It groups
 as its own bucket, so a pie over the dimension draws a &ldquo;(not set)&rdquo; slice indistinguishable
 from a real category. It sorts among real values. It cannot be told apart from a visitor who
@@ -2144,8 +2020,8 @@ the end for the other (<code>setRepeatVisitorFlag</code>, unchanged since 2015).
 bug is fixed, but the <em>shape</em> is the problem: nothing in the schema, the entity layer or
 the ingestion pipeline stops a write path leaving NULL in a column that has only two meanings.</p>
 
-<p><strong>Update, 28 Aug &mdash; fixing the derivation was not enough, and the reason
-generalises.</strong> Rows written before that fix still hold NULL, so the third bucket survives
+<p><strong>Fixing the derivation is not enough, and the reason generalises.</strong> Rows
+written before such a fix still hold NULL, so the third bucket survives
 in the data whatever the writer does now: the pie was still drawing two slices labelled
 &ldquo;New&rdquo; on a live install, months after the derivation was corrected. The client half
 had to change too &mdash; the chart now sums by <em>label</em> rather than emitting one slice per
@@ -2218,10 +2094,7 @@ updates, and the apply loop already sorts numerically, stops at first failure an
   <p>Worth a helper on the update base class rather than a documented convention — the failure
   lands on the update written eighteen months from now.</p>
 </div>
-<p><span class="chip c-meas">Measured</span> A fresh install creates both shapes: 19 empty tables
-cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 15 partitioned fact
-tables. Cheap enough to accept, and it keeps a fresh install able to serve a v1 beacon without
-being migrated forward into v1 first.</p>
+
 
 <h3 id="s210"><span class="num">2.10</span>Packaging <span class="chip c-dec">Decided</span></h3>
 <p><strong>Unchanged.</strong> Same tarball, same Release Packager workflow, same wizard. No
@@ -2476,8 +2349,7 @@ to accept a format v1 will never report on. Heatmaps follow, being built on the 
 
 <h3 id="s220"><span class="num">2.20</span>The parity harness <span class="chip c-dec">Decided</span></h3>
 <p>Both pipelines consume identical events, so v1 can serve as an oracle — but only
-<strong>below the session boundary</strong>, and an earlier draft of this section did not say so.
-The correction matters enough to state first, because it changes what this harness is for.</p>
+<strong>below the session boundary</strong>. That is what this harness is for.</p>
 
 <div class="flag">
   <p class="h">v1 is not an oracle for anything session-scoped</p>
@@ -2592,13 +2464,9 @@ independent session cookies, which is both correct and exactly GA's <code>_ga_&l
   existing identities keep their values and existing data is untouched. Decoupling identity from
   derivation does not require reissuing the identities already handed out.</p>
 </div>
-<p><strong>No second tracking tag, and no second tracker.</strong> An earlier draft of this
-section argued for one; that contradicted &sect;1.9, which is Decided and whose reasoning still holds —
-two trackers split a site's data by which snippet happened to be deployed, so v1's history steps or
-stops the moment a site upgrades, destroying the thing v1 is being kept for. The fidelity argument
-was also backwards: the tracker is <em>extended</em> in Phase 3, so it already emits v2-rich events
-and the server <strong>degrades</strong> them for v1 — not v1-poor events upgraded for v2. There is
-no fidelity gap to protect against.</p>
+<p><strong>No second tracking tag, and no second tracker</strong>, per
+<a href="#s19">&sect;1.9</a>. The tracker is <em>extended</em> in Phase&nbsp;3, so it emits
+v2-rich events and the server degrades them for v1 &mdash; not v1-poor events upgraded for v2.</p>
 <p>So the profile model requires <strong>no client change whatsoever</strong>: one tag, one event,
 and the server writes each received event into every profile configured for that website. The
 site → profiles mapping is server-side, so the page never learns that profiles exist, and &sect;1.9's
@@ -2636,125 +2504,6 @@ anything is selected, the version filter belongs in <code>getMetricEntities()</c
 whose entity is the wrong version, so wrong-version objects are never constructed — rather than at
 the niceness sort, where they already exist. And the recursion into child metrics means filtering
 children constrains their calculated parents for free.</p>
-<h4>Scope the catalog by entity, not by version <span class="chip c-dec">Decided</span></h4>
-<p><strong>Refinement of the section below.</strong> Partitioning by version works but spreads a
-version concept through every accessor, and concepts like that leak until they are everywhere.
-Keying off the <em>entity</em> achieves the same isolation using something already present in every
-registration and already understood across the codebase: a profile determines a candidate entity
-set, the accessors scope to it, and the word &ldquo;version&rdquo; survives only in the profile
-record and the migration machinery — which is the one place generational schema changes are
-actually relevant.</p>
-<p>It is still a single choke point rather than scattered filtering: every consumer goes through the
-accessor, so there is one place to be right instead of ten. And it improves the API independently of
-v2 — <code>getAllMetrics()</code> today returns everything regardless of whether it is queryable in
-the current context, so an entity-scoped picker is more correct even with one generation.</p>
-<div class="scroll"><table>
-<thead><tr><th>Piece</th><th>Change</th></tr></thead>
-<tbody>
-<tr><td><code>Service::$metrics</code></td><td>none — <code>[$name][] = $impl</code> already accumulates</td></tr>
-<tr><td><code>Service::$dimensions</code></td><td><strong>must</strong> become <code>[$name][$entity]</code></td></tr>
-<tr><td>Accessors</td><td>take an entity scope instead of a version</td></tr>
-<tr><td>Profile</td><td>supplies the scope; the only place a version is named</td></tr>
-<tr><td><code>ResultSetManager</code></td><td>nothing — the niceness sort runs inside the scope it is given</td></tr>
-</tbody></table></div>
-<p><strong>This makes the dimension fix required, not optional.</strong> An earlier note suggested
-partitioning might subsume it; under entity-scoped accessors it is the foundation, because the
-overwrite happens at <em>registration</em>, before any read scoping can apply — both
-<code>registerDimension()</code> and <code>_loadDimensions()</code> write flat name-keyed. A v2
-<code>pageTitle</code> replaces v1’s at load time, so by the time an accessor scopes by entity there
-is only one definition left to scope.</p>
-<div class="flag">
-  <p class="h">Calculated metrics have no entity</p>
-  <p>They carry <code>child_metrics</code> and a formula instead, so an entity-scoped
-  <code>getAllMetrics()</code> must include a calculated metric when all of its children resolve
-  within the scope and exclude it otherwise. This falls out of recursion naturally, but it is the
-  one case where scoping is not a direct property test — and getting it wrong silently drops
-  <code>bounceRate</code> and its siblings from the picker rather than erroring.</p>
-</div>
-
-<h5>Superseded: partition by version <span class="chip c-meas">Measured</span></h5>
-<p><em>Kept for the measurement, which still stands; the entity-scoped approach above is preferred.</em></p>
-<p>The paragraphs above proposed registering the v2 set into the existing registry and
-discriminating downstream — a filter in <code>getMetricEntities()</code>. <strong>That is
-wrong</strong>, and the reason is enumeration rather than resolution.
-<code>getAllMetrics()</code> and <code>getAllDimensions()</code> return the flat, name-keyed map,
-and they are consumed in ten places:</p>
-<div class="scroll"><table>
-<thead><tr><th>Consumer</th><th>Use</th></tr></thead>
-<tbody>
-<tr><td><code>ResultSetManager</code> :930, :937, :2364</td><td>internal resolution</td></tr>
-<tr><td><code>CustomReports.php</code> :1371, :1378</td><td>custom report definition</td></tr>
-<tr><td><code>CustomReportEdit.php</code> :220, :226, :243, :270, :282</td><td><strong>the metric/dimension picker UI and its validation</strong></td></tr>
-</tbody></table></div>
-<p>The picker is built from <code>array_keys( getAllMetrics() )</code>. Array keys are unique, so
-with both sets registered it offers <strong>one</strong> <code>visits</code> that silently means two
-different things, and the validation loops beside it are equally version-blind. Selection never gets
-the chance to be wrong, because the wrong definition was already offered and accepted as valid. A
-filter at one consumer fixes one consumer.</p>
-<p><strong>So partition at the aggregation points instead.</strong> There are exactly two, and they
-are the only places module registries merge into the service:</p>
-<pre><code>_loadMetrics()    : $this-&gt;metrics    = array_merge_recursive( $this-&gt;metrics, $module-&gt;metrics );
-_loadDimensions() : $this-&gt;dimensions = array_merge( $this-&gt;dimensions, $module-&gt;dimensions );</code></pre>
-<p>Group by version there rather than flattening, and resolve accessors within a version. Nothing
-downstream filters anything, because the other version is not in scope: the picker lists one
-version's names with no change to <code>CustomReportEdit</code>, validation follows automatically,
-<code>ResultSetManager</code> needs no niceness-sort filter, and <strong>the name-collision blocker
-below dissolves</strong> — separate partitions cannot overwrite one another, so keying
-<code>$this-&gt;dimensions</code> by entity may prove unnecessary.</p>
-<p>The distinction is scoping the registry once versus remembering to discriminate at ten
-consumers. <em>Open:</em> the service is a boot-time singleton, built before a query knows its
-profile, so either every accessor takes a version or the version becomes request-scoped ambient
-state. <strong>The explicit parameter is safer</strong> — ten call sites is tractable, and it keeps
-the version visible at each consumer rather than hidden in ambient state, which is the same
-silent-wrong-answer failure in a different costume.</p>
-
-<div class="flag">
-  <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
-  <p>The claim above that dimensions behave like metrics is <strong>only true for denormalized
-  ones</strong>. <code>registerDimension()</code> loops <code>$entity_names</code> but writes to
-  two different shapes:</p>
-  <pre><code>if ($denormalized) {
-    $this-&gt;denormalizedDimensions[$dim_name][$entity] = $dim;   // entity-keyed
-} else {
-    $this-&gt;dimensions[$dim_name] = $dim;                        // NAME-keyed — last write wins
-}</code></pre>
-  <p><span class="chip c-meas">Measured</span> of 103 registrations: <strong>58</strong>
-  denormalized (safe), <strong>41</strong> normalized against a single entity (the overwrite is a
-  no-op), and <strong>3</strong> normalized against all seven
-  <code>$fact_table_entities</code> — <code>month</code>, <code>userName</code>,
-  <code>priorVisitCount</code>.</p>
-  <p><strong>This blocks v2 for all 44 normalized dimensions.</strong> v1 registers
-  <code>pageTitle</code> against its dimension table, v2 registers <code>pageTitle</code> against
-  the event table, and the second write <em>replaces</em> the first — the v1 definition is gone from
-  the registry before any entity filter could run. No downstream selection can recover it, and
-  renaming is not an option.</p>
-  <p><strong>Fix:</strong> key <code>$this-&gt;dimensions</code> by entity, matching
-  <code>denormalizedDimensions</code>, which already has the right shape.
-  <code>getDimension()</code> has exactly <strong>one caller</strong>
-  (<code>ResultSetManager:970</code>), so the change is that call site plus the registration loop.
-  This is a <strong>prerequisite in 1.x</strong>: the registry must be able to hold two definitions
-  under one name before a second set can exist at all.</p>
-  <p><em>Unverified, worth a trace:</em> the 3 normalized multi-entity registrations keep only the
-  last of seven entities, and <code>$dim['entity']</code> then drives the JOIN
-  (<code>entityFactory()</code>, <code>getForeignKeyColumn()</code>, <code>$db-&gt;join()</code>).
-  <code>date</code> is registered against the same list with <code>denormalized = true</code> while
-  <code>month</code> beside it is not, which looks like an oversight rather than a distinction. Not
-  claimed as a live defect until traced.</p>
-</div>
-
-<div class="flag">
-  <p class="h">Do not add the v2 entity to $fact_table_entities</p>
-  <p>Dimensions are registered against a shared array:
-  <code>registerDimension('date', $fact_table_entities, 'yyyymmdd', …)</code>. Appending the v2
-  entity to that one variable would make <strong>every</strong> dimension claim to work on v2 while
-  still naming v1's columns — a one-line change producing broadly wrong SQL, and the obvious-looking
-  way to &ldquo;add v2 support&rdquo;. v2 needs its own registrations with its own columns, exactly
-  as metrics do.</p>
-</div>
-
-<p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
-settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
-
 <h4>Domain aliases stay v1-only, and narrow <span class="chip c-dec">Decided</span></h4>
 <p>A Property will hold the domains of the website it describes, and the temptation is to make that
 list do two further jobs it should not do.</p>
@@ -2927,6 +2676,147 @@ could see. <code>VisualizationFunnel::walk()</code> resolves same-second events 
 comparing them, and the two tests pinning that assumption should be <em>retired</em> when v2 lands,
 not re-baselined.</p>
 
+<h4>What the shape is worth, measured</h4>
+<div class="scroll"><table>
+<thead><tr><th>Model</th><th>Per tracked pageview</th><th class="n">Events/s</th></tr></thead>
+<tbody>
+<tr><td>1.x star</td><td>1 insert + 1 session upsert + 5 dimension checks = 7 statements</td><td class="n">79</td></tr>
+<tr><td>v2 event table</td><td>1 insert</td><td class="n"><strong>202</strong></td></tr>
+</tbody></table></div>
+<p><span class="chip c-meas">Measured</span> Disk is a wash — within ±2%, because 1.x already
+denormalises 58 dimensions onto its facts. The win is not storage. It is throughput, one
+definition per metric instead of nine commerce metrics existing twice, and the deletion of an
+entire class of dimension-FK bugs this release cycle has been spent fixing.</p>
+<p>The star keeps exactly one real advantage: post-hoc enrichment is <strong>589× cheaper</strong>
+— rewriting one dimension row versus 565k event rows. That advantage is a row-store artefact
+and inverts on a columnar engine, and it has been explicitly traded away.</p>
+<h4>Why v1&rsquo;s history cannot size the session change</h4>
+<div class="flag">
+    <p class="h">And v1's history cannot size it</p>
+    <p><code>owa_request</code> does carry per-request <code>medium</code>, <code>source_id</code>
+    and <code>campaign_id</code>, so the question looks answerable. It is not:
+    <code>setTrafficAttribution()</code> stamps the <em>decided</em>, session-sticky result rather
+    than the observation that produced it, so a mid-session tag change is collapsed before it is
+    stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
+    rather than a rate.</p>
+    <p>This is the same limitation &sect;2.20 records for validating the attribution model &mdash;
+    <em>existing history is not a usable touchpoint log</em>.</p>
+    <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
+    requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
+    is uncommon outside heavy paid-campaign traffic. If a number is wanted later, touchpoint data
+    supplies it; nothing waits on it.</p>
+    <p><strong>Touchpoint recording earns its place on data quality, not on this.</strong>
+    Attribution is decided <em>in the browser</em> today &mdash;
+    <code>setTrafficAttribution()</code> reads the <code>owa_c</code> cookie's <code>attribs</code>
+    stack, applies the model, and the event carries the <em>verdict</em> rather than the observation
+    that produced it. So the server stores a conclusion it cannot check, and four things follow:</p>
+    <ul>
+    <li><strong>A client-side verdict cannot be corrected later.</strong> Fix the attribution logic and every row already
+    written keeps the old verdict &mdash; there is nothing to recompute from.</li>
+    <li><strong>Attribution dies with the cookie.</strong> Clearing <code>owa_c</code> destroys the
+    stack, and the visitor's history is gone rather than re-derivable.</li>
+    <li><strong>The 60-day <code>original</code> window is measured on the client's clock</strong>,
+    which is unverifiable and, on a skewed device, wrong.</li>
+    <li><strong>No post-hoc enrichment.</strong> This research measured the star's one real
+    advantage as rewriting a dimension without touching facts (589&times;); attribution is precisely
+    the dimension worth rewriting, and today it is the one that cannot be.</li>
+    </ul>
+    <p>Recording the touchpoints makes attribution <em>derived</em> rather than <em>reported</em>:
+    recomputable, correctable, and independent of whether a cookie survived. That is the reason to
+    do it early, and it stands whether or not the session step is ever quantified.</p>
+  </div>
+<h4>The measured cost of running both pipelines</h4>
+<div class="scroll"><table>
+<thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
+<tbody>
+<tr><td>Admin — sites, users, goals, config</td><td class="n">6</td><td class="n">0.1 MB</td><td><strong>shared</strong>; must not be altered destructively</td></tr>
+<tr><td>Facts</td><td class="n">10</td><td class="n">2,358.7 MB</td><td>parallel; v1 keeps its own</td></tr>
+<tr><td>Dimensions</td><td class="n">10</td><td class="n">38.6 MB</td><td>parallel; v1 keeps its own</td></tr>
+</tbody></table></div>
+<p><span class="chip c-meas">Measured</span> Effectively all volume is parallel and the shared set
+is trivial, which is what makes coexistence cheap. Cost of the overlap, composed from the two
+write paths: roughly <strong>57 events/s against v1's 79</strong> — about 28% down, and
+pessimistic since the writes share request overhead. That is an argument for the queue carrying
+the fan-out rather than the request doing it inline.</p>
+<h4>Metrics are configuration: the 1.x conversion, measured</h4>
+<p><span class="chip c-meas">Measured</span> An earlier draft of this section said there were 22
+class references, that <strong>no metric class contains SQL</strong>, and that the conversion was
+therefore mechanical. Two of those three were wrong, and wrong the same way: they came from reading
+a few classes rather than classifying the set. The corrected figures, and what they changed:</p>
+<div class="scroll"><table>
+<thead><tr><th>Claimed</th><th>Actually</th></tr></thead>
+<tbody>
+<tr><td>22 class references</td><td><strong>40</strong> registered classes across 28 <code>registerMetric()</code> calls, producing 81 implementations</td></tr>
+<tr><td>No metric class contains SQL</td><td><strong>74 of 81</strong> implementations carry an explicit <code>setSelect()</code> expression with no <code>metric_type</code> at all. Five further classes build SQL with the query builder &mdash; all five unregistered and unreachable, since nothing calls their <code>calculate()</code></td></tr>
+<tr><td>Three aggregate kinds, six renderers total</td><td><strong>Five</strong> metric kinds. The 74 expressions collapse to <strong>seven shapes</strong>, five of which the vocabulary already had; two were added</td></tr>
+</tbody></table></div>
+<p>The distribution is what made it answerable, and it was never visible from samples: 61 plain
+sums (mostly generated goal metrics), 7 <code>distinct_count</code>, 7 calculated, 2
+<code>count</code>, 2 needing a boolean-true kind, 1 needing an average-of-difference, and exactly
+one bespoke composite.</p>
+<p><strong>The formatter model is what made it possible.</strong> A definition names a
+<em>kind</em> and an implementation renders it, so no definition carries SQL &mdash; the same rule
+as derived dimensions above, and the same rule reports-as-config used for formatters. The two new
+kinds, <code>boolean_true_count</code> and <code>avg_difference</code>, were each verified to render
+character-for-character what they replaced before any registration was touched.</p>
+<p><strong>Result:</strong> 48 metric class files became 7. Of 78 metrics, 68 resolve
+byte-identically and 10 differ only in SQL keyword case, since the classes hardcoded lowercase
+while the query builder emits upper.</p>
+<div class="flag">
+  <p class="h">Two defects the conversion uncovered</p>
+  <p><code>ConfigurableMetric</code>'s <code>calculated</code> type <strong>had never
+  worked</strong>. It calls <code>setChildMetric()</code>, which existed only on
+  <code>CalculatedMetric</code> &mdash; not on <code>Core\Metric</code>, which
+  <code>ConfigurableMetric</code> extends. Supported on paper, fatal on first use, and never
+  registered by anything, so nobody found out. &ldquo;Supported but unused&rdquo; was doing more
+  work in the earlier draft than it could bear.</p>
+  <p>And <code>registerMetricDefinition()</code> filters its params with
+  <code>array_intersect_key()</code> against a fixed map, so <strong>any key missing from that map
+  is silently dropped</strong> rather than rejected. A new kind's parameter vanishes and the metric
+  renders a subtraction against nothing.</p>
+</div>
+<p><strong>Seven classes remain, and none of them blocks the conversion.</strong> Seven classes remain: three goal
+classes (which read the <code>siteId</code> request param to build per-site labels),
+<code>repeatVisitors</code> (the one composite expression), one unregistered class a parity test
+names by literal, and <code>ConfigurableMetric</code> itself. <strong>Every one is gone in
+v2</strong> &mdash; the numbered goal slots become named goal events with a parameterised metric, and
+<code>repeatVisitors</code> becomes the <code>newVsReturning</code> dimension (EVENTS.html
+&sect;7.7, &sect;7.14). They are artefacts of numbered slots and stored booleans, which v2 removes
+for unrelated reasons, so <strong>v2's metrics are entirely configuration</strong>.</p>
+<p><strong>The evaluator stays out of scope.</strong> Formulas run through
+<code>ResultSetManager::evalFormula()</code>, which <code>@ eval()</code>s a PHP string &mdash; but
+moving a repo-shipped formula into a repo-shipped config entry does not move the trust boundary. The
+parser is the prerequisite for a <em>user-authored</em> metric builder, and a plain four-operator
+grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
+application. Separately: the <code>@</code> means a malformed formula falls through to
+<code>0</code>, so a broken metric reads as a real zero.</p>
+<h4>The 1.x metric set, classified</h4>
+<p class="note">Measured, not sampled: 40 registered classes across 28 <code>registerMetric()</code>
+calls producing 81 implementations, of which <strong>74 carried an explicit <code>setSelect()</code>
+expression</strong> and no kind at all. Those 74 expressions collapse to seven shapes. 48 metric
+class files became 7; of 78 metrics, 68 resolve byte-identically and 10 differ only in SQL keyword
+case. An earlier draft claimed 22 class references and that no metric class contained SQL &mdash;
+both wrong, and wrong the same way: read from a few classes rather than from classifying the set.</p>
+<h4>What the <code>(not set)</code> sentinel costs in 1.x</h4>
+<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
+<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
+those properties are <code>required</code>, the string is written to the fact row on every event
+that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
+every row carries the literal text.</p>
+<h4>What shipping both schemas costs a fresh install</h4>
+<p><span class="chip c-meas">Measured</span> A fresh install creates both shapes: 19 empty tables
+cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 15 partitioned fact
+tables. Cheap enough to accept, and it keeps a fresh install able to serve a v1 beacon without
+being migrated forward into v1 first.</p>
+<h4>Why a page carries no identity hash</h4>
+<p>An earlier draft called the column
+<code>page_uri</code> and gave a page an identity, <code>hash(site_id + uri)</code>. A hash has to
+commit to its input before anyone asks a question, which forced a decision about whether the query
+string was part of a page's identity &mdash; and neither literal answer was any good. Keep the
+query in the hash and every campaign-tagged arrival becomes a distinct page, fragmenting the
+landing-page report into one row per tag combination. Drop it and the campaign evidence is gone
+from raw entirely. Storing the complete URL and deriving the path readings at read time is what GA
+does, and it defers the question to the reader who is actually asking it.</p>
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
@@ -2972,3 +2862,121 @@ v2 stamps it in the pass and the tracker cookie drops the key.</p>
 </footer>
 </main>
 </div>
+<h4>Superseded: partition by version</h4>
+<p><strong>Refinement of the section below.</strong> Partitioning by version works but spreads a
+version concept through every accessor, and concepts like that leak until they are everywhere.
+Keying off the <em>entity</em> achieves the same isolation using something already present in every
+registration and already understood across the codebase: a profile determines a candidate entity
+set, the accessors scope to it, and the word &ldquo;version&rdquo; survives only in the profile
+record and the migration machinery — which is the one place generational schema changes are
+actually relevant.</p>
+<p>It is still a single choke point rather than scattered filtering: every consumer goes through the
+accessor, so there is one place to be right instead of ten. And it improves the API independently of
+v2 — <code>getAllMetrics()</code> today returns everything regardless of whether it is queryable in
+the current context, so an entity-scoped picker is more correct even with one generation.</p>
+<div class="scroll"><table>
+<thead><tr><th>Piece</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>Service::$metrics</code></td><td>none — <code>[$name][] = $impl</code> already accumulates</td></tr>
+<tr><td><code>Service::$dimensions</code></td><td><strong>must</strong> become <code>[$name][$entity]</code></td></tr>
+<tr><td>Accessors</td><td>take an entity scope instead of a version</td></tr>
+<tr><td>Profile</td><td>supplies the scope; the only place a version is named</td></tr>
+<tr><td><code>ResultSetManager</code></td><td>nothing — the niceness sort runs inside the scope it is given</td></tr>
+</tbody></table></div>
+<p><strong>The dimension fix is required, not optional.</strong> Under entity-scoped
+accessors it is the foundation, because the
+overwrite happens at <em>registration</em>, before any read scoping can apply — both
+<code>registerDimension()</code> and <code>_loadDimensions()</code> write flat name-keyed. A v2
+<code>pageTitle</code> replaces v1’s at load time, so by the time an accessor scopes by entity there
+is only one definition left to scope.</p>
+<div class="flag">
+  <p class="h">Calculated metrics have no entity</p>
+  <p>They carry <code>child_metrics</code> and a formula instead, so an entity-scoped
+  <code>getAllMetrics()</code> must include a calculated metric when all of its children resolve
+  within the scope and exclude it otherwise. This falls out of recursion naturally, but it is the
+  one case where scoping is not a direct property test — and getting it wrong silently drops
+  <code>bounceRate</code> and its siblings from the picker rather than erroring.</p>
+</div>
+
+<h5>Superseded: partition by version <span class="chip c-meas">Measured</span></h5>
+<p><em>Kept for the measurement, which still stands; the entity-scoped approach above is preferred.</em></p>
+<p>The paragraphs above proposed registering the v2 set into the existing registry and
+discriminating downstream — a filter in <code>getMetricEntities()</code>. <strong>That is
+wrong</strong>, and the reason is enumeration rather than resolution.
+<code>getAllMetrics()</code> and <code>getAllDimensions()</code> return the flat, name-keyed map,
+and they are consumed in ten places:</p>
+<div class="scroll"><table>
+<thead><tr><th>Consumer</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>ResultSetManager</code> :930, :937, :2364</td><td>internal resolution</td></tr>
+<tr><td><code>CustomReports.php</code> :1371, :1378</td><td>custom report definition</td></tr>
+<tr><td><code>CustomReportEdit.php</code> :220, :226, :243, :270, :282</td><td><strong>the metric/dimension picker UI and its validation</strong></td></tr>
+</tbody></table></div>
+<p>The picker is built from <code>array_keys( getAllMetrics() )</code>. Array keys are unique, so
+with both sets registered it offers <strong>one</strong> <code>visits</code> that silently means two
+different things, and the validation loops beside it are equally version-blind. Selection never gets
+the chance to be wrong, because the wrong definition was already offered and accepted as valid. A
+filter at one consumer fixes one consumer.</p>
+<p><strong>So partition at the aggregation points instead.</strong> There are exactly two, and they
+are the only places module registries merge into the service:</p>
+<pre><code>_loadMetrics()    : $this-&gt;metrics    = array_merge_recursive( $this-&gt;metrics, $module-&gt;metrics );
+_loadDimensions() : $this-&gt;dimensions = array_merge( $this-&gt;dimensions, $module-&gt;dimensions );</code></pre>
+<p>Group by version there rather than flattening, and resolve accessors within a version. Nothing
+downstream filters anything, because the other version is not in scope: the picker lists one
+version's names with no change to <code>CustomReportEdit</code>, validation follows automatically,
+<code>ResultSetManager</code> needs no niceness-sort filter, and <strong>the name-collision blocker
+below dissolves</strong> — separate partitions cannot overwrite one another, so keying
+<code>$this-&gt;dimensions</code> by entity may prove unnecessary.</p>
+<p>The distinction is scoping the registry once versus remembering to discriminate at ten
+consumers. <em>Open:</em> the service is a boot-time singleton, built before a query knows its
+profile, so either every accessor takes a version or the version becomes request-scoped ambient
+state. <strong>The explicit parameter is safer</strong> — ten call sites is tractable, and it keeps
+the version visible at each consumer rather than hidden in ambient state, which is the same
+silent-wrong-answer failure in a different costume.</p>
+
+<div class="flag">
+  <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
+  <p>The claim above that dimensions behave like metrics is <strong>only true for denormalized
+  ones</strong>. <code>registerDimension()</code> loops <code>$entity_names</code> but writes to
+  two different shapes:</p>
+  <pre><code>if ($denormalized) {
+    $this-&gt;denormalizedDimensions[$dim_name][$entity] = $dim;   // entity-keyed
+} else {
+    $this-&gt;dimensions[$dim_name] = $dim;                        // NAME-keyed — last write wins
+}</code></pre>
+  <p><span class="chip c-meas">Measured</span> of 103 registrations: <strong>58</strong>
+  denormalized (safe), <strong>41</strong> normalized against a single entity (the overwrite is a
+  no-op), and <strong>3</strong> normalized against all seven
+  <code>$fact_table_entities</code> — <code>month</code>, <code>userName</code>,
+  <code>priorVisitCount</code>.</p>
+  <p><strong>This blocks v2 for all 44 normalized dimensions.</strong> v1 registers
+  <code>pageTitle</code> against its dimension table, v2 registers <code>pageTitle</code> against
+  the event table, and the second write <em>replaces</em> the first — the v1 definition is gone from
+  the registry before any entity filter could run. No downstream selection can recover it, and
+  renaming is not an option.</p>
+  <p><strong>Fix:</strong> key <code>$this-&gt;dimensions</code> by entity, matching
+  <code>denormalizedDimensions</code>, which already has the right shape.
+  <code>getDimension()</code> has exactly <strong>one caller</strong>
+  (<code>ResultSetManager:970</code>), so the change is that call site plus the registration loop.
+  This is a <strong>prerequisite in 1.x</strong>: the registry must be able to hold two definitions
+  under one name before a second set can exist at all.</p>
+  <p><em>Unverified, worth a trace:</em> the 3 normalized multi-entity registrations keep only the
+  last of seven entities, and <code>$dim['entity']</code> then drives the JOIN
+  (<code>entityFactory()</code>, <code>getForeignKeyColumn()</code>, <code>$db-&gt;join()</code>).
+  <code>date</code> is registered against the same list with <code>denormalized = true</code> while
+  <code>month</code> beside it is not, which looks like an oversight rather than a distinction. Not
+  claimed as a live defect until traced.</p>
+</div>
+
+<div class="flag">
+  <p class="h">Do not add the v2 entity to $fact_table_entities</p>
+  <p>Dimensions are registered against a shared array:
+  <code>registerDimension('date', $fact_table_entities, 'yyyymmdd', …)</code>. Appending the v2
+  entity to that one variable would make <strong>every</strong> dimension claim to work on v2 while
+  still naming v1's columns — a one-line change producing broadly wrong SQL, and the obvious-looking
+  way to &ldquo;add v2 support&rdquo;. v2 needs its own registrations with its own columns, exactly
+  as metrics do.</p>
+</div>
+
+<p><em>Open:</em> the vocabulary (site / profile / property / <code>site_family</code>) wants
+settling before anything is built, since it will surface in the UI, the API and the schema at once.</p>
