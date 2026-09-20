@@ -2174,8 +2174,15 @@ write as its beacon (<a href="#s26">&sect;2.6.2</a>) &mdash; and the count is ex
 </ul>
 <h4 id="nA132"><span class="num">A.1.32</span>What GA&rsquo;s tracker sends, read from gtag.js</h4>
 <p>Read from the live bundle at <code>googletagmanager.com/gtag/js</code> (429&nbsp;KB), from its
-wire-parameter tables. Earlier GA claims in this appendix rested on a beacon capture that is not
-in the repository; these do not.</p>
+wire-parameter tables and its sender. Earlier GA claims in this appendix rested on a beacon capture
+that is not in the repository; these do not.</p>
+<p class="note"><strong>What this evidence cannot cover.</strong> The bundle was fetched with a
+property id that does not exist, so it came back with no container configuration. Library code is
+therefore fully represented &mdash; the sender, the batch assembly, the parameter tables &mdash;
+but anything a property switches on is not. GA4&rsquo;s scroll tracking is one of those: it is an
+enhanced-measurement setting, and the word <em>scroll</em> appears nowhere in this bundle. So the
+absence of a field here is weaker evidence than its presence, and the claim that <code>_p</code> is
+absent is only as good as the configuration that was fetched.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>Wire</th><th>Carries</th></tr></thead>
