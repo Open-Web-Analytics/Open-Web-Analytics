@@ -224,7 +224,7 @@ since the last report. Losing a beacon then costs one increment rather than one 
 <p>The hide-time <code>user_engagement</code> event carries the residue since the last event, and
 fires on any hide at any size &mdash; the threshold gates read-time classification, never the send,
 or it would bake itself into collection. Its id is content-derived,
-<code>hash(page_view_id + seq)</code>. It is beaconed at hide and then rides the session's next
+<code>hash(site_id + session_id + seq)</code>, <code>seq</code> being a session-scoped counter. It is beaconed at hide and then rides the session's next
 request as parameters rather than a separate catch-up beacon, so duplicates collapse at the table.
 <strong>Final-page dwell is the one irreducible lossy attempt</strong>, and the thing 1.x cannot
 measure at all.</p>
@@ -658,18 +658,17 @@ same primary key. So staging carries no convenience columns, and a schema change
 one step or the swap starts failing.</p>
 
 <h4><span class="num">2.1.2</span>How an event id is derived</h4>
-<p>An id is <strong>63 bits, always positive</strong>, and is produced one of three ways. The rule
+<p>An id is <strong>63 bits, always positive</strong>, and is produced one of two ways. The rule
 behind the split: an id has to be reproducible whenever the same event can arrive twice, and
 random is only safe where a second arrival carries the first id with it.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>Event</th><th>Its id</th><th>Why that one</th></tr></thead>
 <tbody>
-<tr><td><code>page_view</code></td><td><code>page_view_id</code> &mdash; <strong>a new client-minted guid</strong>, one per page load</td><td>1.x has no page-scoped id: the tracker mints only <code>visitor_id</code>, <code>session_id</code> and <code>domstream_guid</code>, and the beacon carries no equivalent. v2 adds one, on the <code>domstream_guid</code> pattern but unconditional. It has to come from the client, because an engagement beacon sent later must name the page view, and a beacon is fire-and-forget &mdash; nothing minted server-side can be handed back. It is also what a domstream chunk attaches to (<a href="#s110">&sect;1.10</a>)</td></tr>
 <tr><td><code>session_start</code></td><td><code>hash(site_id + session_id + &lsquo;session_start&rsquo;)</code></td><td>Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
 <tr><td><code>first_visit</code></td><td><code>hash(site_id + visitor_id + &lsquo;first_visit&rsquo;)</code></td><td>Keyed on the visitor, not the session: racing tabs can each believe they minted the visitor, and a visitor has exactly one first visit. An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
-<tr><td><code>user_engagement</code></td><td><code>hash(page_view_id + seq)</code></td><td>Beacon and retry are independent arrivals, so a random id would write the residue twice</td></tr>
-<tr><td>everything else</td><td>random, minted once at edge receipt</td><td>It travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays the same id and collapses at the primary key</td></tr>
+<tr><td><code>user_engagement</code></td><td><code>hash(site_id + session_id + seq)</code></td><td>Beacon and retry are independent arrivals, so a random id would write the residue twice. <code>seq</code> is session-scoped, so there is no page identity to hash against and none is needed</td></tr>
+<tr><td>every other event, <code>page_view</code> included</td><td>random, minted once at edge receipt</td><td>It travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays the same id and collapses at the primary key</td></tr>
 </tbody></table></div>
 
 <p><strong>The hash is 1.x&rsquo;s, unchanged.</strong> <code>Lib::wideStringGuid()</code>: sha1 of
@@ -1406,7 +1405,7 @@ without it. For the other three it is <strong>the storage the feature needs to m
 <tbody>
 <tr><td>Engagement deltas</td><td>accumulation, piggybacking, terminal beacon</td><td><code>owa_event.engagement_msec</code></td><td>Phase&nbsp;5</td></tr>
 <tr><td>Element path capture</td><td>the selector / ancestor-chain logic</td><td><code>owa_event.element_path</code></td><td>Phase&nbsp;5</td></tr>
-<tr><td>Chunk <code>seq</code></td><td>the page-scoped counter and its uses</td><td>the chunk id, via early cutover (<a href="#s221">&sect;2.21</a>)</td><td>Phase&nbsp;5</td></tr>
+<tr><td>Chunk <code>seq</code></td><td>the per-recording counter, hashed with <code>domstream_guid</code></td><td>the chunk id, via early cutover (<a href="#s221">&sect;2.21</a>)</td><td>Phase&nbsp;5</td></tr>
 <tr><td><code>sendBeacon</code> with a body</td><td>the client transport</td><td>nothing &mdash; complete in 1.x</td><td><span class="chip c-done">Shipped</span></td></tr>
 </tbody></table></div>
 <p class="note">A 1.x engagement column would also carry a number with nothing to check it against
@@ -1453,7 +1452,7 @@ the most is known.</p>
 <tr><td>4</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#nA112">A.1</a> for why a 1.x fix would be worse than leaving it.</td></tr>
 <tr><td>5</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
 <tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>. Carries the new per-page-load <code>page_view_id</code> with it (<a href="#s21">&sect;2.1.2</a>), which the 1.x tracker does not have.</td><td>Not started</td></tr>
+<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>). The engagement id uses a session-scoped counter of its own (<a href="#s21">&sect;2.1.2</a>), so neither needs a page identity.</td><td>Not started</td></tr>
 </tbody></table></div>
 <div class="flag">
   <p class="h">Status &mdash; 2026-09-20</p>
