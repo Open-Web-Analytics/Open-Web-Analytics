@@ -205,9 +205,7 @@ their own content rather than assigned.</p>
 <a href="#sa1">the appendix</a>.</p>
 
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
-<p><strong>A session is not a table and not a row.</strong> Session context is stamped on every
-event, so a session is countable from the denormalised table directly or from the rollup, whichever
-suits the query &mdash; the rollup is the same computation precomputed, not a separate authority.
+<p><strong>A session is not a table and not a row.</strong> Session context is stamped on every event, so a session is counted from the denormalised table. A rollup, if one is ever added, precomputes the same thing rather than becoming a second authority.
 Marker events (<a href="#s13">&sect;1.3</a>) exist for what they carry, not for what they count.</p>
 
 <h4><span class="num">1.2.1</span>Engagement is measured in deltas</h4>
@@ -278,11 +276,16 @@ moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scope
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>A session <strong>total</strong></td><td>the event rows &mdash; directly, or from the rollup, which precomputes the same thing</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
+<tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
 <tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
 <tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
-<p>The rollup carries the session's traffic source alongside its measures (<a href="#s21">&sect;2.1</a>), so a source, medium, campaign or ad breakdown can be served from it without counting markers at all &mdash; markers are a fast path, not the source of truth. Any other breakdown comes from the denormalised table. Where a total and a breakdown meet on
+<p class="note"><strong>While there is no rollup, totals and breakdowns come from the same table
+and cannot disagree</strong>, so the <code>(unknown)</code> row has nothing to report. It is
+specified here because a rollup would reintroduce the gap, and because counting a breakdown from
+marker rows &mdash; a fast path either way &mdash; has the same effect.</p>
+<p>Where a total and a breakdown do come from different places, the total wins and the
+<code>(unknown)</code> row carries the remainder. Two rules keep that honest: Where a total and a breakdown meet on
 one screen the total wins, and the <code>(unknown)</code> row carries the remainder. Two rules keep
 that honest:</p>
 <ul>
@@ -332,18 +335,24 @@ fingerprinting and no IP-and-user-agent heuristics: a probabilistic join produce
 can check.</li>
 </ul>
 
-<h3 id="s15"><span class="num">1.5</span>The three storage layers <span class="chip c-dec">Decided</span></h3>
+<h3 id="s15"><span class="num">1.5</span>The storage layers <span class="chip c-dec">Decided</span></h3>
 <div class="scroll"><table>
-<thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th class="n">Rows (measured)</th></tr></thead>
+<thead><tr><th>Layer</th><th>Grain</th><th>Store</th><th>Serves</th></tr></thead>
 <tbody>
-<tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed</td><td class="n">692,829</td></tr>
-<tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns &mdash; one pass</td><td class="n">692,829</td></tr>
-<tr><td>Rollup</td><td>day &times; traffic source</td><td>a precomputation of the layer above, for windows too wide to scan. Start-day attributed</td><td class="n">121 / 5,455 sessions</td></tr>
+<tr><td><strong>Raw</strong></td><td>event, as received</td><td><strong>row store</strong> &mdash; it takes one insert per beacon</td><td>realtime, and the record of what was observed</td></tr>
+<tr><td><strong>Denormalised</strong></td><td>event, enriched</td><td><strong>row or columnar</strong> &mdash; written only in bulk, by the pass</td><td>every report; the table queries actually hit</td></tr>
+<tr><td>Rollup <span class="chip c-open">Deferred</span></td><td>would be day &times; traffic source</td><td>follows the denormalised table</td><td><strong>Not built, and deliberately not specified.</strong> A rollup is derived from the layer above by definition, so it can be added with one job and one backfill &mdash; no collection change, no migration, nothing to re-derive. Measured against this corpus it earns nothing yet: a month is 106&nbsp;ms straight from events, and only an all-time query is slow enough to want it (<a href="#nA125">appendix</a>). Build it when a measured query is too slow, and let that measurement choose the key</td></tr>
 </tbody></table></div>
-<p><strong>The fact table stops being primary.</strong> Events land in raw exactly as they arrived.
-A pass reads that and writes a denormalised fact table with session- and user-scoped values
-materialised onto every row; the rollup aggregates from there. Queries hit the denormalised table,
-and raw is the record of what was observed.</p>
+<p><strong>The fact table stops being primary.</strong> Events land in raw exactly as they
+arrived. A pass reads that and writes a denormalised fact table with session- and user-scoped
+values materialised onto every row. Queries hit the denormalised table; raw is the record of what
+was observed.</p>
+<p><strong>The two layers have opposite write patterns, so they need not share a store.</strong>
+Raw takes one insert per beacon, which is what a row store is for. The denormalised table is never
+written a row at a time &mdash; the pass builds a whole partition into staging and swaps it
+&mdash; which is the load pattern a columnar store wants. So the design has to admit a
+<em>second data source</em> for the analytics table, with its own loading path: bulk load, partition
+replace, no row-level updates (<a href="#s21">&sect;2.1</a>).</p>
 <p><strong>A derived table can be rebuilt, which is what the whole scheme rests on.</strong> You
 never <code>UPDATE</code> a fact row, you regenerate a partition &mdash; so no-retroactive-fact-updates
 survives intact and stops being a constraint that forces values onto the wire. The pass is
@@ -421,16 +430,17 @@ physically is rather than a policy.</li>
 </ul>
 
 <h3 id="s16"><span class="num">1.6</span>Freshness and the API <span class="chip c-dec">Decided</span></h3>
-<p>Two freshness tiers, and the split is a cost choice rather than two sources of truth.
-<strong>Cost tracks <em>window width</em>, not table size</strong>, so a thirty-minute window is
-trivial against raw events while a year is not. Everything the rollup answers is derivable from the
-denormalised table; it exists so a wide window does not have to scan, and the lag is what that
-costs.</p>
+<p>Two freshness tiers, and the boundary is where the data physically is.
+<strong>Realtime reads raw, which is immediate. Everything attributed reads the denormalised table,
+which is as of the last pass.</strong> Cost tracks <em>window width</em> rather than table size, so
+a thirty-minute window is trivial against raw events while an all-time one is not &mdash; that is
+the query a rollup would eventually serve, and it is deferred until one is slow enough to
+justify it (<a href="#s21">&sect;2.1</a>).</p>
 <div class="scroll"><table>
 <thead><tr><th>View</th><th>Reads</th><th>Freshness</th></tr></thead>
 <tbody>
 <tr><td>Realtime &mdash; &ldquo;what is happening now&rdquo;</td><td>raw events, short window</td><td>immediate</td></tr>
-<tr><td>Historical &mdash; &ldquo;last month by source&rdquo;</td><td>rollup, or the denormalised table for a narrow window</td><td>last job run, or immediate</td></tr>
+<tr><td>Historical &mdash; &ldquo;last month by source&rdquo;</td><td>the denormalised table</td><td>as of the last pass</td></tr>
 </tbody></table></div>
 <p>So the freshest number in the system is the most naively computed one, and &ldquo;is my tracking
 working?&rdquo; &mdash; the question that must never be stale &mdash; never touches a summary.</p>
@@ -442,14 +452,13 @@ cost scales with period width &times; widget count and not at all with how much 
 historical question to get a realtime answer.</p>
 <p><strong>Realtime becomes a single dedicated screen</strong>, a short window over raw events. One query, one partition, no summary touched. It removes the per-report
 auto-refresh control and the per-widget polling behind it.</p>
-<p class="note">What this does not fix: historical reports remain stale for the current day, because
-they read the rollup. The answer is composition rather than polling &mdash;
+<p class="note">What this does not fix: historical reports are only as fresh as the last pass. The answer is composition rather than polling &mdash;
 <code>rollup(closed days) + raw(today)</code>, where closed days never change and cache
 indefinitely. Recorded as the follow-on, not folded into this decision.</p>
 
-<h4><span class="num">1.6.2</span>Eventual consistency is a rollup property, not a scheduling one</h4>
-<p>A rollup that advances a watermark can never converge: an event arriving after the watermark
-passes its own timestamp is not late, it is <em>lost</em>. So <strong>the rollup recomputes a
+<h4><span class="num">1.6.2</span>Eventual consistency is a property of the derived table, not of the schedule</h4>
+<p>A derived table that advances a watermark can never converge: an event arriving after the
+watermark passes its own timestamp is not late, it is <em>lost</em>. So <strong>the pass rebuilds a
 trailing window idempotently</strong>. The window is the lateness horizon, and it is the number a
 test asserts against.</p>
 
@@ -758,40 +767,6 @@ both demand the staging table mirror the target — same columns, same order, sa
 same primary key. So staging carries no convenience columns, and a schema change alters both in
 one step or the swap starts failing.</p>
 
-<h5>Rollup &mdash; <code>owa_event_rollup</code> <span class="chip c-dec">Decided</span></h5>
-<p><strong>The grain is one row per day &times; traffic source.</strong> Nothing else is in the
-key. The rollup exists so that a wide window does not have to scan events, and a key wide enough to
-answer every breakdown stops compressing &mdash; measured on real traffic, adding geography and
-device takes 5,455 sessions to 787 rows, and adding the landing page takes it to 5,203. At that
-point it is the session set with a staleness lag. See <a href="#nA125">the appendix</a>.</p>
-<div class="scroll"><table>
-<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Part</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td class="n">1</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>key</td><td></td></tr>
-<tr><td class="n">2</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>key</td><td>the grain. Start-day attributed; 0.23% of sessions cross midnight</td></tr>
-<tr><td class="n">3</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>key</td><td></td></tr>
-<tr><td class="n">4</td><td><code>source</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
-<tr><td class="n">5</td><td><code>campaign</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
-<tr><td class="n">6</td><td><code>ad</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
-<tr><td class="n">7</td><td><code>sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>counted from <code>session_start</code> markers</td></tr>
-<tr><td class="n">8</td><td><code>events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>no per-type breakdown &mdash; an action or click report reads the denormalised table</td></tr>
-<tr><td class="n">9</td><td><code>page_views</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">10</td><td><code>new_visitors</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>from <code>first_visit</code> markers. Additive; unique visitors are not &mdash; <a href="#s31">&sect;3.1</a></td></tr>
-<tr><td class="n">11</td><td><code>engaged_sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>a <code>DISTINCT IF</code> in the job, not a stored state</td></tr>
-<tr><td class="n">12</td><td><code>bounces</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">13</td><td><code>engagement_msec</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>SUM of the per-event deltas</td></tr>
-<tr><td class="n">14</td><td><code>goal_events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">15</td><td><code>revenue</code></td><td>BIGINT</td><td>measure</td><td>minor units</td></tr>
-<tr><td class="n">16</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>meta</td><td>when the job last rebuilt this row &mdash; the <em>as-of</em> the API reports (<a href="#s16">&sect;1.6</a>)</td></tr>
-</tbody></table></div>
-<p class="note">Bounce rate is <code>1 &minus; engaged_sessions/sessions</code> and earns no column.
-<strong>Everything outside the key comes from the denormalised table</strong> &mdash; geography,
-device, language, host, search terms, landing page, page path, and every action and click
-dimension. That is where <a href="#s15">&sect;1.5.1</a> already puts them, and a narrow key is what
-keeps the rollup worth having. What it drives, widget by widget, is
-<a href="#nA126">the appendix</a>; whether unique visitors can live here at all is
-<a href="#s31">&sect;3.1</a>.</p>
-
 <h4><span class="num">2.1.2</span>Notes on all three</h4>
 <p class="note">Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
 <code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
@@ -808,19 +783,20 @@ the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at
 travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
 <div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
 config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
-abstracted away. The reporting tables (<code>owa_event</code>, <code>owa_event_rollup</code>, the
-payload store) default to the same connection but accept a <em>separate</em> store via a second
-DSN — a dedicated MySQL or the columnar path. The rule that makes the split real: <strong>no
+abstracted away. <strong>Raw requires a row store</strong> &mdash; it takes one insert per beacon, the one thing
+a columnar engine is bad at. <strong>The denormalised table accepts a separate store via a second
+DSN</strong>, a dedicated MySQL or a columnar engine, because the pass never writes it a row at a
+time: it builds a partition into staging and swaps. Such a source brings its own loading path
+&mdash; bulk load, partition replace, no row-level updates &mdash; which is what the pass already
+does on MySQL. The rule that makes the split real: <strong>no
 reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
 literal, goal events are stamped at ingest — so the two stores are never assumed co-located.
-Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
-with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives
-beside what it derives from</strong>: <code>owa_event_rollup</code> and any later materialization go
+Ingest writes raw; the pass writes the analytics store; site deletion becomes two operations,
+with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives beside what it derives from</strong>: any later materialization goes
 in the reporting store, whichever engine that is — rebuildable from that store alone, so the store
 stays self-contained and a backend migration is &ldquo;copy events, rebuild summaries&rdquo;. The
-scheduler's job <em>state</em> stays in the application store; job state is not job output. The
-rollup's replace-whole-day-rows maintenance is also the batch shape columnar engines handle
-well.</div>
+scheduler's job <em>state</em> stays in the application store; job state is not job output. Replacing a whole partition is also the batch shape a
+columnar engine handles well.</div>
 
 
 <p class="note"><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
@@ -954,7 +930,6 @@ v2 needs no new machinery, only registrations.</p>
 <thead><tr><th>Job</th><th>Unit of work</th><th>Does</th><th>State</th></tr></thead>
 <tbody>
 <tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s219">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
-<tr><td><code>rollup-day</code></td><td>One day</td><td>Builds <code>owa_event_rollup</code> from the denormalised table; stamps <code>built_at</code>, which is the freshness <code>as-of</code> the API reports.</td><td>To build</td></tr>
 <tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 13-month sliding inactivity window.</td><td>To build</td></tr>
 <tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
 <tr><td><code>queue-drain</code></td><td>Queue</td><td>Retries the file-backed event queue.</td><td><span class="chip c-done">Shipped</span>, opt-in by config</td></tr>
@@ -963,11 +938,11 @@ v2 needs no new machinery, only registrations.</p>
 <p class="note"><strong>Every registered job must be convergent</strong>, because the scheduler is
 level-triggered: a missed occurrence runs once, not once per occurrence missed. The pass gets this
 from the swap rather than from bookkeeping &mdash; running it twice on the same partition produces
-the same partition. It is also why a watermark rollup was rejected: it would be both non-convergent
+the same partition. It is also why a watermark-advancing pass was rejected: it would be both non-convergent
 <em>and</em> not eventually consistent. One defect, two symptoms.</p>
 
 <p class="note"><strong>Two things change status rather than behaviour.</strong> The scheduler stops
-being optional &mdash; 1.x runs correctly with no cron entry and v2's rollup does not, which belongs
+being optional &mdash; 1.x runs correctly with no cron entry and v2's pass does not, which belongs
 in install verification rather than in how the software is shipped. And
 <code>partition-rotate</code> stops being housekeeping: under the two-stage partition cycle a
 stalled rotation erodes the lead until rows reach <code>pmax</code>, breaking the invariant
@@ -1064,7 +1039,7 @@ later rebuild. The alternative is an explicit session cap in the window, and it 
 <code>session_length</code> is an idle timeout rather than a duration cap, so a session with a hit
 every 25 minutes runs indefinitely and no finite window seals it. <a href="#s211">&sect;2.11</a>
 already makes &ldquo;not final yet&rdquo; and &ldquo;no value&rdquo; the same NULL.</p>
-<p><strong>The five steps run in this order</strong>, each reading what the one before it wrote.
+<p><strong>The four steps run in this order</strong>, each reading what the one before it wrote.
 Out of order they produce wrong rows rather than an error:</p>
 <ol>
 <li><strong>Harvest.</strong> Insert-if-absent into the visitor table from this partition&rsquo;s
@@ -1076,15 +1051,11 @@ this partition and whose close is certain.</li>
 <li><strong>Build.</strong> <code>INSERT INTO staging SELECT &hellip;</code> joining raw against the
 visitor table and the closed-session set.</li>
 <li><strong>Swap.</strong> <code>EXCHANGE PARTITION</code>.</li>
-<li><strong>Roll up.</strong> Replace that day&rsquo;s rollup rows from the new partition.</li>
 </ol>
 <ul>
 <li><strong>The swap is the commit.</strong> Staging is built whole and is invisible until the
 exchange, so a run that dies in step 3 leaves the live table as it was. The visitor table is the
 only state outliving a failed run, which is why its write rule is insert-if-absent independently.</li>
-<li><strong>Step 5 belongs to the same job.</strong> Rebuilding a partition invalidates that day's
-aggregates; scheduling the rollup separately serves a rebuilt day from stale ones, and the symptom
-is a report disagreeing with its own detail view.</li>
 <li><strong>Every step is <code>INSERT &hellip; SELECT</code></strong> against tables in one
 schema. No step needs a row in PHP, and the same shape works on a columnar engine. Step 2 uses
 window functions, so <strong>v2 requires MySQL 8.0</strong> &mdash; the repo declares no minimum
@@ -1265,7 +1236,7 @@ breaks only if it names something that fell out.</p>
 
 
 
-<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_event_rollup.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
+<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (the partition's last pass); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
 <tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
 <tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function, so <code>relatedDimensions</code> describes exactly what the guard will allow. The only curated artifact is a near-empty editorial override list</td></tr>
 </tbody></table></div>
@@ -1313,9 +1284,7 @@ condition that produced these the first time. Worth a lint</li>
 <li><strong>Silently narrowing coverage</strong> — a test deleted because it tested the star, never
 replaced, leaves no trace. A green suite that is green because it asks less</li>
 </ul>
-<p>Claims in this plan that are worth nothing untested: the rollup folds in a late event on the
-next run; an event beyond the horizon does not, but still lands in the event table; running the
-rollup twice changes nothing; a throwing v2 handler fails neither the v1 write nor the request;
+<p>Claims in this plan that are worth nothing untested: the pass folds in a late event on the next run; an event beyond the horizon does not, but still lands in the event table; running the pass twice changes nothing; a throwing v2 handler fails neither the v1 write nor the request;
 the update sequence runs clean with v1 dropped; and generated realtime SQL carries a closed
 partition-key range — asserted <em>on the SQL</em>, since a timing assertion on a small fixture
 would pass either way.</p>
@@ -1380,7 +1349,7 @@ existing trend at the release boundary: ship the collection, defer the redefinit
 discontinuity is expected.</p>
 
 <h4><span class="num">2.18.3</span>Not additive</h4>
-<p>The single table itself, the rollup, the metric registry rework, and the v2 reporting UI. These
+<p>The single table itself, the metric registry rework, and the v2 reporting UI. These
 are the rewrite; the point of everything above is to shrink it.</p>
 
 <h3 id="s219"><span class="num">2.19</span>Build order <span class="chip c-dec">Decided</span></h3>
@@ -1405,20 +1374,18 @@ the most is known.</p>
 <tr><td><strong>4</strong> Interface debt v2 inherits</td><td>Site-access UI; report config as JSON; retention as a scheduled job.</td><td>28&nbsp;Aug. See <a href="#nA111">A.1</a> for the two constraints the report work leaves on v2.</td></tr>
 </tbody></table></div>
 <h4><span class="num">2.19.2</span>Phase 5 &mdash; v2 groundwork</h4>
-<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates
-items&nbsp;2&ndash;4</strong>: there is nothing to roll up, fan out to, or compare against until
-the tables exist. The tracker-side items are independent of it.</p>
+<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates the two below it</strong>: there is nothing to fan out to, or compare against, until the tables exist. The tracker-side items are independent of it.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
 <tr><td>1</td><td><strong>The three storage layers</strong>, created by one CLI-mode update (<a href="#s214">&sect;2.14</a>), with the denormalisation pass, visitor store, partition cycle and scheduling model that <a href="#s15">&sect;1.5</a> brought with them.</td><td>Not started. The largest piece of work in this document, and everything below that touches storage waits on it.</td></tr>
-<tr><td>2</td><td>Rollup job registered against the existing scheduler.</td><td>Not started</td></tr>
-<tr><td>3</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
-<tr><td>4</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>).</td><td>Not started</td></tr>
-<tr><td>5</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#nA112">A.1</a> for why a 1.x fix would be worse than leaving it.</td></tr>
-<tr><td>6</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
-<tr><td>7</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>8</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
+
+<tr><td>2</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
+<tr><td>3</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>).</td><td>Not started</td></tr>
+<tr><td>4</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#nA112">A.1</a> for why a 1.x fix would be worse than leaving it.</td></tr>
+<tr><td>5</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
+<tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
+<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
 </tbody></table></div>
 <div class="flag">
   <p class="h">Status &mdash; 2026-09-20</p>
@@ -1601,8 +1568,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Rebuild set</strong></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>The whole window is the only provably correct option given a late flagged event; narrower needs a way to know which partitions changed.</td></tr>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
-<tr><td><strong>Unique visitors in the rollup</strong></td><td>Every rollup measure is additive across rows except uniques, so a rollup row cannot carry them and still have breakdowns sum to their totals — which <a href="#s111">&sect;1.11</a> promises.</td><td>Either uniques come from the denormalised table and are slower, or the rollup carries a sketch and the exactness promise is narrowed in writing.</td></tr>
-<tr><td><strong>Custom variables in reporting</strong></td><td>Unregistered custom variables replace 1.x's five fixed slots, and are queryable from the denormalised table. They are deliberately <em>not</em> in the rollup key, so a wide-window report grouped by a custom variable scans events.</td><td>A decision on whether unregistered keys enter the rollup key at all, or only keys promoted per site &mdash; the treatment <a href="#s213">&sect;2.13</a> already gives param paths.</td></tr>
+<tr><td><strong>Custom variables in reporting</strong></td><td>Unregistered custom variables replace 1.x's five fixed slots, and are queryable from the denormalised table. A wide-window report grouped by a custom variable therefore scans events.</td><td>A decision on whether unregistered keys are ever promoted into a precomputed form, or only per site &mdash; the treatment <a href="#s213">&sect;2.13</a> already gives param paths.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
