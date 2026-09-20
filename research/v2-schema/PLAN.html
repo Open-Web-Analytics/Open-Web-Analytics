@@ -1700,6 +1700,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
+<tr><td><strong>Ordering provenance</strong></td><td><code>ts</code> is stamped at edge receipt, so events order by arrival rather than by occurrence. A beacon that lands late &mdash; the unload beacon above &mdash; sorts after hits that happened later on the device, which puts <code>is_exit</code> on the wrong event and mis-orders any funnel spanning it.</td><td>Either a device-side sequence on the beacon, or a rule for how late an arrival may be before its order is distrusted. 1.x had the same problem at second resolution and v2 has so far only improved the resolution.</td></tr>
 <tr><td><strong>Three dimensions have no v2 answer</strong></td><td><code>priorPagePath</code> needs the session chain walked; <code>daysToTransaction</code> and <code>visitsToTransaction</code> count backwards from a purchase to the acquiring visit.</td><td>Each needs a rule rather than a renderer. The other three &mdash; geo detail, <code>browserVersion</code>, last-seen &mdash; were closed by columns (<a href="#s21">&sect;2.1</a>).</td></tr>
 </tbody></table></div>
 
@@ -2198,16 +2199,18 @@ _rdi _tu _uip</code>.</li>
 <li><strong><code>user_engagement</code> is raised on <code>visibilitychange</code></strong> and
 the time rides as <code>_et</code>. Two tabs of one session each send their own residue and both
 count, because there is no id to collapse them against.</li>
-<li><strong>GA batches, and we do not.</strong> <code>batch_event_index</code> is &ldquo;the
-sequential order of each event within a batch&rdquo; and <code>event_bundle_sequence_id</code> is
-&ldquo;the sequential ID of the bundle in which these events were uploaded&rdquo;, so one request
-carries many events. GA locates each one deterministically without an id, by a coordinate:
-<code>batch_page_id</code> (which page of the engagement), <code>batch_ordering_id</code> (which
-request from that page) and <code>batch_event_index</code> (which event in that request). Note
-what <code>batch_page_id</code> is not &mdash; it is a page <em>ordinal</em>, not a page
-identifier. <a href="#s21">&sect;2.1.2</a>&rsquo;s id rests on the opposite arrangement, one event
-of a name per beacon; this is what that invariant is standing against, and the coordinate above is
-what would be needed instead of a per-event <code>ts</code> if batching ever arrived.</li>
+<li><strong>The batch fields are not the web tracker&rsquo;s.</strong> The export carries a
+page/request/event ordinal triple &mdash; <code>batch_page_id</code> &ldquo;a sequential number
+assigned to a page that increases for each subsequent page within an engagement&rdquo;,
+<code>batch_ordering_id</code> &ldquo;incremented each time a network request is sent from a given
+page&rdquo;, <code>batch_event_index</code> &ldquo;the sequential order of each event within a
+batch&rdquo; &mdash; plus <code>event_bundle_sequence_id</code> for the upload bundle.
+<strong>gtag.js emits none of them</strong> and has no wire parameter for any; the only trace is an
+internal config key named <code>batch_on_navigation</code>. The export schema spans web and app
+streams (<code>platform</code> is &ldquo;Web, IOS or Android&rdquo;) and does not mark these fields
+as belonging to either, so for web they are server-derived or unpopulated and this evidence settles
+neither. What it does settle: <code>batch_page_id</code> is an <em>ordinal</em>, not a page
+identifier, so it is not a precedent for minting one.</li>
 <li><strong>The path is collected, not only derived.</strong> <code>dp</code> rides beside
 <code>dl</code>, which is the same position <a href="#s21">&sect;2.1</a> takes on
 <code>page_path</code>.</li>
