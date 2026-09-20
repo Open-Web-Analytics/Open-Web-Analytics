@@ -157,8 +157,22 @@ class BackfillVisitorAcquisitionCli extends \OWA\Core\Controller\Cli {
             return;
         }
 
-        $done   = 0;
-        $cursor = 0;
+        $done = 0;
+
+        /*
+         * BELOW EVERY POSSIBLE ID, NOT ZERO.
+         *
+         * Visitor ids are signed BIGINTs and a large number of them are
+         * NEGATIVE: the ids minted before the 32-bit-to-64-bit rekey were
+         * crc32 values cast into a signed column, so roughly half of that era's
+         * visitors have an id below zero. Starting the walk at 0 skipped every
+         * one of them silently -- 12,941 visitors on demo and 2,183 on
+         * peteradamsphoto, which is exactly the shortfall the first production
+         * run left behind and reported as outstanding work on every rerun.
+         *
+         * There is no id at PHP_INT_MIN, so a strict `>` loses nothing.
+         */
+        $cursor = PHP_INT_MIN;
 
         /*
          * Walked by id rather than by re-querying the predicate, and that is not
