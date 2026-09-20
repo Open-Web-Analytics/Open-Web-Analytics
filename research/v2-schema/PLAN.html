@@ -2216,6 +2216,24 @@ of the export&rsquo;s ordinals fall straight out of the format: <code>batch_orde
 <code>_s</code>, and <code>batch_event_index</code> is the position in the CRLF body.
 <code>batch_page_id</code> is not in the tracker under any name found, so it is derived elsewhere.
 It is an <em>ordinal</em> either way, not a page identifier.</li>
+<li><strong>What is exempt is the transferable part.</strong> <code>PP()</code> refuses the buffer
+for <code>is_conversion</code>, <code>is_session_start</code>, <code>is_test_event</code>, the four
+ad-join flags, <code>enhanced_match_result</code>, <code>is_sgtm_service_worker</code>, and
+<code>page_view</code> under common conditions &mdash; those go immediately. What batches is
+ambient traffic. The delay is also per-buffer rather than per-event: the first event into an empty
+buffer sets the deadline and later ones inherit what is left of it, navigation flushes, and an
+event that cannot join the current buffer flushes it first. So the five seconds is a worst case for
+one event, not a latency added to every beacon. During the hidden phase the rule inverts and only
+events marked <code>batch_on_navigation</code> may wait.</li>
+<li><strong>We already batch, one layer down.</strong> The domstream timer fires every
+<code>domstreamLoggingInterval</code> (3&nbsp;s) and sends when more than
+<code>domstreamEventThreshold</code> (10) samples have accrued. The shapes are not the same: GA
+puts <em>N events</em> in one request and keeps them N rows, while a chunk puts <em>N samples</em>
+in one event and keeps it one row &mdash; which is why
+<a href="#s110">&sect;1.10</a> can refuse to promote samples to events without refusing the
+feature. <a href="#s21">&sect;2.1.2</a>&rsquo;s invariant survives either way, because a chunk is
+one event of one name. And the chunk already carries the per-page-load value the event stream does
+not: <code>domstream_guid</code>, minted once per page and reused for every chunk on it.</li>
 <li><strong>The path is collected, not only derived.</strong> <code>dp</code> rides beside
 <code>dl</code>, which is the same position <a href="#s21">&sect;2.1</a> takes on
 <code>page_path</code>.</li>
