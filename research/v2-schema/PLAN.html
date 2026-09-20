@@ -1139,9 +1139,19 @@ which is the seam a two-stage scheme extends. <code>daily</code> was added in PR
 tier the rebuild window uses is open (<a href="#s31">&sect;3.1</a>).</p>
 
 <h3 id="s29"><span class="num">2.9</span>The visitor store <span class="chip c-dec">Decided</span></h3>
-<p><strong>Two columns of content and one of maintenance.</strong> Acquisition &mdash; source,
-medium, campaign, ad, search terms &mdash; write-once from the <code>first_visit</code> event; and
-<code>last_seen</code>, which exists only to drive the TTL. Nothing else.</p>
+<p><strong>This is not a fact table. It is a lookup with one job: stamping first
+attribution.</strong> It holds acquisition &mdash; source, medium, campaign, ad, search terms
+&mdash; write-once from the <code>first_visit</code> event, plus <code>last_seen</code>, which
+exists only to drive the TTL. Nothing else.</p>
+<p><strong>A visitor with no known acquisition has no row, and that is the answer rather than a
+gap.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
+census of visitors: it holds the ones whose first attribution is known, and the absence of a row
+<em>is</em> the statement that it is not &mdash; which is what the pass writes the sentinel from
+(<a href="#s211">&sect;2.11</a>).</p>
+<p class="note">Placeholder rows would also break the write rule below. It is
+<em>insert-if-absent</em>, so a row written with nothing in it would be found present when the real
+<code>first_visit</code> arrived late on a queue drain or a rebuild, and would block the real value
+permanently, silently. Keeping the row absent leaves that path open.</p>
 <p><strong>A value that rides every event does not belong here.</strong> <code>nps</code> is a
 counter the client maintains and sends on every beacon, so &ldquo;how many sessions has this
 visitor had&rdquo; is <code>MAX(nps)</code> in a group-by rather than a lookup &mdash; the same
