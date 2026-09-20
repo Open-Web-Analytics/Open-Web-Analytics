@@ -720,13 +720,6 @@ differ in their id.</p>
 <code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
 decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
 dimension FKs — and bot rows entirely, refused at ingest.</p>
-<div class="note"><strong>The midnight rule</strong> &mdash; re-derived after server
-materialization, still necessary. Dedup rides PK <code>(id, yyyymmdd)</code>, since a partitioned
-table cannot have a unique key omitting the partition column, so a redelivery has to land in the
-same partition as the original or the key cannot see it. <code>ts</code> is stamped <em>once at
-edge receipt and travels with the queue item</em>, and <code>yyyymmdd</code> is derived from that
-<code>ts</code>, so every attempt lands in one partition however long it sat in the queue. The
-same property makes the id stable (&sect;2.1.2).</div>
 <div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
 config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
 abstracted away. <strong>Raw requires a row store</strong> &mdash; it takes one insert per beacon, the one thing
