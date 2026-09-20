@@ -669,7 +669,7 @@ declares which parts of that key it uses:</p>
 <div class="scroll"><table>
 <thead><tr><th>Event</th><th>Key</th><th>Why that key</th></tr></thead>
 <tbody>
-<tr><td><code>session_start</code></td><td>site, visitor, session, name</td><td>At most once per session. Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
+<tr><td><code>session_start</code></td><td>site, visitor, session, name</td><td>At most once per session. Raised server-side from <code>is_new_session_start</code>, which is scoped to one request (<a href="#s26">&sect;2.6.2</a>), so what the derived id collapses is that one request being received twice &mdash; a replay, or the session&rsquo;s first beacon arriving as two separate receipts (<a href="#nA121">A.1.21</a>)</td></tr>
 <tr><td><code>first_visit</code></td><td>site, visitor, name</td><td>At most once per visitor, ever. Leaving the session out makes the id say exactly that, so a second <code>first_visit</code> for one visitor collapses whatever raised it. With <code>session_id</code> in the key it would not, and the only thing keeping it unique would be that <code>is_new_visitor_created</code> marks the single request that minted the visitor (<a href="#s26">&sect;2.6.2</a>). An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
 <tr><td><code>user_engagement</code></td><td>site, visitor, session, name, <code>seq</code></td><td>Repeatable within a session, so the counter separates one residue from the next. Beacon and retry are independent arrivals and both carry the same <code>seq</code></td></tr>
 <tr><td>every other event, <code>page_view</code> included</td><td>not derived &mdash; random, minted once at edge receipt</td><td>The id travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays it and collapses at the primary key</td></tr>
@@ -711,8 +711,8 @@ dimension FKs — and bot rows entirely, refused at ingest.</p>
 <div class="note"><strong>The midnight rule</strong> — re-derived after server materialization,
 still necessary. Dedup rides PK <code>(id, yyyymmdd)</code> (a partitioned table cannot have a
 unique key omitting the partition column), and two cases still hand a second attempt a fresh
-receipt date: the engagement residue (beacon and retry are independent arrivals) and racing tabs
-at session start. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
+receipt date: the engagement residue (beacon and retry are independent arrivals) and the
+session's first beacon arriving as two separate receipts. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
 embedded in <code>session_id</code> — deterministic on every attempt; the entropy fix must keep
 the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at edge receipt and
 travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
@@ -1932,10 +1932,18 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 <p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
 window.</p>
 <h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen; a lost beacon takes its marker with it</h4>
-<p>The marker's event id is content-derived — <code>hash(site_id + visitor_id + session_id +
-'session_start')</code> — so racing writers produce the same row and the second insert is a
-duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
-Locks API is origin-scoped and could not reach.</p>
+<p>The marker's event id is content-derived &mdash; <code>hash(site_id + visitor_id + session_id +
+'session_start')</code> &mdash; so the same raise arriving twice produces the same row and the
+second insert is a duplicate-key no-op. No coordination is needed.</p>
+
+<p><strong>Concurrent tabs are not the case this covers.</strong>
+Two tabs that both decide a session is new each call
+<code>Util.generateRandomGuid()</code> and get different <code>session_id</code>s, so they raise
+two distinct markers, which is the right answer rather than a duplicate. A tab that reads an
+existing session from the store raises nothing at all, because
+<code>is_new_session_start</code> is scoped to the one request that created the session
+(<a href="#s26">&sect;2.6.2</a>). What the derived id collapses is one request received more than
+once.</p>
 
 <p>A marker cannot be lost while its own page view survives, since both are one atomic write; losing the beacon loses both. A negative
 remainder is therefore a defect signal rather than a rounding artefact.</p>
