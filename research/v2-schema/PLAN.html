@@ -2192,25 +2192,30 @@ in the repository; these do not.</p>
 <li><strong>No event id is generated.</strong> <code>evnid</code> carries a developer-supplied
 value, the same shape as <code>transaction_id</code>; nothing in the tracker mints or derives one.
 A duplicate arrival is counted twice.</li>
-<li><strong>No page-load id and no hit counter.</strong> Established by enumerating every short
-wire-parameter literal in the bundle rather than grepping for expected names: the complete
-<code>_</code> set is <code>_ag _aw _dbg _dc _et _eu _gb _gcl _geo _gf _gp _gs _ha _ng _ono _prs
-_rdi _tu _uip</code>.</li>
+<li><strong>A per-page request counter, but no page-load id.</strong> <code>_s</code> is sent on
+every request &mdash; <code>this.U++</code>, monotonic per page load &mdash; which is what the
+export calls <code>batch_ordering_id</code>. <code>_p</code> is genuinely absent. An earlier pass
+here reported both as absent &ldquo;by enumerating every short wire-parameter literal&rdquo;; that
+enumeration only saw parameters assigned as literals, and <code>_s</code> is built by
+concatenation, so the method could not have found it.</li>
 <li><strong><code>user_engagement</code> is raised on <code>visibilitychange</code></strong> and
 the time rides as <code>_et</code>. Two tabs of one session each send their own residue and both
 count, because there is no id to collapse them against.</li>
-<li><strong>The batch fields are not the web tracker&rsquo;s.</strong> The export carries a
-page/request/event ordinal triple &mdash; <code>batch_page_id</code> &ldquo;a sequential number
-assigned to a page that increases for each subsequent page within an engagement&rdquo;,
-<code>batch_ordering_id</code> &ldquo;incremented each time a network request is sent from a given
-page&rdquo;, <code>batch_event_index</code> &ldquo;the sequential order of each event within a
-batch&rdquo; &mdash; plus <code>event_bundle_sequence_id</code> for the upload bundle.
-<strong>gtag.js emits none of them</strong> and has no wire parameter for any; the only trace is an
-internal config key named <code>batch_on_navigation</code>. The export schema spans web and app
-streams (<code>platform</code> is &ldquo;Web, IOS or Android&rdquo;) and does not mark these fields
-as belonging to either, so for web they are server-derived or unpopulated and this evidence settles
-neither. What it does settle: <code>batch_page_id</code> is an <em>ordinal</em>, not a page
-identifier, so it is not a precedent for minting one.</li>
+<li><strong>The web tracker batches.</strong> Not inferred from the export &mdash; read in
+<code>gtag.js</code>. The sender holds a buffer with an <code>events</code> array; an eligible
+event is added rather than sent, a five-second timer is armed, and <code>flush()</code> assembles
+everything buffered into one request. <code>tg()</code> factors out the parameters whose value is
+the same across every buffered event, puts those in the query string with
+<code>_s</code>, and writes only each event&rsquo;s differing parameters into the POST body,
+CRLF-separated &mdash; so a batch costs one copy of everything the events share. A single event
+skips all of it. Navigation triggers a flush, and an engaged-enough page queues a
+<code>user_engagement</code> marked <code>batch_on_navigation</code> to ride it.</li>
+<li><strong>What that means here.</strong> <a href="#s21">&sect;2.1.2</a> rests on one event of a
+name per beacon, and this is a working counter-example to that being the only workable shape. Two
+of the export&rsquo;s ordinals fall straight out of the format: <code>batch_ordering_id</code> is
+<code>_s</code>, and <code>batch_event_index</code> is the position in the CRLF body.
+<code>batch_page_id</code> is not in the tracker under any name found, so it is derived elsewhere.
+It is an <em>ordinal</em> either way, not a page identifier.</li>
 <li><strong>The path is collected, not only derived.</strong> <code>dp</code> rides beside
 <code>dl</code>, which is the same position <a href="#s21">&sect;2.1</a> takes on
 <code>page_path</code>.</li>
