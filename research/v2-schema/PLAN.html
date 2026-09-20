@@ -2014,6 +2014,16 @@ month cannot be had by adding thirty rollup rows whatever the key
 <code>pagesPerVisit</code>, <code>visitDuration</code> and <code>ecommerceConversionRate</code> all
 compute from additive components the rollup holds.</p>
 
+<h4 id="nA131"><span class="num">A.1.31</span>Measured: what the rollup actually saves</h4>
+<p>Against the 692,829-event corpus:</p>
+<div class="scroll"><table>
+<thead><tr><th>Query</th><th class="n">Raw events</th><th class="n">From rollup</th></tr></thead>
+<tbody>
+<tr><td>Distinct sessions, full corpus</td><td class="n">39.2 s</td><td class="n">206.5 ms</td></tr>
+<tr><td>Distinct sessions, one month</td><td class="n">106.2 ms</td><td class="n">2.9 ms</td></tr>
+<tr><td>Rollup build — full / busiest day incremental</td><td class="n" colspan="2">50.4 s / <strong>377 ms</strong></td></tr>
+</tbody></table></div>
+<p><strong>A one-month window is 106&nbsp;ms straight from events</strong>, which needs no rollup at all. The saving is real only on the full corpus, where 39.2&nbsp;s is not a UI latency. So on a corpus this size the rollup earns its keep on all-time and multi-year questions and nothing narrower &mdash; and the crossover point, on a busier install, is unmeasured.</p>
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
