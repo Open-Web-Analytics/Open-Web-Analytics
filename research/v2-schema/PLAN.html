@@ -536,7 +536,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds its creation timestamp, which the midnight rule reads. <strong>Not unique on its own</strong> &mdash; two visitors starting in the same second can share one, so a session is counted as distinct <code>(visitor_id, session_id)</code> (<a href="#s12">&sect;1.2</a>)</td></tr>
 <tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared, forward-only. The only field that outlives a cookie</td></tr>
 <tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>stamped once at edge receipt, zone-less, microseconds. The zone is applied once, into <code>yyyymmdd</code>; the resolution is what makes the id unique (&sect;2.1.2)</td></tr>
-<tr><td class="n">8</td><td><code>clock_offset_usec</code></td><td>BIGINT NULL</td><td>server <code>ts</code> minus the client&rsquo;s own clock at send. Makes skew visible instead of silently wrong &mdash; 1.x subtracts a client clock from a server one and records no provenance. NULL where the beacon carried no client time</td></tr>
+<tr><td class="n">8</td><td><code>clock_offset_usec</code></td><td>BIGINT NULL</td><td>server <code>ts</code> minus the client&rsquo;s own clock at send, so skew is visible instead of silently wrong &mdash; 1.x subtracts a client clock from a server one and records no provenance. NULL where the beacon carried no client time. <strong>Not</strong> GA&rsquo;s <code>event_server_timestamp_offset</code>, which its schema defines as the offset between collection time and upload time: that is queue lag, and it would answer a different open question (<a href="#s31">&sect;3.1</a>)</td></tr>
 <tr><td class="n">9</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key. Not retroactive if the configured zone changes</td></tr>
 <tr><td class="n">10</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts. <code>is_new_visitor</code> derives from it</td></tr>
 <tr><td class="n">11</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>session count, carried not derived — <a href="#s15">&sect;1.5</a></td></tr>
@@ -562,7 +562,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">31</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
 <tr><td class="n">32</td><td><code>country_code</code></td><td>CHAR(2) NULL</td><td>ISO 3166-1 alpha-2, from the same lookup as <code>country</code></td></tr>
 <tr><td class="n">33</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">34</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>state or province, same lookup</td></tr>
+<tr><td class="n">34</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>the reader&rsquo;s <code>state</code> field, same lookup</td></tr>
 <tr><td class="n">35</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
 <tr><td class="n">36</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
 <tr><td class="n">37</td><td><code>consent_state</code></td><td>VARCHAR(32) NULL</td><td>what the page declared at send &mdash; granted, denied or absent. Recorded per event because it can change mid-session, and a row with no consent recorded is not the same as one with consent denied</td></tr>
@@ -876,8 +876,8 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>stateRegion</code></td><td>column</td><td><code>region</code></td><td></td></tr>
 <tr><td></td><td><code>continent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new. A pure function of the code, so it needs no column</td></tr>
 <tr><td></td><td><code>subContinent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new</td></tr>
-<tr><td></td><td><code>metro</code></td><td>&mdash;</td><td>&mdash;</td><td>US DMA coding. The group-by is meaningful; the dataset is licensed and we do not ship one</td></tr>
-<tr><td></td><td><code>latitude / longitude</code></td><td>&mdash;</td><td>&mdash;</td><td>dropped on privacy, not on usefulness: a coordinate per event locates a person, and the group-bys people want are <code>country</code>, <code>region</code> and <code>city</code></td></tr>
+<tr><td></td><td><code>metro</code></td><td>&mdash;</td><td>&mdash;</td><td>the group-by is meaningful, but <code>Geolocation::getGeolocationFromIp()</code> returns city, country, state, country code, latitude and longitude &mdash; there is no metro to read</td></tr>
+<tr><td></td><td><code>latitude / longitude</code></td><td>&mdash;</td><td>&mdash;</td><td>the reader returns both and v2 declines them: a coordinate per event locates a person, and the group-bys people want are <code>country</code>, <code>region</code> and <code>city</code></td></tr>
 <tr><td>Device</td><td><code>browserType</code></td><td>column</td><td><code>browser_type</code></td><td></td></tr>
 <tr><td></td><td><code>browserVersion</code></td><td>column</td><td><code>browser_version</code></td><td>split out of the <code>raw_ua</code> parse</td></tr>
 <tr><td></td><td><code>osType</code></td><td>column</td><td><code>os</code></td><td></td></tr>
