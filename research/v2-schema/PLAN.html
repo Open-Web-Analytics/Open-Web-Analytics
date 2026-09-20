@@ -255,10 +255,9 @@ query-builder feature rather than a schema change.</li>
 <h4><span class="num">1.2.4</span>A record's existence never depends on one packet</h4>
 <p><strong>Values may degrade. Records must not vanish.</strong> Anything carried on a single beacon
 goes with that beacon, which is why a session's identity and context ride every event instead
-&mdash; the session stays countable, and attributable, from any of its rows. The markers are the
-case where that rule is honoured differently: they are raised server-side in the same atomic write
-as the beacon carrying their flags, so they cannot be lost while the session survives
-(<a href="#s13">&sect;1.3.2</a>). A delta or a stamped value rides every event, so losing one costs
+&mdash; the session stays countable, and attributable, from any of its rows. The markers are raised server-side in the same atomic write as the beacon carrying their flags,
+so a marker cannot be lost while its own page view survives &mdash; but the beacon itself can be,
+and then the session has no marker row (<a href="#s13">&sect;1.3.2</a>). A delta or a stamped value rides every event, so losing one costs
 nothing or a single increment. <strong>Where a value can go on either shape, it goes on every
 event.</strong></p>
 
@@ -292,12 +291,22 @@ the counting rules below are about, and what makes its atomic write with the
 that landed without its <code>session_start</code> is not something a later pass can repair.</p>
 
 <h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
-<p><strong>A marker cannot go missing on its own.</strong> The client never sends one: it sends a
-<code>page_view</code> carrying flags, and the server raises the marker from them in the same
-atomic write (<a href="#s26">&sect;2.6.2</a>). So losing the marker means losing that beacon, and
-losing the session's <em>first</em> beacon means there is no session at all &mdash; the store is
-withheld until <code>sendAccepted</code> (<a href="#s19">&sect;1.9.2</a>). There is no state in
-which a session exists and its marker does not.</p>
+<p><strong>A marker cannot be lost on its own, but its beacon can.</strong> The client never
+sends a marker: it sends a <code>page_view</code> carrying flags, and the server raises the marker
+from them in the same atomic write (<a href="#s26">&sect;2.6.2</a>), so there is no state where the
+page view is stored and the marker is not.</p>
+<p><strong>The session's first beacon can still go missing while later ones arrive.</strong> The
+client commits the session to its cookie on <code>sendAccepted</code>, which fires when
+<code>sendBeacon</code> <em>queues</em> the request rather than when it is delivered, and fires
+unconditionally on the iframe fallback, which has no delivery signal at all. The server can also
+discard an accepted event silently. So a session can exist in the data with no
+<code>session_start</code> row.</p>
+<p><strong>What that costs is bounded, and it is not attribution.</strong> Source, medium and
+campaign are resolved at ingest on every event of the session
+(<a href="#s26">&sect;2.6.3</a>), so they are on the later rows. If it was the visitor's first
+session, any of those later events still writes the visitor row
+(<a href="#s29">&sect;2.9</a>). What is actually lost is the marker row itself and the landing
+page, which rides only the landing beacon (<a href="#s210">&sect;2.10</a>).</p>
 <p>Two rules still follow, because a breakdown and a total are not computed the same way:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
@@ -1965,13 +1974,13 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 
 <p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
 window.</p>
-<h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen, and a lost one takes its session with it</h4>
+<h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen; a lost beacon takes its marker with it</h4>
 <p>The marker's event id is content-derived — <code>hash(site_id + session_id +
 'session_start')</code> — so racing writers produce the same row and the second insert is a
 duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
 Locks API is origin-scoped and could not reach.</p>
 
-<p>A marker cannot be lost while its session survives, since both are one atomic write. A negative
+<p>A marker cannot be lost while its own page view survives, since both are one atomic write; losing the beacon loses both. A negative
 remainder is therefore a defect signal rather than a rounding artefact.</p>
 <h4 id="nA122"><span class="num">A.1.22</span>Marker overhead falls as the stream gets richer</h4>
 <div class="scroll"><table>
