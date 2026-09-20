@@ -404,16 +404,22 @@ old, and no later beacon carries it. Everything else about a visitor rides every
 <li>It holds acquisition <strong>written once and never updated</strong>, plus
 <code>last_seen</code>, which exists only to drive the TTL. Column by column it is
 <a href="#s29">&sect;2.9</a>.</li>
-<li><strong>A row expires after N months of inactivity, default 13</strong> &mdash; a sliding
+<li><strong>A row expires after N months of inactivity, default 14</strong> &mdash; a sliding
 inactivity window, which is the shape every other vendor uses and roughly where two of them
-independently land.</li>
+independently land. <strong>The default sits deliberately just above the longest cookie that can
+reach it</strong>, Chrome's 400-day cap on any first-party cookie. Below it, a visitor can return
+carrying an id whose store row has gone; above it, the cookie always dies first.</li>
 <li><strong>Expiring a row does not rewrite history.</strong> Rows already denormalised keep the
 acquisition stamped on them; only the ability to attribute <em>future</em> events is lost.</li>
-<li><strong>When <code>first_visit</code> falls outside the window, acquisition resolves to the
-unresolved sentinel</strong> (<a href="#s211">&sect;2.11</a>) &mdash; never to the earliest
-<em>retained</em> event, which would change the answer every time the window slid forward. It is
-not a state of its own: from a report's side, aged out of the window and never worked out are the
-same answer.</li>
+<li><strong>An expired visitor comes back as a new one, with real attribution.</strong> Their
+cookie is gone too, so <code>is_new_visitor_created</code> fires, a fresh
+<code>first_visit</code> is raised, and acquisition is resolved from <em>that</em> visit. Arriving
+direct makes it a genuine empty, which is NULL and not the sentinel
+(<a href="#s211">&sect;2.11</a>). They are a new visitor who happens to be the same person, and
+nothing connects the two &mdash; which is the honest answer, since nothing can.</li>
+<li><strong>Acquisition never falls back to the earliest <em>retained</em> event</strong>, which
+would change the answer every time the window slid forward. Where the pass genuinely cannot
+resolve it, it writes the sentinel.</li>
 </ul>
 <p class="note">The vendor survey and measured lifespans are <a href="#nA124">A.1</a>; the argument
 that nearly removed this table is <a href="#nA21">A.2</a>.</p>
@@ -929,7 +935,7 @@ v2 needs no new machinery, only registrations.</p>
 <thead><tr><th>Job</th><th>Unit of work</th><th>Does</th><th>State</th></tr></thead>
 <tbody>
 <tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s219">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
-<tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 13-month sliding inactivity window.</td><td>To build</td></tr>
+<tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 14-month sliding inactivity window.</td><td>To build</td></tr>
 <tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
 <tr><td><code>queue-drain</code></td><td>Queue</td><td>Retries the file-backed event queue.</td><td><span class="chip c-done">Shipped</span>, opt-in by config</td></tr>
 </tbody></table></div>
@@ -1895,7 +1901,7 @@ richness, so it falls as v2 does its job. (1.x also averages 1.15 sessions per v
 <h4 id="nA123"><span class="num">A.1.23</span>Visitor retention: what other vendors do, and what this install measures</h4>
 <p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
 the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
-<p>The evidence behind the 13-month inactivity TTL in <a href="#s15">&sect;1.5.4</a>. Two separate expiries have to be kept apart &mdash; the client-side cookie, which is the familiar argument, and a <em>server-side</em> one on the visitor record, which is the relevant one.</p>
+<p>The evidence behind the 14-month inactivity TTL in <a href="#s15">&sect;1.5.4</a>. Two separate expiries have to be kept apart &mdash; the client-side cookie, which is the familiar argument, and a <em>server-side</em> one on the visitor record, which is the relevant one.</p>
 <div class="scroll"><table>
 <tr><th></th><th>client side</th><th>server side</th></tr>
 <tr><td>GA4</td><td><code>_ga</code> nominally 2 years, sliding on each visit</td><td><strong>user-scoped retention 2 or 14 months</strong>, with &ldquo;reset user data on new activity&rdquo; making it slide; without new activity the identifier and its data are deleted monthly</td></tr>
@@ -1908,6 +1914,13 @@ the 181,534 visitors with usable dates and fourteen years of history (2012-01-18
 converges on roughly 12 to 14 months</strong> from two vendors who did not copy each other. That
 Chrome&rsquo;s 400-day cap lands in the same place is probably not a coincidence: there is little
 point retaining a server-side profile past the longest cookie that can reach it.</p>
+<p><strong>Which is why the default is 14 months rather than 13.</strong> The magnitude the vendors
+converge on is the reason for the order of months; Chrome's 400-day cap is the reason for landing
+just above it rather than just below. A TTL of 13 months (~395 days) leaves a five-day window in
+which a Chrome visitor returns carrying an id whose store row has already gone &mdash; no
+<code>first_visit</code> is raised, because the cookie says they have been here, so the pass has
+nothing to resolve from. One further month of visitor rows, on a table measured at 6,761 rows
+against 445,055 request rows, removes that state entirely.</p>
 <div class="scroll"><table>
 <tr><th>lifespan</th><th>visitors</th><th>share</th></tr>
 <tr><td>&le; 1 month</td><td class="n">179,422</td><td class="n">98.837%</td></tr>
@@ -2047,7 +2060,7 @@ replacement matters to a reader who was not present for the change.</p>
 
 <h4 id="nA21"><span class="num">A.2.1</span>The visitor store was nearly removed</h4>
 <p><strong>Correction, and it substantially demotes the table.</strong> If a visitor
-expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
+expires after the TTL window, why not retain <em>raw</em> for that same window and derive
 acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
 inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
 years ago and has returned every month has never expired, and their <code>first_visit</code> event
