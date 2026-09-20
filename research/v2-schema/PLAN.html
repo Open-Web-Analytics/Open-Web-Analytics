@@ -139,16 +139,13 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s214">2.14 Packaging</a>
   <a href="#s215">2.15 Testing</a>
   <a href="#s216">2.16 Multi-site</a>
-  <a href="#s217">2.17 Why additive work matters</a>
-  <a href="#s218">2.18 Fully additive</a>
-  <a href="#s219">2.19 Tracker-additive</a>
-  <a href="#s220">2.20 Not additive</a>
-  <a href="#s221">2.21 Build order</a>
-  <a href="#s222">2.22 Goals became goal events</a>
-  <a href="#s223">2.23 Early cutover, per feature</a>
-  <a href="#s224">2.24 The parity harness</a>
-  <a href="#s225">2.25 Profiles carry the version</a>
-  <a href="#s226">2.26 Cutover sequence</a>
+  <a href="#s217">2.17 What can land in 1.x now</a>
+  <a href="#s218">2.18 Build order</a>
+  <a href="#s219">2.19 Goals became goal events</a>
+  <a href="#s220">2.20 Early cutover, per feature</a>
+  <a href="#s221">2.21 The parity harness</a>
+  <a href="#s222">2.22 Profiles carry the version</a>
+  <a href="#s223">2.23 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
   <div class="navsec">Appendix</div>
@@ -176,7 +173,7 @@ rejected alternatives. Where something is unsettled it is marked as such rather
 than smoothed over.</p>
 
 <div class="legend">
-  <div><span class="chip c-done">Shipped</span> built, tested and running — see the status note in &sect;2.21</div>
+  <div><span class="chip c-done">Shipped</span> built, tested and running — see the status note in &sect;2.18</div>
   <div><span class="chip c-dec">Decided</span> <span>settled; build it</span></div>
   <div><span class="chip c-meas">Measured</span> <span>backed by a number</span></div>
   <div><span class="chip c-open">Open</span> <span>needs a call before building</span></div>
@@ -324,7 +321,7 @@ conversions to key events in 2024; a 1.x installation has goals, and the people 
 so OWA keeps its own noun. Where this document describes what GA does, it still says key event.
 The numbered slots are already gone in 1.x, so v2 inherits authored goal events rather than
 introducing them &mdash; counting, per-goal metrics and the once-per-session clamp are
-<a href="#s222">&sect;2.22</a>.</p>
+<a href="#s219">&sect;2.19</a>.</p>
 
 <h3 id="s14"><span class="num">1.4</span>Visitor identity <span class="chip c-dec">Decided</span></h3>
 <p>A visitor is arbitrary: it must be assigned, carried and trusted, where a page or a referrer is
@@ -503,7 +500,7 @@ already carries every series, so the only thing missing was a way to ask.
 no trend is a different statement from one that has not chosen a starting series.</li>
 </ul>
 
-<h3 id="s18"><span class="num">1.8</span>Privacy and retention</h3>
+<h3 id="s18"><span class="num">1.8</span>Privacy and retention <span class="chip c-dec">Decided</span></h3>
 <ul>
 <li><strong>Anonymise by default.</strong> The implementation exists; the default is simply wrong
 for a privacy-positioned product.</li>
@@ -532,7 +529,7 @@ kept.</p>
 <p>v1 and v2 disagree about when a session <em>begins</em>, and one cookie cannot hold two models.
 <strong>The tracker gets one session model, v2's, and v1 adopts it.</strong> One tracker, one
 cookie, one beacon, one stream; the server writes v1's star from it as before and v2's event table
-when enabled. That is what lets the integrity check of <a href="#s224">&sect;2.24</a> stay a diff
+when enabled. That is what lets the integrity check of <a href="#s221">&sect;2.21</a> stay a diff
 rather than a tolerance.</p>
 
 <h4><span class="num">1.9.2</span>What it costs v1's numbers</h4>
@@ -558,9 +555,9 @@ dimensions, and the shared admin set is 0.1&nbsp;MB.</p>
 
 <h3 id="s110"><span class="num">1.10</span>Organization › Property › Observation Profile <span class="chip c-dec">Decided</span></h3>
 <p>Three tiers, not the two <code>owa_site</code> has today. The split touches users and
-permissions as well as measurement, and it is what gives a version somewhere to live: a profile
-carries the schema generation, so no query ever has to infer one
-(<a href="#s225">&sect;2.25</a>).</p>
+permissions as well as measurement, It is also what would give a schema version somewhere to
+live, which <a href="#s222">&sect;2.22</a> proposes and <a href="#s31">&sect;3.1</a> records as
+still open.</p>
 <div class="scroll"><table>
 <thead><tr><th>Tier</th><th>Is</th><th>Carries</th><th>GA equivalent</th></tr></thead>
 <tbody>
@@ -618,7 +615,7 @@ unchanged</strong> &mdash; the rule from the identity work, and one every fact r
   silent schema change or a tracker that carries two session models to keep the switch honest.</p>
 </div>
 
-<h3 id="s111"><span class="num">1.11</span>What v2 deletes</h3>
+<h3 id="s111"><span class="num">1.11</span>What v2 deletes <span class="chip c-dec">Decided</span></h3>
 <p>Against the live registry: 78 metrics × 100 dimensions = <strong>5,493 valid API pairs</strong>.
 Under v2, 4,443 (81%) work unchanged, 770 (14%) reference the eleven <code>*InVisit</code>
 dimensions which have <em>zero references anywhere outside their own registration</em>, and 280 (5%)
@@ -642,14 +639,14 @@ pagePath</code> is correctly refused today. A single table has no such boundary,
 must enforce explicitly what the schema currently enforces implicitly, or it newly permits
 nonsense.</div>
 
-<h3 id="s112"><span class="num">1.12</span>What v2 deliberately does not do</h3>
+<h3 id="s112"><span class="num">1.12</span>What v2 deliberately does not do <span class="chip c-dec">Decided</span></h3>
 <div class="scroll"><table>
 <thead><tr><th>Not doing</th><th>Why</th></tr></thead>
 <tbody>
 <tr><td><strong>Query-time sampling</strong></td><td>GA samples to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term.</td></tr>
 <tr><td><strong>Approximate counting, cardinality caps, thresholding</strong></td><td>GA4 ships all three, which is why counting <code>session_start</code> and reading its Sessions metric give two different defensible numbers, and why a breakdown need not sum to its total. All are scale accommodations a single tenant does not need — so <strong>every number exact, every breakdown summing to its total</strong> is a property v2 gets by construction and Google structurally cannot offer.</td></tr>
 <tr><td><strong>Retroactive reprocessing</strong></td><td>No retroactive goal conversion, no bot reclassification, no identity stitching backwards. Collection-time accuracy is the only chance, which raises the value of getting collection right.</td></tr>
-<tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 stores the complete URL and lets a report group by a derived <code>pagePath</code> or <code>pagePathPlusQuery</code>, neither of which contains the host &mdash; so both collapse with nothing configured, and a report that wants the host asks for it (&sect;2.1). <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (<a href="#s225">&sect;2.25.3</a>).</td></tr>
+<tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 stores the complete URL and lets a report group by a derived <code>pagePath</code> or <code>pagePathPlusQuery</code>, neither of which contains the host &mdash; so both collapse with nothing configured, and a report that wants the host asks for it (&sect;2.1). <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (<a href="#s222">&sect;2.22.3</a>).</td></tr>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Long-lived credentials off-origin</strong></td><td>Today the overlay's <code>api_url</code> — carrying a user's <code>apiKey</code> and its HMAC signature — is written to a cookie on the <em>tracked site's</em> domain, readable by any script there and sent on every request to that site. v2 mints a <strong>short-lived scoped token</strong> (one site, one page, read-only, minutes) carried in the fragment and held in memory, never a cookie. The signature then protects nothing and goes away</td></tr>
 <tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. Keeps it distinct from <code>(unknown)</code>, which means the breakdown could not attribute a session rather than the event carrying no value</td></tr>
@@ -720,7 +717,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">24</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, which is what makes a click coordinate meaningful</td></tr>
 <tr><td class="n">25</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
 <tr><td class="n">26</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
-<tr><td class="n">27</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s221">&sect;2.21</a>, Phase 5</td></tr>
+<tr><td class="n">27</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s218">&sect;2.18</a>, Phase 5</td></tr>
 <tr><td class="n">28</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
 <tr><td class="n">29</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s210">&sect;2.10</a></td></tr>
 <tr><td class="n">30</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
@@ -990,7 +987,7 @@ be built. The GA4 recommended set fills it in.</p>
 
 <p class="note">A custom event is an arbitrary name plus params and needs no registration, which is
 what removes 1.x's five fixed custom-variable slots (<a href="#s21">&sect;2.1</a>). Author-named
-goal events are the same mechanism &mdash; see <a href="#s222">goals became goal events</a>.</p>
+goal events are the same mechanism &mdash; see <a href="#s219">goals became goal events</a>.</p>
 <h3 id="s23"><span class="num">2.3</span>Metrics <span class="chip c-dec">Decided</span></h3>
 <p>A metric names a <strong>kind</strong> and an implementation renders it; no definition carries
 SQL. That rule is what makes the set configuration rather than code, and it is the same rule
@@ -1080,7 +1077,7 @@ v2 needs no new machinery, only registrations.</p>
 <div class="scroll"><table>
 <thead><tr><th>Job</th><th>Unit of work</th><th>Does</th><th>State</th></tr></thead>
 <tbody>
-<tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s221">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
+<tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s218">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
 <tr><td><code>rollup-day</code></td><td>One day</td><td>Builds <code>owa_event_rollup</code> from the denormalised table; stamps <code>built_at</code>, which is the freshness <code>as-of</code> the API reports.</td><td>To build</td></tr>
 <tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 13-month sliding inactivity window.</td><td>To build</td></tr>
 <tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
@@ -1100,6 +1097,61 @@ in install verification rather than in how the software is shipped. And
 stalled rotation erodes the lead until rows reach <code>pmax</code>, breaking the invariant
 everything else rests on. It wants an alarm, not a log line. There have been two scheduler-adjacent
 stalls already.</p>
+<h4><span class="num">2.5.1</span>Choosing the interval</h4>
+<p><strong>Scheduling needs nothing new.</strong> The job scheduler shipped in #997 already has
+per-job locking (<code>getJobLock</code> / <code>releaseJobLock</code>, with
+<code>--force-release</code> for a lock left by a dead process), which is exactly the
+&ldquo;two runs must not build the same partition&rdquo; guard. Registering is one line beside
+<code>rotate-partitions</code> in <code>Base\Module::registerJobs()</code>. Two cautions from how
+that scheduler actually behaves: the lock is keyed on the <em>job name</em>, so one name serialises
+every partition the job touches &mdash; fine, and probably wanted, but it means the window cannot be
+rebuilt in parallel without per-partition names. And <code>ScheduleRunCli::MAX_RUNTIME</code> (240s)
+is checked <em>before</em> starting a job and never mid-job, so a long pass is not interrupted; it
+just delays whatever else was due to that tick.</p>
+
+<p><strong>The cost profile is why the partition tier at the front has to be fine.</strong>
+Rebuilding today&rsquo;s partition costs however much of today has happened, so an intraday cadence
+rewrites a growing table all day &mdash; cheap at 08:00, a full day&rsquo;s rows at 23:59. That is
+tolerable when a partition is a day and untenable when it is a month, which is the same argument
+<a href="#s27">&sect;2.7</a> makes from the other direction. Two cadences fall out: a frequent run on
+the current partition setting the attributed-freshness tier, and a less frequent run over the rest
+of the late-arrival window, which is where a late <code>first_visit</code> actually gets picked up.</p>
+
+<p><strong>Sub-hourly is already expressible, and the pass already qualifies to run that way.</strong>
+<code>Core\Cron</code> supports step syntax, so <code>*/15 * * * *</code> parses and describes
+itself as &ldquo;every 15 minutes&rdquo;; the crontab line is a one-minute resolution floor rather
+than the schedule, so anything down to a minute is available. No new mechanism.</p>
+
+<p>The constraint that matters is the one <code>Core\Cron</code> states in its own header:
+<strong>a scheduled job must be CONVERGENT, not incremental.</strong> The due test is
+level-triggered and does not backfill &mdash; a job missed for three days runs once at the next
+tick, not once per missed occurrence &mdash; so anything that processes &ldquo;the next unit of
+work&rdquo; loses data across a gap. <strong>The pass passes that test by construction</strong>:
+it rebuilds a whole partition from raw and swaps, so one run after an outage leaves exactly the
+state twenty runs would have. That is the same property the swap-as-commit design already
+provides, and it is worth naming here because the rule is enforced by convention rather than by
+code, and a pass written to enrich only what it had not enriched yet would violate it while
+looking correct.</p>
+
+<p>Two behaviours of the shipped scheduler are worth knowing before picking an interval. The
+per-job lock means <strong>a run that outlasts its interval does not pile up</strong> &mdash; the
+next tick finds the lock held, logs that the job is already running, and skips; the job simply
+runs less often than asked, which is the right failure. And
+<code>ScheduleRunCli::MAX_RUNTIME</code> (240s) is a budget checked <em>before</em> a job starts
+and never mid-job, so a long pass is never interrupted part-way; it only delays whatever else was
+due on that tick.</p>
+
+<p><strong>The interval and the partition granularity are one decision, not two.</strong> Each run
+rebuilds however much of the current partition exists, so at <code>*/15</code> that is 96 rebuilds
+a day, and on a monthly partition the last of them rewrites a month. On a daily partition it
+rewrites at most a day, and the cost is flat across the month instead of climbing through it. A
+sub-hourly cadence is affordable on daily partitions and not really affordable on anything
+coarser. <strong>So v2 needs a <code>daily</code> entry in <code>PARTITION_CUTS</code>, which had
+only <code>monthly</code>, <code>half-month</code> and <code>quarter-month</code>.</strong> Added
+in PR&nbsp;#1113, kept in 1.x because it is additive: nothing adopts it on its own &mdash;
+<code>partition-init</code> still defaults to monthly, <code>partition-rotate</code> still infers
+from the table, and <code>partition-reorganize</code> requires the granularity to be named.</p>
+
 <h3 id="s26"><span class="num">2.6</span>The denormalisation pass <span class="chip c-dec">Decided</span></h3>
 <p>The pass is one function run once per partition: <strong>read every raw row in partition P,
 write the same rows enriched into a staging table, swap staging into P.</strong> It creates
@@ -1259,124 +1311,7 @@ more damaging than it appears when the number sets the whole rebuild cadence.</p
 unload beacon that landed behind a subsequent hit, a retry from the browser, a tab restored from
 bfcache, a device that was offline. None of that is visible in any server queue, which is the part
 that still needs a number.</p>
-<h3 id="s27"><span class="num">2.7</span>The partition cycle <span class="chip c-dec">Decided</span></h3>
-<p>If a rebuild replaces a whole partition, the partition scheme decides the unit of work &mdash;
-so the rebuild window wants fine partitions and everything older wants coarse ones. That is a
-two-stage lead, three operations, and only one of them costs anything.</p>
-
-<table>
-<tr><th>when</th><th>operation</th><th>cost</th></tr>
-<tr><td>continuously, far ahead</td><td><code>REORGANIZE pmax INTO (monthly&hellip;, pmax)</code></td><td>metadata &mdash; <code>pmax</code> is empty</td></tr>
-<tr><td>shortly before a month goes current</td><td><code>REORGANIZE p2026MM INTO (&lt;fine partitions&gt;)</code></td><td>metadata &mdash; that month is still empty too</td></tr>
-<tr><td>after the month closes and its window expires</td><td><code>REORGANIZE &lt;fine&gt; INTO p2026MM</code></td><td><strong>rewrites the month, once</strong></td></tr>
-</table>
-
-<p><strong>The fine partitions are never carved from <code>pmax</code>.</strong> They are carved
-from an already-created, still-empty <em>monthly</em> partition shortly before it goes current, so
-the daily lead only has to cover the reorder window plus margin &mdash; days or weeks. The long
-lead stays monthly and stays far out, exactly as 1.x runs it today (demo's reaches 13 months).</p>
-
-<p><strong>That split is forced, not stylistic: the lead is filled at the table's own
-granularity.</strong> 1.x keeps <code>PARTITION_MONTHS_AHEAD</code> (12) whole future months
-ahead, and <code>extendPartitions()</code> fills to that boundary at whatever granularity the
-table already uses &mdash; the number of months is fixed, the number of partitions is not. A
-table taken wholly to quarter-month therefore carries ~48 partitions of lead rather than 12,
-against a <code>PARTITION_COUNT_LIMIT</code> of 400 whose own docblock notes that quarter-month
-over a decade reaches 480. Making the whole table fine-grained to get a fine-grained rebuild
-window would spend the partition budget on empty future months. The two-stage lead spends it
-only where the rebuild actually happens.</p>
-
-<p><strong>Do not confuse that lead with the detail window.</strong> Three separate month-counts
-govern partitioning in 1.x and only one of them is about granularity:
-<code>PARTITION_CUTS</code> is the granularity itself and is not a month count at all;
-<code>PARTITION_DETAIL_MONTHS</code> (36, and already cited below) is how long a period keeps
-that granularity before compaction may merge it into year blocks;
-<code>PARTITION_MONTHS_AHEAD</code> (12) is the lead. Granularity is never a stored setting
-&mdash; it is inferred per table from the existing layout, defaults to monthly, and only
-<code>partition-reorganize</code> changes it, which is the seam a two-stage scheme has to extend.</p>
-
-<p><strong><code>pmax</code> must never receive a row.</strong> That is the load-bearing invariant,
-and everything else here is tuning. 1.x already depends on it without saying so: the cost of
-extending the lead is <em>&ldquo;proportional to what is sitting in the catch-all&rdquo;</em>
-&mdash; measured at 1.52s to create 31 partitions when it is empty. Let rows land there and the
-next carve stops being metadata and becomes a rewrite, while rows that belong in a dated partition
-sit in the catch-all instead.</p>
-
-<p><strong>One job, and merge before carve.</strong> These are separate <code>ALTER</code>
-statements &mdash; MySQL permits one partition operation per statement &mdash; but they belong in
-one run of one job under one lock, which is how <code>PartitionRotateCli</code> already works
-(extend, then a REORGANIZE per merge, then drops). Order matters for the high-water mark, because
-merge and carve move the count in opposite directions: merging first frees roughly a month of
-partitions before the carve consumes roughly a month, so a run peaks near its starting count
-rather than a month above it. It also fails better &mdash; a run that dies between the two leaves
-the table <em>below</em> where it started, never over budget.</p>
-
-<p><strong>The rebuild granularity is an open trade, and there is a middle rung already built.</strong>
-<code>PARTITION_CUTS</code> offers <code>monthly</code>, <code>half-month</code> and
-<code>quarter-month</code>; <code>daily</code> was added in PR&nbsp;#1113
-and <code>cutsForMonth()</code> already clamps cuts past a short month's end, so February and leap
-years fall out correctly. Daily gives the smallest rebuild and the most partitions &mdash; two
-months of them transiently, since the next month must be carved before the current one's window
-expires. Quarter-month gives a week-sized rebuild, about four partitions a month, and no new
-granularity. Which is right depends on rebuild cost, and that is unmeasured.</p>
-
-<p><strong>The rotation job becomes a dependency of ingest correctness</strong>, not housekeeping. Today a stalled rotation is untidy. Under this scheme the
-lead erodes, rows reach <code>pmax</code>, and the invariant breaks &mdash; so it wants an alarm
-rather than a log line. 1.x has had two scheduler-adjacent stalls already.</p>
-<h3 id="s28"><span class="num">2.8</span>The visitor store <span class="chip c-dec">Decided</span></h3>
-<p>Two columns of content and one of maintenance. <strong>Acquisition</strong> &mdash; source,
-medium, campaign, ad, search terms &mdash; write-once from the <code>first_visit</code> event. And
-<strong><code>last_seen</code></strong>, which exists only to drive the TTL. Nothing else.</p>
-
-<p><strong>Session count does not belong here, and the reasoning generalises.</strong>
-<code>nps</code> is a counter the client already maintains and sends on every beacon, so in v2 it is
-already denormalised onto every event row. &ldquo;How many sessions has this visitor had&rdquo; is
-then <code>MAX(nps)</code> in a group-by, not a lookup &mdash; the same argument that removed the
-session table in &sect;1.3. The rule: <strong>a value that rides every event is already on the
-visitor, and copying it to a visitor row adds a write without adding an answer.</strong> Only values
-that cannot be on the event &mdash; because they originate in one event that may be years old
-&mdash; earn a place here.</p>
-
-<p>1.x is the cautionary version of exactly this, and it is worth stating because the mistake looks
-like tidiness. <code>num_prior_sessions</code> sits on <code>owa_visitor</code> AND on every fact
-row. Both registered dimensions that read it &mdash; &ldquo;Prior Visits&rdquo; and &ldquo;Visits To
-Purchase&rdquo; &mdash; read the <em>fact-row</em> copy, denormalised. The visitor copy is
-maintained by <code>VisitorUpdateHandlers</code>, which fires on every <code>base.new_session</code>,
-loads the visitor, runs a summarize query over <code>owa_session</code>, and writes a column no
-report can reach. A per-session row update plus an aggregate query, for nothing.</p>
-
-<p><strong>And <code>last_seen</code> being mutable does not put a write on the ingest path.</strong>
-That is the property worth protecting, since it is the one ITP made load-bearing: ingest stays a
-pure append with no lookups. Three things keep it that way.</p>
-<ul>
-<li><strong>The pass advances it, not ingest.</strong> One set-based <code>UPDATE</code> over the
-visitors seen in the partition being rebuilt, alongside the acquisition harvest that already
-happens there.</li>
-<li><strong>It is stored as a period, not a timestamp.</strong> The TTL is measured in months, so
-month precision is all it needs &mdash; which makes the value change at most once per visitor per
-month rather than once per session, and makes the common case a write that changes nothing.</li>
-<li><strong><code>GREATEST(last_seen, &lt;partition max&gt;)</code> is monotonic</strong>, so
-rebuilding a partition twice is a no-op and the column cannot go backwards when partitions are
-rebuilt out of order.</li>
-</ul>
-
-<p>So the store is written once per visitor for content, and touched in bulk at most monthly for
-maintenance. If a future column wants a per-session write, that is the signal it belongs on the
-event rather than here.</p>
-
-<p><strong>One write-volume note, since <code>last_seen</code> is the only mutable column.</strong>
-It does not need per-pass precision &mdash; the TTL is measured in months, so storing the period
-rather than the timestamp means the update fires at most once per visitor per month instead of once
-per visitor per partition rebuild. Still <code>GREATEST</code>, still monotonic, still idempotent on
-a rerun, but the common case becomes a no-op write that changes nothing.</p>
-
-<p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
-safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
-same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
-never wrong then corrected&rdquo; property the flag keying buys, now expressed as a storage rule.
-A full rebuild of the table from raw must break ties deterministically &mdash; order by
-<code>(timestamp, event_id)</code>, not timestamp alone &mdash; or two rebuilds can disagree.</p>
-
+<h4><span class="num">2.6.2</span>How one run is ordered</h4>
 <p><strong>2. Session finalisation puts a floor under the late-arrival window that queue reorder
 latency does not.</strong> A session running across midnight has rows in two partitions and cannot
 be finalised while building the first. The window already has to exceed how far the queue can
@@ -1426,60 +1361,70 @@ columnar engine, where the equivalent is likewise a single <code>INSERT SELECT</
 functions make step 2 straightforward and need MySQL 8.0 &mdash; the repo declares no minimum
 server version anywhere, so v2 should state one rather than discover it on someone&rsquo;s 5.7.</p>
 
-<p><strong>Scheduling needs nothing new.</strong> The job scheduler shipped in #997 already has
-per-job locking (<code>getJobLock</code> / <code>releaseJobLock</code>, with
-<code>--force-release</code> for a lock left by a dead process), which is exactly the
-&ldquo;two runs must not build the same partition&rdquo; guard. Registering is one line beside
-<code>rotate-partitions</code> in <code>Base\Module::registerJobs()</code>. Two cautions from how
-that scheduler actually behaves: the lock is keyed on the <em>job name</em>, so one name serialises
-every partition the job touches &mdash; fine, and probably wanted, but it means the window cannot be
-rebuilt in parallel without per-partition names. And <code>ScheduleRunCli::MAX_RUNTIME</code> (240s)
-is checked <em>before</em> starting a job and never mid-job, so a long pass is not interrupted; it
-just delays whatever else was due to that tick.</p>
+<h3 id="s27"><span class="num">2.7</span>The partition cycle <span class="chip c-dec">Decided</span></h3>
+<p>If a rebuild replaces a whole partition, the partition scheme decides the unit of work &mdash;
+so the rebuild window wants fine partitions and everything older wants coarse ones. That is a
+two-stage lead, three operations, and only one of them costs anything.</p>
 
-<p><strong>The cost profile is why the partition tier at the front has to be fine.</strong>
-Rebuilding today&rsquo;s partition costs however much of today has happened, so an intraday cadence
-rewrites a growing table all day &mdash; cheap at 08:00, a full day&rsquo;s rows at 23:59. That is
-tolerable when a partition is a day and untenable when it is a month, which is the same argument
-the partition cycle above makes from the other direction. Two cadences fall out: a frequent run on
-the current partition setting the attributed-freshness tier, and a less frequent run over the rest
-of the late-arrival window, which is where a late <code>first_visit</code> actually gets picked up.</p>
+<table>
+<tr><th>when</th><th>operation</th><th>cost</th></tr>
+<tr><td>continuously, far ahead</td><td><code>REORGANIZE pmax INTO (monthly&hellip;, pmax)</code></td><td>metadata &mdash; <code>pmax</code> is empty</td></tr>
+<tr><td>shortly before a month goes current</td><td><code>REORGANIZE p2026MM INTO (&lt;fine partitions&gt;)</code></td><td>metadata &mdash; that month is still empty too</td></tr>
+<tr><td>after the month closes and its window expires</td><td><code>REORGANIZE &lt;fine&gt; INTO p2026MM</code></td><td><strong>rewrites the month, once</strong></td></tr>
+</table>
 
-<p><strong>Sub-hourly is already expressible, and the pass already qualifies to run that way.</strong>
-<code>Core\Cron</code> supports step syntax, so <code>*/15 * * * *</code> parses and describes
-itself as &ldquo;every 15 minutes&rdquo;; the crontab line is a one-minute resolution floor rather
-than the schedule, so anything down to a minute is available. No new mechanism.</p>
+<p><strong>The fine partitions are never carved from <code>pmax</code>.</strong> They are carved
+from an already-created, still-empty <em>monthly</em> partition shortly before it goes current, so
+the daily lead only has to cover the reorder window plus margin &mdash; days or weeks. The long
+lead stays monthly and stays far out, exactly as 1.x runs it today (demo's reaches 13 months).</p>
 
-<p>The constraint that matters is the one <code>Core\Cron</code> states in its own header:
-<strong>a scheduled job must be CONVERGENT, not incremental.</strong> The due test is
-level-triggered and does not backfill &mdash; a job missed for three days runs once at the next
-tick, not once per missed occurrence &mdash; so anything that processes &ldquo;the next unit of
-work&rdquo; loses data across a gap. <strong>The pass passes that test by construction</strong>:
-it rebuilds a whole partition from raw and swaps, so one run after an outage leaves exactly the
-state twenty runs would have. That is the same property the swap-as-commit design already
-provides, and it is worth naming here because the rule is enforced by convention rather than by
-code, and a pass written to enrich only what it had not enriched yet would violate it while
-looking correct.</p>
+<p><strong>That split is forced, not stylistic: the lead is filled at the table's own
+granularity.</strong> 1.x keeps <code>PARTITION_MONTHS_AHEAD</code> (12) whole future months
+ahead, and <code>extendPartitions()</code> fills to that boundary at whatever granularity the
+table already uses &mdash; the number of months is fixed, the number of partitions is not. A
+table taken wholly to quarter-month therefore carries ~48 partitions of lead rather than 12,
+against a <code>PARTITION_COUNT_LIMIT</code> of 400 whose own docblock notes that quarter-month
+over a decade reaches 480. Making the whole table fine-grained to get a fine-grained rebuild
+window would spend the partition budget on empty future months. The two-stage lead spends it
+only where the rebuild actually happens.</p>
 
-<p>Two behaviours of the shipped scheduler are worth knowing before picking an interval. The
-per-job lock means <strong>a run that outlasts its interval does not pile up</strong> &mdash; the
-next tick finds the lock held, logs that the job is already running, and skips; the job simply
-runs less often than asked, which is the right failure. And
-<code>ScheduleRunCli::MAX_RUNTIME</code> (240s) is a budget checked <em>before</em> a job starts
-and never mid-job, so a long pass is never interrupted part-way; it only delays whatever else was
-due on that tick.</p>
+<p><strong>Do not confuse that lead with the detail window.</strong> Three separate month-counts
+govern partitioning in 1.x and only one of them is about granularity:
+<code>PARTITION_CUTS</code> is the granularity itself and is not a month count at all;
+<code>PARTITION_DETAIL_MONTHS</code> (36) is how long a period keeps
+that granularity before compaction may merge it into year blocks;
+<code>PARTITION_MONTHS_AHEAD</code> (12) is the lead. Granularity is never a stored setting
+&mdash; it is inferred per table from the existing layout, defaults to monthly, and only
+<code>partition-reorganize</code> changes it, which is the seam a two-stage scheme has to extend.</p>
 
-<p><strong>The interval and the partition granularity are one decision, not two.</strong> Each run
-rebuilds however much of the current partition exists, so at <code>*/15</code> that is 96 rebuilds
-a day, and on a monthly partition the last of them rewrites a month. On a daily partition it
-rewrites at most a day, and the cost is flat across the month instead of climbing through it. A
-sub-hourly cadence is affordable on daily partitions and not really affordable on anything
-coarser. <strong>So v2 needs a <code>daily</code> entry in <code>PARTITION_CUTS</code>, which had
-only <code>monthly</code>, <code>half-month</code> and <code>quarter-month</code>.</strong> Added
-in PR&nbsp;#1113, kept in 1.x because it is additive: nothing adopts it on its own &mdash;
-<code>partition-init</code> still defaults to monthly, <code>partition-rotate</code> still infers
-from the table, and <code>partition-reorganize</code> requires the granularity to be named.</p>
+<p><strong><code>pmax</code> must never receive a row.</strong> That is the load-bearing invariant,
+and everything else here is tuning. 1.x already depends on it without saying so: the cost of
+extending the lead is <em>&ldquo;proportional to what is sitting in the catch-all&rdquo;</em>
+&mdash; measured at 1.52s to create 31 partitions when it is empty. Let rows land there and the
+next carve stops being metadata and becomes a rewrite, while rows that belong in a dated partition
+sit in the catch-all instead.</p>
 
+<p><strong>One job, and merge before carve.</strong> These are separate <code>ALTER</code>
+statements &mdash; MySQL permits one partition operation per statement &mdash; but they belong in
+one run of one job under one lock, which is how <code>PartitionRotateCli</code> already works
+(extend, then a REORGANIZE per merge, then drops). Order matters for the high-water mark, because
+merge and carve move the count in opposite directions: merging first frees roughly a month of
+partitions before the carve consumes roughly a month, so a run peaks near its starting count
+rather than a month above it. It also fails better &mdash; a run that dies between the two leaves
+the table <em>below</em> where it started, never over budget.</p>
+
+<p><strong>The rebuild granularity is an open trade, and there is a middle rung already built.</strong>
+<code>PARTITION_CUTS</code> offers <code>monthly</code>, <code>half-month</code> and
+<code>quarter-month</code>; <code>daily</code> was added in PR&nbsp;#1113
+and <code>cutsForMonth()</code> already clamps cuts past a short month's end, so February and leap
+years fall out correctly. Daily gives the smallest rebuild and the most partitions &mdash; two
+months of them transiently, since the next month must be carved before the current one's window
+expires. Quarter-month gives a week-sized rebuild, about four partitions a month, and no new
+granularity. Which is right depends on rebuild cost, and that is unmeasured.</p>
+
+<p><strong>The rotation job becomes a dependency of ingest correctness</strong>, not housekeeping. Today a stalled rotation is untidy. Under this scheme the
+lead erodes, rows reach <code>pmax</code>, and the invariant breaks &mdash; so it wants an alarm
+rather than a log line. 1.x has had two scheduler-adjacent stalls already.</p>
 <p>It was one array entry plus one latent defect, which is the part worth remembering.
 <code>daily</code> is the first granularity whose cuts a short month cannot carry, and
 <code>inferPartitionGranularity()</code> compared a table's boundaries against the raw constant
@@ -1489,12 +1434,56 @@ fall back to monthly, silently changing a table's granularity on a scheduled run
 existed all along and had never once applied, because every other granularity cuts at or below the
 22nd.</p>
 
-<p><strong>What is still unsettled here:</strong> whether the rebuild set is the whole window every
-time (simple, no change tracking, and the only thing that is provably correct given a late flagged
-event) or something narrower; and that partitioning on <code>yyyymmdd</code> alone means one
-partition holds every site, so a multi-site install pays one big site&rsquo;s rebuild cost in every
-site&rsquo;s freshness. Subpartitioning by site is the obvious answer and multiplies the partition
-count by the site count, straight into the budget &sect;1.5 is already spending. Left to &sect;2.16.</p>
+<h3 id="s28"><span class="num">2.8</span>The visitor store <span class="chip c-dec">Decided</span></h3>
+<p>Two columns of content and one of maintenance. <strong>Acquisition</strong> &mdash; source,
+medium, campaign, ad, search terms &mdash; write-once from the <code>first_visit</code> event. And
+<strong><code>last_seen</code></strong>, which exists only to drive the TTL. Nothing else.</p>
+
+<p><strong>Session count does not belong here, and the reasoning generalises.</strong>
+<code>nps</code> is a counter the client already maintains and sends on every beacon, so in v2 it is
+already denormalised onto every event row. &ldquo;How many sessions has this visitor had&rdquo; is
+then <code>MAX(nps)</code> in a group-by, not a lookup &mdash; the same argument that removed the
+session table (<a href="#s15">&sect;1.5.1</a>). The rule: <strong>a value that rides every event is already on the
+visitor, and copying it to a visitor row adds a write without adding an answer.</strong> Only values
+that cannot be on the event &mdash; because they originate in one event that may be years old
+&mdash; earn a place here.</p>
+
+<p>1.x is the cautionary version of exactly this, and it is worth stating because the mistake looks
+like tidiness. <code>num_prior_sessions</code> sits on <code>owa_visitor</code> AND on every fact
+row. Both registered dimensions that read it &mdash; &ldquo;Prior Visits&rdquo; and &ldquo;Visits To
+Purchase&rdquo; &mdash; read the <em>fact-row</em> copy, denormalised. The visitor copy is
+maintained by <code>VisitorUpdateHandlers</code>, which fires on every <code>base.new_session</code>,
+loads the visitor, runs a summarize query over <code>owa_session</code>, and writes a column no
+report can reach. A per-session row update plus an aggregate query, for nothing.</p>
+
+<p><strong>And <code>last_seen</code> being mutable does not put a write on the ingest path.</strong>
+That is the property worth protecting, since it is the one ITP made load-bearing: ingest stays a
+pure append with no lookups. Three things keep it that way.</p>
+<ul>
+<li><strong>The pass advances it, not ingest.</strong> One set-based <code>UPDATE</code> over the
+visitors seen in the partition being rebuilt, alongside the acquisition harvest that already
+happens there.</li>
+<li><strong>It is stored as a period, not a timestamp.</strong> The TTL is measured in months, so
+month precision is all it needs &mdash; which makes the value change at most once per visitor per
+month rather than once per session, and makes the common case a write that changes nothing.</li>
+<li><strong><code>GREATEST(last_seen, &lt;partition max&gt;)</code> is monotonic</strong>, so
+rebuilding a partition twice is a no-op and the column cannot go backwards when partitions are
+rebuilt out of order.</li>
+</ul>
+
+<p>So the store is written once per visitor for content, and touched in bulk at most monthly for
+maintenance. If a future column wants a per-session write, that is the signal it belongs on the
+event rather than here.</p>
+
+<p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
+safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
+same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
+never wrong then corrected&rdquo; property the flag keying buys, now expressed as a storage rule.
+A full rebuild of the table from raw must break ties deterministically &mdash; order by
+<code>(timestamp, event_id)</code>, not timestamp alone &mdash; or two rebuilds can disagree.</p>
+
+<p class="note">Two things about this table are open &mdash; the rebuild set, and what partitioning on <code>yyyymmdd</code> alone costs a multi-site install. Both are in <a href="#s31">&sect;3.1</a>.</p>
+
 <h4><span class="num">2.8.1</span>Do not partition it on <code>last_seen</code></h4>
 <p>Partitioning on <code>last_seen</code> is the obvious move &mdash; expiry becomes
 <code>DROP PARTITION</code>, free and metadata-only, the same idiom raw uses. <strong>It does not
@@ -1621,7 +1610,7 @@ the presentation layer decides how to say it.</strong> Note this narrows what a 
 means rather than widening it &mdash; NULL becomes unambiguously &ldquo;not provided&rdquo;, which
 is only useful if the write path never also writes a sentinel meaning the same thing.</p>
 
-<h3 id="s211"><span class="num">2.11</span>Boolean columns carry three values</h3>
+<h3 id="s211"><span class="num">2.11</span>Boolean columns carry three values <span class="chip c-dec">Decided</span></h3>
 <p><strong>A nullable boolean holds three values, and <code>GROUP BY</code> gives each its own bucket.</strong> In 1.x the boolean fact
 columns are nullable with no default, so <code>is_repeat_visitor</code> holds
 <code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a
@@ -1715,7 +1704,7 @@ exactly when one is tempted to modernise it into something needing a toolchain o
 machine. The schema changing is not a reason for the delivery mechanism to change.</p>
 
 <h3 id="s215"><span class="num">2.15</span>Testing <span class="chip c-dec">Decided</span></h3>
-<p>The two harnesses of &sect;2.24 are the primary tests — pipeline integrity generated and exhaustive, model characterization hand-written and small. Neither alone is “the” test, and reporting them as one is the failure mode that section describes. Around it: 77 test files and 509 methods today,
+<p>The two harnesses of &sect;2.21 are the primary tests — pipeline integrity generated and exhaustive, model characterization hand-written and small. Neither alone is “the” test, and reporting them as one is the failure mode that section describes. Around it: 77 test files and 509 methods today,
 of which only 8 files are named for star-schema artefacts — most of the suite tests CLI commands,
 settings, auth, validation, the queue and the scheduler, and ports unchanged. What genuinely
 expires is the part testing the star's <em>mechanics</em>.</p>
@@ -1736,7 +1725,7 @@ the update sequence runs clean with v1 dropped; and generated realtime SQL carri
 partition-key range — asserted <em>on the SQL</em>, since a timing assertion on a small fixture
 would pass either way.</p>
 
-<h3 id="s216"><span class="num">2.16</span>Multi-site</h3>
+<h3 id="s216"><span class="num">2.16</span>Multi-site <span class="chip c-dec">Decided</span></h3>
 <p>The area needing least work: a single event table handles tenancy naturally, <code>site_id</code>
 is a column, isolation is a <code>WHERE</code>, and it already leads the composite indexes.
 Permissions are already per-site.</p>
@@ -1750,20 +1739,18 @@ would need a row-level <code>DELETE</code> sweeping every partition, leaving fra
 and competing with live writes. Uniform retention is a metadata-only partition drop, effectively
 instant, and already implemented. The single table makes the simpler policy the cheap one.</p>
 
-<h3 id="s217"><span class="num">2.17</span>Why additive work matters</h3>
-<p>Every item here is proved against real traffic <em>before</em> v2 depends on it, and each one
-narrows what the rewrite has to get right on the first attempt. The evidence that this is the
-correct posture is recent: converting one id width across two installations took five pull
-requests, a storage upgrade and most of a day, with tracking dropped in the window where the flag
-and the data disagreed. A total schema change is not that problem scaled up — it is a different
-and much worse problem, and the way to survive it is to arrive with most of the pieces already
-running.</p>
-<p>One decision unlocked much of this list. Because the server fans a single tracker's events out
-to both pipelines, the wire format no longer has to satisfy v1 — compatibility is a
-<em>server-side translation</em>. Work previously blocked until v1 was gone became additive:
-namespace stripping and cookie consolidation both moved into this column.</p>
+<h3 id="s217"><span class="num">2.17</span>What can land in 1.x now <span class="chip c-dec">Decided</span></h3>
+<p>Every item here is proved against real traffic before v2 depends on it, and each one narrows
+what the rewrite has to get right first time. Converting one id width across two installations took
+five pull requests, a storage upgrade and most of a day, with tracking dropped in the window where
+the flag and the data disagreed. A total schema change is not that problem scaled up; it is a worse
+one, and the way to survive it is to arrive with most of the pieces already running.</p>
+<p>One decision unlocks much of the list. Because the server fans a single tracker's events out to
+both pipelines (<a href="#s19">&sect;1.9</a>), the wire format no longer has to satisfy v1 &mdash;
+compatibility becomes a <em>server-side translation</em>. Work previously blocked until v1 was gone
+became additive, namespace stripping and cookie consolidation among it.</p>
 
-<h3 id="s218"><span class="num">2.18</span>Fully additive</h3>
+<h4><span class="num">2.17.1</span>Fully additive</h4>
 <div class="scroll"><table>
 <thead><tr><th>Work</th><th>What it fixes in 1.x today</th></tr></thead>
 <tbody>
@@ -1777,49 +1764,40 @@ namespace stripping and cookie consolidation both moved into this column.</p>
 <tr><td><strong>Report config as JSON</strong> <span class="chip c-done">Shipped</span></td><td>retrofits the v2 widget format into v1 (&sect;1.7). Went further than this row asked: 62 of 64 shipped reports are configuration, and the format is now <em>user-authored</em> &mdash; see Phase 4 for what that costs v2</td></tr>
 </tbody></table></div>
 
-<h3 id="s219"><span class="num">2.19</span>Tracker-additive</h3>
-<p>Worth doing anyway: the tracker half is the hard and novel part, and shipping it first proves
-it against real traffic. But the benefit <em>within</em> 1.x is smaller than it looks — and on
-review, smaller than this section originally claimed.</p>
-<div class="flag">
-  <p class="h">Revised — a feature that needs v2 storage is v2 work</p>
-  <p><strong>No half-features.</strong> The &ldquo;discarded with v1&rdquo; column below was read
-  as licence to ship the client half now and the storage later. That is building half a feature
-  and calling it shipped, and it is refused: if a feature cannot be <em>finished</em> in 1.x, it
-  belongs in a later phase.</p>
-  <p>The test is what the discarded part actually <em>is</em>. For <code>sendBeacon</code> it is
-  &ldquo;a v1-shaped body-parsing path&rdquo; — an implementation detail of v1 compatibility, with
-  the feature complete and running in 1.x without it. For the other three the discarded part is
-  <em>the storage the feature needs to mean anything</em>. Those are not additive; they are v2
-  work whose client half happens to be writable early.</p>
-  <p><strong>So engagement deltas, element path capture and chunk <code>seq</code> moved to
-  Phase&nbsp;5</strong>, where <code>owa_event</code> exists to receive them. Only
-  <code>sendBeacon</code> stayed, and it has shipped.</p>
-  <p>Two supporting points. A 1.x engagement column would carry a number with <em>nothing to
-  check it against</em> — v1 is the oracle only for what v2 is not deliberately changing (&sect;2.24),
-  and 1.x structurally cannot measure final-page dwell. And a <code>seq</code> column on
-  <code>owa_domstream</code> is the option &sect;2.23 already refuses by name: domstreams take the
-  early-cutover path precisely so v1 storage is never renovated to carry a format it will never
-  report on.</p>
-</div>
+<h4><span class="num">2.17.2</span>Tracker-additive, and the rule that limits it</h4>
+<p>The tracker half is the hard and novel part, so shipping it first proves it against real
+traffic. But <strong>a feature that needs v2 storage is v2 work.</strong> Shipping the client half
+now and the storage later is building half a feature and calling it shipped, and it is refused: if
+a feature cannot be finished in 1.x, it belongs in a later phase.</p>
+<p>The test is what the <em>discarded</em> part actually is. For <code>sendBeacon</code> it is a
+v1-shaped body-parsing path &mdash; an implementation detail of v1 compatibility, with the feature
+complete and running in 1.x without it. For the other three the discarded part is
+<strong>the storage the feature needs to mean anything</strong>, so they are v2 work whose client
+half merely happens to be writable early.</p>
 <div class="scroll"><table>
-<thead><tr><th>Work</th><th>Inherited by v2</th><th>Discarded with v1</th></tr></thead>
+<thead><tr><th>Work</th><th>The client half</th><th>What it needs to be a feature</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>Engagement deltas + sticky flag</td><td>accumulation, piggybacking, terminal beacon</td><td>a column, a handler line, a metric</td></tr>
-<tr><td>Element path capture</td><td>the selector / ancestor-chain logic</td><td>a column on <code>owa_click</code></td></tr>
-<tr><td>Chunk <code>seq</code></td><td>the page-scoped counter and its uses</td><td>a column on <code>owa_domstream</code></td></tr>
-<tr><td><code>sendBeacon</code> with a body</td><td>the client transport</td><td>a v1-shaped body-parsing path</td></tr>
+<tr><td>Engagement deltas</td><td>accumulation, piggybacking, terminal beacon</td><td><code>owa_event.engagement_msec</code></td><td>Phase&nbsp;5</td></tr>
+<tr><td>Element path capture</td><td>the selector / ancestor-chain logic</td><td><code>owa_event.element_path</code></td><td>Phase&nbsp;5</td></tr>
+<tr><td>Chunk <code>seq</code></td><td>the page-scoped counter and its uses</td><td>the chunk id, via early cutover (<a href="#s220">&sect;2.20</a>)</td><td>Phase&nbsp;5</td></tr>
+<tr><td><code>sendBeacon</code> with a body</td><td>the client transport</td><td>nothing &mdash; complete in 1.x</td><td><span class="chip c-done">Shipped</span></td></tr>
 </tbody></table></div>
-<div class="note"><strong>One caution.</strong> Redefining <code>visitDuration</code> and
-<code>bounces</code> in 1.x to use engagement would break historical comparability — every
-existing trend steps at the release boundary. Ship the collection; defer the redefinition to v2,
-where the discontinuity is expected.</div>
+<p class="note">Two supporting points. A 1.x engagement column would carry a number with nothing to
+check it against &mdash; v1 is an oracle only for what v2 is not deliberately changing
+(<a href="#s221">&sect;2.21</a>), and 1.x structurally cannot measure final-page dwell. And a
+<code>seq</code> column on <code>owa_domstream</code> is the option
+<a href="#s220">&sect;2.20</a> refuses by name: domstreams take the early-cutover path precisely so
+v1 storage is never renovated to carry a format it will never report on.</p>
+<p class="note">One caution on the shipped work: redefining <code>visitDuration</code> and
+<code>bounces</code> in 1.x to use engagement would break historical comparability, stepping every
+existing trend at the release boundary. Ship the collection; defer the redefinition to v2, where
+the discontinuity is expected.</p>
 
-<h3 id="s220"><span class="num">2.20</span>Not additive</h3>
+<h4><span class="num">2.17.3</span>Not additive</h4>
 <p>The single table itself, the rollup, the metric registry rework, and the v2 reporting UI. These
 are the rewrite. Nothing above changes that; the point is to shrink it.</p>
 
-<h3 id="s221"><span class="num">2.21</span>Build order <span class="chip c-dec">Decided</span></h3>
+<h3 id="s218"><span class="num">2.18</span>Build order <span class="chip c-dec">Decided</span></h3>
 <p>Three rules: defects whose cost accrues daily go first, since a day of delay is data that
 cannot be recovered; foundations before what is built on them; the expensive irreversible work
 last, when the most is known.</p>
@@ -1833,7 +1811,7 @@ last, when the most is known.</p>
   mutation-checked at creation &mdash; break the behaviour, watch the test fail, restore.</p>
 </div>
 
-<h4><span class="num">2.21.1</span>Phases 1&ndash;4, closed</h4>
+<h4><span class="num">2.18.1</span>Phases 1&ndash;4, closed</h4>
 <div class="scroll"><table>
 <thead><tr><th>Phase</th><th>Contents</th><th>Closed</th></tr></thead>
 <tbody>
@@ -1843,7 +1821,7 @@ last, when the most is known.</p>
 <tr><td><strong>4</strong> Interface debt v2 inherits</td><td>Site-access UI; report config as JSON; retention as a scheduled job.</td><td>28&nbsp;Aug. See <a href="#sa1">the appendix</a> for the two constraints the report work leaves on v2.</td></tr>
 </tbody></table></div>
 
-<h4><span class="num">2.21.2</span>Phase 5 &mdash; v2 groundwork</h4>
+<h4><span class="num">2.18.2</span>Phase 5 &mdash; v2 groundwork</h4>
 <p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates
 items&nbsp;2&ndash;4</strong>: there is nothing to roll up, fan out to, or compare against until the
 tables exist. The tracker-side items are independent of it.</p>
@@ -1854,11 +1832,11 @@ tables exist. The tracker-side items are independent of it.</p>
 <tr><td>1</td><td><strong>The three storage layers</strong>, created by one CLI-mode update (<a href="#s213">&sect;2.13</a>), with the denormalisation pass, visitor store, partition cycle and scheduling model that <a href="#s15">&sect;1.5</a> brought with them.</td><td>Not started. The largest piece of work in this document, and everything below that touches storage waits on it.</td></tr>
 <tr><td>2</td><td>Rollup job registered against the existing scheduler.</td><td>Not started</td></tr>
 <tr><td>3</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
-<tr><td>4</td><td>Parity harness as a command (<a href="#s224">&sect;2.24</a>).</td><td>Not started</td></tr>
+<tr><td>4</td><td>Parity harness as a command (<a href="#s221">&sect;2.21</a>).</td><td>Not started</td></tr>
 <tr><td>5</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#sa1">Appendix</a> for why a 1.x fix would be worse than leaving it.</td></tr>
 <tr><td>6</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
 <tr><td>7</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>8</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s223">&sect;2.23</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
+<tr><td>8</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s220">&sect;2.20</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
 </tbody></table></div>
 
 <div class="flag">
@@ -1880,7 +1858,7 @@ tables exist. The tracker-side items are independent of it.</p>
   be created. The next thing is code, not another decision.</p>
 </div>
 
-<h3 id="s222"><span class="num">2.22</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
+<h3 id="s219"><span class="num">2.19</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
 <p class="meta">3&nbsp;Sep&nbsp;2026 &mdash; branch <code>feat/key-events</code>, PR&nbsp;#1064.</p>
 
 <p>Unplanned work, recorded here because it moved a v2 decision into 1.x rather than
@@ -1939,7 +1917,7 @@ that suggested it was actually <code>get_results()</code> materialising the scan
 the scan itself.</p>
 
 <!-- ============ PART III ============ -->
-<h3 id="s223"><span class="num">2.23</span>Early cutover, per feature <span class="chip c-dec">Decided</span></h3>
+<h3 id="s220"><span class="num">2.20</span>Early cutover, per feature <span class="chip c-dec">Decided</span></h3>
 <p>Fan-out is per event type, not global. A feature skips the dual-write period entirely when both
 hold:</p>
 <ol>
@@ -1952,7 +1930,7 @@ row, the encoding becomes delta tuples plus gzip (~30× measured). Dual-writing 
 options — either the new capture has nowhere to land, or <code>owa_domstream</code> is renovated
 to accept a format v1 will never report on. Heatmaps follow, being built on the same capture.</p>
 
-<h3 id="s224"><span class="num">2.24</span>The parity harness <span class="chip c-dec">Decided</span></h3>
+<h3 id="s221"><span class="num">2.21</span>The parity harness <span class="chip c-dec">Decided</span></h3>
 <p>Both pipelines consume identical events, so v1 can serve as an oracle — but only
 <strong>below the session boundary</strong>. That is what this harness is for.</p>
 
@@ -2026,15 +2004,15 @@ exactly what would let an expected difference shelter a real one.</p>
   60-day hold on the one part of v2 that cannot be hurried.</p>
 </div>
 
-<h3 id="s225"><span class="num">2.25</span>Profiles carry the version <span class="chip c-open">Proposed</span></h3>
+<h3 id="s222"><span class="num">2.22</span>Profiles carry the version <span class="chip c-open">Proposed</span></h3>
 <p>Everything above resolves the version at <em>query</em> time, and every automatic signal for
-doing so fails. A date boundary cannot work: &sect;2.23 makes cutover per-feature so there is no single
+doing so fails. A date boundary cannot work: &sect;2.20 makes cutover per-feature so there is no single
 instant, dual-write means both stores hold the same period, the switch-off is an administrator's
 action rather than a release date, and the queue is asynchronous so an event accepted before a
 switch can land after it. Coverage watermarks fail for the same reason — during overlap both
 stores answer, and the data cannot say which is authoritative. An install-wide setting fails
 differently: since <strong>no data is migrated</strong>, v1 holds the history permanently
-(&sect;2.26 keeps v1 reporting precisely for that), so a global flip would blank every historical
+(&sect;2.23 keeps v1 reporting precisely for that), so a global flip would blank every historical
 report.</p>
 <p><strong>The proposal is to stop resolving it at query time and carry it in the data model
 instead.</strong> Decouple the tracked website from the profile that measures it: one website may
@@ -2051,7 +2029,7 @@ This is the path GA took to GA4, and it dissolves rather than solves the open qu
 <tr><td>Cutover</td><td>Per-site opt-in, no big-bang flip. Rollback is &ldquo;use the other profile&rdquo;</td></tr>
 </tbody></table></div>
 
-<h4><span class="num">2.25.1</span>What it requires — and it is smaller than it sounds <span class="chip c-meas">Measured</span></h4>
+<h4><span class="num">2.22.1</span>What it requires — and it is smaller than it sounds <span class="chip c-meas">Measured</span></h4>
 <p><strong><code>site_id</code> is <code>md5($domain)</code></strong>
 (<code>Site::generateSiteId()</code>, and inline at <code>SiteManager.php:44</code>), so two
 profiles for one domain are impossible <em>by construction</em>. Only three call sites derive it,
@@ -2089,7 +2067,7 @@ from <code>siteId</code> to a version — but nothing new threads through the RE
 configs, which is precisely what the profile model buys: an unambiguous input already present in
 every query.</p>
 
-<h4><span class="num">2.25.2</span>Nothing feeds the manager a &ldquo;v2 list&rdquo; <span class="chip c-meas">Measured</span></h4>
+<h4><span class="num">2.22.2</span>Nothing feeds the manager a &ldquo;v2 list&rdquo; <span class="chip c-meas">Measured</span></h4>
 <p>A fair question is what supplies ResultSetManager with the v2 metric and dimension sets. The
 answer is that no new channel is needed. <code>getMetricEntities()</code> asks the service
 singleton for <em>every</em> registered implementation of a requested name, instantiates each, and
@@ -2109,7 +2087,7 @@ anything is selected, the version filter belongs in <code>getMetricEntities()</c
 whose entity is the wrong version, so wrong-version objects are never constructed — rather than at
 the niceness sort, where they already exist. And the recursion into child metrics means filtering
 children constrains their calculated parents for free.</p>
-<h4><span class="num">2.25.3</span>Domain aliases stay v1-only, and narrow <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">2.22.3</span>Domain aliases stay v1-only, and narrow <span class="chip c-dec">Decided</span></h4>
 <p>A Property will hold the domains of the website it describes, and the temptation is to make that
 list do two further jobs it should not do.</p>
 <p><strong>It does not widen CORS.</strong> <code>matchAllowedOrigin()</code> today matches a
@@ -2128,7 +2106,7 @@ current implementation &mdash; a naive substring replace, and a <code>strpos( $u
 that misses a match at position zero &mdash; want <em>not carrying forward</em> rather than
 fixing.</p>
 
-<h3 id="s226"><span class="num">2.26</span>Cutover sequence</h3>
+<h3 id="s223"><span class="num">2.23</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 <ol>
 <li>Ship the additive work in 1.x releases, each standing on its own</li>
 <li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
@@ -2162,6 +2140,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Parameter map cardinality</strong></td><td>Custom variables in the rollup key are what remove 1.x's five fixed slots, but unregistered keys multiply the row count by their cardinality.</td><td>Promotable-per-site, as <a href="#s212">&sect;2.12</a> treats param paths — a separate decision from this one.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>Undecided.</td></tr>
+<tr><td><strong>Does the profile carry the schema version?</strong></td><td>Every automatic way of resolving which version a query uses fails &mdash; dates, watermarks and an install-wide flag each break on dual-write or on history that is never migrated. <a href="#s222">&sect;2.22</a> proposes carrying it on an Observation Profile instead, and is the only candidate on the table.</td><td>Accepting it also settles how <a href="#s110">&sect;1.10</a>'s tiers are used, which is why that section stops short of asserting it.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s216">&sect;2.16</a>.</td></tr>
 </tbody></table></div>
 
@@ -2298,7 +2277,7 @@ and inverts on a columnar engine, and it has been explicitly traded away.</p>
     than the observation that produced it, so a mid-session tag change is collapsed before it is
     stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
     rather than a rate.</p>
-    <p>This is the same limitation &sect;2.24 records for validating the attribution model &mdash;
+    <p>This is the same limitation &sect;2.21 records for validating the attribution model &mdash;
     <em>existing history is not a usable touchpoint log</em>.</p>
     <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
     requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
@@ -2523,7 +2502,7 @@ v2 stamps it in the pass and the tracker cookie drops the key.</p>
 </main>
 </div>
 <h4><span class="num">A.2.3</span>Superseded: partition by version</h4>
-<p><strong>Refinement of <a href="#s225">&sect;2.25</a>.</strong> Partitioning by version works but spreads a
+<p><strong>Refinement of <a href="#s222">&sect;2.22</a>.</strong> Partitioning by version works but spreads a
 version concept through every accessor, and concepts like that leak until they are everywhere.
 Keying off the <em>entity</em> achieves the same isolation using something already present in every
 registration and already understood across the codebase: a profile determines a candidate entity
@@ -2559,7 +2538,7 @@ is only one definition left to scope.</p>
 </div>
 
 <h5>Superseded: partition by version <span class="chip c-meas">Measured</span></h5>
-<p><em>Kept for the measurement, which still stands; the entity-scoped approach of <a href="#s225">&sect;2.25</a> is preferred.</em></p>
+<p><em>Kept for the measurement, which still stands; the entity-scoped approach of <a href="#s222">&sect;2.22</a> is preferred.</em></p>
 <p>That section originally proposed registering the v2 set into the existing registry and
 discriminating downstream — a filter in <code>getMetricEntities()</code>. <strong>That is
 wrong</strong>, and the reason is enumeration rather than resolution.
@@ -2596,7 +2575,7 @@ silent-wrong-answer failure in a different costume.</p>
 
 <div class="flag">
   <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
-  <p>The claim in <a href="#s225">&sect;2.25</a> that dimensions behave like metrics is <strong>only true for denormalized
+  <p>The claim in <a href="#s222">&sect;2.22</a> that dimensions behave like metrics is <strong>only true for denormalized
   ones</strong>. <code>registerDimension()</code> loops <code>$entity_names</code> but writes to
   two different shapes:</p>
   <pre><code>if ($denormalized) {
