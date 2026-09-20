@@ -123,31 +123,34 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s17">1.7 The UI layer</a>
   <a href="#s18">1.8 Privacy and retention</a>
   <a href="#s19">1.9 One tracker, two pipelines</a>
-  <a href="#s110">1.10 Organization › Property › Observat</a>
+  <a href="#s110">1.10 Organization › Property › Observation…</a>
   <a href="#s111">1.11 What v2 deletes</a>
   <a href="#s112">1.12 What v2 deliberately does not do</a>
   <div class="navsec">Implementation</div>
-  <a href="#s21">2.1 The tables</a>
-  <a href="#s22">2.2 Absence is stored as NULL</a>
-  <a href="#s23">2.3 Boolean columns carry three values</a>
-  <a href="#s24">2.4 The data-access API delta</a>
-  <a href="#s25">2.5 Schema versioning</a>
-  <a href="#s26">2.6 Scheduling</a>
-  <a href="#s27">2.7 Packaging</a>
-  <a href="#s28">2.8 Testing</a>
-  <a href="#s29">2.9 Multi-site</a>
-  <a href="#s210">2.10 Why additive work matters</a>
-  <a href="#s211">2.11 Fully additive</a>
-  <a href="#s212">2.12 Tracker-additive</a>
-  <a href="#s213">2.13 Not additive</a>
-  <a href="#s214">2.14 Build order</a>
-  <a href="#s215">2.15 Goals became goal events</a>
-  <a href="#s216">2.16 Early cutover, per feature</a>
-  <a href="#s217">2.17 The parity harness</a>
-  <a href="#s218">2.18 Profiles carry the version</a>
-  <a href="#s219">2.19 Cutover sequence</a>
+  <a href="#s21">2.1 Table layouts</a>
+  <a href="#s22">2.2 Event types</a>
+  <a href="#s23">2.3 Metrics</a>
+  <a href="#s24">2.4 Dimensions</a>
+  <a href="#s25">2.5 Scheduled jobs</a>
+  <a href="#s26">2.6 Absence is stored as NULL</a>
+  <a href="#s27">2.7 Boolean columns carry three values</a>
+  <a href="#s28">2.8 The data-access API delta</a>
+  <a href="#s29">2.9 Schema versioning</a>
+  <a href="#s210">2.10 Packaging</a>
+  <a href="#s211">2.11 Testing</a>
+  <a href="#s212">2.12 Multi-site</a>
+  <a href="#s213">2.13 Why additive work matters</a>
+  <a href="#s214">2.14 Fully additive</a>
+  <a href="#s215">2.15 Tracker-additive</a>
+  <a href="#s216">2.16 Not additive</a>
+  <a href="#s217">2.17 Build order</a>
+  <a href="#s218">2.18 Goals became goal events</a>
+  <a href="#s219">2.19 Early cutover, per feature</a>
+  <a href="#s220">2.20 The parity harness</a>
+  <a href="#s221">2.21 Profiles carry the version</a>
+  <a href="#s222">2.22 Cutover sequence</a>
   <div class="navsec">Open issues</div>
-  <a href="#s31">3.1 Open issues</a>
+  <a href="#s31">3.1 Everything still undecided</a>
   <div class="navsec">Appendix</div>
   <a href="#sa1">A.1 Why the design is what it is</a>
   <a href="#sa2">A.2 Positions held and given up</a>
@@ -173,7 +176,7 @@ rejected alternatives. Where something is unsettled it is marked as such rather
 than smoothed over.</p>
 
 <div class="legend">
-  <div><span class="chip c-done">Shipped</span> built, tested and running — see the status note in &sect;2.14</div>
+  <div><span class="chip c-done">Shipped</span> built, tested and running — see the status note in &sect;2.17</div>
   <div><span class="chip c-dec">Decided</span> <span>settled; build it</span></div>
   <div><span class="chip c-meas">Measured</span> <span>backed by a number</span></div>
   <div><span class="chip c-open">Open</span> <span>needs a call before building</span></div>
@@ -317,21 +320,7 @@ is added to &sect;2.1, and none is needed. The question a chunk row actually get
 <code>page_location</code>, which every event carries. Joining a chunk back to its parent row is
 not a use case anyone has &mdash; GA has no parent pointer either.</p>
 
-<h4>Automatically collected</h4>
-<div class="scroll"><table>
-<thead><tr><th>v2 event</th><th>1.x today</th><th>GA4</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td>page_view</td><td><code>first_page_request</code> collapses in; carries <code>is_new_visitor_created</code>, the flag <code>first_visit</code> is raised from &mdash; GA's <code>_fv</code>. <code>fsts</code> rides alongside as the redundant floor</td></tr>
-<tr><td class="ev">user_engagement</td><td class="dash">—</td><td>user_engagement</td><td>carries the engagement delta; also the terminal beacon</td></tr>
-<tr><td class="ev">click</td><td class="ev-l">dom.click</td><td>click</td><td>gains outbound detection and element path</td></tr>
-<tr><td class="ev">scroll</td><td class="dash">—</td><td>scroll</td><td><strong>new.</strong> 1.x's <code>dom.scroll</code> is a recording sample, not an event — no server handler exists</td></tr>
-<tr><td class="ev">file_download</td><td class="dash">—</td><td>file_download</td><td>derived from click target extension</td></tr>
-<tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>view_search_results</td><td>1.x has the dimensions but never emits an event</td></tr>
-<tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
-<tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
-<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
-<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
-</tbody></table></div>
+<p>The event set itself &mdash; what the tracker sends automatically, what a site opts into, and how each maps to 1.x and to GA4 &mdash; is tabulated in <a href="#s22">the implementation section</a>. What follows is what the markers are <em>for</em>.</p>
 
 <h4>What the markers are for</h4>
 
@@ -462,32 +451,6 @@ correction.</li>
 tracking almost nothing but pageviews. Marker overhead is inversely proportional to stream
 richness, so it falls as v2 does its job. (1.x also averages 1.15 sessions per visitor.)</p>
 
-<h4>Opt-in — commerce</h4>
-<p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can
-be built. The GA4 recommended set fills it in.</p>
-<div class="scroll"><table>
-<thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td class="ev">purchase</td><td class="ev-l">ecommerce.transaction</td><td>the only commerce event 1.x has</td></tr>
-<tr><td class="ev">view_item</td><td class="dash">—</td><td rowspan="5">the funnel 1.x cannot express</td></tr>
-<tr><td class="ev">add_to_cart</td><td class="dash">—</td></tr>
-<tr><td class="ev">remove_from_cart</td><td class="dash">—</td></tr>
-<tr><td class="ev">view_cart</td><td class="dash">—</td></tr>
-<tr><td class="ev">begin_checkout</td><td class="dash">—</td></tr>
-<tr><td class="ev">refund</td><td class="dash">—</td><td>negative revenue, which 1.x handles nowhere</td></tr>
-</tbody></table></div>
-
-<h4>Opt-in — lifecycle and custom</h4>
-<div class="scroll"><table>
-<thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
-<tbody>
-<tr><td class="ev">login</td><td class="ev-l">base.login</td><td>1.x fires this for <em>OWA admin</em> logins, not tracked-site users — a different thing wearing the same name</td></tr>
-<tr><td class="ev">sign_up</td><td class="ev-l">base.new_user_account</td><td>same caveat</td></tr>
-<tr><td class="ev">search</td><td class="dash">—</td><td>site-internal search, distinct from <code>view_search_results</code></td></tr>
-<tr><td class="ev">share</td><td class="dash">—</td><td>GA4 recommended</td></tr>
-<tr><td class="ev">&lt;custom&gt;</td><td class="ev-l">track.action</td><td>arbitrary name plus params, no registration required</td></tr>
-</tbody></table></div>
-
 <h4>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
 <p class="note"><strong>They are called <em>goal events</em>, not key events</strong>
 <span class="chip c-dec">Decided</span> &mdash; 3&nbsp;Sep&nbsp;2026. GA renamed its
@@ -504,7 +467,7 @@ the condition matches, the server <strong>materialises an additional row whose
 above, and the same shape as GA, where a key event is an event whose <em>name</em> is marked as
 key.</p>
 <p class="note"><strong>The numbered slots are already gone in 1.x</strong>
-<span class="chip c-done">Shipped</span> &mdash; see &sect;2.15. A goal event is a row in
+<span class="chip c-done">Shipped</span> &mdash; see &sect;2.18. A goal event is a row in
 <code>owa_goal_event</code> with its conditions in <code>owa_goal_event_condition</code>,
 which is this shape a schema early. So v2 inherits authored goal events rather than
 introducing them, and the migration is a re-home rather than a redesign.</p>
@@ -1054,7 +1017,7 @@ or the earlier day is sealed holding a session that was never closed. OWA&rsquo;
 duration &mdash; a session with a hit every 25 minutes runs indefinitely. So either the window
 carries an explicit session cap, or terminal values stay NULL and the row is corrected on the next
 rebuild, which the window makes free anyway. <strong>The second is the honest answer</strong>, and
-it costs nothing: &sect;2.2 already says &ldquo;(not set)&rdquo; is presentation rather than
+it costs nothing: &sect;2.6 already says &ldquo;(not set)&rdquo; is presentation rather than
 storage, so &ldquo;not final yet&rdquo; and &ldquo;no value&rdquo; are the same NULL and the
 reporting layer already has to handle it.</p>
 
@@ -1162,7 +1125,7 @@ time (simple, no change tracking, and the only thing that is provably correct gi
 event) or something narrower; and that partitioning on <code>yyyymmdd</code> alone means one
 partition holds every site, so a multi-site install pays one big site&rsquo;s rebuild cost in every
 site&rsquo;s freshness. Subpartitioning by site is the obvious answer and multiplies the partition
-count by the site count, straight into the budget &sect;1.5 is already spending. Left to &sect;2.9.</p>
+count by the site count, straight into the budget &sect;1.5 is already spending. Left to &sect;2.12.</p>
 
 <h4>The tracker carries the landing URL, and the server parses it <span class="chip c-dec">Decided</span></h4>
 
@@ -1289,7 +1252,7 @@ the table <em>below</em> where it started, never over budget.</p>
 
 <p><strong>The rebuild granularity is an open trade, and there is a middle rung already built.</strong>
 <code>PARTITION_CUTS</code> offers <code>monthly</code>, <code>half-month</code> and
-<code>quarter-month</code>; there is no <code>daily</code>, though adding one is a single entry
+<code>quarter-month</code>; <code>daily</code> was added in PR&nbsp;#1113
 and <code>cutsForMonth()</code> already clamps cuts past a short month's end, so February and leap
 years fall out correctly. Daily gives the smallest rebuild and the most partitions &mdash; two
 months of them transiently, since the next month must be carved before the current one's window
@@ -1429,7 +1392,7 @@ wants no trend is a different statement from one that has not chosen a starting 
 <li><strong>Anonymise by default.</strong> The implementation exists; the default is simply wrong
 for a privacy-positioned product.</li>
 <li><strong>Installation-wide retention, enforced by a scheduled job</strong>, with a real
-default rather than “forever” — deliberately not per site, see &sect;2.9.</li>
+default rather than “forever” — deliberately not per site, see &sect;2.12.</li>
 <li><strong>An erasure command</strong> — <code>forget visitor=&lt;id&gt;</code> — reaching events,
 recording payloads and rollups, and <em>tested</em>, because an erasure path that silently misses
 a table is worse than none.</li>
@@ -1465,7 +1428,7 @@ being kept.</p>
   tracker, one cookie, one beacon, one stream; the server writes v1's star from it as before and
   v2's event table when enabled. The fan-out described above therefore stands exactly as written,
   and the two pipelines keep consuming <em>identical</em> events — which is what lets the integrity
-  check of &sect;2.17 stay a diff rather than a tolerance.</p>
+  check of &sect;2.20 stay a diff rather than a tolerance.</p>
   <p><strong>The cost is one discontinuity in v1's session-derived numbers</strong>, accepted
   deliberately &mdash; but not where an earlier draft put it. Three rules differ, and they are not
   of equal size:</p>
@@ -1489,7 +1452,7 @@ being kept.</p>
     than the observation that produced it, so a mid-session tag change is collapsed before it is
     stored. A measurement on this install returns 0.246%, which is an artefact of that collapsing
     rather than a rate.</p>
-    <p>This is the same limitation &sect;2.17 records for validating the attribution model &mdash;
+    <p>This is the same limitation &sect;2.20 records for validating the attribution model &mdash;
     <em>existing history is not a usable touchpoint log</em>.</p>
     <p><strong>Not treated as a blocker.</strong> The expectation is that the effect is small: it
     requires a visitor to re-enter through a <em>second</em> tagged link inside the timeout, which
@@ -1533,7 +1496,7 @@ pessimistic since the writes share request overhead. That is an argument for the
 the fan-out rather than the request doing it inline.</p>
 
 <h3 id="s110"><span class="num">1.10</span>Organization › Property › Observation Profile <span class="chip c-dec">Decided</span></h3>
-<p>&sect;2.18 established that a profile carries the version, which is what lets two generations
+<p>&sect;2.21 established that a profile carries the version, which is what lets two generations
 coexist without a query ever inferring one. This is the structure that holds profiles, and it is
 larger than that section assumed: not &ldquo;sites gain a grouping&rdquo; but a three-tier
 hierarchy, touching users and permissions as well as measurement.</p>
@@ -1648,7 +1611,7 @@ carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
 </section>
 
 <h2><span class="secn">II</span>Implementation</h2>
-<h3 id="s21"><span class="num">2.1</span>The tables <span class="chip c-dec">Decided</span></h3>
+<h3 id="s21"><span class="num">2.1</span>Table layouts <span class="chip c-dec">Decided</span></h3>
 <p><strong>The column-admission rule (revised):</strong> a field is a <em>column</em> if its name
 is known at release time and it is scalar; <code>params</code> (JSON) is reserved for what cannot
 be a column — <strong>site-defined keys unknown at release time</strong> (unregistered custom
@@ -1658,98 +1621,16 @@ separate fact table and a join). Params buys nothing else: the wide prototype me
 a wash, JSON extraction is slower than a column, and MySQL&nbsp;8 <code>INSTANT ADD COLUMN</code>
 removes the ALTER cost for release-known fields. Columnar stores agree more strongly — wide and
 sparse is their native shape, and their JSON shredding covers the dynamic keys (one param key, one
-type, enforced at ingest). <code>owa_event</code> lands at <strong>40 columns</strong> against
-<code>owa_request</code>'s 58 + <code>owa_session</code>'s 121.</p>
-<div class="scroll"><table>
-<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
-<tbody>
-<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>; content-derived for idempotent events (markers, engagement), random otherwise</td></tr>
-<tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>the taxonomy names (&sect;1.3)</td></tr>
-<tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>leads every composite index; immutable</td></tr>
-<tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>widened-entropy guid, time prefix kept</td></tr>
-<tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds creation timestamp (midnight rule)</td></tr>
-<tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared identity, forward-only; the only identity field</td></tr>
-<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned. Deliberately zone-less &mdash; MySQL's <code>DATETIME</code> carries no zone and its <code>TIMESTAMP</code> renders per <em>session</em>, so a stored row would read differently depending on who asked. The zone is applied once at write, into <code>yyyymmdd</code>. Anything deriving a SUB-DAY part converts a second time, at query time, and must be told the same zone: set <code>time_zone</code> on connect beside the existing <code>SET SESSION sql_mode</code>. See EVENTS.html &sect;7.11 &mdash; and note the type is a per-store choice, since a columnar reporting store has real timestamp types and should use one.</td></tr>
-<tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key; the only derived date part (1.x stores nine)</td></tr>
-<tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>first-seen ts on every event; new-visitor derives from it</td></tr>
-<tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>carried visitor history</td></tr>
-<tr><td class="n">11</td><td><code>page_location</code></td><td>VARCHAR(1024)</td><td>the complete URL as received, GA's <code>page_location</code>. <strong>No page identity hash</strong> — the path readings are dimensions derived from this, see below</td></tr>
-<tr><td class="n">12</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td></td></tr>
-<tr><td class="n">13</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td></td></tr>
-<tr><td class="n">14</td><td><code>medium</code></td><td>VARCHAR(64)</td><td rowspan="5">attribution: identified server-side at event processing, stamped on every event of the session (sticky)</td></tr>
-<tr><td class="n">15</td><td><code>source</code></td><td>VARCHAR(255)</td></tr>
-<tr><td class="n">16</td><td><code>campaign</code></td><td>VARCHAR(255)</td></tr>
-<tr><td class="n">17</td><td><code>ad</code></td><td>VARCHAR(255)</td></tr>
-<tr><td class="n">18</td><td><code>search_terms</code></td><td>VARCHAR(255)</td></tr>
-<tr><td class="n">19</td><td><code>browser</code></td><td>VARCHAR(128)</td><td rowspan="3">parsed at collection; raw UA on every row — see row 39</td></tr>
-<tr><td class="n">20</td><td><code>browser_type</code></td><td>VARCHAR(64)</td></tr>
-<tr><td class="n">21</td><td><code>os</code></td><td>VARCHAR(64)</td></tr>
-<tr><td class="n">22</td><td><code>language</code></td><td>VARCHAR(16)</td><td></td></tr>
-<tr><td class="n">23</td><td><code>country</code></td><td>VARCHAR(64)</td><td></td></tr>
-<tr><td class="n">24</td><td><code>city</code></td><td>VARCHAR(128)</td><td></td></tr>
-<tr><td class="n">25</td><td><code>host</code></td><td>VARCHAR(255)</td><td></td></tr>
-<tr><td class="n">26</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>anonymised by default</td></tr>
-<tr><td class="n">27</td><td><code>click_x</code></td><td>INT NULL</td><td rowspan="4">click / viewport geometry; NULL when inapplicable</td></tr>
-<tr><td class="n">28</td><td><code>click_y</code></td><td>INT NULL</td></tr>
-<tr><td class="n">29</td><td><code>page_width</code></td><td>INT NULL</td></tr>
-<tr><td class="n">30</td><td><code>page_height</code></td><td>INT NULL</td></tr>
-<tr><td class="n">31</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>click / download / outbound target</td></tr>
-<tr><td class="n">32</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td rowspan="3">element capture</td></tr>
-<tr><td class="n">33</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td></tr>
-<tr><td class="n">34</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td></tr>
-<tr><td class="n">35</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percent bucket</td></tr>
-<tr><td class="n">36</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>on <em>every</em> row: time accrued on the current page since the last report; <code>user_engagement</code> rows carry the hide-time residue. Must not pay JSON extraction</td></tr>
-<tr><td class="n">37</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>stamped at collection; the third engaged disjunct. Set on the <em>materialised</em> goal-event row only, never on the event that triggered it (EVENTS.html &sect;7.14). Not nullable, per &sect;2.2: it is 0 on almost every row, so a three-valued variant would stay invisible and then be wrong</td></tr>
-<tr><td class="n">38</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>cents; <code>purchase</code>/<code>refund</code> rows, negative on refund</td></tr>
-<tr><td class="n">39</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>on every row, behind a dedicated <code>store_raw_ua</code> setting (default on; not coupled to debug mode). Debugging is a reader — and retrospective forensics cannot be captured after the fact, hence the default; reporting never touches it</td></tr>
-<tr><td class="n">40</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: site-defined custom variables and event params (unregistered, unlimited), nested commerce <code>items</code>, declared PII if sent</td></tr>
-</tbody></table></div>
-<p>Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
-<code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
-<code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
-decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
-dimension FKs — and bot rows entirely, refused at ingest.</p>
-<div class="note"><strong>The midnight rule</strong> — re-derived after server materialization,
-still necessary. Dedup rides PK <code>(id, yyyymmdd)</code> (a partitioned table cannot have a
-unique key omitting the partition column), and two cases still hand a second attempt a fresh
-receipt date: the engagement residue (beacon and retry are independent arrivals) and racing tabs
-at session start. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
-embedded in <code>session_id</code> — deterministic on every attempt; the entropy fix must keep
-the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at edge receipt and
-travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
-<p><strong><code>owa_rollup_day</code></strong> — grain <code>(site_id, yyyymmdd)</code> and
-nothing else: <code>events</code>, <code>pageviews</code>, <code>sessions</code> (the reconciliation
-authority), <code>engaged_sessions</code> (threshold applied at build; a change rebuilds, ~50&nbsp;s
-measured, UI-annotated), <code>visitors</code>, <code>new_visitors</code>,
-<code>engagement_msec</code>, <code>goal_events</code>, <code>revenue</code>, and
-<code>built_at</code> — the as-of value the API freshness envelope reports. Bounce rate is
-<code>1 − engaged_sessions/sessions</code> and earns no column.</p>
-<div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
-config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
-abstracted away. The reporting tables (<code>owa_event</code>, <code>owa_rollup_day</code>, the
-payload store) default to the same connection but accept a <em>separate</em> store via a second
-DSN — a dedicated MySQL or the columnar path. The rule that makes the split real: <strong>no
-reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
-literal, goal events are stamped at ingest — so the two stores are never assumed co-located.
-Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
-with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives
-beside what it derives from</strong>: <code>owa_rollup_day</code> and any later materialization go
-in the reporting store, whichever engine that is — rebuildable from that store alone, so the store
-stays self-contained and a backend migration is &ldquo;copy events, rebuild summaries&rdquo;. The
-scheduler's job <em>state</em> stays in the application store; job state is not job output. The
-rollup's replace-whole-day-rows maintenance is also the batch shape columnar engines handle
-well.</div>
+type, enforced at ingest). The three layouts below land at <strong>35, 47 and 25 columns</strong> against <code>owa_request</code>'s 58 + <code>owa_session</code>'s 121.</p>
 
-<p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
-<code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
-the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
+<p>Which layer a column belongs to follows one cut: <strong>a column belongs to raw if it is an
+observation or a mechanical resolution, and to the denormalised table if a pass has to derive
+it.</strong> That is the same cut <a href="#s15">&sect;1.5</a> applies to the wire, one layer
+down.</p>
 
 <h4>The three layers, column by column <span class="chip c-dec">Decided</span></h4>
 
-<p>The 40 columns above were designed when there were two layers. &sect;1.5 made it three, and the
-split is not arbitrary: <strong>a column belongs to raw if it is an observation or a mechanical
-resolution, and to the denormalised table if a pass has to derive it.</strong> That is the same
-cut &sect;1.5 applies to the wire, one layer down.</p>
+
 
 <h5>Raw — <code>owa_event_raw</code>, 35 columns</h5>
 
@@ -1777,7 +1658,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">16</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
 <tr><td class="n">17</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
 <tr><td class="n">18</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
-<tr><td class="n">19</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s22">&sect;2.2</a></td></tr>
+<tr><td class="n">19</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s26">&sect;2.6</a></td></tr>
 <tr><td class="n">20</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, which is what lets <code>pagePath</code> collapse host variants</td></tr>
 <tr><td class="n">21</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
 <tr><td class="n">22</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
@@ -1785,9 +1666,9 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">24</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, which is what makes a click coordinate meaningful</td></tr>
 <tr><td class="n">25</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
 <tr><td class="n">26</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
-<tr><td class="n">27</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s214">&sect;2.14</a>, Phase 5</td></tr>
+<tr><td class="n">27</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s217">&sect;2.17</a>, Phase 5</td></tr>
 <tr><td class="n">28</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
-<tr><td class="n">29</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s22">&sect;2.2</a></td></tr>
+<tr><td class="n">29</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s26">&sect;2.6</a></td></tr>
 <tr><td class="n">30</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
 <tr><td class="n">31</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
 <tr><td class="n">32</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
@@ -1957,125 +1838,146 @@ that corpus and far too many for site-day totals. On that reading the layout is:
 <tr><td class="n">22</td><td><code>engagement_msec</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>SUM of the per-event deltas</td></tr>
 <tr><td class="n">23</td><td><code>goal_events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
 <tr><td class="n">24</td><td><code>revenue</code></td><td>BIGINT</td><td>measure</td><td>minor units</td></tr>
+<tr><td class="n">25</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>meta</td><td>when the job last rebuilt this row. This is the <em>as-of</em> value the API freshness envelope reports &mdash; <a href="#s16">&sect;1.6</a></td></tr>
 </tbody></table></div>
 
-<p>Both are listed in <a href="#s31">&sect;3.1</a>.</p>
+<p class="note">Bounce rate is <code>1 &minus; engaged_sessions/sessions</code> and earns no
+column. Two things about this table are open &mdash; whether unique visitors can live here at all,
+and how far the parameter map may widen the key &mdash; and both are listed in
+<a href="#s31">&sect;3.1</a>.</p>
 
 <p>Until those are answered the rollup's column list is a sketch. The two tables above are not:
 they follow from &sect;1.5, and the pass that fills the second from the first is specified there.</p>
 
-<h3 id="s22"><span class="num">2.2</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
-<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
-<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
-those properties are <code>required</code>, the string is written to the fact row on every event
-that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
-every row carries the literal text.</p>
-<p>This is the &sect;2.2 problem in a different costume. A magic string is not absence; it is a
-value that merely looks like absence, and the difference shows up everywhere downstream. It groups
-as its own bucket, so a pie over the dimension draws a &ldquo;(not set)&rdquo; slice indistinguishable
-from a real category. It sorts among real values. It cannot be told apart from a visitor who
-genuinely typed that. And the codebase already knows it is lying: <code>Visitor.php</code> checks
-<code>!= '(not set)'</code> before using a name, and <code>TrackingEventHelpers</code> does the same
-for <code>REMOTE_HOST</code> and <code>search_terms</code> &mdash; three separate places
-reconstructing an absence the schema threw away.</p>
-<p><strong>v2 stores absence as NULL and decides the label at render time.</strong> The reporting
-layer already formats values; &ldquo;show nothing as <em>(not set)</em>&rdquo; is a formatter's job,
-one place, changeable without touching data, and translatable. Baking it into the row makes a
-display string permanent and unrecoverable &mdash; the one thing &sect;2.1 says facts must never
-be.</p>
-<p>Follows the same rule as the boolean columns below it: <strong>the store records what happened,
-the presentation layer decides how to say it.</strong> Note this narrows what a nullable column
-means rather than widening it &mdash; NULL becomes unambiguously &ldquo;not provided&rdquo;, which
-is only useful if the write path never also writes a sentinel meaning the same thing.</p>
 
-<h3 id="s23"><span class="num">2.3</span>Boolean columns carry three values</h3>
-<p><strong>A nullable boolean holds three values, and <code>GROUP BY</code> gives each its own bucket.</strong> In 1.x the boolean fact
-columns are nullable with no default, so <code>is_repeat_visitor</code> holds
-<code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a
-distinct <code>GROUP BY</code> bucket. A pie over the dimension draws two separate slices that
-both format as &ldquo;No&rdquo;, which is how this was found.</p>
+<h4>Notes on all three</h4>
+<p class="note">Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
+<code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
+<code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
+decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
+dimension FKs — and bot rows entirely, refused at ingest.</p>
+<div class="note"><strong>The midnight rule</strong> — re-derived after server materialization,
+still necessary. Dedup rides PK <code>(id, yyyymmdd)</code> (a partitioned table cannot have a
+unique key omitting the partition column), and two cases still hand a second attempt a fresh
+receipt date: the engagement residue (beacon and retry are independent arrivals) and racing tabs
+at session start. Idempotent events therefore derive <code>yyyymmdd</code> from the timestamp
+embedded in <code>session_id</code> — deterministic on every attempt; the entropy fix must keep
+the guid's time prefix. Pinned alongside: <code>ts</code> is stamped <em>once at edge receipt and
+travels with the queue item</em>, which is what keeps at-least-once redelivery off this list.</div>
+<div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
+config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
+abstracted away. The reporting tables (<code>owa_event</code>, <code>owa_event_rollup</code>, the
+payload store) default to the same connection but accept a <em>separate</em> store via a second
+DSN — a dedicated MySQL or the columnar path. The rule that makes the split real: <strong>no
+reporting query ever joins an application table</strong> — <code>site_id</code> arrives as a
+literal, goal events are stamped at ingest — so the two stores are never assumed co-located.
+Ingest and the rollup job write only the reporting store; site deletion becomes two operations,
+with orphaned events invisible to queries and reaped by retention. <strong>Derived state lives
+beside what it derives from</strong>: <code>owa_event_rollup</code> and any later materialization go
+in the reporting store, whichever engine that is — rebuildable from that store alone, so the store
+stays self-contained and a backend migration is &ldquo;copy events, rebuild summaries&rdquo;. The
+scheduler's job <em>state</em> stays in the application store; job state is not job output. The
+rollup's replace-whole-day-rows maintenance is also the batch shape columnar engines handle
+well.</div>
 
-<p>The cause in 1.x was a derivation that returned <code>true</code> for one branch and fell off
-the end for the other (<code>setRepeatVisitorFlag</code>, unchanged since 2015). That specific
-bug is fixed, but the <em>shape</em> is the problem: nothing in the schema, the entity layer or
-the ingestion pipeline stops a write path leaving NULL in a column that has only two meanings.</p>
 
-<p><strong>Update, 28 Aug &mdash; fixing the derivation was not enough, and the reason
-generalises.</strong> Rows written before that fix still hold NULL, so the third bucket survives
-in the data whatever the writer does now: the pie was still drawing two slices labelled
-&ldquo;New&rdquo; on a live install, months after the derivation was corrected. The client half
-had to change too &mdash; the chart now sums by <em>label</em> rather than emitting one slice per
-row, because a <code>valueLabels</code> map that folds two values onto one name is a statement
-that they mean the same thing, and a renderer that still draws them apart contradicts it. Two
-things for v2 follow: <code>NOT NULL DEFAULT 0</code> fixes new writes and nothing else, so a
-schema that has ever permitted the third value needs a migration to close it; and any renderer
-that groups by a <em>labelled</em> value must fold labels, not rows.</p>
+<p class="note"><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
+<code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
+the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
 
-<p>For v2:</p>
-<ul>
-<li><strong>Declare booleans NOT NULL DEFAULT 0.</strong> The storage should refuse the third
-value rather than rely on every writer remembering. 1.x cannot retrofit this cheaply — it is an
-ALTER over every install&rsquo;s session and fact tables — which is exactly why it belongs in a
-schema that is being defined rather than migrated.</li>
-<li><strong>Give the type a formatter, not each report.</strong> A boolean dimension should
-render as Yes/No wherever it is shown, from its declared type. 1.x now does this, and the same
-seam should exist in v2 rather than every widget re-solving it.</li>
-<li><strong>Let a report rename the values.</strong> Yes/No is the correct default and a poor
-label for a specific question — &ldquo;New/Repeat&rdquo; reads better on a visitor-type chart.
-1.x added a per-widget <code>valueLabels</code> map for this; keep the split, with the type
-supplying the default and the report overriding it.</li>
-<li><strong>Some flags have a real unknown state, and want an explicit three-state type.</strong> Some flags really
-do have an unknown state. Those want an explicit three-state type, not an accidental one.</li>
-</ul>
-
-<p><em>Open question:</em> whether 1.x should backfill the existing NULLs or normalise at read
-time. Reporting currently cannot express a normalised column — the dimension registry prefixes a
-table alias onto whatever it is given, so <code>COALESCE(...)</code> is not expressible as a
-dimension today.</p>
-
-<h3 id="s24"><span class="num">2.4</span>The data-access API delta <span class="chip c-dec">Decided</span></h3>
-<p><strong>The request grammar is stable; the vocabulary and envelope change.</strong> The
-<code>reports</code> route keeps its shape — <code>metrics</code>, <code>dimensions</code>,
-<code>segment</code>, dates, <code>sort</code>, <code>siteId</code> — <code>v2</code> registers
-beside <code>v1</code> (routes are version-keyed today), and API keys keep working. An integration
-breaks only if it names something that fell out.</p>
+<h3 id="s22"><span class="num">2.2</span>Event types <span class="chip c-dec">Decided</span></h3>
+<p>GA4's taxonomy is the guide &mdash; it is the vocabulary the market already speaks, and arguing
+about event names is not where this project should spend its budget. Three groups: what the tracker
+sends automatically, what a site opts into, and what is materialized server-side. Why the markers
+exist and why totals are never counted from them is <a href="#s13">&sect;1.3</a>.</p>
+<h4>Automatically collected</h4>
 <div class="scroll"><table>
-<thead><tr><th>Change</th><th>Detail</th></tr></thead>
+<thead><tr><th>v2 event</th><th>1.x today</th><th>GA4</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td><strong>Falls out — metrics</strong></td><td>the 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers (replaced by goal-event metrics parameterised by <em>name</em>, unlimited); 9 duplicate commerce definitions collapse to one each</td></tr>
-<tr><td><strong>Falls out — dimensions</strong></td><td>the 11 dead <code>*InVisit</code> dimensions (770 of 5,493 valid pairs, zero references); the 4 referral-enrichment dimensions (<code>referralPageTitle</code>, <code>referralLinkText</code>, <code>referralWebSite</code>, enriched <code>isSearchEngine</code>) — the one knowing capability loss, traded with the 589× enrichment property</td></tr>
-<tr><td><strong>New — metrics</strong></td><td><code>engagementTime</code> (incl. final-page dwell, unmeasurable in 1.x), <code>engagementRate</code>/new <code>bounceRate</code>, scroll/download/outbound/form/site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates — 1.x has only the completed transaction), unlimited named goal events</td></tr>
-<tr><td><strong>New — dimensions</strong></td><td><code>eventName</code> itself, <code>keyEvent</code>, <code>userId</code>, element path / click target, scroll-depth bucket — and <strong>any <code>params</code> path, unregistered</strong> (<code>params.author</code>), the API face of unlimited custom variables</td></tr>
-<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_rollup_day.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
-<tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
-<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function — that is what makes <code>relatedDimensions</code> authoritative. The only curated artifact is a near-empty editorial override list</td></tr>
+<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td>page_view</td><td><code>first_page_request</code> collapses in; carries <code>is_new_visitor_created</code>, the flag <code>first_visit</code> is raised from &mdash; GA's <code>_fv</code>. <code>fsts</code> rides alongside as the redundant floor</td></tr>
+<tr><td class="ev">user_engagement</td><td class="dash">—</td><td>user_engagement</td><td>carries the engagement delta; also the terminal beacon</td></tr>
+<tr><td class="ev">click</td><td class="ev-l">dom.click</td><td>click</td><td>gains outbound detection and element path</td></tr>
+<tr><td class="ev">scroll</td><td class="dash">—</td><td>scroll</td><td><strong>new.</strong> 1.x's <code>dom.scroll</code> is a recording sample, not an event — no server handler exists</td></tr>
+<tr><td class="ev">file_download</td><td class="dash">—</td><td>file_download</td><td>derived from click target extension</td></tr>
+<tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>view_search_results</td><td>1.x has the dimensions but never emits an event</td></tr>
+<tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
+<tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
+<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
 </tbody></table></div>
 
-<!-- ============ PART II ============ -->
-<section class="part" id="p2">
-  <p class="part-n">Part Two</p>
-  <h4>Derived dimensions declare a kind, not SQL <span class="chip c-dec">Decided</span></h4>
-<p>Some new dimensions are functions of columns rather than columns &mdash;
-<code>sourceMedium</code> and <code>firstSourceMedium</code> concatenate two, and
-<code>newVsReturning</code> maps one (EVENTS.html &sect;7.7, &sect;7.12). The tempting shortcut is
-to let each carry its own SQL, which works until the reporting store is not MySQL &mdash; and
-&sect;2.1 deliberately holds that door open behind a second DSN. Then a store move rewrites every
-derived dimension by hand.</p>
-<p>The dialect layer does not cover this today: <code>MysqlDialect</code> abstracts DDL and
-introspection &mdash; partitioning, keys, indexes, session <code>sql_mode</code> &mdash; and has no
-expression surface, nor an interface for a second implementation to satisfy.</p>
-<p>So a dimension declares its <strong>kind</strong> and the dialect renders it, and the reason
-that is cheap rather than a mini-language is that the column-admission rule keeps the set small
-and closed. Everything proposed so far needs three: <code>concat</code>, <code>map</code> and
-<code>datePart</code>. That makes a store migration <strong>O(kinds), not O(dimensions)</strong>
-&mdash; three renderers to write once, rather than a bill that grows quietly every time somebody
-adds a dimension.</p>
-<p>Worth settling before the first one is built. Once dimensions carry SQL strings, converting
-them means recovering intent from expressions, which is precisely where the report controllers
-were before they became configuration &mdash; and the narrowing that made <em>that</em> safe was
-the same move: names from a known list, never code (&sect;1.7).</p>
 
-  <h4>Metrics are configuration &mdash; converted, and measured properly the second time <span class="chip c-done">Shipped</span></h4>
+<p class="note"><code>session_start</code> and <code>first_visit</code> carry no client beacon. The
+server materializes them from new-session state and <code>is_new_visitor_created</code> on the first
+<code>page_view</code> request, so they cost nothing on the wire. Both carry attribution &mdash;
+session-scoped and user-scoped respectively &mdash; and neither is ever counted to produce a total.</p>
+<h4>Opt-in — commerce</h4>
+<p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can
+be built. The GA4 recommended set fills it in.</p>
+<div class="scroll"><table>
+<thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="ev">purchase</td><td class="ev-l">ecommerce.transaction</td><td>the only commerce event 1.x has</td></tr>
+<tr><td class="ev">view_item</td><td class="dash">—</td><td rowspan="5">the funnel 1.x cannot express</td></tr>
+<tr><td class="ev">add_to_cart</td><td class="dash">—</td></tr>
+<tr><td class="ev">remove_from_cart</td><td class="dash">—</td></tr>
+<tr><td class="ev">view_cart</td><td class="dash">—</td></tr>
+<tr><td class="ev">begin_checkout</td><td class="dash">—</td></tr>
+<tr><td class="ev">refund</td><td class="dash">—</td><td>negative revenue, which 1.x handles nowhere</td></tr>
+</tbody></table></div>
+
+<h4>Opt-in — lifecycle and custom</h4>
+<div class="scroll"><table>
+<thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="ev">login</td><td class="ev-l">base.login</td><td>1.x fires this for <em>OWA admin</em> logins, not tracked-site users — a different thing wearing the same name</td></tr>
+<tr><td class="ev">sign_up</td><td class="ev-l">base.new_user_account</td><td>same caveat</td></tr>
+<tr><td class="ev">search</td><td class="dash">—</td><td>site-internal search, distinct from <code>view_search_results</code></td></tr>
+<tr><td class="ev">share</td><td class="dash">—</td><td>GA4 recommended</td></tr>
+<tr><td class="ev">&lt;custom&gt;</td><td class="ev-l">track.action</td><td>arbitrary name plus params, no registration required</td></tr>
+</tbody></table></div>
+
+
+<p class="note">A custom event is an arbitrary name plus params and needs no registration, which is
+what removes 1.x's five fixed custom-variable slots (<a href="#s21">&sect;2.1</a>). Author-named
+goal events are the same mechanism &mdash; see <a href="#s218">goals became goal events</a>.</p>
+<h3 id="s23"><span class="num">2.3</span>Metrics <span class="chip c-dec">Decided</span></h3>
+<p>A metric names a <strong>kind</strong> and an implementation renders it; no definition carries
+SQL. That rule is what makes the set configuration rather than code, and it is the same rule
+<a href="#s24">dimensions</a> follow.</p>
+
+<h4>The kinds, and what the 1.x set collapsed to</h4>
+<div class="scroll"><table>
+<thead><tr><th>Kind</th><th>1.x implementations</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><code>sum</code></td><td>61</td><td>Mostly the generated goal metrics, which v2 replaces with one parameterised goal-event metric</td></tr>
+<tr><td><code>distinct_count</code></td><td>7</td><td></td></tr>
+<tr><td><code>calculated</code></td><td>7</td><td>Formula over other metrics</td></tr>
+<tr><td><code>count</code></td><td>2</td><td></td></tr>
+<tr><td><code>boolean_true_count</code></td><td>2</td><td>Added by the conversion</td></tr>
+<tr><td><code>avg_difference</code></td><td>1</td><td>Added by the conversion</td></tr>
+<tr><td class="dash">bespoke</td><td>1</td><td><code>repeatVisitors</code>, the one composite expression; becomes the <code>newVsReturning</code> dimension in v2</td></tr>
+</tbody></table></div>
+<p class="note">Measured, not sampled: 40 registered classes across 28 <code>registerMetric()</code>
+calls producing 81 implementations, of which <strong>74 carried an explicit <code>setSelect()</code>
+expression</strong> and no kind at all. Those 74 expressions collapse to seven shapes. 48 metric
+class files became 7; of 78 metrics, 68 resolve byte-identically and 10 differ only in SQL keyword
+case. An earlier draft claimed 22 class references and that no metric class contained SQL &mdash;
+both wrong, and wrong the same way: read from a few classes rather than from classifying the set.</p>
+
+<h4>What changes in v2</h4>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Metrics</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><strong>Falls out</strong></td><td>The 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers; 9 duplicate commerce definitions</td><td>The numbered slots become named goal events parameterised by <code>name</code>, so the count is unlimited rather than 20. The duplicates collapse to one each</td></tr>
+<tr><td><strong>New</strong></td><td><code>engagementTime</code>, <code>engagementRate</code>, a new <code>bounceRate</code>, scroll / download / outbound / form / site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates), unlimited named goal events</td><td><code>engagementTime</code> includes final-page dwell, which 1.x structurally cannot measure. <code>bounceRate</code> is redefined as <em>not engaged</em> rather than single-request (<a href="#s12">&sect;1.2</a>). 1.x has only the completed transaction, so no commerce funnel can be built at all</td></tr>
+</tbody></table></div>
+<p class="note">Every metric declares a <strong>scope</strong> &mdash; event, session, user or item
+&mdash; at registration. That declaration is what the combination guard in
+<a href="#s28">the API delta</a> computes against; it replaces 1.x's hand-written
+re-registration of a metric on a second entity.</p>
+
+<h4>Metrics are configuration &mdash; converted, and measured properly the second time <span class="chip c-done">Shipped</span></h4>
 <p><span class="chip c-meas">Measured</span> An earlier draft of this section said there were 22
 class references, that <strong>no metric class contains SQL</strong>, and that the conversion was
 therefore mechanical. Two of those three were wrong, and wrong the same way: they came from reading
@@ -2128,7 +2030,177 @@ grammar would not cover today's set, since <code>round(actions / visits, 1)</cod
 application. Separately: the <code>@</code> means a malformed formula falls through to
 <code>0</code>, so a broken metric reads as a real zero.</p>
 
-<h3 id="s25"><span class="num">2.5</span>Schema versioning <span class="chip c-dec">Decided</span></h3>
+<h3 id="s24"><span class="num">2.4</span>Dimensions <span class="chip c-dec">Decided</span></h3>
+<p>Most dimensions are columns. The rest are functions of columns, and they declare a
+<strong>kind</strong> that the dialect renders &mdash; never SQL of their own.</p>
+
+<h4>The kinds</h4>
+<div class="scroll"><table>
+<thead><tr><th>Kind</th><th>Renders</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td><code>column</code></td><td>The stored column</td><td><code>pagePath</code>, <code>eventName</code>, <code>deviceType</code></td></tr>
+<tr><td><code>concat</code></td><td>Two columns joined</td><td><code>sourceMedium</code>, <code>firstSourceMedium</code></td></tr>
+<tr><td><code>map</code></td><td>One column through a lookup</td><td><code>newVsReturning</code></td></tr>
+<tr><td><code>datePart</code></td><td>A component of the timestamp</td><td>hour, day of week</td></tr>
+</tbody></table></div>
+<p class="note">Three kinds cover everything proposed so far, which makes a store migration
+<strong>O(kinds), not O(dimensions)</strong> &mdash; a handful of renderers written once, rather
+than a bill that grows every time somebody adds a dimension. See the note below for why this is
+worth settling before the first one is built.</p>
+
+<h4>What changes in v2</h4>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Dimensions</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><strong>Falls out</strong></td><td>The 11 dead <code>*InVisit</code> dimensions; the 4 referral-enrichment dimensions (<code>referralPageTitle</code>, <code>referralLinkText</code>, <code>referralWebSite</code>, enriched <code>isSearchEngine</code>)</td><td>The <em>InVisit</em> set accounts for 770 of 5,493 valid pairs and has zero references. The referral four are <strong>the one knowing capability loss</strong>, traded against the 589&times; enrichment property (<a href="#s111">&sect;1.11</a>)</td></tr>
+<tr><td><strong>New</strong></td><td><code>eventName</code>, <code>keyEvent</code>, <code>userId</code>, element path, click target, scroll-depth bucket &mdash; and <strong>any <code>params</code> path, unregistered</strong></td><td><code>params.author</code> and the like are the API face of unlimited custom variables. Param paths default to event scope, promotable per site</td></tr>
+</tbody></table></div>
+<p class="note">Like metrics, every dimension declares a scope at registration; the legality of a
+given metric&times;dimension pair is computed from the two declarations rather than looked up in a
+table. See <a href="#s28">the API delta</a>.</p>
+
+<h4>Derived dimensions declare a kind, not SQL <span class="chip c-dec">Decided</span></h4>
+<p>Some new dimensions are functions of columns rather than columns &mdash;
+<code>sourceMedium</code> and <code>firstSourceMedium</code> concatenate two, and
+<code>newVsReturning</code> maps one (EVENTS.html &sect;7.7, &sect;7.12). The tempting shortcut is
+to let each carry its own SQL, which works until the reporting store is not MySQL &mdash; and
+&sect;2.1 deliberately holds that door open behind a second DSN. Then a store move rewrites every
+derived dimension by hand.</p>
+<p>The dialect layer does not cover this today: <code>MysqlDialect</code> abstracts DDL and
+introspection &mdash; partitioning, keys, indexes, session <code>sql_mode</code> &mdash; and has no
+expression surface, nor an interface for a second implementation to satisfy.</p>
+<p>So a dimension declares its <strong>kind</strong> and the dialect renders it, and the reason
+that is cheap rather than a mini-language is that the column-admission rule keeps the set small
+and closed. Everything proposed so far needs three: <code>concat</code>, <code>map</code> and
+<code>datePart</code>. That makes a store migration <strong>O(kinds), not O(dimensions)</strong>
+&mdash; three renderers to write once, rather than a bill that grows quietly every time somebody
+adds a dimension.</p>
+<p>Worth settling before the first one is built. Once dimensions carry SQL strings, converting
+them means recovering intent from expressions, which is precisely where the report controllers
+were before they became configuration &mdash; and the narrowing that made <em>that</em> safe was
+the same move: names from a known list, never code (&sect;1.7).</p>
+
+  <h3 id="s25"><span class="num">2.5</span>Scheduled jobs <span class="chip c-dec">Decided</span></h3>
+<p>The scheduler shipped in 1.11: one crontab line, jobs dispatched from it, per-job overlap
+locking, <strong>level-triggered</strong> so a missed occurrence runs once rather than backfilling.
+v2 needs no new machinery, only registrations.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Job</th><th>Unit of work</th><th>Does</th><th>State</th></tr></thead>
+<tbody>
+<tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s217">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
+<tr><td><code>rollup-day</code></td><td>One day</td><td>Builds <code>owa_event_rollup</code> from the denormalised table; stamps <code>built_at</code>, which is the freshness <code>as-of</code> the API reports.</td><td>To build</td></tr>
+<tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 13-month sliding inactivity window.</td><td>To build</td></tr>
+<tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
+<tr><td><code>queue-drain</code></td><td>Queue</td><td>Retries the file-backed event queue.</td><td><span class="chip c-done">Shipped</span>, opt-in by config</td></tr>
+</tbody></table></div>
+
+<p class="note"><strong>Every registered job must be convergent</strong>, because the scheduler is
+level-triggered: a missed occurrence runs once, not once per occurrence missed. The pass gets this
+from the swap rather than from bookkeeping &mdash; running it twice on the same partition produces
+the same partition. It is also why a watermark rollup was rejected: it would be both non-convergent
+<em>and</em> not eventually consistent. One defect, two symptoms.</p>
+
+<p class="note"><strong>Two things change status rather than behaviour.</strong> The scheduler stops
+being optional &mdash; 1.x runs correctly with no cron entry and v2's rollup does not, which belongs
+in install verification rather than in how the software is shipped. And
+<code>partition-rotate</code> stops being housekeeping: under the two-stage partition cycle a
+stalled rotation erodes the lead until rows reach <code>pmax</code>, breaking the invariant
+everything else rests on. It wants an alarm, not a log line. There have been two scheduler-adjacent
+stalls already.</p>
+<h3 id="s26"><span class="num">2.6</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
+<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
+<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
+those properties are <code>required</code>, the string is written to the fact row on every event
+that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
+every row carries the literal text.</p>
+<p>This is the &sect;2.6 problem in a different costume. A magic string is not absence; it is a
+value that merely looks like absence, and the difference shows up everywhere downstream. It groups
+as its own bucket, so a pie over the dimension draws a &ldquo;(not set)&rdquo; slice indistinguishable
+from a real category. It sorts among real values. It cannot be told apart from a visitor who
+genuinely typed that. And the codebase already knows it is lying: <code>Visitor.php</code> checks
+<code>!= '(not set)'</code> before using a name, and <code>TrackingEventHelpers</code> does the same
+for <code>REMOTE_HOST</code> and <code>search_terms</code> &mdash; three separate places
+reconstructing an absence the schema threw away.</p>
+<p><strong>v2 stores absence as NULL and decides the label at render time.</strong> The reporting
+layer already formats values; &ldquo;show nothing as <em>(not set)</em>&rdquo; is a formatter's job,
+one place, changeable without touching data, and translatable. Baking it into the row makes a
+display string permanent and unrecoverable &mdash; the one thing &sect;2.1 says facts must never
+be.</p>
+<p>Follows the same rule as the boolean columns below it: <strong>the store records what happened,
+the presentation layer decides how to say it.</strong> Note this narrows what a nullable column
+means rather than widening it &mdash; NULL becomes unambiguously &ldquo;not provided&rdquo;, which
+is only useful if the write path never also writes a sentinel meaning the same thing.</p>
+
+<h3 id="s27"><span class="num">2.7</span>Boolean columns carry three values</h3>
+<p><strong>A nullable boolean holds three values, and <code>GROUP BY</code> gives each its own bucket.</strong> In 1.x the boolean fact
+columns are nullable with no default, so <code>is_repeat_visitor</code> holds
+<code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a
+distinct <code>GROUP BY</code> bucket. A pie over the dimension draws two separate slices that
+both format as &ldquo;No&rdquo;, which is how this was found.</p>
+
+<p>The cause in 1.x was a derivation that returned <code>true</code> for one branch and fell off
+the end for the other (<code>setRepeatVisitorFlag</code>, unchanged since 2015). That specific
+bug is fixed, but the <em>shape</em> is the problem: nothing in the schema, the entity layer or
+the ingestion pipeline stops a write path leaving NULL in a column that has only two meanings.</p>
+
+<p><strong>Update, 28 Aug &mdash; fixing the derivation was not enough, and the reason
+generalises.</strong> Rows written before that fix still hold NULL, so the third bucket survives
+in the data whatever the writer does now: the pie was still drawing two slices labelled
+&ldquo;New&rdquo; on a live install, months after the derivation was corrected. The client half
+had to change too &mdash; the chart now sums by <em>label</em> rather than emitting one slice per
+row, because a <code>valueLabels</code> map that folds two values onto one name is a statement
+that they mean the same thing, and a renderer that still draws them apart contradicts it. Two
+things for v2 follow: <code>NOT NULL DEFAULT 0</code> fixes new writes and nothing else, so a
+schema that has ever permitted the third value needs a migration to close it; and any renderer
+that groups by a <em>labelled</em> value must fold labels, not rows.</p>
+
+<p>For v2:</p>
+<ul>
+<li><strong>Declare booleans NOT NULL DEFAULT 0.</strong> The storage should refuse the third
+value rather than rely on every writer remembering. 1.x cannot retrofit this cheaply — it is an
+ALTER over every install&rsquo;s session and fact tables — which is exactly why it belongs in a
+schema that is being defined rather than migrated.</li>
+<li><strong>Give the type a formatter, not each report.</strong> A boolean dimension should
+render as Yes/No wherever it is shown, from its declared type. 1.x now does this, and the same
+seam should exist in v2 rather than every widget re-solving it.</li>
+<li><strong>Let a report rename the values.</strong> Yes/No is the correct default and a poor
+label for a specific question — &ldquo;New/Repeat&rdquo; reads better on a visitor-type chart.
+1.x added a per-widget <code>valueLabels</code> map for this; keep the split, with the type
+supplying the default and the report overriding it.</li>
+<li><strong>Some flags have a real unknown state, and want an explicit three-state type.</strong> Some flags really
+do have an unknown state. Those want an explicit three-state type, not an accidental one.</li>
+</ul>
+
+<p><em>Open question:</em> whether 1.x should backfill the existing NULLs or normalise at read
+time. Reporting currently cannot express a normalised column — the dimension registry prefixes a
+table alias onto whatever it is given, so <code>COALESCE(...)</code> is not expressible as a
+dimension today.</p>
+
+<h3 id="s28"><span class="num">2.8</span>The data-access API delta <span class="chip c-dec">Decided</span></h3>
+<p>The metric and dimension vocabularies themselves are in <a href="#s23">metrics</a> and <a href="#s24">dimensions</a>; this section covers the route, the envelope and the rules governing which combinations are legal.</p>
+
+<p><strong>The request grammar is stable; the vocabulary and envelope change.</strong> The
+<code>reports</code> route keeps its shape — <code>metrics</code>, <code>dimensions</code>,
+<code>segment</code>, dates, <code>sort</code>, <code>siteId</code> — <code>v2</code> registers
+beside <code>v1</code> (routes are version-keyed today), and API keys keep working. An integration
+breaks only if it names something that fell out.</p>
+<div class="scroll"><table>
+<thead><tr><th>Change</th><th>Detail</th></tr></thead>
+<tbody>
+
+
+
+
+<tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_event_rollup.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
+<tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
+<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function — that is what makes <code>relatedDimensions</code> authoritative. The only curated artifact is a near-empty editorial override list</td></tr>
+</tbody></table></div>
+
+<!-- ============ PART II ============ -->
+<section class="part" id="p2">
+  <p class="part-n">Part Two</p>
+  <h3 id="s29"><span class="num">2.9</span>Schema versioning <span class="chip c-dec">Decided</span></h3>
 <p><strong>One schema version, one numbered update sequence.</strong> An update may touch v1
 tables, v2 tables or both. v1 and v2 are not two schemas that coexist; they are one schema
 containing both shapes — which removes the version <em>pair</em>, and with it any compatibility
@@ -2151,26 +2223,15 @@ cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 1
 tables. Cheap enough to accept, and it keeps a fresh install able to serve a v1 beacon without
 being migrated forward into v1 first.</p>
 
-<h3 id="s26"><span class="num">2.6</span>Scheduling <span class="chip c-dec">Decided</span></h3>
-<p>The scheduler shipped in 1.11 — one crontab line, jobs dispatched from it, per-job overlap
-locking, level-triggered so a missed occurrence runs once rather than backfilling. v2 needs no new
-machinery, only a registration.</p>
-<p>The convergence rule it already imposes on registered jobs is the same property the rollup
-needs, arrived at from the other direction: a watermark rollup would be both non-convergent
-<em>and</em> not eventually consistent. One defect, two symptoms.</p>
-<div class="note"><strong>New in v2:</strong> the scheduler stops being optional. 1.x runs
-correctly with no cron entry; v2's rollup does not. That belongs in install verification, not in
-how the software is shipped.</div>
-
-<h3 id="s27"><span class="num">2.7</span>Packaging <span class="chip c-dec">Decided</span></h3>
+<h3 id="s210"><span class="num">2.10</span>Packaging <span class="chip c-dec">Decided</span></h3>
 <p><strong>Unchanged.</strong> Same tarball, same Release Packager workflow, same wizard. No
 Composer requirement for end users, no build step at install time, no new runtime dependency.
 The distribution model is the reason a self-hosted tool gets installed at all, and a rewrite is
 exactly when one is tempted to modernise it into something needing a toolchain on the target
 machine. The schema changing is not a reason for the delivery mechanism to change.</p>
 
-<h3 id="s28"><span class="num">2.8</span>Testing <span class="chip c-dec">Decided</span></h3>
-<p>The two harnesses of &sect;2.17 are the primary tests — pipeline integrity generated and exhaustive, model characterization hand-written and small. Neither alone is “the” test, and reporting them as one is the failure mode that section describes. Around it: 77 test files and 509 methods today,
+<h3 id="s211"><span class="num">2.11</span>Testing <span class="chip c-dec">Decided</span></h3>
+<p>The two harnesses of &sect;2.20 are the primary tests — pipeline integrity generated and exhaustive, model characterization hand-written and small. Neither alone is “the” test, and reporting them as one is the failure mode that section describes. Around it: 77 test files and 509 methods today,
 of which only 8 files are named for star-schema artefacts — most of the suite tests CLI commands,
 settings, auth, validation, the queue and the scheduler, and ports unchanged. What genuinely
 expires is the part testing the star's <em>mechanics</em>.</p>
@@ -2191,7 +2252,7 @@ the update sequence runs clean with v1 dropped; and generated realtime SQL carri
 partition-key range — asserted <em>on the SQL</em>, since a timing assertion on a small fixture
 would pass either way.</p>
 
-<h3 id="s29"><span class="num">2.9</span>Multi-site</h3>
+<h3 id="s212"><span class="num">2.12</span>Multi-site</h3>
 <p>The area needing least work: a single event table handles tenancy naturally, <code>site_id</code>
 is a column, isolation is a <code>WHERE</code>, and it already leads the composite indexes.
 Permissions are already per-site.</p>
@@ -2205,7 +2266,7 @@ would need a row-level <code>DELETE</code> sweeping every partition, leaving fra
 and competing with live writes. Uniform retention is a metadata-only partition drop, effectively
 instant, and already implemented. The single table makes the simpler policy the cheap one.</p>
 
-<h3 id="s210"><span class="num">2.10</span>Why additive work matters</h3>
+<h3 id="s213"><span class="num">2.13</span>Why additive work matters</h3>
 <p>Every item here is proved against real traffic <em>before</em> v2 depends on it, and each one
 narrows what the rewrite has to get right on the first attempt. The evidence that this is the
 correct posture is recent: converting one id width across two installations took five pull
@@ -2218,7 +2279,7 @@ to both pipelines, the wire format no longer has to satisfy v1 — compatibility
 <em>server-side translation</em>. Work previously blocked until v1 was gone became additive:
 namespace stripping and cookie consolidation both moved into this column.</p>
 
-<h3 id="s211"><span class="num">2.11</span>Fully additive</h3>
+<h3 id="s214"><span class="num">2.14</span>Fully additive</h3>
 <div class="scroll"><table>
 <thead><tr><th>Work</th><th>What it fixes in 1.x today</th></tr></thead>
 <tbody>
@@ -2232,7 +2293,7 @@ namespace stripping and cookie consolidation both moved into this column.</p>
 <tr><td><strong>Report config as JSON</strong> <span class="chip c-done">Shipped</span></td><td>retrofits the v2 widget format into v1 (&sect;1.7). Went further than this row asked: 62 of 64 shipped reports are configuration, and the format is now <em>user-authored</em> &mdash; see Phase 4 for what that costs v2</td></tr>
 </tbody></table></div>
 
-<h3 id="s212"><span class="num">2.12</span>Tracker-additive</h3>
+<h3 id="s215"><span class="num">2.15</span>Tracker-additive</h3>
 <p>Worth doing anyway: the tracker half is the hard and novel part, and shipping it first proves
 it against real traffic. But the benefit <em>within</em> 1.x is smaller than it looks — and on
 review, smaller than this section originally claimed.</p>
@@ -2251,9 +2312,9 @@ review, smaller than this section originally claimed.</p>
   Phase&nbsp;5</strong>, where <code>owa_event</code> exists to receive them. Only
   <code>sendBeacon</code> stayed, and it has shipped.</p>
   <p>Two supporting points. A 1.x engagement column would carry a number with <em>nothing to
-  check it against</em> — v1 is the oracle only for what v2 is not deliberately changing (&sect;2.17),
+  check it against</em> — v1 is the oracle only for what v2 is not deliberately changing (&sect;2.20),
   and 1.x structurally cannot measure final-page dwell. And a <code>seq</code> column on
-  <code>owa_domstream</code> is the option &sect;2.16 already refuses by name: domstreams take the
+  <code>owa_domstream</code> is the option &sect;2.19 already refuses by name: domstreams take the
   early-cutover path precisely so v1 storage is never renovated to carry a format it will never
   report on.</p>
 </div>
@@ -2270,327 +2331,72 @@ review, smaller than this section originally claimed.</p>
 existing trend steps at the release boundary. Ship the collection; defer the redefinition to v2,
 where the discontinuity is expected.</div>
 
-<h3 id="s213"><span class="num">2.13</span>Not additive</h3>
+<h3 id="s216"><span class="num">2.16</span>Not additive</h3>
 <p>The single table itself, the rollup, the metric registry rework, and the v2 reporting UI. These
 are the rewrite. Nothing above changes that; the point is to shrink it.</p>
 
-<h3 id="s214"><span class="num">2.14</span>Build order <span class="chip c-dec">Decided</span></h3>
-<p>Sequenced on three rules: <strong>bugs whose cost accrues daily go first</strong>, because every
-day of delay is data you cannot recover; <strong>foundations before the things built on
-them</strong>; and <strong>the expensive irreversible work last</strong>, when the most is known.</p>
-<div class="flag">
-  <p class="h">Standing precondition — coverage before development</p>
-  <p>No phase item starts until the behavior it touches is pinned by tests, in the form the work
-  demands. <strong>Bug fixes</strong> begin with a failing test demonstrating the defect — the test
-  is the bug report. <strong>Behavior-preserving work</strong> (PDO, cookie consolidation,
-  <code>Util.js</code>, CORS) begins with a characterization suite of current behavior — cookie
-  bytes in both formats, emitted beacons per event type, generated SQL text, endpoint headers —
-  because &ldquo;same behavior, different plumbing&rdquo; has no other definition of
-  <em>broke something</em>. Expect the pins to be most of the job; the swap under them is the
-  small half. Every pin is mutation-checked at creation (break the behavior, watch it fail,
-  restore) — a vacuous pin certifies the refactor didn't break what it broke.</p>
-</div>
-
-<div class="phase">
-  <div class="phase-h"><span class="phase-n">Phase 1</span><span class="phase-t">Stop the bleeding</span></div>
-  <p class="phase-why">Data-quality defects that corrupt collection right now. Cheap, independent,
-  and their cost compounds — a bot logged as human today cannot be reclassified later, because
-  retroactive reprocessing is explicitly out of scope.</p>
-  <ul>
-    <li>Bot <code>stripos</code> position-zero fix — one operator
-    <span class="chip c-done">Shipped</span></li>
-    <li>Visitor id entropy <span class="chip c-done">Closed</span> <span class="dash">— not by
-    fixing it. &sect;1.4 establishes that the entropy <em>cannot</em> be improved: the construction
-    already spends 60.6 of a signed <code>BIGINT</code>'s 63 bits, and re-dividing the budget
-    provably cancels. An accepted, quantified limit (~0.8 collisions/year at 10 new
-    visitors/sec), not an open defect. The discarded salt was removed instead
-    (PR&nbsp;#1017), since it could not be honoured for the same reason.</span></li>
-    <li>Goal conversion: <strong>whole fix or none.</strong>
-    <span class="chip c-done">Shipped</span> <span class="dash">— resolved as
-    <em>none</em>, which was the honest branch. The broken types were removed rather than
-    repointed: <code>visit_duration</code> and <code>npvs</code> are gone from the dispatcher
-    <em>and</em> from the goal-entry form, so <code>url_destination</code> is the only type
-    offered and the only one evaluated. A dead option left switchable in the UI is a silent
-    no-op for whoever picks it. The per-goal state reset landed with it — <code>$match</code>,
-    <code>$start</code> and <code>$goal_value</code> once persisted across loop iterations, so
-    a goal carrying no value of its own inherited the previous goal's.</span></li>
-  </ul>
-</div>
-
-<div class="phase">
-  <div class="phase-h"><span class="phase-n">Phase 2</span><span class="phase-t">Foundations</span></div>
-  <p class="phase-why">Everything later writes queries or crosses an origin. Do these before there
-  is more code depending on the current shape.</p>
-  <ul>
-    <li>PDO driver behind the existing data-access seam
-    <span class="chip c-done">Shipped</span> <span class="dash">— merged;
-    <code>Core/Db/Pdo.php</code> and <code>Core/Db/PdoMysql.php</code> are on master.
-    One caveat outlived the merge: <code>Db::query()</code> returns a <em>driver-native</em>
-    result — a PDOStatement on PDO, a mysqli_result on mysqli — so
-    <code>-&gt;fetchAll()</code> is fatal under mysqli. Use <code>get_results()</code> /
-    <code>get_row()</code>. Both database CI jobs exist for exactly this: a green run on a PDO
-    box proves nothing about the other driver. A third member joined the seam in September:
-    <code>get_result_iterator()</code>, which yields rows one at a time for callers whose rows
-    are the <em>work</em> rather than the answer &mdash; <code>get_results()</code> builds one
-    PHP array per row first, measured at 46&nbsp;MB per 100,000 rows, which is fine for an
-    answer and not for a scan. It carries the same obligation: the mysqli driver puts rows
-    through <code>stringifyRow()</code> on the way out, so an iterator skipping it would hand
-    back native ints where the rest of OWA expects strings.</span></li>
-    <li>CORS replacing JSONP — also unblocks the API contract work
-    <span class="chip c-done">Shipped</span> <span class="dash">— PR&nbsp;#1019</span></li>
-    <li>Query builder emits a closed partition-key range whenever a time bound is given (&sect;1.6)
-    <span class="chip c-done">Shipped</span></li>
-  </ul>
-</div>
-
-<div class="phase">
-  <div class="phase-h"><span class="phase-n">Phase 3</span><span class="phase-t">Tracker evolution</span></div>
-  <p class="phase-why">The long pole and v2's riskiest surface, so it gets the longest exposure to
-  real traffic. The tracker is <em>extended, never forked</em> — a fork would mean writing every
-  item here twice.</p>
-  <ul>
-    <li>Modernise <code>Util.js</code>; <code>sendBeacon</code> with a body
-    <span class="chip c-done">Shipped</span> <span class="dash">— both done 2026-08-23.
-    <code>Util.js</code> 1482&nbsp;&rarr;&nbsp;744 lines and the minified tracker bundle
-    62,297&nbsp;&rarr;&nbsp;54,694 bytes. Eighteen methods had no caller at all
-    (<code>sha256</code>, 99 lines, among them); the rest were phpjs ports of PHP's standard
-    library. Two carried real defects, not just weight: <code>strpos</code>'s index-or-false
-    return made a match at position 0 read as no match to all three callers that tested it as
-    a boolean, and <code>base64_encode</code>'s UTF-8 pre-pass emitted <strong>CESU-8</strong>
-    — every emoji crossed a domain boundary in an encoding nothing else decodes, invisibly,
-    because it round-tripped through its own decoder.</span></li>
-    <li>Cookie and state consolidation <span class="chip c-done">Shipped</span>; strip the
-    <code>owa_</code> namespace <span class="chip c-done">Shipped</span>; add a format
-    version marker <span class="chip c-done">Shipped</span> <span class="dash">— an
-    <code>sv</code> key stamped at write. The reader refuses a store written by a
-    <em>newer</em> tracker, which is the one direction sniffing cannot see: the bytes are
-    still valid JSON, so old code reads them confidently and wrong. Unmarked stores — every
-    cookie in the wild — still read, as version 0. Verified against live demo with a real
-    cookie: unmarked carried the visitor across, <code>sv=99</code> was refused.</span></li>
-    <li><code>preconnect</code> and snippet placement guidance
-    <span class="chip c-done">Shipped</span> <span class="dash">— the snippet emits
-    <code>preconnect</code>/<code>dns-prefetch</code> for the tracker origin (deliberately
-    <em>not</em> <code>crossorigin</code>, which would open a second connection nothing uses)
-    and appends the loader to <code>&lt;head&gt;</code> instead of inserting before the first
-    script element, which threw on a page whose only script was external. Demo's sample pages
-    carry hand-written copies and were updated with it.</span></li>
-  </ul>
-  <p class="phase-why" style="margin:12px 0 0"><strong>Moved out:</strong> engagement deltas,
-  element path capture and chunk <code>seq</code> — each needs v2 storage to be a finished
-  feature, so they are Phase&nbsp;5. See &sect;2.12.</p>
-</div>
-
-<div class="phase">
-  <div class="phase-h"><span class="phase-n">Phase 4</span><span class="phase-t">Interface debt v2 inherits</span></div>
-  <p class="phase-why">Work that has to happen regardless of schema, and is cheaper before two
-  reporting UIs exist.</p>
-  <ul>
-    <li>Site-access UI &mdash; the current multi-select posts nothing when empty, and the controller
-    reads that as &ldquo;revoke everyone&rdquo;. Replace with checkbox rows and a rendered-ids field so
-    absence stops meaning revocation <span class="chip c-done">Shipped</span>
-    <span class="dash">&mdash; checkbox rows plus a <code>rendered_users</code> hidden field, and
-    <code>applyAssignedUserChanges( rendered, checked )</code>. The form now states what it
-    showed as well as what was ticked, so absence is absence rather than
-    revocation.</span></li>
-    <li>Report config as JSON, retrofitted to v1 reports
-    <span class="chip c-done">Shipped</span> <span class="dash">&mdash; and it closes this
-    phase. Landed in three parts: <strong>#1044</strong> converted the reports (62 of 64 are
-    JSON now; <code>goal-funnel</code> and <code>domstreams</code> stay controllers because they
-    compute rather than configure &mdash; <em>and goal-funnel has since stopped being a report
-    at all, see &sect;2.15</em>), <strong>#1047</strong> added the widget vocabulary a builder
-    can offer &mdash; <code>trend-card</code>, <code>grid-card</code>, <code>pie</code>,
-    <code>metric-boxes</code>, with panel chrome and a width floor &mdash; and user-authored
-    reports on top of it, and <strong>#1048</strong> retired the conversion scaffolding once it
-    had done its job.
-    <br><br>
-    <strong>Two consequences v2 inherits, neither in this item's original scope.</strong>
-    First, the definition format is now a <em>user-facing contract</em>: rows in
-    <code>owa_custom_report</code> hold definitions written by people, so v2 cannot change the
-    format freely, and the narrowing that made authoring safe (fixed renderer, formatters chosen
-    by name, <code>excludeColumns</code> as names rather than script) is load-bearing now rather
-    than stylistic. Second, and more useful: <strong>the explicit-enforcement seam &sect;1.11
-    says v2 will need already exists</strong>. Every metric, dimension and sort in an authored
-    definition resolves through the registry at save time <em>and</em> again at render time,
-    because the registry changes under a saved report. That is the machinery v2 must have once
-    the schema stops refusing non-additive combinations on its own.</span></li>
-    <li>Installation-wide retention as a scheduled job
-    <span class="chip c-done">Shipped</span> <span class="dash">&mdash; as a mechanism, opt-in by
-    design. <code>partition-rotate</code> is registered <em>with empty params</em>, so no
-    <code>keep=</code> and nothing is ever deleted; an installation that wants retention states
-    it in <code>OWA_SCHEDULED_JOBS</code>. Retention must not arrive as a side effect of
-    turning the scheduler on. If the intent was a retention <em>setting in the admin UI</em>,
-    that is still open and belongs with the reporting work.</span></li>
-  </ul>
-</div>
-
-<div class="phase">
-  <div class="phase-h"><span class="phase-n">Phase 5</span><span class="phase-t">v2 groundwork</span></div>
-  <p class="phase-why">First code that is v2-shaped, still landing in a 1.x release.</p>
-  <ul>
-    <li><strong>The storage layers, created by one CLI-mode update</strong> (&sect;2.5).
-    <span class="dash">— This was written as “event table and rollup”: two layers, one
-    update. &sect;1.5 turned it into <strong>three</strong> — raw, denormalised, rollup — and
-    brought with them a denormalisation pass, a visitor store with an inactivity TTL,
-    ingest-time event expansion under one transaction, a two-stage partition cycle, and a
-    scheduling model. It is no longer one item and no longer small: it is the largest piece
-    of work in this document. &sect;1.5 is <strong>Decided</strong> as of 20 Sep, so what remains
-    there is sizing rather than design — rebuild granularity, whether the rebuild set is the
-    whole window, client-side lateness, multi-site partitioning — and none of it blocks
-    starting. Everything below that touches storage waits on this item.</span></li>
-    <li><strong><code>msec</code> carries a real fraction of a second</strong>
-    <span class="chip c-dec">Decided</span> <span class="dash">&mdash; 3&nbsp;Sep&nbsp;2026,
-    for v2 and deliberately <em>not</em> for 1.x. <code>owa_request.msec</code> is declared
-    <code>INT</code> and fed the fractional part of <code>microtime()</code> as a string, so
-    MySQL rounds it: the column holds 0 or 1 and nothing else (597 and 560 on the test
-    install), and the entity carries a <code>// wrong data type</code> comment beside the
-    declaration. Request ids cannot stand in &mdash; they are the tracker's random GUID, unique
-    but unordered &mdash; so <strong>the 1.x fact table has no sub-second ordering at all</strong>.
-    Fixing it in 1.x would be worse than leaving it: existing rows stay 0/1, so old and new
-    rows would order differently inside one report, and a funnel spanning the cutover would be
-    wrong in a way nobody could see. The v2 event table takes the fraction properly at
-    creation, which is why this is groundwork rather than a bug fix. What depends on it:
-    <code>VisualizationFunnel::walk()</code> resolves same-second events as a set rather than
-    comparing them, and two tests pin that assumption &mdash; they should be <em>retired</em>
-    when this lands, not re-baselined.</span></li>
-    <li>Rollup job registered against the existing scheduler</li>
-    <li>Fan-out dispatcher, defaulting to v1-only until switched on</li>
-    <li>Parity harness as a command (&sect;2.17)</li>
-    <li><strong>Engagement deltas</strong> — accumulation, piggybacking and the terminal
-    beacon. The client work is the hard half, but it is only a finished feature once
-    <code>owa_event</code> carries <code>engagement_msec</code>; a 1.x column would also have
-    nothing to validate it against, since v1 cannot measure final-page dwell and so offers no
-    oracle (&sect;2.17)</li>
-    <li><strong>Element path capture</strong> — the value here <em>is</em> the stored selector,
-    so it lands directly in <code>owa_event.element_path</code> rather than paying for a
-    throwaway column on a 53-partition <code>owa_click</code></li>
-    <li><strong>Landed in 1.x, and never listed here</strong>
-    <span class="chip c-done">Shipped</span>
-    <span class="dash">— four PRs on 19 Sep 2026 that are Phase 5 by this phase's own
-    definition — v2-shaped code landing in a 1.x release — and were done without passing
-    through this list.
-    <strong>#1114</strong>: acquisition source/medium/campaign/ad/terms written once onto
-    <code>owa_visitor</code>, the v1 shape of v2's visitor store and the first first-touch
-    attribution OWA has had.
-    <strong>#1117</strong>: the tracker carries <code>landing_url</code> and the server parses
-    the campaign tags out of it — the wire contract v2 inherits, and what makes the
-    resolution re-derivable.
-    <strong>#1113</strong>: <code>daily</code> added to <code>PARTITION_CUTS</code>, the front
-    partition tier &sect;1.5's rebuild window needs.
-    <strong>#1116</strong>: six dead columns dropped from <code>owa_visitor</code>, and the
-    upgrade cycle taught to verify rollbacks rather than only upgrades.
-    All four are deployed to demo and peteradamsphoto.</span></li>
-
-    <li><strong>Chunk <code>seq</code></strong> — ships with domstream early cutover (&sect;2.16),
-    never as an <code>owa_domstream</code> column; it also feeds the content-derived engagement
-    id, <code>hash(page_view_id + seq)</code></li>
-  </ul>
-</div>
+<h3 id="s217"><span class="num">2.17</span>Build order <span class="chip c-dec">Decided</span></h3>
+<p>Three rules: defects whose cost accrues daily go first, since a day of delay is data that
+cannot be recovered; foundations before what is built on them; the expensive irreversible work
+last, when the most is known.</p>
 
 <div class="flag">
-  <p class="h">Status — 2026-09-20</p>
-  <p><strong>All eight original Phase 5 items are still unstarted</strong>, checked against the
-  code rather than against the note below: no <code>owa_event</code> entity exists,
-  <code>msec</code> is still <code>OWA_DTD_INT</code> with its <em>wrong data type</em> comment
-  beside it, and the rollup job, fan-out dispatcher, parity command, engagement deltas, element
-  path and chunk seq have no references at all.</p>
-  <p><strong>What changed is the shape of the phase, not its progress.</strong> Item 1 grew from
-  two storage layers to three when &sect;1.5 was written, taking a denormalisation pass, a visitor
-  store, a partition cycle and a scheduling model with it. And four PRs of v2 groundwork shipped
-  into 1.x on 19 Sep without appearing here at all; they are recorded above now. The ordering
-  constraint still holds: <strong>item 1 gates the rollup job, the fan-out dispatcher and the
-  parity command</strong>, since there is nothing to roll up, fan out to or compare against
-  until the table exists. The tracker-side items are independent of it, though element path and
-  chunk seq are deliberately blocked on <code>owa_event</code> so they never pay for a throwaway
-  1.x column.</p>
-  <p><strong>So Phase 5 has not moved while the design under it has moved a great deal.</strong>
-  &sect;1.5 was marked <strong>Decided</strong> on 20 Sep, which unblocks item 1: what is left in
-  that section is sizing — cadences and partition widths — not architecture, and none of it
-  has to be settled before the tables can be created. The next thing is code, not another
-  decision.</p>
+  <p class="h">Standing precondition &mdash; coverage before development</p>
+  <p>No item starts until the behaviour it touches is pinned by tests. A <strong>bug fix</strong>
+  starts with a failing test; <strong>behaviour-preserving work</strong> starts with a
+  characterization suite of current behaviour, because &ldquo;same behaviour, different
+  plumbing&rdquo; has no other definition of <em>broke something</em>. Every pin is
+  mutation-checked at creation &mdash; break the behaviour, watch the test fail, restore.</p>
 </div>
+
+<h4>Phases 1&ndash;4, closed</h4>
+<div class="scroll"><table>
+<thead><tr><th>Phase</th><th>Contents</th><th>Closed</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong> Stop the bleeding</td><td>Bot <code>stripos</code> position-zero fix; visitor id entropy; goal conversion.</td><td>23&nbsp;Aug. Only the first was closed by fixing it &mdash; entropy cannot be improved (<a href="#s14">&sect;1.4</a>) and the broken goal types were removed rather than repointed.</td></tr>
+<tr><td><strong>2</strong> Foundations</td><td>PDO driver behind the data-access seam; CORS replacing JSONP; closed partition-key ranges from every time bound.</td><td>28&nbsp;Aug</td></tr>
+<tr><td><strong>3</strong> Tracker evolution</td><td><code>Util.js</code>; <code>sendBeacon</code> with a body; cookie and state consolidation; namespace strip; store format marker; <code>preconnect</code> and snippet placement.</td><td>23&nbsp;Aug. Engagement deltas, element path and chunk <code>seq</code> moved to Phase&nbsp;5 &mdash; each needs v2 storage to be a finished feature.</td></tr>
+<tr><td><strong>4</strong> Interface debt v2 inherits</td><td>Site-access UI; report config as JSON; retention as a scheduled job.</td><td>28&nbsp;Aug. See <a href="#sa1">the appendix</a> for the two constraints the report work leaves on v2.</td></tr>
+</tbody></table></div>
+
+<h4>Phase 5 &mdash; v2 groundwork</h4>
+<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates
+items&nbsp;2&ndash;4</strong>: there is nothing to roll up, fan out to, or compare against until the
+tables exist. The tracker-side items are independent of it.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>The three storage layers</strong>, created by one CLI-mode update (<a href="#s29">&sect;2.9</a>), with the denormalisation pass, visitor store, partition cycle and scheduling model that <a href="#s15">&sect;1.5</a> brought with them.</td><td>Not started. The largest piece of work in this document, and everything below that touches storage waits on it.</td></tr>
+<tr><td>2</td><td>Rollup job registered against the existing scheduler.</td><td>Not started</td></tr>
+<tr><td>3</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
+<tr><td>4</td><td>Parity harness as a command (<a href="#s220">&sect;2.20</a>).</td><td>Not started</td></tr>
+<tr><td>5</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#sa1">Appendix</a> for why a 1.x fix would be worse than leaving it.</td></tr>
+<tr><td>6</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
+<tr><td>7</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
+<tr><td>8</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s219">&sect;2.19</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
+</tbody></table></div>
 
 <div class="flag">
-  <p class="h">Status — 2026-08-28 <span class="dash">(superseded)</span></p>
-  <p><strong>Phases 1, 2, 3 and 4 are closed.</strong> Two items moved since the 23 Aug note,
-  both by shipping. The <strong>PDO driver</strong> merged, closing Phase 2. <strong>Report
-  config as JSON</strong> merged in three parts — #1044, #1047, #1048 — closing Phase 4.
-  <strong>Phase 5, v2 groundwork, is now the whole of the remaining plan</strong>, and none of
-  it has started. It gained one item on 3&nbsp;Sep &mdash; <code>msec</code> carrying a real
-  fraction of a second &mdash; which is a 1.x defect deliberately deferred rather than new
-  scope; see the entry for why fixing it in 1.x would be worse than leaving it.</p>
-
-  <p><strong>Unplanned work landed in September that is not a phase item.</strong> Goals
-  became goal events and funnels stopped being configuration (&sect;2.15). It is recorded
-  because it moved &sect;1.3 from a v2 decision to a 1.x fact, and because it retires a
-  migration hazard: nothing in reporting reads <code>owa_session</code>'s goal columns any
-  more, so they can go without taking the funnel with them.</p>
-
-  <p><strong>What the report work changed about v2, beyond ticking a box.</strong> The item
-  asked for a widget format retrofitted into v1. What shipped also made that format
-  <em>user-authored</em>, which hands v2 one constraint and one asset. The constraint: stored
-  definitions in <code>owa_custom_report</code> are documents written by people, so the format
-  is a compatibility surface now and the narrowing that made authoring safe cannot be relaxed.
-  The asset: registry validation of every metric, dimension and sort — at save time and again
-  at render time — already exists. That is the explicit enforcement &sect;1.11 warns v2 will need
-  once a single table stops refusing non-additive combinations on its own. It was written to
-  keep authored reports honest; it turns out to be the seam v2 needs for a different reason.</p>
-
-  <p><strong>Reports retired along the way</strong>, none of them anticipated here:
-  <code>country-detail</code> and <code>state-detail</code> (duplicative, then orphaned),
-  <code>commerce</code> (an unreachable duplicate of <code>ecommerce</code>) and
-  <code>transaction-detail</code>. Two dead things went with them, <code>wp_plugin.php</code>
-  and the <code>owa_exit</code> entity (&sect;1.11). The eleven <em>InVisit</em> dimensions &sect;1.11 marks
-  for deletion are <strong>still registered in 1.x</strong> — that one is still v2's to make.</p>
-
-  <p class="h" style="margin-top:1.2em">Status — 2026-08-23 (revised, end of day)</p>
-  <p><strong>Phases 1 and 3 are closed. Phase 4 has one item left.</strong> An earlier
-  revision of this note said execution was &ldquo;in Phase 3&rdquo; with Phases 1 and 2 partly
-  open. That was read against the phase lists above rather than against the tree, and the
-  lists had drifted: three items marked open were already shipped, and one was contradicted by
-  this document's own &sect;1.4. Reconciling them against the code is what produced the statuses
-  now on each item. <em>The lists are the record; when they disagree with the code, the code
-  wins and the list is wrong.</em></p>
-
-  <p><strong>Phase 1 is closed, but only one item was closed by fixing it.</strong> The bot
-  <code>stripos</code> operator was corrected. Goal conversion took the <em>none</em> branch of
-  its own &ldquo;whole fix or none&rdquo;: the broken types were deleted from the dispatcher and
-  from the goal-entry form rather than repointed, so nothing is offered that is not evaluated.
-  And visitor id entropy was closed by <em>proving it could not be improved</em> (&sect;1.4) — the
-  construction already spends 60.6 of 63 bits and re-dividing the budget cancels, so it is an
-  accepted, quantified limit. Its discarded salt was removed in PR&nbsp;#1017 for the same
-  reason. Two of three closed without the fix the list called for.</p>
-
-  <p><strong>Phase 3 is closed as of 2026-08-23.</strong> The format version marker,
-  <code>Util.js</code>, and <code>preconnect</code>/snippet placement all shipped, joining the
-  transport, namespace strip and state consolidation already done. Two latent defects
-  surfaced while removing the PHP-function ports rather than from any bug report: PHP's
-  <code>strpos</code> index-or-false convention had made a match at position 0 read as
-  <em>no match</em> to every caller testing it as a boolean, and <code>base64_encode</code>
-  had been emitting <strong>CESU-8</strong> instead of UTF-8, so every emoji crossed a domain
-  boundary in an encoding nothing but OWA could decode — invisible because it round-tripped
-  through its own decoder. Both are the shape this plan's standing precondition predicts:
-  behaviour-preserving work finds what the pins were hiding.</p>
-
-  <p><strong>Still open in Phase 2.</strong> The PDO driver is written and CI-green but
-  <em>not merged</em> — it is not on master, so nothing downstream may assume bound
-  parameters yet. This is a merge decision, not remaining work.</p>
-
-  <p><strong>Next: report config as JSON (Phase 4).</strong> The only untouched item in
-  Phase 4 and the only one of its three that was not already done. It is also the first piece
-  that is v2-shaped while still landing additively in 1.x — &sect;1.7's generic widget
-  format with grid layout descriptors, retrofitted to v1 reports, against a reporting surface
-  already measured at 69 controllers of which roughly 60 are pure configuration.</p>
-
-  <p><strong>Also removed:</strong> third-party mode, which had stopped calling
-  <code>logEvent()</code> entirely — enabling it made the tracker silently send nothing.
-  Dead options are worth deleting rather than leaving switchable. Internet Explorer support
-  went the same way, and for a reason worth recording: the bundle ships untranspiled ES6, so
-  IE cannot parse the file containing its own IE branches. Code deciding what to do in a
-  browser that cannot load the file holding the decision is not compatibility.</p>
+  <p class="h">Status &mdash; 2026-09-20</p>
+  <p>All eight items are unstarted, checked against the code rather than against this list: no
+  <code>owa_event</code> entity exists, <code>msec</code> is still <code>OWA_DTD_INT</code>, and
+  the remaining six have no references at all.</p>
+  <p>What changed is the phase's shape, not its progress. Item&nbsp;1 grew from two storage layers
+  to three when <a href="#s15">&sect;1.5</a> was written. And four PRs of v2 groundwork shipped into
+  1.x on 19&nbsp;Sep without appearing in this list: <strong>#1114</strong> (acquisition columns
+  written once onto <code>owa_visitor</code> &mdash; the v1 shape of v2's visitor store, and the
+  first first-touch attribution OWA has had), <strong>#1117</strong> (the tracker carries
+  <code>landing_url</code> and the server parses the campaign tags out of it), <strong>#1113</strong>
+  (<code>daily</code> added to <code>PARTITION_CUTS</code>) and <strong>#1116</strong> (six dead
+  columns dropped from <code>owa_visitor</code>; the upgrade cycle now verifies rollbacks). All four
+  are deployed to demo and peteradamsphoto.</p>
+  <p><a href="#s15">&sect;1.5</a> was marked Decided on 20&nbsp;Sep, which unblocks item&nbsp;1: what
+  is left there is sizing, not architecture, and none of it has to be settled before the tables can
+  be created. The next thing is code, not another decision.</p>
 </div>
 
-
-<h3 id="s215"><span class="num">2.15</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
+<h3 id="s218"><span class="num">2.18</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
 <p class="meta">3&nbsp;Sep&nbsp;2026 &mdash; branch <code>feat/key-events</code>, PR&nbsp;#1064.</p>
 
 <p>Unplanned work, recorded here because it moved a v2 decision into 1.x rather than
@@ -2621,7 +2427,7 @@ plan should carry:</p>
 
 <ul>
 <li><strong>Nothing in reporting reads <code>owa_session</code>'s goal columns.</strong> The
-45 numbered <code>goal{N}</code> identifiers in &sect;2.4's &ldquo;falls out&rdquo; row can
+45 numbered <code>goal{N}</code> identifiers in &sect;2.8's &ldquo;falls out&rdquo; row can
 retire without taking the funnel with them, because the funnel never consulted them. It
 reads the events. That was not true a fortnight ago and it removes a migration hazard
 nobody had costed.</li>
@@ -2655,7 +2461,7 @@ the scan itself.</p>
   <p class="part-note">Coexistence, not conversion. No 1.x data is ever converted.</p>
 </section>
 
-<h3 id="s216"><span class="num">2.16</span>Early cutover, per feature <span class="chip c-dec">Decided</span></h3>
+<h3 id="s219"><span class="num">2.19</span>Early cutover, per feature <span class="chip c-dec">Decided</span></h3>
 <p>Fan-out is per event type, not global. A feature skips the dual-write period entirely when both
 hold:</p>
 <ol>
@@ -2668,7 +2474,7 @@ row, the encoding becomes delta tuples plus gzip (~30× measured). Dual-writing 
 options — either the new capture has nowhere to land, or <code>owa_domstream</code> is renovated
 to accept a format v1 will never report on. Heatmaps follow, being built on the same capture.</p>
 
-<h3 id="s217"><span class="num">2.17</span>The parity harness <span class="chip c-dec">Decided</span></h3>
+<h3 id="s220"><span class="num">2.20</span>The parity harness <span class="chip c-dec">Decided</span></h3>
 <p>Both pipelines consume identical events, so v1 can serve as an oracle — but only
 <strong>below the session boundary</strong>, and an earlier draft of this section did not say so.
 The correction matters enough to state first, because it changes what this harness is for.</p>
@@ -2743,15 +2549,15 @@ exactly what would let an expected difference shelter a real one.</p>
   60-day hold on the one part of v2 that cannot be hurried.</p>
 </div>
 
-<h3 id="s218"><span class="num">2.18</span>Profiles carry the version <span class="chip c-open">Proposed</span></h3>
+<h3 id="s221"><span class="num">2.21</span>Profiles carry the version <span class="chip c-open">Proposed</span></h3>
 <p>Everything above resolves the version at <em>query</em> time, and every automatic signal for
-doing so fails. A date boundary cannot work: &sect;2.16 makes cutover per-feature so there is no single
+doing so fails. A date boundary cannot work: &sect;2.19 makes cutover per-feature so there is no single
 instant, dual-write means both stores hold the same period, the switch-off is an administrator's
 action rather than a release date, and the queue is asynchronous so an event accepted before a
 switch can land after it. Coverage watermarks fail for the same reason — during overlap both
 stores answer, and the data cannot say which is authoritative. An install-wide setting fails
 differently: since <strong>no data is migrated</strong>, v1 holds the history permanently
-(&sect;2.19 keeps v1 reporting precisely for that), so a global flip would blank every historical
+(&sect;2.22 keeps v1 reporting precisely for that), so a global flip would blank every historical
 report.</p>
 <p><strong>The proposal is to stop resolving it at query time and carry it in the data model
 instead.</strong> Decouple the tracked website from the profile that measures it: one website may
@@ -2801,7 +2607,7 @@ promise holds — nothing about the page changes on cutover day.</p>
 configurations of one domain, renaming a domain without orphaning its data, and expressing one
 property across several domains. The decoupling is additive 1.x work with standalone value.</p>
 <p><strong>What the profile does not do is spare ResultSetManager.</strong> It settles where the
-version <em>comes from</em>, not how the manager acts on it, so the entity-pool change of &sect;2.4
+version <em>comes from</em>, not how the manager acts on it, so the entity-pool change of &sect;2.8
 survives intact and is still the work: resolve the version from the profile behind
 <code>siteId</code>, filter candidate entities to that version <em>before</em>
 <code>arsort($niceness)</code>, and error when none resolves. <code>setSiteId()</code> today only
@@ -2823,7 +2629,7 @@ foreach ($classes as $map) {
 <p>So a v2 registration appears alongside the v1 one automatically. Dimensions behave identically —
 <code>registerDimension()</code> loops <code>$entity_names</code> into one entry per entity, and
 lookup is <code>denormalizedDimensions[$name][$entity]</code>. The v2 set is just more registrations
-carrying the v2 entity, or more config entries once &sect;2.4 lands. This is the same reason report
+carrying the v2 entity, or more config entries once &sect;2.8 lands. This is the same reason report
 configs need no version field.</p>
 <p><strong>Which relocates the filter.</strong> Because implementations are built <em>before</em>
 anything is selected, the version filter belongs in <code>getMetricEntities()</code> — skip a class
@@ -2968,7 +2774,7 @@ current implementation &mdash; a naive substring replace, and a <code>strpos( $u
 that misses a match at position zero &mdash; want <em>not carrying forward</em> rather than
 fixing.</p>
 
-<h3 id="s219"><span class="num">2.19</span>Cutover sequence</h3>
+<h3 id="s222"><span class="num">2.22</span>Cutover sequence</h3>
 <ol>
 <li>Ship the additive work in 1.x releases, each standing on its own</li>
 <li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
@@ -2991,29 +2797,25 @@ administrator's decision rather than an upgrade's side effect.</p>
 
 <h2><span class="secn">III</span>Open issues</h2>
 <h3 id="s31"><span class="num">3.1</span>Everything still undecided</h3>
-<p>Everything unsettled, in one place. Sections that raise a question link here rather than carrying their own list.</p>
+<p>Everything undecided, and what would settle it. Anything with an answer lives in
+<a href="#s11">Architecture</a> or <a href="#s21">Implementation</a>; the reasoning behind the
+answers is in <a href="#sa1">the appendix</a>.</p>
+
 <div class="scroll"><table>
-<thead><tr><th>Question</th><th>State</th></tr></thead>
+<thead><tr><th>Question</th><th>What is undecided</th><th>What would settle it</th></tr></thead>
 <tbody>
-<tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon estimated at ~+27% events; never tested against real traffic patterns.</td></tr>
-<tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td></tr>
-<tr><td><strong>Reprocess cadence, and it is bounded by the partition scheme</strong></td><td>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</td></tr>
-<tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td></tr>
-<tr><td><strong>Idempotency</strong></td><td>A pass must be rerunnable with identical output. Same discipline as a schema update&rsquo;s <code>up()</code>.</td></tr>
-<tr><td><strong>Partition swap</strong></td><td>, and it ports. Both tables on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which is what this design avoids.</td></tr>
-<tr><td><strong>Raw retention</strong></td><td>, which trades storage against how far back the model can be re-derived.</td></tr>
-<tr><td><strong>Worst-case client-side lateness</strong></td><td>, which sets the late-arrival window and therefore the whole cadence. <em>Revised:</em> this was written as &ldquo;queue reorder latency&rdquo;, to be measured as a drain after a stall, citing 1.x's two long stalls &mdash; the notify poison-pill and the legacy-class decode failure. Both were <code>owa_queue_item</code> stalls, and that queue only ever holds retries of events whose session could not be found, which v2 has no equivalent of. The unbounded tail those incidents represent is v1-only. What remains is the file queue's drain cadence, which is configured rather than measured, and lateness originating at the client, which is not visible server-side and is the open number.</td></tr>
-<tr><td><strong>Cost on a small install</strong></td><td>Unmeasured. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, not per day, so a pass over these volumes should be seconds &mdash; but it runs on an RDS instance shared with eight WordPress sites, and that is the constraint to measure against, not the row count.</td></tr>
-<tr><td><strong>Distinct visitors do not sum</strong></td><td>Every other measure above is additive across rows; unique visitors is not, so a rollup row cannot carry it and have breakdowns add up. &sect;1.12 promises "every number exact, every breakdown summing to its total", which this would violate the moment anyone puts uniques on a trend. Either uniques come from raw or the denormalised table and are therefore slower, or the rollup carries a sketch and the exactness promise is narrowed in writing.</td></tr>
-<tr><td><strong>A parameter map in an aggregate key has no bound</strong></td><td>&sect;1.2 wants custom variables in the rollup, and that is the feature that removes 1.x's five fixed slots. But unregistered keys with unbounded values multiply the row count by their cardinality — the thing a rollup exists to avoid. Promotable-per-site (&sect;2.4's treatment of param paths) is the obvious lever and is not the same decision.</td></tr>
+<tr><td><strong>Client-side lateness</strong></td><td>How late a beacon can arrive — unload beacons behind a later hit, browser retries, bfcache restores, a device that was offline.</td><td>Measurement. It is not visible server-side, and it is the number the late-arrival window is derived from.</td></tr>
+<tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td><td>Falls out of the above, plus the file queue's drain cadence, which is configured rather than measured.</td></tr>
+<tr><td><strong>Rebuild granularity</strong></td><td>Whether the front partition tier is daily or quarter-month. Daily gives the smallest rebuild and the most partitions; quarter-month is week-sized and needs no new granularity.</td><td>A rebuild-cost measurement, which nobody has taken.</td></tr>
+<tr><td><strong>Rebuild set</strong></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>The whole window is the only provably correct option given a late flagged event; narrower needs a way to know which partitions changed.</td></tr>
+<tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
+<tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
+<tr><td><strong>Unique visitors in the rollup</strong></td><td>Every rollup measure is additive across rows except uniques, so a rollup row cannot carry them and still have breakdowns sum to their totals — which <a href="#s112">&sect;1.12</a> promises.</td><td>Either uniques come from the denormalised table and are slower, or the rollup carries a sketch and the exactness promise is narrowed in writing.</td></tr>
+<tr><td><strong>Parameter map cardinality</strong></td><td>Custom variables in the rollup key are what remove 1.x's five fixed slots, but unregistered keys multiply the row count by their cardinality.</td><td>Promotable-per-site, as <a href="#s28">&sect;2.8</a> treats param paths — a separate decision from this one.</td></tr>
+<tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
+<tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>Undecided.</td></tr>
+<tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s212">&sect;2.12</a>.</td></tr>
 </tbody></table></div>
-<div class="note"><strong>PII — closed.</strong> The tool cannot police its inputs: PII arrives
-through custom variables, URLs and referrers regardless of what happens to the one <em>declared</em>
-field (measured: 3 real values in 135,798 rows). The operator is the data controller; OWA has the
-same standing as their web server logs. Crypto-shredding and the pseudonym mapping are dropped;
-declared user fields are ordinary event params. What remains are the operator's real obligations
-made practical: anonymise-by-default, retention, and <code>forget visitor=&lt;id&gt;</code> — which
-deletes events wholesale and so reaches PII through every channel, declared or stuffed.</div>
 
 <h2><span class="secn">Appendix</span>Evidence and debate</h2>
 <h3 id="sa1"><span class="num">A.1</span>Why the design is what it is</h3>
@@ -3054,7 +2856,7 @@ mattered for ITP and for keeping append pure is that the <em>write path</em> doe
 that is untouched. Reports never join it either; it is an input to the build, and its values reach
 queries materialised onto event rows like everything else. It is neither <code>owa_visitor</code>
 reborn (no per-request write, no per-request read) nor a star-schema dimension (no query-time join,
-no FK on the fact row, so no repeat of the inner-join-drops-the-row failure &sect;2.2 exists to
+no FK on the fact row, so no repeat of the inner-join-drops-the-row failure &sect;2.6 exists to
 prevent). Calling it a table is accurate; calling the pass stateless would not be.</p>
 <h4>Measured: visitor active lifespan</h4>
 <p><strong>One wrinkle it creates in the write rule above.</strong> A sliding window needs
@@ -3097,10 +2899,38 @@ GA supports the case, and our own data says the case barely occurs</strong>: wit
 first-party cookie at 400 days, even GA&rsquo;s &ldquo;forever&rdquo; is about thirteen months in
 the dominant browser, which is where the TTL landed anyway. The architecture differs; the reachable
 outcome does not, by much.</p>
+<h4>Why reprocess cadence is bounded by the partition scheme</h4>
+<p>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</p>
+<h4>The rebuild-and-swap idiom ports to columnar stores</h4>
+<p>The pass rebuilds a partition and swaps it into place, and that idiom is not a MySQL trick that has to be abandoned if the reporting store changes. Both tables key on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which is what this design avoids.</p>
+<h4>What the report work left on v2</h4>
+<p>Phase&nbsp;4's report-config item asked for a widget format retrofitted into v1. What shipped
+(#1044, #1047, #1048) also made that format <em>user-authored</em>, which hands v2 one constraint
+and one asset. The constraint: rows in <code>owa_custom_report</code> are documents written by
+people, so the format is a compatibility surface now, and the narrowing that made authoring safe
+&mdash; fixed renderer, formatters chosen by name, <code>excludeColumns</code> as names rather than
+script &mdash; is load-bearing rather than stylistic. The asset: every metric, dimension and sort in
+an authored definition already resolves through the registry at save time <em>and</em> again at
+render time, because the registry changes under a saved report. That is the explicit enforcement
+<a href="#s111">&sect;1.11</a> says v2 will need once a single table stops refusing non-additive
+combinations on its own. It was written to keep authored reports honest; it turns out to be the seam
+v2 needs for a different reason.</p>
+
+<h4>Why <code>msec</code> is not fixed in 1.x</h4>
+<p><code>owa_request.msec</code> is declared <code>INT</code> and fed the fractional part of
+<code>microtime()</code> as a string, so MySQL rounds it: the column holds 0 or 1 and nothing else
+(597 and 560 on the test install). Request ids cannot stand in &mdash; they are the tracker's random
+GUID, unique but unordered &mdash; so the 1.x fact table has no sub-second ordering at all. Fixing it
+in 1.x would be worse than leaving it: existing rows stay 0/1, so old and new rows would order
+differently inside one report, and a funnel spanning the cutover would be wrong in a way nobody
+could see. <code>VisualizationFunnel::walk()</code> resolves same-second events as a set rather than
+comparing them, and the two tests pinning that assumption should be <em>retired</em> when v2 lands,
+not re-baselined.</p>
+
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
-inline because &sect;2.3 is Decided and a decided section should read as a design, not as a
+inline because &sect;2.7 is Decided and a decided section should read as a design, not as a
 transcript — but they are kept rather than deleted, because the reason a design is not something
 is usually the most expensive thing in it to rediscover.</p>
 
@@ -3117,7 +2947,7 @@ acquisition from it, with no visitor table at all? The objection I reached for i
 inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
 years ago and has returned every month has never expired, and their <code>first_visit</code> event
 is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
-<p><strong>Superseded.</strong> The store is kept — &sect;2.3 gives the reasons, of which the
+<p><strong>Superseded.</strong> The store is kept — &sect;2.7 gives the reasons, of which the
 decisive one is that GA has to hold acquisition on a user record to support a long-lived
 identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
 
