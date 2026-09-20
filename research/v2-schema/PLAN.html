@@ -240,8 +240,28 @@ event, GA-style: the time accrued on the current page since the last report, so 
 attribution is automatically correct and loss granularity is one increment, not one page. The
 hide-time <code>user_engagement</code> event carries only the <em>residue</em> since the last
 event — fired on any hide at any size; the 10&nbsp;s threshold gates only the read-time
-classification, never the send, or it would bake itself into collection — with a content-derived id (<code>hash(session_id + page_ref + seq)</code>): beaconed at
-hide, then riding the session's next request <em>as parameters</em> — never a separate catch-up
+classification, never the send, or it would bake itself into collection — with a content-derived id (<code>hash(page_view_id + seq)</code> &mdash; see below): beaconed at
+</p>
+
+<p class="note"><strong>The chunk id keys on the page VIEW, not the page.</strong> This was
+written as <code>hash(session_id + page_ref + seq)</code>, where <code>page_ref</code> was never
+a column &mdash; it was shorthand for the page identity §1.10 used to mint, and that identity is
+gone. Substituting the stored <code>page_location</code> would not rescue it: a visitor who
+returns to the same URL later in the session starts a second sequence at the same
+<code>seq</code>, so session plus URL plus seq collides across two genuine page views. The
+<code>page_view</code> event's own id disambiguates them, so the chunk hangs off that.
+Duplicates from redelivery still collapse, which is the whole point of deriving the id, and two
+visits to one URL stay two.</p>
+
+<p class="note"><strong>And <code>page_view_id</code> is an INPUT to the hash, not a column</strong>
+&mdash; which is the distinction <code>page_ref</code> lost. The tracker minted the page view's id
+and still holds it, so it can derive the chunk id without anything being stored; no parent pointer
+is added to §1.10, and none is needed. The question a chunk row actually gets asked is
+&ldquo;which URLs have the most engagement&rdquo;, and it answers that from its own
+<code>page_location</code>, which every event carries. Joining a chunk back to its parent row is
+not a use case anyone has &mdash; GA has no parent pointer either.</p>
+
+<p>hide, then riding the session's next request <em>as parameters</em> — never a separate catch-up
 beacon — with the server materializing the row, duplicates collapsing at the table. Engaged is
 <code>SUM(engagement_msec)</code> across the session vs the threshold. Final-page dwell keeps the
 one irreducible lossy attempt, and is the thing 1.x structurally cannot measure at all.</li>
@@ -258,7 +278,7 @@ final-page time — the exact thing engagement deltas measure. v1 history keeps 
 in its own UI, so no trend steps in either system. Engaged is derived at read time from deltas, pageviews and goal events — the sole authority,
 with no stored flag to disagree with (measured: 201&nbsp;ms/year for the two-level shape). Engaged as a
 <strong>dimension is punted for v2.0</strong> — the question installs actually ask, &ldquo;which
-URLs have the most engagement&rdquo;, is a one-pass <code>SUM(msec) GROUP BY page_ref</code> over
+URLs have the most engagement&rdquo;, is a one-pass <code>SUM(msec) GROUP BY pagePath</code> over
 the <code>user_engagement</code> rows, no classification needed. The punt is free to reverse:
 nothing is stored, so the dimension is a later query-builder feature (measured at 210&nbsp;ms/year
 derived) with no schema change. The
@@ -2223,7 +2243,7 @@ them</strong>; and <strong>the expensive irreversible work last</strong>, when t
 
     <li><strong>Chunk <code>seq</code></strong> — ships with domstream early cutover (§3.2),
     never as an <code>owa_domstream</code> column; it also feeds the content-derived engagement
-    id, <code>hash(session_id + page_ref + seq)</code></li>
+    id, <code>hash(page_view_id + seq)</code></li>
   </ul>
 </div>
 
