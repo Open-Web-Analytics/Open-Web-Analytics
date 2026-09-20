@@ -2100,6 +2100,12 @@ compute from additive components the rollup holds.</p>
 <tr><td>Rollup build — full / busiest day incremental</td><td class="n" colspan="2">50.4 s / <strong>377 ms</strong></td></tr>
 </tbody></table></div>
 <p><strong>A one-month window is 106&nbsp;ms straight from events</strong>, which needs no rollup at all. The saving is real only on the full corpus, where 39.2&nbsp;s is not a UI latency. So on a corpus this size the rollup earns its keep on all-time and multi-year questions and nothing narrower &mdash; and the crossover point, on a busier install, is unmeasured.</p>
+<p class="note"><strong>What 39.2&nbsp;s measures.</strong> It was taken against
+<code>owa_request</code>, whose indexes are single-column &mdash; <code>idx_visitor_id</code>,
+<code>session_id</code>, <code>site_id</code>, <code>yyyymmdd</code>, <code>timestamp</code>, plus
+the primary key on (<code>id</code>, <code>yyyymmdd</code>). None of them covers a site and date
+range together with <code>visitor_id</code> and <code>session_id</code>, so the query could not be
+answered from an index at all. The figure bounds an unindexed scan, not the query.</p>
 <h4 id="nA131"><span class="num">A.1.31</span>GA hit the same problem and pairs the ids</h4>
 <p>GA4 counts sessions by estimating distinct <code>ga_session_id</code> values, not by counting
 <code>session_start</code> events, and the parameter rides every event rather than only the marker.
