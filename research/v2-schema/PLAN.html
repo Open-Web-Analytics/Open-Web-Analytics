@@ -271,7 +271,7 @@ distinct count, which is the cheaper shape over a wide window.</p>
 moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scoped on
 <code>first_visit</code> &mdash; and a natural thing to name as a goal event.</p>
 
-<h4>Totals and breakdowns</h4>
+<h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
 <p>A marker rides one beacon, so it can go missing, and a session whose marker is lost keeps its
 identity on every other event but loses the attribution the marker carried. That sets two rules:</p>
 <div class="scroll"><table>
@@ -700,7 +700,7 @@ domain&rdquo;. Our <code>pagePathPlusQuery</code>. That the query has to be name
 self-imposed: it came from giving a page an identity when nothing needed one. Group by a string,
 derive the readings, and the question of what belongs in a page's identity does not arise.</p>
 
-<h5>Denormalised — <code>owa_event</code>, 47 columns</h5>
+<h5>Denormalised &mdash; <code>owa_event</code>, 48 columns</h5>
 
 <p>Every raw column, unchanged and in the same order, plus twelve the pass stamps on. Queries hit
 this table; nothing else does.</p>
@@ -755,6 +755,7 @@ this table; nothing else does.</p>
 <tr><td class="n">45</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
 <tr><td class="n">46</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
 <tr><td class="n">47</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
+<tr><td class="n">48</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
 </tbody></table></div>
 
 <p><strong>Structurally identical to its staging table, by requirement.</strong> &sect;1.5's swap is
@@ -1238,6 +1239,35 @@ breaks only if it names something that fell out.</p>
 </tbody></table></div>
 
 <!-- ============ PART II ============ -->
+<h4><span class="num">2.13.1</span>Two queries, one generation</h4>
+<p>A report asks for a total and a breakdown, and <code>ResultSetManager</code> issues them as two
+queries &mdash; <code>computeAggregates()</code> then <code>computeDimensionalRows()</code>. The
+pass can swap a partition between them, and then the two numbers describe different data.</p>
+<p><strong>Both queries return <code>MAX(built_at)</code> alongside their result. If the two values
+differ, a swap landed between them and the pair is re-run.</strong></p>
+<pre><code>SELECT COUNT(DISTINCT session_id), MAX(built_at) FROM owa_event WHERE &hellip;
+SELECT source, medium, COUNT(DISTINCT session_id), MAX(built_at)
+  FROM owa_event WHERE &hellip; GROUP BY source, medium</code></pre>
+<ul>
+<li><strong>It needs no transaction</strong>, which matters because there is not one to use. MySQL
+would give this for free under <code>REPEATABLE READ</code>, but the swap is
+<code>EXCHANGE PARTITION</code> &mdash; DDL, which MVCC does not cover &mdash; and ClickHouse's
+transactions are experimental and absent from its cloud. Carrying the generation in the row works
+on both.</li>
+<li><strong>It costs no extra reads.</strong> The check rides queries already being issued, so
+there is no marker table and no second round trip.</li>
+<li><strong>It detects rather than prevents.</strong> Pinning by predicate would not work: the swap
+replaces the partition, so filtering <code>built_at &le; X</code> after one returns nothing rather
+than the old rows. Retaining both generations would prevent it, and costs a second copy of every
+partition under rebuild.</li>
+<li><strong>Most reports never reach the check.</strong> Only a period overlapping the rebuild
+window can see a swap at all (<a href="#s25">&sect;2.5.1</a>); a closed period reads partitions
+nothing will rewrite.</li>
+</ul>
+<p class="note">How often a swap actually lands between the two queries is unmeasured. Reports are
+sub-second and the pass touches one partition at a time, so it should be rare &mdash; but the
+failure is silent, so it wants a number before anyone relies on the retry being cheap.</p>
+
 <h3 id="s214"><span class="num">2.14</span>Schema versioning <span class="chip c-dec">Decided</span></h3>
 <p><strong>One schema version, one numbered update sequence.</strong> An update may touch v1
 tables, v2 tables or both. v1 and v2 are not two schemas that coexist; they are one schema
