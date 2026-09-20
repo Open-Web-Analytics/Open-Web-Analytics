@@ -786,6 +786,30 @@ hash is identity. This is the one piece of canonicalisation that does not disapp
 it is cheaper than v1's, which rewrote stored URLs; here nothing is rewritten, the hash just
 ignores part of its input.</p>
 
+<p><strong>What GA does, since the same question arises there.</strong> It stores the whole
+thing and derives both readings as separate dimensions, rather than choosing:</p>
+<ul>
+<li><strong>Page location</strong> — &ldquo;the complete URL&rdquo;: scheme, host, path and
+query. This is what the beacon carries as <code>dl</code>, confirmed by capture — the landing hit
+sends the URL with its UTMs intact.</li>
+<li><strong>Page path + query string</strong> — &ldquo;the parts of the URL that come after the
+domain&rdquo;. Exactly our <code>page_uri</code>, and the fact that GA had to name the query
+explicitly in a dimension called <em>path + query string</em> is itself the answer to whether a
+path implies one.</li>
+<li><strong>Page path</strong> — path only, query dropped. The identity-shaped reading.</li>
+</ul>
+
+<p><strong>But GA never has to pick one, and v2 does.</strong> GA groups by a string: whichever
+page dimension you choose IS the grouping, so both readings coexist at query time at no cost.
+&sect;1.10 gives a page an <em>identity</em> — <code>hash(site_id + uri)</code> — and a hash has
+to commit to its input before anyone asks a question. That is a constraint of our design rather
+than a property of the problem, and it is worth being clear that it is self-imposed: it buys the
+collapse of <code>www</code> and apex variants with nothing configured, which is what retires
+domain aliases, and it costs this decision about the query string.</p>
+
+<p>Storing the full URI and hashing a normalised form is how both are had at once — GA's two
+dimensions, from one stored column.</p>
+
 <h5>Denormalised — <code>owa_event</code>, 48 columns</h5>
 
 <p>Every raw column, unchanged and in the same order, plus twelve the pass stamps on. Queries hit
