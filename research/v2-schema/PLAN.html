@@ -269,45 +269,18 @@ already riding the session's first <code>page_view</code> request, so they cost 
 wire.</p>
 
 <h4><span class="num">1.3.1</span>What the markers are for</h4>
-<p><strong>A marker gives a session or a visitor one row of its own.</strong> Session-grain
-questions are answerable without it &mdash; every event carries the session's id and context, so
-&ldquo;sessions by landing page&rdquo; is a <code>COUNT(DISTINCT visitor_id, session_id)</code>
-grouped by a stamped column (<a href="#s15">&sect;1.5.1</a>). The marker makes that a row count instead of a
-distinct count, which is the cheaper shape over a wide window.</p>
-<p>That row then does four jobs nothing else can do:</p>
-<div class="scroll"><table>
-<thead><tr><th>Job</th><th>Which marker</th><th>Why only the marker</th></tr></thead>
-<tbody>
-<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>Acquisition is written to the visitor store at ingest, from the visitor's first session, and nothing else writes that table (<a href="#s29">&sect;2.9</a>)</td></tr>
-<tr><td><strong>Anchors acquisition to one event</strong></td><td><code>first_visit</code></td><td>Keying off the flag rather than a computed earliest event is what bounds the correction problem: no later arrival can change the answer, so the failure is <em>absent then present</em>, never <em>wrong then corrected</em> (<a href="#s26">&sect;2.6.3</a>)</td></tr>
-<tr><td><strong>Carries the attribution the client knew at that moment</strong></td><td>both</td><td>Session-scoped on <code>session_start</code>, user-scoped on <code>first_visit</code></td></tr>
-<tr><td><strong>Is the natural thing to name as a goal event</strong></td><td>both</td><td>A goal event is an author-named event, and the marker mechanism is what materialises it (<a href="#s13">&sect;1.3.3</a>)</td></tr>
-</tbody></table></div>
-<p class="note">A marker cannot be duplicated. Its id is content-derived &mdash;
-<code>hash(site_id + session_id + 'session_start')</code> &mdash; so two racing writers produce the
-same row and the second insert collapses at the table. It can still be <em>lost</em>, which is what
-the counting rules below are about, and what makes its atomic write with the
-<code>page_view</code> it was raised from load-bearing (<a href="#s26">&sect;2.6.2</a>): a page view
-that landed without its <code>session_start</code> is not something a later pass can repair.</p>
+<p><strong>A marker gives a session or a visitor one row of its own.</strong> Nothing in this
+design reads that row yet: totals are a distinct count of <code>(visitor_id, session_id)</code>
+over event rows, breakdowns group by a stamped column, and acquisition is written by any event of
+a visitor's first session (<a href="#s29">&sect;2.9</a>). The marker's value is that it makes a
+session countable as a row rather than a distinct, which is the cheaper shape over a wide window,
+and that it is the natural thing to name as a goal event (<a href="#s13">&sect;1.3.3</a>).</p>
+<p class="note">It cannot be duplicated: the id is content-derived, so two racing writers produce
+the same row and the second insert collapses at the table. It can be lost, with the beacon that
+raised it &mdash; see below.</p>
 
 <h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
-<p><strong>A marker cannot be lost on its own, but its beacon can.</strong> The client never
-sends a marker: it sends a <code>page_view</code> carrying flags, and the server raises the marker
-from them in the same atomic write (<a href="#s26">&sect;2.6.2</a>), so there is no state where the
-page view is stored and the marker is not.</p>
-<p><strong>The session's first beacon can still go missing while later ones arrive.</strong> The
-client commits the session to its cookie on <code>sendAccepted</code>, which fires when
-<code>sendBeacon</code> <em>queues</em> the request rather than when it is delivered, and fires
-unconditionally on the iframe fallback, which has no delivery signal at all. The server can also
-discard an accepted event silently. So a session can exist in the data with no
-<code>session_start</code> row.</p>
-<p><strong>What that costs is bounded, and it is not attribution.</strong> Source, medium and
-campaign are resolved at ingest on every event of the session
-(<a href="#s26">&sect;2.6.3</a>), so they are on the later rows. If it was the visitor's first
-session, any of those later events still writes the visitor row
-(<a href="#s29">&sect;2.9</a>). What is actually lost is the marker row itself and the landing
-page, which rides only the landing beacon (<a href="#s210">&sect;2.10</a>).</p>
-<p>Two rules still follow, because a breakdown and a total are not computed the same way:</p>
+<p>A total and a breakdown are computed differently, which sets two rules:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
@@ -317,14 +290,20 @@ page, which rides only the landing beacon (<a href="#s210">&sect;2.10</a>).</p>
 <p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
 A session the pass could not attribute is not missing from the grid, and it does not inflate
 <code>(not set)</code> either: the pass writes a sentinel where it failed, so that session groups
-under <code>(unknown)</code> (<a href="#s211">&sect;2.11</a>). Both are ordinary
-buckets, both sum, and neither is a remainder computed by subtraction.</p>
-<p class="note">A reconciliation row would be needed only if a breakdown were ever computed from a
+under <code>(unknown)</code> (<a href="#s211">&sect;2.11</a>). Both are ordinary buckets, both sum,
+and neither is a remainder computed by subtraction.</p>
+<p class="note">A lost first beacon takes its marker with it &mdash; the client commits the session
+on <code>sendAccepted</code>, which fires when <code>sendBeacon</code> queues rather than delivers
+&mdash; so a session can exist with no <code>session_start</code> row. Neither number above
+notices: attribution is resolved at ingest on every event, and the visitor row is written by any
+event of a first session. What goes with the beacon is the landing page, which rides only that one
+(<a href="#s210">&sect;2.10</a>).</p>
+<p class="note">A reconciliation row would be needed only if a breakdown were computed from a
 different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
-(<a href="#s15">&sect;1.5</a>). Both are out of the current design, so neither is specified. What
-survives from that reasoning is one rule worth keeping: <strong>a breakdown exceeding its total is
-a defect and is never clamped.</strong> It means an event-grain dimension has been crossed with a
-session metric, which <a href="#s213">&sect;2.13</a>'s scope algebra labels rather than hides.</p>
+(<a href="#s15">&sect;1.5</a>). Both are out of the current design. One rule from that reasoning is
+worth keeping: <strong>a breakdown exceeding its total is a defect and is never clamped.</strong>
+It means an event-grain dimension has been crossed with a session metric, which
+<a href="#s213">&sect;2.13</a>'s scope algebra labels rather than hides.</p>
 
 <h4><span class="num">1.3.3</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
 <p>1.x had twenty numbered goal slots. v2 has none: an author names a goal event and gives it an
