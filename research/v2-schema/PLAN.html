@@ -1152,6 +1152,15 @@ census of visitors: it holds the ones whose first attribution is known, and the 
 <em>insert-if-absent</em>, so a row written with nothing in it would be found present when the real
 <code>first_visit</code> arrived late on a queue drain or a rebuild, and would block the real value
 permanently, silently. Keeping the row absent leaves that path open.</p>
+
+<p><strong>Raw is what is authoritative here.</strong> It either holds a <code>first_visit</code>
+for that visitor or it does not. The store mirrors that, and the sentinel on a denormalised row is
+derived from the store missing &mdash; so of the three, only raw is a record; the other two are
+readings of it. A disagreement is therefore not a judgement call: rebuild the store from raw.</p>
+<p class="note">That holds only as far as raw is retained. Past that horizon raw no longer carries
+the <code>first_visit</code>, and the store is the sole record of an acquisition rather than a
+lookup over one &mdash; which is exactly the decoupling it exists for
+(<a href="#s15">&sect;1.5.4</a>), and the point beyond which it can no longer be rebuilt.</p>
 <p><strong>A value that rides every event does not belong here.</strong> <code>nps</code> is a
 counter the client maintains and sends on every beacon, so &ldquo;how many sessions has this
 visitor had&rdquo; is <code>MAX(nps)</code> in a group-by rather than a lookup &mdash; the same
