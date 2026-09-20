@@ -282,9 +282,7 @@ moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scope
 <tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
 <tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
-<p>The rollup carries the session's dimensional context rather than only its measures
-(<a href="#s21">&sect;2.1</a>), so a breakdown can be served from it without counting markers at
-all &mdash; markers are a fast path, not the source of truth. Where a total and a breakdown meet on
+<p>The rollup carries the session's traffic source alongside its measures (<a href="#s21">&sect;2.1</a>), so a source, medium, campaign or ad breakdown can be served from it without counting markers at all &mdash; markers are a fast path, not the source of truth. Any other breakdown comes from the denormalised table. Where a total and a breakdown meet on
 one screen the total wins, and the <code>(unknown)</code> row carries the remainder. Two rules keep
 that honest:</p>
 <ul>
@@ -340,7 +338,7 @@ can check.</li>
 <tbody>
 <tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed</td><td class="n">692,829</td></tr>
 <tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns &mdash; one pass</td><td class="n">692,829</td></tr>
-<tr><td>Rollup</td><td>day &times; dimensional context</td><td>a precomputation of the layer above, for windows too wide to scan. Start-day attributed</td><td class="n">5,785</td></tr>
+<tr><td>Rollup</td><td>day &times; traffic source</td><td>a precomputation of the layer above, for windows too wide to scan. Start-day attributed</td><td class="n">121 / 5,455 sessions</td></tr>
 </tbody></table></div>
 <p><strong>The fact table stops being primary.</strong> Events land in raw exactly as they arrived.
 A pass reads that and writes a denormalised fact table with session- and user-scoped values
@@ -760,54 +758,39 @@ both demand the staging table mirror the target — same columns, same order, sa
 same primary key. So staging carries no convenience columns, and a schema change alters both in
 one step or the swap starts failing.</p>
 
-<h5>Rollup — <code>owa_event_rollup</code> <span class="chip c-open">Open</span></h5>
-
-<p><strong>The grain is one row per day &times; dimensional context</strong>, which is what
-reconciles the two things asked of this table: <a href="#s15">&sect;1.5</a> counts 5,785 rows
-against 692,829 events, and <a href="#s13">&sect;1.3.2</a> has breakdowns served from it without counting markers, which means it has to carry the session's dimensional
-context rather than only its measures. 5,785 is far too few for session grain over that corpus
-and far too many for site-day totals.</p>
-
-<p>The layout that follows from it:</p>
-
+<h5>Rollup &mdash; <code>owa_event_rollup</code> <span class="chip c-dec">Decided</span></h5>
+<p><strong>The grain is one row per day &times; traffic source.</strong> Nothing else is in the
+key. The rollup exists so that a wide window does not have to scan events, and a key wide enough to
+answer every breakdown stops compressing &mdash; measured on real traffic, adding geography and
+device takes 5,455 sessions to 787 rows, and adding the landing page takes it to 5,203. At that
+point it is the session set with a staleness lag. See <a href="#nA125">the appendix</a>.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Part</th><th>Note</th></tr></thead>
 <tbody>
 <tr><td class="n">1</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>key</td><td></td></tr>
 <tr><td class="n">2</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>key</td><td>the grain. Start-day attributed; 0.23% of sessions cross midnight</td></tr>
-<tr><td class="n">3</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>context</td><td>carried so a breakdown sums to its total</td></tr>
-<tr><td class="n">4</td><td><code>source</code></td><td>VARCHAR(255)</td><td>context</td><td></td></tr>
-<tr><td class="n">5</td><td><code>campaign</code></td><td>VARCHAR(255)</td><td>context</td><td></td></tr>
-<tr><td class="n">6</td><td><code>ad</code></td><td>VARCHAR(255)</td><td>context</td><td></td></tr>
-<tr><td class="n">7</td><td><code>search_terms</code></td><td>VARCHAR(255)</td><td>context</td><td></td></tr>
-<tr><td class="n">8</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>context</td><td>the widest key column</td></tr>
-<tr><td class="n">9</td><td><code>country</code></td><td>VARCHAR(64)</td><td>context</td><td></td></tr>
-<tr><td class="n">10</td><td><code>city</code></td><td>VARCHAR(128)</td><td>context</td><td></td></tr>
-<tr><td class="n">11</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>context</td><td></td></tr>
-<tr><td class="n">12</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>context</td><td></td></tr>
-<tr><td class="n">13</td><td><code>os</code></td><td>VARCHAR(64)</td><td>context</td><td></td></tr>
-<tr><td class="n">14</td><td><code>language</code></td><td>VARCHAR(16)</td><td>context</td><td></td></tr>
-<tr><td class="n">15</td><td><code>host</code></td><td>VARCHAR(255)</td><td>context</td><td></td></tr>
-<tr><td class="n">16</td><td><code>sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>counted from <code>session_start</code> markers</td></tr>
-<tr><td class="n">17</td><td><code>events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">18</td><td><code>page_views</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">19</td><td><code>new_visitors</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>from <code>first_visit</code> markers. Additive; unique visitors are not — <a href="#s31">&sect;3.1</a></td></tr>
-<tr><td class="n">20</td><td><code>engaged_sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>a <code>DISTINCT IF</code> in the job, not a stored state</td></tr>
-<tr><td class="n">21</td><td><code>bounces</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">22</td><td><code>engagement_msec</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>SUM of the per-event deltas</td></tr>
-<tr><td class="n">23</td><td><code>goal_events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
-<tr><td class="n">24</td><td><code>revenue</code></td><td>BIGINT</td><td>measure</td><td>minor units</td></tr>
-<tr><td class="n">25</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>meta</td><td>when the job last rebuilt this row. This is the <em>as-of</em> value the API freshness envelope reports &mdash; <a href="#s16">&sect;1.6</a></td></tr>
+<tr><td class="n">3</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>key</td><td></td></tr>
+<tr><td class="n">4</td><td><code>source</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
+<tr><td class="n">5</td><td><code>campaign</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
+<tr><td class="n">6</td><td><code>ad</code></td><td>VARCHAR(255)</td><td>key</td><td></td></tr>
+<tr><td class="n">7</td><td><code>sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>counted from <code>session_start</code> markers</td></tr>
+<tr><td class="n">8</td><td><code>events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>no per-type breakdown &mdash; an action or click report reads the denormalised table</td></tr>
+<tr><td class="n">9</td><td><code>page_views</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
+<tr><td class="n">10</td><td><code>new_visitors</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>from <code>first_visit</code> markers. Additive; unique visitors are not &mdash; <a href="#s31">&sect;3.1</a></td></tr>
+<tr><td class="n">11</td><td><code>engaged_sessions</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>a <code>DISTINCT IF</code> in the job, not a stored state</td></tr>
+<tr><td class="n">12</td><td><code>bounces</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
+<tr><td class="n">13</td><td><code>engagement_msec</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td>SUM of the per-event deltas</td></tr>
+<tr><td class="n">14</td><td><code>goal_events</code></td><td>BIGINT UNSIGNED</td><td>measure</td><td></td></tr>
+<tr><td class="n">15</td><td><code>revenue</code></td><td>BIGINT</td><td>measure</td><td>minor units</td></tr>
+<tr><td class="n">16</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>meta</td><td>when the job last rebuilt this row &mdash; the <em>as-of</em> the API reports (<a href="#s16">&sect;1.6</a>)</td></tr>
 </tbody></table></div>
-
-<p class="note">Bounce rate is <code>1 &minus; engaged_sessions/sessions</code> and earns no
-column. Two things about this table are open &mdash; whether unique visitors can live here at all,
-and how far the parameter map may widen the key &mdash; and both are listed in
+<p class="note">Bounce rate is <code>1 &minus; engaged_sessions/sessions</code> and earns no column.
+<strong>Everything outside the key comes from the denormalised table</strong> &mdash; geography,
+device, language, host, search terms, landing page, page path, and every action and click
+dimension. That is where <a href="#s15">&sect;1.5.1</a> already puts them, and a narrow key is what
+keeps the rollup worth having. What it drives, widget by widget, is
+<a href="#nA126">the appendix</a>; whether unique visitors can live here at all is
 <a href="#s31">&sect;3.1</a>.</p>
-
-<p>Until those are answered the rollup's column list is a sketch. The two tables above are not:
-they follow from &sect;1.5, and the pass that fills the second from the first is specified there.</p>
-
 
 <h4><span class="num">2.1.2</span>Notes on all three</h4>
 <p class="note">Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
@@ -1619,7 +1602,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
 <tr><td><strong>Unique visitors in the rollup</strong></td><td>Every rollup measure is additive across rows except uniques, so a rollup row cannot carry them and still have breakdowns sum to their totals — which <a href="#s111">&sect;1.11</a> promises.</td><td>Either uniques come from the denormalised table and are slower, or the rollup carries a sketch and the exactness promise is narrowed in writing.</td></tr>
-<tr><td><strong>Parameter map cardinality</strong></td><td>Custom variables in the rollup key are what remove 1.x's five fixed slots, but unregistered keys multiply the row count by their cardinality.</td><td>A decision on whether unregistered keys enter the rollup key at all, or only keys promoted per site &mdash; the treatment <a href="#s213">&sect;2.13</a> already gives param paths.</td></tr>
+<tr><td><strong>Custom variables in reporting</strong></td><td>Unregistered custom variables replace 1.x's five fixed slots, and are queryable from the denormalised table. They are deliberately <em>not</em> in the rollup key, so a wide-window report grouped by a custom variable scans events.</td><td>A decision on whether unregistered keys enter the rollup key at all, or only keys promoted per site &mdash; the treatment <a href="#s213">&sect;2.13</a> already gives param paths.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
@@ -1991,6 +1974,46 @@ that groups by a <em>labelled</em> value must fold labels, not rows.</p>
 <p>The name also moved to the legacy class-name test's RETIRED
 list, which asserts it is gone rather than merely dropping it — a real backward-compat break,
 taken deliberately.</p>
+<h4 id="nA129"><span class="num">A.1.29</span>Measured: what each rollup key column costs</h4>
+<p>peteradamsphoto, August 2026 &mdash; <strong>5,455 sessions over 31 days</strong>. Each row adds
+the named columns to the <code>GROUP BY</code> that builds the rollup, so the row count is the
+product of the key's cardinalities rather than the sum.</p>
+<div class="scroll"><table>
+<thead><tr><th>Key</th><th class="n">Rows</th><th class="n">Compression</th><th>Cost of the addition</th></tr></thead>
+<tbody>
+<tr><td>day only</td><td class="n">31</td><td class="n">176&times;</td><td></td></tr>
+<tr><td>+ medium</td><td class="n">89</td><td class="n">61&times;</td><td>&times;2.9</td></tr>
+<tr><td>+ source</td><td class="n">121</td><td class="n">45&times;</td><td>&times;1.4</td></tr>
+<tr><td><strong>+ campaign, ad &mdash; the chosen key</strong></td><td class="n"><strong>121</strong></td><td class="n"><strong>45&times;</strong></td><td>&times;1.0 on this install, which runs no campaigns</td></tr>
+<tr><td>+ country, city</td><td class="n">669</td><td class="n">8&times;</td><td><strong>&times;5.5</strong> &mdash; city is the expensive one</td></tr>
+<tr><td>+ os, language, host</td><td class="n">787</td><td class="n">6.9&times;</td><td>&times;1.2</td></tr>
+<tr><td>+ landing page</td><td class="n">5,203</td><td class="n"><strong>1.05&times;</strong></td><td><strong>&times;6.6</strong> &mdash; the rollup becomes the session set</td></tr>
+</tbody></table></div>
+<p>This is why the key stops at traffic source. An earlier draft of
+<a href="#s21">&sect;2.1</a> carried thirteen context columns including landing page, city and
+search terms, and justified the grain by citing 5,785 rollup rows against 692,829 events. That
+figure is not consistent with that key: on real traffic a key that wide produces roughly one row
+per session, so it would have been describing a materialised session view rather than an aggregate,
+and the freshness lag in <a href="#s16">&sect;1.6</a> would buy nothing in exchange.</p>
+
+<h4 id="nA130"><span class="num">A.1.30</span>Measured: what the rollup drives</h4>
+<p>Against the 49 report definitions on master, <strong>121 widgets</strong>:</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">Widgets</th><th>Shape</th><th>Served by the day &times; traffic-source key?</th></tr></thead>
+<tbody>
+<tr><td class="n">51</td><td>trend, grouped by <code>date</code></td><td><strong>Yes</strong> &mdash; the chart at the top of nearly every report, and the rollup's main workload</td></tr>
+<tr><td class="n">4</td><td>no dimension &mdash; totals and metric boxes</td><td><strong>Yes</strong></td></tr>
+<tr><td class="n">13</td><td>grouped by medium, source, campaign, ad, adType</td><td><strong>Yes</strong> &mdash; the traffic pies, the sources and campaigns grids, ads, ad types, ecommerce by source</td></tr>
+<tr><td class="n">2</td><td>grouped by country or browserType</td><td>No &mdash; one grid-card each, not worth 5.5&times; on every row</td></tr>
+<tr><td class="n">51</td><td>page, action, product, visitor-recency dimensions</td><td>No &mdash; <code>pagePath</code>, <code>entryPagePath</code>, <code>exitPagePath</code>, <code>pageTitle</code>, <code>actionGroup</code>, <code>actionName</code>, <code>domElementId</code>, <code>productName</code>, <code>priorVisitCount</code>, <code>daysSince*</code></td></tr>
+</tbody></table></div>
+<p><strong>The metric constrains it further than the dimension does.</strong>
+<code>uniqueVisitors</code> appears in seven widget queries and does not sum across day rows, so a
+month cannot be had by adding thirty rollup rows whatever the key
+(<a href="#s31">&sect;3.1</a>). The ratios are fine: <code>bounceRate</code>,
+<code>pagesPerVisit</code>, <code>visitDuration</code> and <code>ecommerceConversionRate</code> all
+compute from additive components the rollup holds.</p>
+
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
