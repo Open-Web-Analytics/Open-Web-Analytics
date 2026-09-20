@@ -726,7 +726,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">35</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
 </tbody></table></div>
 
-<p><strong>What raw does NOT have</strong> is the five the 40-column list carried:
+<p><strong>What raw does NOT have</strong> are the five attribution columns:
 <code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code> and
 <code>search_terms</code>. Those are readings of evidence rather than evidence — the referrer
 table changes and channel grouping is a classification — so they are derived in the pass. The
@@ -845,15 +845,14 @@ one step or the swap starts failing.</p>
 
 <h5>Rollup — <code>owa_event_rollup</code> <span class="chip c-open">Open</span></h5>
 
-<p><strong>This one is not settled, and the plan says two different things about it.</strong> &sect;1.3
-describes a <em>day</em> rollup — "totals and trends", 5,785 rows against 692,829 events. &sect;1.2
-says it "is the authority for session counts <em>and</em> their breakdowns, which means it carries
-the session's dimensional context &mdash; taken from the session's own events &mdash; plus a
-parameter map for custom variables." Those are not the same table.</p>
+<p><strong>The grain is one row per day &times; dimensional context</strong>, which is what
+reconciles the two things asked of this table: <a href="#s15">&sect;1.5</a> counts 5,785 rows
+against 692,829 events, and <a href="#s13">&sect;1.3.2</a> makes it the authority for session
+counts <em>and</em> their breakdowns, which means it has to carry the session's dimensional
+context rather than only its measures. 5,785 is far too few for session grain over that corpus
+and far too many for site-day totals.</p>
 
-<p>The reconciliation that fits both figures is <strong>one row per (day × dimensional
-context)</strong>, not per day and not per session: 5,785 is far too few for session grain over
-that corpus and far too many for site-day totals. On that reading the layout is:</p>
+<p>The layout that follows from it:</p>
 
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Part</th><th>Note</th></tr></thead>
@@ -2125,7 +2124,7 @@ administrator's decision rather than an upgrade's side effect.</p>
 <!-- ============ PART IV ============ -->
 <h2><span class="secn">III</span>Open issues</h2>
 <h3 id="s31"><span class="num">3.1</span>Everything still undecided</h3>
-<p>Everything undecided, and what would settle it. Anything with an answer lives in
+<p>Anything with an answer lives in
 <a href="#s11">Architecture</a> or <a href="#s21">Implementation</a>; the reasoning behind the
 answers is in <a href="#sa1">the appendix</a>.</p>
 
@@ -2139,9 +2138,9 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
 <tr><td><strong>Unique visitors in the rollup</strong></td><td>Every rollup measure is additive across rows except uniques, so a rollup row cannot carry them and still have breakdowns sum to their totals — which <a href="#s112">&sect;1.12</a> promises.</td><td>Either uniques come from the denormalised table and are slower, or the rollup carries a sketch and the exactness promise is narrowed in writing.</td></tr>
-<tr><td><strong>Parameter map cardinality</strong></td><td>Custom variables in the rollup key are what remove 1.x's five fixed slots, but unregistered keys multiply the row count by their cardinality.</td><td>Promotable-per-site, as <a href="#s212">&sect;2.12</a> treats param paths — a separate decision from this one.</td></tr>
+<tr><td><strong>Parameter map cardinality</strong></td><td>Custom variables in the rollup key are what remove 1.x's five fixed slots, but unregistered keys multiply the row count by their cardinality.</td><td>A decision on whether unregistered keys enter the rollup key at all, or only keys promoted per site &mdash; the treatment <a href="#s212">&sect;2.12</a> already gives param paths.</td></tr>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
-<tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>Undecided.</td></tr>
+<tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Does the profile carry the schema version?</strong></td><td>Every automatic way of resolving which version a query uses fails &mdash; dates, watermarks and an install-wide flag each break on dual-write or on history that is never migrated. <a href="#s222">&sect;2.22</a> proposes carrying it on an Observation Profile instead, and is the only candidate on the table.</td><td>Accepting it also settles how <a href="#s110">&sect;1.10</a>'s tiers are used, which is why that section stops short of asserting it.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s216">&sect;2.16</a>.</td></tr>
 </tbody></table></div>
