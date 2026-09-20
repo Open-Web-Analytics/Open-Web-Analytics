@@ -732,7 +732,7 @@ split is not arbitrary: <strong>a column belongs to raw if it is an observation 
 resolution, and to the denormalised table if a pass has to derive it.</strong> That is the same
 cut §1.13 applies to the wire, one layer down.</p>
 
-<h5>Raw — <code>owa_event_raw</code>, 36 columns</h5>
+<h5>Raw — <code>owa_event_raw</code>, 35 columns</h5>
 
 <p>Append-only, written one beacon at a time, never updated. It is the record of what was
 observed and the surface realtime queries.</p>
@@ -742,7 +742,7 @@ observed and the surface realtime queries.</p>
 <tbody>
 <tr><td>identity and time</td><td><code>id</code>, <code>event_type</code>, <code>site_id</code>, <code>visitor_id</code>, <code>session_id</code>, <code>user_id</code>, <code>ts</code>, <code>yyyymmdd</code></td><td>observed, or assigned at collection</td></tr>
 <tr><td>carried anchors</td><td><code>visitor_fsts</code>, <code>prior_sessions</code></td><td>counters the client already maintains — §1.13's carry rule</td></tr>
-<tr><td>observed event</td><td><code>page_uri</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, <code>ip_address</code>, <code>language</code>, <code>raw_ua</code>, <code>landing_url</code></td><td>on the beacon. <code>landing_url</code> is the evidence campaign tags are parsed from</td></tr>
+<tr><td>observed event</td><td><code>page_uri</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, <code>ip_address</code>, <code>language</code>, <code>raw_ua</code></td><td>on the beacon. <code>page_uri</code> carries its query string, which is where the campaign tags are — see below</td></tr>
 <tr><td>mechanical resolutions</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>country</code>, <code>city</code></td><td>deterministic lookups from <code>raw_ua</code> and <code>ip_address</code>, no model and no cross-event context — so they resolve <strong>at ingest</strong>, which is why realtime has them (as GA's does)</td></tr>
 <tr><td>event-specific</td><td><code>click_x</code>, <code>click_y</code>, <code>page_width</code>, <code>page_height</code>, <code>target_url</code>, <code>element_path</code>, <code>element_tag</code>, <code>element_id</code>, <code>scroll_depth</code>, <code>engagement_msec</code>, <code>is_goal_event</code>, <code>revenue</code></td><td>observed; <code>engagement_msec</code> is the per-event delta, not a session total</td></tr>
 <tr><td>open-ended</td><td><code>params</code></td><td>what cannot be a column</td></tr>
@@ -755,6 +755,37 @@ table changes and channel grouping is a classification — so they are derived i
 consequence is stated in §1.13 and is deliberate: a live query can show a referring host but not
 a resolved campaign.</p>
 
+<p class="note"><strong>No <code>landing_url</code> column, and that is a correction.</strong>
+An earlier draft of this list gave raw one. In v2 it would be populated on the session's first
+event and NULL on every other — and on that one row it would duplicate <code>page_uri</code>,
+since the landing page <em>is</em> the page that event happened on. The pass reads the session's
+first event for the tags and the landing page alike, so the column earns nothing. <strong>v1 is
+different and keeps it</strong>: v1 has no pass, so its server must be told on every beacon or it
+cannot stamp the fact row — which is what PR&nbsp;#1117 ships.</p>
+
+<p><strong>Which turns on what &ldquo;URI&rdquo; excludes, and it is not the query.</strong>
+RFC&nbsp;3986 defines a URI as <code>scheme:[//authority]path[?query][#fragment]</code> — the
+query is a <em>component</em> of it, and <code>REQUEST_URI</code> carries it in every server
+that reports one. The distinction §1.9 draws with &ldquo;URI, not URL&rdquo; is about the
+<strong>authority</strong>: dropping scheme and host is exactly what collapses
+<code>mydomain.com/x</code> and <code>www.mydomain.com/x</code> into one page and lets domain
+aliases be dropped rather than ported. It was never about the query, and reading it that way is
+the easy mistake — it costs the campaign evidence.</p>
+
+<p><strong>So <code>page_uri</code> keeps its query string, and the plan has to say so, because
+identity cannot then hash it raw.</strong> Page identity is
+<code>hash(site_id + uri)</code> and §3.5 retires canonicalisation as v1-only machinery, so
+nothing normalises the URI before it is hashed. Hash the raw URI with its query and every
+campaign-tagged arrival becomes a distinct page, fragmenting the landing-page report into one row
+per tag combination. Strip the query and the campaign evidence is gone from raw entirely.</p>
+
+<p><strong>So the two are separated deliberately:</strong> <code>page_uri</code> stores the full
+URI <em>including</em> the query, and page identity hashes a <em>normalised</em> form of it with
+the campaign parameters removed. One column, two readings — the stored value is evidence, the
+hash is identity. This is the one piece of canonicalisation that does not disappear with v1, and
+it is cheaper than v1's, which rewrote stored URLs; here nothing is rewritten, the hash just
+ignores part of its input.</p>
+
 <h5>Denormalised — <code>owa_event</code>, 48 columns</h5>
 
 <p>Every raw column, unchanged and in the same order, plus twelve the pass stamps on. Queries hit
@@ -763,7 +794,7 @@ this table; nothing else does.</p>
 <div class="scroll"><table>
 <thead><tr><th>Added</th><th>Scope</th><th>Derived from</th></tr></thead>
 <tbody>
-<tr><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td><td>session</td><td><code>landing_url</code> and <code>referer_url</code>, resolved against the referrer and search-engine tables</td></tr>
+<tr><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td><td>session</td><td>the session's first event — its <code>page_uri</code> query string, and <code>referer_url</code> — resolved against the referrer and search-engine tables</td></tr>
 <tr><td><code>landing_page_uri</code></td><td>session</td><td>the session's first event</td></tr>
 <tr><td><code>is_exit</code></td><td>session, terminal</td><td>the session's last event — the flag §1.2 says the 5% of exit-page pairs need</td></tr>
 <tr><td><code>acq_source</code>, <code>acq_medium</code>, <code>acq_campaign</code>, <code>acq_ad</code>, <code>acq_search_terms</code></td><td>user</td><td>the visitor store, keyed on <code>visitor_id</code> — the only lookup the pass makes outside the partition</td></tr>
@@ -1179,7 +1210,7 @@ the pass has to reach; that cut decides <em>whether it reaches at all</em>.</p>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon, which GA does not</td></tr>
 <tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
-<tr><td>session</td><td>landing page / <code>landing_url</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
+<tr><td>session</td><td>landing page / <code>landing_page_uri</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
 </table>
@@ -1662,7 +1693,7 @@ decided months ago.</p>
 <p><strong>In v1 the tracker carries it on every beacon; in v2 it does not.</strong> The
 difference is that v1 has no pass. Its server is told or it cannot stamp the fact row, so the
 landing URL has to ride the session store and go out with every request. v2 has somewhere to put
-the work: <strong>the pass stamps <code>landing_url</code> onto every denormalised row</strong>, so
+the work: <strong>the pass stamps <code>landing_page_uri</code> onto every denormalised row</strong>, so
 the wire only needs it once, on the landing beacon, where <code>page_url</code> already is it. The
 tracker cookie loses the key entirely.</p>
 
