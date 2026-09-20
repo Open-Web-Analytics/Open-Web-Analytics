@@ -224,7 +224,7 @@ since the last report. Losing a beacon then costs one increment rather than one 
 <p>The hide-time <code>user_engagement</code> event carries the residue since the last event, and
 fires on any hide at any size &mdash; the threshold gates read-time classification, never the send,
 or it would bake itself into collection. Its id is content-derived,
-<code>hash(site_id + session_id + seq)</code>, <code>seq</code> being a session-scoped counter. It is beaconed at hide and then rides the session's next
+keyed on the session and a session-scoped <code>seq</code> (<a href="#s21">&sect;2.1.2</a>). It is beaconed at hide and then rides the session's next
 request as parameters rather than a separate catch-up beacon, so duplicates collapse at the table.
 <strong>Final-page dwell is the one irreducible lossy attempt</strong>, and the thing 1.x cannot
 measure at all.</p>
@@ -658,18 +658,32 @@ same primary key. So staging carries no convenience columns, and a schema change
 one step or the swap starts failing.</p>
 
 <h4><span class="num">2.1.2</span>How an event id is derived</h4>
-<p>An id is <strong>63 bits, always positive</strong>, and is produced one of two ways. The rule
-behind the split: an id has to be reproducible whenever the same event can arrive twice, and
-random is only safe where a second arrival carries the first id with it.</p>
+<p>An id is <strong>63 bits, always positive</strong>, and is either derived from the event&rsquo;s
+own content or random. It has to be derived wherever the same event can arrive twice; random is
+safe only where a second arrival carries the first id with it.</p>
+
+<p><strong>One derivation serves every derived id</strong> &mdash;
+<code>hash(site_id + visitor_id + session_id + event_name + seq)</code> &mdash; and each event type
+declares which parts of that key it uses:</p>
 
 <div class="scroll"><table>
-<thead><tr><th>Event</th><th>Its id</th><th>Why that one</th></tr></thead>
+<thead><tr><th>Event</th><th>Key</th><th>Why that key</th></tr></thead>
 <tbody>
-<tr><td><code>session_start</code></td><td><code>hash(site_id + session_id + &lsquo;session_start&rsquo;)</code></td><td>Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
-<tr><td><code>first_visit</code></td><td><code>hash(site_id + visitor_id + &lsquo;first_visit&rsquo;)</code></td><td>Keyed on the visitor, not the session: racing tabs can each believe they minted the visitor, and a visitor has exactly one first visit. An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
-<tr><td><code>user_engagement</code></td><td><code>hash(site_id + session_id + seq)</code></td><td>Beacon and retry are independent arrivals, so a random id would write the residue twice. <code>seq</code> is session-scoped, so there is no page identity to hash against and none is needed</td></tr>
-<tr><td>every other event, <code>page_view</code> included</td><td>random, minted once at edge receipt</td><td>It travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays the same id and collapses at the primary key</td></tr>
+<tr><td><code>session_start</code></td><td>site, visitor, session, name</td><td>At most once per session. Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
+<tr><td><code>first_visit</code></td><td>site, visitor, name</td><td>At most once per visitor, ever. <strong>The session drops out of the key:</strong> racing tabs can each mint a session and each believe they created the visitor, and keeping <code>session_id</code> would write the marker twice. An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
+<tr><td><code>user_engagement</code></td><td>site, visitor, session, name, <code>seq</code></td><td>Repeatable within a session, so the counter separates one residue from the next. Beacon and retry are independent arrivals and both carry the same <code>seq</code></td></tr>
+<tr><td>every other event, <code>page_view</code> included</td><td>not derived &mdash; random, minted once at edge receipt</td><td>The id travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays it and collapses at the primary key</td></tr>
 </tbody></table></div>
+
+<p class="note">Both of the other two parts earn their place. <code>session_id</code> is not
+unique on its own (<a href="#s12">&sect;1.2</a>) &mdash; two visitors starting in the same second
+can share one &mdash; so without <code>visitor_id</code> the key would derive a single id for both
+their markers and drop one. And <code>visitor_id</code> carries no site: the tracker mints it as a
+timestamp plus nine random digits and the salt its callers still pass is discarded
+(<a href="#s14">&sect;1.4</a>). Every report filters by site, so two sites minting the same
+<code>visitor_id</code> stay correctly separated in reporting &mdash; but the primary key is global
+to a partition, and a partition holds every site&rsquo;s rows
+(<a href="#s217">&sect;2.17</a>).</p>
 
 <p><strong>The hash is 1.x&rsquo;s, unchanged.</strong> <code>Lib::wideStringGuid()</code>: sha1 of
 the lowercased string, first 16 hex characters, split into two 32-bit halves with the top bit of
@@ -684,7 +698,7 @@ effect. Against a 2<sup>63</sup> key space, a day of 10 million events carries r
 5&nbsp;&times;&nbsp;10<sup>&minus;6</sup> chance of one collision within that day; the loser is
 silently dropped as a duplicate key.</p>
 
-<p class="note">The two content-derived cases also take <code>yyyymmdd</code> from the timestamp
+<p class="note">Derived ids also take <code>yyyymmdd</code> from the timestamp
 inside <code>session_id</code> rather than from receipt, or a retry after midnight lands in a
 partition where the primary key cannot see the original &mdash; <a href="#s21">&sect;2.1.3</a>.</p>
 
@@ -1918,7 +1932,7 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 <p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
 window.</p>
 <h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen; a lost beacon takes its marker with it</h4>
-<p>The marker's event id is content-derived — <code>hash(site_id + session_id +
+<p>The marker's event id is content-derived — <code>hash(site_id + visitor_id + session_id +
 'session_start')</code> — so racing writers produce the same row and the second insert is a
 duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
 Locks API is origin-scoped and could not reach.</p>
