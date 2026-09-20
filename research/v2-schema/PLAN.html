@@ -182,7 +182,7 @@ than smoothed over.</p>
 <!-- ============ PART I ============ -->
 <h2><span class="secn">I</span>Architecture</h2>
 <h3 id="s11"><span class="num">1.1</span>The shape <span class="chip c-dec">Decided</span></h3>
-<p>Every tracked interaction becomes one row in one table, GA4-style, replacing ten parallel fact
+<p>Every tracked interaction becomes one row in one table, replacing ten parallel fact
 tables and their dimension satellites. A write is a single insert with no lookups &mdash; no session upsert, no dimension
 check-and-create &mdash; and the ids of events that must collapse on redelivery are derived from
 their own content rather than assigned.</p>
@@ -190,7 +190,7 @@ their own content rather than assigned.</p>
 <thead><tr><th>Piece</th><th>What it settles</th></tr></thead>
 <tbody>
 <tr><td><a href="#s12">&sect;1.2</a> Sessions</td><td>A session is not a row; engagement is measured in deltas and classified at read time</td></tr>
-<tr><td><a href="#s13">&sect;1.3</a> Events and markers</td><td>GA4's vocabulary; what a marker is, and why totals never come from one</td></tr>
+<tr><td><a href="#s13">&sect;1.3</a> Events and markers</td><td>The event vocabulary; what a marker is, and why totals never come from one</td></tr>
 <tr><td><a href="#s14">&sect;1.4</a> Visitor identity</td><td>The one identity v2 mints, and the collision limit it accepts</td></tr>
 <tr><td><a href="#s15">&sect;1.5</a> Three storage layers</td><td>Raw, denormalised, rollup &mdash; and a pass that can rebuild the middle one</td></tr>
 <tr><td><a href="#s16">&sect;1.6</a> Freshness</td><td>Two tiers; every answer carries an as-of time</td></tr>
@@ -254,8 +254,7 @@ value rides every event, so losing one costs nothing or a single increment. Wher
 either shape, it goes on every event.</p>
 
 <h3 id="s13"><span class="num">1.3</span>Events and markers <span class="chip c-dec">Decided</span></h3>
-<p>GA4's taxonomy is the guide, because it is the vocabulary the market already speaks. The event
-set itself is tabulated in <a href="#s22">&sect;2.2</a>.</p>
+<p>The event set is tabulated in <a href="#s22">&sect;2.2</a>.</p>
 <p><strong>Two of those events are markers, and no browser sends them.</strong>
 <code>session_start</code> and <code>first_visit</code> are materialised by the server from state
 already riding the session's first <code>page_view</code> request, so they cost nothing on the
@@ -273,7 +272,7 @@ the natural thing to name as a goal event.</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>A session <strong>total</strong></td><td>the day rollup</td><td>A lost marker then degrades that session's attribution without erasing the session. GA4 counts sessions the same way, for the same reason</td></tr>
+<tr><td>A session <strong>total</strong></td><td>the day rollup</td><td>A lost marker then degrades that session's attribution without erasing the session</td></tr>
 <tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
 <tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
@@ -302,9 +301,7 @@ conversion;</li>
 <li>the <code>event_type</code> vocabulary therefore <strong>stops being closed</strong> &mdash;
 intended, but stated so nobody discovers it by naming a goal event <code>page_view</code>.</li>
 </ul>
-<p class="note">They are called <strong>goal events</strong>, not key events: a 1.x installation has
-goals and the people using it say goals. Where this document describes GA it still says key event.
-The numbered slots are already gone in 1.x, so v2 inherits authored goal events rather than
+<p class="note">They are called <strong>goal events</strong>, because a 1.x installation has goals and the people using it say goals. The numbered slots are already gone in 1.x, so v2 inherits authored goal events rather than
 introducing them &mdash; counting, per-goal metrics and the once-per-session clamp are
 <a href="#s220">&sect;2.20</a>.</p>
 
@@ -319,8 +316,7 @@ bits &mdash; but it is spent on the timestamp, so within any one second only abo
 separate two visitors. It cannot be improved: re-dividing the budget provably cancels, because
 coarsening the time bucket by <em>k</em> multiplies ids per bucket by <em>k</em> and grows the
 random space by the same <em>k</em>. The rate is <strong>~0.8 collisions/year at 10 new visitors/sec</strong>,
-and each one silently merges two people. GA's <code>_ga</code> uses the same construction with one
-more bit. The discarded salt was removed rather than honoured (PR&nbsp;#1017).</li>
+and each one silently merges two people. The discarded salt was removed rather than honoured (PR&nbsp;#1017).</li>
 <li><code>is_new_visitor</code> becomes <strong>derivable</strong> from the first-seen timestamp
 carried on every event, rather than being a marker.</li>
 <li><strong>Known users resolve at collection time only.</strong> Events collected before someone
@@ -375,13 +371,10 @@ shapes.</p>
 <tr><td>A columnar reporting store later</td><td>Bulk load, partition replace, no row-level updates &mdash; so a move to such a store does not mean rewriting the pipeline</td></tr>
 </tbody></table></div>
 <p><strong>Realtime is a query of the raw table</strong>, so its dimension set is smaller rather
-than arbitrarily limited: only what is on the event can be reported live. OWA carries
-session-scoped values on the wire where GA does not, so event and session scope are both
-raw-resident here and only user scope waits for the pass.</p>
+than arbitrarily limited: only what is on the event can be reported live. OWA carries session-scoped values on the wire, so event and session scope are both raw-resident and only user scope waits for the pass.</p>
 
 <h4><span class="num">1.5.3</span>What to carry and what to derive</h4>
-<p>The rule is not &ldquo;carry what cannot be derived&rdquo; &mdash; GA carries first-seen and
-session count, both readily derivable. It is about what kind of thing the value is:</p>
+<p>The rule is not &ldquo;carry what cannot be derived&rdquo;: first-seen and session count are both readily derivable and are carried anyway. It is about what kind of thing the value is:</p>
 <div class="scroll"><table>
 <thead><tr><th>Kind</th><th>Treatment</th><th>Why</th></tr></thead>
 <tbody>
@@ -439,8 +432,7 @@ working?&rdquo; &mdash; the question that must never be stale &mdash; never touc
 more often: on the traffic report that is nine full-period aggregations every fifteen seconds. The
 cost scales with period width &times; widget count and not at all with how much changed: it asks a
 historical question to get a realtime answer.</p>
-<p><strong>Realtime becomes a single dedicated screen</strong>, a short window over raw events. One
-query, one partition, no summary touched. This is also what GA ships, and it removes the per-report
+<p><strong>Realtime becomes a single dedicated screen</strong>, a short window over raw events. One query, one partition, no summary touched. It removes the per-report
 auto-refresh control and the per-widget polling behind it.</p>
 <p class="note">What this does not fix: historical reports remain stale for the current day, because
 they read the rollup. The answer is composition rather than polling &mdash;
@@ -517,8 +509,7 @@ and they are not of equal size:</p>
 <tr><td>The store is withheld until <code>sendAccepted</code></td><td>Edge cases only: a lost beacon means no session where one would previously have been recorded</td></tr>
 <tr><td>A session restarts when new attribution tags are seen</td><td><strong>The material change.</strong> A visitor who arrives tagged, browses, then re-enters through another tagged link inside the timeout now starts a new session where v1 kept one</td></tr>
 </tbody></table></div>
-<p>The last is GA's behaviour, and the reason the tracker must notice a mid-session tag change and
-restart cleanly. Its size depends on traffic mix &mdash; near zero for organic-only sites, material
+<p>The last is why the tracker must notice a mid-session tag change and restart cleanly. Its size depends on traffic mix &mdash; near zero for organic-only sites, material
 for campaign-heavy ones &mdash; and cannot be taken from v1's own history, because
 <code>setTrafficAttribution()</code> stores the decided verdict rather than the observation
 (<a href="#nA114">A.1</a>).</p>
@@ -560,18 +551,18 @@ or it newly permits nonsense.</p>
 <div class="scroll"><table>
 <thead><tr><th>Not doing</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td><strong>Query-time sampling</strong></td><td>GA samples to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term.</td></tr>
-<tr><td><strong>Approximate counting, cardinality caps, thresholding</strong></td><td>GA4 ships all three, which is why counting <code>session_start</code> and reading its Sessions metric give two different defensible numbers, and why a breakdown need not sum to its total. All are scale accommodations a single tenant does not need — so <strong>every number exact, every breakdown summing to its total</strong> is a property v2 gets by construction and Google structurally cannot offer.</td></tr>
+<tr><td><strong>Query-time sampling</strong></td><td>Sampling exists to protect shared capacity across millions of properties. A self-hosted single tenant inverts every term.</td></tr>
+<tr><td><strong>Approximate counting, cardinality caps, thresholding</strong></td><td>All three are scale accommodations a single tenant does not need — so <strong>every number exact, every breakdown summing to its total</strong> is a property v2 gets by construction, and one a multi-tenant service structurally cannot offer.</td></tr>
 <tr><td><strong>Retroactive reprocessing</strong></td><td>No retroactive goal conversion, no bot reclassification, no identity stitching backwards. Collection-time accuracy is the only chance, which raises the value of getting collection right.</td></tr>
 <tr><td><strong>Domain aliases</strong></td><td>The feature exists because v1 identifies a page by its full URL, so one page reached at <code>mydomain.com</code> and <code>www.mydomain.com</code> becomes two. v2 stores the complete URL and lets a report group by a derived <code>pagePath</code> or <code>pagePathPlusQuery</code>, neither of which contains the host &mdash; so both collapse with nothing configured, and a report that wants the host asks for it (&sect;2.1). <strong>Dropped, not ported</strong>; narrowed in v1 meanwhile (<a href="#s223">&sect;2.23</a>).</td></tr>
 <tr><td><strong>Probabilistic identity</strong></td><td>Produces numbers nobody can check.</td></tr>
 <tr><td><strong>Long-lived credentials off-origin</strong></td><td>Today the overlay's <code>api_url</code> — carrying a user's <code>apiKey</code> and its HMAC signature — is written to a cookie on the <em>tracked site's</em> domain, readable by any script there and sent on every request to that site. v2 mints a <strong>short-lived scoped token</strong> (one site, one page, read-only, minutes) carried in the fragment and held in memory, never a cookie. The signature then protects nothing and goes away</td></tr>
 <tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. Keeps it distinct from <code>(unknown)</code>, which means the breakdown could not attribute a session rather than the event carrying no value</td></tr>
 <tr><td><strong>Joins in the reporting path</strong></td><td>The single table exists to remove them. Lookup tables that reintroduce a join into aggregate queries are refused.</td></tr>
-<tr><td colspan="2" class="sunk"><strong>Events GA4 emits that v2 will not</strong> <span class="dash">— the collected set is &sect;2.2</span></td></tr>
+<tr><td colspan="2" class="sunk"><strong>Events v2 will not emit</strong> <span class="dash">— the collected set is &sect;2.2</span></td></tr>
 <tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
 <tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
-<tr><td class="ev-l">base.feed_request <span class="dash">(1.x, no GA4 analogue)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about feeds: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
+<tr><td class="ev-l">base.feed_request <span class="dash">(1.x)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about feeds: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
 </tbody></table></div>
 <p><strong>Domstream chunks stay out of the event table.</strong> A domstream chunk becomes an <em>attachment</em> to a
 <code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
@@ -682,16 +673,13 @@ collapse does not come from a hash — it comes from the host not being <em>in</
 two of the three group by. Nothing is configured because nothing has to be: the host is a column
 of its own, and a report that wants it asks for it.</p>
 
-<p><strong>What GA does, since the same question arises there.</strong> It stores the whole
-thing and derives both readings as separate dimensions, rather than choosing:</p>
+<p><strong>The question is settled by not answering it.</strong> Store the whole URL and derive both readings as separate dimensions, rather than choosing between them:</p>
 <ul>
 <li><strong>Page location</strong> — &ldquo;the complete URL&rdquo;: scheme, host, path and
 query. This is what the beacon carries as <code>dl</code>, confirmed by capture — the landing hit
 sends the URL with its UTMs intact.</li>
 <li><strong>Page path + query string</strong> — &ldquo;the parts of the URL that come after the
-domain&rdquo;. Our <code>pagePathPlusQuery</code>, and the fact that GA had to name the query
-explicitly in a dimension called <em>path + query string</em> is itself the answer to whether a
-path implies one.</li>
+domain&rdquo;. Our <code>pagePathPlusQuery</code>. That the query has to be named explicitly in the dimension's own name is itself the answer to whether a path implies one.</li>
 <li><strong>Page path</strong> — path only, query dropped. The identity-shaped reading.</li>
 </ul>
 
@@ -848,24 +836,23 @@ well.</div>
 the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
 
 <h3 id="s22"><span class="num">2.2</span>Event types <span class="chip c-dec">Decided</span></h3>
-<p>GA4's taxonomy is the guide &mdash; it is the vocabulary the market already speaks, and arguing
-about event names is not where this project should spend its budget. Three groups: what the tracker
+<p>The event names follow the vocabulary the market already speaks; arguing about them is not where this project should spend its budget. Three groups: what the tracker
 sends automatically, what a site opts into, and what is materialized server-side. Why the markers
 exist and why totals are never counted from them is <a href="#s13">&sect;1.3</a>.</p>
 <h4><span class="num">2.2.1</span>Automatically collected</h4>
 <div class="scroll"><table>
-<thead><tr><th>v2 event</th><th>1.x today</th><th>GA4</th><th>Note</th></tr></thead>
+<thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td>page_view</td><td><code>first_page_request</code> collapses in; carries <code>is_new_visitor_created</code>, the flag <code>first_visit</code> is raised from &mdash; GA's <code>_fv</code>. <code>fsts</code> rides alongside as the redundant floor</td></tr>
-<tr><td class="ev">user_engagement</td><td class="dash">—</td><td>user_engagement</td><td>carries the engagement delta; also the terminal beacon</td></tr>
-<tr><td class="ev">click</td><td class="ev-l">dom.click</td><td>click</td><td>gains outbound detection and element path</td></tr>
-<tr><td class="ev">scroll</td><td class="dash">—</td><td>scroll</td><td><strong>new.</strong> 1.x's <code>dom.scroll</code> is a recording sample, not an event — no server handler exists</td></tr>
-<tr><td class="ev">file_download</td><td class="dash">—</td><td>file_download</td><td>derived from click target extension</td></tr>
-<tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>view_search_results</td><td>1.x has the dimensions but never emits an event</td></tr>
-<tr><td class="ev">form_start</td><td class="dash">—</td><td>form_start</td><td>enhanced measurement</td></tr>
-<tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
-<tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
-<tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
+<tr><td class="ev">page_view</td><td class="ev-l">base.page_request</td><td><code>first_page_request</code> collapses in; carries <code>is_new_visitor_created</code>, the flag <code>first_visit</code> is raised from. <code>fsts</code> rides alongside as the redundant floor</td></tr>
+<tr><td class="ev">user_engagement</td><td class="dash">—</td><td>carries the engagement delta; also the terminal beacon</td></tr>
+<tr><td class="ev">click</td><td class="ev-l">dom.click</td><td>gains outbound detection and element path</td></tr>
+<tr><td class="ev">scroll</td><td class="dash">—</td><td><strong>new.</strong> 1.x's <code>dom.scroll</code> is a recording sample, not an event — no server handler exists</td></tr>
+<tr><td class="ev">file_download</td><td class="dash">—</td><td>derived from click target extension</td></tr>
+<tr><td class="ev">view_search_results</td><td class="ev-l">search term dims</td><td>1.x has the dimensions but never emits an event</td></tr>
+<tr><td class="ev">form_start</td><td class="dash">—</td><td>enhanced measurement</td></tr>
+<tr><td class="ev">form_submit</td><td class="dash">—</td><td>enhanced measurement</td></tr>
+<tr><td class="ev">session_start</td><td class="dash">—</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
+<tr><td class="ev">first_visit</td><td class="dash">—</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
 </tbody></table></div>
 
 
@@ -874,8 +861,7 @@ server materializes them from new-session state and <code>is_new_visitor_created
 <code>page_view</code> request, so they cost nothing on the wire. Both carry attribution &mdash;
 session-scoped and user-scoped respectively &mdash; and neither is ever counted to produce a total.</p>
 <h4><span class="num">2.2.2</span>Opt-in — commerce</h4>
-<p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can
-be built. The GA4 recommended set fills it in.</p>
+<p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can be built. A standard commerce set fills it in.</p>
 <div class="scroll"><table>
 <thead><tr><th>v2 event</th><th>1.x today</th><th>Note</th></tr></thead>
 <tbody>
@@ -895,7 +881,7 @@ be built. The GA4 recommended set fills it in.</p>
 <tr><td class="ev">login</td><td class="ev-l">base.login</td><td>1.x fires this for <em>OWA admin</em> logins, not for users of the tracked site</td></tr>
 <tr><td class="ev">sign_up</td><td class="ev-l">base.new_user_account</td><td>same caveat</td></tr>
 <tr><td class="ev">search</td><td class="dash">—</td><td>site-internal search, distinct from <code>view_search_results</code></td></tr>
-<tr><td class="ev">share</td><td class="dash">—</td><td>GA4 recommended</td></tr>
+<tr><td class="ev">share</td><td class="dash">—</td><td>standard</td></tr>
 <tr><td class="ev">&lt;custom&gt;</td><td class="ev-l">track.action</td><td>arbitrary name plus params, no registration required</td></tr>
 </tbody></table></div>
 
@@ -1012,11 +998,7 @@ Rebuilding the window in parallel would need per-partition job names.</p>
 
 <h3 id="s26"><span class="num">2.6</span>Ingest <span class="chip c-dec">Decided</span></h3>
 <p><strong>One beacon becomes several events, and the expansion happens at ingest rather than in
-the pass.</strong> The client sends one <code>page_view</code> carrying flags; the server raises
-<code>session_start</code> and <code>first_visit</code> from them into the raw log. GA does the
-same &mdash; a first page view arrives as one <code>en=page_view</code> with both
-<code>_fv=1</code> and <code>_ss=1</code>, and appears in BigQuery as distinct
-<code>event_name</code> rows.</p>
+the pass.</strong> The client sends one <code>page_view</code> carrying flags; the server raises <code>session_start</code> and <code>first_visit</code> from them into the raw log.</p>
 <p>The test for which side a derivation falls on: <strong>a pure function of one beacon goes in at
 ingest</strong> (raising <code>first_visit</code> from <code>is_new_visitor_created</code>);
 <strong>anything needing other events goes in the pass</strong> (acquisition source, session
@@ -1041,8 +1023,8 @@ single multi-row <code>INSERT</code> lands as one part, which satisfies it equal
 <div class="scroll"><table>
 <thead><tr><th>Flag</th><th>Scope</th><th>Does</th></tr></thead>
 <tbody>
-<tr><td><code>is_new_visitor_created</code></td><td>one request</td><td>the request that minted the visitor. GA's <code>_fv</code>. Raises <code>first_visit</code></td></tr>
-<tr><td><code>is_new_session_start</code></td><td>one request</td><td>the request that created the session. GA's <code>_ss</code>. Raises <code>session_start</code></td></tr>
+<tr><td><code>is_new_visitor_created</code></td><td>one request</td><td>the request that minted the visitor. Raises <code>first_visit</code></td></tr>
+<tr><td><code>is_new_session_start</code></td><td>one request</td><td>the request that created the session. Raises <code>session_start</code></td></tr>
 <tr><td><code>is_new_visitor</code></td><td>session</td><td>rides every beacon of the first session; keeps <code>is_repeat_visitor</code> from flipping mid-session. Not a raiser</td></tr>
 <tr><td><code>is_new_session</code></td><td>page</td><td>rides every beacon from the page the session started on. What <code>is_entry_page</code> needs</td></tr>
 </tbody></table></div>
@@ -1073,7 +1055,7 @@ rows, or an event from years ago.</p>
 <tr><th>scope</th><th>value</th><th>how it gets onto the denormalised row</th></tr>
 <tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
-<tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon, which GA does not</td></tr>
+<tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon</td></tr>
 <tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
 <tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
@@ -1215,7 +1197,7 @@ reprocess rather than being frozen in whatever a browser decided months ago.</p>
 <tr><td>OWA today</td><td>6 <code>tagged_*</code> per beacon</td><td>has session source</td><td><strong>no</strong> &mdash; parsed once, in a browser</td></tr>
 <tr><td><strong>Decided &mdash; v1</strong></td><td><strong>1 landing URL per beacon</strong></td><td>has session source</td><td><strong>yes</strong></td></tr>
 <tr><td><strong>Decided &mdash; v2</strong></td><td><strong>landing beacon only</strong> (the pass stamps the rest)</td><td>referer, not campaign</td><td><strong>yes, and past raw retention</strong></td></tr>
-<tr><td>GA's way</td><td>nothing</td><td><strong>no traffic source</strong></td><td>yes</td></tr>
+
 </table></div>
 <p><strong>v1 sends it on every beacon; v2 sends it only on the landing beacon.</strong> v1 has no
 pass, so its server must be told or it cannot stamp the fact row. v2 has somewhere to put the work:
@@ -1227,9 +1209,7 @@ pruned, with no evidence left to re-read. Keeping the URL means the evidence out
 parser fix can be reapplied to years of history &mdash; the same argument that justified the
 visitor table, one layer down.</p>
 <p class="note">The cost falls on realtime, and it is narrow: a raw row from later in the session
-carries no landing URL, so a live query cannot resolve session <em>campaign</em> for it. It still
-carries <code>session_referer</code>, so referring host and organic-search detection work live.
-GA's realtime has neither.</p>
+carries no landing URL, so a live query cannot resolve session <em>campaign</em> for it. It still carries <code>session_referer</code>, so referring host and organic-search detection work live.</p>
 
 <h3 id="s211"><span class="num">2.11</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
 
@@ -1382,7 +1362,7 @@ cookie consolidation became additive that way.</p>
 <tr><td><strong>Visitor id entropy</strong> <span class="chip c-done">Closed</span></td><td>~30 bits inside any one second. <strong>Not fixable</strong> — the budget is already spent and re-dividing it cancels, so this is an accepted, quantified limit rather than a defect (&sect;1.4). The discarded salt was removed instead (PR&nbsp;#1017)</td></tr>
 <tr><td><strong>Cookie + state consolidation</strong> <span class="chip c-done">Shipped</span></td><td>one write format; the dual-format reader already exists, so existing cookies keep parsing. Now carries an <code>sv</code> version marker, so the <em>next</em> format change is routine rather than bespoke</td></tr>
 <tr><td><strong>URL parameter namespacing</strong> <span class="chip c-done">Shipped</span></td><td>the <code>owa_</code> prefix was a leftover from embedded-mode, long since removed. Split rather than deleted: <code>ns</code> still governs cookies, <code>owa_state</code>, campaign keys and the table prefix; <code>app_ns</code> governs OWA's own URLs and the beacon, and is now empty</td></tr>
-<tr><td><strong><code>preconnect</code> + snippet placement</strong> <span class="chip c-done">Shipped</span></td><td>removes DNS, TCP and TLS from the critical path on a cold origin — worth far more for a self-hosted tracker than for GA, whose origin is already warm in most browsers</td></tr>
+<tr><td><strong><code>preconnect</code> + snippet placement</strong> <span class="chip c-done">Shipped</span></td><td>removes DNS, TCP and TLS from the critical path on a cold origin &mdash; worth more for a self-hosted tracker, whose origin is rarely already warm</td></tr>
 <tr><td><strong>Report config as JSON</strong> <span class="chip c-done">Shipped</span></td><td>retrofits the v2 widget format into v1 (&sect;1.7). Went further than this row asked: 62 of 64 shipped reports are configuration, and the format is now <em>user-authored</em> &mdash; see Phase 4 for what that costs v2</td></tr>
 </tbody></table></div>
 <h4><span class="num">2.18.2</span>Tracker-additive, and the rule that limits it</h4>
