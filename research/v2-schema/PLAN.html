@@ -606,71 +606,28 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <p class="note">Why a page carries no identity hash, and what giving it one would have cost, is
 <a href="#nA118">A.1.18</a>.</p>
 
-<h5>Denormalised &mdash; <code>owa_event</code>, 57 columns</h5>
+<h5>Denormalised &mdash; <code>owa_event</code>: raw&rsquo;s 42 columns, plus these 15</h5>
 
-<p>Every raw column, unchanged and in the same order, plus fifteen the pass stamps on. Queries hit
-this table; nothing else does.</p>
+<p>Every column of raw, unchanged and in the same order, then the fifteen below. Only these fifteen are listed: the first 42 are <a href="#s21">the raw table</a> verbatim. Queries hit this table; nothing else does.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Scope</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">9</td><td><code>visitor_fsts</code></td><td>BIGINT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">10</td><td><code>prior_sessions</code></td><td>INT UNSIGNED</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">11</td><td><code>page_location</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">12</td><td><code>page_path</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">13</td><td><code>page_query</code></td><td>VARCHAR(1024) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">14</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">15</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">16</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">17</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">18</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">19</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">20</td><td><code>tagged_search_terms</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">21</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">22</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">23</td><td><code>os</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">24</td><td><code>language</code></td><td>VARCHAR(16)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">25</td><td><code>country</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">26</td><td><code>city</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">27</td><td><code>host</code></td><td>VARCHAR(255)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">28</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">29</td><td><code>click_x</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">30</td><td><code>click_y</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">31</td><td><code>page_width</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">32</td><td><code>page_height</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">33</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">34</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">35</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">36</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">37</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">38</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">39</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">40</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">41</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">42</td><td><code>params</code></td><td>JSON</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">43</td><td><code>source</code></td><td>VARCHAR(255)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_source</code> if present, else the referring host</td></tr>
-<tr><td class="n">44</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_medium</code> if present, else the referrer classified &mdash; organic search, social, referral, or direct where there is no referrer. The classifier is a table, so correcting it is a reprocess over retained raw (<a href="#s15">&sect;1.5.2</a>), not an edit</td></tr>
-<tr><td class="n">45</td><td><code>campaign</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_campaign</code>. NULL where there was none</td></tr>
-<tr><td class="n">46</td><td><code>ad</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_ad</code></td></tr>
-<tr><td class="n">47</td><td><code>search_terms</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_search_terms</code>, else the search engine&rsquo;s query parameter</td></tr>
-<tr><td class="n">48</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>session</td><td>the session's first <code>page_location</code>. Makes landing-page reports a group-by: 215&nbsp;ms against 3.1&nbsp;s — <a href="#s13">&sect;1.3</a></td></tr>
-<tr><td class="n">49</td><td><code>landing_page_path</code></td><td>VARCHAR(1024)</td><td>session</td><td>the first event&rsquo;s <code>page_path</code>. Copied, not re-parsed</td></tr>
-<tr><td class="n">50</td><td><code>landing_page_query</code></td><td>VARCHAR(1024) NULL</td><td>session</td><td>the first event&rsquo;s <code>page_query</code></td></tr>
-<tr><td class="n">51</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
-<tr><td class="n">52</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
-<tr><td class="n">53</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
-<tr><td class="n">54</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">55</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">56</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
-<tr><td class="n">57</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
+<tr><td class="n">1</td><td><code>source</code></td><td>VARCHAR(255)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_source</code> if present, else the referring host</td></tr>
+<tr><td class="n">2</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_medium</code> if present, else the referrer classified &mdash; organic search, social, referral, or direct where there is no referrer. The classifier is a table, so correcting it is a reprocess over retained raw (<a href="#s15">&sect;1.5.2</a>), not an edit</td></tr>
+<tr><td class="n">3</td><td><code>campaign</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_campaign</code>. NULL where there was none</td></tr>
+<tr><td class="n">4</td><td><code>ad</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_ad</code></td></tr>
+<tr><td class="n">5</td><td><code>search_terms</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_search_terms</code>, else the search engine&rsquo;s query parameter</td></tr>
+<tr><td class="n">6</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>session</td><td>the session's first <code>page_location</code>. Makes landing-page reports a group-by: 215&nbsp;ms against 3.1&nbsp;s — <a href="#s13">&sect;1.3</a></td></tr>
+<tr><td class="n">7</td><td><code>landing_page_path</code></td><td>VARCHAR(1024)</td><td>session</td><td>the first event&rsquo;s <code>page_path</code>. Copied, not re-parsed</td></tr>
+<tr><td class="n">8</td><td><code>landing_page_query</code></td><td>VARCHAR(1024) NULL</td><td>session</td><td>the first event&rsquo;s <code>page_query</code></td></tr>
+<tr><td class="n">9</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
+<tr><td class="n">10</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
+<tr><td class="n">11</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
+<tr><td class="n">12</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">13</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">14</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
+<tr><td class="n">15</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>partition</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
 </tbody></table></div>
 
 <p><strong>Structurally identical to its staging table, by requirement.</strong> &sect;1.5's swap is
@@ -831,7 +788,7 @@ re-registration of a metric on a second entity.</p>
 <h3 id="s24"><span class="num">2.4</span>Dimensions <span class="chip c-dec">Decided</span></h3>
 <p>Most dimensions are a column: <code>eventName</code> groups by <code>event_type</code>.
 The rest are computed from columns &mdash; <code>sourceMedium</code> joins two,
-<code>newVsReturning</code> maps one onto labels. A computed dimension names which of four shapes
+<code>newVsReturning</code> maps one onto labels. A computed dimension names which of six shapes
 it is and the dialect renders that shape, so no dimension definition holds SQL either.</p>
 
 <h4><span class="num">2.4.1</span>The kinds</h4>
@@ -842,28 +799,97 @@ it is and the dialect renders that shape, so no dimension definition holds SQL e
 <tr><td><code>concat</code></td><td>Two columns joined</td><td><code>sourceMedium</code>, <code>firstSourceMedium</code></td></tr>
 <tr><td><code>map</code></td><td>One column through a lookup</td><td><code>newVsReturning</code></td></tr>
 <tr><td><code>datePart</code></td><td>A component of the timestamp</td><td>hour, day of week</td></tr>
+<tr><td><code>test</code></td><td>A column against a constant, rendered as a boolean</td><td><code>isNewVisitor</code>, <code>isRepeatVisitor</code></td></tr>
+<tr><td><code>filtered</code></td><td>A column restricted to rows carrying a flag</td><td><code>exitPagePath</code>, on <code>is_exit</code></td></tr>
 </tbody></table></div>
-<p class="note">Only three of those are computed; <code>column</code> is the trivial case. A
-move to a different reporting store therefore means writing three renderers, not revisiting every
+<p class="note">Only five of those are computed; <code>column</code> is the trivial case. A
+move to a different reporting store therefore means writing five renderers, not revisiting every
 dimension &mdash; which is the reason to keep the set small and closed, and to settle it before the
 first computed dimension is built. The portability argument is in <a href="#nA111">the
 appendix</a>.</p>
 
-<h4><span class="num">2.4.2</span>The page dimensions</h4>
-<p>The full set, each one a column or a concat of two. None of them parses a URL:</p>
+<h4><span class="num">2.4.2</span>The vocabulary</h4>
+<p>Every dimension 1.x registers, reviewed against the denormalised table rather than carried over.
+<em>Reads</em> is the column or expression it resolves to; <strong>open</strong> marks one that has
+no answer yet and needs a decision rather than a renderer.</p>
 <div class="scroll"><table>
-<thead><tr><th>Dimension</th><th>Kind</th><th>Reads</th></tr></thead>
+<thead><tr><th>Group</th><th>Dimension</th><th>Kind</th><th>Reads</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td><code>pageLocation</code></td><td>column</td><td><code>page_location</code> &mdash; the complete URL as received</td></tr>
-<tr><td><code>pagePath</code></td><td>column</td><td><code>page_path</code></td></tr>
-<tr><td><code>pagePathPlusQuery</code></td><td>concat</td><td><code>page_path</code> + <code>page_query</code></td></tr>
-<tr><td><code>hostName</code></td><td>column</td><td><code>host</code> &mdash; so the path dimensions collapse <code>www</code> against apex with nothing configured</td></tr>
-<tr><td><code>pageTitle</code></td><td>column</td><td><code>page_title</code></td></tr>
-<tr><td><code>pageReferrer</code></td><td>column</td><td><code>referer_url</code></td></tr>
-<tr><td><code>landingPage</code></td><td>column</td><td><code>landing_page_path</code></td></tr>
-<tr><td><code>landingPagePlusQuery</code></td><td>concat</td><td><code>landing_page_path</code> + <code>landing_page_query</code></td></tr>
+<tr><td>Page</td><td><code>pageLocation</code></td><td>column</td><td><code>page_location</code></td><td>renamed from <code>pageUrl</code></td></tr>
+<tr><td></td><td><code>pagePath</code></td><td>column</td><td><code>page_path</code></td><td></td></tr>
+<tr><td></td><td><code>pagePathPlusQuery</code></td><td>concat</td><td><code>page_path</code> + <code>page_query</code></td><td>new</td></tr>
+<tr><td></td><td><code>pageTitle</code></td><td>column</td><td><code>page_title</code></td><td></td></tr>
+<tr><td></td><td><code>hostName</code></td><td>column</td><td><code>host</code></td><td></td></tr>
+<tr><td></td><td><code>pageReferrer</code></td><td>column</td><td><code>referer_url</code></td><td>renamed from <code>referralPageUrl</code></td></tr>
+<tr><td></td><td><code>landingPage</code></td><td>column</td><td><code>landing_page_path</code></td><td>renamed from <code>entryPagePath</code></td></tr>
+<tr><td></td><td><code>landingPagePlusQuery</code></td><td>concat</td><td><code>landing_page_path</code> + <code>landing_page_query</code></td><td>new</td></tr>
+<tr><td></td><td><code>landingPageLocation</code></td><td>column</td><td><code>landing_page_location</code></td><td>renamed from <code>entryPageUrl</code></td></tr>
+<tr><td></td><td><code>exitPagePath</code></td><td>filtered</td><td><code>page_path</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>the 5% of pairs 1.10 costed</td></tr>
+<tr><td></td><td><code>exitPageLocation</code></td><td>filtered</td><td><code>page_location</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td></td></tr>
+<tr><td></td><td><code>priorPagePath</code></td><td><strong>open</strong></td><td>&mdash;</td><td><code>referer_url</code> holds the previous page only when it was a link. 1.x&rsquo;s <code>priorPage*</code> came from the session chain, which v2 would have to walk</td></tr>
+<tr><td></td><td><code>entryPageTitle / exitPageTitle</code></td><td>&mdash;</td><td>&mdash;</td><td>no landing or exit title column, and no report uses one</td></tr>
+<tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.x document type. <code>event_type</code> replaces it</td></tr>
+<tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>same walk as <code>priorPagePath</code>, same absence of a caller</td></tr>
+<tr><td>Traffic source</td><td><code>source</code></td><td>column</td><td><code>source</code></td><td>the reading, written by the pass</td></tr>
+<tr><td></td><td><code>medium</code></td><td>column</td><td><code>medium</code></td><td></td></tr>
+<tr><td></td><td><code>sourceMedium</code></td><td>concat</td><td><code>source</code> + <code>medium</code></td><td></td></tr>
+<tr><td></td><td><code>campaign</code></td><td>column</td><td><code>campaign</code></td><td></td></tr>
+<tr><td></td><td><code>ad</code></td><td>column</td><td><code>ad</code></td><td></td></tr>
+<tr><td></td><td><code>referralSearchTerms</code></td><td>column</td><td><code>search_terms</code></td><td></td></tr>
+<tr><td></td><td><code>channel</code></td><td>map</td><td><code>medium</code> through a lookup</td><td>new &mdash; the grouping 1.x had no name for</td></tr>
+<tr><td></td><td><code>isSearchEngine</code></td><td>map</td><td><code>medium</code> = <code>organic-search</code></td><td>was an enriched referer column; now a test on the reading</td></tr>
+<tr><td></td><td><code>firstSource / firstMedium / firstCampaign / firstAd</code></td><td>column</td><td><code>acq_*</code></td><td>new &mdash; acquisition, which 1.x could not report at all</td></tr>
+<tr><td></td><td><code>taggedSource / taggedMedium / taggedCampaign</code></td><td>column</td><td><code>tagged_*</code></td><td>new &mdash; lets a report separate tagged arrivals from inferred ones</td></tr>
+<tr><td></td><td><code>latestAttributions</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>attribs</code> stack. 1.5.3 refuses to carry a verdict</td></tr>
+<tr><td></td><td><code>referralPageTitle / referralLinkText / referralWebSite</code></td><td>&mdash;</td><td>&mdash;</td><td>the referral enrichment 2.4.3 records as the one knowing capability loss</td></tr>
+<tr><td>Visitor</td><td><code>visitorId</code></td><td>column</td><td><code>visitor_id</code></td><td></td></tr>
+<tr><td></td><td><code>userId</code></td><td>column</td><td><code>user_id</code></td><td>new &mdash; site-declared</td></tr>
+<tr><td></td><td><code>isNewVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;=&nbsp;0</code></td><td>a flag in 1.x, a test in v2 (1.4)</td></tr>
+<tr><td></td><td><code>isRepeatVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;&gt;&nbsp;0</code></td><td></td></tr>
+<tr><td></td><td><code>newVsReturning</code></td><td>map</td><td><code>prior_sessions</code> through a lookup</td><td>the labelled pair, 2.4.1&rsquo;s <code>map</code> example</td></tr>
+<tr><td></td><td><code>priorVisitCount</code></td><td>column</td><td><code>prior_sessions</code></td><td></td></tr>
+<tr><td></td><td><code>daysSinceFirstVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>visitor_fsts</code></td><td>both anchors ride every event, so no lookup</td></tr>
+<tr><td></td><td><code>daysSinceLastVisit</code></td><td><strong>open</strong></td><td>&mdash;</td><td>needs a last-seen anchor on the event. 1.x carried one; v2 drops it and nothing replaces it</td></tr>
+<tr><td></td><td><code>userEmail</code></td><td>&mdash;</td><td>&mdash;</td><td>PII on a fact row</td></tr>
+<tr><td></td><td><code>userName</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>(not set)</code> column A.1.16 measures</td></tr>
+<tr><td>Session</td><td><code>sessionId</code></td><td>column</td><td><code>session_id</code></td><td>counted as the pair with <code>visitor_id</code> (1.2)</td></tr>
+<tr><td></td><td><code>timeSinceLastVisit</code></td><td><strong>open</strong></td><td>&mdash;</td><td>same missing anchor as <code>daysSinceLastVisit</code></td></tr>
+<tr><td></td><td><code>the 11 <code>*InVisit</code> dimensions</code></td><td>&mdash;</td><td>&mdash;</td><td>zero references anywhere outside their own registration</td></tr>
+<tr><td>Time</td><td><code>date</code></td><td>column</td><td><code>yyyymmdd</code></td><td></td></tr>
+<tr><td></td><td><code>day / month / year / dayofweek / dayofyear / weekofyear</code></td><td>datePart</td><td><code>ts</code></td><td>six columns per fact row in 1.x, now rendered from one</td></tr>
+<tr><td></td><td><code>hour</code></td><td>datePart</td><td><code>ts</code></td><td>new &mdash; 1.x stored no hour part</td></tr>
+<tr><td>Geography</td><td><code>country</code></td><td>column</td><td><code>country</code></td><td></td></tr>
+<tr><td></td><td><code>city</code></td><td>column</td><td><code>city</code></td><td></td></tr>
+<tr><td></td><td><code>countryCode / stateRegion / latitude / longitude</code></td><td><strong>open</strong></td><td>&mdash;</td><td>raw carries <code>country</code> and <code>city</code> only. Restoring these is four columns at ingest, not a derivation</td></tr>
+<tr><td>Device</td><td><code>browserType</code></td><td>column</td><td><code>browser_type</code></td><td></td></tr>
+<tr><td></td><td><code>browserVersion</code></td><td><strong>open</strong></td><td>&mdash;</td><td><code>browser</code> is one parsed string. Splitting name from version is an ingest decision 2.1 has not taken</td></tr>
+<tr><td></td><td><code>osType</code></td><td>column</td><td><code>os</code></td><td></td></tr>
+<tr><td></td><td><code>language</code></td><td>column</td><td><code>language</code></td><td></td></tr>
+<tr><td></td><td><code>ipAddress</code></td><td>column</td><td><code>ip_address</code></td><td>nullable: anonymise-on-write</td></tr>
+<tr><td>Event</td><td><code>eventName</code></td><td>column</td><td><code>event_type</code></td><td>new as a dimension</td></tr>
+<tr><td></td><td><code>keyEvent</code></td><td>column</td><td><code>is_goal_event</code></td><td>new &mdash; 2.20</td></tr>
+<tr><td></td><td><code>domElementId</code></td><td>column</td><td><code>element_id</code></td><td>real on 0.09% of 1.x clicks (2.11)</td></tr>
+<tr><td></td><td><code>domElementTag</code></td><td>column</td><td><code>element_tag</code></td><td></td></tr>
+<tr><td></td><td><code>elementPath</code></td><td>column</td><td><code>element_path</code></td><td>new &mdash; Phase 5</td></tr>
+<tr><td></td><td><code>clickTarget</code></td><td>column</td><td><code>target_url</code></td><td>new</td></tr>
+<tr><td></td><td><code>scrollDepth</code></td><td>map</td><td><code>scroll_depth</code> bucketed</td><td>new</td></tr>
+<tr><td></td><td><code>domElementClass / Name / Text / Value</code></td><td>param path</td><td><code>params</code> path</td><td>no column; available as an unregistered param path</td></tr>
+<tr><td></td><td><code>actionGroup / actionName / actionLabel</code></td><td>param path</td><td><code>params</code> path</td><td>1.x action_fact columns become event params</td></tr>
+<tr><td></td><td><code>customVarName / customVarValue</code></td><td>param path</td><td><code>params</code> path</td><td>the five fixed slots become unlimited keys</td></tr>
+<tr><td>Commerce</td><td><code>productName / productSku / productCategory</code></td><td>param path</td><td><code>params</code> nested items</td><td>the line-item fact table and its join go away</td></tr>
+<tr><td></td><td><code>transactionId / transactionGateway / transactionOriginator</code></td><td>param path</td><td><code>params</code> path</td><td></td></tr>
+<tr><td></td><td><code>daysToTransaction / visitsToTransaction</code></td><td><strong>open</strong></td><td>&mdash;</td><td>both count backwards from a purchase to the acquiring visit. Derivable over the event table, but not by a dimension renderer</td></tr>
+<tr><td>Site</td><td><code>siteId</code></td><td>column</td><td><code>site_id</code></td><td></td></tr>
+<tr><td></td><td><code>siteDomain / siteName</code></td><td>column</td><td>the site table</td><td>an admin lookup, not an event column</td></tr>
+<tr><td>Feed</td><td><code>feedType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.10 &mdash; nothing has written a feed request since 2021</td></tr>
 </tbody></table></div>
-<p class="note">Why a page carries no <em>identity</em> is <a href="#nA118">A.1.18</a>.</p>
+<p class="note">Counts: 33 resolve to a column, 9 computed (3 <code>concat</code>, 4 <code>map</code>,
+2 <code>datePart</code>), 3 a <code>test</code> on a column, 2 <code>filtered</code> on <code>is_exit</code>, 5 a
+<code>params</code> path. Nine fall out. <strong>Six are open</strong> &mdash;
+<code>priorPagePath</code>, <code>daysSinceLastVisit</code>, <code>timeSinceLastVisit</code>, the
+four geo detail columns, <code>browserVersion</code>, and the two backwards-counting commerce
+dimensions &mdash; and each is a schema or ingest decision, not a rendering one
+(<a href="#s31">&sect;3.1</a>).</p>
 
 <h4><span class="num">2.4.3</span>What changes in v2</h4>
 <div class="scroll"><table>
@@ -1658,6 +1684,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Beacon volume</strong></td><td>Piggyback plus one terminal beacon, estimated at ~+27% events.</td><td>Never tested against real traffic patterns.</td></tr>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
+<tr><td><strong>Six dimensions have no v2 answer</strong></td><td><code>priorPagePath</code> needs the session chain walked; <code>daysSinceLastVisit</code> and <code>timeSinceLastVisit</code> need a last-seen anchor on the event that v2 drops; <code>countryCode</code>, <code>stateRegion</code>, <code>latitude</code> and <code>longitude</code> are not columns; <code>browserVersion</code> is inside one parsed <code>browser</code> string; <code>daysToTransaction</code> and <code>visitsToTransaction</code> count backwards from a purchase.</td><td>Each is a schema or ingest decision rather than a renderer, so each needs a column or a rule before the vocabulary in <a href="#s24">&sect;2.4</a> is closed.</td></tr>
 </tbody></table></div>
 
 <h2><span class="secn">Appendix</span>Evidence and debate</h2>
