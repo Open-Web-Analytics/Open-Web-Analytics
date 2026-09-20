@@ -185,7 +185,8 @@ than smoothed over.</p>
 <p>Every tracked interaction becomes one row in one table, replacing ten parallel fact
 tables and their dimension satellites. A write is a single insert with no lookups &mdash; no session upsert, no dimension
 check-and-create &mdash; and the ids of events that must collapse on redelivery are derived from
-their own content rather than assigned.</p>
+their own content rather than assigned. The one exception is a new visitor's first session, which
+also writes the visitor store (<a href="#s29">&sect;2.9</a>).</p>
 <div class="scroll"><table>
 <thead><tr><th>Piece</th><th>What it settles</th></tr></thead>
 <tbody>
@@ -272,7 +273,7 @@ distinct count, which is the cheaper shape over a wide window.</p>
 <div class="scroll"><table>
 <thead><tr><th>Job</th><th>Which marker</th><th>Why only the marker</th></tr></thead>
 <tbody>
-<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>The pass harvests acquisition from <code>first_visit</code> rows and nothing else writes that table (<a href="#s27">&sect;2.7.1</a>). The marker is raised atomically with the beacon that flags it, so a visitor who exists has one</td></tr>
+<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>Acquisition is written to the visitor store at ingest, from the visitor's first session, and nothing else writes that table (<a href="#s29">&sect;2.9</a>)</td></tr>
 <tr><td><strong>Anchors acquisition to one event</strong></td><td><code>first_visit</code></td><td>Keying off the flag rather than a computed earliest event is what bounds the correction problem: no later arrival can change the answer, so the failure is <em>absent then present</em>, never <em>wrong then corrected</em> (<a href="#s26">&sect;2.6.3</a>)</td></tr>
 <tr><td><strong>Carries the attribution the client knew at that moment</strong></td><td>both</td><td>Session-scoped on <code>session_start</code>, user-scoped on <code>first_visit</code></td></tr>
 <tr><td><strong>Is the natural thing to name as a goal event</strong></td><td>both</td><td>A goal event is an author-named event, and the marker mechanism is what materialises it (<a href="#s13">&sect;1.3.3</a>)</td></tr>
@@ -1025,7 +1026,7 @@ nothing about it reaches ingest.</p>
 <tbody>
 <tr><td><code>is_new_visitor_created</code></td><td>one request</td><td>the request that minted the visitor. Raises <code>first_visit</code></td></tr>
 <tr><td><code>is_new_session_start</code></td><td>one request</td><td>the request that created the session. Raises <code>session_start</code></td></tr>
-<tr><td><code>is_new_visitor</code></td><td>session</td><td>rides every beacon of the first session; keeps <code>is_repeat_visitor</code> from flipping mid-session. Not a raiser</td></tr>
+<tr><td><code>is_new_visitor</code></td><td>session</td><td>rides every beacon of the first session; keeps <code>is_repeat_visitor</code> from flipping mid-session. Not a raiser, but it is what lets any event of that session write the visitor row (<a href="#s29">&sect;2.9</a>)</td></tr>
 <tr><td><code>is_new_session</code></td><td>page</td><td>rides every beacon from the page the session started on. What <code>is_entry_page</code> needs</td></tr>
 </tbody></table></div>
 <p><strong>Acquisition keys off the flag, never off a computed earliest event.</strong> Derived as
@@ -1075,13 +1076,9 @@ later rebuild. The alternative is an explicit session cap in the window, and it 
 <code>session_length</code> is an idle timeout rather than a duration cap, so a session with a hit
 every 25 minutes runs indefinitely and no finite window seals it. <a href="#s211">&sect;2.11</a>
 already makes &ldquo;not final yet&rdquo; and &ldquo;no value&rdquo; the same NULL.</p>
-<p><strong>The four steps run in this order</strong>, each reading what the one before it wrote.
+<p><strong>The three steps run in this order</strong>, each reading what the one before it wrote.
 Out of order they produce wrong rows rather than an error:</p>
 <ol>
-<li><strong>Harvest.</strong> Insert-if-absent into the visitor table from this partition&rsquo;s
-<code>first_visit</code> rows. Must precede step 3: a visitor whose first session <em>and</em>
-second session both fall in this partition needs their own acquisition row to already exist, and
-nothing about the second session&rsquo;s rows carries it.</li>
 <li><strong>Close.</strong> Compute terminal session values for sessions whose last event is in
 this partition and whose close is certain.</li>
 <li><strong>Build.</strong> <code>INSERT INTO staging SELECT &hellip;</code> joining raw against the
@@ -1153,6 +1150,20 @@ census of visitors: it holds the ones whose first attribution is known, and the 
 <code>first_visit</code> arrived late on a queue drain or a rebuild, and would block the real value
 permanently, silently. Keeping the row absent leaves that path open.</p>
 
+<p><strong>The row is written at ingest, in the same transaction as the event, and the pass only
+reads it.</strong> Attribution is resolved at ingest (<a href="#s26">&sect;2.6.3</a>), so the
+acquisition exists by the time the event is written &mdash; there is nothing for a later step to
+derive, and no harvest.</p>
+<p><strong>Any event of the visitor&rsquo;s first session can write it</strong>, not only the one
+that raised <code>first_visit</code>. A session cannot change its attribution part-way, since new
+tags start a new session (<a href="#s19">&sect;1.9.2</a>), so every event of that session resolves
+the same acquisition; <code>is_new_visitor</code> or <code>prior_sessions</code>=0 says which
+session it is. Insert-if-absent means whichever lands first writes the row and the rest are
+no-ops.</p>
+<p class="note">That is what makes losing one beacon survivable. It does not reopen the correction
+problem <a href="#s26">&sect;2.6.3</a> guards against: every candidate resolves the same answer, so
+the failure stays <em>absent then present</em> and never <em>wrong then corrected</em>.</p>
+
 <p><strong>Raw is what is authoritative here.</strong> It either holds a <code>first_visit</code>
 for that visitor or it does not. The store mirrors that, and the sentinel on a denormalised row is
 derived from the store missing &mdash; so of the three, only raw is a record; the other two are
@@ -1166,11 +1177,15 @@ counter the client maintains and sends on every beacon, so &ldquo;how many sessi
 visitor had&rdquo; is <code>MAX(nps)</code> in a group-by rather than a lookup &mdash; the same
 argument that removed the session table (<a href="#s15">&sect;1.5.1</a>). Only values that cannot
 be on the event, because they originate in one event that may be years old, earn a row.</p>
-<p><strong><code>last_seen</code> is mutable without putting a write on the ingest path</strong>,
-which keeps ingest a pure append. Three things hold that:</p>
+<p><strong>Ingest makes exactly one keyed write, and only for a visitor&rsquo;s first
+session.</strong> That is the one departure from the pure-append path
+<a href="#s11">&sect;1.1</a> describes, and it is bounded: on the measured install the visitor
+store holds 6,761 rows against 445,055 requests. Every other event is still a straight insert with
+no lookup.</p>
+<p><strong><code>last_seen</code> does not add a second one.</strong> Three things hold that:</p>
 <ul>
 <li>the pass advances it, not ingest &mdash; one set-based <code>UPDATE</code> over the visitors
-seen in the partition being rebuilt, alongside the acquisition harvest already happening there;</li>
+seen in the partition being rebuilt;</li>
 <li>it stores a <em>period</em>, not a timestamp, so it changes at most once per visitor per month
 and the common case is a write that changes nothing;</li>
 <li><code>GREATEST(last_seen, &lt;partition max&gt;)</code> is monotonic, so rebuilding a partition
