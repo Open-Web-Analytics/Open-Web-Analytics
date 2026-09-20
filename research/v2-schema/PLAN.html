@@ -665,7 +665,7 @@ random is only safe where a second arrival carries the first id with it.</p>
 <div class="scroll"><table>
 <thead><tr><th>Event</th><th>Its id</th><th>Why that one</th></tr></thead>
 <tbody>
-<tr><td><code>page_view</code></td><td>the client&rsquo;s <code>page_view_id</code>, minted per page load</td><td>Later engagement beacons have to name it, so the client is the only place that can hold it. The tracker mints <code>domstream_guid</code> this way already</td></tr>
+<tr><td><code>page_view</code></td><td><code>page_view_id</code> &mdash; <strong>a new client-minted guid</strong>, one per page load</td><td>1.x has no page-scoped id: the tracker mints only <code>visitor_id</code>, <code>session_id</code> and <code>domstream_guid</code>, and the beacon carries no equivalent. v2 adds one, on the <code>domstream_guid</code> pattern but unconditional. It has to come from the client, because an engagement beacon sent later must name the page view, and a beacon is fire-and-forget &mdash; nothing minted server-side can be handed back. It is also what a domstream chunk attaches to (<a href="#s110">&sect;1.10</a>)</td></tr>
 <tr><td><code>session_start</code></td><td><code>hash(site_id + session_id + &lsquo;session_start&rsquo;)</code></td><td>Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
 <tr><td><code>first_visit</code></td><td><code>hash(site_id + visitor_id + &lsquo;first_visit&rsquo;)</code></td><td>Keyed on the visitor, not the session: racing tabs can each believe they minted the visitor, and a visitor has exactly one first visit. An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
 <tr><td><code>user_engagement</code></td><td><code>hash(page_view_id + seq)</code></td><td>Beacon and retry are independent arrivals, so a random id would write the residue twice</td></tr>
@@ -1453,7 +1453,7 @@ the most is known.</p>
 <tr><td>4</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#nA112">A.1</a> for why a 1.x fix would be worse than leaving it.</td></tr>
 <tr><td>5</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
 <tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>.</td><td>Not started</td></tr>
+<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>); also feeds the engagement id, <code>hash(page_view_id&nbsp;+&nbsp;seq)</code>. Carries the new per-page-load <code>page_view_id</code> with it (<a href="#s21">&sect;2.1.2</a>), which the 1.x tracker does not have.</td><td>Not started</td></tr>
 </tbody></table></div>
 <div class="flag">
   <p class="h">Status &mdash; 2026-09-20</p>
