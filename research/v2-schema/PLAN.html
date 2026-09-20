@@ -2176,13 +2176,12 @@ write as its beacon (<a href="#s26">&sect;2.6.2</a>) &mdash; and the count is ex
 <p>Read from the live bundle at <code>googletagmanager.com/gtag/js</code> (429&nbsp;KB), from its
 wire-parameter tables and its sender. Earlier GA claims in this appendix rested on a beacon capture
 that is not in the repository; these do not.</p>
-<p class="note"><strong>What this evidence cannot cover.</strong> The bundle was fetched with a
-property id that does not exist, so it came back with no container configuration. Library code is
-therefore fully represented &mdash; the sender, the batch assembly, the parameter tables &mdash;
-but anything a property switches on is not. GA4&rsquo;s scroll tracking is one of those: it is an
-enhanced-measurement setting, and the word <em>scroll</em> appears nowhere in this bundle. So the
-absence of a field here is weaker evidence than its presence, and the claim that <code>_p</code> is
-absent is only as good as the configuration that was fetched.</p>
+<p class="note"><strong>How this was read.</strong> A bundle fetched with a non-existent property
+id returns the library with no container configuration, so anything a property switches on is
+missing from it &mdash; the first pass here did that and concluded GA had no scroll handling at
+all. Re-fetched against a real property, the container carries the enhanced-measurement modules.
+Library code (the sender, the batch assembly, the parameter tables) is present either way;
+configured behaviour is not. Absence remains weaker evidence than presence.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>Wire</th><th>Carries</th></tr></thead>
@@ -2241,6 +2240,16 @@ in one event and keeps it one row &mdash; which is why
 feature. <a href="#s21">&sect;2.1.2</a>&rsquo;s invariant survives either way, because a chunk is
 one event of one name. And the chunk already carries the per-page-load value the event stream does
 not: <code>domstream_guid</code>, minted once per page and reused for every chunk on it.</li>
+<li><strong>GA does not record scrolling; it records one milestone.</strong> The container&rsquo;s
+<code>__ccd_em_scroll</code> module registers a single auto-event at
+<code>verticalThresholds: 90</code>, <code>verticalThresholdUnits: "PERCENT"</code>, and on
+<code>gtm.scrollDepth</code> sends one <code>scroll</code> event carrying
+<code>percent_scrolled</code>, marked <code>deferrable</code> so it may ride a batch. One event per
+page. No positions, no samples, no interval &mdash; a third option beside streaming every scroll
+event and sampling at a rate. v2 already has the equivalent in the event stream:
+<code>scroll_depth</code> on the row, bucketed into a dimension
+(<a href="#s24">&sect;2.4</a>). What GA has no counterpart for is the domstream sample, because it
+has no heatmap.</li>
 <li><strong>The path is collected, not only derived.</strong> <code>dp</code> rides beside
 <code>dl</code>, which is the same position <a href="#s21">&sect;2.1</a> takes on
 <code>page_path</code>.</li>
