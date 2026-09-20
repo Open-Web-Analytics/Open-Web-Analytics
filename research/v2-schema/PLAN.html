@@ -126,6 +126,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s111">1.11 The API delta</a>
   <a href="#s112">1.12 Booleans</a>
   <a href="#s113">1.13 Three storage layers</a>
+  <a href="#s114">1.14 Considered and abandoned</a>
   <a class="r-part" href="#p2">II · Additive in 1.x</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
@@ -420,19 +421,6 @@ be built. The GA4 recommended set fills it in.</p>
 <tr><td class="ev">&lt;custom&gt;</td><td class="ev-l">track.action</td><td>arbitrary name plus params, no registration required</td></tr>
 </tbody></table></div>
 
-<h4>What v2 deliberately will <em>not</em> record</h4>
-<div class="scroll"><table>
-<thead><tr><th>GA4 emits</th><th>v2</th><th>Why</th></tr></thead>
-<tbody>
-<tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
-<tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
-<tr><td class="ev-l">base.feed_request <span class="dash">(1.x, no GA4 analogue)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about whether feeds matter: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
-</tbody></table></div>
-<p><strong>Recordings are not events.</strong> A domstream chunk becomes an <em>attachment</em> to a
-<code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
-their samples — to events would swamp the table: one measured corpus held 229,663 chunks
-carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
-
 <h4>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
 <p class="note"><strong>They are called <em>goal events</em>, not key events</strong>
 <span class="chip c-dec">Decided</span> &mdash; 3&nbsp;Sep&nbsp;2026. GA renamed its
@@ -630,7 +618,15 @@ saw it. Erasure has to scan, not look up.</p>
 <tr><td><strong>Long-lived credentials off-origin</strong></td><td>Today the overlay's <code>api_url</code> — carrying a user's <code>apiKey</code> and its HMAC signature — is written to a cookie on the <em>tracked site's</em> domain, readable by any script there and sent on every request to that site. v2 mints a <strong>short-lived scoped token</strong> (one site, one page, read-only, minutes) carried in the fragment and held in memory, never a cookie. The signature then protects nothing and goes away</td></tr>
 <tr><td><strong>Sentinel strings in storage</strong></td><td>NULL means absent — no <code>(not set)</code> written by tracker or server, so <code>COUNT(column)</code> becomes meaningful (today <code>dom_element_id</code> reads as populated on 94% of clicks while real on 0.09%). <code>GROUP BY</code> is unaffected — MySQL buckets NULLs together — and the <em>formatter</em> renders a null key as <code>(not set)</code> at the edge. Keeps it distinct from <code>(unknown)</code>, which means the breakdown could not attribute a session rather than the event carrying no value</td></tr>
 <tr><td><strong>Joins in the reporting path</strong></td><td>The single table exists to remove them. Lookup tables that reintroduce a join into aggregate queries are refused.</td></tr>
+<tr><td colspan="2" class="sunk"><strong>Events GA4 emits that v2 will not</strong> <span class="dash">— moved here from §1.4, which now lists only what IS collected</span></td></tr>
+<tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
+<tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
+<tr><td class="ev-l">base.feed_request <span class="dash">(1.x, no GA4 analogue)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about whether feeds matter: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
 </tbody></table></div>
+<p><strong>Recordings are not events.</strong> A domstream chunk becomes an <em>attachment</em> to a
+<code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
+their samples — to events would swamp the table: one measured corpus held 229,663 chunks
+carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
 
 <h3 id="s110"><span class="num">1.10</span>The tables <span class="chip c-dec">Decided</span></h3>
 <p><strong>The column-admission rule (revised):</strong> a field is a <em>column</em> if its name
@@ -1232,12 +1228,7 @@ partition is a no-op and idempotency survives intact. Worth stating plainly, bec
 &ldquo;never update the visitor row&rdquo; is the kind of rule that gets enforced literally by
 someone who was not in this conversation.</p>
 
-<p class="note"><strong>Correction, and it substantially demotes the table.</strong> If a visitor
-expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
-acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
-inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
-years ago and has returned every month has never expired, and their <code>first_visit</code> event
-is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
+
 
 <p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
 the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
@@ -1305,6 +1296,8 @@ relabelled, so it fails the same way and for the same reason.</li>
 It holds active visitors, not all visitors ever: 6,761 against 445,055 request rows here, about
 1.5%. Cheap &mdash; but cheap is not the same as needed.</li>
 </ul>
+
+<p class="note">The reasoning that nearly removed this store, and the trade that replaced it, are in <a href="#s114">§1.14</a>.</p>
 
 <p><strong>Position, after the GA reading above: keep the store.</strong> The intermediate
 recommendation here was to ship without it and retain raw for the attribution window, on the
@@ -1598,14 +1591,7 @@ evidence outlives raw, and a parser fix or an <code>ns</code> change can be reap
 history. That is exactly the argument that justified the visitor table, one layer down.</li>
 </ul>
 
-<p class="note"><strong>Correction.</strong> This section previously argued that carrying the URL on
-every beacon <em>removes</em> a cross-partition read, and called that a strengthening. It does, and
-it is the wrong trade. Stamping in the pass accepts that read and takes the cookie shrink instead
-&mdash; and the read is not a new class of problem, because <strong>session finalisation already
-needs exactly the same thing</strong>: the session's other events, which for a session spanning
-midnight are in the previous partition. One mechanism serves both. What the earlier version bought
-was wire bytes on every beacon for the life of every session, spent to avoid a read the pass has to
-do anyway.</p>
+
 
 <p><strong>The honest cost is realtime, and it is narrower than it first looks.</strong> A raw row
 from later in the session will not carry the landing URL, so a live query cannot resolve session
@@ -1777,6 +1763,42 @@ sending no campaign at all; and <code>_ga</code> unchanged across sessions while
 cookie&rsquo;s <code>s</code> rolled and <code>$o</code> incremented. Several secondary sources
 consulted first were wrong on these points, including on which cookie carries the
 <code>GS2</code> format.</p>
+
+<h3 id="s114"><span class="num">1.14</span>Considered and abandoned</h3>
+
+<p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
+inline because §1.13 is Decided and a decided section should read as a design, not as a
+transcript — but they are kept rather than deleted, because the reason a design is not something
+is usually the most expensive thing in it to rediscover.</p>
+
+<p>Two rules for what belongs here. A rejected alternative that is <em>load-bearing</em> for a
+nearby decision stays where it is — §1.4's session table did not survive review, and that finding
+IS the argument that the event table is the session-grain table, so moving it would gut the
+section. What moves is revision history: a position taken, then replaced, where only the
+replacement matters to a reader who was not present for the change.</p>
+
+<h4>The visitor store was nearly removed</h4>
+<p><strong>Correction, and it substantially demotes the table.</strong> If a visitor
+expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
+acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
+inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
+years ago and has returned every month has never expired, and their <code>first_visit</code> event
+is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
+<p><strong>Superseded.</strong> The store is kept — §1.13 gives the reasons, of which the
+decisive one is that GA has to hold acquisition on a user record to support a long-lived
+identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
+
+<h4>The landing URL was going to ride every beacon in v2 as well</h4>
+<p><strong>Correction.</strong> This section previously argued that carrying the URL on
+every beacon <em>removes</em> a cross-partition read, and called that a strengthening. It does, and
+it is the wrong trade. Stamping in the pass accepts that read and takes the cookie shrink instead
+&mdash; and the read is not a new class of problem, because <strong>session finalisation already
+needs exactly the same thing</strong>: the session's other events, which for a session spanning
+midnight are in the previous partition. One mechanism serves both. What the earlier version bought
+was wire bytes on every beacon for the life of every session, spent to avoid a read the pass has to
+do anyway.</p>
+<p><strong>Superseded.</strong> v1 carries it on every beacon because v1 has no pass to stamp it.
+v2 stamps it in the pass and the tracker cookie drops the key.</p>
 
 <h2>Additive work in 1.x</h2>
   <p class="part-note">What ships now, reduces risk, and is inherited by v2 rather than redone.</p>
