@@ -302,7 +302,7 @@ which a session exists and its marker does not.</p>
 <p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
 A session the pass could not attribute is not missing from the grid, and it does not inflate
 <code>(not set)</code> either: the pass writes a sentinel where it failed, so that session groups
-under <code>(unknown)</code> and says so (<a href="#s211">&sect;2.11</a>). Both are ordinary
+under <code>(unknown)</code> (<a href="#s211">&sect;2.11</a>). Both are ordinary
 buckets, both sum, and neither is a remainder computed by subtraction.</p>
 <p class="note">A reconciliation row would be needed only if a breakdown were ever computed from a
 different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
@@ -356,19 +356,19 @@ can check.</li>
 <tbody>
 <tr><td><strong>Raw</strong></td><td>event, as received</td><td><strong>row store</strong> &mdash; it takes one insert per beacon</td><td>realtime, and the record of what was observed</td></tr>
 <tr><td><strong>Denormalised</strong></td><td>event, enriched</td><td><strong>row or columnar</strong> &mdash; written only in bulk, by the pass</td><td>every report; the table queries actually hit</td></tr>
-<tr><td>Rollup <span class="chip c-open">Deferred</span></td><td>would be day &times; traffic source</td><td>follows the denormalised table</td><td><strong>Not built, and deliberately not specified.</strong> A rollup is derived from the layer above by definition, so it can be added with one job and one backfill &mdash; no collection change, no migration, nothing to re-derive. Measured against this corpus it earns nothing yet: a month is 106&nbsp;ms straight from events, and only an all-time query is slow enough to want it (<a href="#nA125">appendix</a>). Build it when a measured query is too slow, and let that measurement choose the key</td></tr>
+<tr><td>Rollup <span class="chip c-open">Deferred</span></td><td>would be day &times; traffic source</td><td>follows the denormalised table</td><td><strong>Not built, and deliberately not specified.</strong> A rollup is derived from the layer above by definition, so it can be added with one job and one backfill &mdash; no collection change, no migration, nothing to re-derive. Measured against this corpus it saves nothing yet: a month is 106&nbsp;ms straight from events, and only an all-time query is slow enough to want it (<a href="#nA125">appendix</a>). Build it when a measured query is too slow, and let that measurement choose the key</td></tr>
 </tbody></table></div>
 <p><strong>The fact table stops being primary.</strong> Events land in raw exactly as they
 arrived. A pass reads that and writes a denormalised fact table with session- and user-scoped
 values materialised onto every row. Queries hit the denormalised table; raw is the record of what
 was observed.</p>
 <p><strong>The two layers have opposite write patterns, so they need not share a store.</strong>
-Raw takes one insert per beacon, which is what a row store is for. The denormalised table is never
+Raw takes one insert per beacon, which a row store handles and a columnar engine does not. The denormalised table is never
 written a row at a time &mdash; the pass builds a whole partition into staging and swaps it
 &mdash; which is the load pattern a columnar store wants. So the design has to admit a
 <em>second data source</em> for the analytics table, with its own loading path: bulk load, partition
 replace, no row-level updates (<a href="#s21">&sect;2.1</a>).</p>
-<p><strong>A derived table can be rebuilt, which is what the whole scheme rests on.</strong> You
+<p><strong>The whole scheme rests on a derived table being rebuildable.</strong> You
 never <code>UPDATE</code> a fact row, you regenerate a partition &mdash; so no-retroactive-fact-updates
 survives intact and stops being a constraint that forces values onto the wire. The pass is
 <a href="#s27">&sect;2.7</a>; the partition cycle is <a href="#s28">&sect;2.8</a>.</p>
@@ -1026,7 +1026,7 @@ nothing about it reaches ingest.</p>
 <tbody>
 <tr><td><code>is_new_visitor_created</code></td><td>one request</td><td>the request that minted the visitor. Raises <code>first_visit</code></td></tr>
 <tr><td><code>is_new_session_start</code></td><td>one request</td><td>the request that created the session. Raises <code>session_start</code></td></tr>
-<tr><td><code>is_new_visitor</code></td><td>session</td><td>rides every beacon of the first session; keeps <code>is_repeat_visitor</code> from flipping mid-session. Not a raiser, but it is what lets any event of that session write the visitor row (<a href="#s29">&sect;2.9</a>)</td></tr>
+<tr><td><code>is_new_visitor</code></td><td>session</td><td>rides every beacon of the first session; keeps <code>is_repeat_visitor</code> from flipping mid-session. Not a raiser. Any event of that session can write the visitor row (<a href="#s29">&sect;2.9</a>)</td></tr>
 <tr><td><code>is_new_session</code></td><td>page</td><td>rides every beacon from the page the session started on. What <code>is_entry_page</code> needs</td></tr>
 </tbody></table></div>
 <p><strong>Acquisition keys off the flag, never off a computed earliest event.</strong> Derived as
@@ -1068,7 +1068,7 @@ rows, or an event from years ago.</p>
 <p class="note">A partition is not self-contained on the read side: a row written today belongs to
 a visitor whose <code>first_visit</code> may be two years back. So the pass needs a visitor store
 to look acquisition up in (<a href="#s29">&sect;2.9</a>), and it cannot finalise a session whose
-last event has not arrived, which is what the late-arrival window bounds.</p>
+last event has not arrived, which the late-arrival window bounds.</p>
 
 <h4><span class="num">2.7.1</span>One statement and a swap</h4>
 <p><strong>There are two inserters in the whole design: ingest and this pass.</strong> Ingest
@@ -1083,10 +1083,10 @@ the visitor store, and the terminal values computed inline over the session's ow
 <li><strong>Swap.</strong> <code>EXCHANGE PARTITION</code>.</li>
 </ol>
 <p><strong>Terminal session values stay NULL until the session closes</strong>, and are filled on a
-later rebuild. They are a predicate inside the build, not a step before it. The alternative is an
+later rebuild. They are a predicate inside the build. The alternative is an
 explicit session cap in the window, and it is not needed: <code>session_length</code> is an idle
-timeout rather than a duration cap, so a session with a hit every 25 minutes runs indefinitely and
-no finite window seals it. <a href="#s211">&sect;2.11</a> already makes &ldquo;not final yet&rdquo;
+timeout rather than a duration cap, so a session with a hit every 25 minutes runs indefinitely, and
+no finite window can wait for it to close. <a href="#s211">&sect;2.11</a> already makes &ldquo;not final yet&rdquo;
 and &ldquo;no value&rdquo; the same NULL.</p>
 <ul>
 <li><strong>The swap is the commit.</strong> Staging is built whole and is invisible until the
@@ -1145,10 +1145,9 @@ tier the rebuild window uses is open (<a href="#s31">&sect;3.1</a>).</p>
 attribution.</strong> It holds acquisition &mdash; source, medium, campaign, ad, search terms
 &mdash; write-once from the <code>first_visit</code> event, plus <code>last_seen</code>, which
 exists only to drive the TTL. Nothing else.</p>
-<p><strong>A visitor with no known acquisition has no row, and that is the answer rather than a
-gap.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
-census of visitors: it holds the ones whose first attribution is known, and the absence of a row
-<em>is</em> the statement that it is not &mdash; which is what the pass writes the sentinel from
+<p><strong>A visitor with no known acquisition has no row.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
+census of visitors: it holds the ones whose first attribution is known, and the pass writes the sentinel
+where the row is absent
 (<a href="#s211">&sect;2.11</a>).</p>
 <p class="note">Placeholder rows would also break the write rule below. It is
 <em>insert-if-absent</em>, so a row written with nothing in it would be found present when the real
@@ -1165,7 +1164,7 @@ tags start a new session (<a href="#s19">&sect;1.9.2</a>), so every event of tha
 the same acquisition; <code>is_new_visitor</code> or <code>prior_sessions</code>=0 says which
 session it is. Insert-if-absent means whichever lands first writes the row and the rest are
 no-ops.</p>
-<p class="note">That is what makes losing one beacon survivable. It does not reopen the correction
+<p class="note">So losing one beacon does not cost the acquisition. It does not reopen the correction
 problem <a href="#s26">&sect;2.6.3</a> guards against: every candidate resolves the same answer, so
 the failure stays <em>absent then present</em> and never <em>wrong then corrected</em>.</p>
 
@@ -1209,7 +1208,7 @@ alone, or two rebuilds can disagree.</p>
 <p><strong>Partitioning on <code>last_seen</code> is refused by MySQL, not merely expensive.</strong>
 Every unique key on a partitioned table must contain all partitioning columns, so the key becomes
 <code>(visitor_id, last_seen_period)</code> and <em>uniqueness on <code>visitor_id</code> alone
-becomes unenforceable</em> &mdash; which is what insert-if-absent is built on. A visitor could hold
+becomes unenforceable</em>, and insert-if-absent depends on it. A visitor could hold
 two acquisition rows in two partitions with nothing to say which is right. The cost objections are
 real too: <code>last_seen</code> is mutable, so MySQL physically moves the row between partitions
 whenever it crosses a boundary, and a lookup by <code>visitor_id</code> with no period in hand
@@ -1304,7 +1303,7 @@ observed values &mdash; which a <code>VARCHAR</code> wants anyway.
 <p class="note">The mechanism to copy is a grammar, not a token. GA reserves the prefixes
 <code>firebase_</code>, <code>google_</code> and <code>ga_</code> for event and parameter
 <em>names</em>, and requires a name to start with a letter and hold only letters, digits and
-underscores &mdash; which is what puts <code>(not set)</code> outside the alphabet a name may use.
+underscores, so <code>(not set)</code> falls outside the alphabet a name may use.
 It does not do the same for dimension <em>values</em>: nothing stops a site sending
 <code>utm_source=(not set)</code>, and the parenthesis convention rests on real values rarely
 containing one. That is tolerable there because a forged placeholder mislabels one row of the
@@ -1790,7 +1789,7 @@ outcome does not, by much.</p>
 <h4 id="nA19"><span class="num">A.1.9</span>Why reprocess cadence is bounded by the partition scheme</h4>
 <p>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</p>
 <h4 id="nA110"><span class="num">A.1.10</span>The rebuild-and-swap idiom ports to columnar stores</h4>
-<p>The pass rebuilds a partition and swaps it into place, and that idiom is not a MySQL trick that has to be abandoned if the reporting store changes. Both tables key on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which is what this design avoids.</p>
+<p>The pass rebuilds a partition and swaps it into place, and that idiom is not a MySQL trick that has to be abandoned if the reporting store changes. Both tables key on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which this design does not do.</p>
 <h4 id="nA111"><span class="num">A.1.11</span>What the report work left on v2</h4>
 <p>Phase&nbsp;4's report-config item asked for a widget format retrofitted into v1. What shipped
 (#1044, #1047, #1048) also made that format <em>user-authored</em>, which hands v2 one constraint
