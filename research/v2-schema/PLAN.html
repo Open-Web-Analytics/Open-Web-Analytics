@@ -1230,7 +1230,18 @@ out</em>. The formatter renders the first <code>(not set)</code> and the second
 attribution columns can carry visitor text. A readable token like
 &ldquo;<code>(unknown)</code>&rdquo; would therefore be forgeable, which is the confusion this
 section exists to remove. It is a reserved control byte, and the pass strips control bytes from
-observed values &mdash; which a <code>VARCHAR</code> wants anyway.</li>
+observed values &mdash; which a <code>VARCHAR</code> wants anyway.
+<p class="note">The mechanism to copy is a grammar, not a token. GA reserves the prefixes
+<code>firebase_</code>, <code>google_</code> and <code>ga_</code> for event and parameter
+<em>names</em>, and requires a name to start with a letter and hold only letters, digits and
+underscores &mdash; which is what puts <code>(not set)</code> outside the alphabet a name may use.
+It does not do the same for dimension <em>values</em>: nothing stops a site sending
+<code>utm_source=(not set)</code>, and the parenthesis convention rests on real values rarely
+containing one. That is tolerable there because a forged placeholder mislabels one row of the
+site's own report. It is not tolerable here, because our sentinel asserts <em>the pipeline failed
+to resolve this</em> &mdash; a claim about our processing, which the thing being processed should
+not be able to make. Restricting what an observed value may contain is the same move GA makes for
+names, applied to values.</p></li>
 </ul>
 <p class="note">Two things this cost 1.x, worth carrying forward: <code>NOT NULL DEFAULT 0</code>
 fixes new writes and nothing else, so a schema that has ever permitted the third value needs a
@@ -1704,7 +1715,7 @@ retained events</strong>, since those live 2 or 14 months while attribution pers
 for an active user. The store described above is real and GA has one. But <strong>GA has it because
 GA supports the case, and our own data says the case barely occurs</strong>: with Chrome capping any
 first-party cookie at 400 days, even GA&rsquo;s &ldquo;forever&rdquo; is about thirteen months in
-the dominant browser, which is where the TTL landed anyway. The architecture differs; the reachable
+the dominant browser, which is the cap the TTL is set just above. The architecture differs; the reachable
 outcome does not, by much.</p>
 <h4 id="nA19"><span class="num">A.1.9</span>Why reprocess cadence is bounded by the partition scheme</h4>
 <p>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</p>
