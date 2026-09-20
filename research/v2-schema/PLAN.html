@@ -272,22 +272,31 @@ moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scope
 <code>first_visit</code> &mdash; and a natural thing to name as a goal event.</p>
 
 <h4><span class="num">1.3.2</span>Totals, breakdowns, and the <code>(unknown)</code> row</h4>
-<p>A marker rides one beacon, so it can go missing. That sets three rules:</p>
+<p>A marker rides one beacon, so it can go missing. Three rules follow:</p>
 <div class="scroll"><table>
 <thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
 <tr><td>A session <strong>total</strong></td><td>the event rows</td><td><strong>Never from markers.</strong> Every event of a session carries its id, so a lost marker costs that session's attribution and not its existence</td></tr>
-<tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
-<tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
+<tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>Counting marker rows instead is a fast path &mdash; far cheaper than a <code>DISTINCT</code> per bucket &mdash; and trades a wider gap for it</td></tr>
+<tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>A session the total can see and the breakdown cannot place. The API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
-<p class="note"><strong>While there is no rollup, totals and breakdowns come from the same table
-and cannot disagree</strong>, so the <code>(unknown)</code> row has nothing to report. It is
-specified here because a rollup would reintroduce the gap, and because counting a breakdown from
-marker rows &mdash; a fast path either way &mdash; has the same effect.</p>
-<p>Where a total and a breakdown do come from different places, the total wins and the
-<code>(unknown)</code> row carries the remainder. Two rules keep that honest: Where a total and a breakdown meet on
-one screen the total wins, and the <code>(unknown)</code> row carries the remainder. Two rules keep
-that honest:</p>
+<p><strong>A session can be counted while its attribution is missing, and that is true in one
+table.</strong> The total is a distinct count over event rows; a breakdown groups by a stamped
+column. Where that column is NULL for a session the total still sees it and the breakdown cannot
+place it, and three decisions in this plan produce exactly that:</p>
+<ul>
+<li><strong>A lost marker.</strong> The row above says it: losing one costs that session's
+attribution and not its existence.</li>
+<li><strong>Acquisition past the TTL.</strong> <a href="#s15">&sect;1.5.4</a> resolves it to NULL
+rather than to the visitor's earliest retained event, so user-scoped breakdowns undercount by
+design.</li>
+<li><strong>Terminal values before a session closes.</strong> <a href="#s27">&sect;2.7.1</a> leaves
+them NULL until it does, so an exit-page or bounce breakdown omits sessions the total includes.</li>
+</ul>
+<p>Counting a breakdown from marker rows adds a fourth, and a rollup would add a fifth. None of
+them is the reason the row exists; the first three arrive with the single table.</p>
+<p>Where a total and a breakdown meet on one screen the total wins, and the <code>(unknown)</code>
+row carries the remainder. Two rules keep that honest:</p>
 <ul>
 <li>the row appears only for a <strong>positive</strong> remainder, labelled
 <code>(unknown)</code>, never blended into <code>(not set)</code>, which means something else
