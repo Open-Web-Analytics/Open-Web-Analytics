@@ -281,10 +281,10 @@ identity on every other event but loses the attribution the marker carried. That
 <tr><td>A session <strong>breakdown</strong></td><td>the event rows, grouped by a stamped column</td><td>A session with no value for that column groups under NULL, which the formatter renders <code>(not set)</code> (<a href="#s211">&sect;2.11</a>)</td></tr>
 </tbody></table></div>
 <p><strong>Breakdowns therefore sum to their totals, and nothing has to reconcile them.</strong>
-A session the pass could not attribute is not missing from the grid &mdash; it is in the
-<code>(not set)</code> row, alongside the sessions that genuinely carried no value. The two are not
-told apart, which is the price of this being arithmetic rather than bookkeeping: a lost marker
-inflates <code>(not set)</code> rather than announcing itself.</p>
+A session the pass could not attribute is not missing from the grid, and it does not inflate
+<code>(not set)</code> either: the pass writes a sentinel where it failed, so that session groups
+under <code>(unknown)</code> and says so (<a href="#s211">&sect;2.11</a>). Both are ordinary
+buckets, both sum, and neither is a remainder computed by subtraction.</p>
 <p class="note">A reconciliation row would be needed only if a breakdown were ever computed from a
 different source than its total &mdash; counting marker rows as a fast path, or reading a rollup
 (<a href="#s15">&sect;1.5</a>). Both are out of the current design, so neither is specified. What
@@ -409,9 +409,11 @@ inactivity window, which is the shape every other vendor uses and roughly where 
 independently land.</li>
 <li><strong>Expiring a row does not rewrite history.</strong> Rows already denormalised keep the
 acquisition stamped on them; only the ability to attribute <em>future</em> events is lost.</li>
-<li><strong>When <code>first_visit</code> falls outside the window, acquisition resolves to
-NULL</strong> &mdash; never to the earliest <em>retained</em> event, which would change the answer
-every time the window slid forward.</li>
+<li><strong>When <code>first_visit</code> falls outside the window, acquisition resolves to the
+unresolved sentinel</strong> (<a href="#s211">&sect;2.11</a>) &mdash; never to the earliest
+<em>retained</em> event, which would change the answer every time the window slid forward. It is
+not a state of its own: from a report's side, aged out of the window and never worked out are the
+same answer.</li>
 </ul>
 <p class="note">The vendor survey and measured lifespans are <a href="#nA124">A.1</a>; the argument
 that nearly removed this table is <a href="#nA21">A.2</a>.</p>
@@ -1020,7 +1022,7 @@ rows, or an event from years ago.</p>
 <tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon</td></tr>
-<tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution</td></tr>
+<tr><td>session</td><td><strong>source, medium, channel</strong></td><td><strong>derived in the PASS.</strong> The referrer table changes and channel grouping is a classification, so this is a model, not a resolution. Where the pass cannot resolve it &mdash; the session's first event is not in the processed set &mdash; it writes the unresolved sentinel rather than NULL (<a href="#s211">&sect;2.11</a>)</td></tr>
 <tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>derived in the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>derived in the PASS</strong>, from the <code>first_visit</code> event &mdash; <strong>which is usually not in this partition</strong></td></tr>
@@ -1209,6 +1211,20 @@ Yes/No from its declared type, wherever it is shown.</li>
 Yes/No on a visitor-type chart. The type supplies the default; the report overrides it.</li>
 <li><strong>A flag with a real unknown state gets an explicit three-state type</strong>, not an
 accidental one.</li>
+<li><strong>A value the pass could not produce gets a sentinel, and that is not a contradiction.</strong>
+The objection above is to a sentinel standing in for an <em>observation</em>, where it cannot be
+told apart from a value someone supplied. &ldquo;Unresolved&rdquo; is not an observation: the pass
+generates it, and no visitor can produce it. So NULL keeps one meaning &mdash; <em>the beacon
+carried nothing</em> &mdash; and the sentinel carries the other, <em>the pass could not work it
+out</em>. The formatter renders the first <code>(not set)</code> and the second
+<code>(unknown)</code>, at the same edge, in the same place.</li>
+<li><strong>The sentinel has to be un-typeable.</strong> <code>source</code> and
+<code>medium</code> are not purely server-derived: <code>resolveMedium()</code> returns
+<code>strtolower(trim($tagged))</code> straight from the URL when a visit is tagged, so all five
+attribution columns can carry visitor text. A readable token like
+&ldquo;<code>(unknown)</code>&rdquo; would therefore be forgeable, which is the confusion this
+section exists to remove. It is a reserved control byte, and the pass strips control bytes from
+observed values &mdash; which a <code>VARCHAR</code> wants anyway.</li>
 </ul>
 <p class="note">Two things this cost 1.x, worth carrying forward: <code>NOT NULL DEFAULT 0</code>
 fixes new writes and nothing else, so a schema that has ever permitted the third value needs a
