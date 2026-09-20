@@ -128,7 +128,6 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s112">1.12 Privacy and retention</a>
   <a href="#s113">1.13 What it deletes</a>
   <a href="#s114">1.14 Deliberate non-goals</a>
-  <a href="#s115">1.15 Considered and abandoned</a>
   <a href="#s21">2.1 Why additive</a>
   <a href="#s22">2.2 Fully additive</a>
   <a href="#s23">2.3 Tracker-additive</a>
@@ -149,6 +148,9 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s44">4.4 Testing</a>
   <a href="#s45">4.5 Multi-site</a>
   <a href="#s46">4.6 Open questions</a>
+  <div class="navsec">Appendix</div>
+  <a href="#sa1">A.1 Evidence</a>
+  <a href="#sa2">A.2 Given up</a>
 </nav>
 
 <main>
@@ -329,65 +331,88 @@ the redundant floor for new-visitor.</div>
   rollup restores exactly that at the session grain.</p>
 </div>
 
-<h4>The session table proved unnecessary</h4>
-<p>An earlier draft kept a session-grain derived table (~30 columns, <code>owa_session</code>'s
-grain reborn). It did not survive review: the v2 session primitives already make every session
-metric a <strong>single-pass aggregate over the fact table</strong>. Deltas are additive, so
-engagement time is <code>SUM(delta)</code> by anything; the engaged flag is sticky, so engaged
-sessions are a <code>DISTINCT IF</code>; and session-scoped values (source, campaign, landing
-page) are stamped on every event — a decision made for attribution that turns out to govern query
-shape. Measured: &ldquo;sessions by landing page&rdquo; as a first-event join costs 3.1&nbsp;s over
-a year; as a plain group-by over sticky values, 215&nbsp;ms. The session's context is embedded in
-its event rows, so the event table <em>is</em> the session-grain table. (This is also why
-<code>owa_session</code> is needed in 1.x — its events carry none of this.)</p>
-<div class="scroll"><table>
-<thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th>Rows (measured)</th></tr></thead>
-<tbody>
-<tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed (&sect;1.5)</td><td class="n">692,829</td></tr>
-<tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns — one-pass</td><td class="n">692,829</td></tr>
-<tr><td>Day rollup</td><td><code>yyyymmdd</code></td><td>totals and trends, start-day attributed (0.23% of sessions cross midnight)</td><td class="n">5,785</td></tr>
-</tbody></table></div>
-<p class="note"><strong>This table said TWO layers when it was written, and the measurement that
-put it here is unaffected by the third.</strong> &sect;1.5 split the fact table into raw and
-denormalised; what this section established — that a session-grain table is unnecessary, because
-session-scoped values are stamped on every event row — is a statement about GRAIN, not about how
-many layers hold it. The 215&nbsp;ms group-by still beats the 3.1&nbsp;s first-event join, and it
-now happens against the denormalised layer.</p>
-<p><strong>The markers are the breakdown fast path.</strong> With <code>session_start</code> in the
-stream, an interactive breakdown counts marker rows instead of deduplicating session ids —
-measured via 1.x's <code>is_entry_page</code> proxy: <strong>92&nbsp;ms vs 373&nbsp;ms</strong>
-over a year, <strong>218&nbsp;ms vs 1,855&nbsp;ms</strong> over three. The expensive
-<code>DISTINCT</code> is confined to the rollup job, bounded to its trailing window. A lost marker
-undercounts the breakdown and lands in <code>(unknown)</code>. Duplicate markers (tab races, queue
-redelivery) are <strong>structurally impossible</strong>: the marker's event id is content-derived
-— <code>hash(site_id + session_id + 'session_start')</code> — so racing writers produce the same
-row and the second insert is a duplicate-key no-op, with no coordination and across subdomains,
-where the Web Locks API (origin-scoped) could not reach. A negative remainder is therefore a pure
-defect signal. The derived session table demotes to an
-<em>optional materialization</em>: derived state an install can add later with one rebuild if
-breakdown latency outgrows these shapes, a cache with a trigger condition rather than
-architecture.</p>
-<p><strong>Where a total and a breakdown meet on one screen, the total is authoritative and the
-API closes the gap</strong> — a synthetic row with dimension value <code>(unknown)</code> and the
-remainder as its metric value, which is simply true: sessions the total can see and the breakdown
-cannot attribute. The invariant &ldquo;breakdowns sum to totals&rdquo; is enforced at the API
-envelope rather than assumed from storage, and v1 already has the seam — result sets carry
-<code>aggregates</code> beside the dimensional rows. Two rules keep it honest: the row appears
-only for a <em>positive</em> remainder and is labelled <code>(unknown)</code>, never blended into
-<code>(not set)</code>; and a negative remainder is never clamped — breakdown exceeding total
-means a defect, and absorbing it would silently convert the parity harness's clearest bug signal
-into invisible correction.</p>
+<h4>No session table</h4>
 
-<div class="flag">
-  <p class="h">Measured — the cost depends on how rich the stream is</p>
-  <p>1.x averages <strong>2.10 events per session</strong> and 1.15 sessions per visitor, measured
-  across two live installs. At that density the two markers would add roughly <strong>89%</strong>
-  to event volume, which is what made a flat rejection look reasonable.</p>
-  <p>But that density is an artefact of 1.x tracking almost nothing but pageviews. With the
-  automatic events above — scroll, engagement, clicks, form interactions — a v2 session is more
-  like 6–8 events, and the same two markers cost <strong>25–30%</strong>. The marker overhead is
-  inversely proportional to stream richness, so it falls as v2 does its job.</p>
-</div>
+<p>An earlier draft kept a session-grain derived table — about 30 columns,
+<code>owa_session</code>'s grain rebuilt. It is not needed, because every session metric is a
+one-pass aggregate over the event table:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Session metric</th><th>How it is computed</th><th>Why it works</th></tr></thead>
+<tbody>
+<tr><td>engagement time</td><td><code>SUM(delta)</code> by anything</td><td>the deltas are additive</td></tr>
+<tr><td>engaged sessions</td><td><code>DISTINCT IF</code></td><td>the engaged flag is sticky</td></tr>
+<tr><td>source, campaign, landing page</td><td>group by the column</td><td>stamped on every event of the session</td></tr>
+</tbody></table></div>
+
+<p>The third line is the one that decides it: session context is on every event row, so the event
+table <em>is</em> the session-grain table. That stamping was a decision made for attribution; it
+governs query shape as a side effect.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>&ldquo;Sessions by landing page&rdquo;</th><th>Over a year</th></tr></thead>
+<tbody>
+<tr><td>first-event join</td><td class="n">3.1 s</td></tr>
+<tr><td>group-by over stamped values</td><td class="n">215 ms</td></tr>
+</tbody></table></div>
+
+<p><code>owa_session</code> is needed in 1.x for the opposite reason: its events carry none of
+this. And the derived table is not forbidden — it demotes to an optional materialisation, a cache
+an install can add later with one rebuild if breakdown latency outgrows these shapes.</p>
+
+<h4>Markers are the breakdown fast path</h4>
+
+<p>With <code>session_start</code> in the stream, a breakdown counts marker rows instead of
+deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> proxy:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Range</th><th>Counting markers</th><th>DISTINCT on session ids</th></tr></thead>
+<tbody>
+<tr><td>one year</td><td class="n">92 ms</td><td class="n">373 ms</td></tr>
+<tr><td>three years</td><td class="n">218 ms</td><td class="n">1,855 ms</td></tr>
+</tbody></table></div>
+
+<p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
+window.</p>
+
+<h4>A duplicate marker cannot happen; a lost one is visible</h4>
+
+<p>The marker's event id is content-derived — <code>hash(site_id + session_id +
+'session_start')</code> — so racing writers produce the same row and the second insert is a
+duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
+Locks API is origin-scoped and could not reach.</p>
+
+<p>A lost marker undercounts the breakdown and lands in <code>(unknown)</code>. A negative
+remainder is therefore a defect signal rather than a rounding artefact.</p>
+
+<h4>Breakdowns sum to totals, enforced at the API</h4>
+
+<p>Where a total and a breakdown meet on one screen, the total is authoritative and the API
+closes the gap with a synthetic row: dimension value <code>(unknown)</code>, the remainder as its
+metric. That row is true — sessions the total can see and the breakdown cannot attribute. v1
+already has the seam, since result sets carry aggregates beside the dimensional rows.</p>
+
+<p>Two rules keep it honest:</p>
+<ul>
+<li>the row appears only for a <strong>positive</strong> remainder, and is labelled
+<code>(unknown)</code>, never blended into <code>(not set)</code>;</li>
+<li>a negative remainder is <strong>never clamped</strong>. A breakdown exceeding its total is a
+defect, and absorbing it would turn the parity harness's clearest signal into silent
+correction.</li>
+</ul>
+
+<h4>Marker overhead falls as the stream gets richer</h4>
+
+<div class="scroll"><table>
+<thead><tr><th>Stream</th><th>Events per session</th><th>Cost of two markers</th></tr></thead>
+<tbody>
+<tr><td>1.x, measured across two live installs</td><td class="n">2.10</td><td class="n">~89%</td></tr>
+<tr><td>v2, with scroll, engagement, clicks and form events</td><td class="n">6&ndash;8</td><td class="n">25&ndash;30%</td></tr>
+</tbody></table></div>
+
+<p>The 89% figure is what made a flat rejection look reasonable, and it is an artefact of 1.x
+tracking almost nothing but pageviews. Marker overhead is inversely proportional to stream
+richness, so it falls as v2 does its job. (1.x also averages 1.15 sessions per visitor.)</p>
 
 <h4>Opt-in — commerce</h4>
 <p>This is where 1.x is thinnest: it has <em>only</em> the completed transaction, so no funnel can
@@ -498,6 +523,13 @@ can check.</li>
 </ul>
 
 <h3 id="s15"><span class="num">1.5</span>Three storage layers: raw, denormalised, rollup <span class="chip c-dec">Decided</span></h3>
+<div class="scroll"><table>
+<thead><tr><th>Layer</th><th>Grain</th><th>Serves</th><th>Rows (measured)</th></tr></thead>
+<tbody>
+<tr><td>Raw</td><td>event, as received</td><td>realtime, and the record of what was observed (&sect;1.5)</td><td class="n">692,829</td></tr>
+<tr><td>Denormalised fact table</td><td>event, enriched</td><td>all breakdowns — one-pass</td><td class="n">692,829</td></tr>
+<tr><td>Day rollup</td><td><code>yyyymmdd</code></td><td>totals and trends, start-day attributed (0.23% of sessions cross midnight)</td><td class="n">5,785</td></tr>
+</tbody></table></div>
 
 <p><strong>The fact table stops being primary.</strong> Events land in a raw, append-only table
 exactly as they arrived. A pass reads that and writes a <em>denormalised</em> fact table with
@@ -714,16 +746,9 @@ group-by over sticky values against 3.1&nbsp;s as a first-event join &mdash; so 
 changes. What changes is <em>who</em> stamps them and <em>which layer</em> they exist in: the pass,
 and the denormalised table, not the tracker and not raw.</p>
 
-<p><strong>That also narrows the realtime claim made above, and it should be narrowed.</strong>
-OWA&rsquo;s raw layer does hold more than GA&rsquo;s &mdash; the referring URL and the campaign tags
-are there on every event where GA carries only per-event collected values &mdash; so realtime can
-report a referring host. It cannot report a resolved source, medium or channel, because those do
-not exist until the pass runs. Richer than GA&rsquo;s realtime, but not unboundedly so, and along a
-line that follows from the architecture rather than from a policy.</p>
 
-<p><strong>GA is built this way, and its BigQuery export says so explicitly.</strong> The export
-carries <em>three separate</em> traffic-source records per event row, which is the same three-way
-cut arrived at above:</p>
+
+
 <ul>
 <li><code>collected_traffic_source.*</code> &mdash; <code>manual_source</code>,
 <code>manual_medium</code>, <code>manual_campaign_*</code>, <code>gclid</code>,
@@ -739,14 +764,7 @@ and explicitly <em>&ldquo;do not change if the user interacts with subsequent ca
 Write-once acquisition, materialised onto every event row.</li>
 </ul>
 
-<p><strong>And the line in that documentation that settles the architecture:
-<em>&ldquo;This record is not populated in intraday tables.&rdquo;</em></strong> GA&rsquo;s intraday
-table is its raw layer and its daily table is its processed one, and user acquisition exists only in
-the second. That is the raw/denormalised split observed from outside GA, with the same value in the
-same place for the same reason &mdash; it cannot be known from the event alone, so it cannot be in
-the layer that is written one event at a time. <code>geo</code> and <code>device</code>, by
-contrast, are on every exported row including intraday, which is the ingest-time mechanical
-resolution above.</p>
+
 
 <p>Whether GA keeps a user-acquisition table internally is not observable from outside. The
 <em>shape</em> is not in question: a write-once, user-scoped value that originates in one event
@@ -758,15 +776,13 @@ is the unit of work&rdquo; describes the write side exactly, and the read side n
 written today belongs to a visitor whose <code>first_visit</code> may be two years back, and to a
 session that may have started yesterday. Two things follow, </p>
 
-<p><strong>1. Visitor acquisition needs a derived visitor table, and the reason is retention,
-not lookup cost.</strong> The tempting answer is that the pass needs no table because it can join
-raw to raw &mdash; find the visitor&rsquo;s <code>first_visit</code> row and read the arrival values
-off it. <strong>That works right up until raw is pruned.</strong> &sect;1.5 banks on pruning raw to
-recover the storage doubling three layers cost; the moment the horizon passes a visitor&rsquo;s
-first visit, their acquisition is not expensive to recover, it is <em>gone</em>, and every
-subsequent event they generate is permanently unattributable. Retaining raw forever to avoid that
-gives back the one mitigation the third layer had. A visitor-cardinality row survives the prune
-because it is not event-cardinality.</p>
+<p>Why the pass needs a visitor store, what that store holds and how long it keeps it are below.</p>
+
+<h4>The visitor store</h4>
+<p>Evidence for the shape below &mdash; the measured visitor lifespans, and what GA does &mdash; is in <a href="#sa1">the appendix</a>.</p>
+
+
+
 
 <p>A cost argument points the same way but is weaker than it first looks, and the difference is
 worth recording because it nearly went in as the headline. MySQL has no global secondary index on
@@ -777,14 +793,7 @@ from the row doing the asking</em>, and the seek is qualified rather than unqual
 optimiser actually prunes on a per-row join key, rather than only on a constant, is a measurement
 nobody here has taken. So the lookup is probably affordable, and retention is the decisive argument.</p>
 
-<p>So: one row per visitor, written when the <code>first_visit</code> event is seen, holding the
-arrival values. <strong>Maintained by the pass, not by ingest</strong> &mdash; the property that
-mattered for ITP and for keeping append pure is that the <em>write path</em> does no lookups, and
-that is untouched. Reports never join it either; it is an input to the build, and its values reach
-queries materialised onto event rows like everything else. It is neither <code>owa_visitor</code>
-reborn (no per-request write, no per-request read) nor a star-schema dimension (no query-time join,
-no FK on the fact row, so no repeat of the inner-join-drops-the-row failure &sect;1.7 exists to
-prevent). Calling it a table is accurate; calling the pass stateless would not be.</p>
+
 
 <p><strong>The test this passes is the one that deleted the session table.</strong> That draft kept
 a session-grain derived table and lost it because session-scoped values are stamped on every event,
@@ -826,20 +835,11 @@ explicitly &mdash; its retention setting <em>&ldquo;only affects explorations an
 reports&rdquo;</em> and <em>&ldquo;does not affect standard aggregated reports&rdquo;</em>, which
 is exactly the distinction between the per-visitor record and the rows it has already stamped.</p>
 
-<p><strong>One wrinkle it creates in the write rule above.</strong> A sliding window needs
-<code>last_seen</code>, and the pass writing <code>last_seen</code> contradicts
-&ldquo;insert-if-absent, never update&rdquo;. The resolution is that the rule belongs to the
-<em>acquisition columns</em>, not to the row: those are write-once, while <code>last_seen</code> is
-a maintenance column the pass advances as
-<code>GREATEST(last_seen, &lt;partition max&gt;)</code> &mdash; monotonic, so a rerun of the same
-partition is a no-op and idempotency survives intact. Worth stating plainly, because
-&ldquo;never update the visitor row&rdquo; is the kind of rule that gets enforced literally by
-someone who was not in this conversation.</p>
 
 
 
-<p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
-the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
+
+
 
 <table>
 <tr><th>lifespan</th><th>visitors</th><th>share</th></tr>
@@ -850,33 +850,11 @@ the 181,534 visitors with usable dates and fourteen years of history (2012-01-18
 <tr><td><strong>over 26 months</strong></td><td class="n">121</td><td class="n">0.067%</td></tr>
 </table>
 
-<p><strong>0.172% of visitors have an active life longer than thirteen months.</strong> Among the
-6,761 visitors active in the last 90 days, the oldest first visit is 2025-10-24 &mdash; under a
-year, with none at all over thirteen months, while 171,642 visitors first seen more than thirteen
-months ago exist in the table and never return. Repeat visits plainly work at short range
-(120,356 visitors have exactly one prior session), so this is not broken recognition at the
-margin; it is recognition decaying to nothing well before the window closes. The cause is the same
-browser cookie physics that set the window: Chrome&rsquo;s 400-day cap, Safari&rsquo;s seven days,
-and people changing device or clearing state. <strong>The theoretical hole is closed by the same
-mechanism that produced the TTL.</strong></p>
 
-<p><strong>GA is worth being precise about here, because its fourteen months do not bind the way
-the number suggests.</strong> With &ldquo;reset user data on new activity&rdquo; the window slides
-on every event, so a user who returns at least once inside it <em>never</em> expires &mdash; and
-first-user attribution rides with the identity rather than being stored beside it. Someone acquired
-via organic search stays organic on the first-user dimensions forever, unchanged by any later
-campaign, for exactly as long as the identity survives. What ends it is documented as the identity
-being lost &mdash; cookie expiry, a new device, Safari&rsquo;s caps &mdash; not the retention
-setting.</p>
 
-<p>Two things follow, pulling in opposite directions, and both are worth stating.
-<strong>GA must therefore hold acquisition on a user record and cannot be deriving it from its own
-retained events</strong>, since those live 2 or 14 months while attribution persists indefinitely
-for an active user. The store described above is real and GA has one. But <strong>GA has it because
-GA supports the case, and our own data says the case barely occurs</strong>: with Chrome capping any
-first-party cookie at 400 days, even GA&rsquo;s &ldquo;forever&rdquo; is about thirteen months in
-the dominant browser, which is where the TTL landed anyway. The architecture differs; the reachable
-outcome does not, by much.</p>
+
+
+
 
 <p><strong>A qualification on the 0.172%.</strong> Those are not 0.172% of randomly chosen
 visitors &mdash; they are, by construction, the most persistently engaged cohort on the site, the
@@ -905,7 +883,7 @@ It holds active visitors, not all visitors ever: 6,761 against 445,055 request r
 1.5%. Cheap &mdash; but cheap is not the same as needed.</li>
 </ul>
 
-<p class="note">The reasoning that nearly removed this store, and the trade that replaced it, are in <a href="#s15">&sect;1.15</a>.</p>
+<p class="note">The reasoning that nearly removed this store, and the trade that replaced it, are in <a href="#s15"><a href="#sa2">the appendix</a></a>.</p>
 
 <p><strong>Position, after the GA reading above: keep the store.</strong> The intermediate
 recommendation here was to ship without it and retain raw for the attribution window, on the
@@ -1293,12 +1271,7 @@ that derivation in; see the pass section above, which is where the distinction i
 <p>Open items from this section are collected in <a href="#s46">&sect;4.6</a>, with the rest of the plan’s.</p>
 
 <h4>The visitor store was nearly removed</h4>
-<p><strong>Correction, and it substantially demotes the table.</strong> If a visitor
-expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
-acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
-inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
-years ago and has returned every month has never expired, and their <code>first_visit</code> event
-is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
+
 <p><strong>Superseded.</strong> The store is kept — &sect;1.5 gives the reasons, of which the
 decisive one is that GA has to hold acquisition on a user record to support a long-lived
 identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
@@ -1947,42 +1920,6 @@ nonsense.</div>
 <code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
 their samples — to events would swamp the table: one measured corpus held 229,663 chunks
 carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
-
-<h3 id="s115"><span class="num">1.15</span>Considered and abandoned</h3>
-
-<p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
-inline because &sect;1.8 is Decided and a decided section should read as a design, not as a
-transcript — but they are kept rather than deleted, because the reason a design is not something
-is usually the most expensive thing in it to rediscover.</p>
-
-<p>Two rules for what belongs here. A rejected alternative that is <em>load-bearing</em> for a
-nearby decision stays where it is — &sect;1.3's session table did not survive review, and that finding
-IS the argument that the event table is the session-grain table, so moving it would gut the
-section. What moves is revision history: a position taken, then replaced, where only the
-replacement matters to a reader who was not present for the change.</p>
-
-<h4>The visitor store was nearly removed</h4>
-<p><strong>Correction, and it substantially demotes the table.</strong> If a visitor
-expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
-acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
-inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
-years ago and has returned every month has never expired, and their <code>first_visit</code> event
-is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
-<p><strong>Superseded.</strong> The store is kept — &sect;1.8 gives the reasons, of which the
-decisive one is that GA has to hold acquisition on a user record to support a long-lived
-identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
-
-<h4>The landing URL was going to ride every beacon in v2 as well</h4>
-<p><strong>Correction.</strong> This section previously argued that carrying the URL on
-every beacon <em>removes</em> a cross-partition read, and called that a strengthening. It does, and
-it is the wrong trade. Stamping in the pass accepts that read and takes the cookie shrink instead
-&mdash; and the read is not a new class of problem, because <strong>session finalisation already
-needs exactly the same thing</strong>: the session's other events, which for a session spanning
-midnight are in the previous partition. One mechanism serves both. What the earlier version bought
-was wire bytes on every beacon for the life of every session, spent to avoid a read the pass has to
-do anyway.</p>
-<p><strong>Superseded.</strong> v1 carries it on every beacon because v1 has no pass to stamp it.
-v2 stamps it in the pass and the tracker cookie drops the key.</p>
 
 <h2>Additive work in 1.x</h2>
   <p class="part-note">What ships now, reduces risk, and is inherited by v2 rather than redone.</p>
@@ -3027,6 +2964,124 @@ same standing as their web server logs. Crypto-shredding and the pseudonym mappi
 declared user fields are ordinary event params. What remains are the operator's real obligations
 made practical: anonymise-by-default, retention, and <code>forget visitor=&lt;id&gt;</code> — which
 deletes events wholesale and so reaches PII through every channel, declared or stuffed.</div>
+
+<h2><span class="secn">Appendix</span>Evidence and debate</h2>
+<h3 id="sa1"><span class="num">A.1</span>Why the design is what it is</h3>
+<p>The body states what v2 is. This is the evidence behind it and the positions that were held and given up &mdash; kept because the reason a design is <em>not</em> something is the most expensive thing to rediscover, and moved here because it was making the plan unreadable.</p>
+<h4>GA: three traffic-source records</h4>
+<p><strong>That also narrows the realtime claim made above, and it should be narrowed.</strong>
+OWA&rsquo;s raw layer does hold more than GA&rsquo;s &mdash; the referring URL and the campaign tags
+are there on every event where GA carries only per-event collected values &mdash; so realtime can
+report a referring host. It cannot report a resolved source, medium or channel, because those do
+not exist until the pass runs. Richer than GA&rsquo;s realtime, but not unboundedly so, and along a
+line that follows from the architecture rather than from a policy.</p>
+<h4>GA: not populated in intraday tables</h4>
+<p><strong>GA is built this way, and its BigQuery export says so explicitly.</strong> The export
+carries <em>three separate</em> traffic-source records per event row, which is the same three-way
+cut arrived at above:</p>
+<h4>GA: what is and is not observable</h4>
+<p><strong>And the line in that documentation that settles the architecture:
+<em>&ldquo;This record is not populated in intraday tables.&rdquo;</em></strong> GA&rsquo;s intraday
+table is its raw layer and its daily table is its processed one, and user acquisition exists only in
+the second. That is the raw/denormalised split observed from outside GA, with the same value in the
+same place for the same reason &mdash; it cannot be known from the event alone, so it cannot be in
+the layer that is written one event at a time. <code>geo</code> and <code>device</code>, by
+contrast, are on every exported row including intraday, which is the ingest-time mechanical
+resolution above.</p>
+<h4>Why lookup cost is not the reason</h4>
+<p><strong>Why the store exists: retention, not lookup cost.</strong> The tempting answer is that the pass needs no table because it can join
+raw to raw &mdash; find the visitor&rsquo;s <code>first_visit</code> row and read the arrival values
+off it. <strong>That works right up until raw is pruned.</strong> &sect;1.5 banks on pruning raw to
+recover the storage doubling three layers cost; the moment the horizon passes a visitor&rsquo;s
+first visit, their acquisition is not expensive to recover, it is <em>gone</em>, and every
+subsequent event they generate is permanently unattributable. Retaining raw forever to avoid that
+gives back the one mitigation the third layer had. A visitor-cardinality row survives the prune
+because it is not event-cardinality.</p>
+<h4>The same test that removed the session table</h4>
+<p>So: one row per visitor, written when the <code>first_visit</code> event is seen, holding the
+arrival values. <strong>Maintained by the pass, not by ingest</strong> &mdash; the property that
+mattered for ITP and for keeping append pure is that the <em>write path</em> does no lookups, and
+that is untouched. Reports never join it either; it is an input to the build, and its values reach
+queries materialised onto event rows like everything else. It is neither <code>owa_visitor</code>
+reborn (no per-request write, no per-request read) nor a star-schema dimension (no query-time join,
+no FK on the fact row, so no repeat of the inner-join-drops-the-row failure &sect;1.7 exists to
+prevent). Calling it a table is accurate; calling the pass stateless would not be.</p>
+<h4>Measured: visitor active lifespan</h4>
+<p><strong>One wrinkle it creates in the write rule above.</strong> A sliding window needs
+<code>last_seen</code>, and the pass writing <code>last_seen</code> contradicts
+&ldquo;insert-if-absent, never update&rdquo;. The resolution is that the rule belongs to the
+<em>acquisition columns</em>, not to the row: those are write-once, while <code>last_seen</code> is
+a maintenance column the pass advances as
+<code>GREATEST(last_seen, &lt;partition max&gt;)</code> &mdash; monotonic, so a rerun of the same
+partition is a no-op and idempotency survives intact. Worth stating plainly, because
+&ldquo;never update the visitor row&rdquo; is the kind of rule that gets enforced literally by
+someone who was not in this conversation.</p>
+<h4>Measured: the 0.172%</h4>
+<p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
+the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
+<h4>GA: why fourteen months does not bind</h4>
+<p><strong>0.172% of visitors have an active life longer than thirteen months.</strong> Among the
+6,761 visitors active in the last 90 days, the oldest first visit is 2025-10-24 &mdash; under a
+year, with none at all over thirteen months, while 171,642 visitors first seen more than thirteen
+months ago exist in the table and never return. Repeat visits plainly work at short range
+(120,356 visitors have exactly one prior session), so this is not broken recognition at the
+margin; it is recognition decaying to nothing well before the window closes. The cause is the same
+browser cookie physics that set the window: Chrome&rsquo;s 400-day cap, Safari&rsquo;s seven days,
+and people changing device or clearing state. <strong>The theoretical hole is closed by the same
+mechanism that produced the TTL.</strong></p>
+<h4>What follows from GA holding a user record</h4>
+<p><strong>GA is worth being precise about here, because its fourteen months do not bind the way
+the number suggests.</strong> With &ldquo;reset user data on new activity&rdquo; the window slides
+on every event, so a user who returns at least once inside it <em>never</em> expires &mdash; and
+first-user attribution rides with the identity rather than being stored beside it. Someone acquired
+via organic search stays organic on the first-user dimensions forever, unchanged by any later
+campaign, for exactly as long as the identity survives. What ends it is documented as the identity
+being lost &mdash; cookie expiry, a new device, Safari&rsquo;s caps &mdash; not the retention
+setting.</p>
+<h4>Who the 0.172% are</h4>
+<p>Two things follow, pulling in opposite directions, and both are worth stating.
+<strong>GA must therefore hold acquisition on a user record and cannot be deriving it from its own
+retained events</strong>, since those live 2 or 14 months while attribution persists indefinitely
+for an active user. The store described above is real and GA has one. But <strong>GA has it because
+GA supports the case, and our own data says the case barely occurs</strong>: with Chrome capping any
+first-party cookie at 400 days, even GA&rsquo;s &ldquo;forever&rdquo; is about thirteen months in
+the dominant browser, which is where the TTL landed anyway. The architecture differs; the reachable
+outcome does not, by much.</p>
+<h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
+
+<p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
+inline because &sect;1.8 is Decided and a decided section should read as a design, not as a
+transcript — but they are kept rather than deleted, because the reason a design is not something
+is usually the most expensive thing in it to rediscover.</p>
+
+<p>Two rules for what belongs here. A rejected alternative that is <em>load-bearing</em> for a
+nearby decision stays where it is — &sect;1.3's session table did not survive review, and that finding
+IS the argument that the event table is the session-grain table, so moving it would gut the
+section. What moves is revision history: a position taken, then replaced, where only the
+replacement matters to a reader who was not present for the change.</p>
+
+<h4>The visitor store was nearly removed</h4>
+<p><strong>Correction, and it substantially demotes the table.</strong> If a visitor
+expires after 13 months of inactivity, why not retain <em>raw</em> for 13 months and derive
+acquisition from it, with no visitor table at all? The objection I reached for is that a sliding
+inactivity window bounds <em>staleness</em>, not <em>age</em>: a visitor who first arrived five
+years ago and has returned every month has never expired, and their <code>first_visit</code> event
+is five years old. True in principle. <strong>Measured, it is almost entirely false.</strong></p>
+<p><strong>Superseded.</strong> The store is kept — &sect;1.8 gives the reasons, of which the
+decisive one is that GA has to hold acquisition on a user record to support a long-lived
+identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
+
+<h4>The landing URL was going to ride every beacon in v2 as well</h4>
+<p><strong>Correction.</strong> This section previously argued that carrying the URL on
+every beacon <em>removes</em> a cross-partition read, and called that a strengthening. It does, and
+it is the wrong trade. Stamping in the pass accepts that read and takes the cookie shrink instead
+&mdash; and the read is not a new class of problem, because <strong>session finalisation already
+needs exactly the same thing</strong>: the session's other events, which for a session spanning
+midnight are in the previous partition. One mechanism serves both. What the earlier version bought
+was wire bytes on every beacon for the life of every session, spent to avoid a read the pass has to
+do anyway.</p>
+<p><strong>Superseded.</strong> v1 carries it on every beacon because v1 has no pass to stamp it.
+v2 stamps it in the pass and the tracker cookie drops the key.</p>
 
 <footer>
   Source: <code>research/v2-schema/README.md</code> — 35 sections, method and rejected
