@@ -212,6 +212,15 @@ deliberately left in place</strong>: dropping it is a destructive migration and 
 decision from deleting dead code. The name also moved to the legacy class-name test's RETIRED
 list, which asserts it is gone rather than merely dropping it — a real backward-compat break,
 taken deliberately.</p>
+
+<p><strong><code>base.feed_request</code> joins it, and for the same kind of reason.</strong> It
+was carried in the v2 taxonomy as &ldquo;OWA-specific; kept&rdquo; until 20 Sep; measuring it
+showed the collection path is dead — newest row <strong>2021-11-09</strong> on peteradamsphoto
+and <strong>2019-08-17</strong> on demo. §1.4 records the removal. As with
+<code>owa_exit</code>, <strong>the table stays where it is</strong>: peteradamsphoto holds
+350,744 historical rows, and dropping them is a destructive migration that is a separate
+decision from deciding v2 will not collect this. What v2 drops is the event type, the entity and
+the one dimension — <code>feedType</code> — that reads it.</p>
 <div class="note"><strong>The risk inverts.</strong> 1.x's entity boundaries <em>prevent</em>
 non-additive metric combinations — the resolver intersects entity sets, so <code>bounceRate ×
 pagePath</code> is correctly refused today. A single table has no such boundary, so v2's registry
@@ -290,7 +299,6 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">form_submit</td><td class="dash">—</td><td>form_submit</td><td>enhanced measurement</td></tr>
 <tr><td class="ev">session_start</td><td class="dash">—</td><td>session_start</td><td><strong>server-materialized</strong> from new-session state on the first <code>page_view</code> request — no client beacon, zero wire cost; carries session-scoped attribution. <strong>Never counted</strong> — see below</td></tr>
 <tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
-<tr><td class="ev">feed_request</td><td class="ev-l">base.feed_request</td><td class="dash">—</td><td>OWA-specific; kept</td></tr>
 </tbody></table></div>
 
 <div class="note"><strong>Emit the markers; never count from them.</strong> They exist for
@@ -418,6 +426,7 @@ be built. The GA4 recommended set fills it in.</p>
 <tbody>
 <tr><td class="ev-l">video_start / progress / complete</td><td>Deferred</td><td>real work per player vendor for a feature nobody has asked OWA for</td></tr>
 <tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
+<tr><td class="ev-l">base.feed_request <span class="dash">(1.x, no GA4 analogue)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about whether feeds matter: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
 </tbody></table></div>
 <p><strong>Recordings are not events.</strong> A domstream chunk becomes an <em>attachment</em> to a
 <code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
