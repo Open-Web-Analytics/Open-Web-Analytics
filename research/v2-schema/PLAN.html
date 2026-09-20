@@ -116,7 +116,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <div class="navsec">Architecture</div>
   <a href="#s11">1.1 The shape</a>
   <a href="#s12">1.2 Sessions</a>
-  <a href="#s13">1.3 Event taxonomy</a>
+  <a href="#s13">1.3 Events and markers</a>
   <a href="#s14">1.4 Visitor identity</a>
   <a href="#s15">1.5 The three storage layers</a>
   <a href="#s16">1.6 Freshness and the API</a>
@@ -264,76 +264,70 @@ so losing it erases a session while its other events still count; a delta or a s
 every event, so losing one costs nothing or one increment. Where the two conflict, the second
 shape wins.</p>
 
-<h3 id="s13"><span class="num">1.3</span>Event taxonomy <span class="chip c-dec">Decided</span></h3>
+<h3 id="s13"><span class="num">1.3</span>Events and markers <span class="chip c-dec">Decided</span></h3>
 <p>GA4's taxonomy is the guide, because it is the vocabulary the market already speaks. The event
-set itself &mdash; what is sent automatically, what a site opts into, and how each maps to 1.x and
-GA4 &mdash; is <a href="#s22">&sect;2.2</a>. What follows is what the markers are for.</p>
+set itself &mdash; what the tracker sends automatically, what a site opts into, and how each maps to
+1.x and to GA4 &mdash; is tabulated in <a href="#s22">&sect;2.2</a>.</p>
+<p><strong>Two of those events are markers, and no browser ever sends them.</strong>
+<code>session_start</code> and <code>first_visit</code> are materialised by the server from state
+that already rides the session's first <code>page_view</code> request, so they cost nothing on the
+wire. The rest of this section is what they are for, and the counting rules that follow from a
+marker being losable.</p>
 
 <h4><span class="num">1.3.1</span>What the markers are for</h4>
 <p>A metric and a dimension can only be combined where a row exists at their shared grain.
-<code>session_start</code> is what gives sessions that row: without it &ldquo;sessions by landing
-page&rdquo; is not slow, it is <em>unavailable</em>. That is the job <code>owa_session</code>'s 121
-columns do in 1.x. Markers also carry the attribution the client knew at that moment, and they are
-the natural thing to name as a goal event.</p>
+<code>session_start</code> is what gives sessions that row: without it, &ldquo;sessions by landing
+page&rdquo; is not slow, it is <em>unavailable</em>. Supplying that grain is the job
+<code>owa_session</code>'s 121 columns do in 1.x.</p>
+<p>Markers also carry the attribution the client knew at that moment &mdash; session-scoped on
+<code>session_start</code>, user-scoped on <code>first_visit</code> &mdash; and they are the natural
+thing to name as a goal event.</p>
 
-<h4><span class="num">1.3.2</span>Totals are not counted from markers</h4>
-<p>A marker can go missing, so <strong>session totals come from the rollup</strong> and a lost
-marker degrades that session's attribution without erasing it. GA4 does the same, for the same
-reason. A <em>breakdown</em> does count marker rows, because that is far cheaper than a
-<code>DISTINCT</code> over session ids.</p>
-<p>Totals and breakdowns can therefore disagree. <strong>The rollup is the authority for both</strong>,
-which is why it carries the session's dimensional context plus a parameter map for custom variables
-&mdash; and the difference is shown as the <code>(unknown)</code> row rather than hidden. The
-parameter map is also what removes 1.x's five fixed custom-variable slots, which were never a
-preference but what a fixed-width session row forces.</p>
-
-<h4><span class="num">1.3.3</span>No session table</h4>
-<p>There is no session-grain derived table. Session context is stamped on every event row, so the
-event table <em>is</em> the session-grain table, and every session metric is a one-pass aggregate
-over it.</p>
+<h4><span class="num">1.3.2</span>Totals, breakdowns, and the <code>(unknown)</code> row</h4>
+<p>A marker rides one beacon, so it can go missing. That single fact sets three rules:</p>
 <div class="scroll"><table>
-<thead><tr><th>Session metric</th><th>How it is computed</th></tr></thead>
+<thead><tr><th>Number</th><th>Comes from</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>engagement time</td><td><code>SUM(delta)</code> by anything &mdash; the deltas are additive</td></tr>
-<tr><td>engaged sessions</td><td><code>DISTINCT IF</code></td></tr>
-<tr><td>source, campaign, landing page</td><td>group by the column, stamped on every event of the session</td></tr>
+<tr><td>A session <strong>total</strong></td><td>the day rollup</td><td>A lost marker then degrades that session's attribution without erasing the session. GA4 counts sessions the same way, for the same reason</td></tr>
+<tr><td>A session <strong>breakdown</strong></td><td>counting marker rows</td><td>Far cheaper than a <code>DISTINCT</code> over session ids</td></tr>
+<tr><td>The <strong>difference</strong></td><td>a synthetic <code>(unknown)</code> row</td><td>Two different sources can disagree, so the API states the gap instead of hiding it</td></tr>
 </tbody></table></div>
-<p class="note"><code>owa_session</code> is needed in 1.x for the opposite reason: its events carry
-none of this. The derived table is not forbidden either &mdash; it demotes to an optional
-materialisation an install can add later with one rebuild, if breakdown latency ever outgrows these
-shapes.</p>
-
-<h4><span class="num">1.3.4</span>Breakdowns sum to totals, enforced at the API</h4>
-<p>Where a total and a breakdown meet on one screen the total is authoritative, and the API closes
-the gap with a synthetic row: dimension value <code>(unknown)</code>, the remainder as its metric.
-That row is true &mdash; sessions the total can see and the breakdown cannot attribute. Two rules
-keep it honest:</p>
+<p>The rollup is therefore the authority for session counts <em>and</em> their breakdowns, which is
+why it carries the session's dimensional context rather than only its measures
+(<a href="#s21">&sect;2.1</a>). Where a total and a breakdown meet on one screen the total wins, and
+the <code>(unknown)</code> row carries the remainder &mdash; sessions the total can see and the
+breakdown cannot attribute. Two rules keep that honest:</p>
 <ul>
 <li>the row appears only for a <strong>positive</strong> remainder, and is labelled
-<code>(unknown)</code>, never blended into <code>(not set)</code>;</li>
+<code>(unknown)</code>, never blended into <code>(not set)</code>, which means something else
+entirely (<a href="#s210">&sect;2.10</a>);</li>
 <li>a negative remainder is <strong>never clamped</strong>. A breakdown exceeding its total is a
 defect, and absorbing it would turn the parity harness's clearest signal into silent correction.</li>
 </ul>
 
-<h4><span class="num">1.3.5</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
-<p>1.x had twenty numbered goal slots. v2 has none: an author names a goal event and gives it an
-event type and a condition, and when the condition matches <strong>the server materialises an
-additional row whose <code>event_type</code> is that name</strong> &mdash; the same mechanism as
-<code>session_start</code>, and the same shape as GA. Three rules come with it:</p>
+<h4><span class="num">1.3.3</span>Goal events are author-named events <span class="chip c-dec">Decided</span></h4>
+<p>1.x had twenty numbered goal slots. v2 has none. An author names a goal event and gives it an
+event type and a condition &mdash; &ldquo;a click whose target is <em>x</em>&rdquo; &mdash; and when
+the condition matches, <strong>the server materialises an additional row whose
+<code>event_type</code> is that name</strong>. That is the marker mechanism again, pointed at a
+condition the author wrote, and it is the shape GA uses for key events.</p>
+<p>Three rules come with it:</p>
 <ul>
-<li>the materialised row is <strong>never counted as an ordinary event</strong>;</li>
+<li>the materialised row is <strong>never counted as an ordinary event</strong>, the rule already
+set for <code>session_start</code>;</li>
 <li>the triggering event stays an ordinary <code>page_view</code> with
-<code>is_goal_event = 0</code>, since flagging both would double-count and blur which row is the
+<code>is_goal_event = 0</code>, because flagging both would double-count and blur which row is the
 conversion;</li>
 <li>the <code>event_type</code> vocabulary therefore <strong>stops being closed</strong> &mdash;
-intended, but stated so nobody discovers it by naming a goal event <code>page_view</code>.</li>
+intended, but stated here so nobody discovers it by naming a goal event
+<code>page_view</code>.</li>
 </ul>
 <p class="note">They are called <strong>goal events</strong>, not key events. GA renamed its
-conversions to key events in 2024; a 1.x installation has goals and the people using it say goals,
-so OWA keeps its own noun. Where this document describes what GA does it still says key event.
-The numbered slots are already gone in 1.x (<a href="#s222">&sect;2.22</a>), so v2 inherits authored
-goal events rather than introducing them. Counting, per-goal metrics and the once-per-session
-clamp are <a href="#s222">&sect;2.22</a>.</p>
+conversions to key events in 2024; a 1.x installation has goals, and the people using it say goals,
+so OWA keeps its own noun. Where this document describes what GA does, it still says key event.
+The numbered slots are already gone in 1.x, so v2 inherits authored goal events rather than
+introducing them &mdash; counting, per-goal metrics and the once-per-session clamp are
+<a href="#s222">&sect;2.22</a>.</p>
 
 <h3 id="s14"><span class="num">1.4</span>Visitor identity <span class="chip c-dec">Decided</span></h3>
 <p>A visitor is arbitrary: it must be assigned, carried and trusted, where a page or a referrer is
@@ -373,7 +367,24 @@ raw is the record of what was observed.</p>
 survives intact, and stops being a constraint that forces values onto the wire. How the pass runs is
 <a href="#s26">&sect;2.6</a>; how partitions are cycled is <a href="#s27">&sect;2.7</a>.</p>
 
-<h4><span class="num">1.5.1</span>What the three layers resolve</h4>
+<h4><span class="num">1.5.1</span>No session table</h4>
+<p>There is no session-grain derived table. Session context is stamped on every event row, so the
+event table <em>is</em> the session-grain table, and every session metric is a one-pass aggregate
+over it.</p>
+<div class="scroll"><table>
+<thead><tr><th>Session metric</th><th>How it is computed</th></tr></thead>
+<tbody>
+<tr><td>engagement time</td><td><code>SUM(delta)</code> by anything &mdash; the deltas are additive</td></tr>
+<tr><td>engaged sessions</td><td><code>DISTINCT IF</code></td></tr>
+<tr><td>source, campaign, landing page</td><td>group by the column, stamped on every event of the session</td></tr>
+</tbody></table></div>
+<p class="note"><code>owa_session</code> is needed in 1.x for the opposite reason: its events carry
+none of this. The derived table is not forbidden either &mdash; it demotes to an optional
+materialisation an install can add later with one rebuild, if breakdown latency ever outgrows these
+shapes.</p>
+
+
+<h4><span class="num">1.5.2</span>What the three layers resolve</h4>
 <p>Each of these was an open question before:</p>
 <div class="scroll"><table>
 <thead><tr><th>Question</th><th>Resolved by</th></tr></thead>
@@ -390,7 +401,7 @@ rather than arbitrarily limited: only what is on the event can be reported live.
 be richer than GA's, because OWA carries session-scoped values on the wire and GA does not &mdash;
 so event and session scope are both raw-resident here, and only user scope waits for the pass.</p>
 
-<h4><span class="num">1.5.2</span>What to carry and what to derive</h4>
+<h4><span class="num">1.5.3</span>What to carry and what to derive</h4>
 <p>The rule is not &ldquo;carry what cannot be derived&rdquo; &mdash; GA carries first-seen and
 session count, both readily derivable. The rule is about what kind of thing the value is:</p>
 <div class="scroll"><table>
@@ -403,7 +414,7 @@ session count, both readily derivable. The rule is about what kind of thing the 
 <p class="note">By that rule <code>nps</code> and <code>fsts</code> stay &mdash; they are
 observations &mdash; and <code>attribs</code> goes.</p>
 
-<h4><span class="num">1.5.3</span>The visitor store</h4>
+<h4><span class="num">1.5.4</span>The visitor store</h4>
 <p>v2 keeps one visitor-grain table, for a single value that cannot ride an event:
 <strong>acquisition</strong> &mdash; the source, medium, campaign, ad and search terms of the visit
 that created the visitor. It originates in one <code>first_visit</code> event that may be years
@@ -428,7 +439,7 @@ value is a defect.</li>
 <p class="note">The vendor retention survey, the measured visitor lifespans, and the argument that
 nearly removed this table are in <a href="#sa1">the appendix</a>.</p>
 
-<h4><span class="num">1.5.4</span>Consequences for decisions already taken</h4>
+<h4><span class="num">1.5.5</span>Consequences for decisions already taken</h4>
 <ul>
 <li>Raw plus denormalised <strong>roughly doubles event storage</strong> before the rollup,
 recoverable by pruning raw &mdash; at the cost of re-derivability past that horizon, which is one of
@@ -2459,6 +2470,35 @@ remainder is therefore a defect signal rather than a rounding artefact.</p>
 <p>The 89% figure is what made a flat rejection look reasonable, and it is an artefact of 1.x
 tracking almost nothing but pageviews. Marker overhead is inversely proportional to stream
 richness, so it falls as v2 does its job. (1.x also averages 1.15 sessions per visitor.)</p>
+<h4><span class="num">A.1.26</span>Visitor retention: what other vendors do, and what this install measures</h4>
+<p>The evidence behind the 13-month inactivity TTL in <a href="#s15">&sect;1.5.4</a>. Two separate expiries have to be kept apart &mdash; the client-side cookie, which is the familiar argument, and a <em>server-side</em> one on the visitor record, which is the relevant one.</p>
+<div class="scroll"><table>
+<tr><th></th><th>client side</th><th>server side</th></tr>
+<tr><td>GA4</td><td><code>_ga</code> nominally 2 years, sliding on each visit</td><td><strong>user-scoped retention 2 or 14 months</strong>, with &ldquo;reset user data on new activity&rdquo; making it slide; without new activity the identifier and its data are deleted monthly</td></tr>
+<tr><td>Adobe</td><td><code>s_vi</code> / ECID 2 years</td><td><strong>&ldquo;visitor profiles are deleted after 1 year of inactivity, regardless of any visitor ID cookie expiration&rdquo;</strong></td></tr>
+<tr><td>Matomo</td><td>default 30 years</td><td>none documented</td></tr>
+<tr><td>browser caps, which override every row above</td><td colspan="2">Chrome 400 days on any first-party cookie; Firefox ~45 days; <strong>Safari 7 days for a JS-set cookie</strong>, 24 hours on a <code>gclid</code> arrival</td></tr>
+</table></div>
+<p>Two things fall out. The <strong>shape is a sliding inactivity window, not a fixed lifetime</strong>
+&mdash; GA resets on activity, Adobe counts from last seen &mdash; and the <strong>magnitude
+converges on roughly 12 to 14 months</strong> from two vendors who did not copy each other. That
+Chrome&rsquo;s 400-day cap lands in the same place is probably not a coincidence: there is little
+point retaining a server-side profile past the longest cookie that can reach it.</p>
+<div class="scroll"><table>
+<tr><th>lifespan</th><th>visitors</th><th>share</th></tr>
+<tr><td>&le; 1 month</td><td class="n">179,422</td><td class="n">98.837%</td></tr>
+<tr><td>1&ndash;6 months</td><td class="n">1,434</td><td class="n">0.790%</td></tr>
+<tr><td>6&ndash;13 months</td><td class="n">365</td><td class="n">0.201%</td></tr>
+<tr><td><strong>13&ndash;26 months</strong></td><td class="n">192</td><td class="n">0.106%</td></tr>
+<tr><td><strong>over 26 months</strong></td><td class="n">121</td><td class="n">0.067%</td></tr>
+</table></div>
+<p><strong>Expiring the row does not rewrite history, which is what makes it cheap.</strong>
+Events already denormalised keep the acquisition values stamped on them; only the ability to
+attribute <em>future</em> events for that visitor is lost, and a visitor returning after thirteen
+months of silence is a new acquisition by any reasonable reading. GA draws the same line
+explicitly &mdash; its retention setting <em>&ldquo;only affects explorations and funnel
+reports&rdquo;</em> and <em>&ldquo;does not affect standard aggregated reports&rdquo;</em>, which
+is exactly the distinction between the per-visitor record and the rows it has already stamped.</p>
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
