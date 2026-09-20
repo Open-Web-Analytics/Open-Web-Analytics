@@ -262,14 +262,26 @@ already riding the session's first <code>page_view</code> request, so they cost 
 wire.</p>
 
 <h4><span class="num">1.3.1</span>What the markers are for</h4>
-<p><strong>A marker gives a session one row of its own.</strong> Session-grain questions are
-answerable without it &mdash; every event carries the session's id and context, so
+<p><strong>A marker gives a session or a visitor one row of its own.</strong> Session-grain
+questions are answerable without it &mdash; every event carries the session's id and context, so
 &ldquo;sessions by landing page&rdquo; is a <code>COUNT(DISTINCT session_id)</code> grouped by a
 stamped column (<a href="#s15">&sect;1.5.1</a>). The marker makes that a row count instead of a
 distinct count, which is the cheaper shape over a wide window.</p>
-<p>Two things only the marker carries: <strong>the attribution the client knew at that
-moment</strong> &mdash; session-scoped on <code>session_start</code>, user-scoped on
-<code>first_visit</code> &mdash; and a natural thing to name as a goal event.</p>
+<p>That row then does four jobs nothing else can do:</p>
+<div class="scroll"><table>
+<thead><tr><th>Job</th><th>Which marker</th><th>Why only the marker</th></tr></thead>
+<tbody>
+<tr><td><strong>Seeds the visitor store</strong></td><td><code>first_visit</code></td><td>The pass harvests acquisition from <code>first_visit</code> rows and nothing else writes that table (<a href="#s27">&sect;2.7.1</a>). No marker, no acquisition row, ever &mdash; not a degraded one</td></tr>
+<tr><td><strong>Anchors acquisition to one event</strong></td><td><code>first_visit</code></td><td>Keying off the flag rather than a computed earliest event is what bounds the correction problem: no later arrival can change the answer, so the failure is <em>absent then present</em>, never <em>wrong then corrected</em> (<a href="#s26">&sect;2.6.3</a>)</td></tr>
+<tr><td><strong>Carries the attribution the client knew at that moment</strong></td><td>both</td><td>Session-scoped on <code>session_start</code>, user-scoped on <code>first_visit</code></td></tr>
+<tr><td><strong>Is the natural thing to name as a goal event</strong></td><td>both</td><td>A goal event is an author-named event, and the marker mechanism is what materialises it (<a href="#s13">&sect;1.3.3</a>)</td></tr>
+</tbody></table></div>
+<p class="note">A marker cannot be duplicated. Its id is content-derived &mdash;
+<code>hash(site_id + session_id + 'session_start')</code> &mdash; so two racing writers produce the
+same row and the second insert collapses at the table. It can still be <em>lost</em>, which is what
+the counting rules below are about, and what makes its atomic write with the
+<code>page_view</code> it was raised from load-bearing (<a href="#s26">&sect;2.6.2</a>): a page view
+that landed without its <code>session_start</code> is not something a later pass can repair.</p>
 
 <h4><span class="num">1.3.2</span>Totals and breakdowns</h4>
 <p>A marker rides one beacon, so it can go missing, and a session whose marker is lost keeps its
