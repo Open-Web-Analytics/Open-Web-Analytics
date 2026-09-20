@@ -372,7 +372,7 @@ shapes.</p>
 <tr><td>A columnar reporting store later</td><td>Bulk load, partition replace, no row-level updates &mdash; so a move to such a store does not mean rewriting the pipeline</td></tr>
 </tbody></table></div>
 <p><strong>Realtime is a query of the raw table</strong>, so its dimension set is smaller rather
-than arbitrarily limited: only what is on the event can be reported live. attribution is resolved at ingest and written onto the event, so event and session scope are both raw-resident; only visitor scope needs the pass, and then only to copy it forward.</p>
+than arbitrarily limited: only what is on the event can be reported live. the tagged values are written onto the event at ingest, so the evidence is raw-resident; the reading over it is the pass&rsquo;s, and so is visitor scope.</p>
 
 <h4><span class="num">1.5.3</span>What to carry and what to derive</h4>
 <p>The rule is not &ldquo;carry what cannot be derived&rdquo;: first-seen and session count are both readily derivable and are carried anyway. It is about what kind of thing the value is:</p>
@@ -521,7 +521,7 @@ down.</p>
 
 
 
-<h5>Raw — <code>owa_event_raw</code>, 37 columns</h5>
+<h5>Raw — <code>owa_event_raw</code>, 42 columns</h5>
 
 <p>Append-only, written one beacon at a time, never updated. It is the record of what was
 observed and the surface realtime queries.</p>
@@ -544,36 +544,52 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">13</td><td><code>page_query</code></td><td>VARCHAR(1024) NULL</td><td>the query string without its leading <code>?</code>. NULL where there was none</td></tr>
 <tr><td class="n">14</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td>varies for one URL over time, so it is per event</td></tr>
 <tr><td class="n">15</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>the previous page. Also the attribution fallback when no tags are present</td></tr>
-<tr><td class="n">16</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>parsed from <code>raw_ua</code> at ingest, so realtime has it</td></tr>
-<tr><td class="n">17</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
-<tr><td class="n">18</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
-<tr><td class="n">19</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
-<tr><td class="n">20</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
-<tr><td class="n">21</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">22</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
-<tr><td class="n">23</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
-<tr><td class="n">24</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
-<tr><td class="n">25</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">26</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
-<tr><td class="n">27</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">28</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
-<tr><td class="n">29</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
-<tr><td class="n">30</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
-<tr><td class="n">31</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">32</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
-<tr><td class="n">33</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
-<tr><td class="n">34</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
-<tr><td class="n">35</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
-<tr><td class="n">36</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
-<tr><td class="n">37</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
+<tr><td class="n">16</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>as collected from the URL. NULL when the visit carried no tags. Ingest transcribes, it does not classify (<a href="#s26">&sect;2.6.2</a>)</td></tr>
+<tr><td class="n">17</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>as collected</td></tr>
+<tr><td class="n">18</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">19</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">20</td><td><code>tagged_search_terms</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">21</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>parsed from <code>raw_ua</code> at ingest, so realtime has it</td></tr>
+<tr><td class="n">22</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
+<tr><td class="n">23</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
+<tr><td class="n">24</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
+<tr><td class="n">25</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
+<tr><td class="n">26</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">27</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
+<tr><td class="n">28</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
+<tr><td class="n">29</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
+<tr><td class="n">30</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">31</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
+<tr><td class="n">32</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">33</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
+<tr><td class="n">34</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
+<tr><td class="n">35</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
+<tr><td class="n">36</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">37</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
+<tr><td class="n">38</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
+<tr><td class="n">39</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
+<tr><td class="n">40</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
+<tr><td class="n">41</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
+<tr><td class="n">42</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
 </tbody></table></div>
 
-<p><strong>What raw does NOT have</strong> are the five attribution columns:
-<code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code> and
-<code>search_terms</code>. Those are readings of evidence rather than evidence, but ingest
-resolves them and writes them onto the event, so raw carries both the evidence and the reading. The
-consequence is stated in &sect;1.5 and is deliberate: a live query can show a referring host but not
-a resolved campaign.</p>
+<p><strong>Raw holds the evidence; the denormalised table holds the reading.</strong> The
+<code>tagged_*</code> columns are what the URL carried, written as collected, with
+<code>referer_url</code> beside them. The pass turns the pair into <code>source</code> and
+<code>medium</code> &mdash; the tag if there was one, otherwise the referrer classified. Ingest can
+write the evidence on every event rather than only the session&rsquo;s first, because the tracker
+carries it on every beacon: <code>Tracker.js</code> sets each campaign key and
+<code>session_referer</code> as <em>global event properties</em>, which are applied to every event
+it sends.</p>
+
+<p><strong>The verdict is never written where it cannot be corrected.</strong> Not in the cookie
+&mdash; that is the objection <a href="#s15">&sect;1.5.3</a> raises against carrying
+<code>attribs</code> &mdash; and not in raw either. It goes in the derived layer, which exists to
+be rebuilt, so a fixed classifier re-reads history instead of leaving it wrong.</p>
+
+<p class="note">The cost falls on realtime, narrowly: a live query over raw shows tagged campaigns
+and the referring host, but not the classified channel or the landing page &mdash; both are the
+pass&rsquo;s (<a href="#s15">&sect;1.5</a>).</p>
 
 <p class="note"><strong>No <code>landing_url</code> column in raw.</strong> It would be
 populated on the session's first event and NULL on every other — and on that one row it would duplicate <code>page_location</code>,
@@ -590,9 +606,9 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <p class="note">Why a page carries no identity hash, and what giving it one would have cost, is
 <a href="#nA118">A.1.18</a>.</p>
 
-<h5>Denormalised &mdash; <code>owa_event</code>, 52 columns</h5>
+<h5>Denormalised &mdash; <code>owa_event</code>, 57 columns</h5>
 
-<p>Every raw column, unchanged and in the same order, plus twelve the pass stamps on. Queries hit
+<p>Every raw column, unchanged and in the same order, plus fifteen the pass stamps on. Queries hit
 this table; nothing else does.</p>
 
 <div class="scroll"><table>
@@ -613,43 +629,48 @@ this table; nothing else does.</p>
 <tr><td class="n">13</td><td><code>page_query</code></td><td>VARCHAR(1024) NULL</td><td>event</td><td>from raw</td></tr>
 <tr><td class="n">14</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td>event</td><td>from raw</td></tr>
 <tr><td class="n">15</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">16</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">17</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">18</td><td><code>os</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">19</td><td><code>language</code></td><td>VARCHAR(16)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">20</td><td><code>country</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">21</td><td><code>city</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">22</td><td><code>host</code></td><td>VARCHAR(255)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">23</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">24</td><td><code>click_x</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">25</td><td><code>click_y</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">26</td><td><code>page_width</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">27</td><td><code>page_height</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">28</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">29</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">30</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">31</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">32</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">33</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">34</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">35</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">36</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">37</td><td><code>params</code></td><td>JSON</td><td>event</td><td>from raw</td></tr>
-<tr><td class="n">38</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>session</td><td>tag, else the referrer classified, else <code>direct</code></td></tr>
-<tr><td class="n">39</td><td><code>source</code></td><td>VARCHAR(255)</td><td>session</td><td>tagged source, else the referrer's host</td></tr>
-<tr><td class="n">40</td><td><code>campaign</code></td><td>VARCHAR(255)</td><td>session</td><td>tagged campaign. NULL where there was none</td></tr>
-<tr><td class="n">41</td><td><code>ad</code></td><td>VARCHAR(255)</td><td>session</td><td>tagged ad</td></tr>
-<tr><td class="n">42</td><td><code>search_terms</code></td><td>VARCHAR(255)</td><td>session</td><td>tagged terms, else the search engine's query parameter</td></tr>
-<tr><td class="n">43</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>session</td><td>the session's first <code>page_location</code>. Makes landing-page reports a group-by: 215&nbsp;ms against 3.1&nbsp;s — <a href="#s13">&sect;1.3</a></td></tr>
-<tr><td class="n">44</td><td><code>landing_page_path</code></td><td>VARCHAR(1024)</td><td>session</td><td>the first event&rsquo;s <code>page_path</code>. Copied, not re-parsed</td></tr>
-<tr><td class="n">45</td><td><code>landing_page_query</code></td><td>VARCHAR(1024) NULL</td><td>session</td><td>the first event&rsquo;s <code>page_query</code></td></tr>
-<tr><td class="n">46</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
-<tr><td class="n">47</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
-<tr><td class="n">48</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
-<tr><td class="n">49</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">50</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
-<tr><td class="n">51</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
-<tr><td class="n">52</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
+<tr><td class="n">16</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">17</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">18</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">19</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">20</td><td><code>tagged_search_terms</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">21</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">22</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">23</td><td><code>os</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">24</td><td><code>language</code></td><td>VARCHAR(16)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">25</td><td><code>country</code></td><td>VARCHAR(64)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">26</td><td><code>city</code></td><td>VARCHAR(128)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">27</td><td><code>host</code></td><td>VARCHAR(255)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">28</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">29</td><td><code>click_x</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">30</td><td><code>click_y</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">31</td><td><code>page_width</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">32</td><td><code>page_height</code></td><td>INT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">33</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">34</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">35</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">36</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">37</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">38</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">39</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">40</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">41</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">42</td><td><code>params</code></td><td>JSON</td><td>event</td><td>from raw</td></tr>
+<tr><td class="n">43</td><td><code>source</code></td><td>VARCHAR(255)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_source</code> if present, else the referring host</td></tr>
+<tr><td class="n">44</td><td><code>medium</code></td><td>VARCHAR(64)</td><td>session</td><td><strong>the reading.</strong> <code>tagged_medium</code> if present, else the referrer classified &mdash; organic search, social, referral, or direct where there is no referrer. The classifier is a table, so correcting it is a reprocess over retained raw (<a href="#s15">&sect;1.5.2</a>), not an edit</td></tr>
+<tr><td class="n">45</td><td><code>campaign</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_campaign</code>. NULL where there was none</td></tr>
+<tr><td class="n">46</td><td><code>ad</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_ad</code></td></tr>
+<tr><td class="n">47</td><td><code>search_terms</code></td><td>VARCHAR(255) NULL</td><td>session</td><td><code>tagged_search_terms</code>, else the search engine&rsquo;s query parameter</td></tr>
+<tr><td class="n">48</td><td><code>landing_page_location</code></td><td>VARCHAR(1024)</td><td>session</td><td>the session's first <code>page_location</code>. Makes landing-page reports a group-by: 215&nbsp;ms against 3.1&nbsp;s — <a href="#s13">&sect;1.3</a></td></tr>
+<tr><td class="n">49</td><td><code>landing_page_path</code></td><td>VARCHAR(1024)</td><td>session</td><td>the first event&rsquo;s <code>page_path</code>. Copied, not re-parsed</td></tr>
+<tr><td class="n">50</td><td><code>landing_page_query</code></td><td>VARCHAR(1024) NULL</td><td>session</td><td>the first event&rsquo;s <code>page_query</code></td></tr>
+<tr><td class="n">51</td><td><code>is_exit</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>session, terminal</td><td>the session's last event</td></tr>
+<tr><td class="n">52</td><td><code>acq_source</code></td><td>VARCHAR(255)</td><td>user</td><td>from the visitor store — the pass's only read outside its partition</td></tr>
+<tr><td class="n">53</td><td><code>acq_medium</code></td><td>VARCHAR(64)</td><td>user</td><td>write-once at <code>first_visit</code>; later campaigns do not move it</td></tr>
+<tr><td class="n">54</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">55</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
+<tr><td class="n">56</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
+<tr><td class="n">57</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
 </tbody></table></div>
 
 <p><strong>Structurally identical to its staging table, by requirement.</strong> &sect;1.5's swap is
@@ -927,16 +948,17 @@ rather than as &ldquo;a transaction&rdquo;: on MySQL it is a transaction, and on
 single multi-row <code>INSERT</code> lands as one part, which satisfies it equally.</p>
 
 <h4><span class="num">2.6.2</span>The flags, and why acquisition keys off one</h4>
-<p><strong>Ingest also sets the attribution values, and the rule is two branches:</strong> an
-explicit tag wins, otherwise the referrer is classified &mdash; a search engine gives
-<code>organic-search</code> and the search terms, a known social host gives
-<code>social-network</code>, any other referrer gives <code>referral</code>, and no referrer at all
-gives <code>direct</code>. A table lookup, not a model, which is why it sits here beside the geo
-and device resolutions rather than in the pass.</p>
-<p class="note"><strong>Attribution <em>reporting</em> is a separate matter entirely</strong>
-&mdash; original versus last touch, and the window either is measured over. That is a choice the
-reporting layer makes over stored values and touchpoints (<a href="#s222">&sect;2.22</a>), and
-nothing about it reaches ingest.</p>
+<p><strong>Ingest records the tagged values and stops there.</strong> Whatever the URL carried
+&mdash; source, medium, campaign, ad, term &mdash; is written onto the event as
+<code>tagged_*</code>, beside the <code>referer_url</code> it arrived with. That is transcription,
+which is why it sits here next to the geo and device lookups.</p>
+<p><strong>The reading is the pass&rsquo;s, and the model is the report&rsquo;s.</strong> Whether
+a referring host counts as organic search, a social network or a plain referral is a table that
+grows and gets corrected, so the pass resolves it into <code>source</code> and <code>medium</code>
+on the denormalised row (<a href="#s21">&sect;2.1</a>) &mdash; correcting the table is then a
+reprocess over retained raw (<a href="#s15">&sect;1.5.2</a>), not an edit. Above that, original
+versus last touch and the window either is measured over is a choice the reporting layer makes over
+stored values and touchpoints (<a href="#s222">&sect;2.22</a>). Neither reaches ingest.</p>
 <p>OWA has the flags already, with three different lifetimes:</p>
 <div class="scroll"><table>
 <thead><tr><th>Flag</th><th>Scope</th><th>Does</th></tr></thead>
@@ -977,10 +999,10 @@ rows, or an event from years ago.</p>
 <tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
 <tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon</td></tr>
-<tr><td>session</td><td><strong>source, medium, campaign</strong></td><td><strong>resolved at INGEST</strong>, on every event of the session. Its inputs &mdash; <code>session_referer</code> and the collected tags &mdash; ride every beacon, so each event resolves the same answer independently. The values are sticky because the inputs are; the pass does not touch them</td></tr>
+<tr><td>session</td><td><strong>source, medium, campaign</strong></td><td><strong>collected at INGEST</strong>, on every event of the session &mdash; the tagged values only, never a classification. Its inputs &mdash; <code>session_referer</code> and the collected tags &mdash; ride every beacon, so each event resolves the same answer independently. The values are sticky because the inputs are; the pass does not touch them</td></tr>
 <tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>computed by the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
-<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>resolved at INGEST</strong> like any other event's, on the <code>first_visit</code> event. The pass copies it onto later rows, reading the visitor store because <strong>that event is usually not in this partition</strong></td></tr>
+<tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>collected at INGEST</strong> like any other event's, on the <code>first_visit</code> event. The pass copies it onto later rows, reading the visitor store because <strong>that event is usually not in this partition</strong></td></tr>
 </table></div>
 <p class="note">A partition is not self-contained on the read side: a row written today belongs to
 a visitor whose <code>first_visit</code> may be two years back. So the pass needs a visitor store
@@ -1060,7 +1082,7 @@ tier the rebuild window uses is open (<a href="#s31">&sect;3.1</a>).</p>
 <h3 id="s29"><span class="num">2.9</span>The visitor store <span class="chip c-dec">Decided</span></h3>
 <p><strong>This is not a fact table. It is a lookup with one job: stamping first
 attribution.</strong> It holds acquisition &mdash; source, medium, campaign, ad, search terms
-&mdash; write-once from the visitor's first session, plus <code>last_seen</code>, which
+as collected &mdash; write-once from the visitor's first session, plus <code>last_seen</code>, which
 exists only to drive the TTL. Nothing else.</p>
 <p><strong>A visitor with no known acquisition has no row.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
 census of visitors: it holds the ones whose first attribution is known, and the pass writes the sentinel
@@ -1072,7 +1094,7 @@ where the row is absent
 permanently, silently. Keeping the row absent leaves that path open.</p>
 
 <p><strong>The row is written at ingest, in the same transaction as the event, and the pass only
-reads it.</strong> Attribution is resolved at ingest (<a href="#s26">&sect;2.6.2</a>), so the
+reads it.</strong> The tagged values are recorded at ingest (<a href="#s26">&sect;2.6.2</a>), so the
 acquisition exists by the time the event is written &mdash; there is nothing for a later step to
 derive, and no harvest.</p>
 <p><strong>Any event of the visitor&rsquo;s first session can write it</strong>, not only the one
@@ -1163,7 +1185,7 @@ pruned, with no evidence left to re-read. Keeping the URL means the evidence out
 parser fix can be reapplied to years of history &mdash; the same argument that justified the
 visitor table, one layer down.</p>
 <p class="note">The cost falls on realtime, and it is narrow: a raw row from later in the session
-carries no landing URL, so a live query cannot resolve session <em>campaign</em> for it. It still carries <code>session_referer</code>, so referring host and organic-search detection work live.</p>
+carries no landing URL, so a live query cannot show the <em>landing page</em> for it. The tagged values and <code>session_referer</code> ride every beacon, so a tagged campaign and the referring host read live; the classified channel does not.</p>
 
 <h3 id="s211"><span class="num">2.11</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
 
@@ -1274,7 +1296,7 @@ and neither is a remainder computed by subtraction.</p>
 <p class="note">A lost first beacon takes its marker with it &mdash; the client commits the session
 on <code>sendAccepted</code>, which fires when <code>sendBeacon</code> queues rather than delivers
 &mdash; so a session can exist with no <code>session_start</code> row. Neither number above
-notices: attribution is resolved at ingest on every event, and the visitor row is written by any
+notices: the tagged values are recorded at ingest on every event, and the visitor row is written by any
 event of a first session. What goes with the beacon is the landing page, which rides only that one
 (<a href="#s210">&sect;2.10</a>).</p>
 <p class="note">A reconciliation row would be needed only if a breakdown were computed from a
