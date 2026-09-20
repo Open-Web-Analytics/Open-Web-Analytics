@@ -516,7 +516,7 @@ observation or a mechanical resolution, and to the denormalised table if a pass 
 it.</strong> That is the same cut <a href="#s15">&sect;1.5</a> applies to the wire, one layer
 down.</p>
 
-<h4><span class="num">2.1.1</span>The three layers, column by column <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">2.1.1</span>The two layers, column by column <span class="chip c-dec">Decided</span></h4>
 
 
 
@@ -528,7 +528,7 @@ observed and the surface realtime queries.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>. Content-derived for idempotent events, random otherwise</td></tr>
+<tr><td class="n">1</td><td><code>id</code></td><td>BIGINT UNSIGNED</td><td>PK with <code>yyyymmdd</code>. Content-derived, client-minted or random by event type &mdash; &sect;2.1.2</td></tr>
 <tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>the taxonomy names — <a href="#s13">&sect;1.3</a></td></tr>
 <tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>leads every composite index. Immutable</td></tr>
 <tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>the one identity v2 mints — <a href="#s14">&sect;1.4</a></td></tr>
@@ -657,7 +657,39 @@ both demand the staging table mirror the target — same columns, same order, sa
 same primary key. So staging carries no convenience columns, and a schema change alters both in
 one step or the swap starts failing.</p>
 
-<h4><span class="num">2.1.2</span>Notes on all three</h4>
+<h4><span class="num">2.1.2</span>How an event id is derived</h4>
+<p>An id is <strong>63 bits, always positive</strong>, and is produced one of three ways. The rule
+behind the split: an id has to be reproducible whenever the same event can arrive twice, and
+random is only safe where a second arrival carries the first id with it.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Event</th><th>Its id</th><th>Why that one</th></tr></thead>
+<tbody>
+<tr><td><code>page_view</code></td><td>the client&rsquo;s <code>page_view_id</code>, minted per page load</td><td>Later engagement beacons have to name it, so the client is the only place that can hold it. The tracker mints <code>domstream_guid</code> this way already</td></tr>
+<tr><td><code>session_start</code></td><td><code>hash(site_id + session_id + &lsquo;session_start&rsquo;)</code></td><td>Raised server-side, so two racing tabs raise it independently and both must land on the same row (<a href="#nA121">A.1.21</a>)</td></tr>
+<tr><td><code>first_visit</code></td><td><code>hash(site_id + visitor_id + &lsquo;first_visit&rsquo;)</code></td><td>Keyed on the visitor, not the session: racing tabs can each believe they minted the visitor, and a visitor has exactly one first visit. An expired visitor returns with a new <code>visitor_id</code> (<a href="#s15">&sect;1.5.4</a>), so the key moves with them</td></tr>
+<tr><td><code>user_engagement</code></td><td><code>hash(page_view_id + seq)</code></td><td>Beacon and retry are independent arrivals, so a random id would write the residue twice</td></tr>
+<tr><td>everything else</td><td>random, minted once at edge receipt</td><td>It travels with the queue item exactly as <code>ts</code> does, so an at-least-once redelivery replays the same id and collapses at the primary key</td></tr>
+</tbody></table></div>
+
+<p><strong>The hash is 1.x&rsquo;s, unchanged.</strong> <code>Lib::wideStringGuid()</code>: sha1 of
+the lowercased string, first 16 hex characters, split into two 32-bit halves with the top bit of
+the high half masked off. The two halves keep every intermediate inside the integer range: all 16
+characters through <code>hexdec()</code> produce a float, which loses precision and whose cast to
+int is undefined in PHP. Several nodes derive ids for the same content and have to agree on it. Reusing it means one
+derivation serves both pipelines while they run side by side (<a href="#s19">&sect;1.9</a>).</p>
+
+<p><strong>Uniqueness is required within a partition, not globally.</strong> The primary key is
+(<code>id</code>, <code>yyyymmdd</code>), so two events a week apart may share an id with no
+effect. Against a 2<sup>63</sup> key space, a day of 10 million events carries roughly a
+5&nbsp;&times;&nbsp;10<sup>&minus;6</sup> chance of one collision within that day; the loser is
+silently dropped as a duplicate key.</p>
+
+<p class="note">The two content-derived cases also take <code>yyyymmdd</code> from the timestamp
+inside <code>session_id</code> rather than from receipt, or a retry after midnight lands in a
+partition where the primary key cannot see the original &mdash; <a href="#s21">&sect;2.1.3</a>.</p>
+
+<h4><span class="num">2.1.3</span>Notes on both</h4>
 <p class="note">Indexes as measured in the prototype: PK <code>(id, yyyymmdd)</code>, <code>site_date</code>,
 <code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
 <code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
