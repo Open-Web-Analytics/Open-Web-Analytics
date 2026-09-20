@@ -54,6 +54,7 @@ h3{font-size:1.3rem;margin:52px 0 4px;font-weight:600;line-height:1.25;letter-sp
   text-wrap:balance;scroll-margin-top:20px}
 h3 .num{font-family:var(--mono);font-size:.72em;color:var(--muted);font-weight:400;margin-right:.6em}
 h4{font-size:1.02rem;margin:32px 0 2px;font-weight:600}
+h5{font-size:.94rem;margin:22px 0 2px;font-weight:600;letter-spacing:.01em}
 p{margin:14px 0}
 a{color:var(--fwd)}
 strong{font-weight:600}
@@ -723,6 +724,94 @@ well.</div>
 <p><strong><code>owa_event_payload</code></strong> — recording chunks as attachments:
 <code>(event_id, yyyymmdd, payload)</code>, partitioned on the same scheme so payload retention is
 the same partition drop, on a shorter window than events since nothing is derived from payloads.</p>
+
+<h4>The three layers, column by column <span class="chip c-dec">Decided</span></h4>
+
+<p>The 40 columns above were designed when there were two layers. §1.13 made it three, and the
+split is not arbitrary: <strong>a column belongs to raw if it is an observation or a mechanical
+resolution, and to the denormalised table if a pass has to derive it.</strong> That is the same
+cut §1.13 applies to the wire, one layer down.</p>
+
+<h5>Raw — <code>owa_event_raw</code>, 36 columns</h5>
+
+<p>Append-only, written one beacon at a time, never updated. It is the record of what was
+observed and the surface realtime queries.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Group</th><th>Columns</th><th>Why it is here</th></tr></thead>
+<tbody>
+<tr><td>identity and time</td><td><code>id</code>, <code>event_type</code>, <code>site_id</code>, <code>visitor_id</code>, <code>session_id</code>, <code>user_id</code>, <code>ts</code>, <code>yyyymmdd</code></td><td>observed, or assigned at collection</td></tr>
+<tr><td>carried anchors</td><td><code>visitor_fsts</code>, <code>prior_sessions</code></td><td>counters the client already maintains — §1.13's carry rule</td></tr>
+<tr><td>observed event</td><td><code>page_uri</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, <code>ip_address</code>, <code>language</code>, <code>raw_ua</code>, <code>landing_url</code></td><td>on the beacon. <code>landing_url</code> is the evidence campaign tags are parsed from</td></tr>
+<tr><td>mechanical resolutions</td><td><code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>country</code>, <code>city</code></td><td>deterministic lookups from <code>raw_ua</code> and <code>ip_address</code>, no model and no cross-event context — so they resolve <strong>at ingest</strong>, which is why realtime has them (as GA's does)</td></tr>
+<tr><td>event-specific</td><td><code>click_x</code>, <code>click_y</code>, <code>page_width</code>, <code>page_height</code>, <code>target_url</code>, <code>element_path</code>, <code>element_tag</code>, <code>element_id</code>, <code>scroll_depth</code>, <code>engagement_msec</code>, <code>is_goal_event</code>, <code>revenue</code></td><td>observed; <code>engagement_msec</code> is the per-event delta, not a session total</td></tr>
+<tr><td>open-ended</td><td><code>params</code></td><td>what cannot be a column</td></tr>
+</tbody></table></div>
+
+<p><strong>What raw does NOT have</strong> is the five the 40-column list carried:
+<code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code> and
+<code>search_terms</code>. Those are readings of evidence rather than evidence — the referrer
+table changes and channel grouping is a classification — so they are derived in the pass. The
+consequence is stated in §1.13 and is deliberate: a live query can show a referring host but not
+a resolved campaign.</p>
+
+<h5>Denormalised — <code>owa_event</code>, 48 columns</h5>
+
+<p>Every raw column, unchanged and in the same order, plus twelve the pass stamps on. Queries hit
+this table; nothing else does.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Added</th><th>Scope</th><th>Derived from</th></tr></thead>
+<tbody>
+<tr><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code></td><td>session</td><td><code>landing_url</code> and <code>referer_url</code>, resolved against the referrer and search-engine tables</td></tr>
+<tr><td><code>landing_page_uri</code></td><td>session</td><td>the session's first event</td></tr>
+<tr><td><code>is_exit</code></td><td>session, terminal</td><td>the session's last event — the flag §1.2 says the 5% of exit-page pairs need</td></tr>
+<tr><td><code>acq_source</code>, <code>acq_medium</code>, <code>acq_campaign</code>, <code>acq_ad</code>, <code>acq_search_terms</code></td><td>user</td><td>the visitor store, keyed on <code>visitor_id</code> — the only lookup the pass makes outside the partition</td></tr>
+</tbody></table></div>
+
+<p><strong>Structurally identical to its staging table, by requirement.</strong> §1.13's swap is
+<code>EXCHANGE PARTITION</code> on MySQL and <code>REPLACE PARTITION</code> on ClickHouse, and
+both demand the staging table mirror the target — same columns, same order, same partition key,
+same primary key. So staging carries no convenience columns, and a schema change alters both in
+one step or the swap starts failing.</p>
+
+<h5>Rollup — <code>owa_event_rollup</code> <span class="chip c-open">Open</span></h5>
+
+<p><strong>This one is not settled, and the plan says two different things about it.</strong> §1.4
+describes a <em>day</em> rollup — "totals and trends", 5,785 rows against 692,829 events. §1.3
+says it "is the authority for session counts <em>and</em> their breakdowns, which means it carries
+the session's dimensional context &mdash; taken from the session's own events &mdash; plus a
+parameter map for custom variables." Those are not the same table.</p>
+
+<p>The reconciliation that fits both figures is <strong>one row per (day × dimensional
+context)</strong>, not per day and not per session: 5,785 is far too few for session grain over
+that corpus and far too many for site-day totals. On that reading the layout is:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Part</th><th>Columns</th></tr></thead>
+<tbody>
+<tr><td>key</td><td><code>site_id</code>, <code>yyyymmdd</code></td></tr>
+<tr><td>context</td><td><code>medium</code>, <code>source</code>, <code>campaign</code>, <code>ad</code>, <code>search_terms</code>, <code>landing_page_uri</code>, <code>country</code>, <code>city</code>, <code>browser</code>, <code>browser_type</code>, <code>os</code>, <code>language</code>, <code>host</code></td></tr>
+<tr><td>measures</td><td><code>sessions</code>, <code>events</code>, <code>page_views</code>, <code>new_visitors</code>, <code>engaged_sessions</code>, <code>bounces</code>, <code>engagement_msec</code>, <code>goal_events</code>, <code>revenue</code></td></tr>
+</tbody></table></div>
+
+<p><strong>Two problems have to be answered before this is built, and neither is cosmetic.</strong></p>
+<ul>
+<li><strong>Distinct visitors do not sum.</strong> Every other measure above is additive across
+rows; unique visitors is not, so a rollup row cannot carry it and have breakdowns add up. §1.9
+promises "every number exact, every breakdown summing to its total", which this would violate the
+moment anyone puts uniques on a trend. Either uniques come from raw or the denormalised table and
+are therefore slower, or the rollup carries a sketch and the exactness promise is narrowed in
+writing.</li>
+<li><strong>A parameter map in an aggregate key has no bound.</strong> §1.3 wants custom
+variables in the rollup, and that is the feature that removes 1.x's five fixed slots. But
+unregistered keys with unbounded values multiply the row count by their cardinality — the thing a
+rollup exists to avoid. Promotable-per-site (§1.11's treatment of param paths) is the obvious
+lever and is not the same decision.</li>
+</ul>
+
+<p>Until those are answered the rollup's column list is a sketch. The two tables above are not:
+they follow from §1.13, and the pass that fills the second from the first is specified there.</p>
 
 <h3 id="s111"><span class="num">1.11</span>The data-access API delta <span class="chip c-dec">Decided</span></h3>
 <p><strong>The request grammar is stable; the vocabulary and envelope change.</strong> The
