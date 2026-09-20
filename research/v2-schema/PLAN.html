@@ -298,17 +298,30 @@ what GA4 emits that v2 deliberately will not.</p>
 <tr><td class="ev">first_visit</td><td class="dash">—</td><td>first_visit</td><td>server-materialized likewise, from <code>is_new_visitor_created</code> &mdash; which marks the one REQUEST that minted the visitor, not the whole first session (<code>is_new_visitor</code> does that). Fresh <code>fsts</code> / <code>prior_sessions</code>=0 remain the redundant floor when the marker is lost. Carries user-scoped acquisition</td></tr>
 </tbody></table></div>
 
-<div class="note"><strong>Emit the markers; never count from them.</strong> They exist for
-<em>grain</em>, not merely for payload. A metric and a dimension combine only where a row exists at
-their shared grain — which is the entire job <code>owa_session</code>'s 121 columns do in 1.x, and
-why removing the session-grain table would make “sessions by landing page” not slow but
-<em>unavailable</em>. They are also the natural thing to mark as a goal event, and they carry the
-attribution the client knows at that instant.<br><br>
-What they must <em>not</em> be is the basis of a count. GA4 emits <code>session_start</code> yet
-counts sessions by estimating distinct session ids, precisely because the marker goes missing
-(consent mode, app lifecycle). v2 counts from the rollup for the same reason, so a lost marker
-degrades that session's attribution and erases nothing. <code>fsts</code> stays on every event as
-the redundant floor for new-visitor.</div>
+<h4>What the markers are for</h4>
+
+<p>A metric and a dimension can only be combined where a row exists at their shared grain.
+<code>session_start</code> is what gives sessions that row. Without it &ldquo;sessions by landing
+page&rdquo; is not slow, it is <strong>unavailable</strong> &mdash; supplying that grain is the
+job <code>owa_session</code>'s 121 columns do in 1.x.</p>
+
+<p>Markers also carry the attribution the client knew at that moment, and they are the natural
+thing to name as a goal event.</p>
+
+<h4>Totals are not counted from markers</h4>
+
+<p>A marker can go missing. GA4 emits <code>session_start</code> and still counts sessions by
+estimating distinct session ids, because consent mode and app lifecycle drop it. v2 takes session
+totals from the rollup for the same reason, so a lost marker degrades that session's attribution
+and erases nothing.</p>
+
+<p>A <em>breakdown</em> does count marker rows, because that is far cheaper than a
+<code>DISTINCT</code> over session ids. Totals and breakdowns can therefore disagree, and the
+difference is shown as the <code>(unknown)</code> row rather than hidden.</p>
+
+<p><code>fsts</code> rides every event as a redundant floor, so new-visitor survives a lost
+<code>first_visit</code>.</p>
+
 
 <div class="flag">
   <p class="h">One authority per metric — the trap this creates</p>
@@ -795,7 +808,7 @@ nobody here has taken. So the lookup is probably affordable, and retention is th
 
 
 
-<p><strong>The test this passes is the one that deleted the session table.</strong> That draft kept
+<p><strong>The session table failed this test; the visitor store passes it.</strong> That draft kept
 a session-grain derived table and lost it because session-scoped values are stamped on every event,
 so the event table already <em>was</em> the session-grain table. Acquisition is the case where that
 is not true: it is user-scoped, it originates in one event that may be years old, and no later
@@ -1024,7 +1037,7 @@ visitor table and the closed-session set.</li>
 <li><strong>Roll up.</strong> Replace that day&rsquo;s rollup rows from the new partition.</li>
 </ol>
 
-<p><strong>Idempotency comes from the swap, not from clever SQL.</strong> Staging is built whole and
+<p><strong>The swap is what makes a rerun safe.</strong> Staging is built whole and
 is invisible until the exchange, so a run that dies in step 3 leaves the live table exactly as it
 was and the next run simply rebuilds. This is a stronger property than &ldquo;the statements are
 rerunnable&rdquo;, and it is the reason to build into staging rather than to write the target
@@ -1629,7 +1642,7 @@ means rather than widening it &mdash; NULL becomes unambiguously &ldquo;not prov
 is only useful if the write path never also writes a sentinel meaning the same thing.</p>
 
 <h3 id="s18"><span class="num">1.8</span>Boolean columns carry three values <span class="chip c-open">Open</span></h3>
-<p><strong>A two-state fact must not be storable as three.</strong> In 1.x the boolean fact
+<p><strong>A nullable boolean holds three values, and <code>GROUP BY</code> gives each its own bucket.</strong> In 1.x the boolean fact
 columns are nullable with no default, so <code>is_repeat_visitor</code> holds
 <code>1</code>, <code>0</code> <em>and</em> <code>NULL</code> — and every one of those is a
 distinct <code>GROUP BY</code> bucket. A pie over the dimension draws two separate slices that
@@ -1664,7 +1677,7 @@ seam should exist in v2 rather than every widget re-solving it.</li>
 label for a specific question — &ldquo;New/Repeat&rdquo; reads better on a visitor-type chart.
 1.x added a per-widget <code>valueLabels</code> map for this; keep the split, with the type
 supplying the default and the report overriding it.</li>
-<li><strong>Decide NULL&rsquo;s meaning where it is unknown.</strong> Some flags really
+<li><strong>Some flags have a real unknown state, and want an explicit three-state type.</strong> Some flags really
 do have an unknown state. Those want an explicit three-state type, not an accidental one.</li>
 </ul>
 
@@ -1812,7 +1825,7 @@ while the query builder emits upper.</p>
   is silently dropped</strong> rather than rejected. A new kind's parameter vanishes and the metric
   renders a subtraction against nothing.</p>
 </div>
-<p><strong>What resists, and why it does not matter.</strong> Seven classes remain: three goal
+<p><strong>Seven classes remain, and none of them blocks the conversion.</strong> Seven classes remain: three goal
 classes (which read the <code>siteId</code> request param to build per-site labels),
 <code>repeatVisitors</code> (the one composite expression), one unregistered class a parity test
 names by literal, and <code>ConfigurableMetric</code> itself. <strong>Every one is gone in
@@ -1876,7 +1889,7 @@ saw it. Erasure has to scan, not look up.</p>
 <p>Against the live registry: 78 metrics × 100 dimensions = <strong>5,493 valid API pairs</strong>.
 Under v2, 4,443 (81%) work unchanged, 770 (14%) reference the eleven <code>*InVisit</code>
 dimensions which have <em>zero references anywhere outside their own registration</em>, and 280 (5%)
-need an exit page served by an <code>is_exit</code> flag. <strong>Nothing is lost.</strong></p>
+need an exit page served by an <code>is_exit</code> flag. <strong>Every pair is either unchanged or has a stated replacement.</strong></p>
 <p>Also retired: <code>owa_session</code>'s 121 columns (45 of them goal columns) and nine derived
 date-part columns per fact row. The dead <code>owa_exit</code> entity is <em>already gone</em> —
 removed from 1.x in #1048 with its registration and its setting. Its <strong>table is
@@ -1916,7 +1929,7 @@ nonsense.</div>
 <tr><td class="ev-l">dom.keypress</td><td>No</td><td>exists in 1.x only as a recording sample with no server handler. Keystroke capture needs a privacy decision before it becomes a first-class event, not after</td></tr>
 <tr><td class="ev-l">base.feed_request <span class="dash">(1.x, no GA4 analogue)</span></td><td><strong>Removed</strong></td><td>listed here as &ldquo;OWA-specific; kept&rdquo; until 20 Sep. <strong>Nothing has written a feed request since 2021</strong> — newest row 2021-11-09 on peteradamsphoto (350,744 rows, all historical) and 2019-08-17 on demo (2 rows). Not a judgement about feeds: the collection path is empirically dead on both installs. Its whole reporting surface is one dimension, <code>feedType</code>, which has had no data to show for five years</td></tr>
 </tbody></table></div>
-<p><strong>Recordings are not events.</strong> A domstream chunk becomes an <em>attachment</em> to a
+<p><strong>Domstream chunks stay out of the event table.</strong> A domstream chunk becomes an <em>attachment</em> to a
 <code>page_view</code>, with the payload stored outside the row. Promoting chunks — or worse,
 their samples — to events would swamp the table: one measured corpus held 229,663 chunks
 carrying <strong>5,767,986</strong> pointer and scroll samples.</p>
@@ -2318,7 +2331,7 @@ merely preparing for one. &sect;1.3 says v2 has no numbered goal slots and that 
 names a goal event and gives it a condition. <strong>That is now true in 1.x.</strong></p>
 
 <ul>
-<li><strong>Goal events are rows.</strong> <code>owa_goal_event</code> with its conditions
+<li><strong>Goals move from a settings blob into their own tables.</strong> <code>owa_goal_event</code> with its conditions
 in <code>owa_goal_event_condition</code>, replacing twenty numbered slots in a serialised
 settings blob. The old screen listed twenty rows whether or not anybody had filled them in,
 because the storage was a fixed-length array and the screen showed the storage; the new one
@@ -2392,7 +2405,7 @@ being kept.</p>
   models, so fanning one stream out unchanged would give v2 rows carrying <em>v1's</em> session
   boundaries — the v2 session model inherited rather than implemented.</p>
   <p>An intermediate draft concluded from this that the page must carry two tracker configurations,
-  one per profile. <strong>That is not the decision.</strong> Two configurations would mean two
+  one per profile. <strong>One configuration, not two.</strong> Two configurations would mean two
   session state machines in the tracker — the riskiest surface in the project — and would break the
   property this section exists to provide, because two streams are not the same events and raw
   counts would only match within a tolerance.</p>
@@ -2436,7 +2449,7 @@ being kept.</p>
     stack, applies the model, and the event carries the <em>verdict</em> rather than the observation
     that produced it. So the server stores a conclusion it cannot check, and four things follow:</p>
     <ul>
-    <li><strong>A model bug is permanent.</strong> Fix the attribution logic and every row already
+    <li><strong>A client-side verdict cannot be corrected later.</strong> Fix the attribution logic and every row already
     written keeps the old verdict &mdash; there is nothing to recompute from.</li>
     <li><strong>Attribution dies with the cookie.</strong> Clearing <code>owa_c</code> destroys the
     stack, and the visitor's history is gone rather than re-derivable.</li>
@@ -2514,7 +2527,7 @@ referrer host), plus raw event counts 1:1</td><td><strong>v1 is a true oracle.</
 same parser, same expected output; a disagreement is a bug. Generated and exhaustive, as originally
 described</td></tr>
 <tr><td><strong>Model characterization</strong></td><td>at or above it — sessions, attribution, and
-everything derived from them</td><td><strong>v1 is not an oracle.</strong> Expected values come from
+everything derived from them</td><td><strong>Model characterization.</strong> Expected values come from
 the new model's definition, not from v1's output. Hand-written and small, because the model
 decisions are few</td></tr>
 </tbody></table></div>
@@ -2950,7 +2963,7 @@ instant, and already implemented. The single table makes the simpler policy the 
 <tr><td><strong>Reprocess cadence, and it is bounded by the partition scheme</strong></td><td>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</td></tr>
 <tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td></tr>
 <tr><td><strong>Idempotency</strong></td><td>A pass must be rerunnable with identical output. Same discipline as a schema update&rsquo;s <code>up()</code>.</td></tr>
-<tr><td><strong>Partition swap</strong></td><td>, and it ports. Both tables on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>The portable constraint is structural match.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong>Dropping is free; reorganising is not.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which is what this design avoids.</td></tr>
+<tr><td><strong>Partition swap</strong></td><td>, and it ports. Both tables on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which is what this design avoids.</td></tr>
 <tr><td><strong>Raw retention</strong></td><td>, which trades storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Worst-case client-side lateness</strong></td><td>, which sets the late-arrival window and therefore the whole cadence. <em>Revised:</em> this was written as &ldquo;queue reorder latency&rdquo;, to be measured as a drain after a stall, citing 1.x's two long stalls &mdash; the notify poison-pill and the legacy-class decode failure. Both were <code>owa_queue_item</code> stalls, and that queue only ever holds retries of events whose session could not be found, which v2 has no equivalent of. The unbounded tail those incidents represent is v1-only. What remains is the file queue's drain cadence, which is configured rather than measured, and lateness originating at the client, which is not visible server-side and is the open number.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>Unmeasured. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, not per day, so a pass over these volumes should be seconds &mdash; but it runs on an RDS instance shared with eight WordPress sites, and that is the constraint to measure against, not the row count.</td></tr>
