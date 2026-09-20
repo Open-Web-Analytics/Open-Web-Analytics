@@ -527,8 +527,7 @@ kept.</p>
 <p>v1 and v2 disagree about when a session <em>begins</em>, and one cookie cannot hold two models.
 <strong>The tracker gets one session model, v2's, and v1 adopts it.</strong> One tracker, one
 cookie, one beacon, one stream; the server writes v1's star from it as before and v2's event table
-when enabled. That is what lets the integrity check of <a href="#s222">&sect;2.22</a> stay a diff
-rather than a tolerance.</p>
+when enabled. The integrity check of <a href="#s222">&sect;2.22</a> can therefore be a diff rather than a tolerance.</p>
 
 <h4><span class="num">1.9.2</span>What it costs v1's numbers</h4>
 <p>One discontinuity in v1's session-derived numbers, accepted deliberately. Three rules differ, and
@@ -657,11 +656,11 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">17</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
 <tr><td class="n">18</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
 <tr><td class="n">19</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">20</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, which is what lets <code>pagePath</code> collapse host variants</td></tr>
+<tr><td class="n">20</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
 <tr><td class="n">21</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
 <tr><td class="n">22</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
 <tr><td class="n">23</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">24</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, which is what makes a click coordinate meaningful</td></tr>
+<tr><td class="n">24</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
 <tr><td class="n">25</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
 <tr><td class="n">26</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
 <tr><td class="n">27</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
@@ -1213,7 +1212,7 @@ visitor table and the closed-session set.</li>
 <li><strong>Roll up.</strong> Replace that day&rsquo;s rollup rows from the new partition.</li>
 </ol>
 
-<p><strong>The swap is what makes a rerun safe.</strong> Staging is built whole and
+<p><strong>The swap is what a rerun depends on.</strong> Staging is built whole and
 is invisible until the exchange, so a run that dies in step 3 leaves the live table exactly as it
 was and the next run simply rebuilds. This is a stronger property than &ldquo;the statements are
 rerunnable&rdquo;, and it is the reason to build into staging rather than to write the target
@@ -1354,8 +1353,7 @@ acquisition columns, not to the row.</strong> Those are write-once; <code>last_s
 maintenance column the pass advances monotonically. Worth stating plainly, because &ldquo;never
 update the visitor row&rdquo; is the kind of rule that gets enforced literally by someone who was
 not in this conversation.</p>
-<p>Its write rule is <strong>insert-if-absent, never update</strong>, which is what makes a rerun
-safe: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
+<p>Its write rule is <strong>insert-if-absent, never update</strong>, so a rerun cannot corrupt it: a visitor has exactly one <code>first_visit</code> in their life, so a second write of the
 same row can only be a reprocess of the same event. That is the same &ldquo;absent then present,
 never wrong then corrected&rdquo; property the flag keying buys, now expressed as a storage rule.
 A full rebuild of the table from raw must break ties deterministically &mdash; order by
@@ -1389,8 +1387,7 @@ searching for, pruning to exactly one partition. Uniqueness also survives in sub
 given id can only ever hash to one period, so <code>UNIQUE(visitor_id, first_seen_period)</code>
 <em>is</em> uniqueness on <code>visitor_id</code>.</p>
 
-<p><strong>But first-seen partitioning buys nothing for expiry</strong>, which is the thing that
-wanted partitioning in the first place. Expiry is by inactivity, and a first-seen partition holds
+<p><strong>But first-seen partitioning buys nothing for expiry</strong>, and expiry is the only reason to partition this table. Expiry is by inactivity, and a first-seen partition holds
 a mix of long-dead and still-active visitors, so it can never be dropped whole &mdash; only deleted
 within.</p>
 
@@ -1551,7 +1548,7 @@ breaks only if it names something that fell out.</p>
 
 <tr><td><strong>Envelope</strong></td><td>a freshness <em>as-of</em> field (from <code>owa_event_rollup.built_at</code>); the synthetic <code>(unknown)</code> reconciliation row; <code>relatedDimensions</code> becomes <em>authority</em>, not description</td></tr>
 <tr><td><strong>Combinations gained</strong></td><td>1.x supports overlap only by re-registering a metric on another entity by hand (<code>visits</code> is registered twice, which is why <code>visits × pageUri</code> already works; the 9 duplicate commerce metrics are the same mechanism). v2 gains <em>every overlapping pair nobody hand-wrote a bridge for</em> — <code>visitDuration × pageUri</code>, engagement × anything, funnel × attribution, any param × any metric — and replaces re-registration with one scope declaration per metric</td></tr>
-<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function — that is what makes <code>relatedDimensions</code> authoritative. The only curated artifact is a near-empty editorial override list</td></tr>
+<tr><td><strong>The guard</strong></td><td>a <strong>scope algebra, not a table</strong> — every metric and dimension declares a scope (event/session/user/item) in code at registration, and one function computes a three-way verdict: <em>partitioning</em> (sums to total; <code>(unknown)</code> row applies), <em>overlapping</em> (<code>visits × pageUri</code> — valid, sum legitimately exceeds total, no <code>(unknown)</code> row, UI labels it), or <em>refused</em> (ratio × overlapping, e.g. <code>bounceRate × pagePath</code>, with the error naming the legal spelling <code>bounceRate × landing page</code>). Param paths default to event scope, promotable per site. Discovery and enforcement call the same function, so <code>relatedDimensions</code> describes exactly what the guard will allow. The only curated artifact is a near-empty editorial override list</td></tr>
 </tbody></table></div>
 
 <!-- ============ PART II ============ -->
@@ -1896,8 +1893,7 @@ report.</p>
 instead.</strong> Decouple the tracked website from the profile that measures it: one website may
 have several profiles, and <em>a profile declares its version</em>. The whole experience fans out
 from the profile — a v2 profile shows v2 navigation, v2 reports, and queries the v2 REST endpoint.
-This is the path GA took to GA4. It answers the
-open questions rather than deciding them:</p>
+This is the path GA took to GA4. Each open question below gets a structural answer instead of a rule someone has to remember:</p>
 <div class="scroll"><table>
 <thead><tr><th>Question</th><th>How the profile answers it</th></tr></thead>
 <tbody>
@@ -2121,8 +2117,7 @@ script &mdash; is load-bearing rather than stylistic. The asset: every metric, d
 an authored definition already resolves through the registry at save time <em>and</em> again at
 render time, because the registry changes under a saved report. That is the explicit enforcement
 <a href="#s110">&sect;1.10</a> says v2 will need once a single table stops refusing non-additive
-combinations on its own. It was written to keep authored reports honest; it turns out to be the seam
-v2 needs for a different reason.</p>
+combinations on its own. It was written to validate authored reports; it turns out to be the seam v2 needs for a different reason.</p>
 
 <h4 id="nA112"><span class="num">A.1.12</span>Why <code>msec</code> is not fixed in 1.x</h4>
 <p><code>owa_request.msec</code> is declared <code>INT</code> and fed the fractional part of
@@ -2193,7 +2188,7 @@ and inverts on a columnar engine, and it has been explicitly traded away.</p>
 <tr><td>Dimensions</td><td class="n">10</td><td class="n">38.6 MB</td><td>parallel; v1 keeps its own</td></tr>
 </tbody></table></div>
 <p><span class="chip c-meas">Measured</span> Effectively all volume is parallel and the shared set
-is trivial, which is what makes coexistence cheap. Cost of the overlap, composed from the two
+is trivial, so coexistence costs little. Cost of the overlap, composed from the two
 write paths: roughly <strong>57 events/s against v1's 79</strong> — about 28% down, and
 pessimistic since the writes share request overhead. That is an argument for the queue carrying
 the fan-out rather than the request doing it inline.</p>
@@ -2227,8 +2222,7 @@ while the query builder emits upper.</p>
   worked</strong>. It calls <code>setChildMetric()</code>, which existed only on
   <code>CalculatedMetric</code> &mdash; not on <code>Core\Metric</code>, which
   <code>ConfigurableMetric</code> extends. Supported on paper, fatal on first use, and never
-  registered by anything, so nobody found out. &ldquo;Supported but unused&rdquo; was doing more
-  work in the earlier draft than it could bear.</p>
+  registered by anything, so nobody found out. The earlier draft described it as &ldquo;supported but unused&rdquo;, which was wrong on both counts.</p>
   <p>And <code>registerMetricDefinition()</code> filters its params with
   <code>array_intersect_key()</code> against a fixed map, so <strong>any key missing from that map
   is silently dropped</strong> rather than rejected. A new kind's parameter vanishes and the metric
@@ -2249,25 +2243,18 @@ parser is the prerequisite for a <em>user-authored</em> metric builder, and a pl
 grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
 application. Separately: the <code>@</code> means a malformed formula falls through to
 <code>0</code>, so a broken metric reads as a real zero.</p>
-<h4 id="nA117"><span class="num">A.1.17</span>The 1.x metric set, classified</h4>
-<p class="note">Measured, not sampled: 40 registered classes across 28 <code>registerMetric()</code>
-calls producing 81 implementations, of which <strong>74 carried an explicit <code>setSelect()</code>
-expression</strong> and no kind at all. Those 74 expressions collapse to seven shapes. 48 metric
-class files became 7; of 78 metrics, 68 resolve byte-identically and 10 differ only in SQL keyword
-case. An earlier draft claimed 22 class references and that no metric class contained SQL &mdash;
-both wrong, and wrong the same way: read from a few classes rather than from classifying the set.</p>
-<h4 id="nA118"><span class="num">A.1.18</span>What the <code>(not set)</code> sentinel costs in 1.x</h4>
+<h4 id="nA117"><span class="num">A.1.17</span>What the <code>(not set)</code> sentinel costs in 1.x</h4>
 <p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
 <code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
 those properties are <code>required</code>, the string is written to the fact row on every event
 that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
 every row carries the literal text.</p>
-<h4 id="nA119"><span class="num">A.1.19</span>What shipping both schemas costs a fresh install</h4>
+<h4 id="nA118"><span class="num">A.1.18</span>What shipping both schemas costs a fresh install</h4>
 <p><span class="chip c-meas">Measured</span> A fresh install creates both shapes: 19 empty tables
 cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 15 partitioned fact
 tables. Cheap enough to accept, and it keeps a fresh install able to serve a v1 beacon without
 being migrated forward into v1 first.</p>
-<h4 id="nA120"><span class="num">A.1.20</span>Why a page carries no identity hash</h4>
+<h4 id="nA119"><span class="num">A.1.19</span>Why a page carries no identity hash</h4>
 <p>An earlier draft called the column
 <code>page_uri</code> and gave a page an identity, <code>hash(site_id + uri)</code>. A hash has to
 commit to its input before anyone asks a question, which forced a decision about whether the query
@@ -2276,7 +2263,7 @@ query in the hash and every campaign-tagged arrival becomes a distinct page, fra
 landing-page report into one row per tag combination. Drop it and the campaign evidence is gone
 from raw entirely. Storing the complete URL and deriving the path readings at read time is what GA
 does, and it defers the question to the reader who is actually asking it.</p>
-<h4 id="nA121"><span class="num">A.1.21</span>Markers are the breakdown fast path</h4>
+<h4 id="nA120"><span class="num">A.1.20</span>Markers are the breakdown fast path</h4>
 <p>With <code>session_start</code> in the stream, a breakdown counts marker rows instead of
 deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> proxy:</p>
 
@@ -2289,7 +2276,7 @@ deduplicating session ids. Measured against 1.x's <code>is_entry_page</code> pro
 
 <p>The expensive <code>DISTINCT</code> is confined to the rollup job, bounded to its trailing
 window.</p>
-<h4 id="nA122"><span class="num">A.1.22</span>A duplicate marker cannot happen; a lost one is visible</h4>
+<h4 id="nA121"><span class="num">A.1.21</span>A duplicate marker cannot happen; a lost one is visible</h4>
 <p>The marker's event id is content-derived — <code>hash(site_id + session_id +
 'session_start')</code> — so racing writers produce the same row and the second insert is a
 duplicate-key no-op. No coordination is needed, and it holds across subdomains, where the Web
@@ -2297,7 +2284,7 @@ Locks API is origin-scoped and could not reach.</p>
 
 <p>A lost marker undercounts the breakdown and lands in <code>(unknown)</code>. A negative
 remainder is therefore a defect signal rather than a rounding artefact.</p>
-<h4 id="nA123"><span class="num">A.1.23</span>Marker overhead falls as the stream gets richer</h4>
+<h4 id="nA122"><span class="num">A.1.22</span>Marker overhead falls as the stream gets richer</h4>
 <div class="scroll"><table>
 <thead><tr><th>Stream</th><th>Events per session</th><th>Cost of two markers</th></tr></thead>
 <tbody>
@@ -2308,7 +2295,7 @@ remainder is therefore a defect signal rather than a rounding artefact.</p>
 <p>The 89% figure is what made a flat rejection look reasonable, and it is an artefact of 1.x
 tracking almost nothing but pageviews. Marker overhead is inversely proportional to stream
 richness, so it falls as v2 does its job. (1.x also averages 1.15 sessions per visitor.)</p>
-<h4 id="nA124"><span class="num">A.1.24</span>Visitor retention: what other vendors do, and what this install measures</h4>
+<h4 id="nA123"><span class="num">A.1.23</span>Visitor retention: what other vendors do, and what this install measures</h4>
 <p>Visitor active lifespan on peteradamsphoto &mdash; first visit to last seen, per visitor, over
 the 181,534 visitors with usable dates and fourteen years of history (2012-01-18 onward):</p>
 <p>The evidence behind the 13-month inactivity TTL in <a href="#s15">&sect;1.5.4</a>. Two separate expiries have to be kept apart &mdash; the client-side cookie, which is the familiar argument, and a <em>server-side</em> one on the visitor record, which is the relevant one.</p>
@@ -2332,14 +2319,14 @@ point retaining a server-side profile past the longest cookie that can reach it.
 <tr><td><strong>13&ndash;26 months</strong></td><td class="n">192</td><td class="n">0.106%</td></tr>
 <tr><td><strong>over 26 months</strong></td><td class="n">121</td><td class="n">0.067%</td></tr>
 </table></div>
-<p><strong>Expiring the row does not rewrite history, which is what makes it cheap.</strong>
+<p><strong>Expiring the row does not rewrite history.</strong>
 Events already denormalised keep the acquisition values stamped on them; only the ability to
 attribute <em>future</em> events for that visitor is lost, and a visitor returning after thirteen
 months of silence is a new acquisition by any reasonable reading. GA draws the same line
 explicitly &mdash; its retention setting <em>&ldquo;only affects explorations and funnel
 reports&rdquo;</em> and <em>&ldquo;does not affect standard aggregated reports&rdquo;</em>, which
 is exactly the distinction between the per-visitor record and the rows it has already stamped.</p>
-<h4 id="nA125"><span class="num">A.1.25</span>Why a dimension names a shape instead of carrying SQL</h4>
+<h4 id="nA124"><span class="num">A.1.24</span>Why a dimension names a shape instead of carrying SQL</h4>
 <p>The tempting shortcut is to let each computed dimension carry its own SQL. That works until the
 reporting store is not MySQL &mdash; and <a href="#s21">&sect;2.1</a> deliberately holds that door
 open behind a second DSN. Then a store move rewrites every derived dimension by hand.</p>
@@ -2351,7 +2338,7 @@ keeps the set closed. Once dimensions carry SQL strings instead, converting them
 intent from expressions &mdash; which is exactly where the report controllers were before they
 became configuration, and the narrowing that made <em>that</em> safe was the same move: names from
 a known list, never code (<a href="#s17">&sect;1.7</a>).</p>
-<h4 id="nA126"><span class="num">A.1.26</span>What bounds the late-arrival window, and what does not</h4>
+<h4 id="nA125"><span class="num">A.1.25</span>What bounds the late-arrival window, and what does not</h4>
 <p>1.x has two queues, and they are not the same mechanism:</p>
 <ul>
 <li><strong>The incoming queue is a file.</strong> Tracking events are written to disk and
@@ -2489,8 +2476,7 @@ below dissolves</strong> — separate partitions cannot overwrite one another, s
 consumers. <em>Open:</em> the service is a boot-time singleton, built before a query knows its
 profile, so either every accessor takes a version or the version becomes request-scoped ambient
 state. <strong>The explicit parameter is safer</strong> — ten call sites is tractable, and it keeps
-the version visible at each consumer rather than hidden in ambient state, which is the same
-silent-wrong-answer failure in a different costume.</p>
+the version visible at each consumer rather than hidden in ambient state, the same silent-wrong-answer failure.</p>
 
 <div class="flag">
   <p class="h">BLOCKER: the normalized dimension registry is name-keyed, so v2 would overwrite v1</p>
