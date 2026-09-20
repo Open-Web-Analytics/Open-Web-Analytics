@@ -206,7 +206,13 @@ also writes the visitor store (<a href="#s29">&sect;2.9</a>).</p>
 <a href="#sa1">the appendix</a>.</p>
 
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
-<p><strong>A session is not a table and not a row.</strong> Session context is stamped on every event, so a session is counted from the denormalised table. A rollup, if one is ever added, precomputes the same thing rather than becoming a second authority.
+<p><strong>A session is not a table and not a row.</strong> Session context is stamped on every
+event, so a session is counted from the denormalised table &mdash; as a distinct count of
+<code>(visitor_id, session_id)</code>, not of <code>session_id</code> alone. The session id embeds
+its creation timestamp (<a href="#s21">&sect;2.1</a>), so two visitors starting in the same second
+can share one; pairing it with the visitor id makes the count depend only on visitor-id uniqueness,
+which <a href="#s14">&sect;1.4</a> bounds. A rollup, if one is ever added, precomputes the same
+thing rather than becoming a second authority.
 Marker events (<a href="#s13">&sect;1.3</a>) exist for what they carry, not for what they count.</p>
 
 <h4><span class="num">1.2.1</span>Engagement is measured in deltas</h4>
@@ -266,8 +272,8 @@ wire.</p>
 <h4><span class="num">1.3.1</span>What the markers are for</h4>
 <p><strong>A marker gives a session or a visitor one row of its own.</strong> Session-grain
 questions are answerable without it &mdash; every event carries the session's id and context, so
-&ldquo;sessions by landing page&rdquo; is a <code>COUNT(DISTINCT session_id)</code> grouped by a
-stamped column (<a href="#s15">&sect;1.5.1</a>). The marker makes that a row count instead of a
+&ldquo;sessions by landing page&rdquo; is a <code>COUNT(DISTINCT visitor_id, session_id)</code>
+grouped by a stamped column (<a href="#s15">&sect;1.5.1</a>). The marker makes that a row count instead of a
 distinct count, which is the cheaper shape over a wide window.</p>
 <p>That row then does four jobs nothing else can do:</p>
 <div class="scroll"><table>
@@ -643,7 +649,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">2</td><td><code>event_type</code></td><td>VARCHAR(24)</td><td>the taxonomy names — <a href="#s13">&sect;1.3</a></td></tr>
 <tr><td class="n">3</td><td><code>site_id</code></td><td>VARCHAR(64)</td><td>leads every composite index. Immutable</td></tr>
 <tr><td class="n">4</td><td><code>visitor_id</code></td><td>BIGINT UNSIGNED</td><td>the one identity v2 mints — <a href="#s14">&sect;1.4</a></td></tr>
-<tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds its creation timestamp, which the midnight rule reads</td></tr>
+<tr><td class="n">5</td><td><code>session_id</code></td><td>BIGINT UNSIGNED</td><td>embeds its creation timestamp, which the midnight rule reads. <strong>Not unique on its own</strong> &mdash; two visitors starting in the same second can share one, so a session is counted as distinct <code>(visitor_id, session_id)</code> (<a href="#s12">&sect;1.2</a>)</td></tr>
 <tr><td class="n">6</td><td><code>user_id</code></td><td>VARCHAR(255) NULL</td><td>site-declared, forward-only. The only field that outlives a cookie</td></tr>
 <tr><td class="n">7</td><td><code>ts</code></td><td>BIGINT UNSIGNED</td><td>server-assigned, zone-less. The zone is applied once, into <code>yyyymmdd</code></td></tr>
 <tr><td class="n">8</td><td><code>yyyymmdd</code></td><td>INT UNSIGNED</td><td>partition key. Not retroactive if the configured zone changes</td></tr>
@@ -1347,8 +1353,8 @@ queries &mdash; <code>computeAggregates()</code> then <code>computeDimensionalRo
 pass can swap a partition between them, and then the two numbers describe different data.</p>
 <p><strong>Both queries return <code>MAX(built_at)</code> alongside their result. If the two values
 differ, a swap landed between them and the pair is re-run.</strong></p>
-<pre><code>SELECT COUNT(DISTINCT session_id), MAX(built_at) FROM owa_event WHERE &hellip;
-SELECT source, medium, COUNT(DISTINCT session_id), MAX(built_at)
+<pre><code>SELECT COUNT(DISTINCT visitor_id, session_id), MAX(built_at) FROM owa_event WHERE &hellip;
+SELECT source, medium, COUNT(DISTINCT visitor_id, session_id), MAX(built_at)
   FROM owa_event WHERE &hellip; GROUP BY source, medium</code></pre>
 <ul>
 <li><strong>It needs no transaction</strong>, which matters because there is not one to use. MySQL
@@ -2125,6 +2131,22 @@ compute from additive components the rollup holds.</p>
 <tr><td>Rollup build — full / busiest day incremental</td><td class="n" colspan="2">50.4 s / <strong>377 ms</strong></td></tr>
 </tbody></table></div>
 <p><strong>A one-month window is 106&nbsp;ms straight from events</strong>, which needs no rollup at all. The saving is real only on the full corpus, where 39.2&nbsp;s is not a UI latency. So on a corpus this size the rollup earns its keep on all-time and multi-year questions and nothing narrower &mdash; and the crossover point, on a busier install, is unmeasured.</p>
+<h4 id="nA132"><span class="num">A.1.32</span>GA hit the same problem and pairs the ids</h4>
+<p>GA4 counts sessions by estimating distinct <code>ga_session_id</code> values, not by counting
+<code>session_start</code> events, and the parameter rides every event rather than only the marker.
+Two details are worth carrying:</p>
+<ul>
+<li><strong><code>ga_session_id</code> is not unique on its own.</strong> It is the session-start
+timestamp in seconds, so two users starting together collide. Google's documented method is to
+count distinct combinations of <code>user_pseudo_id</code>/<code>user_id</code> <em>and</em>
+<code>ga_session_id</code>, joining the user id to the session id to get a unique identifier. Our
+session id is built the same way, which is why <a href="#s12">&sect;1.2</a> counts the pair.</li>
+<li><strong>Counting the marker gives a different answer from the metric.</strong> Google documents
+both causes: <code>session_start</code> can be filtered out while the session id is still
+generated, and reports estimate with HyperLogLog++ at precision 12 while BigQuery counts exactly.
+Our marker cannot be filtered independently &mdash; it is raised server-side in the same atomic
+write as its beacon (<a href="#s26">&sect;2.6.2</a>) &mdash; and the count is exact either way.</li>
+</ul>
 <h3 id="sa2"><span class="num">A.2</span>Positions held and given up</h3>
 
 <p><strong>Positions this plan held and gave up.</strong> They are collected here rather than left
